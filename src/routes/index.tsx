@@ -7,12 +7,11 @@ export const Route = createFileRoute("/")({
 });
 
 function LoginPage() {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
@@ -33,18 +32,14 @@ function LoginPage() {
     setError(null);
     setSubmitting(true);
 
-    const { error } = isSignUp
-      ? await signUp(email, password)
-      : await signIn(email, password);
+    const { error } = await signIn(email, password);
 
     setSubmitting(false);
 
     if (error) {
       setError(error.message);
-    } else if (!isSignUp) {
-      navigate({ to: "/dashboard" });
     } else {
-      setError("Check your email to confirm your account");
+      navigate({ to: "/dashboard" });
     }
   };
 
@@ -53,9 +48,7 @@ function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold">GenZen</h1>
-          <p className="text-neutral-500 mt-1">
-            {isSignUp ? "Create an account" : "Sign in to continue"}
-          </p>
+          <p className="text-neutral-500 mt-1">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -107,24 +100,9 @@ function LoginPage() {
             disabled={submitting}
             className="w-full py-2 px-4 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "..." : isSignUp ? "Sign Up" : "Sign In"}
+            {submitting ? "..." : "Sign In"}
           </button>
         </form>
-
-        <div className="text-center text-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-            }}
-            className="text-neutral-600 hover:text-neutral-900"
-          >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "Need an account? Sign up"}
-          </button>
-        </div>
       </div>
     </div>
   );

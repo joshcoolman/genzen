@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { checkConnections } from "@/lib/server/check-connections";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -10,6 +11,10 @@ export const Route = createFileRoute("/dashboard")({
 interface ConnectionStatus {
   supabase: "checking" | "connected" | "error";
   supabaseError?: string;
+  fal: "checking" | "connected" | "error";
+  falError?: string;
+  trigger: "checking" | "connected" | "error";
+  triggerError?: string;
 }
 
 function Dashboard() {
@@ -17,6 +22,8 @@ function Dashboard() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<ConnectionStatus>({
     supabase: "checking",
+    fal: "checking",
+    trigger: "checking",
   });
 
   useEffect(() => {
@@ -26,8 +33,8 @@ function Dashboard() {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    async function checkConnections() {
-      // Check Supabase connection by calling auth.getUser() which requires a valid connection
+    async function runChecks() {
+      // Check Supabase connection
       try {
         const { error } = await supabase.auth.getUser();
         if (error) {
@@ -46,10 +53,31 @@ function Dashboard() {
           supabaseError: err instanceof Error ? err.message : "Unknown error",
         }));
       }
+
+      // Check FAL and Trigger.dev via server function
+      try {
+        const serverStatus = await checkConnections();
+        setStatus((s) => ({
+          ...s,
+          fal: serverStatus.fal.status,
+          falError: serverStatus.fal.error,
+          trigger: serverStatus.trigger.status,
+          triggerError: serverStatus.trigger.error,
+        }));
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Server error";
+        setStatus((s) => ({
+          ...s,
+          fal: "error",
+          falError: errorMsg,
+          trigger: "error",
+          triggerError: errorMsg,
+        }));
+      }
     }
 
     if (user) {
-      checkConnections();
+      runChecks();
     }
   }, [user]);
 
@@ -92,8 +120,17 @@ function Dashboard() {
               status={status.supabase}
               error={status.supabaseError}
             />
-
             <StatusRow label="Auth" status="connected" detail={user.email} />
+            <StatusRow
+              label="FAL"
+              status={status.fal}
+              error={status.falError}
+            />
+            <StatusRow
+              label="Trigger.dev"
+              status={status.trigger}
+              error={status.triggerError}
+            />
           </div>
         </div>
 
@@ -131,13 +168,19 @@ function StatusRow({
       <div className="flex items-center gap-2">
         {detail && <span className="text-sm text-neutral-500">{detail}</span>}
         <StatusBadge status={status} />
+        {error && status === "error" && (
+          <span className="text-xs text-red-500">{error}</span>
+        )}
       </div>
-      {error && <span className="text-xs text-red-500 ml-2">{error}</span>}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: "checking" | "connected" | "error" }) {
+function StatusBadge({
+  status,
+}: {
+  status: "checking" | "connected" | "error";
+}) {
   const styles = {
     checking: "bg-yellow-100 text-yellow-700",
     connected: "bg-green-100 text-green-700",
