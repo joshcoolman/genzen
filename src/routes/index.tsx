@@ -47,7 +47,7 @@ function LoginPage() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-accent-gold">GenZen</h1>
+          <h1 className="text-2xl font-semibold text-accent-gold">Get your zen on.</h1>
           <p className="text-muted-foreground mt-1">Sign in to continue</p>
         </div>
 

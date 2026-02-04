@@ -1,4 +1,4 @@
-# GenZen
+# GenZen, Something to see!
 
 AI image generation app with real-time job status updates.
 
