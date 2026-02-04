@@ -1,0 +1,13 @@
+node_modules
+.git
+.gitignore
+.output
+.nitro
+.tanstack
+.trigger
+.vinxi
+*.local
+.env*
+README.md
+dashboard-*.png
+supabase/.temp
