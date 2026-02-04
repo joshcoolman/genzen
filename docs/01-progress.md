@@ -4,6 +4,24 @@ Development progress for GenZen.
 
 ---
 
+### Dashboard UI/UX with Layout System
+
+**Issue:** #2 - Dashboard UI/UX exploration with static content
+
+Implemented the dashboard layout system with global dark theme styling. Created responsive sidebar navigation (desktop) and sheet-based mobile nav. Established color palette with gold accent (#C9A75C) and sage green (#8FA888) secondary. Set up TanStack Router layout routes for auth-protected dashboard pages.
+
+**Key files:**
+- `src/styles.css` - Global dark theme with CSS variables
+- `src/components/DashboardLayout.tsx` - Layout wrapper
+- `src/components/Sidebar.tsx` - Desktop navigation
+- `src/components/MobileNav.tsx` - Mobile sheet navigation
+- `src/routes/dashboard.tsx` - Layout route with auth protection
+- `src/routes/dashboard/index.tsx` - Dashboard home
+- `src/routes/dashboard/profile.tsx` - Profile page
+- `src/routes/dashboard/settings.tsx` - Settings page
+
+---
+
 ### Initial Setup Complete
 
 **Issue:** #1 - Initial setup: Authenticated dashboard with full stack verification

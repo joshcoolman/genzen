@@ -18,7 +18,10 @@ Users sign in with email and password. The dashboard is protected and redirects 
 - `src/lib/auth.ts` - Auth context type definitions and hook
 - `src/components/auth-provider.tsx` - React context provider for auth state
 - `src/routes/index.tsx` - Login page
-- `src/routes/dashboard.tsx` - Protected dashboard
+- `src/routes/dashboard.tsx` - Layout route with auth protection (wraps all dashboard child routes)
+- `src/routes/dashboard/index.tsx` - Dashboard home page
+- `src/routes/dashboard/profile.tsx` - User profile page
+- `src/routes/dashboard/settings.tsx` - Settings page
 - `src/routes/__root.tsx` - Wraps app with AuthProvider
 
 ### How It Works
@@ -26,8 +29,9 @@ Users sign in with email and password. The dashboard is protected and redirects 
 1. `AuthProvider` wraps the app and manages auth state via `supabase.auth.onAuthStateChange()`
 2. Login page calls `supabase.auth.signInWithPassword()`
 3. On success, user is redirected to `/dashboard`
-4. Dashboard checks `user` from auth context; redirects to `/` if null
-5. Sign out calls `supabase.auth.signOut()` and redirects to login
+4. Dashboard layout route (`/dashboard.tsx`) checks `user` from auth context; redirects to `/` if null
+5. All child routes under `/dashboard/*` inherit auth protection from the layout route
+6. Sign out calls `supabase.auth.signOut()` and redirects to login
 
 ### Dependencies
 

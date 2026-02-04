@@ -16,8 +16,8 @@ function LoginPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-neutral-500">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
@@ -44,18 +44,18 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">GenZen</h1>
-          <p className="text-neutral-500 mt-1">Sign in to continue</p>
+          <h1 className="text-2xl font-semibold text-accent-gold">GenZen</h1>
+          <p className="text-muted-foreground mt-1">Sign in to continue</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-neutral-700 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Email
             </label>
@@ -65,7 +65,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
@@ -73,7 +73,7 @@ function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-neutral-700 mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Password
             </label>
@@ -84,13 +84,13 @@ function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent"
+              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+            <div className="text-sm text-red-400 bg-red-900/30 p-3 rounded-md">
               {error}
             </div>
           )}
@@ -98,7 +98,7 @@ function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2 px-4 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {submitting ? "..." : "Sign In"}
           </button>
