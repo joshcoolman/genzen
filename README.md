@@ -10,6 +10,11 @@ AI image generation app with real-time job status updates.
 - **FAL** - Image generation API
 - **Fly.io** - Hosting
 
+## Features
+
+- **Dashboard** - Connection status for all services
+- **User Images** - Upload, manage, and organize images (`/dashboard/images`)
+
 ## Live
 
 https://genzen.fly.dev/

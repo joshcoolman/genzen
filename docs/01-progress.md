@@ -4,6 +4,21 @@ Development progress for GenZen.
 
 ---
 
+### User Images Feature
+
+**Issue:** #9 - User Images: Upload and manage images from dashboard
+
+Added user images feature at `/dashboard/images`. Users can upload images (jpeg, png, webp, gif up to 50MB), view them in a responsive grid, edit title/description, and delete. Uses Supabase Storage with RLS for security. Auto-generates titles from filenames and computes SHA-256 hashes for future duplicate detection.
+
+**Key files:**
+- `src/features/user-images/` - Feature module (hooks, components, types)
+- `src/routes/dashboard/images.tsx` - Route component
+- `src/components/ui/dialog.tsx` - Dialog component
+- `src/lib/types/supabase.ts` - Generated Supabase types
+- `supabase/migrations/20260204215304_remote_schema.sql` - DB migration
+
+---
+
 ### Dashboard UI/UX with Layout System
 
 **Issue:** #2 - Dashboard UI/UX exploration with static content
