@@ -106,3 +106,99 @@
     @apply text-foreground;
   }
 }
+
+/* Prose styles for markdown docs */
+.prose {
+  color: var(--foreground);
+  line-height: 1.75;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--foreground);
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.prose h2 {
+  font-size: 1.5rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+.prose h3 {
+  font-size: 1.25rem;
+}
+.prose p {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+.prose a {
+  color: var(--accent-gold);
+  text-decoration: underline;
+}
+.prose a:hover {
+  color: var(--accent-gold-hover);
+}
+.prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.prose code {
+  color: var(--accent-gold);
+  background: var(--card);
+  padding: 0.15em 0.35em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+.prose pre {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+.prose ul, .prose ol {
+  padding-left: 1.5em;
+  margin: 0.75em 0;
+}
+.prose ul {
+  list-style-type: disc;
+}
+.prose ol {
+  list-style-type: decimal;
+}
+.prose li {
+  margin: 0.25em 0;
+}
+.prose li input[type="checkbox"] {
+  margin-right: 0.5em;
+}
+.prose blockquote {
+  border-left: 3px solid var(--accent-gold);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--muted-foreground);
+}
+.prose hr {
+  border-color: var(--border);
+  margin: 2em 0;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose th {
+  background: var(--card);
+  font-weight: 600;
+}
