@@ -1,19 +1,15 @@
 /**
  * Image Edit Dialog
  *
- * Dialog for editing image title and description.
+ * Full-screen overlay for editing image title and description.
+ * Two-column layout: image + inputs on left, tabbed palette on right.
  */
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { UserImage } from "../types";
+import { ColorPaletteDisplay } from "./ColorPaletteDisplay";
+import type { UserImage, ColorPalette } from "../types";
 
 interface ImageEditDialogProps {
   image: UserImage | null;
@@ -22,10 +18,11 @@ interface ImageEditDialogProps {
   onClose: () => void;
   onSave: (id: string, title: string, description: string | null) => Promise<void>;
   onNext: () => void;
+  userId: string;
 }
 
 /**
- * Image edit dialog with keyboard shortcuts
+ * Full-screen image editor with keyboard shortcuts
  */
 export function ImageEditDialog({
   image,
@@ -34,16 +31,20 @@ export function ImageEditDialog({
   onClose,
   onSave,
   onNext,
+  userId,
 }: ImageEditDialogProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [localPalette, setLocalPalette] = useState<ColorPalette | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (image) {
       setTitle(image.title);
       setDescription(image.description ?? "");
+      setLocalPalette(image.color_palette as ColorPalette | null);
     }
   }, [image]);
 
@@ -55,6 +56,33 @@ export function ImageEditDialog({
       }, 100);
     }
   }, [open, image?.id]);
+
+  // Handle escape key at overlay level
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  // Prevent body scroll when overlay is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   const save = async () => {
     if (!image) return;
@@ -81,9 +109,6 @@ export function ImageEditDialog({
     if (e.key === "Enter") {
       e.preventDefault();
       saveAndClose();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      onClose();
     } else if (e.key === "Tab") {
       e.preventDefault();
       saveAndNext();
@@ -93,42 +118,43 @@ export function ImageEditDialog({
   const handleDescriptionKeyDown = (
     e: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      onClose();
-    } else if (e.key === "Tab" && !e.shiftKey) {
+    if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
       saveAndNext();
     }
   };
 
-  const handleOpenChange = async (newOpen: boolean) => {
-    if (!newOpen) {
-      await saveAndClose();
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === overlayRef.current) {
+      saveAndClose();
     }
   };
 
-  if (!image) return null;
+  if (!open || !image) return null;
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-3xl bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="text-foreground">Edit Image</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Image Preview */}
-          <div className="aspect-video overflow-hidden rounded-lg bg-sidebar-hover">
+    <div
+      ref={overlayRef}
+      onClick={handleOverlayClick}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 lg:p-[90px]"
+    >
+      {/* Modal container - min 800px, always side-by-side */}
+      <div className="relative w-full h-full min-w-[800px] bg-background rounded-lg border border-border shadow-2xl overflow-hidden">
+        {/* Two-column layout - always side-by-side */}
+        <div className="h-full grid grid-cols-2 gap-0">
+        {/* Left column: Image + Title + Description */}
+        <div className="flex flex-col p-6 overflow-y-auto">
+          {/* Image */}
+          <div className="flex-1 min-h-0 flex items-center justify-center mb-6">
             <img
               src={imageUrl}
               alt={title}
-              className="h-full w-full object-contain"
+              className="max-h-full max-w-full object-contain rounded-lg"
             />
           </div>
 
           {/* Title Input */}
-          <div className="space-y-2">
+          <div className="space-y-2 mb-4">
             <label
               htmlFor="title"
               className="text-sm font-medium text-foreground"
@@ -169,7 +195,20 @@ export function ImageEditDialog({
             />
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Right column: Tabbed palette */}
+        <div className="border-l border-border bg-card flex flex-col min-h-0 overflow-hidden">
+          <ColorPaletteDisplay
+            palette={localPalette}
+            imageId={image.id}
+            imageUrl={imageUrl}
+            userId={userId}
+            onPaletteGenerated={setLocalPalette}
+            onClose={onClose}
+          />
+        </div>
+      </div>
+      </div>
+    </div>
   );
 }

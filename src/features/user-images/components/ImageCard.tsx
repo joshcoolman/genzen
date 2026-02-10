@@ -34,7 +34,7 @@ export function ImageCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-gold/50 ${
+      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-gold/50 flex flex-col ${
         isDeleting ? "opacity-50" : ""
       }`}
       onClick={onClick}
@@ -55,18 +55,13 @@ export function ImageCard({
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-foreground line-clamp-2">
+      <div className="flex-1 px-4 pt-3 pb-2">
+        <h3 className="text-xs font-medium text-foreground line-clamp-2">
           {image.title}
         </h3>
-        {image.description && (
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-3">
-            {image.description}
-          </p>
-        )}
       </div>
 
-      {/* Metadata */}
+      {/* Metadata - pinned to bottom */}
       <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
         <div className="flex justify-between items-center">
           <span>{formatFileSize(image.file_size)}</span>

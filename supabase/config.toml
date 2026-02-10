@@ -364,6 +364,9 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+[functions.generate-palette]
+# Include the magick-wasm WASM binary for image processing
+
 [analytics]
 enabled = true
 port = 54327

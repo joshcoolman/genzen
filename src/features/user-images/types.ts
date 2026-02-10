@@ -111,3 +111,49 @@ export const updateUserImageSchema = z.object({
     .nullable()
     .optional(),
 });
+
+/**
+ * Tailwind shade scale (50-950)
+ * 11 shades from lightest to darkest
+ */
+export interface ShadeScale {
+  50: string;
+  100: string;
+  200: string;
+  300: string;
+  400: string;
+  500: string;
+  600: string;
+  700: string;
+  800: string;
+  900: string;
+  950: string;
+}
+
+/**
+ * Color palette v3: 8 hue-diverse colors with shade scales
+ */
+export interface ColorPalette {
+  colors: ShadeScale[];
+  metadata: {
+    extractionMethod: "lab-kmeans";
+    version: 3;
+  };
+}
+
+/**
+ * Type guard to check if palette is v3 format (array of 8 colors)
+ */
+export function isColorPaletteV3(palette: unknown): palette is ColorPalette {
+  if (!palette || typeof palette !== "object") return false;
+  const p = palette as Record<string, unknown>;
+  return (
+    "colors" in p &&
+    Array.isArray(p.colors) &&
+    "metadata" in p &&
+    typeof p.metadata === "object" &&
+    p.metadata !== null &&
+    "version" in (p.metadata as Record<string, unknown>) &&
+    (p.metadata as Record<string, unknown>).version === 3
+  );
+}

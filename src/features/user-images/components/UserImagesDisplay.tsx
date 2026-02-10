@@ -138,6 +138,7 @@ export function UserImagesDisplay() {
         onClose={handleCloseEdit}
         onSave={handleUpdate}
         onNext={handleNextImage}
+        userId={user?.id || ""}
       />
     </div>
   );
