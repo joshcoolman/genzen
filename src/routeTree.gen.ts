@@ -17,6 +17,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
+import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -58,12 +59,18 @@ const DashboardImagesRoute = DashboardImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
+  id: '/ai-images',
+  path: '/ai-images',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
+  '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/login'
+    | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/login'
+    | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -186,10 +198,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/ai-images': {
+      id: '/dashboard/ai-images'
+      path: '/ai-images'
+      fullPath: '/dashboard/ai-images'
+      preLoaderRoute: typeof DashboardAiImagesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -197,6 +217,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,

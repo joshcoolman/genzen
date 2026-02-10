@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Menu, Home, User, Settings, Image, LogOut } from "lucide-react";
+import { Menu, Home, User, Settings, Image, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/auth";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Home", href: "/dashboard", icon: Home },
   { label: "Images", href: "/dashboard/images", icon: Image },
+  { label: "AI Images", href: "/dashboard/ai-images", icon: Sparkles },
   { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

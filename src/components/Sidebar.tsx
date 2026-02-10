@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, User, Settings, Image, LogOut, type LucideIcon } from "lucide-react";
+import { Home, User, Settings, Image, Sparkles, LogOut, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: Home },
   { label: "Images", href: "/dashboard/images", icon: Image },
+  { label: "AI Images", href: "/dashboard/ai-images", icon: Sparkles },
   { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
