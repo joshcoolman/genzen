@@ -18,7 +18,7 @@ interface ConnectionStatus {
 }
 
 function DashboardHome() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [status, setStatus] = useState<ConnectionStatus>({
     supabase: "checking",
     fal: "checking",
@@ -74,21 +74,9 @@ function DashboardHome() {
     }
   }, [user]);
 
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <button
-          onClick={handleSignOut}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Sign out
-        </button>
-      </div>
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <div className="bg-card rounded-lg p-6 space-y-4">
         <h2 className="font-medium">Connection Status</h2>

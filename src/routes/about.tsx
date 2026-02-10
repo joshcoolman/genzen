@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({
-  component: HomePage,
+export const Route = createFileRoute("/about")({
+  component: AboutPage,
 });
 
-function HomePage() {
+function AboutPage() {
   return (
     <div className="min-h-[calc(100vh-52px)] flex flex-col items-center justify-center p-4 bg-background">
-      <h1 className="text-4xl font-semibold text-foreground">Home</h1>
+      <h1 className="text-4xl font-semibold text-foreground">About</h1>
       <p className="text-muted-foreground mt-4">Coming soon.</p>
     </div>
   );

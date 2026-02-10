@@ -2,6 +2,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { AuthProvider } from '@/components/auth-provider'
+import { GlobalNav } from '@/components/GlobalNav'
 
 import appCss from '../styles.css?url'
 
@@ -34,6 +35,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <AuthProvider>
+      <GlobalNav />
       <Outlet />
     </AuthProvider>
   )

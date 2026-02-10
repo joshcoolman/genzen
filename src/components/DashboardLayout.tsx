@@ -3,7 +3,7 @@ import { MobileNav } from "./MobileNav";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-[calc(100vh-52px)] bg-background">
       {/* Desktop sidebar */}
       <Sidebar className="hidden lg:flex" />
 

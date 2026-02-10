@@ -13,7 +13,7 @@ function DashboardLayoutRoute() {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate({ to: "/" });
+      navigate({ to: "/login" });
     }
   }, [user, loading, navigate]);
 
