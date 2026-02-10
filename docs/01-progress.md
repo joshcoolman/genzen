@@ -4,6 +4,17 @@ Development progress for GenZen.
 
 ---
 
+### Added JSON output for color palettes and minor design refinements
+
+Added JSON export tab to the color palette display so users can view and copy palette data for use in other tools. Palette/JSON toggle with copy-to-clipboard. Restructured the image edit dialog header with icon-only action buttons. Swatch hover interactions refined: regenerate and eyedropper show on hover, lock always visible. Image cards updated with smaller title text and bottom-pinned metadata. Dialog is now always side-by-side layout with min 800px width.
+
+**Key files:**
+- `src/features/user-images/components/ColorPaletteDisplay.tsx` - JSON tab, header layout, swatch hover behavior
+- `src/features/user-images/components/ImageEditDialog.tsx` - Fixed layout, overflow constraints
+- `src/features/user-images/components/ImageCard.tsx` - Title sizing, bottom-pinned metadata
+
+---
+
 ### User Images Feature
 
 **Issue:** #9 - User Images: Upload and manage images from dashboard
