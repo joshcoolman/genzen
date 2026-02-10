@@ -4,6 +4,39 @@ Development progress for GenZen.
 
 ---
 
+### FAL Image Generation with Model Selection and AI Prompts
+
+**Issue:** #3 - FAL Direct: Simple image generation from dashboard
+
+Added AI image generation at `/dashboard/ai-images`. Users can select from 7 curated FAL models (FLUX Schnell, FLUX.2 Turbo/Max, Nano Banana Pro, Recraft V3, Grok Imagine, ImagineArt 1.5) and generate images from text prompts. Includes a "Random Prompt" button that uses `fal-ai/any-llm` with Gemini 2.5 Flash to generate creative prompts. Server functions use TanStack Start `inputValidator` for type-safe input.
+
+**Key files:**
+- `src/features/ai-images/models.ts` - Curated model list with id/name/description
+- `src/features/ai-images/server/generate-image.server.ts` - generateImage and generatePrompt server functions
+- `src/routes/dashboard/ai-images.tsx` - Route with model dropdown, prompt textarea, generation UI
+
+---
+
+### Global Navigation and Route Restructure
+
+Added a persistent global nav bar across all pages. Created public routes for home (`/`), about (`/about`), and login (`/login`). Dashboard routes remain auth-protected under `/dashboard`. Removed TanStack devtools panel from root layout.
+
+**Key files:**
+- `src/components/GlobalNav.tsx` - Site-wide navigation bar
+- `src/routes/__root.tsx` - Root layout with GlobalNav, devtools removed
+- `src/routes/index.tsx`, `src/routes/about.tsx`, `src/routes/login.tsx` - Public routes
+
+---
+
+### Docs Viewer
+
+Added an in-app documentation viewer at `/docs` that renders markdown files from the `docs/` directory. Provides browsable access to feature docs and progress log without leaving the app.
+
+**Key files:**
+- `src/routes/docs.tsx` - Docs viewer route
+
+---
+
 ### Added JSON output for color palettes and minor design refinements
 
 Added JSON export tab to the color palette display so users can view and copy palette data for use in other tools. Palette/JSON toggle with copy-to-clipboard. Restructured the image edit dialog header with icon-only action buttons. Swatch hover interactions refined: regenerate and eyedropper show on hover, lock always visible. Image cards updated with smaller title text and bottom-pinned metadata. Dialog is now always side-by-side layout with min 800px width.
