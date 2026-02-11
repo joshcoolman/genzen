@@ -1,16 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { fal } from "@fal-ai/client";
+import { requireAuth } from "@/lib/server/auth.server";
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? "" });
 
 interface GenerateImageInput {
   prompt: string;
   model: string;
+  accessToken: string;
 }
 
 export const generateImage = createServerFn({ method: "POST" })
   .inputValidator((data: GenerateImageInput) => data)
   .handler(async ({ data }) => {
+    await requireAuth(data.accessToken);
+
     const { prompt, model } = data;
 
     if (!prompt.trim()) {
@@ -42,8 +46,15 @@ export const generateImage = createServerFn({ method: "POST" })
     };
   });
 
-export const generatePrompt = createServerFn({ method: "POST" }).handler(
-  async () => {
+interface GeneratePromptInput {
+  accessToken: string;
+}
+
+export const generatePrompt = createServerFn({ method: "POST" })
+  .inputValidator((data: GeneratePromptInput) => data)
+  .handler(async ({ data }) => {
+    await requireAuth(data.accessToken);
+
     if (!process.env.FAL_KEY) {
       throw new Error("FAL_KEY environment variable is not set");
     }
@@ -65,5 +76,4 @@ export const generatePrompt = createServerFn({ method: "POST" }).handler(
     }
 
     return { prompt: output.trim() };
-  }
-);
+  });

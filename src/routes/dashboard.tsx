@@ -1,21 +1,26 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+} from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/dashboard")({
+  beforeLoad: async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      throw redirect({ to: "/login" });
+    }
+  },
   component: DashboardLayoutRoute,
 });
 
 function DashboardLayoutRoute() {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate({ to: "/login" });
-    }
-  }, [user, loading, navigate]);
 
   if (loading) {
     return (

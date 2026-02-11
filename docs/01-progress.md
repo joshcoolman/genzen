@@ -4,6 +4,18 @@ Development progress for GenZen.
 
 ---
 
+### Auth Hardening: Route Protection and Server Function Guards
+
+Deleted dead `user-images.server.ts` server functions that used `SERVICE_ROLE_KEY` with client-provided `userId` (never called, but a vulnerability waiting to happen). Added TanStack Router `beforeLoad` hook to `/dashboard` for server-side auth redirect, eliminating the unauthenticated content flash from the old `useEffect` approach. Added `requireAuth()` server helper that verifies Supabase access tokens, and wired it into `generateImage` and `generatePrompt` server functions so unauthenticated requests can't consume FAL API credits.
+
+**Key files:**
+- `src/lib/server/auth.server.ts` - New server-side auth helper
+- `src/routes/dashboard.tsx` - `beforeLoad` auth guard
+- `src/features/ai-images/server/generate-image.server.ts` - Auth checks on FAL endpoints
+- `src/routes/dashboard/ai-images.tsx` - Passes access token to server functions
+
+---
+
 ### FAL Image Generation with Model Selection and AI Prompts
 
 **Issue:** #3 - FAL Direct: Simple image generation from dashboard

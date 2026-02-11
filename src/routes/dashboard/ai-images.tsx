@@ -7,6 +7,7 @@ import {
   generatePrompt,
 } from "@/features/ai-images/server/generate-image.server";
 import { IMAGE_MODELS, DEFAULT_MODEL } from "@/features/ai-images/models";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/dashboard/ai-images")({
   component: AiImagesPage,
@@ -20,6 +21,7 @@ interface GenerationResult {
 }
 
 function AiImagesPage() {
+  const { session } = useAuth();
   const [prompt, setPrompt] = useState(
     "A golden retriever sitting at a sidewalk cafe table, shot with a 50mm f/1.4 lens, shallow depth of field with creamy bokeh, warm afternoon light casting soft shadows, a cappuccino and croissant on the table, street scene blurred in the background"
   );
@@ -30,7 +32,7 @@ function AiImagesPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate() {
-    if (!prompt.trim() || loading) return;
+    if (!prompt.trim() || loading || !session?.access_token) return;
 
     setLoading(true);
     setError(null);
@@ -38,7 +40,7 @@ function AiImagesPage() {
 
     try {
       const data = await generateImage({
-          data: { prompt: prompt.trim(), model },
+          data: { prompt: prompt.trim(), model, accessToken: session.access_token },
         });
       setResult(data);
     } catch (err) {
@@ -51,13 +53,13 @@ function AiImagesPage() {
   }
 
   async function handleRandomPrompt() {
-    if (generatingPrompt) return;
+    if (generatingPrompt || !session?.access_token) return;
 
     setGeneratingPrompt(true);
     setError(null);
 
     try {
-      const data = await generatePrompt();
+      const data = await generatePrompt({ data: { accessToken: session.access_token } });
       setPrompt(data.prompt);
     } catch (err) {
       setError(

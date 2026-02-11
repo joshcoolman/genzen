@@ -16,9 +16,10 @@ Users sign in with email and password. The dashboard is protected and redirects 
 
 - `src/lib/supabase.ts` - Supabase client initialization
 - `src/lib/auth.ts` - Auth context type definitions and hook
+- `src/lib/server/auth.server.ts` - Server-side auth helper (`requireAuth`) for verifying access tokens
 - `src/components/auth-provider.tsx` - React context provider for auth state
 - `src/routes/index.tsx` - Login page
-- `src/routes/dashboard.tsx` - Layout route with auth protection (wraps all dashboard child routes)
+- `src/routes/dashboard.tsx` - Layout route with `beforeLoad` auth guard (wraps all dashboard child routes)
 - `src/routes/dashboard/index.tsx` - Dashboard home page
 - `src/routes/dashboard/profile.tsx` - User profile page
 - `src/routes/dashboard/settings.tsx` - Settings page
@@ -29,9 +30,14 @@ Users sign in with email and password. The dashboard is protected and redirects 
 1. `AuthProvider` wraps the app and manages auth state via `supabase.auth.onAuthStateChange()`
 2. Login page calls `supabase.auth.signInWithPassword()`
 3. On success, user is redirected to `/dashboard`
-4. Dashboard layout route (`/dashboard.tsx`) checks `user` from auth context; redirects to `/` if null
-5. All child routes under `/dashboard/*` inherit auth protection from the layout route
-6. Sign out calls `supabase.auth.signOut()` and redirects to login
+4. Dashboard layout route (`/dashboard.tsx`) uses TanStack Router's `beforeLoad` hook to check the Supabase session before rendering -- redirects to `/login` if no session exists (prevents unauthenticated content flash)
+5. Component-level `if (!user) return null` guard remains as a safety net
+6. All child routes under `/dashboard/*` inherit auth protection from the layout route
+7. Sign out calls `supabase.auth.signOut()` and redirects to login
+
+### Server Function Auth
+
+Server functions that access external APIs (FAL) require an `accessToken` parameter. The `requireAuth()` helper in `src/lib/server/auth.server.ts` verifies the token server-side via `supabase.auth.getUser(token)`. Client components pass `session.access_token` from `useAuth()` when calling server functions.
 
 ### Dependencies
 
@@ -81,3 +87,4 @@ SUPABASE_SERVICE_ROLE_KEY=...
 - Email confirmation toggle
 - Session refresh handling
 - Remember me functionality
+- Server-side session via cookies (eliminates need to pass access tokens from client)
