@@ -132,9 +132,11 @@ export type Database = {
           file_hash: string
           file_name: string
           file_size: number
+          generation_metadata: Json | null
           height: number | null
           id: string
           mime_type: string
+          source: string
           storage_path: string
           title: string
           updated_at: string
@@ -148,9 +150,11 @@ export type Database = {
           file_hash: string
           file_name: string
           file_size: number
+          generation_metadata?: Json | null
           height?: number | null
           id?: string
           mime_type: string
+          source?: string
           storage_path: string
           title: string
           updated_at?: string
@@ -164,9 +168,11 @@ export type Database = {
           file_hash?: string
           file_name?: string
           file_size?: number
+          generation_metadata?: Json | null
           height?: number | null
           id?: string
           mime_type?: string
+          source?: string
           storage_path?: string
           title?: string
           updated_at?: string
