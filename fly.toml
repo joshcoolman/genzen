@@ -11,6 +11,10 @@ primary_region = 'sjc'
     VITE_SUPABASE_URL = "https://gwrihviowugtjvbcxpyw.supabase.co"
     VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cmlodmlvd3VndGp2YmN4cHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDcwODYsImV4cCI6MjA3MDYyMzA4Nn0.SEMf8caXneX1-AnXHHLMluWhxbqD-SJsb2-W2DseL58"
 
+[env]
+  VITE_SUPABASE_URL = "https://gwrihviowugtjvbcxpyw.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cmlodmlvd3VndGp2YmN4cHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUwNDcwODYsImV4cCI6MjA3MDYyMzA4Nn0.SEMf8caXneX1-AnXHHLMluWhxbqD-SJsb2-W2DseL58"
+
 [http_service]
   internal_port = 8080
   force_https = true
