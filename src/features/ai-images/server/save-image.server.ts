@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "@/lib/server/auth.server";
-import { IMAGE_MODELS } from "@/features/ai-images/models";
+import { ALL_IMAGE_MODELS } from "@/features/ai-images/models";
 import crypto from "node:crypto";
 
 interface SaveGeneratedImageInput {
@@ -64,7 +64,7 @@ export const saveGeneratedImage = createServerFn({ method: "POST" })
 
     // Title = model friendly name, description = prompt
     const modelName =
-      IMAGE_MODELS.find((m) => m.id === data.model)?.name ?? data.model;
+      ALL_IMAGE_MODELS.find((m) => m.id === data.model)?.name ?? data.model;
     const title = modelName;
     const description =
       data.prompt.length > 997

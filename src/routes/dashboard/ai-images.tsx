@@ -1,13 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Settings } from "lucide-react";
 import {
   generateImage,
   generatePrompt,
 } from "@/features/ai-images/server/generate-image.server";
 import { saveGeneratedImage } from "@/features/ai-images/server/save-image.server";
-import { IMAGE_MODELS, DEFAULT_MODEL } from "@/features/ai-images/models";
+import {
+  ALL_IMAGE_MODELS,
+  DEFAULT_VISIBLE_MODELS,
+  DEFAULT_MODEL,
+  getVisibleModels,
+} from "@/features/ai-images/models";
+import { ModelSettingsDialog } from "@/features/ai-images/components/ModelSettingsDialog";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -35,7 +42,7 @@ function AiImagesPage() {
     // Load persisted model selection
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("ai-image-model");
-      if (stored && IMAGE_MODELS.some((m) => m.id === stored)) {
+      if (stored && ALL_IMAGE_MODELS.some((m) => m.id === stored)) {
         return stored;
       }
     }
@@ -44,6 +51,34 @@ function AiImagesPage() {
   const [loading, setLoading] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Model visibility settings
+  const [visibleModelIds, setVisibleModelIds] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("genzen:visible-models");
+        if (stored) {
+          const parsed = JSON.parse(stored) as string[];
+          // Validate against ALL_IMAGE_MODELS
+          const validIds = parsed.filter((id) =>
+            ALL_IMAGE_MODELS.some((m) => m.id === id)
+          );
+          if (validIds.length > 0) {
+            return validIds;
+          }
+        }
+      } catch {
+        // Fallback to defaults
+      }
+    }
+    return DEFAULT_VISIBLE_MODELS.map((m) => m.id);
+  });
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const visibleModels = useMemo(
+    () => getVisibleModels(visibleModelIds),
+    [visibleModelIds]
+  );
 
   // Saved AI images gallery
   const [savedImages, setSavedImages] = useState<SavedAiImage[]>([]);
@@ -94,6 +129,23 @@ function AiImagesPage() {
       localStorage.setItem("ai-image-model", model);
     }
   }, [model]);
+
+  // Persist visible models selection
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "genzen:visible-models",
+        JSON.stringify(visibleModelIds)
+      );
+    }
+  }, [visibleModelIds]);
+
+  // Auto-switch model if current selection becomes invisible
+  useEffect(() => {
+    if (!visibleModelIds.includes(model) && visibleModelIds.length > 0) {
+      setModel(visibleModelIds[0]);
+    }
+  }, [visibleModelIds, model]);
 
   // Generate random prompt on mount
   useEffect(() => {
@@ -211,7 +263,7 @@ function AiImagesPage() {
   }
 
   function getModelName(modelId: string) {
-    return IMAGE_MODELS.find((m) => m.id === modelId)?.name ?? modelId;
+    return ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ?? modelId;
   }
 
   return (
@@ -273,11 +325,22 @@ function AiImagesPage() {
 
           {/* Right Column: Model Selection */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-muted-foreground">
-              Model
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-medium text-muted-foreground">
+                Model
+              </label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSettingsOpen(true)}
+                disabled={loading}
+                title="Configure visible models"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="space-y-1">
-              {IMAGE_MODELS.map((m) => (
+              {visibleModels.map((m) => (
                 <label
                   key={m.id}
                   className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
@@ -389,6 +452,14 @@ function AiImagesPage() {
           </div>
         )}
       </div>
+
+      {/* Model Settings Dialog */}
+      <ModelSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        visibleModels={visibleModelIds}
+        onSaveVisibleModels={setVisibleModelIds}
+      />
     </div>
   );
 }
