@@ -55,45 +55,59 @@ export const SUBJECT_NOUNS = [
   'monument',
 ] as const
 
-// Photography-focused subjects (people, all ages, diverse professions)
+// Photography-focused subjects (diverse ages, genders, ethnicities)
 export const SUBJECTS_PEOPLE = [
-  // Children
-  'A child catching fireflies',
-  'A young girl with a telescope',
+  // Children (diverse)
+  'Two Chinese children playing in a field',
+  'A young Black girl with a telescope',
   'A boy building a sandcastle',
   'A toddler covered in paint',
+  'A group of kids from different backgrounds laughing',
 
   // Teenagers
-  'A teenage skateboarder',
-  'A young musician with headphones',
-  'A student reading in a library',
+  'A teenage skateboarder mid-trick',
+  'A young woman with headphones dancing',
+  'A Latino student reading in a library',
   'A surfer carrying a board',
+  'A hot young cheerleader cheering on the team',
 
-  // Young adults
-  'A chef plating a dish',
-  'A scientist in a lab coat',
-  'A photographer adjusting their camera',
-  'A dancer in mid-performance',
-  'A rock climber scaling a wall',
-  'A barista making latte art',
-  'A tattoo artist at work',
-  'A programmer at a desk',
+  // Young adults (20s)
+  'A young Asian woman in a coffee shop',
+  'A handsome young Black man in a suit',
+  'A beautiful Indian woman in traditional dress',
+  'A sexy young male executive preening in front of a mirror',
+  'A Korean woman shopping with her Polish boyfriend at the market',
+  'A Middle Eastern chef plating a dish',
+  'A tattooed woman bartender mixing a cocktail',
+  'A fit young man rock climbing',
+  'An attractive woman photographer with vintage camera',
 
-  // Middle-aged
-  'A pilot in the cockpit',
-  'A gardener tending plants',
-  'A mechanic under a car hood',
-  'A teacher at a chalkboard',
-  'A architect reviewing blueprints',
-  'A conductor leading an orchestra',
+  // 30s-40s
+  'A man in his 30s working at a laptop',
+  'A confident businesswoman presenting',
+  'An African-American pilot in the cockpit',
+  'A handsome bearded man reading',
+  'A beautiful woman scientist in a lab coat',
+  'A Latino mechanic under a car hood',
 
-  // Diverse ages
-  'A street musician playing saxophone',
-  'A graffiti artist with spray cans',
-  'A boxer training in a gym',
-  'A chef tasting a sauce',
-  'A painter with a palette',
-  'A writer at a typewriter',
+  // Couples & Groups
+  'An older couple from Asia walking hand-in-hand',
+  'A mixed-race couple laughing together',
+  'Two friends from different backgrounds',
+  'A diverse group of young professionals',
+
+  // Older adults
+  'An elderly Black woman gardening',
+  'A distinguished older gentleman with glasses',
+  'A silver-haired Asian man painting',
+  'A weathered fisherman mending nets',
+
+  // Diverse professions
+  'A hijab-wearing doctor examining charts',
+  'A drag performer applying makeup',
+  'A Indigenous artist creating traditional art',
+  'A plus-size model posing confidently',
+  'A disabled athlete competing',
 ] as const
 
 export const SUBJECTS_PLACES = [
