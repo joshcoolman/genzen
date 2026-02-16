@@ -41,15 +41,25 @@ interface SavedAiImage {
 function AiImagesPage() {
   const { user, session } = useAuth()
   const [prompt, setPrompt] = useState('')
-  const [model, setModel] = useState(() => {
-    // Load persisted model selection
+  const [selectedModels, setSelectedModels] = useState<string[]>(() => {
+    // Load persisted model selections
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('ai-image-model')
-      if (stored && ALL_IMAGE_MODELS.some((m) => m.id === stored)) {
-        return stored
+      const stored = localStorage.getItem('ai-image-selected-models')
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as string[]
+          const validIds = parsed.filter((id) =>
+            ALL_IMAGE_MODELS.some((m) => m.id === id),
+          )
+          if (validIds.length > 0) {
+            return validIds
+          }
+        } catch {
+          // Fall through to default
+        }
       }
     }
-    return DEFAULT_MODEL
+    return [DEFAULT_MODEL]
   })
   const [loading, setLoading] = useState(false)
   const [generatingPrompt, setGeneratingPrompt] = useState(false)
@@ -220,12 +230,12 @@ function AiImagesPage() {
     return () => clearInterval(pollInterval)
   }, [savedImages, session])
 
-  // Persist model selection
+  // Persist model selections
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ai-image-model', model)
+      localStorage.setItem('ai-image-selected-models', JSON.stringify(selectedModels))
     }
-  }, [model])
+  }, [selectedModels])
 
   // Persist visible models selection
   useEffect(() => {
@@ -237,15 +247,22 @@ function AiImagesPage() {
     }
   }, [visibleModelIds])
 
-  // Auto-switch model if current selection becomes invisible
+  // Auto-update selected models if any become invisible
   useEffect(() => {
-    if (!visibleModelIds.includes(model) && visibleModelIds.length > 0) {
-      setModel(visibleModelIds[0])
+    const validSelections = selectedModels.filter((id) =>
+      visibleModelIds.includes(id),
+    )
+    // If all selections became invisible, select the first visible model
+    if (validSelections.length === 0 && visibleModelIds.length > 0) {
+      setSelectedModels([visibleModelIds[0]])
+    } else if (validSelections.length !== selectedModels.length) {
+      // Some selections became invisible, keep only the valid ones
+      setSelectedModels(validSelections)
     }
-  }, [visibleModelIds, model])
+  }, [visibleModelIds, selectedModels])
 
   async function handleGenerate() {
-    if (loading || !session?.access_token) return
+    if (loading || !session?.access_token || selectedModels.length === 0) return
 
     setLoading(true)
     setError(null)
@@ -261,15 +278,20 @@ function AiImagesPage() {
         // Don't set it in the input - keep it a surprise!
       }
 
-      // Submit generation (returns immediately with pending record)
-      // Realtime subscription will automatically add it to the UI
-      await generateImage({
-        data: {
-          prompt: finalPrompt,
-          model,
-          accessToken: session.access_token,
-        },
-      })
+      // Submit generation for each selected model
+      // Each returns immediately with pending record
+      // Realtime subscription will automatically add them to the UI
+      await Promise.all(
+        selectedModels.map((modelId) =>
+          generateImage({
+            data: {
+              prompt: finalPrompt,
+              model: modelId,
+              accessToken: session.access_token,
+            },
+          }),
+        ),
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate image')
     } finally {
@@ -287,7 +309,7 @@ function AiImagesPage() {
     const { prompt, model: selectedModel } = img.generation_metadata
 
     setPrompt(prompt)
-    setModel(selectedModel)
+    setSelectedModels([selectedModel])
 
     // If the model isn't in the visible list, add it
     if (!visibleModelIds.includes(selectedModel)) {
@@ -410,10 +432,16 @@ function AiImagesPage() {
 
             <Button
               onClick={handleGenerate}
-              disabled={loading}
+              disabled={loading || selectedModels.length === 0}
               className="w-full"
             >
-              {loading ? 'Generating...' : 'Generate'}
+              {loading
+                ? selectedModels.length > 1
+                  ? `Generating ${selectedModels.length} images...`
+                  : 'Generating...'
+                : selectedModels.length > 1
+                  ? `Generate ${selectedModels.length} images`
+                  : 'Generate'}
             </Button>
 
             {error && (
@@ -424,7 +452,9 @@ function AiImagesPage() {
 
             {loading && (
               <p className="text-sm text-muted-foreground">
-                Generating image, this may take a moment...
+                {selectedModels.length > 1
+                  ? `Generating ${selectedModels.length} images, this may take a moment...`
+                  : 'Generating image, this may take a moment...'}
               </p>
             )}
           </div>
@@ -433,7 +463,7 @@ function AiImagesPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-medium text-muted-foreground">
-                Model
+                Models ({selectedModels.length} selected)
               </label>
               <Button
                 variant="ghost"
@@ -452,11 +482,21 @@ function AiImagesPage() {
                   className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
                 >
                   <input
-                    type="radio"
-                    name="model"
+                    type="checkbox"
                     value={m.id}
-                    checked={model === m.id}
-                    onChange={(e) => setModel(e.target.value)}
+                    checked={selectedModels.includes(m.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedModels([...selectedModels, m.id])
+                      } else {
+                        // Don't allow unchecking if it's the last selected model
+                        if (selectedModels.length > 1) {
+                          setSelectedModels(
+                            selectedModels.filter((id) => id !== m.id),
+                          )
+                        }
+                      }
+                    }}
                     disabled={loading}
                     className="h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
                   />
