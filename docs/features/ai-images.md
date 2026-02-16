@@ -27,15 +27,15 @@ Direct FAL API integration for text-to-image generation. No persistence or backg
 
 ### Available Models
 
-| Model | Description |
-|-------|-------------|
-| FLUX Schnell | Fast, reliable default |
-| FLUX.2 Turbo | Fastest, cheapest |
-| FLUX.2 Max | High quality FLUX |
+| Model           | Description                       |
+| --------------- | --------------------------------- |
+| FLUX Schnell    | Fast, reliable default            |
+| FLUX.2 Turbo    | Fastest, cheapest                 |
+| FLUX.2 Max      | High quality FLUX                 |
 | Nano Banana Pro | Google SOTA, realism + typography |
-| Recraft V3 | SOTA benchmarks, vector art |
-| Grok Imagine | xAI, highly aesthetic |
-| ImagineArt 1.5 | Professional realism |
+| Recraft V3      | SOTA benchmarks, vector art       |
+| Grok Imagine    | xAI, highly aesthetic             |
+| ImagineArt 1.5  | Professional realism              |
 
 ### Dependencies
 

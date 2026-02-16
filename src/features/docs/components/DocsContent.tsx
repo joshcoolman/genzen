@@ -1,7 +1,7 @@
-import type { DocFile } from "@/lib/docs/types";
+import type { DocFile } from '@/lib/docs/types'
 
 interface DocsContentProps {
-  doc: DocFile;
+  doc: DocFile
 }
 
 export function DocsContent({ doc }: DocsContentProps) {
@@ -18,5 +18,5 @@ export function DocsContent({ doc }: DocsContentProps) {
         dangerouslySetInnerHTML={{ __html: doc.html }}
       />
     </article>
-  );
+  )
 }

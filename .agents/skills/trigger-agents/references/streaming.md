@@ -8,19 +8,19 @@ Create typed stream definitions in a shared file:
 
 ```typescript
 // trigger/streams.ts
-import { streams } from "@trigger.dev/sdk";
+import { streams } from '@trigger.dev/sdk'
 
 // Define with type and unique ID
 export const progressStream = streams.define<string>({
-  id: "progress",
-});
+  id: 'progress',
+})
 
 export const aiOutputStream = streams.define<string>({
-  id: "ai-output",
-});
+  id: 'ai-output',
+})
 
 // Export type for frontend
-export type STREAMS = typeof progressStream | typeof aiOutputStream;
+export type STREAMS = typeof progressStream | typeof aiOutputStream
 ```
 
 ---
@@ -30,14 +30,14 @@ export type STREAMS = typeof progressStream | typeof aiOutputStream;
 ### Basic emit
 
 ```typescript
-import { task } from "@trigger.dev/sdk";
-import { progressStream } from "./streams";
+import { task } from '@trigger.dev/sdk'
+import { progressStream } from './streams'
 
 export const processItems = task({
-  id: "process-items",
+  id: 'process-items',
   run: async ({ items }) => {
     for (const [i, item] of items.entries()) {
-      await processItem(item);
+      await processItem(item)
 
       // Emit progress
       progressStream.append(
@@ -45,38 +45,38 @@ export const processItems = task({
           current: i + 1,
           total: items.length,
           status: `Processing ${item.name}`,
-        })
-      );
+        }),
+      )
     }
 
-    return { processed: items.length };
+    return { processed: items.length }
   },
-});
+})
 ```
 
 ### Stream AI completion
 
 ```typescript
-import { task } from "@trigger.dev/sdk";
-import { streamText } from "ai";
-import { aiOutputStream } from "./streams";
+import { task } from '@trigger.dev/sdk'
+import { streamText } from 'ai'
+import { aiOutputStream } from './streams'
 
 export const generateText = task({
-  id: "generate-text",
+  id: 'generate-text',
   run: async ({ prompt }) => {
     const result = streamText({
-      model: openai("gpt-4o"),
+      model: openai('gpt-4o'),
       prompt,
-    });
+    })
 
     // Pipe AI stream to Trigger stream
     for await (const chunk of result.textStream) {
-      aiOutputStream.append(chunk);
+      aiOutputStream.append(chunk)
     }
 
-    return { text: await result.text };
+    return { text: await result.text }
   },
-});
+})
 ```
 
 ---
@@ -88,30 +88,29 @@ When child tasks need to emit to the parent's stream:
 ```typescript
 // Child task
 export const workerTask = task({
-  id: "worker",
+  id: 'worker',
   run: async ({ item }) => {
-    const result = await processItem(item);
+    const result = await processItem(item)
 
     // Emit to PARENT's stream, not this task's
-    progressStream.append(
-      JSON.stringify({ item: item.id, status: "done" }),
-      { target: "parent" }
-    );
+    progressStream.append(JSON.stringify({ item: item.id, status: 'done' }), {
+      target: 'parent',
+    })
 
-    return result;
+    return result
   },
-});
+})
 
 // Parent task - frontend subscribes to this run
 export const orchestrator = task({
-  id: "orchestrator",
+  id: 'orchestrator',
   run: async ({ items }) => {
     // Child emits bubble up to this task's stream
     return workerTask.batchTriggerAndWait(
-      items.map(item => ({ payload: { item } }))
-    );
+      items.map((item) => ({ payload: { item } })),
+    )
   },
-});
+})
 ```
 
 ---
@@ -121,50 +120,56 @@ export const orchestrator = task({
 ### Using useRealtimeStream (Recommended)
 
 ```tsx
-import { useRealtimeStream } from "@trigger.dev/react-hooks";
-import type { progressStream } from "@/trigger/streams";
+import { useRealtimeStream } from '@trigger.dev/react-hooks'
+import type { progressStream } from '@/trigger/streams'
 
-function Progress({ runId, accessToken }: { runId: string; accessToken: string }) {
+function Progress({
+  runId,
+  accessToken,
+}: {
+  runId: string
+  accessToken: string
+}) {
   const { data } = useRealtimeStream<typeof progressStream>(runId, {
     accessToken,
-    stream: "progress",
-  });
+    stream: 'progress',
+  })
 
-  if (!data) return <div>Waiting...</div>;
+  if (!data) return <div>Waiting...</div>
 
   // data is array of emitted values
-  const latest = data[data.length - 1];
-  const progress = JSON.parse(latest);
+  const latest = data[data.length - 1]
+  const progress = JSON.parse(latest)
 
   return (
     <div>
       {progress.current} / {progress.total}: {progress.status}
     </div>
-  );
+  )
 }
 ```
 
 ### Using useRealtimeRunWithStreams
 
 ```tsx
-import { useRealtimeRunWithStreams } from "@trigger.dev/react-hooks";
-import type { processItems, STREAMS } from "@/trigger/tasks";
+import { useRealtimeRunWithStreams } from '@trigger.dev/react-hooks'
+import type { processItems, STREAMS } from '@/trigger/tasks'
 
 function TaskProgress({ runId, accessToken }: Props) {
-  const { run, streams } = useRealtimeRunWithStreams<typeof processItems, STREAMS>(
-    runId,
-    { accessToken }
-  );
+  const { run, streams } = useRealtimeRunWithStreams<
+    typeof processItems,
+    STREAMS
+  >(runId, { accessToken })
 
-  const progressUpdates = streams.progress ?? [];
-  const latest = progressUpdates[progressUpdates.length - 1];
+  const progressUpdates = streams.progress ?? []
+  const latest = progressUpdates[progressUpdates.length - 1]
 
   return (
     <div>
       <p>Status: {run?.status}</p>
       {latest && <p>Progress: {latest}</p>}
     </div>
-  );
+  )
 }
 ```
 
@@ -175,20 +180,20 @@ function TaskProgress({ runId, accessToken }: Props) {
 Read streams from your backend:
 
 ```typescript
-import { aiOutputStream } from "./trigger/streams";
+import { aiOutputStream } from './trigger/streams'
 
 async function consumeStream(runId: string) {
   const stream = await aiOutputStream.read(runId, {
     timeoutInSeconds: 120,
-  });
+  })
 
-  let fullText = "";
+  let fullText = ''
   for await (const chunk of stream) {
-    fullText += chunk;
-    console.log("Received:", chunk);
+    fullText += chunk
+    console.log('Received:', chunk)
   }
 
-  return fullText;
+  return fullText
 }
 ```
 
@@ -200,12 +205,16 @@ Streams serialize as strings. For objects, use JSON:
 
 ```typescript
 // Define helper functions
-export function emitProgress(update: ProgressUpdate, options?: { target: "parent" }) {
-  progressStream.append(JSON.stringify(update), options);
+export function emitProgress(
+  update: ProgressUpdate,
+  options?: { target: 'parent' },
+) {
+  progressStream.append(JSON.stringify(update), options)
 }
 
 // Parse on frontend
-const updates = streams.progress?.map(s => JSON.parse(s) as ProgressUpdate) ?? [];
+const updates =
+  streams.progress?.map((s) => JSON.parse(s) as ProgressUpdate) ?? []
 ```
 
 ---
@@ -217,9 +226,9 @@ Prevent excessive re-renders:
 ```tsx
 const { data } = useRealtimeStream<typeof progressStream>(runId, {
   accessToken,
-  stream: "progress",
-  throttleInMs: 100,  // Max 10 updates/second
-});
+  stream: 'progress',
+  throttleInMs: 100, // Max 10 updates/second
+})
 ```
 
 ---
@@ -231,14 +240,15 @@ Stream tool calls and results:
 ```tsx
 const { streams } = useRealtimeRunWithStreams<typeof aiTask, STREAMS>(runId, {
   accessToken,
-});
+})
 
 // streams.openai is TextStreamPart[]
-const toolCalls = streams.openai?.filter(s => s.type === "tool-call") ?? [];
-const toolResults = streams.openai?.filter(s => s.type === "tool-result") ?? [];
-const textDeltas = streams.openai?.filter(s => s.type === "text-delta") ?? [];
+const toolCalls = streams.openai?.filter((s) => s.type === 'tool-call') ?? []
+const toolResults =
+  streams.openai?.filter((s) => s.type === 'tool-result') ?? []
+const textDeltas = streams.openai?.filter((s) => s.type === 'text-delta') ?? []
 
-const fullText = textDeltas.map(d => d.textDelta).join("");
+const fullText = textDeltas.map((d) => d.textDelta).join('')
 ```
 
 ---

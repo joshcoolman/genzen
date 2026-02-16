@@ -73,11 +73,13 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ## Testing
 
 ### Local
+
 1. Run `supabase start`
 2. Create user via Supabase Studio (http://localhost:54323) or sign up
 3. Sign in at http://localhost:3000
 
 ### Production
+
 - Test user: `demo@genzen.app` / `demo1234`
 
 ## Future Improvements

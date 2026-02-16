@@ -4,11 +4,11 @@
  * Responsive grid layout for displaying image cards.
  */
 
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react'
 
 interface ImageGridProps {
-  children: ReactNode;
-  className?: string;
+  children: ReactNode
+  className?: string
 }
 
 /**
@@ -20,14 +20,14 @@ interface ImageGridProps {
  * - Desktop: 3 columns
  * - Large: 4 columns
  */
-export function ImageGrid({ children, className = "" }: ImageGridProps) {
+export function ImageGrid({ children, className = '' }: ImageGridProps) {
   return (
     <div
       className={`grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${className}`}
     >
       {children}
     </div>
-  );
+  )
 }
 
 /**
@@ -44,5 +44,5 @@ export function EmptyState() {
         Upload your first image to get started
       </p>
     </div>
-  );
+  )
 }

@@ -5,15 +5,15 @@
  * 8 hue-diverse colors, each with 11 shades.
  */
 
-import type { ExtractedColor } from "./quantize.ts";
-import { generateShadeScaleFromRgb, type ShadeScale } from "./shades.ts";
+import type { ExtractedColor } from './quantize.ts'
+import { generateShadeScaleFromRgb, type ShadeScale } from './shades.ts'
 
 export interface PaletteExport {
-  colors: ShadeScale[];
+  colors: ShadeScale[]
   metadata: {
-    extractionMethod: "lab-kmeans";
-    version: 3;
-  };
+    extractionMethod: 'lab-kmeans'
+    version: 3
+  }
 }
 
 /**
@@ -21,13 +21,13 @@ export interface PaletteExport {
  */
 export function buildPalette(extractedColors: ExtractedColor[]): PaletteExport {
   // Generate shade scales for each extracted color
-  const colors = extractedColors.map((c) => generateShadeScaleFromRgb(c.rgb));
+  const colors = extractedColors.map((c) => generateShadeScaleFromRgb(c.rgb))
 
   return {
     colors,
     metadata: {
-      extractionMethod: "lab-kmeans",
+      extractionMethod: 'lab-kmeans',
       version: 3,
     },
-  };
+  }
 }

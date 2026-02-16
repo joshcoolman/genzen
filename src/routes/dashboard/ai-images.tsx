@@ -291,8 +291,18 @@ function AiImagesPage() {
 
   function handleLoadPromptAndModel(img: SavedAiImage) {
     if (!img.generation_metadata) return
-    setPrompt(img.generation_metadata.prompt)
-    setModel(img.generation_metadata.model)
+    const { prompt, model: selectedModel } = img.generation_metadata
+
+    setPrompt(prompt)
+    setModel(selectedModel)
+
+    // If the model isn't in the visible list, add it
+    if (!visibleModelIds.includes(selectedModel)) {
+      // Verify it's a valid model before adding
+      if (ALL_IMAGE_MODELS.some((m) => m.id === selectedModel)) {
+        setVisibleModelIds((prev) => [...prev, selectedModel])
+      }
+    }
   }
 
   async function handleDelete(img: SavedAiImage) {

@@ -1,5 +1,5 @@
-import { Sidebar } from "./Sidebar";
-import { MobileNav } from "./MobileNav";
+import { Sidebar } from './Sidebar'
+import { MobileNav } from './MobileNav'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,5 +13,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <main className="flex-1 p-6 lg:ml-64">{children}</main>
     </div>
-  );
+  )
 }

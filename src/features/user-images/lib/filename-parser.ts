@@ -14,16 +14,16 @@
  * 4. Trim extra whitespace
  */
 export function parseFilenameToTitle(filename: string): string {
-  const withoutExtension = filename.replace(/\.[^.]+$/, "");
-  const withSpaces = withoutExtension.replace(/[_-]+/g, " ");
+  const withoutExtension = filename.replace(/\.[^.]+$/, '')
+  const withSpaces = withoutExtension.replace(/[_-]+/g, ' ')
   const titleCased = withSpaces
-    .split(" ")
+    .split(' ')
     .map((word) => {
-      if (word.length === 0) return "";
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      if (word.length === 0) return ''
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     })
-    .join(" ");
-  return titleCased.trim();
+    .join(' ')
+  return titleCased.trim()
 }
 
 /**
@@ -32,5 +32,5 @@ export function parseFilenameToTitle(filename: string): string {
  * Removes any characters that might cause issues in storage paths
  */
 export function sanitizeFilename(filename: string): string {
-  return filename.replace(/[^a-zA-Z0-9.-]/g, "_");
+  return filename.replace(/[^a-zA-Z0-9.-]/g, '_')
 }

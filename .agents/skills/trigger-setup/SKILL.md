@@ -34,6 +34,7 @@ npx trigger init
 ```
 
 This creates:
+
 - `trigger.config.ts` - project configuration
 - `trigger/` directory - where your tasks live
 - `trigger/example.ts` - a sample task
@@ -41,27 +42,27 @@ This creates:
 ### 3. Configure trigger.config.ts
 
 ```ts
-import { defineConfig } from "@trigger.dev/sdk";
+import { defineConfig } from '@trigger.dev/sdk'
 
 export default defineConfig({
-  project: "proj_xxxxx", // From dashboard
-  dirs: ["./trigger"],
-});
+  project: 'proj_xxxxx', // From dashboard
+  dirs: ['./trigger'],
+})
 ```
 
 ### 4. Create Your First Task
 
 ```ts
 // trigger/my-task.ts
-import { task } from "@trigger.dev/sdk";
+import { task } from '@trigger.dev/sdk'
 
 export const myFirstTask = task({
-  id: "my-first-task",
+  id: 'my-first-task',
   run: async (payload: { name: string }) => {
-    console.log(`Hello, ${payload.name}!`);
-    return { message: `Processed ${payload.name}` };
+    console.log(`Hello, ${payload.name}!`)
+    return { message: `Processed ${payload.name}` }
   },
-});
+})
 ```
 
 ### 5. Start Development Server
@@ -75,12 +76,12 @@ npx trigger dev
 From your app code:
 
 ```ts
-import { tasks } from "@trigger.dev/sdk";
-import type { myFirstTask } from "./trigger/my-task";
+import { tasks } from '@trigger.dev/sdk'
+import type { myFirstTask } from './trigger/my-task'
 
-await tasks.trigger<typeof myFirstTask>("my-first-task", {
-  name: "World",
-});
+await tasks.trigger<typeof myFirstTask>('my-first-task', {
+  name: 'World',
+})
 ```
 
 Or from the Trigger.dev dashboard "Test" tab.
@@ -108,14 +109,17 @@ TRIGGER_SECRET_KEY=tr_dev_xxxxx  # From dashboard > API Keys
 ## Common Issues
 
 ### "No tasks found"
+
 - Ensure tasks are **exported** from files in `dirs` folders
 - Check `trigger.config.ts` points to correct directories
 
 ### "Project not found"
+
 - Verify `project` in config matches dashboard
 - Check `TRIGGER_SECRET_KEY` is set
 
 ### "Task not registered"
+
 - Restart `npx trigger dev` after adding new tasks
 - Tasks must use `task()` or `schemaTask()` from `@trigger.dev/sdk`
 

@@ -4,16 +4,16 @@
  * Displays a single image with title, description, and actions.
  */
 
-import { Trash2 } from "lucide-react";
-import type { UserImage } from "../types";
+import { Trash2 } from 'lucide-react'
+import type { UserImage } from '../types'
 
 interface ImageCardProps {
-  image: UserImage;
-  imageUrl: string;
-  onClick: () => void;
-  onDelete: (id: string) => void;
-  isDeleting?: boolean;
-  isUpdating?: boolean;
+  image: UserImage
+  imageUrl: string
+  onClick: () => void
+  onDelete: (id: string) => void
+  isDeleting?: boolean
+  isUpdating?: boolean
 }
 
 /**
@@ -28,14 +28,14 @@ export function ImageCard({
   isUpdating,
 }: ImageCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete(image.id);
-  };
+    e.stopPropagation()
+    onDelete(image.id)
+  }
 
   return (
     <div
       className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-gold/50 flex flex-col ${
-        isDeleting ? "opacity-50" : ""
+        isDeleting ? 'opacity-50' : ''
       }`}
       onClick={onClick}
     >
@@ -79,11 +79,11 @@ export function ImageCard({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }

@@ -2,8 +2,8 @@
 
 ## Required Variables
 
-| Variable | Description | Where to find |
-|----------|-------------|---------------|
+| Variable             | Description                | Where to find        |
+| -------------------- | -------------------------- | -------------------- |
 | `TRIGGER_SECRET_KEY` | API key for authentication | Dashboard > API Keys |
 
 ## Development vs Production Keys
@@ -62,11 +62,11 @@ Set `TRIGGER_SECRET_KEY` in your platform's secret management.
 
 Use different keys per environment:
 
-| Environment | Key Prefix | Dashboard Section |
-|-------------|------------|-------------------|
-| Development | `tr_dev_` | Dev environment |
-| Staging | `tr_stg_` | Staging environment |
-| Production | `tr_prod_` | Prod environment |
+| Environment | Key Prefix | Dashboard Section   |
+| ----------- | ---------- | ------------------- |
+| Development | `tr_dev_`  | Dev environment     |
+| Staging     | `tr_stg_`  | Staging environment |
+| Production  | `tr_prod_` | Prod environment    |
 
 ## Task Environment Variables
 
@@ -76,17 +76,15 @@ Tasks run in Trigger.dev's infrastructure. To use env vars in tasks:
 
 ```ts
 // trigger.config.ts
-import { defineConfig } from "@trigger.dev/sdk";
-import { syncEnvVars } from "@trigger.dev/build/extensions/core";
+import { defineConfig } from '@trigger.dev/sdk'
+import { syncEnvVars } from '@trigger.dev/build/extensions/core'
 
 export default defineConfig({
-  project: "proj_xxxxx",
+  project: 'proj_xxxxx',
   build: {
-    extensions: [
-      syncEnvVars(),
-    ],
+    extensions: [syncEnvVars()],
   },
-});
+})
 ```
 
 2. **Set in dashboard**: Project Settings > Environment Variables
@@ -95,10 +93,10 @@ export default defineConfig({
 
 ```ts
 export const myTask = task({
-  id: "my-task",
+  id: 'my-task',
   run: async () => {
-    const apiKey = process.env.EXTERNAL_API_KEY;
+    const apiKey = process.env.EXTERNAL_API_KEY
     // ...
   },
-});
+})
 ```

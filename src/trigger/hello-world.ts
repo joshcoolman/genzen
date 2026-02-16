@@ -1,13 +1,13 @@
-import { task } from "@trigger.dev/sdk/v3";
+import { task } from '@trigger.dev/sdk/v3'
 
 export const helloWorld = task({
-  id: "hello-world",
+  id: 'hello-world',
   run: async (payload: { name: string }) => {
-    console.log(`Hello ${payload.name}!`);
+    console.log(`Hello ${payload.name}!`)
 
     return {
       message: `Hello ${payload.name}!`,
       timestamp: new Date().toISOString(),
-    };
+    }
   },
-});
+})

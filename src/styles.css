@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -51,48 +51,48 @@
   --radius: 0.5rem;
 
   /* Core dark palette */
-  --background: #1E1E1E;
-  --foreground: #C8C8C8;
+  --background: #1e1e1e;
+  --foreground: #c8c8c8;
   --card: #303030;
-  --card-foreground: #C8C8C8;
+  --card-foreground: #c8c8c8;
   --popover: #303030;
-  --popover-foreground: #C8C8C8;
-  --primary: #C8C8C8;
-  --primary-foreground: #1E1E1E;
+  --popover-foreground: #c8c8c8;
+  --primary: #c8c8c8;
+  --primary-foreground: #1e1e1e;
   --secondary: #414141;
-  --secondary-foreground: #C8C8C8;
+  --secondary-foreground: #c8c8c8;
   --muted: #414141;
-  --muted-foreground: #8A8A8A;
+  --muted-foreground: #8a8a8a;
   --accent: #414141;
-  --accent-foreground: #C8C8C8;
+  --accent-foreground: #c8c8c8;
   --destructive: #ef4444;
   --border: #414141;
   --input: #414141;
-  --ring: #C9A75C;
+  --ring: #c9a75c;
 
   /* Custom accent colors */
-  --accent-gold: #C9A75C;
-  --accent-gold-hover: #D4B76A;
-  --accent-sage: #8FA888;
-  --accent-sage-hover: #9FB898;
+  --accent-gold: #c9a75c;
+  --accent-gold-hover: #d4b76a;
+  --accent-sage: #8fa888;
+  --accent-sage-hover: #9fb898;
 
   /* Sidebar specific */
   --sidebar: #303030;
-  --sidebar-foreground: #C8C8C8;
-  --sidebar-primary: #C9A75C;
-  --sidebar-primary-foreground: #1E1E1E;
-  --sidebar-accent: #3A3A3A;
-  --sidebar-accent-foreground: #C8C8C8;
+  --sidebar-foreground: #c8c8c8;
+  --sidebar-primary: #c9a75c;
+  --sidebar-primary-foreground: #1e1e1e;
+  --sidebar-accent: #3a3a3a;
+  --sidebar-accent-foreground: #c8c8c8;
   --sidebar-border: #414141;
-  --sidebar-ring: #C9A75C;
-  --sidebar-hover: #3A3A3A;
+  --sidebar-ring: #c9a75c;
+  --sidebar-hover: #3a3a3a;
 
   /* Chart colors */
-  --chart-1: #C9A75C;
-  --chart-2: #8FA888;
-  --chart-3: #6B8E9F;
-  --chart-4: #9B8AA8;
-  --chart-5: #C88A8A;
+  --chart-1: #c9a75c;
+  --chart-2: #8fa888;
+  --chart-3: #6b8e9f;
+  --chart-4: #9b8aa8;
+  --chart-5: #c88a8a;
 }
 
 @layer base {
@@ -102,7 +102,10 @@
   body {
     @apply bg-background text-foreground;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     @apply text-foreground;
   }
 }
@@ -112,7 +115,10 @@
   color: var(--foreground);
   line-height: 1.75;
 }
-.prose h1, .prose h2, .prose h3, .prose h4 {
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
   color: var(--foreground);
   font-weight: 600;
   margin-top: 1.5em;
@@ -162,7 +168,8 @@
   color: var(--foreground);
   font-size: 0.875rem;
 }
-.prose ul, .prose ol {
+.prose ul,
+.prose ol {
   padding-left: 1.5em;
   margin: 0.75em 0;
 }
@@ -175,7 +182,7 @@
 .prose li {
   margin: 0.25em 0;
 }
-.prose li input[type="checkbox"] {
+.prose li input[type='checkbox'] {
   margin-right: 0.5em;
 }
 .prose blockquote {
@@ -193,7 +200,8 @@
   border-collapse: collapse;
   margin: 1em 0;
 }
-.prose th, .prose td {
+.prose th,
+.prose td {
   border: 1px solid var(--border);
   padding: 0.5em 0.75em;
   text-align: left;

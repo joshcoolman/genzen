@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute("/about")({
+export const Route = createFileRoute('/about')({
   component: AboutPage,
-});
+})
 
 function AboutPage() {
   return (
@@ -10,5 +10,5 @@ function AboutPage() {
       <h1 className="text-4xl font-semibold text-foreground">About</h1>
       <p className="text-muted-foreground mt-4">Coming soon.</p>
     </div>
-  );
+  )
 }

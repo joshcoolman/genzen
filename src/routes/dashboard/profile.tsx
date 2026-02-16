@@ -1,12 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth";
+import { createFileRoute } from '@tanstack/react-router'
+import { useAuth } from '@/lib/auth'
 
-export const Route = createFileRoute("/dashboard/profile")({
+export const Route = createFileRoute('/dashboard/profile')({
   component: ProfilePage,
-});
+})
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user } = useAuth()
 
   return (
     <div className="space-y-8">
@@ -31,11 +31,11 @@ function ProfilePage() {
             <span className="text-foreground">
               {user?.created_at
                 ? new Date(user.created_at).toLocaleDateString()
-                : "—"}
+                : '—'}
             </span>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }

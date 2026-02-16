@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute("/dashboard/settings")({
+export const Route = createFileRoute('/dashboard/settings')({
   component: SettingsPage,
-});
+})
 
 function SettingsPage() {
   return (
@@ -16,5 +16,5 @@ function SettingsPage() {
         </p>
       </div>
     </div>
-  );
+  )
 }

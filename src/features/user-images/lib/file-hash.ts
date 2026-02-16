@@ -13,17 +13,17 @@
  */
 export async function computeFileHash(file: File): Promise<string> {
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const arrayBuffer = await file.arrayBuffer()
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer)
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
     const hashHex = hashArray
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-    return hashHex;
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+    return hashHex
   } catch (error) {
     throw new Error(
-      `Failed to compute file hash: ${error instanceof Error ? error.message : "Unknown error"}`
-    );
+      `Failed to compute file hash: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    )
   }
 }
 
@@ -31,7 +31,7 @@ export async function computeFileHash(file: File): Promise<string> {
  * Validates that a string is a valid SHA-256 hash
  */
 export function isValidSHA256Hash(hash: string): boolean {
-  return /^[a-f0-9]{64}$/.test(hash);
+  return /^[a-f0-9]{64}$/.test(hash)
 }
 
 /**
@@ -39,14 +39,14 @@ export function isValidSHA256Hash(hash: string): boolean {
  */
 export async function computeAndValidateFileHash(file: File): Promise<string> {
   if (!file || file.size === 0) {
-    throw new Error("File is empty or invalid");
+    throw new Error('File is empty or invalid')
   }
 
-  const hash = await computeFileHash(file);
+  const hash = await computeFileHash(file)
 
   if (!isValidSHA256Hash(hash)) {
-    throw new Error("Generated hash is invalid");
+    throw new Error('Generated hash is invalid')
   }
 
-  return hash;
+  return hash
 }

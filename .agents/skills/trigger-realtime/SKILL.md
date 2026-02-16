@@ -20,18 +20,18 @@ Subscribe to task runs and stream data in real-time from frontend and backend.
 ### Create Public Access Token (Backend)
 
 ```ts
-import { auth } from "@trigger.dev/sdk";
+import { auth } from '@trigger.dev/sdk'
 
 // Read-only token for specific runs
 const publicToken = await auth.createPublicToken({
   scopes: {
     read: {
-      runs: ["run_123"],
-      tasks: ["my-task"],
+      runs: ['run_123'],
+      tasks: ['my-task'],
     },
   },
-  expirationTime: "1h",
-});
+  expirationTime: '1h',
+})
 
 // Pass this token to your frontend
 ```
@@ -39,37 +39,37 @@ const publicToken = await auth.createPublicToken({
 ### Create Trigger Token (for frontend triggering)
 
 ```ts
-const triggerToken = await auth.createTriggerPublicToken("my-task", {
-  expirationTime: "30m",
-});
+const triggerToken = await auth.createTriggerPublicToken('my-task', {
+  expirationTime: '30m',
+})
 ```
 
 ## Backend Subscriptions
 
 ```ts
-import { runs, tasks } from "@trigger.dev/sdk";
+import { runs, tasks } from '@trigger.dev/sdk'
 
 // Trigger and subscribe
-const handle = await tasks.trigger("my-task", { data: "value" });
+const handle = await tasks.trigger('my-task', { data: 'value' })
 
 for await (const run of runs.subscribeToRun(handle.id)) {
-  console.log(`Status: ${run.status}`);
-  console.log(`Progress: ${run.metadata?.progress}`);
-  
-  if (run.status === "COMPLETED") {
-    console.log("Output:", run.output);
-    break;
+  console.log(`Status: ${run.status}`)
+  console.log(`Progress: ${run.metadata?.progress}`)
+
+  if (run.status === 'COMPLETED') {
+    console.log('Output:', run.output)
+    break
   }
 }
 
 // Subscribe to tagged runs
-for await (const run of runs.subscribeToRunsWithTag("user-123")) {
-  console.log(`Run ${run.id}: ${run.status}`);
+for await (const run of runs.subscribeToRunsWithTag('user-123')) {
+  console.log(`Run ${run.id}: ${run.status}`)
 }
 
 // Subscribe to batch
 for await (const run of runs.subscribeToBatch(batchId)) {
-  console.log(`Batch run ${run.id}: ${run.status}`);
+  console.log(`Batch run ${run.id}: ${run.status}`)
 }
 ```
 
@@ -84,25 +84,22 @@ npm add @trigger.dev/react-hooks
 ### Trigger Task from React
 
 ```tsx
-"use client";
-import { useRealtimeTaskTrigger } from "@trigger.dev/react-hooks";
-import type { myTask } from "../trigger/tasks";
+'use client'
+import { useRealtimeTaskTrigger } from '@trigger.dev/react-hooks'
+import type { myTask } from '../trigger/tasks'
 
 function TaskTrigger({ accessToken }: { accessToken: string }) {
   const { submit, run, isLoading } = useRealtimeTaskTrigger<typeof myTask>(
-    "my-task",
-    { accessToken }
-  );
+    'my-task',
+    { accessToken },
+  )
 
   return (
     <div>
-      <button 
-        onClick={() => submit({ data: "value" })} 
-        disabled={isLoading}
-      >
+      <button onClick={() => submit({ data: 'value' })} disabled={isLoading}>
         Start Task
       </button>
-      
+
       {run && (
         <div>
           <p>Status: {run.status}</p>
@@ -111,53 +108,67 @@ function TaskTrigger({ accessToken }: { accessToken: string }) {
         </div>
       )}
     </div>
-  );
+  )
 }
 ```
 
 ### Subscribe to Existing Run
 
 ```tsx
-"use client";
-import { useRealtimeRun } from "@trigger.dev/react-hooks";
-import type { myTask } from "../trigger/tasks";
+'use client'
+import { useRealtimeRun } from '@trigger.dev/react-hooks'
+import type { myTask } from '../trigger/tasks'
 
-function RunStatus({ runId, accessToken }: { runId: string; accessToken: string }) {
+function RunStatus({
+  runId,
+  accessToken,
+}: {
+  runId: string
+  accessToken: string
+}) {
   const { run, error } = useRealtimeRun<typeof myTask>(runId, {
     accessToken,
     onComplete: (run) => {
-      console.log("Completed:", run.output);
+      console.log('Completed:', run.output)
     },
-  });
+  })
 
-  if (error) return <div>Error: {error.message}</div>;
-  if (!run) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>
+  if (!run) return <div>Loading...</div>
 
   return (
     <div>
       <p>Status: {run.status}</p>
       <p>Progress: {run.metadata?.progress || 0}%</p>
     </div>
-  );
+  )
 }
 ```
 
 ### Subscribe to Tagged Runs
 
 ```tsx
-"use client";
-import { useRealtimeRunsWithTag } from "@trigger.dev/react-hooks";
+'use client'
+import { useRealtimeRunsWithTag } from '@trigger.dev/react-hooks'
 
-function UserTasks({ userId, accessToken }: { userId: string; accessToken: string }) {
-  const { runs } = useRealtimeRunsWithTag(`user-${userId}`, { accessToken });
+function UserTasks({
+  userId,
+  accessToken,
+}: {
+  userId: string
+  accessToken: string
+}) {
+  const { runs } = useRealtimeRunsWithTag(`user-${userId}`, { accessToken })
 
   return (
     <ul>
       {runs.map((run) => (
-        <li key={run.id}>{run.id}: {run.status}</li>
+        <li key={run.id}>
+          {run.id}: {run.status}
+        </li>
       ))}
     </ul>
-  );
+  )
 }
 ```
 
@@ -167,51 +178,57 @@ function UserTasks({ userId, accessToken }: { userId: string; accessToken: strin
 
 ```ts
 // trigger/streams.ts
-import { streams } from "@trigger.dev/sdk";
+import { streams } from '@trigger.dev/sdk'
 
 export const aiStream = streams.define<string>({
-  id: "ai-output",
-});
+  id: 'ai-output',
+})
 ```
 
 ### Pipe Stream in Task
 
 ```ts
-import { task } from "@trigger.dev/sdk";
-import { aiStream } from "./streams";
+import { task } from '@trigger.dev/sdk'
+import { aiStream } from './streams'
 
 export const streamingTask = task({
-  id: "streaming-task",
+  id: 'streaming-task',
   run: async (payload: { prompt: string }) => {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: payload.prompt }],
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: payload.prompt }],
       stream: true,
-    });
+    })
 
-    const { waitUntilComplete } = aiStream.pipe(completion);
-    await waitUntilComplete();
+    const { waitUntilComplete } = aiStream.pipe(completion)
+    await waitUntilComplete()
   },
-});
+})
 ```
 
 ### Read Stream in React
 
 ```tsx
-"use client";
-import { useRealtimeStream } from "@trigger.dev/react-hooks";
-import { aiStream } from "../trigger/streams";
+'use client'
+import { useRealtimeStream } from '@trigger.dev/react-hooks'
+import { aiStream } from '../trigger/streams'
 
-function AIResponse({ runId, accessToken }: { runId: string; accessToken: string }) {
+function AIResponse({
+  runId,
+  accessToken,
+}: {
+  runId: string
+  accessToken: string
+}) {
   const { parts, error } = useRealtimeStream(aiStream, runId, {
     accessToken,
     throttleInMs: 50,
-  });
+  })
 
-  if (error) return <div>Error: {error.message}</div>;
-  if (!parts) return <div>Waiting for response...</div>;
+  if (error) return <div>Error: {error.message}</div>
+  if (!parts) return <div>Waiting for response...</div>
 
-  return <div>{parts.join("")}</div>;
+  return <div>{parts.join('')}</div>
 }
 ```
 
@@ -220,62 +237,64 @@ function AIResponse({ runId, accessToken }: { runId: string; accessToken: string
 ### In Task
 
 ```ts
-import { task, wait } from "@trigger.dev/sdk";
+import { task, wait } from '@trigger.dev/sdk'
 
 export const approvalTask = task({
-  id: "approval-task",
+  id: 'approval-task',
   run: async (payload) => {
     // Process initial data
-    const processed = await processData(payload);
+    const processed = await processData(payload)
 
     // Wait for human approval
     const approval = await wait.forToken<{ approved: boolean }>({
       token: `approval-${payload.id}`,
       timeoutInSeconds: 86400, // 24 hours
-    });
+    })
 
     if (approval.approved) {
-      return await finalizeData(processed);
+      return await finalizeData(processed)
     }
-    
-    throw new Error("Not approved");
+
+    throw new Error('Not approved')
   },
-});
+})
 ```
 
 ### Complete Token from React
 
 ```tsx
-"use client";
-import { useWaitToken } from "@trigger.dev/react-hooks";
+'use client'
+import { useWaitToken } from '@trigger.dev/react-hooks'
 
-function ApprovalButton({ tokenId, accessToken }: { tokenId: string; accessToken: string }) {
-  const { complete } = useWaitToken(tokenId, { accessToken });
+function ApprovalButton({
+  tokenId,
+  accessToken,
+}: {
+  tokenId: string
+  accessToken: string
+}) {
+  const { complete } = useWaitToken(tokenId, { accessToken })
 
   return (
     <div>
-      <button onClick={() => complete({ approved: true })}>
-        Approve
-      </button>
-      <button onClick={() => complete({ approved: false })}>
-        Reject
-      </button>
+      <button onClick={() => complete({ approved: true })}>Approve</button>
+      <button onClick={() => complete({ approved: false })}>Reject</button>
     </div>
-  );
+  )
 }
 ```
 
 ## Run Object Properties
 
-| Property | Description |
-|----------|-------------|
-| `id` | Unique run identifier |
-| `status` | `QUEUED`, `EXECUTING`, `COMPLETED`, `FAILED`, `CANCELED` |
-| `payload` | Task input (typed) |
-| `output` | Task result (typed, when completed) |
-| `metadata` | Real-time updatable data |
-| `createdAt` | Start timestamp |
-| `costInCents` | Execution cost |
+| Property      | Description                                              |
+| ------------- | -------------------------------------------------------- |
+| `id`          | Unique run identifier                                    |
+| `status`      | `QUEUED`, `EXECUTING`, `COMPLETED`, `FAILED`, `CANCELED` |
+| `payload`     | Task input (typed)                                       |
+| `output`      | Task result (typed, when completed)                      |
+| `metadata`    | Real-time updatable data                                 |
+| `createdAt`   | Start timestamp                                          |
+| `costInCents` | Execution cost                                           |
 
 ## Best Practices
 

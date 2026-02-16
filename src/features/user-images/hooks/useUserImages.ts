@@ -5,32 +5,36 @@
  * Uses Supabase client directly with RLS for security.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import type { UserImage, CreateUserImageInput, UserImageFilters } from "../types";
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
+import type {
+  UserImage,
+  CreateUserImageInput,
+  UserImageFilters,
+} from '../types'
 
-const BUCKET_NAME = "user-images";
+const BUCKET_NAME = 'user-images'
 
 interface UseUserImagesState {
-  images: UserImage[];
-  imageUrls: Record<string, string>;
-  isLoading: boolean;
-  isCreating: boolean;
-  isDeleting: string | null;
-  isUpdating: string | null;
-  error: string | null;
+  images: UserImage[]
+  imageUrls: Record<string, string>
+  isLoading: boolean
+  isCreating: boolean
+  isDeleting: string | null
+  isUpdating: string | null
+  error: string | null
 }
 
 interface UseUserImagesReturn extends UseUserImagesState {
-  create: (input: CreateUserImageInput) => Promise<UserImage>;
+  create: (input: CreateUserImageInput) => Promise<UserImage>
   update: (
     id: string,
     title: string,
-    description: string | null
-  ) => Promise<UserImage>;
-  deleteImage: (id: string) => Promise<void>;
-  refresh: () => Promise<void>;
-  clearError: () => void;
+    description: string | null,
+  ) => Promise<UserImage>
+  deleteImage: (id: string) => Promise<void>
+  refresh: () => Promise<void>
+  clearError: () => void
 }
 
 /**
@@ -38,7 +42,7 @@ interface UseUserImagesReturn extends UseUserImagesState {
  */
 export function useUserImages(
   userId: string | undefined,
-  filters?: UserImageFilters
+  filters?: UserImageFilters,
 ): UseUserImagesReturn {
   const [state, setState] = useState<UseUserImagesState>({
     images: [],
@@ -48,121 +52,124 @@ export function useUserImages(
     isDeleting: null,
     isUpdating: null,
     error: null,
-  });
+  })
 
   /**
    * Load signed URLs for images
    */
   const loadImageUrls = useCallback(async (images: UserImage[]) => {
-    const urls: Record<string, string> = {};
+    const urls: Record<string, string> = {}
 
     for (const image of images) {
       try {
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 3600);
+          .createSignedUrl(image.storage_path, 3600)
 
         if (!error && data) {
-          urls[image.id] = data.signedUrl;
+          urls[image.id] = data.signedUrl
         }
       } catch (err) {
-        console.error(`Failed to load URL for image ${image.id}:`, err);
+        console.error(`Failed to load URL for image ${image.id}:`, err)
       }
     }
 
-    setState((prev) => ({ ...prev, imageUrls: urls }));
-  }, []);
+    setState((prev) => ({ ...prev, imageUrls: urls }))
+  }, [])
 
   /**
    * Fetch all images
    */
   const fetchImages = useCallback(async () => {
     if (!userId) {
-      setState((prev) => ({ ...prev, isLoading: false, images: [] }));
-      return;
+      setState((prev) => ({ ...prev, isLoading: false, images: [] }))
+      return
     }
 
     try {
-      setState((prev) => ({ ...prev, isLoading: true, error: null }));
+      setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
       let query = supabase
-        .from("user_images")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+        .from('user_images')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
 
       if (filters?.search_term) {
-        const searchPattern = `%${filters.search_term}%`;
+        const searchPattern = `%${filters.search_term}%`
         query = query.or(
-          `title.ilike.${searchPattern},description.ilike.${searchPattern}`
-        );
+          `title.ilike.${searchPattern},description.ilike.${searchPattern}`,
+        )
       }
 
       if (filters?.limit !== undefined) {
-        query = query.limit(filters.limit);
+        query = query.limit(filters.limit)
       }
 
-      const { data: images, error } = await query;
+      const { data: images, error } = await query
 
       if (error) {
-        throw new Error(error.message);
+        throw new Error(error.message)
       }
 
       setState((prev) => ({
         ...prev,
         images: images ?? [],
         isLoading: false,
-      }));
+      }))
 
       // Load URLs in background
       if (images && images.length > 0) {
-        loadImageUrls(images);
+        loadImageUrls(images)
       }
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        error: err instanceof Error ? err.message : "Failed to load images",
+        error: err instanceof Error ? err.message : 'Failed to load images',
         isLoading: false,
-      }));
+      }))
     }
-  }, [userId, filters, loadImageUrls]);
+  }, [userId, filters, loadImageUrls])
 
   // Load images on mount
   useEffect(() => {
-    fetchImages();
-  }, [fetchImages]);
+    fetchImages()
+  }, [fetchImages])
 
   /**
    * Create a new image
    */
   const create = useCallback(
     async (input: CreateUserImageInput): Promise<UserImage> => {
-      if (!userId) throw new Error("User not authenticated");
+      if (!userId) throw new Error('User not authenticated')
 
       try {
-        setState((prev) => ({ ...prev, isCreating: true, error: null }));
+        setState((prev) => ({ ...prev, isCreating: true, error: null }))
 
         // Generate storage path
-        const timestamp = Date.now();
-        const uuid = crypto.randomUUID();
-        const sanitizedFileName = input.file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`;
+        const timestamp = Date.now()
+        const uuid = crypto.randomUUID()
+        const sanitizedFileName = input.file.name.replace(
+          /[^a-zA-Z0-9.-]/g,
+          '_',
+        )
+        const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
         // Upload file to storage
         const { error: uploadError } = await supabase.storage
           .from(BUCKET_NAME)
           .upload(storagePath, input.file, {
-            cacheControl: "3600",
+            cacheControl: '3600',
             upsert: false,
-          });
+          })
 
         if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`);
+          throw new Error(`Failed to upload file: ${uploadError.message}`)
         }
 
         // Create database record
         const { data: newImage, error: insertError } = await supabase
-          .from("user_images")
+          .from('user_images')
           .insert({
             user_id: userId,
             title: input.title,
@@ -174,18 +181,20 @@ export function useUserImages(
             file_hash: input.file_hash,
           })
           .select()
-          .single();
+          .single()
 
         if (insertError) {
           // Rollback: delete uploaded file
-          await supabase.storage.from(BUCKET_NAME).remove([storagePath]);
-          throw new Error(`Failed to create image record: ${insertError.message}`);
+          await supabase.storage.from(BUCKET_NAME).remove([storagePath])
+          throw new Error(
+            `Failed to create image record: ${insertError.message}`,
+          )
         }
 
         // Get signed URL for new image
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 3600);
+          .createSignedUrl(newImage.storage_path, 3600)
 
         // Update state
         setState((prev) => ({
@@ -195,20 +204,20 @@ export function useUserImages(
             ? { ...prev.imageUrls, [newImage.id]: urlData.signedUrl }
             : prev.imageUrls,
           isCreating: false,
-        }));
+        }))
 
-        return newImage;
+        return newImage
       } catch (err) {
         setState((prev) => ({
           ...prev,
-          error: err instanceof Error ? err.message : "Failed to create image",
+          error: err instanceof Error ? err.message : 'Failed to create image',
           isCreating: false,
-        }));
-        throw err;
+        }))
+        throw err
       }
     },
-    [userId]
-  );
+    [userId],
+  )
 
   /**
    * Update an existing image
@@ -217,113 +226,113 @@ export function useUserImages(
     async (
       id: string,
       title: string,
-      description: string | null
+      description: string | null,
     ): Promise<UserImage> => {
-      if (!userId) throw new Error("User not authenticated");
+      if (!userId) throw new Error('User not authenticated')
 
       try {
-        setState((prev) => ({ ...prev, isUpdating: id, error: null }));
+        setState((prev) => ({ ...prev, isUpdating: id, error: null }))
 
         // Optimistic update
         setState((prev) => ({
           ...prev,
           images: prev.images.map((img) =>
-            img.id === id ? { ...img, title, description } : img
+            img.id === id ? { ...img, title, description } : img,
           ),
-        }));
+        }))
 
         const { data: updatedImage, error } = await supabase
-          .from("user_images")
+          .from('user_images')
           .update({ title, description })
-          .eq("id", id)
-          .eq("user_id", userId)
+          .eq('id', id)
+          .eq('user_id', userId)
           .select()
-          .single();
+          .single()
 
         if (error) {
-          throw new Error(error.message);
+          throw new Error(error.message)
         }
 
         // Replace with server response
         setState((prev) => ({
           ...prev,
           images: prev.images.map((img) =>
-            img.id === updatedImage.id ? updatedImage : img
+            img.id === updatedImage.id ? updatedImage : img,
           ),
           isUpdating: null,
-        }));
+        }))
 
-        return updatedImage;
+        return updatedImage
       } catch (err) {
         // Rollback by refetching
-        await fetchImages();
+        await fetchImages()
         setState((prev) => ({
           ...prev,
-          error: err instanceof Error ? err.message : "Failed to update image",
+          error: err instanceof Error ? err.message : 'Failed to update image',
           isUpdating: null,
-        }));
-        throw err;
+        }))
+        throw err
       }
     },
-    [userId, fetchImages]
-  );
+    [userId, fetchImages],
+  )
 
   /**
    * Delete an image
    */
   const deleteImageFn = useCallback(
     async (id: string): Promise<void> => {
-      if (!userId) throw new Error("User not authenticated");
+      if (!userId) throw new Error('User not authenticated')
 
       try {
-        setState((prev) => ({ ...prev, isDeleting: id, error: null }));
+        setState((prev) => ({ ...prev, isDeleting: id, error: null }))
 
         // Get storage path first
-        const imageToDelete = state.images.find((img) => img.id === id);
+        const imageToDelete = state.images.find((img) => img.id === id)
         if (!imageToDelete) {
-          throw new Error("Image not found");
+          throw new Error('Image not found')
         }
 
         // Optimistic delete
         setState((prev) => ({
           ...prev,
           images: prev.images.filter((img) => img.id !== id),
-        }));
+        }))
 
         // Delete database record
         const { error: deleteError } = await supabase
-          .from("user_images")
+          .from('user_images')
           .delete()
-          .eq("id", id)
-          .eq("user_id", userId);
+          .eq('id', id)
+          .eq('user_id', userId)
 
         if (deleteError) {
-          throw new Error(deleteError.message);
+          throw new Error(deleteError.message)
         }
 
         // Delete storage file (best effort)
         await supabase.storage
           .from(BUCKET_NAME)
-          .remove([imageToDelete.storage_path]);
+          .remove([imageToDelete.storage_path])
 
-        setState((prev) => ({ ...prev, isDeleting: null }));
+        setState((prev) => ({ ...prev, isDeleting: null }))
       } catch (err) {
         // Rollback by refetching
-        await fetchImages();
+        await fetchImages()
         setState((prev) => ({
           ...prev,
-          error: err instanceof Error ? err.message : "Failed to delete image",
+          error: err instanceof Error ? err.message : 'Failed to delete image',
           isDeleting: null,
-        }));
-        throw err;
+        }))
+        throw err
       }
     },
-    [userId, state.images, fetchImages]
-  );
+    [userId, state.images, fetchImages],
+  )
 
   const clearError = useCallback(() => {
-    setState((prev) => ({ ...prev, error: null }));
-  }, []);
+    setState((prev) => ({ ...prev, error: null }))
+  }, [])
 
   return {
     ...state,
@@ -332,5 +341,5 @@ export function useUserImages(
     deleteImage: deleteImageFn,
     refresh: fetchImages,
     clearError,
-  };
+  }
 }

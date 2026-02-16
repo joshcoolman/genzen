@@ -4,20 +4,20 @@
  * Main container component that orchestrates the entire user images feature.
  */
 
-import { useState } from "react";
-import { useAuth } from "@/lib/auth";
-import { ImageUploadButton } from "./ImageUploadButton";
-import { ImageGrid, EmptyState } from "./ImageGrid";
-import { ImageCard } from "./ImageCard";
-import { ImageEditDialog } from "./ImageEditDialog";
-import { useUserImages } from "../hooks/useUserImages";
-import type { CreateUserImageInput } from "../types";
+import { useState } from 'react'
+import { useAuth } from '@/lib/auth'
+import { ImageUploadButton } from './ImageUploadButton'
+import { ImageGrid, EmptyState } from './ImageGrid'
+import { ImageCard } from './ImageCard'
+import { ImageEditDialog } from './ImageEditDialog'
+import { useUserImages } from '../hooks/useUserImages'
+import type { CreateUserImageInput } from '../types'
 
 /**
  * User images display component
  */
 export function UserImagesDisplay() {
-  const { user } = useAuth();
+  const { user } = useAuth()
   const {
     images,
     imageUrls,
@@ -30,46 +30,46 @@ export function UserImagesDisplay() {
     update,
     deleteImage,
     clearError,
-  } = useUserImages(user?.id);
+  } = useUserImages(user?.id)
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
 
   const handleUpload = async (input: CreateUserImageInput) => {
-    await create(input);
-  };
+    await create(input)
+  }
 
   const handleUpdate = async (
     id: string,
     title: string,
-    description: string | null
+    description: string | null,
   ) => {
-    await update(id, title, description);
-  };
+    await update(id, title, description)
+  }
 
   const handleDelete = (id: string) => {
-    deleteImage(id);
-  };
+    deleteImage(id)
+  }
 
   const handleOpenEdit = (index: number) => {
-    setEditingIndex(index);
-  };
+    setEditingIndex(index)
+  }
 
   const handleCloseEdit = () => {
-    setEditingIndex(null);
-  };
+    setEditingIndex(null)
+  }
 
   const handleNextImage = () => {
-    if (editingIndex === null) return;
-    const nextIndex = editingIndex + 1;
+    if (editingIndex === null) return
+    const nextIndex = editingIndex + 1
     if (nextIndex < images.length) {
-      setEditingIndex(nextIndex);
+      setEditingIndex(nextIndex)
     } else {
-      setEditingIndex(0);
+      setEditingIndex(0)
     }
-  };
+  }
 
   const editingImage =
-    editingIndex !== null ? (images[editingIndex] ?? null) : null;
+    editingIndex !== null ? (images[editingIndex] ?? null) : null
 
   if (isLoading) {
     return (
@@ -79,7 +79,7 @@ export function UserImagesDisplay() {
           <p className="text-muted-foreground">Loading images...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -89,7 +89,7 @@ export function UserImagesDisplay() {
         <div>
           <h2 className="text-2xl font-bold text-foreground">My Images</h2>
           <p className="text-sm text-muted-foreground">
-            {images.length} {images.length === 1 ? "image" : "images"}
+            {images.length} {images.length === 1 ? 'image' : 'images'}
           </p>
         </div>
 
@@ -118,7 +118,7 @@ export function UserImagesDisplay() {
             <ImageCard
               key={image.id}
               image={image}
-              imageUrl={imageUrls[image.id] || ""}
+              imageUrl={imageUrls[image.id] || ''}
               onClick={() => handleOpenEdit(index)}
               onDelete={handleDelete}
               isDeleting={isDeleting === image.id}
@@ -133,13 +133,13 @@ export function UserImagesDisplay() {
       {/* Edit Dialog */}
       <ImageEditDialog
         image={editingImage}
-        imageUrl={editingImage ? imageUrls[editingImage.id] || "" : ""}
+        imageUrl={editingImage ? imageUrls[editingImage.id] || '' : ''}
         open={editingIndex !== null}
         onClose={handleCloseEdit}
         onSave={handleUpdate}
         onNext={handleNextImage}
-        userId={user?.id || ""}
+        userId={user?.id || ''}
       />
     </div>
-  );
+  )
 }

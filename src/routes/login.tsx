@@ -1,61 +1,63 @@
-import { useState, useEffect } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/lib/auth";
+import { useState, useEffect } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '@/lib/auth'
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute('/login')({
   component: LoginPage,
-});
+})
 
 function LoginPage() {
-  const { user, loading, signIn } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const { user, loading, signIn } = useAuth()
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Redirect if already logged in
   useEffect(() => {
     if (!loading && user) {
-      navigate({ to: "/dashboard" });
+      navigate({ to: '/dashboard' })
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate])
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-muted-foreground">Loading...</div>
       </div>
-    );
+    )
   }
 
   if (user) {
-    return null;
+    return null
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
+    e.preventDefault()
+    setError(null)
+    setSubmitting(true)
 
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(email, password)
 
-    setSubmitting(false);
+    setSubmitting(false)
 
     if (error) {
-      setError(error.message);
+      setError(error.message)
     } else {
-      navigate({ to: "/dashboard" });
+      navigate({ to: '/dashboard' })
     }
-  };
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-accent-gold">Get your zen on.</h1>
+          <h1 className="text-2xl font-semibold text-accent-gold">
+            Get your zen on.
+          </h1>
           <p className="text-muted-foreground mt-1">Sign in to continue</p>
         </div>
 
@@ -88,7 +90,7 @@ function LoginPage() {
             <div className="relative">
               <input
                 id="password"
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -118,10 +120,10 @@ function LoginPage() {
             disabled={submitting}
             className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
-            {submitting ? "..." : "Sign In"}
+            {submitting ? '...' : 'Sign In'}
           </button>
         </form>
       </div>
     </div>
-  );
+  )
 }

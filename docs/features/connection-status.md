@@ -20,10 +20,12 @@ The dashboard shows whether each service in the stack is properly configured and
 ### How It Works
 
 **Client-side checks:**
+
 - Supabase: Calls `supabase.auth.getUser()` to verify connection
 - Auth: Displays logged-in user email
 
 **Server-side checks (via TanStack Start server function):**
+
 - FAL: Configures client and makes a test API call; "not found" error means auth worked
 - Trigger.dev: Validates key format (starts with `tr_dev_` or `tr_prod_`)
 
@@ -35,6 +37,7 @@ The dashboard shows whether each service in the stack is properly configured and
 ## Usage
 
 Navigate to `/dashboard` after signing in. Status badges show:
+
 - **Checking...** (yellow) - Request in progress
 - **Connected** (green) - Service is working
 - **Error** (red) - Configuration issue or service unreachable
@@ -48,6 +51,7 @@ TRIGGER_SECRET_KEY=tr_dev_...
 ```
 
 For Fly.io:
+
 ```bash
 fly secrets set FAL_KEY=... TRIGGER_SECRET_KEY=...
 ```

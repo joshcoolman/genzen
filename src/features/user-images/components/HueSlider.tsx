@@ -5,52 +5,61 @@
  * with draggable thumb positioned at current hue.
  */
 
-import { useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from 'react'
 
 interface HueSliderProps {
-  currentHue: number; // 0-360
-  onChange: (newHue: number) => void;
+  currentHue: number // 0-360
+  onChange: (newHue: number) => void
 }
 
 export function HueSlider({ currentHue, onChange }: HueSliderProps) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
-  const getHueFromPosition = useCallback((clientX: number) => {
-    if (!trackRef.current) return currentHue;
-    const rect = trackRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    return (x / rect.width) * 360;
-  }, [currentHue]);
+  const getHueFromPosition = useCallback(
+    (clientX: number) => {
+      if (!trackRef.current) return currentHue
+      const rect = trackRef.current.getBoundingClientRect()
+      const x = Math.max(0, Math.min(clientX - rect.left, rect.width))
+      return (x / rect.width) * 360
+    },
+    [currentHue],
+  )
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    onChange(getHueFromPosition(e.clientX));
-  }, [getHueFromPosition, onChange]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setIsDragging(true)
+      onChange(getHueFromPosition(e.clientX))
+    },
+    [getHueFromPosition, onChange],
+  )
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return;
-    onChange(getHueFromPosition(e.clientX));
-  }, [isDragging, getHueFromPosition, onChange]);
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return
+      onChange(getHueFromPosition(e.clientX))
+    },
+    [isDragging, getHueFromPosition, onChange],
+  )
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+    setIsDragging(false)
+  }, [])
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
       return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
+        window.removeEventListener('mousemove', handleMouseMove)
+        window.removeEventListener('mouseup', handleMouseUp)
+      }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   // Position thumb at current hue (0-360 mapped to 0-100%)
-  const thumbPosition = (currentHue / 360) * 100;
+  const thumbPosition = (currentHue / 360) * 100
 
   return (
     <div className="w-full py-2">
@@ -77,5 +86,5 @@ export function HueSlider({ currentHue, onChange }: HueSliderProps) {
         />
       </div>
     </div>
-  );
+  )
 }

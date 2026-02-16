@@ -1,82 +1,82 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
-import { checkConnections } from "@/lib/server/check-connections";
-import { useRestoreDashboardRoute } from "@/lib/use-dashboard-route-memory";
+import { useEffect, useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
+import { useAuth } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
+import { checkConnections } from '@/lib/server/check-connections'
+import { useRestoreDashboardRoute } from '@/lib/use-dashboard-route-memory'
 
-export const Route = createFileRoute("/dashboard/")({
+export const Route = createFileRoute('/dashboard/')({
   component: DashboardHome,
-});
+})
 
 interface ConnectionStatus {
-  supabase: "checking" | "connected" | "error";
-  supabaseError?: string;
-  fal: "checking" | "connected" | "error";
-  falError?: string;
-  trigger: "checking" | "connected" | "error";
-  triggerError?: string;
+  supabase: 'checking' | 'connected' | 'error'
+  supabaseError?: string
+  fal: 'checking' | 'connected' | 'error'
+  falError?: string
+  trigger: 'checking' | 'connected' | 'error'
+  triggerError?: string
 }
 
 function DashboardHome() {
-  const { user } = useAuth();
+  const { user } = useAuth()
   const [status, setStatus] = useState<ConnectionStatus>({
-    supabase: "checking",
-    fal: "checking",
-    trigger: "checking",
-  });
+    supabase: 'checking',
+    fal: 'checking',
+    trigger: 'checking',
+  })
 
   // Automatically restore the last visited dashboard route
-  useRestoreDashboardRoute();
+  useRestoreDashboardRoute()
 
   useEffect(() => {
     async function runChecks() {
       // Check Supabase connection
       try {
-        const { error } = await supabase.auth.getUser();
+        const { error } = await supabase.auth.getUser()
         if (error) {
           setStatus((s) => ({
             ...s,
-            supabase: "error",
+            supabase: 'error',
             supabaseError: error.message,
-          }));
+          }))
         } else {
-          setStatus((s) => ({ ...s, supabase: "connected" }));
+          setStatus((s) => ({ ...s, supabase: 'connected' }))
         }
       } catch (err) {
         setStatus((s) => ({
           ...s,
-          supabase: "error",
-          supabaseError: err instanceof Error ? err.message : "Unknown error",
-        }));
+          supabase: 'error',
+          supabaseError: err instanceof Error ? err.message : 'Unknown error',
+        }))
       }
 
       // Check FAL and Trigger.dev via server function
       try {
-        const serverStatus = await checkConnections();
+        const serverStatus = await checkConnections()
         setStatus((s) => ({
           ...s,
           fal: serverStatus.fal.status,
           falError: serverStatus.fal.error,
           trigger: serverStatus.trigger.status,
           triggerError: serverStatus.trigger.error,
-        }));
+        }))
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Server error";
+        const errorMsg = err instanceof Error ? err.message : 'Server error'
         setStatus((s) => ({
           ...s,
-          fal: "error",
+          fal: 'error',
           falError: errorMsg,
-          trigger: "error",
+          trigger: 'error',
           triggerError: errorMsg,
-        }));
+        }))
       }
     }
 
     if (user) {
-      runChecks();
+      runChecks()
     }
-  }, [user]);
+  }, [user])
 
   return (
     <div className="space-y-8">
@@ -105,7 +105,7 @@ function DashboardHome() {
         <h2 className="font-medium">Environment</h2>
         <div className="text-sm space-y-2 text-muted-foreground">
           <div>
-            <span className="text-muted-foreground">Supabase URL:</span>{" "}
+            <span className="text-muted-foreground">Supabase URL:</span>{' '}
             {import.meta.env.VITE_SUPABASE_URL}
           </div>
           <div>
@@ -114,7 +114,7 @@ function DashboardHome() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function StatusRow({
@@ -123,41 +123,43 @@ function StatusRow({
   detail,
   error,
 }: {
-  label: string;
-  status: "checking" | "connected" | "error";
-  detail?: string;
-  error?: string;
+  label: string
+  status: 'checking' | 'connected' | 'error'
+  detail?: string
+  error?: string
 }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
       <span className="text-foreground">{label}</span>
       <div className="flex items-center gap-2">
-        {detail && <span className="text-sm text-muted-foreground">{detail}</span>}
+        {detail && (
+          <span className="text-sm text-muted-foreground">{detail}</span>
+        )}
         <StatusBadge status={status} />
-        {error && status === "error" && (
+        {error && status === 'error' && (
           <span className="text-xs text-destructive">{error}</span>
         )}
       </div>
     </div>
-  );
+  )
 }
 
 function StatusBadge({
   status,
 }: {
-  status: "checking" | "connected" | "error";
+  status: 'checking' | 'connected' | 'error'
 }) {
   const styles = {
-    checking: "bg-yellow-900/30 text-yellow-500",
-    connected: "bg-accent-sage/20 text-accent-sage",
-    error: "bg-red-900/30 text-red-400",
-  };
+    checking: 'bg-yellow-900/30 text-yellow-500',
+    connected: 'bg-accent-sage/20 text-accent-sage',
+    error: 'bg-red-900/30 text-red-400',
+  }
 
   const labels = {
-    checking: "Checking...",
-    connected: "Connected",
-    error: "Error",
-  };
+    checking: 'Checking...',
+    connected: 'Connected',
+    error: 'Error',
+  }
 
   return (
     <span
@@ -165,5 +167,5 @@ function StatusBadge({
     >
       {labels[status]}
     </span>
-  );
+  )
 }

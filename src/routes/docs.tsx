@@ -1,17 +1,17 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { DocsSidebar } from "@/features/docs/components/DocsSidebar";
-import { getDocNavCategories } from "@/lib/docs/loadDocs.server";
+import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { DocsSidebar } from '@/features/docs/components/DocsSidebar'
+import { getDocNavCategories } from '@/lib/docs/loadDocs.server'
 
-export const Route = createFileRoute("/docs")({
+export const Route = createFileRoute('/docs')({
   loader: async () => {
-    const categories = await getDocNavCategories();
-    return { categories };
+    const categories = await getDocNavCategories()
+    return { categories }
   },
   component: DocsLayout,
-});
+})
 
 function DocsLayout() {
-  const { categories } = Route.useLoaderData();
+  const { categories } = Route.useLoaderData()
 
   return (
     <div className="flex h-[calc(100vh-49px)]">
@@ -20,5 +20,5 @@ function DocsLayout() {
         <Outlet />
       </div>
     </div>
-  );
+  )
 }

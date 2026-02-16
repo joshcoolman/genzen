@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { DocNavCategory } from "@/lib/docs/types";
+import { useState } from 'react'
+import { Link, useLocation } from '@tanstack/react-router'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { DocNavCategory } from '@/lib/docs/types'
 
 interface DocsSidebarProps {
-  categories: DocNavCategory[];
+  categories: DocNavCategory[]
 }
 
 export function DocsSidebar({ categories }: DocsSidebarProps) {
-  const location = useLocation();
-  const currentSlug = location.pathname.replace(/^\/docs\/?/, "");
+  const location = useLocation()
+  const currentSlug = location.pathname.replace(/^\/docs\/?/, '')
 
   return (
     <aside className="w-64 shrink-0 border-r border-border overflow-y-auto h-full">
@@ -29,17 +29,17 @@ export function DocsSidebar({ categories }: DocsSidebarProps) {
         </nav>
       </div>
     </aside>
-  );
+  )
 }
 
 function CategorySection({
   category,
   currentSlug,
 }: {
-  category: DocNavCategory;
-  currentSlug: string;
+  category: DocNavCategory
+  currentSlug: string
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(true)
 
   return (
     <div className="mb-2">
@@ -59,13 +59,13 @@ function CategorySection({
           {category.items.map((item) => (
             <li key={item.slug}>
               <Link
-                to={"/docs/$" as string}
+                to={'/docs/$' as string}
                 params={{ _splat: item.slug }}
                 className={cn(
-                  "block text-sm py-1 px-2 rounded transition-colors",
+                  'block text-sm py-1 px-2 rounded transition-colors',
                   item.slug === currentSlug
-                    ? "text-accent-gold bg-accent/50"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                    ? 'text-accent-gold bg-accent/50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/30',
                 )}
               >
                 {item.title}
@@ -75,5 +75,5 @@ function CategorySection({
         </ul>
       )}
     </div>
-  );
+  )
 }

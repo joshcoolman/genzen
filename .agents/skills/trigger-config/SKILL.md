@@ -21,13 +21,13 @@ Configure your Trigger.dev project with `trigger.config.ts` and build extensions
 
 ```ts
 // trigger.config.ts
-import { defineConfig } from "@trigger.dev/sdk";
+import { defineConfig } from '@trigger.dev/sdk'
 
 export default defineConfig({
-  project: "<project-ref>",
-  dirs: ["./trigger"],
-  runtime: "node", // "node", "node-22", or "bun"
-  logLevel: "info",
+  project: '<project-ref>',
+  dirs: ['./trigger'],
+  runtime: 'node', // "node", "node-22", or "bun"
+  logLevel: 'info',
 
   retries: {
     enabledInDev: false,
@@ -42,7 +42,7 @@ export default defineConfig({
   build: {
     extensions: [], // Add extensions here
   },
-});
+})
 ```
 
 ## Common Build Extensions
@@ -50,30 +50,30 @@ export default defineConfig({
 ### Prisma
 
 ```ts
-import { prismaExtension } from "@trigger.dev/build/extensions/prisma";
+import { prismaExtension } from '@trigger.dev/build/extensions/prisma'
 
 export default defineConfig({
   // ...
   build: {
     extensions: [
       prismaExtension({
-        schema: "prisma/schema.prisma",
+        schema: 'prisma/schema.prisma',
         migrate: true,
-        directUrlEnvVarName: "DIRECT_DATABASE_URL",
+        directUrlEnvVarName: 'DIRECT_DATABASE_URL',
       }),
     ],
   },
-});
+})
 ```
 
 ### Playwright (Browser Automation)
 
 ```ts
-import { playwright } from "@trigger.dev/build/extensions/playwright";
+import { playwright } from '@trigger.dev/build/extensions/playwright'
 
 extensions: [
   playwright({
-    browsers: ["chromium"], // or ["chromium", "firefox", "webkit"]
+    browsers: ['chromium'], // or ["chromium", "firefox", "webkit"]
   }),
 ]
 ```
@@ -81,7 +81,7 @@ extensions: [
 ### Puppeteer
 
 ```ts
-import { puppeteer } from "@trigger.dev/build/extensions/puppeteer";
+import { puppeteer } from '@trigger.dev/build/extensions/puppeteer'
 
 extensions: [puppeteer()]
 
@@ -91,39 +91,37 @@ extensions: [puppeteer()]
 ### FFmpeg (Media Processing)
 
 ```ts
-import { ffmpeg } from "@trigger.dev/build/extensions/core";
+import { ffmpeg } from '@trigger.dev/build/extensions/core'
 
-extensions: [
-  ffmpeg({ version: "7" }),
-]
+extensions: [ffmpeg({ version: '7' })]
 // Automatically sets FFMPEG_PATH and FFPROBE_PATH
 ```
 
 ### Python
 
 ```ts
-import { pythonExtension } from "@trigger.dev/build/extensions/python";
+import { pythonExtension } from '@trigger.dev/build/extensions/python'
 
 extensions: [
   pythonExtension({
-    scripts: ["./python/**/*.py"],
-    requirementsFile: "./requirements.txt",
-    devPythonBinaryPath: ".venv/bin/python",
+    scripts: ['./python/**/*.py'],
+    requirementsFile: './requirements.txt',
+    devPythonBinaryPath: '.venv/bin/python',
   }),
 ]
 
 // Usage in tasks:
-const result = await python.runScript("./python/process.py", ["arg1"]);
+const result = await python.runScript('./python/process.py', ['arg1'])
 ```
 
 ### System Packages (apt-get)
 
 ```ts
-import { aptGet } from "@trigger.dev/build/extensions/core";
+import { aptGet } from '@trigger.dev/build/extensions/core'
 
 extensions: [
   aptGet({
-    packages: ["imagemagick", "curl"],
+    packages: ['imagemagick', 'curl'],
   }),
 ]
 ```
@@ -131,11 +129,11 @@ extensions: [
 ### Additional Files
 
 ```ts
-import { additionalFiles } from "@trigger.dev/build/extensions/core";
+import { additionalFiles } from '@trigger.dev/build/extensions/core'
 
 extensions: [
   additionalFiles({
-    files: ["./assets/**", "./templates/**"],
+    files: ['./assets/**', './templates/**'],
   }),
 ]
 ```
@@ -143,14 +141,14 @@ extensions: [
 ### Environment Variable Sync
 
 ```ts
-import { syncEnvVars } from "@trigger.dev/build/extensions/core";
+import { syncEnvVars } from '@trigger.dev/build/extensions/core'
 
 extensions: [
   syncEnvVars(async (ctx) => {
     return [
-      { name: "API_KEY", value: await getSecret(ctx.environment) },
-      { name: "ENV", value: ctx.environment },
-    ];
+      { name: 'API_KEY', value: await getSecret(ctx.environment) },
+      { name: 'ENV', value: ctx.environment },
+    ]
   }),
 ]
 ```
@@ -161,8 +159,8 @@ extensions: [
 
 ```ts
 extensions: [
-  prismaExtension({ schema: "prisma/schema.prisma", migrate: true }),
-  additionalFiles({ files: ["./assets/**"] }),
+  prismaExtension({ schema: 'prisma/schema.prisma', migrate: true }),
+  additionalFiles({ files: ['./assets/**'] }),
   syncEnvVars(async (ctx) => [...envVars]),
 ]
 ```
@@ -172,10 +170,10 @@ extensions: [
 ```ts
 extensions: [
   pythonExtension({
-    scripts: ["./ai/**/*.py"],
-    requirementsFile: "./requirements.txt",
+    scripts: ['./ai/**/*.py'],
+    requirementsFile: './requirements.txt',
   }),
-  ffmpeg({ version: "7" }),
+  ffmpeg({ version: '7' }),
 ]
 ```
 
@@ -183,8 +181,8 @@ extensions: [
 
 ```ts
 extensions: [
-  playwright({ browsers: ["chromium"] }),
-  additionalFiles({ files: ["./selectors.json"] }),
+  playwright({ browsers: ['chromium'] }),
+  additionalFiles({ files: ['./selectors.json'] }),
 ]
 ```
 
@@ -194,15 +192,15 @@ extensions: [
 export default defineConfig({
   // ...
   onStartAttempt: async ({ payload, ctx }) => {
-    console.log("Task starting:", ctx.task.id);
+    console.log('Task starting:', ctx.task.id)
   },
   onSuccess: async ({ payload, output, ctx }) => {
-    console.log("Task succeeded");
+    console.log('Task succeeded')
   },
   onFailure: async ({ payload, error, ctx }) => {
-    console.error("Task failed:", error);
+    console.error('Task failed:', error)
   },
-});
+})
 ```
 
 ## Machine Defaults
@@ -210,22 +208,22 @@ export default defineConfig({
 ```ts
 export default defineConfig({
   // ...
-  defaultMachine: "medium-1x",
+  defaultMachine: 'medium-1x',
   maxDuration: 300, // seconds
-});
+})
 ```
 
 ## Telemetry Integration
 
 ```ts
-import { PrismaInstrumentation } from "@prisma/instrumentation";
+import { PrismaInstrumentation } from '@prisma/instrumentation'
 
 export default defineConfig({
   // ...
   telemetry: {
     instrumentations: [new PrismaInstrumentation()],
   },
-});
+})
 ```
 
 ## Best Practices
