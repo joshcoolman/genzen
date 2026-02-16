@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -44,11 +44,6 @@ function AiImagesPage() {
   const [loading, setLoading] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Preview state: shows either a just-generated image or a clicked thumbnail
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewCaption, setPreviewCaption] = useState<string | null>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   // Saved AI images gallery
   const [savedImages, setSavedImages] = useState<SavedAiImage[]>([]);
@@ -117,18 +112,6 @@ function AiImagesPage() {
     loadInitialPrompt();
   }, [session?.access_token]);
 
-  // Escape key dismisses preview
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && previewUrl) {
-        setPreviewUrl(null);
-        setPreviewCaption(null);
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [previewUrl]);
-
   async function handleGenerate() {
     if (!prompt.trim() || loading || !session?.access_token) return;
 
@@ -144,11 +127,6 @@ function AiImagesPage() {
           accessToken: session.access_token,
         },
       });
-
-      // Show preview immediately
-      const caption = `Generated in ${(data.elapsed / 1000).toFixed(1)}s · ${getModelName(model)}`;
-      setPreviewUrl(data.url);
-      setPreviewCaption(caption);
 
       // Auto-save in background
       saveGeneratedImage({
@@ -178,27 +156,6 @@ function AiImagesPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleDismissPreview() {
-    setPreviewUrl(null);
-    setPreviewCaption(null);
-  }
-
-  function handleShowPreview(img: SavedAiImage) {
-    const url = imageUrls[img.id];
-    if (!url) return;
-
-    const modelName = img.generation_metadata
-      ? getModelName(img.generation_metadata.model)
-      : img.title;
-    const elapsed = img.generation_metadata?.elapsed
-      ? `Generated in ${(img.generation_metadata.elapsed / 1000).toFixed(1)}s · `
-      : "";
-    setPreviewUrl(url);
-    setPreviewCaption(`${elapsed}${modelName}`);
-
-    previewRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function handleLoadPrompt(img: SavedAiImage) {
@@ -342,40 +299,6 @@ function AiImagesPage() {
         </div>
       </div>
 
-      {/* Dismissible Preview */}
-      {previewUrl && (
-        <div ref={previewRef} className="relative bg-card rounded-lg p-6 space-y-3">
-          <button
-            onClick={handleDismissPreview}
-            className="absolute top-3 right-3 rounded-full bg-background/80 backdrop-blur-sm border border-border p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Dismiss preview"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="rounded-lg max-w-full"
-          />
-          {previewCaption && (
-            <p className="text-xs text-muted-foreground">{previewCaption}</p>
-          )}
-        </div>
-      )}
-
       {/* Saved AI Images Gallery */}
       <div className="space-y-4">
         <h2 className="text-lg font-medium">Recent Generations</h2>
@@ -432,12 +355,6 @@ function AiImagesPage() {
                   </button>
                   {/* Action buttons overlay */}
                   <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleShowPreview(img)}
-                      className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-                    >
-                      Preview
-                    </button>
                     <button
                       onClick={() => handleLoadPrompt(img)}
                       className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
