@@ -3,10 +3,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Settings } from 'lucide-react'
-import {
-  generateImage,
-  generatePrompt,
-} from '@/features/ai-images/server/generate-image.server'
+import { generateImage } from '@/features/ai-images/server/generate-image.server'
+import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
+import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import {
   ALL_IMAGE_MODELS,
@@ -16,6 +15,7 @@ import {
 } from '@/features/ai-images/models'
 import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
 import { PendingImageCard } from '@/features/ai-images/components/PendingImageCard'
+import { CreditBalance } from '@/components/CreditBalance'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
@@ -244,35 +244,28 @@ function AiImagesPage() {
     }
   }, [visibleModelIds, model])
 
-  // Generate random prompt on mount
-  useEffect(() => {
-    async function loadInitialPrompt() {
-      if (!session?.access_token) return
-
-      try {
-        const data = await generatePrompt({
-          data: { accessToken: session.access_token },
-        })
-        setPrompt(data.prompt)
-      } catch {
-        // Silently fail - user can generate their own
-      }
-    }
-    loadInitialPrompt()
-  }, [session?.access_token])
-
   async function handleGenerate() {
-    if (!prompt.trim() || loading || !session?.access_token) return
+    if (loading || !session?.access_token) return
 
     setLoading(true)
     setError(null)
 
     try {
+      // If prompt is empty, generate a random one silently (slot machine style!)
+      let finalPrompt = prompt.trim()
+      if (!finalPrompt) {
+        const data = await generatePromptServer({
+          data: { accessToken: session.access_token },
+        })
+        finalPrompt = data.prompt
+        // Don't set it in the input - keep it a surprise!
+      }
+
       // Submit generation (returns immediately with pending record)
       // Realtime subscription will automatically add it to the UI
       await generateImage({
         data: {
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           model,
           accessToken: session.access_token,
         },
@@ -333,12 +326,36 @@ function AiImagesPage() {
     setError(null)
 
     try {
-      const data = await generatePrompt({
+      const data = await generatePromptServer({
         data: { accessToken: session.access_token },
       })
       setPrompt(data.prompt)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate prompt')
+    } finally {
+      setGeneratingPrompt(false)
+    }
+  }
+
+  async function handleEnhancedPrompt() {
+    if (generatingPrompt || !session?.access_token) return
+
+    setGeneratingPrompt(true)
+    setError(null)
+
+    try {
+      const data = await generatePromptEnhanced({
+        data: { accessToken: session.access_token },
+      })
+      setPrompt(data.prompt)
+
+      // Optional: Log cost for development
+      if (data.metadata?.cost) {
+        console.log(`AI-Enhanced prompt cost: $${data.metadata.cost.toFixed(6)}`)
+        console.log(`Tokens: ${data.metadata.inputTokens} in, ${data.metadata.outputTokens} out, ${data.metadata.cacheReadTokens} cached`)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate enhanced prompt')
     } finally {
       setGeneratingPrompt(false)
     }
@@ -350,7 +367,10 @@ function AiImagesPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">AI Images</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">AI Images</h1>
+        <CreditBalance />
+      </div>
 
       {/* Generator */}
       <div className="bg-card rounded-lg p-6">
@@ -365,18 +385,29 @@ function AiImagesPage() {
                 >
                   Prompt
                 </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRandomPrompt}
-                  disabled={generatingPrompt || loading}
-                >
-                  {generatingPrompt ? 'Generating...' : 'Random Prompt'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRandomPrompt}
+                    disabled={generatingPrompt || loading}
+                  >
+                    {generatingPrompt ? 'Generating...' : 'Random'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEnhancedPrompt}
+                    disabled={generatingPrompt || loading}
+                    className="text-primary"
+                  >
+                    ✨ Enhanced
+                  </Button>
+                </div>
               </div>
               <Textarea
                 id="prompt-textarea"
-                placeholder="Describe the image you want to generate..."
+                placeholder="Prompt for image, or just click Generate for a surprise"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={loading}
@@ -386,7 +417,7 @@ function AiImagesPage() {
 
             <Button
               onClick={handleGenerate}
-              disabled={!prompt.trim() || loading}
+              disabled={loading}
               className="w-full"
             >
               {loading ? 'Generating...' : 'Generate'}
