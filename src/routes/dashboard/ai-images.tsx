@@ -30,9 +30,7 @@ interface SavedAiImage {
 
 function AiImagesPage() {
   const { user, session } = useAuth();
-  const [prompt, setPrompt] = useState(
-    "A golden retriever sitting at a sidewalk cafe table, shot with a 50mm f/1.4 lens, shallow depth of field with creamy bokeh, warm afternoon light casting soft shadows, a cappuccino and croissant on the table, street scene blurred in the background"
-  );
+  const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [loading, setLoading] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
@@ -85,6 +83,23 @@ function AiImagesPage() {
   useEffect(() => {
     loadSavedImages();
   }, [loadSavedImages]);
+
+  // Generate random prompt on mount
+  useEffect(() => {
+    async function loadInitialPrompt() {
+      if (!session?.access_token) return;
+
+      try {
+        const data = await generatePrompt({
+          data: { accessToken: session.access_token },
+        });
+        setPrompt(data.prompt);
+      } catch {
+        // Silently fail - user can generate their own
+      }
+    }
+    loadInitialPrompt();
+  }, [session?.access_token]);
 
   // Escape key dismisses preview
   useEffect(() => {
