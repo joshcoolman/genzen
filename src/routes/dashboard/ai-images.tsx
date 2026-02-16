@@ -338,24 +338,27 @@ function AiImagesPage() {
   }
 
   async function handleEnhancedPrompt() {
-    if (generatingPrompt || !session?.access_token) return
+    if (generatingPrompt || !session?.access_token || !prompt.trim()) return
 
     setGeneratingPrompt(true)
     setError(null)
 
     try {
       const data = await generatePromptEnhanced({
-        data: { accessToken: session.access_token },
+        data: {
+          accessToken: session.access_token,
+          currentPrompt: prompt.trim(),
+        },
       })
       setPrompt(data.prompt)
 
-      // Optional: Log cost for development
+      // Log cost for development
       if (data.metadata?.cost) {
-        console.log(`AI-Enhanced prompt cost: $${data.metadata.cost.toFixed(6)}`)
-        console.log(`Tokens: ${data.metadata.inputTokens} in, ${data.metadata.outputTokens} out, ${data.metadata.cacheReadTokens} cached`)
+        console.log(`Prompt enhancement cost: $${data.metadata.cost.toFixed(6)}`)
+        console.log(`Tokens: ${data.metadata.inputTokens} in, ${data.metadata.outputTokens} out`)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate enhanced prompt')
+      setError(err instanceof Error ? err.message : 'Failed to enhance prompt')
     } finally {
       setGeneratingPrompt(false)
     }
@@ -391,6 +394,7 @@ function AiImagesPage() {
                     size="sm"
                     onClick={handleRandomPrompt}
                     disabled={generatingPrompt || loading}
+                    title="Generate a random photography prompt"
                   >
                     {generatingPrompt ? 'Generating...' : 'Random'}
                   </Button>
@@ -398,10 +402,11 @@ function AiImagesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={handleEnhancedPrompt}
-                    disabled={generatingPrompt || loading}
+                    disabled={generatingPrompt || loading || !prompt.trim()}
                     className="text-primary"
+                    title="Enhance the current prompt with AI"
                   >
-                    ✨ Enhanced
+                    ✨ Enhance
                   </Button>
                 </div>
               </div>

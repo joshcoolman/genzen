@@ -11,20 +11,15 @@ import type {
   Medium,
 } from './prompt-types'
 import {
-  SUBJECT_MODIFIERS,
-  SUBJECT_NOUNS,
   SUBJECTS_PEOPLE,
   SUBJECTS_PLACES,
-  SUBJECTS_CREATURES,
+  SUBJECTS_ANIMALS,
+  SUBJECTS_OBJECTS,
   ACTIONS,
-  MEDIUMS,
-  ATMOSPHERES,
+  ENVIRONMENTS,
   CAMERA_LENSES,
   CAMERA_FRAMING,
   FILM_STOCKS,
-  ART_TECHNIQUES,
-  RENDER_ENGINES,
-  WILDCARDS,
   ASPECT_RATIOS,
 } from './prompt-keywords'
 
@@ -65,23 +60,20 @@ function chance(probability: number): boolean {
 }
 
 // ============================================================================
-// SUBJECT GENERATION
+// SUBJECT GENERATION (Photography-focused)
 // ============================================================================
 
 /**
- * Generate a subject using adjective-subject multiplier or dedicated pools
+ * Generate a subject - equal distribution across people, places, animals, objects
  */
 function generateSubject(): string {
-  // 30% chance: Combine modifier + noun for surprising results
-  if (chance(0.3)) {
-    const modifier = pick(SUBJECT_MODIFIERS)
-    const noun = pick(SUBJECT_NOUNS)
-    return `A ${modifier.toLowerCase()} ${noun}`
-  }
+  const pools = [
+    SUBJECTS_PEOPLE,
+    SUBJECTS_PLACES,
+    SUBJECTS_ANIMALS,
+    SUBJECTS_OBJECTS,
+  ] as const
 
-  // 70% chance: Pick from dedicated subject pools
-  // Equal distribution between people, places, creatures
-  const pools = [SUBJECTS_PEOPLE, SUBJECTS_PLACES, SUBJECTS_CREATURES] as const
   const selectedPool = pick(pools)
   return pick(selectedPool)
 }
@@ -187,80 +179,63 @@ function assemblePrompt(parts: PromptParts): string {
 // ============================================================================
 
 /**
- * Generate a complete AI image prompt with all rules and commitment logic
+ * Generate a photography prompt using template system
+ * Format: [subject] [action] [environment], [lens], [film], [framing] --ar [ratio]
  */
 export function generatePrompt(
   options: PromptGenerationOptions = {},
 ): GeneratedPrompt {
-  // Parse options with defaults
-  const {
-    wildcardChance = 0.15,
-    chaosModeChance = 0.1,
-    disableWildcards = false,
-    disableChaosMode = false,
-    forceMediumType,
-    forceAspectRatio,
-  } = options
+  const { forceAspectRatio } = options
 
-  // 1. Chaos Mode Check (10% chance for contrast pairing)
-  const isChaosMode = disableChaosMode ? false : chance(chaosModeChance)
-
-  // 2. Subject Generation
+  // 1. Pick subject (people, places, animals, or objects)
   const subject = generateSubject()
 
-  // 3. Action
-  const action = pick(ACTIONS)
+  // 2. Pick action (optional - 70% chance to include)
+  const action = chance(0.7) ? pick(ACTIONS) : ''
 
-  // 4. Medium (with type)
-  let medium: Medium
-  if (forceMediumType) {
-    const filteredMediums = MEDIUMS.filter((m) => m.type === forceMediumType)
-    medium = pick(filteredMediums)
-  } else {
-    medium = pick(MEDIUMS)
-  }
+  // 3. Pick environment (optional - 60% chance to include)
+  const environment = chance(0.6) ? pick(ENVIRONMENTS) : ''
 
-  // 5. Atmosphere
-  const atmosphere = pick(ATMOSPHERES)
+  // 4. Pick camera technical specs (3-4 items)
+  const lens = pick(CAMERA_LENSES)
+  const film = pick(FILM_STOCKS)
+  const framing = chance(0.7) ? pick(CAMERA_FRAMING) : '' // Optional framing
 
-  // 6. Technical Details (COMMITMENT LOGIC)
-  const technical = generateTechnicalDetails(medium.type)
-
-  // 7. Wildcard Injection (15% chance)
-  let wildcard: string | undefined
-  if (!disableWildcards && chance(wildcardChance)) {
-    wildcard = pick(WILDCARDS)
-  }
-
-  // 8. Aspect Ratio
+  // 5. Pick aspect ratio
   const aspectRatio = forceAspectRatio || pickWeighted(ASPECT_RATIOS)
 
-  // 9. Assemble Parts
-  const parts: PromptParts = {
+  // 6. Assemble prompt in natural order
+  const parts = [subject]
+  if (action) parts.push(action)
+  if (environment) parts.push(environment)
+
+  const subjectPart = parts.join(' ')
+  const technical = [lens, film, framing].filter(Boolean)
+
+  const prompt = `${subjectPart}, ${technical.join(', ')} --ar ${aspectRatio}`
+
+  // 7. Build parts object (simplified for photography)
+  const promptParts: PromptParts = {
     subject,
     action,
-    medium,
-    atmosphere,
+    medium: { text: 'Photography', type: 'photography' },
+    atmosphere: environment || '',
     technical,
-    wildcard,
     aspectRatio,
   }
 
-  // 10. Generate Final Prompt
-  const prompt = assemblePrompt(parts)
-
-  // 11. Build Metadata
+  // 8. Build metadata
   const metadata = {
-    mediumType: medium.type,
-    hasChaosMode: isChaosMode,
-    hasWildcard: !!wildcard,
+    mediumType: 'photography' as const,
+    hasChaosMode: false,
+    hasWildcard: false,
     aspectRatio,
     technicalCount: technical.length,
   }
 
   return {
     prompt,
-    parts,
+    parts: promptParts,
     metadata,
   }
 }

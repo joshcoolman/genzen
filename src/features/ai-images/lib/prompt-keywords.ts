@@ -55,89 +55,232 @@ export const SUBJECT_NOUNS = [
   'monument',
 ] as const
 
+// Photography-focused subjects (people, all ages, diverse professions)
 export const SUBJECTS_PEOPLE = [
-  'A nomadic merchant carrying lanterns',
-  'A blind cartographer mapping by touch',
-  'A child made of starlight',
-  'An elderly clockmaker with gear-tattoos',
-  'A knight in armor of ice',
-  'A dancer mid-leap, frozen in time',
-  'A scholar reading from a floating book',
-  'A pilot wearing moth-wing goggles',
-  'A gardener tending glowing plants',
-  'A musician playing an instrument of light',
-  'A warrior with a blade of water',
-  'A healer channeling golden energy',
-  'A thief dissolving into shadows',
-  'An oracle with eyes like galaxies',
-  'A chef conjuring flavors from thin air',
+  // Children
+  'A child catching fireflies',
+  'A young girl with a telescope',
+  'A boy building a sandcastle',
+  'A toddler covered in paint',
+
+  // Teenagers
+  'A teenage skateboarder',
+  'A young musician with headphones',
+  'A student reading in a library',
+  'A surfer carrying a board',
+
+  // Young adults
+  'A chef plating a dish',
+  'A scientist in a lab coat',
+  'A photographer adjusting their camera',
+  'A dancer in mid-performance',
+  'A rock climber scaling a wall',
+  'A barista making latte art',
+  'A tattoo artist at work',
+  'A programmer at a desk',
+
+  // Middle-aged
+  'A pilot in the cockpit',
+  'A gardener tending plants',
+  'A mechanic under a car hood',
+  'A teacher at a chalkboard',
+  'A architect reviewing blueprints',
+  'A conductor leading an orchestra',
+
+  // Diverse ages
+  'A street musician playing saxophone',
+  'A graffiti artist with spray cans',
+  'A boxer training in a gym',
+  'A chef tasting a sauce',
+  'A painter with a palette',
+  'A writer at a typewriter',
 ] as const
 
 export const SUBJECTS_PLACES = [
-  'An overgrown lighthouse on a floating island',
-  'A library where books fly like birds',
-  'A marketplace suspended in the clouds',
-  'A cathedral made entirely of ice',
-  'A greenhouse containing impossible flowers',
-  'A clocktower that runs backwards',
-  'A bridge connecting two moons',
-  'A temple carved from a single crystal',
-  'A workshop where stars are forged',
-  'A garden where seasons change by the hour',
-  'An observatory viewing parallel universes',
-  'A station between dimensions',
-  'A courtyard where gravity reverses',
-  'A conservatory of extinct species',
-  'A plaza paved with liquid gold',
+  // Urban
+  'A neon-lit Tokyo street',
+  'A busy New York crosswalk',
+  'A Parisian cafe terrace',
+  'A London Underground platform',
+  'A rooftop garden in Singapore',
+  'A Venice canal at dawn',
+
+  // Nature
+  'A misty forest path',
+  'A desert sand dune',
+  'A frozen waterfall',
+  'A coral reef',
+  'A mountain peak at sunrise',
+  'A lavender field in Provence',
+
+  // Interiors
+  'A dimly lit jazz club',
+  'A vintage record store',
+  'A modern art gallery',
+  'A cozy bookshop',
+  'A neon arcade',
+  'A industrial loft',
+
+  // Fantasy/Surreal
+  'A floating island',
+  'A glass pyramid in the desert',
+  'A abandoned amusement park',
+  'A underwater cave',
+  'A cyberpunk alleyway',
 ] as const
 
-export const SUBJECTS_CREATURES = [
-  'A glass frog containing a miniature forest',
-  'A mechanical owl with telescope eyes',
-  'A dragon made of origami paper',
-  'A whale swimming through clouds',
-  'A phoenix mid-rebirth',
-  'A deer with antlers of coral',
-  'A serpent of flowing water',
-  'A butterfly with wings of stained glass',
-  'A wolf made of smoke and embers',
-  'A hawk carrying a lantern',
-  'A tortoise with a city on its shell',
-  'A jellyfish trailing constellations',
-  'A lion with a mane of fire',
-  'A cat phasing between dimensions',
-  'A bear carved from living wood',
+export const SUBJECTS_ANIMALS = [
+  // Domestic/Pets
+  'A cat sitting in a window',
+  'A dog catching a frisbee',
+  'A parrot on a perch',
+  'A goldfish in a bowl',
+
+  // Wildlife
+  'A wolf in the snow',
+  'A lion yawning',
+  'A elephant at a watering hole',
+  'A eagle in flight',
+  'A deer in morning mist',
+  'A fox in autumn leaves',
+  'A bear catching salmon',
+  'A owl perched on a branch',
+
+  // Marine life
+  'A jellyfish floating in darkness',
+  'A sea turtle swimming',
+  'A whale breaching',
+  'A octopus camouflaging',
+  'A school of fish',
+
+  // Insects/Small
+  'A butterfly on a flower',
+  'A bee collecting pollen',
+  'A dragonfly hovering',
+  'A ladybug on a leaf',
+
+  // Fantasy/Unusual
+  'A glass frog on a lily pad',
+  'A bioluminescent jellyfish',
+  'A mechanical bird',
+  'A crystal beetle',
 ] as const
 
 // ============================================================================
-// ACTIONS / STATES
+// OBJECTS / STILL LIFE
+// ============================================================================
+
+export const SUBJECTS_OBJECTS = [
+  // Food & Drink
+  'A steaming cup of coffee',
+  'A fresh croissant on a plate',
+  'A wine bottle and glass',
+  'A bowl of ramen',
+  'A stack of pancakes',
+  'A espresso machine brewing',
+
+  // Technology
+  'A vintage typewriter',
+  'A vinyl record spinning',
+  'A analog camera',
+  'A guitar leaning against a wall',
+  'A pair of headphones',
+  'A mechanical watch',
+
+  // Vehicles
+  'A vintage motorcycle',
+  'A classic car in a garage',
+  'A bicycle against a wall',
+  'A skateboard on concrete',
+
+  // Abstract/Artistic
+  'Light refracting through a prism',
+  'Smoke patterns in darkness',
+  'Water droplets on glass',
+  'Ink dispersing in water',
+  'Shattered mirror fragments',
+  'Neon signs reflecting in puddles',
+] as const
+
+// ============================================================================
+// ACTIONS / STATES (Photography-focused)
 // ============================================================================
 
 export const ACTIONS = [
-  'dissolving into particles',
-  'reading by candlelight',
-  'emerging from fog',
-  'casting long shadows',
-  'frozen mid-transformation',
-  'reflecting in still water',
-  'illuminated from within',
-  'suspended in zero gravity',
-  'shattering into fragments',
-  'blooming with bioluminescence',
-  'trailing wisps of smoke',
-  'surrounded by floating debris',
-  'phasing between states',
-  'catching golden hour light',
-  'wreathed in morning mist',
-  'silhouetted against the horizon',
-  'dripping with liquid light',
-  'crackling with energy',
-  'weathering a cosmic storm',
-  'resting in perfect stillness',
-  'ascending toward the sky',
-  'descending into darkness',
-  'bathed in ethereal glow',
-  'fragmenting into echoes',
+  'mid-jump',
+  'in motion',
+  'at rest',
+  'in flight',
+  'emerging from shadow',
+  'catching light',
+  'reflected in water',
+  'silhouetted against sky',
+  'in sharp focus',
+  'motion-blurred',
+  'frozen in time',
+  'dissolving into mist',
+  'backlit',
+  'at golden hour',
+  'in harsh sunlight',
+  'under neon lights',
+  'in candlelight',
+  'during blue hour',
+  'at dawn',
+  'at dusk',
+  'in the rain',
+  'through a window',
+  'in soft focus',
+  'perfectly still',
+] as const
+
+// ============================================================================
+// ENVIRONMENTS / SETTINGS
+// ============================================================================
+
+export const ENVIRONMENTS = [
+  // Time of day
+  'at sunrise',
+  'at sunset',
+  'at golden hour',
+  'at blue hour',
+  'at noon',
+  'at midnight',
+  'at dawn',
+  'at dusk',
+
+  // Weather
+  'in the rain',
+  'in the snow',
+  'in the fog',
+  'in harsh sunlight',
+  'on a cloudy day',
+  'during a storm',
+
+  // Indoor
+  'in a dimly lit room',
+  'by a window',
+  'in a studio',
+  'in a garage',
+  'in a cafe',
+  'in a library',
+
+  // Outdoor
+  'in a forest',
+  'on a beach',
+  'in the desert',
+  'on a mountain',
+  'in the city',
+  'in an alley',
+  'on a rooftop',
+  'in a park',
+
+  // Special
+  'under neon lights',
+  'in bioluminescent glow',
+  'through colored glass',
+  'in mirror reflections',
+  'underwater',
+  'in darkness',
 ] as const
 
 // ============================================================================
