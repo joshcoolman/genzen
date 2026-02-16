@@ -6,6 +6,7 @@ import {
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useDashboardRouteMemory } from "@/lib/use-dashboard-route-memory";
 
 export const Route = createFileRoute("/dashboard")({
   beforeLoad: async () => {
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardLayoutRoute() {
   const { user, loading } = useAuth();
+
+  // Remember the last visited dashboard route
+  useDashboardRouteMemory();
 
   if (loading) {
     return (

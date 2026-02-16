@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { checkConnections } from "@/lib/server/check-connections";
+import { useRestoreDashboardRoute } from "@/lib/use-dashboard-route-memory";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -24,6 +25,9 @@ function DashboardHome() {
     fal: "checking",
     trigger: "checking",
   });
+
+  // Automatically restore the last visited dashboard route
+  useRestoreDashboardRoute();
 
   useEffect(() => {
     async function runChecks() {
