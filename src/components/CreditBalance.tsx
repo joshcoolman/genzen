@@ -17,7 +17,7 @@ export function CreditBalance() {
         className="h-7 text-xs"
       >
         <a
-          href="https://fal.ai/dashboard"
+          href="https://fal.ai/dashboard/usage-billing/credits"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5"
