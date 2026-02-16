@@ -233,6 +233,3 @@ export function generatePromptComponents(
 
   return components
 }
-
-// Export both for backward compatibility
-export { generatePromptComponents }
