@@ -31,7 +31,16 @@ interface SavedAiImage {
 function AiImagesPage() {
   const { user, session } = useAuth();
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [model, setModel] = useState(() => {
+    // Load persisted model selection
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ai-image-model");
+      if (stored && IMAGE_MODELS.some((m) => m.id === stored)) {
+        return stored;
+      }
+    }
+    return DEFAULT_MODEL;
+  });
   const [loading, setLoading] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +92,13 @@ function AiImagesPage() {
   useEffect(() => {
     loadSavedImages();
   }, [loadSavedImages]);
+
+  // Persist model selection
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("ai-image-model", model);
+    }
+  }, [model]);
 
   // Generate random prompt on mount
   useEffect(() => {
@@ -246,76 +262,84 @@ function AiImagesPage() {
       <h1 className="text-2xl font-semibold">AI Images</h1>
 
       {/* Generator */}
-      <div className="bg-card rounded-lg p-6 space-y-4">
-        <h2 className="font-medium">Generate Images</h2>
+      <div className="bg-card rounded-lg p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left Column: Prompt */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label
+                  htmlFor="prompt-textarea"
+                  className="block text-sm font-medium text-muted-foreground"
+                >
+                  Prompt
+                </label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRandomPrompt}
+                  disabled={generatingPrompt || loading}
+                >
+                  {generatingPrompt ? "Generating..." : "Random Prompt"}
+                </Button>
+              </div>
+              <Textarea
+                id="prompt-textarea"
+                placeholder="Describe the image you want to generate..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={loading}
+                rows={8}
+              />
+            </div>
 
-        <div>
-          <label
-            htmlFor="model-select"
-            className="block text-sm font-medium text-muted-foreground mb-1.5"
-          >
-            Model
-          </label>
-          <select
-            id="model-select"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            disabled={loading}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {IMAGE_MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} — {m.description}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label
-              htmlFor="prompt-textarea"
-              className="block text-sm font-medium text-muted-foreground"
-            >
-              Prompt
-            </label>
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRandomPrompt}
-              disabled={generatingPrompt || loading}
+              onClick={handleGenerate}
+              disabled={!prompt.trim() || loading}
+              className="w-full"
             >
-              {generatingPrompt ? "Generating..." : "Random Prompt"}
+              {loading ? "Generating..." : "Generate"}
             </Button>
+
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            {loading && (
+              <p className="text-sm text-muted-foreground">
+                Generating image, this may take a moment...
+              </p>
+            )}
           </div>
-          <Textarea
-            id="prompt-textarea"
-            placeholder="Describe the image you want to generate..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            disabled={loading}
-            rows={3}
-          />
+
+          {/* Right Column: Model Selection */}
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-muted-foreground">
+              Model
+            </label>
+            <div className="space-y-1">
+              {IMAGE_MODELS.map((m) => (
+                <label
+                  key={m.id}
+                  className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="model"
+                    value={m.id}
+                    checked={model === m.id}
+                    onChange={(e) => setModel(e.target.value)}
+                    disabled={loading}
+                    className="h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <span className="text-xs font-medium">{m.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
-
-        <Button
-          onClick={handleGenerate}
-          disabled={!prompt.trim() || loading}
-        >
-          {loading ? "Generating..." : "Generate"}
-        </Button>
-
-        {error && (
-          <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        {loading && (
-          <p className="text-sm text-muted-foreground">
-            Generating image, this may take a moment...
-          </p>
-        )}
       </div>
 
       {/* Dismissible Preview */}
