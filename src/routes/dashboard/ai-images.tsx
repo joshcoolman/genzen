@@ -388,27 +388,15 @@ function AiImagesPage() {
                 >
                   Prompt
                 </label>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRandomPrompt}
-                    disabled={generatingPrompt || loading}
-                    title="Generate a random photography prompt"
-                  >
-                    {generatingPrompt ? 'Generating...' : 'Random'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleEnhancedPrompt}
-                    disabled={generatingPrompt || loading || !prompt.trim()}
-                    className="text-primary"
-                    title="Enhance the current prompt with AI"
-                  >
-                    ✨ Enhance
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRandomPrompt}
+                  disabled={generatingPrompt || loading}
+                  title="Generate a random photography prompt with AI"
+                >
+                  {generatingPrompt ? 'Generating...' : 'Random Prompt'}
+                </Button>
               </div>
               <Textarea
                 id="prompt-textarea"

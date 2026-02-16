@@ -11,10 +11,16 @@ import type {
   Medium,
 } from './prompt-types'
 import {
-  SUBJECTS_PEOPLE,
-  SUBJECTS_PLACES,
-  SUBJECTS_ANIMALS,
-  SUBJECTS_OBJECTS,
+  AGES,
+  GENDERS,
+  ETHNICITIES,
+  DESCRIPTORS,
+  PROFESSIONS,
+  BODY_TYPES,
+  RELATIONSHIPS,
+  ANIMAL_TYPES,
+  OBJECT_TYPES,
+  PLACE_TYPES,
   ACTIONS,
   ENVIRONMENTS,
   CAMERA_LENSES,
@@ -179,73 +185,54 @@ function assemblePrompt(parts: PromptParts): string {
 // ============================================================================
 
 /**
- * Generate a photography prompt using template system
- * Format: [subject] [action] [environment], [lens], [film], [framing] --ar [ratio]
+ * Generate modular components for Claude to assemble
+ * Returns raw components that will be sent to Claude for natural language assembly
  */
-export function generatePrompt(
+export function generatePromptComponents(
   options: PromptGenerationOptions = {},
-): GeneratedPrompt {
+): PromptComponents {
   const { forceAspectRatio } = options
 
-  // 1. Pick subject (people, places, animals, or objects)
-  const subject = generateSubject()
+  // Decide subject type
+  const subjectTypes = ['person', 'couple', 'animal', 'object', 'place'] as const
+  const subjectType = pick(subjectTypes)
 
-  // 2. Pick action (optional - 70% chance to include)
-  const action = chance(0.7) ? pick(ACTIONS) : ''
-
-  // 3. Pick environment (optional - 60% chance to include)
-  const environment = chance(0.6) ? pick(ENVIRONMENTS) : ''
-
-  // 4. Pick camera technical specs (3-4 items)
-  const lens = pick(CAMERA_LENSES)
-  const film = pick(FILM_STOCKS)
-  const framing = chance(0.7) ? pick(CAMERA_FRAMING) : '' // Optional framing
-
-  // 5. Pick aspect ratio
-  const aspectRatio = forceAspectRatio || pickWeighted(ASPECT_RATIOS)
-
-  // 6. Assemble prompt in natural order
-  const parts = [subject]
-  if (action) parts.push(action)
-  if (environment) parts.push(environment)
-
-  const subjectPart = parts.join(' ')
-  const technical = [lens, film, framing].filter(Boolean)
-
-  const prompt = `${subjectPart}, ${technical.join(', ')} --ar ${aspectRatio}`
-
-  // 7. Build parts object (simplified for photography)
-  const promptParts: PromptParts = {
-    subject,
-    action,
-    medium: { text: 'Photography', type: 'photography' },
-    atmosphere: environment || '',
-    technical,
-    aspectRatio,
+  const components: PromptComponents = {
+    subjectType,
+    lens: pick(CAMERA_LENSES),
+    film: pick(FILM_STOCKS),
+    framing: chance(0.7) ? pick(CAMERA_FRAMING) : undefined,
+    aspectRatio: forceAspectRatio || pickWeighted(ASPECT_RATIOS),
+    action: chance(0.7) ? pick(ACTIONS) : undefined,
+    environment: chance(0.6) ? pick(ENVIRONMENTS) : undefined,
   }
 
-  // 8. Build metadata
-  const metadata = {
-    mediumType: 'photography' as const,
-    hasChaosMode: false,
-    hasWildcard: false,
-    aspectRatio,
-    technicalCount: technical.length,
+  // Pick subject-specific components
+  if (subjectType === 'person') {
+    components.age = chance(0.8) ? pick(AGES) : undefined
+    components.gender = pick(GENDERS)
+    components.ethnicity = chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.descriptor = chance(0.6) ? pick(DESCRIPTORS) : undefined
+    components.profession = chance(0.8) ? pick(PROFESSIONS) : undefined
+    components.bodyType = chance(0.3) ? pick(BODY_TYPES) : undefined
+  } else if (subjectType === 'couple') {
+    components.relationship = pick(RELATIONSHIPS)
+    components.age = chance(0.6) ? pick(AGES) : undefined
+    components.ethnicity = chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
+  } else if (subjectType === 'animal') {
+    components.animalType = pick(ANIMAL_TYPES)
+    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
+  } else if (subjectType === 'object') {
+    components.objectType = pick(OBJECT_TYPES)
+    components.descriptor = chance(0.4) ? pick(DESCRIPTORS) : undefined
+  } else if (subjectType === 'place') {
+    components.placeType = pick(PLACE_TYPES)
+    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
   }
 
-  return {
-    prompt,
-    parts: promptParts,
-    metadata,
-  }
+  return components
 }
 
-/**
- * Generate multiple prompts at once
- */
-export function generatePrompts(
-  count: number,
-  options: PromptGenerationOptions = {},
-): GeneratedPrompt[] {
-  return Array.from({ length: count }, () => generatePrompt(options))
-}
+// Export both for backward compatibility
+export { generatePromptComponents }

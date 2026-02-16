@@ -40,10 +40,30 @@ export interface GeneratedPrompt {
 }
 
 export interface PromptGenerationOptions {
-  wildcardChance?: number // 0-1, default 0.15
-  chaosModeChance?: number // 0-1, default 0.10
-  disableWildcards?: boolean
-  disableChaosMode?: boolean
-  forceMediumType?: MediumType
   forceAspectRatio?: string
+}
+
+export interface PromptComponents {
+  subjectType: 'person' | 'couple' | 'group' | 'animal' | 'object' | 'place'
+  // Person components (if applicable)
+  age?: string
+  gender?: string
+  ethnicity?: string
+  descriptor?: string
+  profession?: string
+  bodyType?: string
+  // Relationship (if couple/group)
+  relationship?: string
+  // Non-person subjects
+  animalType?: string
+  objectType?: string
+  placeType?: string
+  // Context
+  action?: string
+  environment?: string
+  // Technical
+  lens: string
+  film: string
+  framing?: string
+  aspectRatio: string
 }
