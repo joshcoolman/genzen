@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GenZen Architecture Explorer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; min-width: 280px; background: #161822; border-right: 1px solid #2d3148; display: flex; flex-direction: column; overflow-y: auto; }
+  .sidebar h1 { font-size: 15px; padding: 16px 16px 4px; color: #94a3b8; font-weight: 600; letter-spacing: 0.03em; }
+  .sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; padding: 16px 16px 8px; font-weight: 600; }
+
+  /* Flow selector */
+  .flow-buttons { padding: 0 12px; display: flex; flex-direction: column; gap: 4px; }
+  .flow-btn { background: #1e2035; border: 1px solid #2d3148; color: #94a3b8; padding: 10px 12px; border-radius: 6px; cursor: pointer; text-align: left; font-size: 13px; transition: all 0.15s; }
+  .flow-btn:hover { border-color: #4a5180; color: #e2e8f0; }
+  .flow-btn.active { border-color: #6366f1; color: #e2e8f0; background: #1e1e3a; }
+  .flow-btn .flow-label { font-weight: 600; display: block; }
+  .flow-btn .flow-desc { font-size: 11px; color: #64748b; margin-top: 2px; display: block; }
+  .flow-btn.active .flow-desc { color: #818cf8; }
+
+  /* Layer toggles */
+  .layer-toggles { padding: 0 16px; display: flex; flex-direction: column; gap: 6px; }
+  .layer-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #94a3b8; }
+  .layer-toggle input { display: none; }
+  .layer-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; transition: all 0.15s; }
+  .layer-toggle input:checked ~ .layer-dot { background: currentColor; }
+  .layer-toggle:hover { color: #e2e8f0; }
+
+  /* Detail panel */
+  .detail-panel { margin: 12px; background: #1e2035; border: 1px solid #2d3148; border-radius: 8px; padding: 12px; font-size: 12px; line-height: 1.6; flex-shrink: 0; }
+  .detail-panel h3 { font-size: 13px; margin-bottom: 6px; }
+  .detail-panel .detail-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; margin-right: 4px; margin-bottom: 3px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .detail-panel .detail-section { margin-top: 8px; }
+  .detail-panel .detail-section strong { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px; }
+  .detail-panel code { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; background: #0f1117; padding: 1px 4px; border-radius: 3px; }
+
+  /* Main canvas */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+  svg { width: 100%; height: 100%; }
+
+  /* Animated particles */
+  .particle { fill: currentColor; opacity: 0; }
+  .particle.active { animation: flowParticle var(--duration, 3s) linear infinite; }
+  @keyframes flowParticle { 0% { opacity: 0; } 5% { opacity: 0.9; } 90% { opacity: 0.9; } 100% { opacity: 0; } }
+
+  /* Node styles */
+  .node-group { cursor: pointer; transition: transform 0.15s; }
+  .node-group:hover .node-rect { filter: brightness(1.2); stroke-width: 2; }
+  .node-group.highlighted .node-rect { stroke-width: 2.5; filter: brightness(1.3); }
+  .node-group.dimmed { opacity: 0.15; }
+  .node-rect { rx: 8; ry: 8; transition: all 0.2s; }
+  .node-title { font-size: 12px; font-weight: 600; fill: #e2e8f0; pointer-events: none; }
+  .node-subtitle { font-size: 9.5px; fill: #94a3b8; pointer-events: none; font-family: 'SF Mono', monospace; }
+  .node-icon { font-size: 18px; pointer-events: none; }
+
+  /* Connection styles */
+  .connection { fill: none; stroke-width: 1.5; transition: opacity 0.3s; }
+  .connection.dimmed { opacity: 0.06; }
+  .connection.highlighted { stroke-width: 2.5; opacity: 1; }
+  .conn-label { font-size: 9px; fill: #64748b; pointer-events: none; font-family: 'SF Mono', monospace; }
+  .conn-label.highlighted { fill: #e2e8f0; font-weight: 600; }
+
+  /* Prompt bar */
+  .prompt-bar { background: #161822; border-top: 1px solid #2d3148; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .prompt-text { flex: 1; font-size: 12px; color: #94a3b8; font-family: 'SF Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .copy-btn { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .copy-btn:hover { background: #818cf8; }
+
+  /* Legend */
+  .legend { position: absolute; bottom: 12px; left: 12px; background: #161822ee; border: 1px solid #2d3148; border-radius: 8px; padding: 10px 14px; font-size: 10px; display: flex; gap: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; color: #64748b; }
+  .legend-line { width: 20px; height: 2px; }
+  .legend-dash { width: 20px; height: 0; border-top: 2px dashed; }
+
+  /* Step indicator */
+  .step-indicator { position: absolute; top: 12px; right: 12px; background: #161822ee; border: 1px solid #2d3148; border-radius: 8px; padding: 10px 14px; font-size: 11px; max-width: 320px; }
+  .step-indicator .step-title { font-weight: 600; color: #e2e8f0; margin-bottom: 6px; }
+  .step-list { list-style: none; }
+  .step-list li { padding: 3px 0; color: #64748b; display: flex; align-items: flex-start; gap: 6px; }
+  .step-list li.active-step { color: #e2e8f0; }
+  .step-num { display: inline-flex; width: 16px; height: 16px; border-radius: 50%; background: #2d3148; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; }
+  .step-list li.active-step .step-num { background: #6366f1; color: white; }
+
+  /* Pulse animation for active nodes */
+  .pulse-ring { opacity: 0; }
+  .pulse-ring.active { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.08); } }
+
+  /* Scrollbar */
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>GenZen Architecture</h1>
+  <h2>Flow View</h2>
+  <div class="flow-buttons">
+    <button class="flow-btn active" data-flow="generation" onclick="setFlow('generation')">
+      <span class="flow-label">AI Image Generation</span>
+      <span class="flow-desc">Prompt to pixels via FAL queue</span>
+    </button>
+    <button class="flow-btn" data-flow="upload" onclick="setFlow('upload')">
+      <span class="flow-label">Image Upload</span>
+      <span class="flow-desc">File to storage with palette extraction</span>
+    </button>
+    <button class="flow-btn" data-flow="auth" onclick="setFlow('auth')">
+      <span class="flow-label">Authentication</span>
+      <span class="flow-desc">Login, sessions, RLS enforcement</span>
+    </button>
+    <button class="flow-btn" data-flow="overview" onclick="setFlow('overview')">
+      <span class="flow-label">Full System</span>
+      <span class="flow-desc">All connections at a glance</span>
+    </button>
+  </div>
+
+  <h2>Layers</h2>
+  <div class="layer-toggles" id="layerToggles"></div>
+
+  <h2>Selected Component</h2>
+  <div class="detail-panel" id="detailPanel">
+    <div style="color:#64748b;">Click any node to inspect</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="canvas-wrap">
+    <svg id="canvas" viewBox="0 0 900 580"></svg>
+    <div class="legend" id="legend"></div>
+    <div class="step-indicator" id="stepIndicator"></div>
+  </div>
+  <div class="prompt-bar">
+    <div class="prompt-text" id="promptText">Select a flow to explore the GenZen architecture.</div>
+    <button class="copy-btn" onclick="copyPrompt()">Copy</button>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────
+
+const LAYERS = {
+  client:    { label: 'Client (React)', color: '#22c55e' },
+  server:    { label: 'Server Functions', color: '#a78bfa' },
+  supabase:  { label: 'Supabase', color: '#3b82f6' },
+  fal:       { label: 'FAL.ai', color: '#c084fc' },
+  anthropic: { label: 'Anthropic Claude', color: '#f97316' },
+};
+
+const NODES = [
+  // Client layer (y ~60-100)
+  { id: 'dashboard',    label: 'Dashboard',        subtitle: 'routes/dashboard/ai-images.tsx', layer: 'client',    x: 120, y: 55,  w: 150, h: 48, icon: 'grid' },
+  { id: 'auth-ctx',     label: 'AuthProvider',      subtitle: 'components/auth-provider.tsx',   layer: 'client',    x: 370, y: 55,  w: 150, h: 48, icon: 'shield' },
+  { id: 'realtime',     label: 'Realtime Sub',      subtitle: 'Supabase channel listener',      layer: 'client',    x: 620, y: 55,  w: 150, h: 48, icon: 'zap' },
+  { id: 'login-page',   label: 'Login Page',        subtitle: 'routes/login.tsx',               layer: 'client',    x: 370, y: 120, w: 150, h: 48, icon: 'key' },
+
+  // Server layer (y ~200-250)
+  { id: 'gen-image',    label: 'generateImage',     subtitle: 'server/generate-image.server.ts', layer: 'server',   x: 80,  y: 210, w: 165, h: 48, icon: 'fn' },
+  { id: 'check-pending',label: 'checkPending',      subtitle: 'server/check-pending-images.server.ts', layer: 'server', x: 290, y: 210, w: 165, h: 48, icon: 'fn' },
+  { id: 'gen-prompt',   label: 'generatePrompt',    subtitle: 'server/generate-prompt.server.ts', layer: 'server',  x: 530, y: 210, w: 165, h: 48, icon: 'fn' },
+  { id: 'require-auth', label: 'requireAuth',       subtitle: 'lib/server/auth.server.ts',      layer: 'server',   x: 730, y: 210, w: 145, h: 48, icon: 'lock' },
+
+  // Supabase layer (y ~330-400)
+  { id: 'sb-auth',      label: 'Supabase Auth',     subtitle: 'Email/password + JWT tokens',    layer: 'supabase',  x: 80,  y: 340, w: 155, h: 48, icon: 'users' },
+  { id: 'sb-db',        label: 'Database',           subtitle: 'user_images + user_preferences', layer: 'supabase',  x: 290, y: 340, w: 155, h: 48, icon: 'db' },
+  { id: 'sb-storage',   label: 'Storage',            subtitle: 'user-images bucket',             layer: 'supabase',  x: 500, y: 340, w: 155, h: 48, icon: 'box' },
+  { id: 'sb-realtime',  label: 'Realtime',           subtitle: 'Channel: user_images changes',   layer: 'supabase',  x: 690, y: 340, w: 155, h: 48, icon: 'radio' },
+  { id: 'rls',          label: 'RLS Policies',       subtitle: 'user_id = auth.uid()',           layer: 'supabase',  x: 290, y: 410, w: 155, h: 42, icon: 'lock' },
+
+  // External: FAL (y ~480)
+  { id: 'fal-queue',    label: 'FAL Queue',          subtitle: 'fal.queue.submit / status / result', layer: 'fal',  x: 80,  y: 490, w: 165, h: 48, icon: 'layers' },
+  { id: 'fal-models',   label: 'FAL Models',         subtitle: '14 models: FLUX, Kling, Recraft...', layer: 'fal',  x: 310, y: 490, w: 165, h: 48, icon: 'cpu' },
+  { id: 'fal-cdn',      label: 'FAL CDN',            subtitle: 'Temporary image hosting',        layer: 'fal',      x: 530, y: 490, w: 145, h: 48, icon: 'cloud' },
+
+  // External: Anthropic (y ~480)
+  { id: 'claude',       label: 'Claude Haiku',       subtitle: 'claude-haiku-4-5-20251001',     layer: 'anthropic', x: 720, y: 490, w: 155, h: 48, icon: 'sparkle' },
+];
+
+const CONNECTIONS = [
+  // Generation flow
+  { from: 'dashboard',    to: 'gen-image',     type: 'data',  label: 'prompt + models',     flows: ['generation','overview'] },
+  { from: 'dashboard',    to: 'gen-prompt',    type: 'data',  label: 'request prompt',      flows: ['generation','overview'] },
+  { from: 'gen-image',    to: 'require-auth',  type: 'call',  label: 'accessToken',         flows: ['generation','overview'] },
+  { from: 'gen-image',    to: 'fal-queue',     type: 'data',  label: 'submit(model,prompt)',flows: ['generation','overview'] },
+  { from: 'fal-queue',    to: 'fal-models',    type: 'call',  label: 'inference',           flows: ['generation','overview'] },
+  { from: 'fal-models',   to: 'fal-cdn',       type: 'data',  label: 'output image',        flows: ['generation','overview'] },
+  { from: 'gen-image',    to: 'sb-db',         type: 'data',  label: 'INSERT pending',      flows: ['generation','overview'] },
+  { from: 'sb-db',        to: 'sb-realtime',   type: 'event', label: 'INSERT event',        flows: ['generation','overview'] },
+  { from: 'sb-realtime',  to: 'realtime',      type: 'event', label: 'push update',         flows: ['generation','overview'] },
+  { from: 'check-pending',to: 'fal-queue',     type: 'data',  label: 'poll status(reqId)',  flows: ['generation','overview'] },
+  { from: 'fal-cdn',      to: 'check-pending', type: 'data',  label: 'download image',      flows: ['generation','overview'] },
+  { from: 'check-pending',to: 'sb-storage',    type: 'data',  label: 'upload bytes',        flows: ['generation','overview'] },
+  { from: 'check-pending',to: 'sb-db',         type: 'data',  label: 'UPDATE completed',    flows: ['generation','overview'] },
+  { from: 'gen-prompt',   to: 'claude',        type: 'call',  label: 'assemble prompt',     flows: ['generation','overview'] },
+  { from: 'gen-prompt',   to: 'require-auth',  type: 'call',  label: 'accessToken',         flows: ['generation','overview'] },
+
+  // Upload flow
+  { from: 'dashboard',    to: 'sb-storage',    type: 'data',  label: 'upload file',          flows: ['upload','overview'] },
+  { from: 'dashboard',    to: 'sb-db',         type: 'data',  label: 'INSERT completed',     flows: ['upload','overview'] },
+  { from: 'sb-db',        to: 'sb-realtime',   type: 'event', label: 'INSERT event',         flows: ['upload','overview'] },
+  { from: 'sb-realtime',  to: 'realtime',      type: 'event', label: 'push update',          flows: ['upload','overview'] },
+
+  // Auth flow
+  { from: 'login-page',   to: 'sb-auth',       type: 'data',  label: 'email + password',     flows: ['auth','overview'] },
+  { from: 'sb-auth',      to: 'auth-ctx',      type: 'data',  label: 'session + token',      flows: ['auth','overview'] },
+  { from: 'auth-ctx',     to: 'gen-image',     type: 'call',  label: 'accessToken',          flows: ['auth','overview'] },
+  { from: 'require-auth', to: 'sb-auth',       type: 'call',  label: 'getUser(token)',        flows: ['auth','overview'] },
+  { from: 'sb-auth',      to: 'rls',           type: 'call',  label: 'auth.uid()',            flows: ['auth','overview'] },
+  { from: 'rls',          to: 'sb-db',         type: 'call',  label: 'enforce policy',        flows: ['auth','overview'] },
+];
+
+const CONN_STYLES = {
+  data:  { color: '#3b82f6', dash: '',      label: 'Data Flow' },
+  call:  { color: '#22c55e', dash: '6,3',   label: 'Function Call' },
+  event: { color: '#f97316', dash: '4,4',   label: 'Async Event' },
+};
+
+const FLOW_STEPS = {
+  generation: [
+    'User submits prompt + selected models',
+    'Optional: Claude Haiku generates/enhances prompt',
+    'Server validates auth via requireAuth()',
+    'Submit to FAL queue (returns request_id)',
+    'Create "pending" record in Supabase DB',
+    'Realtime subscription pushes INSERT to client',
+    'Background polling (3s) checks FAL status',
+    'When complete: download from FAL CDN',
+    'Compute SHA-256, upload to Supabase Storage',
+    'Update record to "completed" in DB',
+    'Realtime UPDATE triggers UI refresh',
+  ],
+  upload: [
+    'User selects file from device',
+    'Upload to Supabase Storage bucket',
+    'Insert record (source: upload, status: completed)',
+    'Generate color palette from image',
+    'Store palette in JSONB column',
+    'Create signed URL (3600s expiry)',
+    'Display in image grid',
+  ],
+  auth: [
+    'User enters email + password on login page',
+    'signIn() calls Supabase Auth',
+    'Supabase returns session + access_token',
+    'AuthProvider stores session in React state',
+    'Protected routes check useAuth()',
+    'Server functions receive accessToken in payload',
+    'requireAuth() validates token with Supabase',
+    'RLS enforces user_id = auth.uid() on all queries',
+  ],
+  overview: [],
+};
+
+const NODE_DETAILS = {
+  dashboard: {
+    title: 'Dashboard', tags: ['React', 'TanStack Router'],
+    desc: 'Main UI for browsing and generating images. Hosts the image grid, prompt input, model selector (14 models with checkboxes), and pending image cards.',
+    data: ['user_images[]', 'generation_metadata', 'color_palette'],
+    security: 'Protected route - redirects to /login if no session',
+  },
+  'auth-ctx': {
+    title: 'AuthProvider', tags: ['React Context', 'Supabase Auth'],
+    desc: 'Wraps app, manages auth state via onAuthStateChange listener. Provides useAuth() hook with signIn, signUp, signOut, user, session.',
+    data: ['User', 'Session', 'access_token'],
+    security: 'Session stored in React state, not localStorage',
+  },
+  realtime: {
+    title: 'Realtime Subscription', tags: ['Supabase Realtime', 'WebSocket'],
+    desc: 'Subscribes to user_images table changes. Receives INSERT (new pending images) and UPDATE (status changes) events for instant UI updates.',
+    data: ['INSERT payload', 'UPDATE payload'],
+    security: 'Channel filtered to authenticated user',
+  },
+  'login-page': {
+    title: 'Login Page', tags: ['Route', '/login'],
+    desc: 'Email/password login form. Calls signIn(email, password) from AuthProvider. Redirects to /dashboard on success.',
+    data: ['email', 'password'],
+    security: 'Credentials sent over HTTPS to Supabase Auth',
+  },
+  'gen-image': {
+    title: 'generateImage()', tags: ['Server Function', 'createServerFn'],
+    desc: 'Validates auth, submits prompt to FAL queue for selected model, creates "pending" record in Supabase. Returns immediately with request_id.',
+    data: ['prompt', 'model', 'request_id', 'record.id'],
+    security: 'requireAuth() validates accessToken before any operation',
+  },
+  'check-pending': {
+    title: 'checkPendingImages()', tags: ['Server Function', 'Polling'],
+    desc: 'Called every 3 seconds. Checks FAL queue status for pending images. On completion: downloads image, computes SHA-256, uploads to Storage, updates DB.',
+    data: ['request_id', 'image bytes', 'file_hash', 'seed', 'timings'],
+    security: 'Runs server-side with service role key',
+  },
+  'gen-prompt': {
+    title: 'generatePrompt()', tags: ['Server Function', 'Claude API'],
+    desc: 'Generates creative photography prompts via Claude Haiku. Uses modular component assembly: picks random subject, ethnicity, camera lens, film type. Also handles prompt enhancement.',
+    data: ['components[]', 'assembled prompt', 'token costs'],
+    security: 'ANTHROPIC_API_KEY server-side only',
+  },
+  'require-auth': {
+    title: 'requireAuth()', tags: ['Auth Guard', 'Server'],
+    desc: 'Validates access_token by calling supabase.auth.getUser(token). Returns user object or throws 401. Used by all server functions.',
+    data: ['accessToken', 'User { id, email }'],
+    security: 'Token validated on every server function call',
+  },
+  'sb-auth': {
+    title: 'Supabase Auth', tags: ['Auth', 'JWT'],
+    desc: 'Email/password authentication. Issues JWT access tokens. Provides auth.uid() function used by RLS policies for row-level isolation.',
+    data: ['Session', 'access_token', 'refresh_token'],
+    security: 'JWT signed by Supabase, validates server-side',
+  },
+  'sb-db': {
+    title: 'PostgreSQL Database', tags: ['Supabase DB', 'RLS'],
+    desc: 'Tables: user_images (images + AI generations), user_preferences. All tables have RLS enabled. Indexes on user_id, status, request_id, and full-text search.',
+    data: ['user_images { id, title, status, storage_path, generation_metadata, color_palette }', 'user_preferences { key, value }'],
+    security: 'RLS: every query filtered by user_id = auth.uid()',
+  },
+  'sb-storage': {
+    title: 'Supabase Storage', tags: ['S3-compatible', 'Signed URLs'],
+    desc: 'Bucket: user-images. Path: {user_id}/{timestamp}_{uuid}_{filename}. Generates signed URLs (3600s expiry) for secure access.',
+    data: ['image bytes', 'storage_path', 'signed URL'],
+    security: 'Signed URLs expire after 1 hour. Path includes user_id.',
+  },
+  'sb-realtime': {
+    title: 'Supabase Realtime', tags: ['WebSocket', 'postgres_changes'],
+    desc: 'Broadcasts INSERT and UPDATE events on user_images table. Client subscribes to channel filtered by user_id. Enables instant UI updates.',
+    data: ['INSERT event', 'UPDATE event', 'payload diff'],
+    security: 'Channel auth via access_token, filtered by user',
+  },
+  rls: {
+    title: 'Row-Level Security', tags: ['PostgreSQL', 'Policy'],
+    desc: 'Policies on all tables enforce user_id = auth.uid() for SELECT, INSERT, UPDATE, DELETE. Users cannot see or modify other users\' data.',
+    data: ['auth.uid()', 'user_id column'],
+    security: 'Enforced at database level. Cannot be bypassed from client.',
+  },
+  'fal-queue': {
+    title: 'FAL Queue API', tags: ['Async', 'Queue'],
+    desc: 'Async job queue. submit() returns request_id immediately. status() checks progress. result() fetches output. Enables non-blocking generation.',
+    data: ['request_id', 'status (PENDING/COMPLETED)', 'result { images, seed, timings }'],
+    security: 'FAL_KEY (API key) server-side only',
+  },
+  'fal-models': {
+    title: 'FAL Models (14)', tags: ['FLUX', 'Kling', 'Recraft', 'SD3.5'],
+    desc: 'FLUX (5): schnell, dev, 2-flex, kontext, krea-lora. Kling (2): v3, o3. Specialized (5): nano-banana, recraft, grok-imagine, imagineart, bria-fibo. Other (2): qwen, sd3.5.',
+    data: ['prompt', 'output image', 'seed', 'timings'],
+    security: 'Inference runs on FAL infrastructure',
+  },
+  'fal-cdn': {
+    title: 'FAL CDN', tags: ['Temporary', 'Image Host'],
+    desc: 'Temporary hosting for generated images. URLs are ephemeral. GenZen downloads immediately and re-uploads to Supabase Storage for permanence.',
+    data: ['image URL', 'image bytes (PNG)'],
+    security: 'Temporary URLs. Images moved to Supabase Storage.',
+  },
+  claude: {
+    title: 'Claude Haiku 4.5', tags: ['Anthropic', 'Prompt Caching'],
+    desc: 'Fast, cheap model for prompt generation. Uses prompt caching (system prompt cached) for cost efficiency. Assembles random components into vivid photography prompts.',
+    data: ['components[]', 'assembled prompt', 'input/output tokens', 'cache stats'],
+    security: 'ANTHROPIC_API_KEY server-side only. Prompt caching reduces costs.',
+  },
+};
+
+// ─── STATE ────────────────────────────────────────────────
+
+const state = {
+  flow: 'generation',
+  layers: { client: true, server: true, supabase: true, fal: true, anthropic: true },
+  selectedNode: null,
+  activeStep: 0,
+  animating: true,
+};
+
+let stepTimer = null;
+
+// ─── ICONS (simple SVG paths) ─────────────────────────────
+
+function iconPath(type) {
+  const icons = {
+    grid:    'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+    shield:  'M12 2L3 7v5c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z',
+    zap:     'M13 2L3 14h6l-1 8 10-12h-6l1-8z',
+    key:     'M12 2C9.24 2 7 4.24 7 7c0 1.85 1 3.44 2.5 4.32V20h5v-8.68C16 10.44 17 8.85 17 7c0-2.76-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z',
+    fn:      'M4 4h6v4H4zM14 4h6v4h-6zM4 12h6v4H4zM14 12h6v4h-6z',
+    lock:    'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3-9H9V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2z',
+    users:   'M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z',
+    db:      'M12 2C6.48 2 2 4.02 2 6.5v11C2 19.98 6.48 22 12 22s10-2.02 10-4.5v-11C22 4.02 17.52 2 12 2z',
+    box:     'M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5z',
+    radio:   'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z',
+    layers:  'M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z',
+    cpu:     'M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7c-1.1 0-2 .9-2 2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2z',
+    cloud:   'M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z',
+    sparkle: 'M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z',
+  };
+  return icons[type] || icons.grid;
+}
+
+// ─── RENDER ───────────────────────────────────────────────
+
+function render() {
+  renderLayers();
+  renderCanvas();
+  renderSteps();
+  renderDetail();
+  updatePrompt();
+}
+
+function renderLayers() {
+  const el = document.getElementById('layerToggles');
+  el.innerHTML = Object.entries(LAYERS).map(([id, l]) => `
+    <label class="layer-toggle" style="color:${l.color}">
+      <input type="checkbox" ${state.layers[id] ? 'checked' : ''} onchange="toggleLayer('${id}', this.checked)">
+      <span class="layer-dot" style="border-color:${l.color}"></span>
+      ${l.label}
+    </label>
+  `).join('');
+}
+
+function renderCanvas() {
+  const svg = document.getElementById('canvas');
+  const flowConns = CONNECTIONS.filter(c => c.flows.includes(state.flow));
+  const activeNodeIds = new Set();
+  flowConns.forEach(c => { activeNodeIds.add(c.from); activeNodeIds.add(c.to); });
+
+  // Markers
+  let html = '<defs>';
+  Object.entries(CONN_STYLES).forEach(([type, s]) => {
+    html += `<marker id="arrow-${type}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="${s.color}"/>
+    </marker>`;
+  });
+  html += '</defs>';
+
+  // Layer bands
+  const bands = [
+    { y: 30, h: 150, label: 'CLIENT', layer: 'client' },
+    { y: 190, h: 80,  label: 'SERVER', layer: 'server' },
+    { y: 310, h: 160, label: 'SUPABASE', layer: 'supabase' },
+    { y: 470, h: 80,  label: 'EXTERNAL', layer: 'fal' },
+  ];
+  bands.forEach(b => {
+    const layerColor = b.layer === 'fal' ? '#c084fc' : LAYERS[b.layer]?.color || '#64748b';
+    html += `<rect x="0" y="${b.y}" width="900" height="${b.h}" fill="${layerColor}" opacity="0.03" rx="0"/>`;
+    html += `<text x="12" y="${b.y + 14}" fill="${layerColor}" opacity="0.25" font-size="9" font-weight="700" letter-spacing="0.1em">${b.label}</text>`;
+  });
+
+  // Connections
+  flowConns.forEach(c => {
+    const from = NODES.find(n => n.id === c.from);
+    const to = NODES.find(n => n.id === c.to);
+    if (!from || !to) return;
+    if (!state.layers[from.layer] || !state.layers[to.layer]) return;
+
+    const style = CONN_STYLES[c.type];
+    const x1 = from.x + from.w/2, y1 = from.y + from.h/2;
+    const x2 = to.x + to.w/2, y2 = to.y + to.h/2;
+
+    // Bezier control points
+    const dy = y2 - y1;
+    const dx = x2 - x1;
+    const cx1 = x1 + dx * 0.1, cy1 = y1 + dy * 0.5;
+    const cx2 = x2 - dx * 0.1, cy2 = y2 - dy * 0.5;
+
+    const isHighlighted = state.selectedNode && (c.from === state.selectedNode || c.to === state.selectedNode);
+    const isDimmed = state.selectedNode && !isHighlighted;
+
+    const pathId = `path-${c.from}-${c.to}`;
+    html += `<path id="${pathId}" class="connection ${isHighlighted ? 'highlighted' : ''} ${isDimmed ? 'dimmed' : ''}"
+      d="M${x1},${y1} C${cx1},${cy1} ${cx2},${cy2} ${x2},${y2}"
+      stroke="${style.color}" stroke-dasharray="${style.dash}"
+      marker-end="url(#arrow-${c.type})" opacity="${isDimmed ? 0.06 : 0.5}"
+      data-from="${c.from}" data-to="${c.to}"/>`;
+
+    // Label
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    if (c.label && !isDimmed) {
+      html += `<text class="conn-label ${isHighlighted ? 'highlighted' : ''}" x="${mx}" y="${my - 6}" text-anchor="middle">${c.label}</text>`;
+    }
+
+    // Animated particle
+    if (state.animating && !isDimmed) {
+      const delay = Math.random() * 2;
+      html += `<circle r="3" fill="${style.color}" opacity="0">
+        <animateMotion dur="3s" repeatCount="indefinite" begin="${delay}s">
+          <mpath href="#${pathId}"/>
+        </animateMotion>
+        <animate attributeName="opacity" values="0;0.8;0.8;0" dur="3s" repeatCount="indefinite" begin="${delay}s"/>
+      </circle>`;
+    }
+  });
+
+  // Nodes
+  NODES.forEach(n => {
+    if (!state.layers[n.layer]) return;
+    const color = LAYERS[n.layer].color;
+    const isInFlow = state.flow === 'overview' || activeNodeIds.has(n.id);
+    const isSelected = state.selectedNode === n.id;
+    const isDimmed = state.flow !== 'overview' && !isInFlow;
+
+    html += `<g class="node-group ${isSelected ? 'highlighted' : ''} ${isDimmed ? 'dimmed' : ''}"
+      onclick="selectNode('${n.id}')" data-id="${n.id}">`;
+
+    // Pulse ring for selected
+    if (isSelected) {
+      html += `<rect class="pulse-ring active" x="${n.x-3}" y="${n.y-3}" width="${n.w+6}" height="${n.h+6}" rx="10" fill="none" stroke="${color}" stroke-width="2"/>`;
+    }
+
+    // Background
+    html += `<rect class="node-rect" x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}"
+      fill="${color}10" stroke="${color}" stroke-width="${isSelected ? 2.5 : 1}" opacity="${isDimmed ? 0.3 : 1}"/>`;
+
+    // Icon
+    const iconScale = 0.55;
+    html += `<g transform="translate(${n.x + 8}, ${n.y + n.h/2 - 7}) scale(${iconScale})">
+      <path d="${iconPath(n.icon)}" fill="${color}" opacity="0.7"/>
+    </g>`;
+
+    // Text
+    html += `<text class="node-title" x="${n.x + 24}" y="${n.y + 19}">${n.label}</text>`;
+    html += `<text class="node-subtitle" x="${n.x + 24}" y="${n.y + 33}">${n.subtitle.length > 28 ? n.subtitle.slice(0,26)+'...' : n.subtitle}</text>`;
+
+    html += '</g>';
+  });
+
+  svg.innerHTML = html;
+
+  // Legend
+  const legend = document.getElementById('legend');
+  legend.innerHTML = Object.entries(CONN_STYLES).map(([type, s]) =>
+    `<div class="legend-item">
+      <div class="${s.dash ? 'legend-dash' : 'legend-line'}" style="border-color:${s.color};background:${s.dash ? 'none' : s.color}"></div>
+      ${s.label}
+    </div>`
+  ).join('');
+}
+
+function renderSteps() {
+  const el = document.getElementById('stepIndicator');
+  const steps = FLOW_STEPS[state.flow];
+  if (!steps || steps.length === 0) {
+    el.innerHTML = '<div class="step-title">All Connections</div><div style="color:#64748b;font-size:11px;">Every service relationship shown. Select a specific flow to see the step-by-step sequence.</div>';
+    return;
+  }
+
+  const flowNames = { generation: 'AI Generation Flow', upload: 'Upload Flow', auth: 'Auth Flow' };
+  el.innerHTML = `
+    <div class="step-title">${flowNames[state.flow] || 'Flow'}</div>
+    <ol class="step-list">
+      ${steps.map((s, i) => `<li class="${i === state.activeStep ? 'active-step' : ''}"><span class="step-num">${i+1}</span>${s}</li>`).join('')}
+    </ol>
+  `;
+}
+
+function renderDetail() {
+  const el = document.getElementById('detailPanel');
+  if (!state.selectedNode) {
+    el.innerHTML = '<div style="color:#64748b;">Click any node to inspect</div>';
+    return;
+  }
+
+  const d = NODE_DETAILS[state.selectedNode];
+  if (!d) { el.innerHTML = '<div style="color:#64748b;">No details available</div>'; return; }
+
+  const node = NODES.find(n => n.id === state.selectedNode);
+  const color = LAYERS[node.layer].color;
+
+  el.innerHTML = `
+    <h3 style="color:${color}">${d.title}</h3>
+    <div>${d.tags.map(t => `<span class="detail-tag" style="background:${color}20;color:${color}">${t}</span>`).join('')}</div>
+    <div class="detail-section" style="color:#c8d0df;">${d.desc}</div>
+    <div class="detail-section"><strong>Data Shapes</strong>${d.data.map(x => `<div><code>${x}</code></div>`).join('')}</div>
+    <div class="detail-section"><strong>Security</strong><div style="color:#fbbf24;">${d.security}</div></div>
+  `;
+}
+
+function updatePrompt() {
+  const el = document.getElementById('promptText');
+  const parts = [];
+
+  const flowDescs = {
+    generation: 'the AI image generation flow (prompt submission through FAL queue to completed image)',
+    upload: 'the image upload flow (file selection through storage to grid display)',
+    auth: 'the authentication flow (login through session management to RLS enforcement)',
+    overview: 'the full system architecture with all service connections',
+  };
+
+  parts.push(`Exploring ${flowDescs[state.flow]}.`);
+
+  const hidden = Object.entries(state.layers).filter(([,v]) => !v).map(([k]) => LAYERS[k].label);
+  if (hidden.length) parts.push(`Hidden layers: ${hidden.join(', ')}.`);
+
+  if (state.selectedNode) {
+    const d = NODE_DETAILS[state.selectedNode];
+    if (d) parts.push(`Inspecting ${d.title}: ${d.desc.split('.')[0]}.`);
+  }
+
+  el.textContent = parts.join(' ');
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────
+
+function setFlow(flow) {
+  state.flow = flow;
+  state.activeStep = 0;
+  state.selectedNode = null;
+  document.querySelectorAll('.flow-btn').forEach(b => b.classList.toggle('active', b.dataset.flow === flow));
+  startStepAnimation();
+  render();
+}
+
+function toggleLayer(id, checked) {
+  state.layers[id] = checked;
+  render();
+}
+
+function selectNode(id) {
+  state.selectedNode = state.selectedNode === id ? null : id;
+  render();
+}
+
+function startStepAnimation() {
+  clearInterval(stepTimer);
+  const steps = FLOW_STEPS[state.flow];
+  if (!steps || steps.length === 0) return;
+  stepTimer = setInterval(() => {
+    state.activeStep = (state.activeStep + 1) % steps.length;
+    renderSteps();
+  }, 2500);
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+render();
+startStepAnimation();
+</script>
+</body>
+</html>
