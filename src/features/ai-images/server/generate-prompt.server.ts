@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireAuth } from '@/lib/server/auth.server'
 import { generatePromptComponents } from '../lib/prompt-generator'
+import type { PromptTheme } from '../lib/prompt-types'
 import Anthropic from '@anthropic-ai/sdk'
 
 const anthropic = new Anthropic({
@@ -9,6 +10,7 @@ const anthropic = new Anthropic({
 
 interface GeneratePromptInput {
   accessToken: string
+  theme?: PromptTheme
 }
 
 const ASSEMBLY_PROMPT = `You are a photography prompt assembler. I'll give you modular components, and you create a natural, vivid photography prompt.
@@ -47,7 +49,7 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
 
     try {
       // 1. Generate random components
-      const components = generatePromptComponents()
+      const components = generatePromptComponents({ theme: data.theme })
 
       // 2. Build component description for Claude
       const parts = [`${components.subjectType}`]
@@ -87,13 +89,17 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
       const componentString = `Components: ${parts.join(', ')}`
 
       // 3. Send to Claude for assembly
+      const fantasyPrefix =
+        data.theme === 'fantasy-scifi'
+          ? 'Create a vivid fantasy or sci-fi themed prompt. Lean into genre imagery -- magic, technology, alien worlds, mythical creatures.\n\n'
+          : ''
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
         system: [
           {
             type: 'text',
-            text: ASSEMBLY_PROMPT,
+            text: fantasyPrefix + ASSEMBLY_PROMPT,
             cache_control: { type: 'ephemeral' },
           },
         ],

@@ -3,13 +3,7 @@
  * Implements sophisticated template-based generation with commitment logic
  */
 
-import type {
-  GeneratedPrompt,
-  PromptGenerationOptions,
-  PromptParts,
-  MediumType,
-  Medium,
-} from './prompt-types'
+import type { PromptGenerationOptions, PromptComponents } from './prompt-types'
 import {
   AGES,
   GENDERS,
@@ -27,6 +21,13 @@ import {
   CAMERA_FRAMING,
   FILM_STOCKS,
   ASPECT_RATIOS,
+  FANTASY_PROFESSIONS,
+  FANTASY_DESCRIPTORS,
+  FANTASY_ANIMAL_TYPES,
+  FANTASY_OBJECT_TYPES,
+  FANTASY_PLACE_TYPES,
+  FANTASY_ENVIRONMENTS,
+  FANTASY_ACTIONS,
 } from './prompt-keywords'
 
 // ============================================================================
@@ -66,121 +67,6 @@ function chance(probability: number): boolean {
 }
 
 // ============================================================================
-// SUBJECT GENERATION (Photography-focused)
-// ============================================================================
-
-/**
- * Generate a subject - equal distribution across people, places, animals, objects
- */
-function generateSubject(): string {
-  const pools = [
-    SUBJECTS_PEOPLE,
-    SUBJECTS_PLACES,
-    SUBJECTS_ANIMALS,
-    SUBJECTS_OBJECTS,
-  ] as const
-
-  const selectedPool = pick(pools)
-  return pick(selectedPool)
-}
-
-// ============================================================================
-// TECHNICAL DETAILS GENERATION (Commitment Logic)
-// ============================================================================
-
-/**
- * Generate technical details based on medium type
- * COMMITMENT LOGIC: Never mix camera specs with art techniques with 3D render settings
- */
-function generateTechnicalDetails(mediumType: MediumType): string[] {
-  const technical: string[] = []
-
-  if (mediumType === 'photography') {
-    // MUST include: lens + film stock
-    technical.push(pick(CAMERA_LENSES))
-    technical.push(pick(FILM_STOCKS))
-
-    // Optional: framing (50% chance)
-    if (chance(0.5)) {
-      technical.push(pick(CAMERA_FRAMING))
-    }
-
-    // MUST NOT include: art techniques, render engines
-  } else if (mediumType === 'art') {
-    // MUST include: art technique
-    technical.push(pick(ART_TECHNIQUES))
-
-    // Optional: additional technique (30% chance)
-    if (chance(0.3)) {
-      const secondTechnique = pick(
-        ART_TECHNIQUES.filter((t) => t !== technical[0]),
-      )
-      technical.push(secondTechnique)
-    }
-
-    // Optional: framing (40% chance)
-    if (chance(0.4)) {
-      technical.push(pick(CAMERA_FRAMING))
-    }
-
-    // MUST NOT include: camera lenses, film stocks, render engines
-  } else if (mediumType === '3d') {
-    // MUST include: render engine technique
-    technical.push(pick(RENDER_ENGINES))
-
-    // Optional: additional render technique (50% chance)
-    if (chance(0.5)) {
-      const secondTechnique = pick(
-        RENDER_ENGINES.filter((t) => t !== technical[0]),
-      )
-      technical.push(secondTechnique)
-    }
-
-    // Optional: framing (40% chance)
-    if (chance(0.4)) {
-      technical.push(pick(CAMERA_FRAMING))
-    }
-
-    // MUST NOT include: camera lenses, film stocks, art techniques
-  }
-
-  return technical
-}
-
-// ============================================================================
-// PROMPT ASSEMBLY
-// ============================================================================
-
-/**
- * Assemble final prompt string from parts
- * Format: {subject} {action}, {medium}, {atmosphere}, {technical}, [wildcard] --ar {aspectRatio}
- */
-function assemblePrompt(parts: PromptParts): string {
-  const segments: string[] = []
-
-  // Subject + action (front-loaded for importance)
-  segments.push(`${parts.subject} ${parts.action}`)
-
-  // Medium
-  segments.push(parts.medium.text)
-
-  // Atmosphere
-  segments.push(parts.atmosphere)
-
-  // Technical details
-  segments.push(...parts.technical)
-
-  // Optional wildcard
-  if (parts.wildcard) {
-    segments.push(parts.wildcard)
-  }
-
-  // Join with commas and add aspect ratio flag
-  const prompt = segments.join(', ')
-  return `${prompt} --ar ${parts.aspectRatio}`
-}
-
-// ============================================================================
 // MAIN GENERATION FUNCTION
 // ============================================================================
 
@@ -191,11 +77,44 @@ function assemblePrompt(parts: PromptParts): string {
 export function generatePromptComponents(
   options: PromptGenerationOptions = {},
 ): PromptComponents {
-  const { forceAspectRatio } = options
+  const { forceAspectRatio, theme = 'general' } = options
+  const isFantasy = theme === 'fantasy-scifi'
 
-  // Decide subject type
-  const subjectTypes = ['person', 'couple', 'animal', 'object', 'place'] as const
-  const subjectType = pick(subjectTypes)
+  // Pick pools based on theme
+  const professions = isFantasy ? FANTASY_PROFESSIONS : PROFESSIONS
+  const descriptors = isFantasy ? FANTASY_DESCRIPTORS : DESCRIPTORS
+  const animalTypes = isFantasy ? FANTASY_ANIMAL_TYPES : ANIMAL_TYPES
+  const objectTypes = isFantasy ? FANTASY_OBJECT_TYPES : OBJECT_TYPES
+  const placeTypes = isFantasy ? FANTASY_PLACE_TYPES : PLACE_TYPES
+  const environments = isFantasy ? FANTASY_ENVIRONMENTS : ENVIRONMENTS
+  const actions = isFantasy ? FANTASY_ACTIONS : ACTIONS
+
+  // Decide subject type -- fantasy shifts weight from couples to person/animal/place
+  const subjectWeights = isFantasy
+    ? [
+        { type: 'person' as const, weight: 40 },
+        { type: 'couple' as const, weight: 5 },
+        { type: 'place' as const, weight: 25 },
+        { type: 'animal' as const, weight: 20 },
+        { type: 'object' as const, weight: 10 },
+      ]
+    : [
+        { type: 'person' as const, weight: 35 },
+        { type: 'couple' as const, weight: 20 },
+        { type: 'place' as const, weight: 25 },
+        { type: 'animal' as const, weight: 12 },
+        { type: 'object' as const, weight: 8 },
+      ]
+  const totalWeight = subjectWeights.reduce((sum, s) => sum + s.weight, 0)
+  let random = Math.random() * totalWeight
+  let subjectType: (typeof subjectWeights)[number]['type'] = 'person'
+  for (const entry of subjectWeights) {
+    random -= entry.weight
+    if (random <= 0) {
+      subjectType = entry.type
+      break
+    }
+  }
 
   const components: PromptComponents = {
     subjectType,
@@ -203,32 +122,33 @@ export function generatePromptComponents(
     film: pick(FILM_STOCKS),
     framing: chance(0.7) ? pick(CAMERA_FRAMING) : undefined,
     aspectRatio: forceAspectRatio || pickWeighted(ASPECT_RATIOS),
-    action: chance(0.7) ? pick(ACTIONS) : undefined,
-    environment: chance(0.6) ? pick(ENVIRONMENTS) : undefined,
+    action: chance(0.7) ? pick(actions) : undefined,
+    environment: chance(0.6) ? pick(environments) : undefined,
+    theme: isFantasy ? 'fantasy-scifi' : undefined,
   }
 
   // Pick subject-specific components
   if (subjectType === 'person') {
     components.age = chance(0.8) ? pick(AGES) : undefined
     components.gender = pick(GENDERS)
-    components.ethnicity = chance(0.7) ? pick(ETHNICITIES) : undefined
-    components.descriptor = chance(0.6) ? pick(DESCRIPTORS) : undefined
-    components.profession = chance(0.8) ? pick(PROFESSIONS) : undefined
+    components.ethnicity = !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.descriptor = chance(0.6) ? pick(descriptors) : undefined
+    components.profession = chance(0.8) ? pick(professions) : undefined
     components.bodyType = chance(0.3) ? pick(BODY_TYPES) : undefined
   } else if (subjectType === 'couple') {
     components.relationship = pick(RELATIONSHIPS)
     components.age = chance(0.6) ? pick(AGES) : undefined
-    components.ethnicity = chance(0.7) ? pick(ETHNICITIES) : undefined
-    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
+    components.ethnicity = !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.descriptor = chance(0.5) ? pick(descriptors) : undefined
   } else if (subjectType === 'animal') {
-    components.animalType = pick(ANIMAL_TYPES)
-    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
+    components.animalType = pick(animalTypes)
+    components.descriptor = chance(0.5) ? pick(descriptors) : undefined
   } else if (subjectType === 'object') {
-    components.objectType = pick(OBJECT_TYPES)
-    components.descriptor = chance(0.4) ? pick(DESCRIPTORS) : undefined
+    components.objectType = pick(objectTypes)
+    components.descriptor = chance(0.4) ? pick(descriptors) : undefined
   } else if (subjectType === 'place') {
-    components.placeType = pick(PLACE_TYPES)
-    components.descriptor = chance(0.5) ? pick(DESCRIPTORS) : undefined
+    components.placeType = pick(placeTypes)
+    components.descriptor = chance(0.5) ? pick(descriptors) : undefined
   }
 
   return components

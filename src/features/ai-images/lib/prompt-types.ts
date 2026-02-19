@@ -2,6 +2,8 @@
  * Type definitions for the AI prompt generator
  */
 
+export type PromptTheme = 'general' | 'fantasy-scifi'
+
 export type MediumType = 'photography' | 'art' | '3d'
 
 export interface Medium {
@@ -41,6 +43,7 @@ export interface GeneratedPrompt {
 
 export interface PromptGenerationOptions {
   forceAspectRatio?: string
+  theme?: PromptTheme
 }
 
 export interface PromptComponents {
@@ -66,4 +69,6 @@ export interface PromptComponents {
   film: string
   framing?: string
   aspectRatio: string
+  // Theme
+  theme?: PromptTheme
 }

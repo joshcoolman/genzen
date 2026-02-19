@@ -6,6 +6,7 @@ import { Settings } from 'lucide-react'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
+import type { PromptTheme } from '@/features/ai-images/lib/prompt-types'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import {
   ALL_IMAGE_MODELS,
@@ -64,6 +65,13 @@ function AiImagesPage() {
   const [loading, setLoading] = useState(false)
   const [generatingPrompt, setGeneratingPrompt] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [theme, setTheme] = useState<PromptTheme>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('ai-image-theme')
+      if (stored === 'fantasy-scifi') return 'fantasy-scifi'
+    }
+    return 'general'
+  })
 
   // Model visibility settings
   const [visibleModelIds, setVisibleModelIds] = useState<string[]>(() => {
@@ -247,6 +255,13 @@ function AiImagesPage() {
     }
   }, [visibleModelIds])
 
+  // Persist theme selection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ai-image-theme', theme)
+    }
+  }, [theme])
+
   // Auto-update selected models if any become invisible
   useEffect(() => {
     const validSelections = selectedModels.filter((id) =>
@@ -272,7 +287,7 @@ function AiImagesPage() {
       let finalPrompt = prompt.trim()
       if (!finalPrompt) {
         const data = await generatePromptServer({
-          data: { accessToken: session.access_token },
+          data: { accessToken: session.access_token, theme },
         })
         finalPrompt = data.prompt
         // Don't set it in the input - keep it a surprise!
@@ -349,7 +364,7 @@ function AiImagesPage() {
 
     try {
       const data = await generatePromptServer({
-        data: { accessToken: session.access_token },
+        data: { accessToken: session.access_token, theme },
       })
       setPrompt(data.prompt)
     } catch (err) {
@@ -419,6 +434,32 @@ function AiImagesPage() {
                 >
                   {generatingPrompt ? 'Generating...' : 'Random Prompt'}
                 </Button>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="prompt-theme"
+                    value="general"
+                    checked={theme === 'general'}
+                    onChange={() => setTheme('general')}
+                    disabled={loading}
+                    className="h-3.5 w-3.5 cursor-pointer"
+                  />
+                  <span className="text-muted-foreground">General</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="prompt-theme"
+                    value="fantasy-scifi"
+                    checked={theme === 'fantasy-scifi'}
+                    onChange={() => setTheme('fantasy-scifi')}
+                    disabled={loading}
+                    className="h-3.5 w-3.5 cursor-pointer"
+                  />
+                  <span className="text-muted-foreground">Fantasy / Sci-Fi</span>
+                </label>
               </div>
               <Textarea
                 id="prompt-textarea"
