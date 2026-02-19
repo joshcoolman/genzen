@@ -7,6 +7,7 @@ import { generateImage } from '@/features/ai-images/server/generate-image.server
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
 import type { PromptTheme } from '@/features/ai-images/lib/prompt-types'
+import { generateVariation } from '@/features/ai-images/server/generate-variation.server'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import {
   ALL_IMAGE_MODELS,
@@ -332,6 +333,25 @@ function AiImagesPage() {
       if (ALL_IMAGE_MODELS.some((m) => m.id === selectedModel)) {
         setVisibleModelIds((prev) => [...prev, selectedModel])
       }
+    }
+  }
+
+  async function handleMoreLikeThis(img: SavedAiImage) {
+    if (!session?.access_token || !imageUrls[img.id] || !img.generation_metadata?.prompt) return
+
+    setError(null)
+
+    try {
+      await generateVariation({
+        data: {
+          accessToken: session.access_token,
+          sourceImageUrl: imageUrls[img.id],
+          prompt: img.generation_metadata.prompt,
+          sourceImageId: img.id,
+        },
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate variations')
     }
   }
 
@@ -666,6 +686,12 @@ function AiImagesPage() {
                         className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
                       >
                         P+M
+                      </button>
+                      <button
+                        onClick={() => handleMoreLikeThis(img)}
+                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                      >
+                        More
                       </button>
                     </div>
                   </div>
