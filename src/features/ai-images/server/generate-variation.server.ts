@@ -50,6 +50,13 @@ export const generateVariation = createServerFn({ method: 'POST' })
       },
     )
 
+    // Fetch the source image's created_at so variations sort next to it
+    const { data: sourceImage } = await supabase
+      .from('user_images')
+      .select('created_at')
+      .eq('id', sourceImageId)
+      .single()
+
     const model = 'fal-ai/flux/dev/image-to-image'
     const results: { recordId: string; request_id: string }[] = []
 
@@ -62,6 +69,11 @@ export const generateVariation = createServerFn({ method: 'POST' })
         },
       })
 
+      // Offset created_at by 1-2 seconds after source so variations sort right next to it
+      const variationTimestamp = sourceImage?.created_at
+        ? new Date(new Date(sourceImage.created_at).getTime() + (i + 1) * 1000).toISOString()
+        : undefined
+
       const { data: record, error: insertError } = await supabase
         .from('user_images')
         .insert({
@@ -70,6 +82,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
           status: 'pending',
           source: 'ai_generated',
           title: 'Generating variation...',
+          ...(variationTimestamp && { created_at: variationTimestamp }),
           generation_metadata: {
             prompt,
             model,
