@@ -337,7 +337,8 @@ function AiImagesPage() {
   }
 
   async function handleMoreLikeThis(img: SavedAiImage) {
-    if (!session?.access_token || !imageUrls[img.id] || !img.generation_metadata?.prompt) return
+    if (!session?.access_token || !img.generation_metadata?.prompt || !img.generation_metadata?.model)
+      return
 
     setError(null)
 
@@ -345,8 +346,8 @@ function AiImagesPage() {
       await generateVariation({
         data: {
           accessToken: session.access_token,
-          sourceImageUrl: imageUrls[img.id],
           prompt: img.generation_metadata.prompt,
+          model: img.generation_metadata.model,
           sourceImageId: img.id,
         },
       })
