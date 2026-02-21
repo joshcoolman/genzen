@@ -51,44 +51,44 @@
   --radius: 0.5rem;
 
   /* Core dark palette */
-  --background: #1e1e1e;
-  --foreground: #c8c8c8;
-  --card: #303030;
-  --card-foreground: #c8c8c8;
-  --popover: #303030;
-  --popover-foreground: #c8c8c8;
-  --primary: #c8c8c8;
-  --primary-foreground: #1e1e1e;
-  --secondary: #414141;
-  --secondary-foreground: #c8c8c8;
-  --muted: #414141;
-  --muted-foreground: #8a8a8a;
-  --accent: #414141;
-  --accent-foreground: #c8c8c8;
+  --background: #141414;
+  --foreground: #d4d4d4;
+  --card: #1e1e1e;
+  --card-foreground: #d4d4d4;
+  --popover: #1e1e1e;
+  --popover-foreground: #d4d4d4;
+  --primary: #d4d4d4;
+  --primary-foreground: #141414;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #d4d4d4;
+  --muted: #2a2a2a;
+  --muted-foreground: #737373;
+  --accent: #2a2a2a;
+  --accent-foreground: #d4d4d4;
   --destructive: #ef4444;
-  --border: #414141;
-  --input: #414141;
-  --ring: #c9a75c;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #4ade80;
 
   /* Custom accent colors */
-  --accent-gold: #c9a75c;
-  --accent-gold-hover: #d4b76a;
+  --accent-gold: #4ade80;
+  --accent-gold-hover: #5eead4;
   --accent-sage: #8fa888;
   --accent-sage-hover: #9fb898;
 
   /* Sidebar specific */
-  --sidebar: #303030;
-  --sidebar-foreground: #c8c8c8;
-  --sidebar-primary: #c9a75c;
-  --sidebar-primary-foreground: #1e1e1e;
-  --sidebar-accent: #3a3a3a;
-  --sidebar-accent-foreground: #c8c8c8;
-  --sidebar-border: #414141;
-  --sidebar-ring: #c9a75c;
-  --sidebar-hover: #3a3a3a;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #d4d4d4;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: #141414;
+  --sidebar-accent: #252525;
+  --sidebar-accent-foreground: #d4d4d4;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #4ade80;
+  --sidebar-hover: #252525;
 
   /* Chart colors */
-  --chart-1: #c9a75c;
+  --chart-1: #4ade80;
   --chart-2: #8fa888;
   --chart-3: #6b8e9f;
   --chart-4: #9b8aa8;
@@ -101,6 +101,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
   }
   h1,
   h2,
