@@ -1,3 +1,10 @@
+## Session Memory
+
+At the start of every session, read `memory/progress.md` for current branch, recent work, and backlog.
+At the end of every session (or after completing significant work), update `memory/progress.md` — move finished items to "committed", add new backlog items, note any key decisions made.
+
+---
+
 ## Stack
 
 TanStack Start (React 19 + Vite + Nitro SSR), Supabase (auth/postgres/realtime), Trigger.dev v3, FAL AI (image gen), Tailwind v4, shadcn/ui (new-york style), Fly.io deploy

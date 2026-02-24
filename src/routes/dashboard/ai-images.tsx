@@ -169,8 +169,23 @@ function AiImagesPage() {
           if (payload.eventType === 'INSERT') {
             const newImage = payload.new as SavedAiImage
             setSavedImages((prev) => {
-              // Prevent duplicates (real record may already replace an optimistic card)
+              // Prevent duplicates
               if (prev.some((img) => img.id === newImage.id)) return prev
+              // If this is a variation, replace an optimistic placeholder instead of adding a new card
+              const metadata = newImage.generation_metadata as (SavedAiImage['generation_metadata'] & { generation_type?: string; source_image_id?: string }) | null
+              if (metadata?.generation_type === 'variation' && metadata?.source_image_id) {
+                const sourceId = metadata.source_image_id
+                const optimisticIdx = prev.findIndex((img) =>
+                  img.id.startsWith(`optimistic-${sourceId}-`),
+                )
+                if (optimisticIdx !== -1) {
+                  const updated = [...prev]
+                  updated[optimisticIdx] = newImage
+                  return updated.sort(
+                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                  )
+                }
+              }
               // Insert at correct sorted position (DESC by created_at)
               return [...prev, newImage].sort(
                 (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -376,8 +391,12 @@ function AiImagesPage() {
       })
 
       // Replace optimistic placeholders with real pending records
+      // Also filter out real IDs already inserted by Realtime to avoid duplicates
       setSavedImages((prev) => {
-        const withoutOptimistic = prev.filter((i) => !optimisticIds.includes(i.id))
+        const realIds = results.map((r) => r.recordId)
+        const filtered = prev.filter(
+          (i) => !optimisticIds.includes(i.id) && !realIds.includes(i.id),
+        )
         const realCards: SavedAiImage[] = results.map((r, i) => ({
           id: r.recordId,
           title: 'Generating variation...',
@@ -390,7 +409,7 @@ function AiImagesPage() {
             model: img.generation_metadata!.model,
           },
         }))
-        return [...withoutOptimistic, ...realCards].sort(
+        return [...filtered, ...realCards].sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         )
       })
