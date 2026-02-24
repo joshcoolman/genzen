@@ -1,12 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
-import { requireAuth } from '@/lib/server/auth.server'
+import { generateText } from 'ai'
 import { generatePromptComponents } from '../lib/prompt-generator'
 import type { PromptTheme } from '../lib/prompt-types'
-import Anthropic from '@anthropic-ai/sdk'
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+import { ai } from '@/lib/server/ai.server'
+import { requireAuth } from '@/lib/server/auth.server'
 
 interface GeneratePromptInput {
   accessToken: string
@@ -42,10 +39,6 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
   .inputValidator((data: GeneratePromptInput) => data)
   .handler(async ({ data }) => {
     await requireAuth(data.accessToken)
-
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is not set')
-    }
 
     try {
       // 1. Generate random components
@@ -93,47 +86,29 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
         data.theme === 'fantasy-scifi'
           ? 'Create a vivid fantasy or sci-fi themed prompt. Lean into genre imagery -- magic, technology, alien worlds, mythical creatures.\n\n'
           : ''
-      const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 200,
-        system: [
-          {
-            type: 'text',
-            text: fantasyPrefix + ASSEMBLY_PROMPT,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
-        messages: [
-          {
-            role: 'user',
-            content: componentString,
-          },
-        ],
+
+      const response = await generateText({
+        model: ai.haiku,
+        maxOutputTokens: 200,
+        system: fantasyPrefix + ASSEMBLY_PROMPT,
+        messages: [{ role: 'user', content: componentString }],
       })
 
-      const textContent = response.content.find((c) => c.type === 'text')
-      if (!textContent || textContent.type !== 'text') {
-        throw new Error('No text content in response')
-      }
+      const prompt = response.text.trim()
 
-      const prompt = textContent.text.trim()
-
-      // Calculate cost
       const usage = response.usage
       const estimatedCost =
-        ((usage.input_tokens - (usage.cache_read_input_tokens ?? 0)) * 0.25 +
-          (usage.cache_read_input_tokens ?? 0) * 0.025 +
-          usage.output_tokens * 1.25) /
+        ((usage.inputTokens ?? 0) * 0.25 + (usage.outputTokens ?? 0) * 1.25) /
         1_000_000
 
       return {
         prompt,
-        components, // Return components for debugging
+        components,
         metadata: {
           cost: estimatedCost,
-          inputTokens: usage.input_tokens,
-          outputTokens: usage.output_tokens,
-          cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+          cacheReadTokens: 0,
         },
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'

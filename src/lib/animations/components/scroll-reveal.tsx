@@ -5,10 +5,12 @@
  * Accepts custom variants for flexible animations
  */
 
-import { motion, Variants, Transition } from 'framer-motion'
-import { ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import { useScrollReveal } from '../hooks/use-scroll-reveal'
-import { transitions, TransitionPreset } from '../config/transitions'
+import { transitions } from '../config/transitions'
+import type { Transition, Variants } from 'framer-motion'
+import type { ReactNode } from 'react'
+import type { TransitionPreset } from '../config/transitions'
 
 export interface ScrollRevealProps {
   children: ReactNode

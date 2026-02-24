@@ -1,3 +1,4 @@
+import type { ImageModel, ModelCategory } from '@/features/ai-images/models'
 import {
   Dialog,
   DialogContent,
@@ -5,17 +6,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  ALL_IMAGE_MODELS,
-  type ModelCategory,
-  type ImageModel,
-} from '@/features/ai-images/models'
+import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 
 interface ModelSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  visibleModels: string[]
-  onSaveVisibleModels: (modelIds: string[]) => void
+  visibleModels: Array<string>
+  onSaveVisibleModels: (modelIds: Array<string>) => void
 }
 
 export function ModelSettingsDialog({
@@ -36,7 +33,7 @@ export function ModelSettingsDialog({
   }
 
   // Group models by category
-  const modelsByCategory: Record<ModelCategory, ImageModel[]> = {
+  const modelsByCategory: Record<ModelCategory, Array<ImageModel>> = {
     FLUX: [],
     Kling: [],
     Specialized: [],
@@ -60,7 +57,9 @@ export function ModelSettingsDialog({
 
         <div className="space-y-4 py-2">
           {(
-            Object.entries(modelsByCategory) as [ModelCategory, ImageModel[]][]
+            Object.entries(modelsByCategory) as Array<
+              [ModelCategory, Array<ImageModel>]
+            >
           ).map(([category, models]) => (
             <div key={category} className="space-y-1">
               <h3 className="text-xs font-semibold text-muted-foreground px-1 mb-1">

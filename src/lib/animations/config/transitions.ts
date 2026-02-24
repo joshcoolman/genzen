@@ -3,8 +3,8 @@
  * Presets for common animation transition types
  */
 
-import { Transition } from 'framer-motion'
 import { DURATION, EASING } from './constants'
+import type { Transition } from 'framer-motion'
 
 export const transitions = {
   smooth: {

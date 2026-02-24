@@ -6,9 +6,9 @@
  */
 
 import { motion } from 'framer-motion'
-import { ReactNode } from 'react'
 import { useScrollReveal } from '../hooks/use-scroll-reveal'
 import { fadeIn } from '../config/variants'
+import type { ReactNode } from 'react'
 
 export interface FadeInProps {
   children: ReactNode

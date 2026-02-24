@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { DocsSidebar } from '@/features/docs/components/DocsSidebar'
 import { getDocNavCategories } from '@/lib/docs/loadDocs.server'
 

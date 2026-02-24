@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
@@ -40,12 +40,12 @@ function LoginPage() {
     setError(null)
     setSubmitting(true)
 
-    const { error } = await signIn(email, password)
+    const { error: signInError } = await signIn(email, password)
 
     setSubmitting(false)
 
-    if (error) {
-      setError(error.message)
+    if (signInError) {
+      setError(signInError.message)
     } else {
       navigate({ to: '/dashboard' })
     }

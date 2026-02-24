@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 export type Json =
   | string
   | number
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[]
+  | Array<Json>
 
 export type Database = {
   graphql_public: {
@@ -215,15 +216,15 @@ export type Database = {
     Functions: {
       get_duplicate_images: {
         Args: { p_user_id: string }
-        Returns: {
+        Returns: Array<{
           file_hash: string
           image_count: number
-          image_ids: string[]
+          image_ids: Array<string>
           total_size: number
-        }[]
+        }>
       }
       show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { '': string }; Returns: string[] }
+      show_trgm: { Args: { '': string }; Returns: Array<string> }
     }
     Enums: {
       [_ in never]: never

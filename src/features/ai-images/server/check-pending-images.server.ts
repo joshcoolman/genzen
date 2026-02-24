@@ -1,14 +1,14 @@
+import crypto from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
-import { requireAuth } from '@/lib/server/auth.server'
 import { createClient } from '@supabase/supabase-js'
-import crypto from 'node:crypto'
+import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 interface CheckPendingImagesInput {
   accessToken: string
-  recordIds: string[]
+  recordIds: Array<string>
 }
 
 interface CheckResult {
@@ -49,11 +49,11 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
       throw new Error(`Failed to fetch pending records: ${queryError.message}`)
     }
 
-    if (!pendingRecords || pendingRecords.length === 0) {
+    if (pendingRecords.length === 0) {
       return []
     }
 
-    const results: CheckResult[] = []
+    const results: Array<CheckResult> = []
 
     for (const record of pendingRecords) {
       const { request_id, generation_metadata } = record
@@ -145,22 +145,9 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
           }
 
           results.push({ recordId: record.id, status: 'completed' })
-        } else if (
-          status.status === 'IN_PROGRESS' ||
-          status.status === 'IN_QUEUE'
-        ) {
-          results.push({ recordId: record.id, status: 'pending' })
         } else {
-          // Failed or unknown status
-          await supabase
-            .from('user_images')
-            .update({
-              status: 'failed',
-              generation_error: `FAL generation failed with status: ${status.status}`,
-            })
-            .eq('id', record.id)
-
-          results.push({ recordId: record.id, status: 'failed' })
+          // IN_PROGRESS or IN_QUEUE — still pending
+          results.push({ recordId: record.id, status: 'pending' })
         }
       } catch (error) {
         console.error(`Error checking request ${request_id}:`, error)

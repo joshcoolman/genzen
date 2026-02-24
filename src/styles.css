@@ -101,7 +101,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Geist',
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
   h1,
   h2,

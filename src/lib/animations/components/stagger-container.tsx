@@ -6,9 +6,9 @@
  */
 
 import { motion } from 'framer-motion'
-import { ReactNode } from 'react'
 import { useScrollReveal } from '../hooks/use-scroll-reveal'
 import { useStaggerChildren } from '../hooks/use-stagger-children'
+import type { ReactNode } from 'react'
 
 export interface StaggerContainerProps {
   children: ReactNode

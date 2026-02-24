@@ -5,13 +5,13 @@
  */
 
 import { useState } from 'react'
-import { useAuth } from '@/lib/auth'
+import { useUserImages } from '../hooks/useUserImages'
 import { ImageUploadButton } from './ImageUploadButton'
-import { ImageGrid, EmptyState } from './ImageGrid'
+import { EmptyState, ImageGrid } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
-import { useUserImages } from '../hooks/useUserImages'
 import type { CreateUserImageInput } from '../types'
+import { useAuth } from '@/lib/auth'
 
 /**
  * User images display component

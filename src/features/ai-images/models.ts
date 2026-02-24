@@ -8,7 +8,7 @@ export interface ImageModel {
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
-export const ALL_IMAGE_MODELS: ImageModel[] = [
+export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   // FLUX Family - verified models only
   {
     id: 'fal-ai/flux/schnell',
@@ -119,6 +119,6 @@ export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
 /**
  * Get visible models by their IDs
  */
-export function getVisibleModels(ids: string[]): ImageModel[] {
+export function getVisibleModels(ids: Array<string>): Array<ImageModel> {
   return ALL_IMAGE_MODELS.filter((model) => ids.includes(model.id))
 }

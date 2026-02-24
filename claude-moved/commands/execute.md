@@ -23,16 +23,19 @@ Read plan file: `$ARGUMENTS`
 For EACH task in "Step by Step Tasks":
 
 #### a. Navigate to the task
+
 - Identify the file and action required
 - Read existing related files if modifying
 
 #### b. Implement the task
+
 - Follow the detailed specifications exactly
 - Maintain consistency with existing code patterns
 - Include proper type hints and documentation
 - Add structured logging where appropriate
 
 #### c. Verify as you go
+
 - After each file change, check syntax
 - Ensure imports are correct
 - Verify types are properly defined
@@ -55,6 +58,7 @@ Execute ALL validation commands from the plan in order:
 ```
 
 If any command fails:
+
 - Fix the issue
 - Re-run the command
 - Continue only when it passes
@@ -74,21 +78,25 @@ Before completing:
 Provide summary:
 
 ### Completed Tasks
+
 - List of all tasks completed
 - Files created (with paths)
 - Files modified (with paths)
 
 ### Tests Added
+
 - Test files created
 - Test cases implemented
 - Test results
 
 ### Validation Results
+
 ```bash
 # Output from each validation command
 ```
 
 ### Ready for Commit
+
 - Confirm all changes are complete
 - Confirm all validations pass
 - Ready for `/commit` command

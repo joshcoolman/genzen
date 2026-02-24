@@ -1,11 +1,11 @@
-import type { TocHeading } from './types'
 import { slugify } from './slugify'
+import type { TocHeading } from './types'
 
 /**
  * Extract H2 headings from raw markdown for table of contents.
  */
-export function extractHeadings(markdown: string): TocHeading[] {
-  const headings: TocHeading[] = []
+export function extractHeadings(markdown: string): Array<TocHeading> {
+  const headings: Array<TocHeading> = []
   const lines = markdown.split('\n')
 
   for (const line of lines) {

@@ -3,6 +3,7 @@
 ## Current Phase: Learning & Experimentation
 
 GenZen is currently a **learning project** focused on building AI-powered applications. The primary goal is hands-on experience with:
+
 - AI image generation (FAL AI)
 - Async workflows (Trigger.dev)
 - Real-time updates (Supabase Realtime)
@@ -15,6 +16,7 @@ All services use **personal API keys** and there is **no monetization active**.
 ## Future Vision: Compelling, Monetizable Product
 
 ### Goal
+
 Transform GenZen into a **compelling AI image generation platform** that users would pay for.
 
 ### Monetization Model: Usage-Based Credits
@@ -22,6 +24,7 @@ Transform GenZen into a **compelling AI image generation platform** that users w
 **Inspired by:** FAL AI's top-up credit system, OpenAI's API credits, Replicate's pay-per-use
 
 **Pricing Structure (Future):**
+
 ```
 Free Tier:
 - 50 generations/month
@@ -58,12 +61,14 @@ Enterprise:
 ## Building Blocks for Monetization
 
 ### Already In Place
+
 - ✅ User authentication (Supabase Auth)
 - ✅ Per-user image tracking (user_images table)
 - ✅ Generation metadata (prompt, model, timestamps)
 - ✅ Async processing (can handle scale)
 
 ### Need to Add (Future)
+
 - [ ] Usage tracking per user (generations count, cost tracking)
 - [ ] Credit system (balance, transactions, top-ups)
 - [ ] Stripe integration (payment processing)
@@ -77,12 +82,14 @@ Enterprise:
 ## Cost Consciousness
 
 ### Current Costs (Personal Use)
+
 - **FAL AI:** ~$0.003-0.004 per image (Flux Schnell)
 - **Anthropic (if added):** ~$0.0005 per enhanced prompt (with caching)
 - **Supabase:** Free tier (adequate for now)
 - **Trigger.dev:** Free tier (adequate for now)
 
 ### Target Economics (Future Monetization)
+
 - Sell credits at 2-3x cost (industry standard markup)
 - Example: $0.01/generation = $0.003 FAL cost + $0.007 margin
 - Free tier: Subsidize 50 generations/month (~$0.15-0.20 cost)
@@ -110,12 +117,14 @@ Enterprise:
 ## Roadmap Phases
 
 ### Phase 1: Foundation (Current)
+
 - Build core features
 - Learn AI app patterns
 - Optimize UX
 - Track usage/costs informally
 
 ### Phase 2: Premium Features
+
 - AI-enhanced prompts (Claude)
 - Image upscaling
 - More models
@@ -123,6 +132,7 @@ Enterprise:
 - Usage analytics dashboard
 
 ### Phase 3: Monetization Prep
+
 - Implement credit system
 - Add usage tracking
 - Build pricing tiers
@@ -130,12 +140,14 @@ Enterprise:
 - Terms of service, privacy policy
 
 ### Phase 4: Launch
+
 - Beta testing with credits
 - Marketing
 - Community building
 - Iterate based on feedback
 
 ### Phase 5: Scale
+
 - API access
 - Advanced features (video, batch)
 - Enterprise tier

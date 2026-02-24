@@ -27,7 +27,7 @@ export function parseFileName(fileName: string): ParsedFileName {
   }
 }
 
-export function sortFileNames(fileNames: string[]): string[] {
+export function sortFileNames(fileNames: Array<string>): Array<string> {
   return [...fileNames].sort((a, b) => {
     const pa = parseFileName(a)
     const pb = parseFileName(b)

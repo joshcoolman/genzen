@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { requireAuth } from '@/lib/server/auth.server'
 import { FALCreditProvider } from './fal-provider.server'
 import type { CreditBalance } from './types'
+import { requireAuth } from '@/lib/server/auth.server'
 
 interface GetBalanceInput {
   accessToken: string

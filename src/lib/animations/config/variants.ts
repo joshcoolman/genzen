@@ -3,9 +3,9 @@
  * Reusable animation states for Framer Motion
  */
 
-import { Variants } from 'framer-motion'
 import { transitions } from './transitions'
 import { STAGGER } from './constants'
+import type { Variants } from 'framer-motion'
 
 export const fadeIn: Variants = {
   hidden: { opacity: 0 },

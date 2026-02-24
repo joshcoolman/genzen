@@ -21,7 +21,7 @@ export interface DocNavItem {
 
 export interface DocNavCategory {
   name: string
-  items: DocNavItem[]
+  items: Array<DocNavItem>
 }
 
 export interface TocHeading {

@@ -1,15 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
+import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
-import Anthropic from '@anthropic-ai/sdk'
+import { ai } from '@/lib/server/ai.server'
 
 interface GeneratePromptEnhancedInput {
   accessToken: string
   currentPrompt: string // The prompt to enhance
 }
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
 
 // System prompt - Prompt Enhancer
 const SYSTEM_PROMPT = `You are a photography prompt enhancer. The user will give you a prompt, and you improve it to make better AI-generated images.
@@ -45,55 +42,6 @@ Output: "Rich espresso streaming into a ceramic cup, captured in slow motion wit
 
 Return ONLY the enhanced prompt as plain text (not JSON, just the prompt string).`
 
-const RESPONSE_SCHEMA = {
-  type: 'object' as const,
-  properties: {
-    subject: {
-      type: 'string' as const,
-      description: 'The main subject with descriptive modifiers',
-    },
-    action: {
-      type: 'string' as const,
-      description: 'Action or state of the subject',
-    },
-    medium: {
-      type: 'object' as const,
-      properties: {
-        text: {
-          type: 'string' as const,
-          description: 'The medium description',
-        },
-        type: {
-          type: 'string' as const,
-          enum: ['photography', 'art', '3d'],
-          description: 'Medium type classification',
-        },
-      },
-      required: ['text', 'type'],
-    },
-    atmosphere: {
-      type: 'string' as const,
-      description: 'Lighting and atmospheric mood',
-    },
-    technical: {
-      type: 'array' as const,
-      items: { type: 'string' as const },
-      description:
-        'Technical details appropriate for the medium type (follow commitment logic)',
-    },
-    wildcard: {
-      type: 'string' as const,
-      description: 'Optional abstract concept or surprise element',
-    },
-    aspectRatio: {
-      type: 'string' as const,
-      pattern: '^\\d+:\\d+$',
-      description: 'Aspect ratio in format X:Y',
-    },
-  },
-  required: ['subject', 'action', 'medium', 'atmosphere', 'technical', 'aspectRatio'],
-}
-
 /**
  * Enhance an existing prompt using Claude
  * Takes a simple prompt and makes it more vivid and detailed
@@ -103,26 +51,15 @@ export const generatePromptEnhanced = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireAuth(data.accessToken)
 
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is not set')
-    }
-
-    if (!data.currentPrompt?.trim()) {
+    if (!data.currentPrompt.trim()) {
       throw new Error('No prompt provided to enhance')
     }
 
     try {
-      // Using Haiku 4.5 - fast and cheap for prompt enhancement
-      const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300, // Shorter since we're just enhancing
-        system: [
-          {
-            type: 'text',
-            text: SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' },
-          },
-        ],
+      const response = await generateText({
+        model: ai.haiku,
+        maxOutputTokens: 300,
+        system: SYSTEM_PROMPT,
         messages: [
           {
             role: 'user',
@@ -131,28 +68,20 @@ export const generatePromptEnhanced = createServerFn({ method: 'POST' })
         ],
       })
 
-      const textContent = response.content.find((c) => c.type === 'text')
-      if (!textContent || textContent.type !== 'text') {
-        throw new Error('No text content in response')
-      }
+      const enhancedPrompt = response.text.trim()
 
-      const enhancedPrompt = textContent.text.trim()
-
-      // Calculate cost
       const usage = response.usage
       const estimatedCost =
-        ((usage.input_tokens - (usage.cache_read_input_tokens ?? 0)) * 0.25 +
-          (usage.cache_read_input_tokens ?? 0) * 0.025 +
-          usage.output_tokens * 1.25) /
+        ((usage.inputTokens ?? 0) * 0.25 + (usage.outputTokens ?? 0) * 1.25) /
         1_000_000
 
       return {
         prompt: enhancedPrompt,
         metadata: {
           cost: estimatedCost,
-          inputTokens: usage.input_tokens,
-          outputTokens: usage.output_tokens,
-          cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+          inputTokens: usage.inputTokens ?? 0,
+          outputTokens: usage.outputTokens ?? 0,
+          cacheReadTokens: 0,
         },
       }
     } catch (err) {

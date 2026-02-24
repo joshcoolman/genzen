@@ -5,7 +5,7 @@
  * Positioned to left or right of column to keep column visible.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Pipette } from 'lucide-react'
 import { HueSlider } from './HueSlider'
@@ -42,7 +42,7 @@ export function HueShiftPopover({
   })
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Columns 0-2: popover to the right; Columns 3-5: popover to the left
   const positionRight = columnIndex < 3

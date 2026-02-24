@@ -5,7 +5,7 @@
  * with draggable thumb positioned at current hue.
  */
 
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface HueSliderProps {
   currentHue: number // 0-360

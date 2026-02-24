@@ -134,7 +134,7 @@ export interface ShadeScale {
  * Color palette v3: 8 hue-diverse colors with shade scales
  */
 export interface ColorPalette {
-  colors: ShadeScale[]
+  colors: Array<ShadeScale>
   metadata: {
     extractionMethod: 'lab-kmeans'
     version: 3

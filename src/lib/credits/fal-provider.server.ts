@@ -3,7 +3,7 @@
  * Fetches balance from FAL's API
  */
 
-import type { CreditProvider, CreditBalance, UsageMetadata } from './types'
+import type { CreditBalance, CreditProvider, UsageMetadata } from './types'
 
 export class FALCreditProvider implements CreditProvider {
   readonly providerName = 'FAL AI'
@@ -88,6 +88,7 @@ export class FALCreditProvider implements CreditProvider {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async trackUsage(metadata: UsageMetadata): Promise<void> {
     // For now, just log usage
     // In production, you might want to store this in Supabase

@@ -5,18 +5,18 @@
  * Uses Supabase client directly with RLS for security.
  */
 
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useCallback, useEffect, useState } from 'react'
 import type {
-  UserImage,
   CreateUserImageInput,
+  UserImage,
   UserImageFilters,
 } from '../types'
+import { supabase } from '@/lib/supabase'
 
 const BUCKET_NAME = 'user-images'
 
 interface UseUserImagesState {
-  images: UserImage[]
+  images: Array<UserImage>
   imageUrls: Record<string, string>
   isLoading: boolean
   isCreating: boolean
@@ -57,7 +57,7 @@ export function useUserImages(
   /**
    * Load signed URLs for images
    */
-  const loadImageUrls = useCallback(async (images: UserImage[]) => {
+  const loadImageUrls = useCallback(async (images: Array<UserImage>) => {
     const urls: Record<string, string> = {}
 
     for (const image of images) {
@@ -66,7 +66,7 @@ export function useUserImages(
           .from(BUCKET_NAME)
           .createSignedUrl(image.storage_path, 3600)
 
-        if (!error && data) {
+        if (!error) {
           urls[image.id] = data.signedUrl
         }
       } catch (err) {
@@ -114,12 +114,12 @@ export function useUserImages(
 
       setState((prev) => ({
         ...prev,
-        images: images ?? [],
+        images,
         isLoading: false,
       }))
 
       // Load URLs in background
-      if (images && images.length > 0) {
+      if (images.length > 0) {
         loadImageUrls(images)
       }
     } catch (err) {

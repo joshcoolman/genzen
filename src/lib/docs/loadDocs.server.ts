@@ -1,13 +1,13 @@
-import { createServerFn } from '@tanstack/react-start'
 import fs from 'node:fs'
 import path from 'node:path'
+import { createServerFn } from '@tanstack/react-start'
 import matter from 'gray-matter'
 import { marked } from 'marked'
 import { DOCS_DIR } from './config'
 import { parseFileName, sortFileNames } from './parseFileName'
 import { extractHeadings } from './extractHeadings'
-import { slugify, slugToTitle } from './slugify'
-import type { DocFile, DocNavItem, DocNavCategory } from './types'
+import { slugToTitle, slugify } from './slugify'
+import type { DocFile, DocNavCategory, DocNavItem } from './types'
 
 // Configure marked with heading IDs
 const renderer = new marked.Renderer()
@@ -18,8 +18,8 @@ renderer.heading = ({ text, depth }: { text: string; depth: number }) => {
 
 marked.use({ renderer, gfm: true })
 
-function scanDocsDirectory(): DocNavItem[] {
-  const items: DocNavItem[] = []
+function scanDocsDirectory(): Array<DocNavItem> {
+  const items: Array<DocNavItem> = []
 
   // Root-level markdown files
   const rootFiles = fs
@@ -115,16 +115,14 @@ function readDocFile(slug: string): DocFile | null {
   }
 }
 
-export const getAllDocSlugs = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    return scanDocsDirectory().map((item) => item.slug)
-  },
-)
+export const getAllDocSlugs = createServerFn({ method: 'GET' }).handler(() => {
+  return scanDocsDirectory().map((item) => item.slug)
+})
 
 export const getDocBySlug = createServerFn({ method: 'GET' }).handler(
   // @ts-expect-error -- TanStack Start handler receives ctx with .data at runtime
-  async (ctx) => {
-    const slug: string = ctx?.data?.slug ?? ctx?.slug ?? ''
+  (ctx: { data?: { slug?: string }; slug?: string }) => {
+    const slug: string = ctx.data?.slug ?? ctx.slug ?? ''
     const doc = readDocFile(slug)
     if (!doc) throw new Error(`Doc not found: ${slug}`)
 
@@ -134,16 +132,16 @@ export const getDocBySlug = createServerFn({ method: 'GET' }).handler(
 )
 
 export const getDocNavCategories = createServerFn({ method: 'GET' }).handler(
-  async () => {
+  () => {
     const items = scanDocsDirectory()
-    const categories: DocNavCategory[] = []
-    const uncategorized: DocNavItem[] = []
+    const categories: Array<DocNavCategory> = []
+    const uncategorized: Array<DocNavItem> = []
 
     for (const item of items) {
       if (item.category) {
         let cat = categories.find((c) => c.name === item.category)
         if (!cat) {
-          cat = { name: item.category!, items: [] }
+          cat = { name: item.category, items: [] }
           categories.push(cat)
         }
         cat.items.push(item)
@@ -153,7 +151,7 @@ export const getDocNavCategories = createServerFn({ method: 'GET' }).handler(
     }
 
     // Put uncategorized items first as a "General" category
-    const result: DocNavCategory[] = []
+    const result: Array<DocNavCategory> = []
     if (uncategorized.length > 0) {
       result.push({ name: 'General', items: uncategorized })
     }
@@ -163,9 +161,7 @@ export const getDocNavCategories = createServerFn({ method: 'GET' }).handler(
   },
 )
 
-export const getFirstDocSlug = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    const items = scanDocsDirectory()
-    return items.length > 0 ? items[0].slug : null
-  },
-)
+export const getFirstDocSlug = createServerFn({ method: 'GET' }).handler(() => {
+  const items = scanDocsDirectory()
+  return items.length > 0 ? items[0].slug : null
+})

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
 import type { TocHeading } from '@/lib/docs/types'
+import { cn } from '@/lib/utils'
 
 interface TableOfContentsProps {
-  headings: TocHeading[]
+  headings: Array<TocHeading>
 }
 
 export function TableOfContents({ headings }: TableOfContentsProps) {

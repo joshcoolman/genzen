@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { ColorPaletteDisplay } from './ColorPaletteDisplay'
+import type { ColorPalette, UserImage } from '../types'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ColorPaletteDisplay } from './ColorPaletteDisplay'
-import type { UserImage, ColorPalette } from '../types'
 
 interface ImageEditDialogProps {
   image: UserImage | null

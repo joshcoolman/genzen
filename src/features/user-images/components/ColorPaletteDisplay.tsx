@@ -9,21 +9,19 @@
 import { useState } from 'react'
 import {
   DndContext,
-  closestCenter,
   KeyboardSensor,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
-  useSortable,
+  arrayMove,
   defaultAnimateLayoutChanges,
-  type AnimateLayoutChanges,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -36,21 +34,23 @@ import {
   Unlock,
   X,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ColorSwatch } from './ColorSwatch'
-import { HueShiftPopover } from './HueShiftPopover'
-import { supabase } from '@/lib/supabase'
-import type { ColorPalette, ShadeScale } from '../types'
 import { isColorPaletteV3 } from '../types'
 import {
   generatePaletteFromImage,
   getHueFromHex,
-  getSaturationFromHex,
   getLightnessFromHex,
+  getSaturationFromHex,
   shiftHueAndRegenerateScale,
-  type PaletteMode,
 } from '../lib/palette-generator'
+import { HueShiftPopover } from './HueShiftPopover'
+import { ColorSwatch } from './ColorSwatch'
+import type { PaletteMode } from '../lib/palette-generator'
+import type { ColorPalette, ShadeScale } from '../types'
+import type { AnimateLayoutChanges } from '@dnd-kit/sortable'
+import type { DragEndEvent } from '@dnd-kit/core'
 import type { Json } from '@/lib/types/supabase'
+import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
 
 interface ColorPaletteDisplayProps {
   palette: ColorPalette | null
@@ -209,7 +209,7 @@ export function ColorPaletteDisplay({
     null,
   )
   const [error, setError] = useState<string | null>(null)
-  const [lockedColumns, setLockedColumns] = useState<boolean[]>(
+  const [lockedColumns, setLockedColumns] = useState<Array<boolean>>(
     Array(6).fill(false),
   )
   const [view, setView] = useState<'palette' | 'json'>('palette')

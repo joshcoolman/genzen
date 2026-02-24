@@ -6,13 +6,8 @@
  * Uses LAB color space for perceptually uniform transitions.
  */
 
-import {
-  type Vec3,
-  rgbToLab,
-  labToRgb,
-  rgbToHex,
-  hexToRgb,
-} from './color-utils.ts'
+import { hexToRgb, labToRgb, rgbToHex, rgbToLab } from './color-utils.ts'
+import type { Vec3 } from './color-utils.ts'
 
 export type ShadeKey =
   | 50

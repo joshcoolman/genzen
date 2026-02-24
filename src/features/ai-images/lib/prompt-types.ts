@@ -22,7 +22,7 @@ export interface PromptParts {
   action: string
   medium: Medium
   atmosphere: string
-  technical: string[]
+  technical: Array<string>
   wildcard?: string
   aspectRatio: string
 }

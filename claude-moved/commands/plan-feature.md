@@ -1,5 +1,5 @@
 ---
-description: "Create comprehensive feature plan with deep codebase analysis and research"
+description: 'Create comprehensive feature plan with deep codebase analysis and research'
 ---
 
 # Plan a new task

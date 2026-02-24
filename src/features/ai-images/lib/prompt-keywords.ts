@@ -3,7 +3,7 @@
  * Components combine to create infinite variety
  */
 
-import type { Medium, AspectRatioEntry } from './prompt-types'
+import type { AspectRatioEntry, Medium } from './prompt-types'
 
 // ============================================================================
 // MODULAR COMPONENTS - Mix and match these!
@@ -21,12 +21,7 @@ export const AGES = [
   'senior',
 ] as const
 
-export const GENDERS = [
-  'woman',
-  'man',
-  'person',
-  'non-binary person',
-] as const
+export const GENDERS = ['woman', 'man', 'person', 'non-binary person'] as const
 
 export const ETHNICITIES = [
   'Asian',
@@ -522,7 +517,7 @@ export const ENVIRONMENTS = [
 // MEDIUMS (with type classification)
 // ============================================================================
 
-export const MEDIUMS: readonly Medium[] = [
+export const MEDIUMS: ReadonlyArray<Medium> = [
   // Photography
   { text: '35mm street photography', type: 'photography' },
   { text: 'Medium format film photography', type: 'photography' },
@@ -732,7 +727,7 @@ export const WILDCARDS = [
   'Liminal space',
   'Tilt-shift miniaturization',
   'Chiaroscuro drama',
-  'Trompe-l\'oeil illusion',
+  "Trompe-l'oeil illusion",
   'Anamorphic lens flare',
   'Bokeh light orbs',
   'Chromatic aberration',
@@ -755,7 +750,7 @@ export const WILDCARDS = [
 // ASPECT RATIOS (Weighted Distribution)
 // ============================================================================
 
-export const ASPECT_RATIOS: readonly AspectRatioEntry[] = [
+export const ASPECT_RATIOS: ReadonlyArray<AspectRatioEntry> = [
   // Landscape (preferred)
   { value: '16:9', weight: 25, use: 'cinematic standard' },
   { value: '3:2', weight: 20, use: 'classic photography' },

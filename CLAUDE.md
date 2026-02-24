@@ -37,6 +37,10 @@ supabase/
   seed.sql
 ```
 
+## Pre-Commit Workflow
+
+Before staging and committing, always run `pnpm check` (prettier + eslint fix). Fix any errors before proceeding. Sequence: `pnpm check` -> `pnpm build` -> stage -> commit -> push.
+
 ## Key Conventions
 
 - Path aliases: `@/components`, `@/lib`, `@/features` (via tsconfig paths)

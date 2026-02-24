@@ -29,6 +29,7 @@ On Linux, run: `tree -L 3 -I 'node_modules|__pycache__|.git|dist|build'`
 ### 3. Identify Key Files
 
 Based on the structure, identify and read:
+
 - Main entry points (main.py, index.ts, app.py, etc.)
 - Core configuration files (pyproject.toml, package.json, tsconfig.json)
 - Key model/schema definitions
@@ -47,27 +48,32 @@ Check current branch and status:
 Provide a concise summary covering:
 
 ### Project Overview
+
 - Purpose and type of application
 - Primary technologies and frameworks
 - Current version/state
 
 ### Architecture
+
 - Overall structure and organization
 - Key architectural patterns identified
 - Important directories and their purposes
 
 ### Tech Stack
+
 - Languages and versions
 - Frameworks and major libraries
 - Build tools and package managers
 - Testing frameworks
 
 ### Core Principles
+
 - Code style and conventions observed
 - Documentation standards
 - Testing approach
 
 ### Current State
+
 - Active branch
 - Recent changes or development focus
 - Any immediate observations or concerns

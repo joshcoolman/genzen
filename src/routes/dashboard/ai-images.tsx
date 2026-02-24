@@ -1,18 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Settings } from 'lucide-react'
+import type { PromptTheme } from '@/features/ai-images/lib/prompt-types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Settings } from 'lucide-react'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
-import type { PromptTheme } from '@/features/ai-images/lib/prompt-types'
 import { generateVariation } from '@/features/ai-images/server/generate-variation.server'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import {
   ALL_IMAGE_MODELS,
-  DEFAULT_VISIBLE_MODELS,
   DEFAULT_MODEL,
+  DEFAULT_VISIBLE_MODELS,
   getVisibleModels,
 } from '@/features/ai-images/models'
 import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
@@ -45,13 +45,13 @@ interface SavedAiImage {
 function AiImagesPage() {
   const { user, session } = useAuth()
   const [prompt, setPrompt] = useState('')
-  const [selectedModels, setSelectedModels] = useState<string[]>(() => {
+  const [selectedModels, setSelectedModels] = useState<Array<string>>(() => {
     // Load persisted model selections
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('ai-image-selected-models')
       if (stored) {
         try {
-          const parsed = JSON.parse(stored) as string[]
+          const parsed = JSON.parse(stored) as Array<string>
           const validIds = parsed.filter((id) =>
             ALL_IMAGE_MODELS.some((m) => m.id === id),
           )
@@ -77,12 +77,12 @@ function AiImagesPage() {
   })
 
   // Model visibility settings
-  const [visibleModelIds, setVisibleModelIds] = useState<string[]>(() => {
+  const [visibleModelIds, setVisibleModelIds] = useState<Array<string>>(() => {
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem('genzen:visible-models')
         if (stored) {
-          const parsed = JSON.parse(stored) as string[]
+          const parsed = JSON.parse(stored) as Array<string>
           // Validate against ALL_IMAGE_MODELS
           const validIds = parsed.filter((id) =>
             ALL_IMAGE_MODELS.some((m) => m.id === id),
@@ -105,10 +105,12 @@ function AiImagesPage() {
   )
 
   // Saved AI images gallery
-  const [savedImages, setSavedImages] = useState<SavedAiImage[]>([])
+  const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingGallery, setLoadingGallery] = useState(true)
-  const [generatingVariationFor, setGeneratingVariationFor] = useState<string | null>(null)
+  const [generatingVariationFor, setGeneratingVariationFor] = useState<
+    string | null
+  >(null)
 
   const loadSavedImages = useCallback(async () => {
     if (!user?.id) return
@@ -127,7 +129,8 @@ function AiImagesPage() {
 
       if (queryError) throw queryError
 
-      const images = (data ?? []) as SavedAiImage[]
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const images = (data ?? []) as Array<SavedAiImage>
       setSavedImages(images)
 
       // Load signed URLs only for completed images
@@ -175,7 +178,10 @@ function AiImagesPage() {
               if (prev.some((img) => img.id === newImage.id)) return prev
               // If this is a variation, replace an optimistic placeholder instead of adding a new card
               const metadata = newImage.generation_metadata
-              if (metadata?.generation_type === 'variation' && metadata?.source_image_id) {
+              if (
+                metadata?.generation_type === 'variation' &&
+                metadata.source_image_id
+              ) {
                 const sourceId = metadata.source_image_id
                 const optimisticIdx = prev.findIndex((img) =>
                   img.id.startsWith(`optimistic-${sourceId}-`),
@@ -184,23 +190,32 @@ function AiImagesPage() {
                   const updated = [...prev]
                   updated[optimisticIdx] = newImage
                   return updated.sort(
-                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                    (a, b) =>
+                      new Date(b.created_at).getTime() -
+                      new Date(a.created_at).getTime(),
                   )
                 }
               }
               // Insert at correct sorted position (DESC by created_at)
               return [...prev, newImage].sort(
-                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime(),
               )
             })
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
             setSavedImages((prev) =>
-              prev.map((img) => (img.id === updatedImage.id ? updatedImage : img))
+              prev.map((img) =>
+                img.id === updatedImage.id ? updatedImage : img,
+              ),
             )
 
             // Load signed URL if image just completed
-            if (updatedImage.status === 'completed' && updatedImage.storage_path) {
+            if (
+              updatedImage.status === 'completed' &&
+              updatedImage.storage_path
+            ) {
               supabase.storage
                 .from('user-images')
                 .createSignedUrl(updatedImage.storage_path, 3600)
@@ -213,6 +228,7 @@ function AiImagesPage() {
                   }
                 })
             }
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id
             setSavedImages((prev) => prev.filter((img) => img.id !== deletedId))
@@ -222,7 +238,7 @@ function AiImagesPage() {
               return newUrls
             })
           }
-        }
+        },
       )
       .subscribe()
 
@@ -250,8 +266,8 @@ function AiImagesPage() {
           },
         })
         // Don't refetch - Realtime will handle the updates
-      } catch (error) {
-        console.error('Error polling pending images:', error)
+      } catch (pollError) {
+        console.error('Error polling pending images:', pollError)
       }
     }, 3000) // Poll every 3 seconds
 
@@ -261,7 +277,10 @@ function AiImagesPage() {
   // Persist model selections
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('ai-image-selected-models', JSON.stringify(selectedModels))
+      localStorage.setItem(
+        'ai-image-selected-models',
+        JSON.stringify(selectedModels),
+      )
     }
   }, [selectedModels])
 
@@ -341,9 +360,9 @@ function AiImagesPage() {
 
   function handleLoadPromptAndModel(img: SavedAiImage) {
     if (!img.generation_metadata) return
-    const { prompt, model: selectedModel } = img.generation_metadata
+    const { prompt: imgPrompt, model: selectedModel } = img.generation_metadata
 
-    setPrompt(prompt)
+    setPrompt(imgPrompt)
     setSelectedModels([selectedModel])
 
     // If the model isn't in the visible list, add it
@@ -356,7 +375,11 @@ function AiImagesPage() {
   }
 
   async function handleMoreLikeThis(img: SavedAiImage) {
-    if (!session?.access_token || !img.generation_metadata?.prompt || !img.generation_metadata?.model)
+    if (
+      !session?.access_token ||
+      !img.generation_metadata?.prompt ||
+      !img.generation_metadata.model
+    )
       return
 
     setError(null)
@@ -364,11 +387,13 @@ function AiImagesPage() {
 
     // Optimistically insert 2 placeholder cards at the correct inline position immediately
     const optimisticIds = [`optimistic-${img.id}-0`, `optimistic-${img.id}-1`]
-    const optimisticCards: SavedAiImage[] = [0, 1].map((i) => ({
+    const optimisticCards: Array<SavedAiImage> = [0, 1].map((i) => ({
       id: optimisticIds[i],
       title: 'Generating variation...',
       storage_path: null,
-      created_at: new Date(new Date(img.created_at).getTime() + (i + 1) * 1000).toISOString(),
+      created_at: new Date(
+        new Date(img.created_at).getTime() + (i + 1) * 1000,
+      ).toISOString(),
       status: 'pending',
       generation_error: null,
       generation_metadata: {
@@ -380,7 +405,8 @@ function AiImagesPage() {
     }))
     setSavedImages((prev) =>
       [...prev, ...optimisticCards].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       ),
     )
 
@@ -401,11 +427,13 @@ function AiImagesPage() {
         const filtered = prev.filter(
           (i) => !optimisticIds.includes(i.id) && !realIds.includes(i.id),
         )
-        const realCards: SavedAiImage[] = results.map((r, i) => ({
+        const realCards: Array<SavedAiImage> = results.map((r, i) => ({
           id: r.recordId,
           title: 'Generating variation...',
           storage_path: null,
-          created_at: new Date(new Date(img.created_at).getTime() + (i + 1) * 1000).toISOString(),
+          created_at: new Date(
+            new Date(img.created_at).getTime() + (i + 1) * 1000,
+          ).toISOString(),
           status: 'pending',
           generation_error: null,
           generation_metadata: {
@@ -414,13 +442,18 @@ function AiImagesPage() {
           },
         }))
         return [...filtered, ...realCards].sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         )
       })
     } catch (err) {
       // Remove optimistic cards on failure
-      setSavedImages((prev) => prev.filter((i) => !optimisticIds.includes(i.id)))
-      setError(err instanceof Error ? err.message : 'Failed to generate variations')
+      setSavedImages((prev) =>
+        prev.filter((i) => !optimisticIds.includes(i.id)),
+      )
+      setError(
+        err instanceof Error ? err.message : 'Failed to generate variations',
+      )
     } finally {
       setGeneratingVariationFor(null)
     }
@@ -481,9 +514,13 @@ function AiImagesPage() {
       setPrompt(data.prompt)
 
       // Log cost for development
-      if (data.metadata?.cost) {
-        console.log(`Prompt enhancement cost: $${data.metadata.cost.toFixed(6)}`)
-        console.log(`Tokens: ${data.metadata.inputTokens} in, ${data.metadata.outputTokens} out`)
+      if (data.metadata.cost) {
+        console.log(
+          `Prompt enhancement cost: $${data.metadata.cost.toFixed(6)}`,
+        )
+        console.log(
+          `Tokens: ${data.metadata.inputTokens} in, ${data.metadata.outputTokens} out`,
+        )
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to enhance prompt')
@@ -500,11 +537,13 @@ function AiImagesPage() {
     // Resolve root ancestor for an image
     function findRoot(img: SavedAiImage): string {
       const meta = img.generation_metadata
-      if (meta?.generation_type !== 'variation' || !meta.source_image_id) return img.id
+      if (meta?.generation_type !== 'variation' || !meta.source_image_id)
+        return img.id
 
       // Check optimistic ID pattern (optimistic-{sourceId}-N)
       if (img.id.startsWith('optimistic-')) {
-        const sourceId = meta.source_image_id ?? img.id.split('-').slice(1, -1).join('-')
+        const sourceId =
+          meta.source_image_id ?? img.id.split('-').slice(1, -1).join('-')
         const parent = imageMap.get(sourceId)
         return parent ? findRoot(parent) : sourceId
       }
@@ -515,7 +554,7 @@ function AiImagesPage() {
       return meta.source_image_id
     }
 
-    const groups = new Map<string, SavedAiImage[]>()
+    const groups = new Map<string, Array<SavedAiImage>>()
     for (const img of savedImages) {
       const rootId = findRoot(img)
       const group = groups.get(rootId)
@@ -529,14 +568,20 @@ function AiImagesPage() {
         // Original (root) always first
         if (a.id === rootId) return -1
         if (b.id === rootId) return 1
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
       })
     }
 
     // Sort groups by earliest created_at, descending (newest families first)
     return Array.from(groups.values()).sort((a, b) => {
-      const aEarliest = Math.min(...a.map((i) => new Date(i.created_at).getTime()))
-      const bEarliest = Math.min(...b.map((i) => new Date(i.created_at).getTime()))
+      const aEarliest = Math.min(
+        ...a.map((i) => new Date(i.created_at).getTime()),
+      )
+      const bEarliest = Math.min(
+        ...b.map((i) => new Date(i.created_at).getTime()),
+      )
       return bEarliest - aEarliest
     })
   }, [savedImages])
@@ -598,7 +643,9 @@ function AiImagesPage() {
                     disabled={loading}
                     className="h-3.5 w-3.5 cursor-pointer"
                   />
-                  <span className="text-muted-foreground">Fantasy / Sci-Fi</span>
+                  <span className="text-muted-foreground">
+                    Fantasy / Sci-Fi
+                  </span>
                 </label>
               </div>
               <Textarea
@@ -705,21 +752,177 @@ function AiImagesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            }}
+          >
             {familyGroups.map((group) =>
               group.length > 1 ? (
-              <div
-                key={group[0].id}
-                className="grid gap-4 rounded-lg border border-dashed border-border p-4"
-                style={{ gridColumn: '1 / -1', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
-              >
-                {group.map((img) =>
+                <div
+                  key={group[0].id}
+                  className="grid gap-4 rounded-lg border border-dashed border-border p-4"
+                  style={{
+                    gridColumn: '1 / -1',
+                    gridTemplateColumns:
+                      'repeat(auto-fill, minmax(200px, 1fr))',
+                  }}
+                >
+                  {group.map((img) =>
+                    img.status === 'pending' ? (
+                      <PendingImageCard
+                        key={img.id}
+                        prompt={img.generation_metadata?.prompt ?? ''}
+                        model={getModelName(
+                          img.generation_metadata?.model ?? '',
+                        )}
+                        isVariation={
+                          img.generation_metadata?.generation_type ===
+                          'variation'
+                        }
+                      />
+                    ) : img.status === 'failed' ? (
+                      <div
+                        key={img.id}
+                        className="group relative overflow-hidden rounded-lg border border-destructive/50 bg-card"
+                      >
+                        <div className="aspect-square flex items-center justify-center bg-destructive/10 p-4">
+                          <div className="text-center space-y-2">
+                            <p className="text-sm font-medium text-destructive">
+                              Generation Failed
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {img.generation_error ?? 'Unknown error'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-1">
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {img.generation_metadata?.prompt ?? img.title}
+                          </p>
+                        </div>
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDelete(img)}
+                          className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Delete failed generation"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        key={img.id}
+                        className="group relative overflow-hidden rounded-lg border border-border bg-card"
+                      >
+                        <div className="relative">
+                          {imageUrls[img.id] ? (
+                            <img
+                              src={imageUrls[img.id]}
+                              alt={img.title}
+                              className="aspect-square w-full object-cover"
+                            />
+                          ) : (
+                            <div className="aspect-square w-full bg-muted animate-pulse" />
+                          )}
+                          {img.generation_metadata?.generation_type ===
+                            'variation' && (
+                            <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+                              Variation
+                            </span>
+                          )}
+                          {/* Delete button */}
+                          <button
+                            onClick={() => handleDelete(img)}
+                            className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                            aria-label="Delete image"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </button>
+                          {/* Action buttons overlay */}
+                          <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleLoadPrompt(img)}
+                              className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                            >
+                              Prompt
+                            </button>
+                            <button
+                              onClick={() => handleLoadPromptAndModel(img)}
+                              className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                            >
+                              P+M
+                            </button>
+                            <button
+                              onClick={() => handleMoreLikeThis(img)}
+                              disabled={generatingVariationFor === img.id}
+                              className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {generatingVariationFor === img.id
+                                ? '...'
+                                : 'More'}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-1">
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {img.generation_metadata?.prompt ?? img.title}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground/60">
+                            <span>
+                              {img.generation_metadata
+                                ? getModelName(img.generation_metadata.model)
+                                : ''}
+                            </span>
+                            <span>
+                              {new Date(img.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                // Single-image group: render card directly in the outer grid
+                group.map((img) =>
                   img.status === 'pending' ? (
                     <PendingImageCard
                       key={img.id}
                       prompt={img.generation_metadata?.prompt ?? ''}
                       model={getModelName(img.generation_metadata?.model ?? '')}
-                      isVariation={img.generation_metadata?.generation_type === 'variation'}
+                      isVariation={
+                        img.generation_metadata?.generation_type === 'variation'
+                      }
                     />
                   ) : img.status === 'failed' ? (
                     <div
@@ -741,7 +944,6 @@ function AiImagesPage() {
                           {img.generation_metadata?.prompt ?? img.title}
                         </p>
                       </div>
-                      {/* Delete button */}
                       <button
                         onClick={() => handleDelete(img)}
                         className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
@@ -779,12 +981,12 @@ function AiImagesPage() {
                         ) : (
                           <div className="aspect-square w-full bg-muted animate-pulse" />
                         )}
-                        {img.generation_metadata?.generation_type === 'variation' && (
+                        {img.generation_metadata?.generation_type ===
+                          'variation' && (
                           <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
                             Variation
                           </span>
                         )}
-                        {/* Delete button */}
                         <button
                           onClick={() => handleDelete(img)}
                           className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
@@ -804,117 +1006,6 @@ function AiImagesPage() {
                             <path d="M3 6h18" />
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          </svg>
-                        </button>
-                        {/* Action buttons overlay */}
-                        <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleLoadPrompt(img)}
-                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-                          >
-                            Prompt
-                          </button>
-                          <button
-                            onClick={() => handleLoadPromptAndModel(img)}
-                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-                          >
-                            P+M
-                          </button>
-                          <button
-                            onClick={() => handleMoreLikeThis(img)}
-                            disabled={generatingVariationFor === img.id}
-                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {generatingVariationFor === img.id ? '...' : 'More'}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {img.generation_metadata?.prompt ?? img.title}
-                        </p>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
-                          <span>
-                            {img.generation_metadata
-                              ? getModelName(img.generation_metadata.model)
-                              : ''}
-                          </span>
-                          <span>
-                            {new Date(img.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-              ) : (
-                // Single-image group: render card directly in the outer grid
-                group.map((img) =>
-                  img.status === 'pending' ? (
-                    <PendingImageCard
-                      key={img.id}
-                      prompt={img.generation_metadata?.prompt ?? ''}
-                      model={getModelName(img.generation_metadata?.model ?? '')}
-                      isVariation={img.generation_metadata?.generation_type === 'variation'}
-                    />
-                  ) : img.status === 'failed' ? (
-                    <div
-                      key={img.id}
-                      className="group relative overflow-hidden rounded-lg border border-destructive/50 bg-card"
-                    >
-                      <div className="aspect-square flex items-center justify-center bg-destructive/10 p-4">
-                        <div className="text-center space-y-2">
-                          <p className="text-sm font-medium text-destructive">
-                            Generation Failed
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {img.generation_error ?? 'Unknown error'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="p-3 space-y-1">
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {img.generation_metadata?.prompt ?? img.title}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(img)}
-                        className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                        aria-label="Delete failed generation"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      key={img.id}
-                      className="group relative overflow-hidden rounded-lg border border-border bg-card"
-                    >
-                      <div className="relative">
-                        {imageUrls[img.id] ? (
-                          <img
-                            src={imageUrls[img.id]}
-                            alt={img.title}
-                            className="aspect-square w-full object-cover"
-                          />
-                        ) : (
-                          <div className="aspect-square w-full bg-muted animate-pulse" />
-                        )}
-                        {img.generation_metadata?.generation_type === 'variation' && (
-                          <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
-                            Variation
-                          </span>
-                        )}
-                        <button
-                          onClick={() => handleDelete(img)}
-                          className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                          aria-label="Delete image"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                           </svg>
                         </button>
                         <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">

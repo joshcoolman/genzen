@@ -31,13 +31,13 @@ export interface UsageMetadata {
  */
 export interface CreditProvider {
   /** Get current credit balance */
-  getBalance(): Promise<CreditBalance>
+  getBalance: () => Promise<CreditBalance>
 
   /** Track usage (for analytics/billing) */
-  trackUsage(metadata: UsageMetadata): Promise<void>
+  trackUsage: (metadata: UsageMetadata) => Promise<void>
 
   /** Optional: Get usage history */
-  getUsageHistory?(limit?: number): Promise<UsageMetadata[]>
+  getUsageHistory?: (limit?: number) => Promise<Array<UsageMetadata>>
 
   /** Provider name for display */
   readonly providerName: string

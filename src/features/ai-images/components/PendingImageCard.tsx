@@ -4,7 +4,11 @@ interface PendingImageCardProps {
   isVariation?: boolean
 }
 
-export function PendingImageCard({ prompt, model, isVariation }: PendingImageCardProps) {
+export function PendingImageCard({
+  prompt,
+  model,
+  isVariation,
+}: PendingImageCardProps) {
   return (
     <div className="relative overflow-hidden rounded-lg border border-border bg-card">
       {/* Shimmer skeleton */}

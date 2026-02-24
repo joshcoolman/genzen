@@ -5,7 +5,7 @@
  * Manages state for page transitions during navigation
  */
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 export interface UsePageTransitionReturn {
   /** Whether the page is currently exiting */

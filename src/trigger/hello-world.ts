@@ -2,6 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 
 export const helloWorld = task({
   id: 'hello-world',
+  // eslint-disable-next-line @typescript-eslint/require-await
   run: async (payload: { name: string }) => {
     console.log(`Hello ${payload.name}!`)
 

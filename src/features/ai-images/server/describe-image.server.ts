@@ -1,8 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk'
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
+import { generateText } from 'ai'
+import { ai } from '@/lib/server/ai.server'
 
 const DESCRIBE_SYSTEM_PROMPT = `You are an expert image analyst. Given an image, produce a structured JSON description that captures every visual detail needed to recreate it as a text-to-image prompt.
 
@@ -31,7 +28,9 @@ export interface ImageDescription {
   style: string
 }
 
-export async function describeImage(imageUrl: string): Promise<ImageDescription> {
+export async function describeImage(
+  imageUrl: string,
+): Promise<ImageDescription> {
   // Fetch the image and send as base64 (signed URLs may be HTTP in dev)
   const imageResponse = await fetch(imageUrl)
   if (!imageResponse.ok) {
@@ -43,23 +42,17 @@ export async function describeImage(imageUrl: string): Promise<ImageDescription>
   // Detect media type from file magic bytes (headers from Supabase can be unreliable)
   const mediaType = detectMediaType(imageBuffer)
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    system: [
-      {
-        type: 'text',
-        text: DESCRIBE_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+  const response = await generateText({
+    model: ai.haiku,
+    maxOutputTokens: 1024,
+    system: DESCRIBE_SYSTEM_PROMPT,
     messages: [
       {
         role: 'user',
         content: [
           {
             type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: base64Data },
+            image: `data:${mediaType};base64,${base64Data}`,
           },
           {
             type: 'text',
@@ -70,15 +63,12 @@ export async function describeImage(imageUrl: string): Promise<ImageDescription>
     ],
   })
 
-  const textContent = response.content.find((c) => c.type === 'text')
-  if (!textContent || textContent.type !== 'text') {
-    throw new Error('No text content in Claude vision response')
-  }
-
   // Extract JSON from response - strip markdown fences, find the JSON object
-  let jsonStr = textContent.text.trim()
+  let jsonStr = response.text.trim()
   // Remove markdown code fences if present
-  jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '')
+  jsonStr = jsonStr
+    .replace(/^```(?:json)?\s*\n?/i, '')
+    .replace(/\n?```\s*$/, '')
   // As a fallback, extract the first { ... } block
   if (!jsonStr.startsWith('{')) {
     const braceMatch = jsonStr.match(/\{[\s\S]*\}/)
@@ -90,10 +80,19 @@ export async function describeImage(imageUrl: string): Promise<ImageDescription>
   return JSON.parse(jsonStr) as ImageDescription
 }
 
-type SupportedMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
+type SupportedMediaType =
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+  | 'image/gif'
 
 function detectMediaType(buffer: Buffer): SupportedMediaType {
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
     return 'image/png'
   }
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {

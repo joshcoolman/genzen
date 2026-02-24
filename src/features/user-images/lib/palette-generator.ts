@@ -57,7 +57,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 /**
  * Extract pixels from image with resize and blur
  */
-function extractPixelsFromImage(img: HTMLImageElement): Vec3[] {
+function extractPixelsFromImage(img: HTMLImageElement): Array<Vec3> {
   // Create canvas
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
@@ -84,7 +84,7 @@ function extractPixelsFromImage(img: HTMLImageElement): Vec3[] {
   const data = imageData.data
 
   // Convert to Vec3 array (skip transparent pixels)
-  const pixels: Vec3[] = []
+  const pixels: Array<Vec3> = []
   for (let i = 0; i < data.length; i += 4) {
     const a = data[i + 3]
     if (a >= 128) {
@@ -144,12 +144,16 @@ export function rgbToHsl(
 /**
  * Simple k-means clustering
  */
-function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
+function clusterColors(
+  pixels: Array<Vec3>,
+  k: number,
+  maxIter = 15,
+): Array<Vec3> {
   if (pixels.length === 0) return []
   if (pixels.length <= k) return [...pixels]
 
   // Initialize centroids randomly from actual pixels
-  const centroids: Vec3[] = []
+  const centroids: Array<Vec3> = []
   const used = new Set<number>()
   while (centroids.length < k && centroids.length < pixels.length) {
     const idx = Math.floor(Math.random() * pixels.length)
@@ -161,7 +165,7 @@ function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
 
   // Iterate
   for (let iter = 0; iter < maxIter; iter++) {
-    const clusters: Vec3[][] = centroids.map(() => [])
+    const clusters: Array<Array<Vec3>> = centroids.map(() => [])
 
     // Assign pixels to nearest centroid
     for (const pixel of pixels) {
@@ -211,7 +215,7 @@ function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
 /**
  * Snap a color to the nearest actual pixel in the image
  */
-function snapToNearestPixel(color: Vec3, pixels: Vec3[]): Vec3 {
+function snapToNearestPixel(color: Vec3, pixels: Array<Vec3>): Vec3 {
   let nearest = pixels[0]
   let minDist = Infinity
 
@@ -232,7 +236,7 @@ function snapToNearestPixel(color: Vec3, pixels: Vec3[]): Vec3 {
 /**
  * Shuffle array in place (Fisher-Yates)
  */
-function shuffle<T>(arr: T[]): T[] {
+function shuffle<T>(arr: Array<T>): Array<T> {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
@@ -245,10 +249,10 @@ function shuffle<T>(arr: T[]): T[] {
  * @param shuffleFirst - if true, randomize order before diversity filtering
  */
 function extractColors(
-  pixels: Vec3[],
+  pixels: Array<Vec3>,
   count: number,
   shuffleFirst = false,
-): Vec3[] {
+): Array<Vec3> {
   if (pixels.length === 0) {
     // Return neutral grays as fallback
     return Array(count)
@@ -290,7 +294,7 @@ function extractColors(
 
   // Filter for hue diversity (at least 22 degrees apart for saturated colors)
   // Lower threshold allows adjacent hues like orange/yellow to coexist
-  const diverse: Vec3[] = []
+  const diverse: Array<Vec3> = []
   for (const color of withHue) {
     if (diverse.length >= count) break
 

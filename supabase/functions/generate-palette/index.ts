@@ -15,12 +15,13 @@ import {
 } from 'npm:@imagemagick/magick-wasm@0.0.30'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import {
-  samplePixels,
   extractColors,
-  extractColorsRandom,
   extractColorsQuadrant,
+  extractColorsRandom,
+  samplePixels,
 } from './quantize.ts'
-import { buildPalette, type PaletteExport } from './palette.ts'
+import { buildPalette } from './palette.ts'
+import type { PaletteExport } from './palette.ts'
 
 // Initialize ImageMagick WASM
 const wasmBytes = await Deno.readFile(
@@ -140,7 +141,7 @@ Deno.serve(async (req) => {
       let extractedColors
       if (mode === 'quadrant') {
         // Simple quadrant sampling - uses raw pixel array directly
-        const allPixels: [number, number, number][] = []
+        const allPixels: Array<[number, number, number]> = []
         for (let i = 0; i < pixels.length; i += 4) {
           allPixels.push([pixels[i], pixels[i + 1], pixels[i + 2]])
         }

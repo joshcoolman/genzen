@@ -5,8 +5,9 @@
  * Most customizable component - use when other components don't fit needs
  */
 
-import { motion, MotionProps } from 'framer-motion'
-import { ElementType, ReactNode } from 'react'
+import { motion } from 'framer-motion'
+import type { MotionProps } from 'framer-motion'
+import type { ElementType, ReactNode } from 'react'
 
 export interface AnimatedWrapperProps extends MotionProps {
   children: ReactNode

@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
-  Menu,
   Home,
-  User,
-  Settings,
   Image,
-  Sparkles,
   LogOut,
+  Menu,
+  Settings,
+  Sparkles,
+  User,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'

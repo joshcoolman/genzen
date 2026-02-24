@@ -6,14 +6,13 @@
  */
 
 import {
-  type Vec3,
-  type LAB,
-  rgbToLab,
-  labToRgb,
-  rgbToHsl,
   getLabDistance,
   getVibrancy,
+  labToRgb,
+  rgbToHsl,
+  rgbToLab,
 } from './color-utils.ts'
+import type { LAB, Vec3 } from './color-utils.ts'
 
 export interface QuantizedColor {
   rgb: Vec3
@@ -37,12 +36,12 @@ export interface ExtractedColor {
 export function samplePixels(
   imageData: Uint8ClampedArray,
   sampleRate = 10,
-): Vec3[] {
+): Array<Vec3> {
   const totalPixels = imageData.length / 4
   const targetSamples = Math.floor(totalPixels / sampleRate)
 
   // Collect all valid (non-transparent) pixel indices
-  const validIndices: number[] = []
+  const validIndices: Array<number> = []
   for (let i = 0; i < totalPixels; i++) {
     const a = imageData[i * 4 + 3]
     if (a >= 128) {
@@ -61,7 +60,7 @@ export function samplePixels(
   const sampledIndices = validIndices.slice(0, sampleCount)
 
   // Extract RGB values for sampled pixels
-  const pixels: Vec3[] = []
+  const pixels: Array<Vec3> = []
   for (const idx of sampledIndices) {
     const base = idx * 4
     pixels.push([imageData[base], imageData[base + 1], imageData[base + 2]])
@@ -74,7 +73,7 @@ export function samplePixels(
  * Get random initial centroids from LAB points
  * Uses shuffle approach for randomness
  */
-function getRandomCentroids(points: LAB[], k: number): LAB[] {
+function getRandomCentroids(points: Array<LAB>, k: number): Array<LAB> {
   // Get unique points
   const uniquePoints = Array.from(
     new Set(points.map((p) => JSON.stringify(p))),
@@ -97,7 +96,7 @@ function getRandomCentroids(points: LAB[], k: number): LAB[] {
     return []
   }
 
-  let centroidsToReturn: LAB[] = []
+  let centroidsToReturn: Array<LAB> = []
 
   if (numUnique < k) {
     // Not enough unique points, duplicate some
@@ -127,10 +126,10 @@ function getRandomCentroids(points: LAB[], k: number): LAB[] {
  * in LAB corresponds to perceived color difference.
  */
 function kMeansCluster(
-  pixels: Vec3[],
+  pixels: Array<Vec3>,
   numColors = 16,
   maxIterations = 20,
-): QuantizedColor[] {
+): Array<QuantizedColor> {
   if (pixels.length === 0) return []
 
   const k = Math.min(numColors, pixels.length)
@@ -167,7 +166,7 @@ function kMeansCluster(
   // Step 3: Iterative K-means refinement
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     // Initialize empty clusters
-    const clusters: LAB[][] = centroids.map(() => [])
+    const clusters: Array<Array<LAB>> = centroids.map(() => [])
 
     // Assign each LAB pixel to nearest centroid (using LAB distance)
     for (const labPixel of labPixels) {
@@ -187,7 +186,7 @@ function kMeansCluster(
 
     // Calculate new centroids as cluster means in LAB space
     let converged = true
-    const newCentroids: LAB[] = []
+    const newCentroids: Array<LAB> = []
 
     for (let i = 0; i < centroids.length; i++) {
       const cluster = clusters[i]
@@ -268,15 +267,15 @@ function getHueDistance(hue1: number, hue2: number): number {
  * Returns colors with at least minHueDistance degrees apart
  */
 function filterByHueDiversity(
-  colors: QuantizedColor[],
+  colors: Array<QuantizedColor>,
   minHueDistance: number,
   maxColors: number,
   includeNeutrals = false,
-): QuantizedColor[] {
+): Array<QuantizedColor> {
   if (colors.length === 0) return []
 
-  const selected: QuantizedColor[] = []
-  const selectedHues: number[] = []
+  const selected: Array<QuantizedColor> = []
+  const selectedHues: Array<number> = []
 
   // Sort by combined vibrancy + population score with jitter for variety
   const jitterAmount = 0.15
@@ -317,7 +316,9 @@ function filterByHueDiversity(
 /**
  * Convert quantized colors to extracted colors with hue/saturation info
  */
-function toExtractedColors(colors: QuantizedColor[]): ExtractedColor[] {
+function toExtractedColors(
+  colors: Array<QuantizedColor>,
+): Array<ExtractedColor> {
   return colors.map((c) => {
     const [h, s] = rgbToHsl(...c.rgb)
     return {
@@ -342,9 +343,12 @@ function toExtractedColors(colors: QuantizedColor[]): ExtractedColor[] {
  * 2. Filter by hue diversity (~30° minimum separation)
  * 3. Pick top 8 by combined vibrancy + population score
  */
-export function extractColors(pixels: Vec3[], count = 8): ExtractedColor[] {
+export function extractColors(
+  pixels: Array<Vec3>,
+  count = 8,
+): Array<ExtractedColor> {
   // Default fallback colors (well-distributed hues)
-  const defaultColors: ExtractedColor[] = [
+  const defaultColors: Array<ExtractedColor> = [
     { rgb: [59, 130, 246], vibrancy: 0.8, hue: 217, saturation: 0.91 }, // Blue
     { rgb: [34, 197, 94], vibrancy: 0.7, hue: 142, saturation: 0.71 }, // Green
     { rgb: [249, 115, 22], vibrancy: 0.75, hue: 25, saturation: 0.95 }, // Orange
@@ -407,11 +411,11 @@ export function extractColors(pixels: Vec3[], count = 8): ExtractedColor[] {
  * find the dominant color in each region. Less smart, more fun.
  */
 export function extractColorsRandom(
-  pixels: Vec3[],
+  pixels: Array<Vec3>,
   imageWidth: number,
   count = 8,
-): ExtractedColor[] {
-  const defaultColors: ExtractedColor[] = [
+): Array<ExtractedColor> {
+  const defaultColors: Array<ExtractedColor> = [
     { rgb: [59, 130, 246], vibrancy: 0.8, hue: 217, saturation: 0.91 },
     { rgb: [34, 197, 94], vibrancy: 0.7, hue: 142, saturation: 0.71 },
     { rgb: [249, 115, 22], vibrancy: 0.75, hue: 25, saturation: 0.95 },
@@ -427,7 +431,7 @@ export function extractColorsRandom(
   }
 
   const imageHeight = Math.floor(pixels.length / imageWidth)
-  const result: ExtractedColor[] = []
+  const result: Array<ExtractedColor> = []
 
   // Region size: ~10x10 pixels (adjustable based on image size)
   const regionSize = Math.max(
@@ -441,7 +445,7 @@ export function extractColorsRandom(
     const centerY = Math.floor(Math.random() * imageHeight)
 
     // Gather pixels from the region
-    const regionPixels: Vec3[] = []
+    const regionPixels: Array<Vec3> = []
     const halfSize = Math.floor(regionSize / 2)
 
     for (let dy = -halfSize; dy <= halfSize; dy++) {
@@ -508,7 +512,7 @@ function getRgbDistanceSq(a: Vec3, b: Vec3): number {
 /**
  * Find the actual pixel in the image nearest to a given color
  */
-function snapToNearestPixel(color: Vec3, pixels: Vec3[]): Vec3 {
+function snapToNearestPixel(color: Vec3, pixels: Array<Vec3>): Vec3 {
   let nearest = pixels[0]
   let minDist = Infinity
 
@@ -530,12 +534,16 @@ function snapToNearestPixel(color: Vec3, pixels: Vec3[]): Vec3 {
  * Simple k-means clustering on RGB values
  * Returns cluster centers
  */
-function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
+function clusterColors(
+  pixels: Array<Vec3>,
+  k: number,
+  maxIter = 15,
+): Array<Vec3> {
   if (pixels.length === 0) return []
   if (pixels.length <= k) return [...pixels]
 
   // Initialize centroids randomly from actual pixels
-  const centroids: Vec3[] = []
+  const centroids: Array<Vec3> = []
   const used = new Set<number>()
   while (centroids.length < k && centroids.length < pixels.length) {
     const idx = Math.floor(Math.random() * pixels.length)
@@ -548,7 +556,7 @@ function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
   // Iterate
   for (let iter = 0; iter < maxIter; iter++) {
     // Assign pixels to nearest centroid
-    const clusters: Vec3[][] = centroids.map(() => [])
+    const clusters: Array<Array<Vec3>> = centroids.map(() => [])
 
     for (const pixel of pixels) {
       let minDist = Infinity
@@ -599,11 +607,11 @@ function clusterColors(pixels: Vec3[], k: number, maxIter = 15): Vec3[] {
  * Ensures every extracted color actually exists in the image
  */
 export function extractColorsQuadrant(
-  pixels: Vec3[],
+  pixels: Array<Vec3>,
   _imageWidth: number,
   count = 8,
-): ExtractedColor[] {
-  const defaultColors: ExtractedColor[] = [
+): Array<ExtractedColor> {
+  const defaultColors: Array<ExtractedColor> = [
     { rgb: [59, 130, 246], vibrancy: 0.8, hue: 217, saturation: 0.91 },
     { rgb: [34, 197, 94], vibrancy: 0.7, hue: 142, saturation: 0.71 },
     { rgb: [249, 115, 22], vibrancy: 0.75, hue: 25, saturation: 0.95 },
@@ -636,7 +644,7 @@ export function extractColorsQuadrant(
   )
 
   // Convert to ExtractedColor and sort by vibrancy
-  const extracted: ExtractedColor[] = snappedColors.map((rgb) => {
+  const extracted: Array<ExtractedColor> = snappedColors.map((rgb) => {
     const [h, s] = rgbToHsl(...rgb)
     return {
       rgb,
@@ -653,7 +661,7 @@ export function extractColorsQuadrant(
   )
 
   // Filter for hue diversity (at least 20° apart)
-  const diverse: ExtractedColor[] = []
+  const diverse: Array<ExtractedColor> = []
   for (const color of extracted) {
     if (diverse.length >= count) break
 

@@ -5,8 +5,8 @@
  * Returns variant object with stagger timing for container elements
  */
 
-import { Variants } from 'framer-motion'
 import { STAGGER } from '../config/constants'
+import type { Variants } from 'framer-motion'
 
 export interface UseStaggerChildrenOptions {
   /** Delay between each child animation */

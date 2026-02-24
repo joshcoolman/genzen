@@ -3,32 +3,32 @@
  * Implements sophisticated template-based generation with commitment logic
  */
 
-import type { PromptGenerationOptions, PromptComponents } from './prompt-types'
 import {
-  AGES,
-  GENDERS,
-  ETHNICITIES,
-  DESCRIPTORS,
-  PROFESSIONS,
-  BODY_TYPES,
-  RELATIONSHIPS,
-  ANIMAL_TYPES,
-  OBJECT_TYPES,
-  PLACE_TYPES,
   ACTIONS,
-  ENVIRONMENTS,
-  CAMERA_LENSES,
-  CAMERA_FRAMING,
-  FILM_STOCKS,
+  AGES,
+  ANIMAL_TYPES,
   ASPECT_RATIOS,
-  FANTASY_PROFESSIONS,
-  FANTASY_DESCRIPTORS,
+  BODY_TYPES,
+  CAMERA_FRAMING,
+  CAMERA_LENSES,
+  DESCRIPTORS,
+  ENVIRONMENTS,
+  ETHNICITIES,
+  FANTASY_ACTIONS,
   FANTASY_ANIMAL_TYPES,
+  FANTASY_DESCRIPTORS,
+  FANTASY_ENVIRONMENTS,
   FANTASY_OBJECT_TYPES,
   FANTASY_PLACE_TYPES,
-  FANTASY_ENVIRONMENTS,
-  FANTASY_ACTIONS,
+  FANTASY_PROFESSIONS,
+  FILM_STOCKS,
+  GENDERS,
+  OBJECT_TYPES,
+  PLACE_TYPES,
+  PROFESSIONS,
+  RELATIONSHIPS,
 } from './prompt-keywords'
+import type { PromptComponents, PromptGenerationOptions } from './prompt-types'
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -37,7 +37,7 @@ import {
 /**
  * Pick a random element from an array
  */
-function pick<T>(arr: readonly T[]): T {
+function pick<T>(arr: ReadonlyArray<T>): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
@@ -131,14 +131,16 @@ export function generatePromptComponents(
   if (subjectType === 'person') {
     components.age = chance(0.8) ? pick(AGES) : undefined
     components.gender = pick(GENDERS)
-    components.ethnicity = !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.ethnicity =
+      !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
     components.descriptor = chance(0.6) ? pick(descriptors) : undefined
     components.profession = chance(0.8) ? pick(professions) : undefined
     components.bodyType = chance(0.3) ? pick(BODY_TYPES) : undefined
   } else if (subjectType === 'couple') {
     components.relationship = pick(RELATIONSHIPS)
     components.age = chance(0.6) ? pick(AGES) : undefined
-    components.ethnicity = !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
+    components.ethnicity =
+      !isFantasy && chance(0.7) ? pick(ETHNICITIES) : undefined
     components.descriptor = chance(0.5) ? pick(descriptors) : undefined
   } else if (subjectType === 'animal') {
     components.animalType = pick(animalTypes)
@@ -146,7 +148,7 @@ export function generatePromptComponents(
   } else if (subjectType === 'object') {
     components.objectType = pick(objectTypes)
     components.descriptor = chance(0.4) ? pick(descriptors) : undefined
-  } else if (subjectType === 'place') {
+  } else {
     components.placeType = pick(placeTypes)
     components.descriptor = chance(0.5) ? pick(descriptors) : undefined
   }

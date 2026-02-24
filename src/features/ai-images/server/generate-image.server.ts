@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
-import { requireAuth } from '@/lib/server/auth.server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -71,4 +71,3 @@ export const generateImage = createServerFn({ method: 'POST' })
       model,
     }
   })
-

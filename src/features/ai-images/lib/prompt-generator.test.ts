@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { generatePrompt, generatePrompts } from './prompt-generator'
 import type { MediumType } from './prompt-types'
 
@@ -41,8 +41,7 @@ describe('AI Prompt Generator', () => {
 
         if (metadata.mediumType === 'photography') {
           // Photography prompts should have camera terms
-          const hasCameraTerms =
-            prompt.includes('mm') || prompt.includes('f/')
+          const hasCameraTerms = prompt.includes('mm') || prompt.includes('f/')
           expect(hasCameraTerms).toBe(true)
 
           // Photography prompts should NOT have art terms
@@ -96,8 +95,9 @@ describe('AI Prompt Generator', () => {
           // Photography should have lens and film stock
           const technicalStr = parts.technical.join(' ')
           const hasLens = /mm/.test(technicalStr)
-          const hasFilmStock =
-            /Kodak|Fujifilm|Ilford|CineStill/.test(technicalStr)
+          const hasFilmStock = /Kodak|Fujifilm|Ilford|CineStill/.test(
+            technicalStr,
+          )
           expect(hasLens || hasFilmStock).toBe(true)
         } else if (metadata.mediumType === 'art') {
           // Art should have art techniques or framing
@@ -164,7 +164,7 @@ describe('AI Prompt Generator', () => {
 
   describe('Options', () => {
     it('should respect forced medium type', () => {
-      const types: MediumType[] = ['photography', 'art', '3d']
+      const types: Array<MediumType> = ['photography', 'art', '3d']
 
       for (const type of types) {
         const results = generatePrompts(20, { forceMediumType: type })

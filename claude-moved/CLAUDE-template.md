@@ -20,9 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- List technologies used. Add/remove rows as needed -->
 
-| Technology | Purpose |
-|------------|---------|
-| {tech} | {why it's used} |
+| Technology | Purpose         |
+| ---------- | --------------- |
+| {tech}     | {why it's used} |
 
 ---
 
@@ -78,12 +78,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 <!-- Key patterns and conventions used in this codebase -->
 
 ### Naming Conventions
+
 - {convention}
 
 ### File Organization
+
 - {pattern}
 
 ### Error Handling
+
 - {approach}
 
 ---
@@ -112,8 +115,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- Important files to know about -->
 
-| File | Purpose |
-|------|---------|
+| File     | Purpose       |
+| -------- | ------------- |
 | `{path}` | {description} |
 
 ---
@@ -122,8 +125,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 <!-- Optional: Reference docs for deeper context -->
 
-| Topic | File |
-|-------|------|
+| Topic   | File     |
+| ------- | -------- |
 | {topic} | `{path}` |
 
 ---

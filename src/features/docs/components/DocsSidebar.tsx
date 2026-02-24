@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import type { DocNavCategory } from '@/lib/docs/types'
+import { cn } from '@/lib/utils'
 
 interface DocsSidebarProps {
-  categories: DocNavCategory[]
+  categories: Array<DocNavCategory>
 }
 
 export function DocsSidebar({ categories }: DocsSidebarProps) {
