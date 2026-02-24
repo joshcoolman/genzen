@@ -31,7 +31,7 @@ export const ALL_IMAGE_MODELS: ImageModel[] = [
   {
     id: 'fal-ai/flux-pro/kontext',
     name: 'FLUX Kontext Pro',
-    description: 'Context-aware generation',
+    description: 'Subject-consistent generation',
     category: 'FLUX',
   },
   {
@@ -102,11 +102,12 @@ export const ALL_IMAGE_MODELS: ImageModel[] = [
   },
 ]
 
-// Default visible models - curated selection of 7 most useful models
+// Default visible models - curated selection of 8 most useful models
 export const DEFAULT_VISIBLE_MODELS = [
   ALL_IMAGE_MODELS[0], // FLUX Schnell
   ALL_IMAGE_MODELS[1], // FLUX Dev
   ALL_IMAGE_MODELS[2], // FLUX.2 Flex
+  ALL_IMAGE_MODELS[3], // FLUX Kontext Pro
   ALL_IMAGE_MODELS[7], // Nano Banana Pro
   ALL_IMAGE_MODELS[8], // Recraft V3
   ALL_IMAGE_MODELS[9], // Grok Imagine

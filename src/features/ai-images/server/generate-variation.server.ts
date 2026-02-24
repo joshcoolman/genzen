@@ -10,22 +10,24 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const VARIATION_SYSTEM_PROMPT = `You are a creative photography director. Given an image generation prompt, you create a fresh variation that feels like a different frame from the same shoot.
+const VARIATION_SYSTEM_PROMPT = `You are a creative director reimagining what a subject could be doing in a completely different moment or place.
 
-KEEP THE SAME:
-- The subject (same person/animal/object type, same general description)
-- The setting/environment
-- Camera specs (lens, film stock, framing) and aspect ratio
-- The overall mood and style
+KEEP:
+- The subject's identity and appearance (Kontext will anchor this visually)
+- Camera/lens specs, film stock, visual style
+- Image quality descriptors
 
-CHANGE CREATIVELY:
-- The angle or perspective (low angle, over-the-shoulder, from behind, bird's eye)
-- The action or moment (different gesture, interaction, expression)
-- The pose or body language
-- Small environmental details (different lighting moment, background activity)
-- The "decisive moment" - capture a different instant
+CHANGE BOLDLY — surprise the viewer:
+- Put the subject somewhere entirely different: a new location, time of day, social setting
+- Invent a new story beat: what are they doing an hour later? Who are they with? What just happened?
+- Shift the emotional register: intimate vs. epic, quiet vs. chaotic, solitary vs. crowded
+- New action, interaction, or environmental drama
+- The goal is to feel like a different chapter of the same story, not a different angle of the same scene
 
-Think like a photographer doing a real shoot: same subject, same location, but each frame tells a slightly different story.
+Examples of the spirit:
+- Street scene → same person now in a dimly lit jazz bar, leaning into conversation
+- Portrait → same subject caught mid-laugh at an outdoor market, motion blur of crowds behind them
+- Landscape with figure → same figure now silhouetted against a storm rolling in from the ocean
 
 Return ONLY the new prompt as plain text. No explanations.`
 
@@ -65,19 +67,50 @@ export const generateVariation = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch the source image's created_at so variations sort next to it
+    // Fetch the source image's created_at so variations sort next to it, and storage_path for vision grounding
     const { data: sourceImage } = await supabase
       .from('user_images')
-      .select('created_at')
+      .select('created_at, storage_path')
       .eq('id', sourceImageId)
       .single()
+
+    const signedUrl = sourceImage?.storage_path
+      ? (await supabase.storage.from('user-images').createSignedUrl(sourceImage.storage_path, 3600))
+          .data?.signedUrl
+      : undefined
+
+    // Fetch image bytes — needed for both Claude (base64) and FAL (upload to get HTTPS URL)
+    let imageBase64: { data: string; mediaType: string } | undefined
+    let falImageUrl: string | undefined
+    if (signedUrl) {
+      try {
+        const imageRes = await fetch(signedUrl)
+        const buffer = await imageRes.arrayBuffer()
+        const bytes = new Uint8Array(buffer)
+        // Detect actual format from magic bytes — don't trust Content-Type header
+        let mediaType = 'image/jpeg'
+        if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+          mediaType = 'image/png'
+        } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+          mediaType = 'image/webp'
+        }
+        imageBase64 = {
+          data: Buffer.from(buffer).toString('base64'),
+          mediaType,
+        }
+        // Upload to FAL storage to get a public HTTPS URL usable by Kontext (works in dev + prod)
+        falImageUrl = await fal.storage.upload(new Blob([buffer], { type: mediaType }))
+      } catch {
+        // proceed without vision grounding if fetch or upload fails
+      }
+    }
 
     const results: { recordId: string; request_id: string }[] = []
 
     for (let i = 0; i < 2; i++) {
       // Use Claude to reimagine the prompt for each variation
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 300,
         system: [
           {
@@ -89,7 +122,15 @@ export const generateVariation = createServerFn({ method: 'POST' })
         messages: [
           {
             role: 'user',
-            content: `Create variation ${i + 1} of this prompt:\n\n${prompt}`,
+            content: imageBase64
+              ? [
+                  {
+                    type: 'image',
+                    source: { type: 'base64', media_type: imageBase64.mediaType, data: imageBase64.data },
+                  },
+                  { type: 'text', text: `Create variation ${i + 1} of this image using this prompt as the base:\n\n${prompt}` },
+                ]
+              : `Create variation ${i + 1} of this prompt:\n\n${prompt}`,
           },
         ],
       })
@@ -101,9 +142,12 @@ export const generateVariation = createServerFn({ method: 'POST' })
 
       const variedPrompt = textContent.text.trim()
 
-      // Submit as fresh text-to-image generation
-      const { request_id } = await fal.queue.submit(model, {
-        input: { prompt: variedPrompt },
+      // Submit via Kontext for subject-consistent generation, anchored to source image
+      const { request_id } = await fal.queue.submit('fal-ai/flux-pro/kontext', {
+        input: {
+          prompt: variedPrompt,
+          ...(falImageUrl && { image_url: falImageUrl }),
+        },
       })
 
       // Offset created_at by 1-2 seconds after source so variations sort right next to it

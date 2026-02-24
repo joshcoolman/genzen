@@ -106,6 +106,7 @@ function AiImagesPage() {
   const [savedImages, setSavedImages] = useState<SavedAiImage[]>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingGallery, setLoadingGallery] = useState(true)
+  const [generatingVariationFor, setGeneratingVariationFor] = useState<string | null>(null)
 
   const loadSavedImages = useCallback(async () => {
     if (!user?.id) return
@@ -168,11 +169,12 @@ function AiImagesPage() {
           if (payload.eventType === 'INSERT') {
             const newImage = payload.new as SavedAiImage
             setSavedImages((prev) => {
-              // Prevent duplicates
-              if (prev.some((img) => img.id === newImage.id)) {
-                return prev
-              }
-              return [newImage, ...prev]
+              // Prevent duplicates (real record may already replace an optimistic card)
+              if (prev.some((img) => img.id === newImage.id)) return prev
+              // Insert at correct sorted position (DESC by created_at)
+              return [...prev, newImage].sort(
+                (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+              )
             })
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
@@ -341,9 +343,30 @@ function AiImagesPage() {
       return
 
     setError(null)
+    setGeneratingVariationFor(img.id)
+
+    // Optimistically insert 2 placeholder cards at the correct inline position immediately
+    const optimisticIds = [`optimistic-${img.id}-0`, `optimistic-${img.id}-1`]
+    const optimisticCards: SavedAiImage[] = [0, 1].map((i) => ({
+      id: optimisticIds[i],
+      title: 'Generating variation...',
+      storage_path: null,
+      created_at: new Date(new Date(img.created_at).getTime() + (i + 1) * 1000).toISOString(),
+      status: 'pending',
+      generation_error: null,
+      generation_metadata: {
+        prompt: img.generation_metadata!.prompt,
+        model: img.generation_metadata!.model,
+      },
+    }))
+    setSavedImages((prev) =>
+      [...prev, ...optimisticCards].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ),
+    )
 
     try {
-      await generateVariation({
+      const results = await generateVariation({
         data: {
           accessToken: session.access_token,
           prompt: img.generation_metadata.prompt,
@@ -351,8 +374,32 @@ function AiImagesPage() {
           sourceImageId: img.id,
         },
       })
+
+      // Replace optimistic placeholders with real pending records
+      setSavedImages((prev) => {
+        const withoutOptimistic = prev.filter((i) => !optimisticIds.includes(i.id))
+        const realCards: SavedAiImage[] = results.map((r, i) => ({
+          id: r.recordId,
+          title: 'Generating variation...',
+          storage_path: null,
+          created_at: new Date(new Date(img.created_at).getTime() + (i + 1) * 1000).toISOString(),
+          status: 'pending',
+          generation_error: null,
+          generation_metadata: {
+            prompt: img.generation_metadata!.prompt,
+            model: img.generation_metadata!.model,
+          },
+        }))
+        return [...withoutOptimistic, ...realCards].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+      })
     } catch (err) {
+      // Remove optimistic cards on failure
+      setSavedImages((prev) => prev.filter((i) => !optimisticIds.includes(i.id)))
       setError(err instanceof Error ? err.message : 'Failed to generate variations')
+    } finally {
+      setGeneratingVariationFor(null)
     }
   }
 
@@ -690,9 +737,10 @@ function AiImagesPage() {
                       </button>
                       <button
                         onClick={() => handleMoreLikeThis(img)}
-                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                        disabled={generatingVariationFor === img.id}
+                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        More
+                        {generatingVariationFor === img.id ? '...' : 'More'}
                       </button>
                     </div>
                   </div>
