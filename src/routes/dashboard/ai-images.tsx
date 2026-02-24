@@ -37,6 +37,8 @@ interface SavedAiImage {
     model: string
     seed?: number
     elapsed?: number
+    generation_type?: string
+    source_image_id?: string
   } | null
 }
 
@@ -172,7 +174,7 @@ function AiImagesPage() {
               // Prevent duplicates
               if (prev.some((img) => img.id === newImage.id)) return prev
               // If this is a variation, replace an optimistic placeholder instead of adding a new card
-              const metadata = newImage.generation_metadata as (SavedAiImage['generation_metadata'] & { generation_type?: string; source_image_id?: string }) | null
+              const metadata = newImage.generation_metadata
               if (metadata?.generation_type === 'variation' && metadata?.source_image_id) {
                 const sourceId = metadata.source_image_id
                 const optimisticIdx = prev.findIndex((img) =>
@@ -659,6 +661,7 @@ function AiImagesPage() {
                   key={img.id}
                   prompt={img.generation_metadata?.prompt ?? ''}
                   model={getModelName(img.generation_metadata?.model ?? '')}
+                  isVariation={img.generation_metadata?.generation_type === 'variation'}
                 />
               ) : img.status === 'failed' ? (
                 <div
@@ -717,6 +720,11 @@ function AiImagesPage() {
                       />
                     ) : (
                       <div className="aspect-square w-full bg-muted animate-pulse" />
+                    )}
+                    {img.generation_metadata?.generation_type === 'variation' && (
+                      <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+                        Variation
+                      </span>
                     )}
                     {/* Delete button */}
                     <button
