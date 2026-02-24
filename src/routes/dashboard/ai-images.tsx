@@ -374,6 +374,8 @@ function AiImagesPage() {
       generation_metadata: {
         prompt: img.generation_metadata!.prompt,
         model: img.generation_metadata!.model,
+        generation_type: 'variation',
+        source_image_id: img.id,
       },
     }))
     setSavedImages((prev) =>
@@ -489,6 +491,55 @@ function AiImagesPage() {
       setGeneratingPrompt(false)
     }
   }
+
+  // Group images into families by root ancestor
+  const familyGroups = useMemo(() => {
+    const imageMap = new Map<string, SavedAiImage>()
+    for (const img of savedImages) imageMap.set(img.id, img)
+
+    // Resolve root ancestor for an image
+    function findRoot(img: SavedAiImage): string {
+      const meta = img.generation_metadata
+      if (meta?.generation_type !== 'variation' || !meta.source_image_id) return img.id
+
+      // Check optimistic ID pattern (optimistic-{sourceId}-N)
+      if (img.id.startsWith('optimistic-')) {
+        const sourceId = meta.source_image_id ?? img.id.split('-').slice(1, -1).join('-')
+        const parent = imageMap.get(sourceId)
+        return parent ? findRoot(parent) : sourceId
+      }
+
+      const parent = imageMap.get(meta.source_image_id)
+      if (parent) return findRoot(parent)
+      // Parent not in list (deleted) — use source_image_id as group key
+      return meta.source_image_id
+    }
+
+    const groups = new Map<string, SavedAiImage[]>()
+    for (const img of savedImages) {
+      const rootId = findRoot(img)
+      const group = groups.get(rootId)
+      if (group) group.push(img)
+      else groups.set(rootId, [img])
+    }
+
+    // Sort within each group: original first, then by created_at ascending
+    for (const [rootId, group] of groups) {
+      group.sort((a, b) => {
+        // Original (root) always first
+        if (a.id === rootId) return -1
+        if (b.id === rootId) return 1
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      })
+    }
+
+    // Sort groups by earliest created_at, descending (newest families first)
+    return Array.from(groups.values()).sort((a, b) => {
+      const aEarliest = Math.min(...a.map((i) => new Date(i.created_at).getTime()))
+      const bEarliest = Math.min(...b.map((i) => new Date(i.created_at).getTime()))
+      return bEarliest - aEarliest
+    })
+  }, [savedImages])
 
   function getModelName(modelId: string) {
     return ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ?? modelId
@@ -654,139 +705,258 @@ function AiImagesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {savedImages.map((img) =>
-              img.status === 'pending' ? (
-                <PendingImageCard
-                  key={img.id}
-                  prompt={img.generation_metadata?.prompt ?? ''}
-                  model={getModelName(img.generation_metadata?.model ?? '')}
-                  isVariation={img.generation_metadata?.generation_type === 'variation'}
-                />
-              ) : img.status === 'failed' ? (
-                <div
-                  key={img.id}
-                  className="group relative overflow-hidden rounded-lg border border-destructive/50 bg-card"
-                >
-                  <div className="aspect-square flex items-center justify-center bg-destructive/10 p-4">
-                    <div className="text-center space-y-2">
-                      <p className="text-sm font-medium text-destructive">
-                        Generation Failed
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {img.generation_error ?? 'Unknown error'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {img.generation_metadata?.prompt ?? img.title}
-                    </p>
-                  </div>
-                  {/* Delete button */}
-                  <button
-                    onClick={() => handleDelete(img)}
-                    className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                    aria-label="Delete failed generation"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            {familyGroups.map((group) =>
+              group.length > 1 ? (
+              <div
+                key={group[0].id}
+                className="grid gap-4 rounded-lg border border-dashed border-border p-4"
+                style={{ gridColumn: '1 / -1', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
+              >
+                {group.map((img) =>
+                  img.status === 'pending' ? (
+                    <PendingImageCard
+                      key={img.id}
+                      prompt={img.generation_metadata?.prompt ?? ''}
+                      model={getModelName(img.generation_metadata?.model ?? '')}
+                      isVariation={img.generation_metadata?.generation_type === 'variation'}
+                    />
+                  ) : img.status === 'failed' ? (
+                    <div
+                      key={img.id}
+                      className="group relative overflow-hidden rounded-lg border border-destructive/50 bg-card"
                     >
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    </svg>
-                  </button>
-                </div>
+                      <div className="aspect-square flex items-center justify-center bg-destructive/10 p-4">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm font-medium text-destructive">
+                            Generation Failed
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {img.generation_error ?? 'Unknown error'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {img.generation_metadata?.prompt ?? img.title}
+                        </p>
+                      </div>
+                      {/* Delete button */}
+                      <button
+                        onClick={() => handleDelete(img)}
+                        className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label="Delete failed generation"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      key={img.id}
+                      className="group relative overflow-hidden rounded-lg border border-border bg-card"
+                    >
+                      <div className="relative">
+                        {imageUrls[img.id] ? (
+                          <img
+                            src={imageUrls[img.id]}
+                            alt={img.title}
+                            className="aspect-square w-full object-cover"
+                          />
+                        ) : (
+                          <div className="aspect-square w-full bg-muted animate-pulse" />
+                        )}
+                        {img.generation_metadata?.generation_type === 'variation' && (
+                          <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+                            Variation
+                          </span>
+                        )}
+                        {/* Delete button */}
+                        <button
+                          onClick={() => handleDelete(img)}
+                          className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Delete image"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
+                        {/* Action buttons overlay */}
+                        <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleLoadPrompt(img)}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                          >
+                            Prompt
+                          </button>
+                          <button
+                            onClick={() => handleLoadPromptAndModel(img)}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                          >
+                            P+M
+                          </button>
+                          <button
+                            onClick={() => handleMoreLikeThis(img)}
+                            disabled={generatingVariationFor === img.id}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {generatingVariationFor === img.id ? '...' : 'More'}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {img.generation_metadata?.prompt ?? img.title}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
+                          <span>
+                            {img.generation_metadata
+                              ? getModelName(img.generation_metadata.model)
+                              : ''}
+                          </span>
+                          <span>
+                            {new Date(img.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
               ) : (
-                <div
-                  key={img.id}
-                  className="group relative overflow-hidden rounded-lg border border-border bg-card"
-                >
-                  <div className="relative">
-                    {imageUrls[img.id] ? (
-                      <img
-                        src={imageUrls[img.id]}
-                        alt={img.title}
-                        className="aspect-square w-full object-cover"
-                      />
-                    ) : (
-                      <div className="aspect-square w-full bg-muted animate-pulse" />
-                    )}
-                    {img.generation_metadata?.generation_type === 'variation' && (
-                      <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
-                        Variation
-                      </span>
-                    )}
-                    {/* Delete button */}
-                    <button
-                      onClick={() => handleDelete(img)}
-                      className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                      aria-label="Delete image"
+                // Single-image group: render card directly in the outer grid
+                group.map((img) =>
+                  img.status === 'pending' ? (
+                    <PendingImageCard
+                      key={img.id}
+                      prompt={img.generation_metadata?.prompt ?? ''}
+                      model={getModelName(img.generation_metadata?.model ?? '')}
+                      isVariation={img.generation_metadata?.generation_type === 'variation'}
+                    />
+                  ) : img.status === 'failed' ? (
+                    <div
+                      key={img.id}
+                      className="group relative overflow-hidden rounded-lg border border-destructive/50 bg-card"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      </svg>
-                    </button>
-                    {/* Action buttons overlay */}
-                    <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="aspect-square flex items-center justify-center bg-destructive/10 p-4">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm font-medium text-destructive">
+                            Generation Failed
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {img.generation_error ?? 'Unknown error'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {img.generation_metadata?.prompt ?? img.title}
+                        </p>
+                      </div>
                       <button
-                        onClick={() => handleLoadPrompt(img)}
-                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                        onClick={() => handleDelete(img)}
+                        className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                        aria-label="Delete failed generation"
                       >
-                        Prompt
-                      </button>
-                      <button
-                        onClick={() => handleLoadPromptAndModel(img)}
-                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-                      >
-                        P+M
-                      </button>
-                      <button
-                        onClick={() => handleMoreLikeThis(img)}
-                        disabled={generatingVariationFor === img.id}
-                        className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {generatingVariationFor === img.id ? '...' : 'More'}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
                       </button>
                     </div>
-                  </div>
-                  <div className="p-3 space-y-1">
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {img.generation_metadata?.prompt ?? img.title}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground/60">
-                      <span>
-                        {img.generation_metadata
-                          ? getModelName(img.generation_metadata.model)
-                          : ''}
-                      </span>
-                      <span>
-                        {new Date(img.created_at).toLocaleDateString()}
-                      </span>
+                  ) : (
+                    <div
+                      key={img.id}
+                      className="group relative overflow-hidden rounded-lg border border-border bg-card"
+                    >
+                      <div className="relative">
+                        {imageUrls[img.id] ? (
+                          <img
+                            src={imageUrls[img.id]}
+                            alt={img.title}
+                            className="aspect-square w-full object-cover"
+                          />
+                        ) : (
+                          <div className="aspect-square w-full bg-muted animate-pulse" />
+                        )}
+                        {img.generation_metadata?.generation_type === 'variation' && (
+                          <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+                            Variation
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleDelete(img)}
+                          className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label="Delete image"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleLoadPrompt(img)}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                          >
+                            Prompt
+                          </button>
+                          <button
+                            onClick={() => handleLoadPromptAndModel(img)}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+                          >
+                            P+M
+                          </button>
+                          <button
+                            onClick={() => handleMoreLikeThis(img)}
+                            disabled={generatingVariationFor === img.id}
+                            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {generatingVariationFor === img.id ? '...' : 'More'}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-3 space-y-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {img.generation_metadata?.prompt ?? img.title}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
+                          <span>
+                            {img.generation_metadata
+                              ? getModelName(img.generation_metadata.model)
+                              : ''}
+                          </span>
+                          <span>
+                            {new Date(img.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  ),
+                )
               ),
             )}
           </div>

@@ -24,6 +24,7 @@
 - **Root prompt resolution**: variations-of-variations trace back to original prompt, preventing creative tension collapse
 - **Kontext guidance_scale 3.5 → 5.0**: text prompt gets more influence over reference image (face/identity preserved, but pose/scene can change)
 - **Realtime race condition fix**: variation records arriving via realtime replace optimistic placeholders in-place
+- **Family grouping in gallery**: images grouped by root ancestor (original + all descendants) so variation families never interleave with unrelated images. Optimistic cards include `source_image_id`/`generation_type` metadata for correct grouping. Standalone images render as single-item groups (no visual difference).
 
 ---
 
