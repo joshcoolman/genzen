@@ -15,13 +15,15 @@
   - Uploaded to FAL storage → HTTPS URL → Kontext `image_url`
   - Magic byte detection for media type (don't trust Content-Type header)
 - **Claude model**: Haiku → Sonnet 4.6 for variation prompt generation
-- **Bolder system prompt**: encourages new scene/context/story beat, not just camera angle change
 - **Optimistic inline UI**: 2 placeholder cards appear immediately on "More" click, sorted next to source by timestamp offset
 - **Realtime INSERT** now sorts by `created_at` instead of prepending (fixes cards appearing at top)
 - **"More" button**: disabled/loading state during server call
-
-### Fixed this session (not yet committed)
-- **Realtime race condition**: When a variation DB record arrived via realtime before `generateVariation` returned, a 3rd card was added instead of filling a placeholder. Fix: realtime INSERT handler now detects `generation_type === 'variation'` and replaces an optimistic placeholder in-place. Also, the `handleMoreLikeThis` replacement filters out real IDs already in state before re-adding them.
+- **Describe-first prompt strategy**: Claude observes the image visually (face, hair, outfit, accessories) and uses that as ground truth instead of relying on the text prompt
+- **History awareness**: queries existing variation prompts in the family + source prompt, passes as "avoid" list so Claude never repeats similar scenarios
+- **Batch dedup**: variation 2 in each batch sees variation 1's prompt
+- **Root prompt resolution**: variations-of-variations trace back to original prompt, preventing creative tension collapse
+- **Kontext guidance_scale 3.5 → 5.0**: text prompt gets more influence over reference image (face/identity preserved, but pose/scene can change)
+- **Realtime race condition fix**: variation records arriving via realtime replace optimistic placeholders in-place
 
 ---
 
@@ -31,7 +33,7 @@
 - [ ] Variation card labeling — cards derived from an original show same model name + date as source, no indication they're variants. Need a visual treatment (label? subtle border? indicator?). Josh is still thinking about the right approach.
 
 ### Medium priority
-- [ ] Prompt boldness tuning — current prompt improvements are good but Josh wants more unexpected narrative leaps. More testing needed before adjusting further. Feedback: "if a man walking in the street, want to see him eating in a restaurant, meeting a friend."
+- [ ] Variation drift — deeper variation chains (variation-of-variation-of-variation) drift further from original subject. Not urgent but worth monitoring.
 - [ ] Fast model UX: overall latency is ~10s (Claude + FAL storage upload). Optimistic UI helps perceived speed but actual time is still slow.
 
 ### Low priority / deferred
@@ -45,10 +47,12 @@
 1. User hovers image → clicks "More"
 2. **Client**: immediately inserts 2 optimistic placeholder cards inline (sorted by `created_at + 1s/2s`)
 3. **Server** (`generate-variation.server.ts`):
-   - Fetches source image `storage_path` from Supabase
+   - Fetches source image `storage_path` + `generation_metadata` from Supabase
+   - Resolves root prompt (traces back through variation chain to original)
    - Fetches image bytes → base64 (Claude) + uploads to FAL storage (FAL URL)
-   - Calls Claude Sonnet with image + original prompt → 2 varied prompts
-   - Submits both to `fal-ai/flux-pro/kontext` with `image_url`
+   - Queries existing variation prompts in the family for "avoid" list
+   - Calls Claude Sonnet with image + avoid list → Claude describes what it sees, writes new scenario
+   - Submits both to `fal-ai/flux-pro/kontext` with `image_url` + `guidance_scale: 5.0`
    - Inserts 2 pending DB records with `created_at` offset from source
 4. **Client**: realtime INSERT replaces optimistic placeholders; on server return, cleans up any remaining optimistic + deduplicates real cards
 5. **Realtime + polling**: updates cards as FAL completes
