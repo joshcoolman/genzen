@@ -7,26 +7,30 @@ import { ai } from '@/lib/server/ai.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const VARIATION_SYSTEM_PROMPT = `You are a creative director. Your job is to look at a photograph and reimagine the subject in a completely different moment.
+const VARIATION_SYSTEM_PROMPT = `You are a photographer directing a photoshoot. You are looking at a shot that was just taken and directing the next shot in the SAME session.
 
 STEP 1 — OBSERVE THE IMAGE (do this internally, don't output it):
-Study the image carefully. Note the subject's face, hair, build, clothing, accessories, and any distinguishing features. This is your ground truth — not the text prompt.
+Study everything: the subject's face, hair, build, clothing, accessories, the location, lighting, time of day, weather, and visual style. This is your ground truth.
 
-STEP 2 — WRITE A NEW PROMPT:
-Describe the SAME PERSON (using details you observed) in a completely new scenario.
+STEP 2 — WRITE THE NEXT SHOT:
+Describe the SAME PERSON in the SAME LOCATION wearing the SAME CLOTHES — but a different moment in the shoot.
 
-KEEP:
-- The subject's appearance as you see it: face, hair, build, clothing, accessories
-- Visual style and quality level of the original image
+KEEP EXACTLY THE SAME:
+- The subject's appearance: face, hair, build, clothing, accessories
+- The location, environment, and setting
+- Lighting conditions and time of day
+- Visual style, color grade, and quality level
 
-ALWAYS CHANGE:
-- POSE and BODY LANGUAGE: completely different physical position — if sitting, have them standing/walking/leaning. Be explicit (e.g., "crouched at the edge of a rooftop" not just "on a rooftop").
-- SCENE and LOCATION: entirely new place, time of day, weather, social context
-- ACTION and STORY: what just happened? What are they doing? Who else is present?
-- COMPOSITION: different framing and camera angle
+CHANGE (pick 1-2 per variation):
+- POSE: completely different body position — if standing straight, try crouching/leaning/sitting/walking. Be specific (e.g., "looking over their shoulder" not just "different pose")
+- CAMERA ANGLE: shoot from above, below, behind, tight close-up, wide establishing shot, profile view, three-quarter angle
+- EXPRESSION and MOOD: laughing, contemplative, intense eye contact, looking away, mid-conversation, candid moment
+- FRAMING: full body vs waist-up vs headshot, centered vs rule-of-thirds, foreground elements
 
-AVOID THESE ALREADY-USED SCENARIOS (if listed below):
-The user may provide a list of prompts that have already been generated. You MUST avoid producing anything similar to those. Choose a genuinely different setting, action, and mood.
+DO NOT CHANGE the environment, background, wardrobe, or setting. This is the same photoshoot, same location, same session.
+
+AVOID THESE ALREADY-USED SHOTS (if listed below):
+The user may provide previous shots from this session. Choose a distinctly different pose, angle, or expression from what's already been captured.
 
 Return ONLY the new prompt as plain text. No explanations, no preamble.`
 
@@ -183,10 +187,10 @@ export const generateVariation = createServerFn({ method: 'POST' })
             },
             {
               type: 'text' as const,
-              text: `Look at this image. Describe the subject to yourself, then reimagine them in a completely different scene.${avoidSection}`,
+              text: `Look at this shot from the photoshoot. Direct the next shot — same person, same location, same clothes, but a different pose, angle, or expression.${avoidSection}`,
             },
           ]
-        : `Create a variation of this prompt — put the subject in a completely new scenario:\n\n${rootPrompt}${avoidSection}`
+        : `Create another shot from the same photoshoot — same person, same location, same clothes, different pose/angle/expression:\n\n${rootPrompt}${avoidSection}`
 
       const response = await generateText({
         model: ai.sonnet,
@@ -202,7 +206,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
       const kontextInput = {
         prompt: variedPrompt,
         image_url: falImageUrl ?? '',
-        guidance_scale: 5.0,
+        guidance_scale: 7.0,
         safety_tolerance: '6' as const,
       }
       const { request_id } = await fal.queue.submit('fal-ai/flux-pro/kontext', {

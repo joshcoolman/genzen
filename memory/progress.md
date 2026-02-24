@@ -27,21 +27,7 @@
 
 ## Known Issues / Backlog
 
-### High priority
-
-- [x] **Remove image grouping** — done, flat chronological grid now
-- [ ] Variation card labeling — cards derived from an original show same model name + date as source, need visual treatment
-
-### Medium priority
-
-- [ ] Variation drift — deeper variation chains drift from original subject
-- [ ] Fast model UX: ~10s latency (Claude + FAL storage upload)
-- [ ] Re-add prompt caching via `providerOptions.anthropic.cacheControl` (lost in migration)
-
-### Low priority / deferred
-
-- [ ] Model name on variant cards shows original generation model, not Kontext
-- [ ] Explore Vercel AI Gateway if observability/billing consolidation becomes valuable
+No active backlog items. Stable state — issues will be added as they come up.
 
 ---
 

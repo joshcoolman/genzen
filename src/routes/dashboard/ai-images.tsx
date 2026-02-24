@@ -721,6 +721,11 @@ function AiImagesPage() {
                   isVariation={
                     img.generation_metadata?.generation_type === 'variation'
                   }
+                  sourceImageUrl={
+                    img.generation_metadata?.source_image_id
+                      ? imageUrls[img.generation_metadata.source_image_id]
+                      : undefined
+                  }
                 />
               ) : img.status === 'failed' ? (
                 <div
