@@ -190,6 +190,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
       const kontextInput: Record<string, unknown> = {
         prompt: variedPrompt,
         guidance_scale: 5.0,
+        safety_tolerance: 6,
       }
       if (falImageUrl) {
         kontextInput.image_url = falImageUrl

@@ -28,7 +28,7 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     // Submit to FAL async queue (returns immediately)
     const { request_id } = await fal.queue.submit(model, {
-      input: { prompt },
+      input: { prompt, safety_tolerance: 6 },
     })
 
     // Create Supabase client authenticated as the user
