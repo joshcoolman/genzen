@@ -10,6 +10,7 @@
 
 ### Recently committed
 
+- **Video workspaces & generations** (`gen-video`): Added persistence layer to video page. New `video_workspaces` + `video_generations` tables (migration `20260225000002`). `/dashboard/video` is now a workspace list; `/dashboard/video/$workspaceId` hosts the 3-step FLF UI. After video completes, a generation record is saved with firstFrameId/lastFrameId/videoId. Generations list below the UI shows thumbnails; click video thumb → Dialog player; click Load → repopulates UI from that generation. 4 new server fns: create-workspace, get-workspaces, create-generation, get-generations.
 - **Manual last frame UX** (`gen-video`): Removed auto-generate-on-upload chain. Last frame panel now always shows textarea; Suggest button stays for inspiration; button always says "Generate Last Frame" (never "Regenerate"). Button disabled until prompt has text. Fully manual workflow — user controls when generation fires.
 - **Suggest fix** (`gen-video`): `suggest-last-frame` was returning identical output every call — caused by re-sending the full first-frame text prompt as context when image grounding was present. Fixed by neutral instruction when image attached + `temperature: 1.0`. Rewrote system prompt: 10-word max action phrases, no camera/lighting terms.
 - **Kling O1 swap + continuity fix** (`gen-video`): Replaced `fal-ai/wan-flf2v` with `fal-ai/kling-video/o1/image-to-video`. Uses `@Image1`/`@Image2` prompt syntax, `duration: '5'`. Added `guidance_scale: 2.0` to `generate-last-frame` to keep FLUX close to input image.

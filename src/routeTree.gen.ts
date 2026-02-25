@@ -22,6 +22,7 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settin
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
+import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -89,6 +90,11 @@ const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   path: '/ai-images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardVideoRoute,
+} as any)
 const DashboardVideoWorkspaceIdRoute =
   DashboardVideoWorkspaceIdRouteImport.update({
     id: '/$workspaceId',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,11 +127,11 @@ export interface FileRoutesByTo {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/video': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +149,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +168,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/video/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -169,11 +178,11 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
-    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/video'
   id:
     | '__root__'
     | '/'
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/video/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -293,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAiImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/video/': {
+      id: '/dashboard/video/'
+      path: '/'
+      fullPath: '/dashboard/video/'
+      preLoaderRoute: typeof DashboardVideoIndexRouteImport
+      parentRoute: typeof DashboardVideoRoute
+    }
     '/dashboard/video/$workspaceId': {
       id: '/dashboard/video/$workspaceId'
       path: '/$workspaceId'
@@ -305,10 +322,12 @@ declare module '@tanstack/react-router' {
 
 interface DashboardVideoRouteChildren {
   DashboardVideoWorkspaceIdRoute: typeof DashboardVideoWorkspaceIdRoute
+  DashboardVideoIndexRoute: typeof DashboardVideoIndexRoute
 }
 
 const DashboardVideoRouteChildren: DashboardVideoRouteChildren = {
   DashboardVideoWorkspaceIdRoute: DashboardVideoWorkspaceIdRoute,
+  DashboardVideoIndexRoute: DashboardVideoIndexRoute,
 }
 
 const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
