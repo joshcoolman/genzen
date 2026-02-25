@@ -30,7 +30,7 @@ export const getGenerations = createServerFn({ method: 'POST' })
         created_at,
         first_frame:first_frame_id(id, storage_path, generation_metadata),
         last_frame:last_frame_id(id, storage_path, generation_metadata),
-        video:video_id(id, storage_path, generation_metadata)
+        video:video_id(id, status, storage_path, generation_metadata)
         `,
       )
       .eq('workspace_id', data.workspaceId)
@@ -46,6 +46,7 @@ export const getGenerations = createServerFn({ method: 'POST' })
       generations.map(async (gen) => {
         type FrameRow = {
           id: string
+          status?: string
           storage_path: string | null
           generation_metadata: Record<string, unknown> | null
         }
@@ -83,7 +84,16 @@ export const getGenerations = createServerFn({ method: 'POST' })
             ? { id: firstFrame.id, url: firstFrameUrl }
             : null,
           lastFrame: lastFrame ? { id: lastFrame.id, url: lastFrameUrl } : null,
-          video: video ? { id: video.id, url: videoUrl } : null,
+          video: video
+            ? {
+                id: video.id,
+                url: videoUrl,
+                status: (video.status ?? 'completed') as
+                  | 'pending'
+                  | 'completed'
+                  | 'failed',
+              }
+            : null,
         }
       }),
     )

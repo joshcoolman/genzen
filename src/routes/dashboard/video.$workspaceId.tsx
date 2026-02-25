@@ -31,7 +31,6 @@ const FIRST_FRAME_MODELS = [
 const FLUX_KONTEXT_MODEL_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 
 type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
-type VideoStatus = 'idle' | 'generating' | 'completed' | 'error'
 type LastFrameMode = 'prompt' | 'image'
 
 type Generation = {
@@ -39,7 +38,11 @@ type Generation = {
   createdAt: string
   firstFrame: { id: string; url: string | null } | null
   lastFrame: { id: string; url: string | null } | null
-  video: { id: string; url: string | null } | null
+  video: {
+    id: string
+    url: string | null
+    status: 'pending' | 'completed' | 'failed'
+  } | null
 }
 
 function cropTo16x9(file: File): Promise<string> {
@@ -150,11 +153,54 @@ function FrameImageArea({
 function GenerationRow({
   generation,
   onLoad,
+  onUpdate,
+  accessToken,
 }: {
   generation: Generation
   onLoad: (gen: Generation) => void
+  onUpdate: (id: string, updates: Partial<Generation>) => void
+  accessToken: string | undefined
 }) {
   const [videoOpen, setVideoOpen] = useState(false)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const isPending = generation.video?.status === 'pending'
+
+  // Poll for pending videos
+  useEffect(() => {
+    if (!isPending || !accessToken || !generation.video) return
+
+    const videoRecordId = generation.video.id
+
+    const poll = async () => {
+      try {
+        const result = await checkPendingVideo({
+          data: { accessToken, recordId: videoRecordId },
+        })
+        if (result.status === 'completed' && result.videoUrl) {
+          onUpdate(generation.id, {
+            video: {
+              id: videoRecordId,
+              url: result.videoUrl,
+              status: 'completed',
+            },
+          })
+        } else if (result.status === 'error') {
+          onUpdate(generation.id, {
+            video: { id: videoRecordId, url: null, status: 'failed' },
+          })
+        }
+      } catch {
+        // keep polling
+      }
+    }
+
+    poll()
+    pollingRef.current = setInterval(poll, 5000)
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+    }
+  }, [isPending, accessToken, generation.video?.id, generation.id, onUpdate])
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
@@ -178,7 +224,11 @@ function GenerationRow({
         ) : (
           <div className="w-24 aspect-video rounded border border-dashed border-border bg-muted/30" />
         )}
-        {generation.video?.url ? (
+        {generation.video?.status === 'pending' ? (
+          <div className="w-24 aspect-video rounded border border-border bg-muted/30 flex items-center justify-center animate-pulse">
+            <p className="text-[10px] text-muted-foreground">Processing...</p>
+          </div>
+        ) : generation.video?.url ? (
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -196,6 +246,10 @@ function GenerationRow({
               <span className="text-white text-xs">Play</span>
             </div>
           </button>
+        ) : generation.video?.status === 'failed' ? (
+          <div className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex items-center justify-center">
+            <p className="text-[10px] text-destructive">Failed</p>
+          </div>
         ) : (
           <div className="w-24 aspect-video rounded border border-dashed border-border bg-muted/30" />
         )}
@@ -265,14 +319,9 @@ function WorkspaceDetailPage() {
   const [lastFrameError, setLastFrameError] = useState<string | null>(null)
   const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
 
-  // Video state
-  const [videoStatus, setVideoStatus] = useState<VideoStatus>('idle')
-  const [videoRecordId, setVideoRecordId] = useState<string | null>(null)
-  const [videoUrl, setVideoUrl] = useState<string | null>(null)
-  const [videoError, setVideoError] = useState<string | null>(null)
-
   // Generations list
   const [generations, setGenerations] = useState<Array<Generation>>([])
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
 
   const firstFrameFileInputRef = useRef<HTMLInputElement>(null)
   const lastFrameFileInputRef = useRef<HTMLInputElement>(null)
@@ -289,22 +338,24 @@ function WorkspaceDetailPage() {
       .catch(() => {})
   }, [workspaceId, session?.access_token])
 
+  function resetAllState() {
+    setFirstFrameStatus('idle')
+    setFirstFrameUrl(null)
+    setFirstFrameRecordId(null)
+    setFirstFrameError(null)
+    setLastFrameStatus('idle')
+    setLastFrameUrl(null)
+    setLastFrameRecordId(null)
+    setLastFrameError(null)
+    setLastFramePrompt('')
+    setLastFrameImageData(null)
+  }
+
   function resetDownstream() {
     setLastFrameStatus('idle')
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
-    setVideoStatus('idle')
-    setVideoUrl(null)
-    setVideoRecordId(null)
-    setVideoError(null)
-  }
-
-  function resetVideoState() {
-    setVideoStatus('idle')
-    setVideoUrl(null)
-    setVideoRecordId(null)
-    setVideoError(null)
   }
 
   function handleModelChange(modelId: string) {
@@ -325,7 +376,6 @@ function WorkspaceDetailPage() {
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
-    resetVideoState()
   }
 
   async function handleFirstFrameFilePick(
@@ -470,59 +520,6 @@ function WorkspaceDetailPage() {
     return () => clearInterval(interval)
   }, [lastFrameStatus, lastFrameRecordId, checkLastFrame, lastFrameMode])
 
-  // Poll for video
-  const checkVideo = useCallback(async () => {
-    if (!session?.access_token || !videoRecordId) return
-    try {
-      const result = await checkPendingVideo({
-        data: { accessToken: session.access_token, recordId: videoRecordId },
-      })
-      if (result.status === 'completed' && result.videoUrl) {
-        setVideoUrl(result.videoUrl)
-        setVideoStatus('completed')
-        // Save generation record
-        if (firstFrameRecordId && lastFrameRecordId) {
-          try {
-            const gen = await createGeneration({
-              data: {
-                workspaceId,
-                firstFrameId: firstFrameRecordId,
-                lastFrameId: lastFrameRecordId,
-                videoId: videoRecordId,
-                accessToken: session.access_token,
-              },
-            })
-            // Refresh generations list
-            const updated = await getGenerations({
-              data: { workspaceId, accessToken: session.access_token },
-            })
-            setGenerations(updated)
-            void gen
-          } catch {
-            // non-fatal
-          }
-        }
-      } else if (result.status === 'error') {
-        setVideoStatus('error')
-        setVideoError(result.error || 'Video generation failed')
-      }
-    } catch {
-      // keep polling
-    }
-  }, [
-    session?.access_token,
-    videoRecordId,
-    firstFrameRecordId,
-    lastFrameRecordId,
-    workspaceId,
-  ])
-
-  useEffect(() => {
-    if (videoStatus !== 'generating' || !videoRecordId) return
-    const interval = setInterval(checkVideo, 5000)
-    return () => clearInterval(interval)
-  }, [videoStatus, videoRecordId, checkVideo])
-
   async function handleGenerateFirstFrame() {
     if (!session?.access_token || !firstFramePrompt.trim()) return
     setFirstFrameStatus('generating')
@@ -561,7 +558,6 @@ function WorkspaceDetailPage() {
       setLastFrameUrl(null)
       setLastFrameRecordId(null)
       setLastFrameError(null)
-      resetVideoState()
       try {
         const result = await uploadVideoFrame({
           data: {
@@ -587,7 +583,6 @@ function WorkspaceDetailPage() {
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
-    resetVideoState()
     try {
       const result = await generateLastFrame({
         data: {
@@ -614,11 +609,11 @@ function WorkspaceDetailPage() {
       lastFrameStatus !== 'completed'
     )
       return
-    setVideoStatus('generating')
-    setVideoUrl(null)
-    setVideoRecordId(null)
-    setVideoError(null)
+
+    setIsGeneratingVideo(true)
+
     try {
+      // Kick off video generation
       const result = await generateFlfVideo({
         data: {
           firstFrameRecordId,
@@ -627,14 +622,57 @@ function WorkspaceDetailPage() {
           accessToken: session.access_token,
         },
       })
-      setVideoRecordId(result.recordId)
+
+      // Capture current frame data before resetting
+      const capturedFirstFrameUrl = firstFrameUrl
+      const capturedFirstFrameRecordId = firstFrameRecordId
+      const capturedLastFrameUrl = lastFrameUrl
+      const capturedLastFrameRecordId = lastFrameRecordId
+
+      // Create generation record immediately with pending video
+      const gen = await createGeneration({
+        data: {
+          workspaceId,
+          firstFrameId: capturedFirstFrameRecordId,
+          lastFrameId: capturedLastFrameRecordId,
+          videoId: result.recordId,
+          accessToken: session.access_token,
+        },
+      })
+
+      // Add optimistic generation to list
+      const newGeneration: Generation = {
+        id: gen.id,
+        createdAt: new Date().toISOString(),
+        firstFrame: capturedFirstFrameRecordId
+          ? { id: capturedFirstFrameRecordId, url: capturedFirstFrameUrl }
+          : null,
+        lastFrame: capturedLastFrameRecordId
+          ? { id: capturedLastFrameRecordId, url: capturedLastFrameUrl }
+          : null,
+        video: { id: result.recordId, url: null, status: 'pending' },
+      }
+
+      setGenerations((prev) => [newGeneration, ...prev])
+
+      // Reset form for next generation
+      resetAllState()
     } catch (err) {
-      setVideoStatus('error')
-      setVideoError(
-        err instanceof Error ? err.message : 'Failed to generate video',
-      )
+      // Don't reset on error -- let user retry
+      console.error('Failed to generate video:', err)
+    } finally {
+      setIsGeneratingVideo(false)
     }
   }
+
+  const handleUpdateGeneration = useCallback(
+    (id: string, updates: Partial<Generation>) => {
+      setGenerations((prev) =>
+        prev.map((gen) => (gen.id === id ? { ...gen, ...updates } : gen)),
+      )
+    },
+    [],
+  )
 
   async function handleSuggestLastFrame() {
     if (!session?.access_token || firstFrameStatus !== 'completed') return
@@ -668,13 +706,6 @@ function WorkspaceDetailPage() {
       setLastFrameUrl(gen.lastFrame.url)
       setLastFrameError(null)
     }
-    if (gen.video) {
-      setVideoStatus('completed')
-      setVideoRecordId(gen.video.id)
-      setVideoUrl(gen.video.url)
-      setVideoError(null)
-    }
-    // scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -872,60 +903,38 @@ function WorkspaceDetailPage() {
         <div className="flex justify-center">
           <Button
             onClick={handleGenerateVideo}
-            disabled={videoStatus === 'generating'}
+            disabled={isGeneratingVideo}
             size="lg"
             className="min-w-[240px]"
           >
-            {videoStatus === 'generating'
-              ? 'Generating Video...'
-              : videoStatus === 'completed'
-                ? 'Regenerate Video'
-                : 'Generate Video'}
+            {isGeneratingVideo ? 'Starting...' : 'Generate Video'}
           </Button>
         </div>
       )}
 
-      {videoError && (
-        <p className="text-sm text-destructive text-center">{videoError}</p>
-      )}
-
-      {videoStatus === 'generating' && (
-        <div className="rounded-lg border border-border bg-muted/30 p-8 flex items-center justify-center">
-          <div className="text-center space-y-2">
-            <div className="animate-pulse h-2 w-48 mx-auto bg-muted-foreground/30 rounded-full" />
-            <p className="text-sm text-muted-foreground">
-              Kling O1 is processing — this takes 30–90 seconds
+      {/* Generations list */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium">Generations</h2>
+        {generations.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-6 flex items-center justify-center">
+            <p className="text-xs text-muted-foreground">
+              Generated videos will appear here
             </p>
           </div>
-        </div>
-      )}
-
-      {videoStatus === 'completed' && videoUrl && (
-        <div className="rounded-lg overflow-hidden border border-border bg-black">
-          <video
-            src={videoUrl}
-            controls
-            className="w-full"
-            preload="metadata"
-          />
-        </div>
-      )}
-
-      {/* Generations history */}
-      {generations.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium">Generations</h2>
+        ) : (
           <div className="space-y-2">
             {generations.map((gen) => (
               <GenerationRow
                 key={gen.id}
                 generation={gen}
                 onLoad={handleLoadGeneration}
+                onUpdate={handleUpdateGeneration}
+                accessToken={session?.access_token}
               />
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
