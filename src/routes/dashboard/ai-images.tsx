@@ -385,26 +385,26 @@ function AiImagesPage() {
     setError(null)
     setGeneratingVariationFor(img.id)
 
-    // Optimistically insert 2 placeholder cards at the correct inline position immediately
-    const optimisticIds = [`optimistic-${img.id}-0`, `optimistic-${img.id}-1`]
-    const optimisticCards: Array<SavedAiImage> = [0, 1].map((i) => ({
-      id: optimisticIds[i],
+    // Optimistically insert 1 placeholder card at the correct inline position immediately
+    const optimisticId = `optimistic-${img.id}-0`
+    const optimisticCard: SavedAiImage = {
+      id: optimisticId,
       title: 'Generating variation...',
       storage_path: null,
       created_at: new Date(
-        new Date(img.created_at).getTime() + (i + 1) * 1000,
+        new Date(img.created_at).getTime() + 1000,
       ).toISOString(),
       status: 'pending',
       generation_error: null,
       generation_metadata: {
-        prompt: img.generation_metadata!.prompt,
-        model: img.generation_metadata!.model,
+        prompt: img.generation_metadata.prompt,
+        model: img.generation_metadata.model,
         generation_type: 'variation',
         source_image_id: img.id,
       },
-    }))
+    }
     setSavedImages((prev) =>
-      [...prev, ...optimisticCards].sort(
+      [...prev, optimisticCard].sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       ),
@@ -420,19 +420,19 @@ function AiImagesPage() {
         },
       })
 
-      // Replace optimistic placeholders with real pending records
-      // Also filter out real IDs already inserted by Realtime to avoid duplicates
+      // Replace optimistic placeholder with real pending record
+      // Also filter out real ID if already inserted by Realtime to avoid duplicates
       setSavedImages((prev) => {
-        const realIds = results.map((r) => r.recordId)
+        const realId = results[0].recordId
         const filtered = prev.filter(
-          (i) => !optimisticIds.includes(i.id) && !realIds.includes(i.id),
+          (i) => i.id !== optimisticId && i.id !== realId,
         )
-        const realCards: Array<SavedAiImage> = results.map((r, i) => ({
-          id: r.recordId,
+        const realCard: SavedAiImage = {
+          id: realId,
           title: 'Generating variation...',
           storage_path: null,
           created_at: new Date(
-            new Date(img.created_at).getTime() + (i + 1) * 1000,
+            new Date(img.created_at).getTime() + 1000,
           ).toISOString(),
           status: 'pending',
           generation_error: null,
@@ -440,17 +440,15 @@ function AiImagesPage() {
             prompt: img.generation_metadata!.prompt,
             model: img.generation_metadata!.model,
           },
-        }))
-        return [...filtered, ...realCards].sort(
+        }
+        return [...filtered, realCard].sort(
           (a, b) =>
             new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
         )
       })
     } catch (err) {
-      // Remove optimistic cards on failure
-      setSavedImages((prev) =>
-        prev.filter((i) => !optimisticIds.includes(i.id)),
-      )
+      // Remove optimistic card on failure
+      setSavedImages((prev) => prev.filter((i) => i.id !== optimisticId))
       setError(
         err instanceof Error ? err.message : 'Failed to generate variations',
       )

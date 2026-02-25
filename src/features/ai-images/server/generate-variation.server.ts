@@ -167,86 +167,76 @@ export const generateVariation = createServerFn({ method: 'POST' })
       usedPrompts.unshift(sourcePrompt)
     }
 
-    const results: Array<{ recordId: string; request_id: string }> = []
-    // Collect prompts generated in this batch so variation 2 avoids repeating variation 1
-    const batchPrompts: Array<string> = []
+    const avoidSection =
+      usedPrompts.length > 0
+        ? `\n\nALREADY GENERATED (avoid similar shots):\n${usedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
+        : ''
 
-    for (let i = 0; i < 2; i++) {
-      const allUsedPrompts = [...usedPrompts, ...batchPrompts]
-      const avoidSection =
-        allUsedPrompts.length > 0
-          ? `\n\nALREADY GENERATED (avoid similar scenarios):\n${allUsedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
-          : ''
-
-      // Use Claude to reimagine based on what it SEES in the image, not just the text prompt
-      const userContent = imageBase64
-        ? [
-            {
-              type: 'image' as const,
-              image: `data:${imageBase64.mediaType};base64,${imageBase64.data}`,
-            },
-            {
-              type: 'text' as const,
-              text: `Look at this shot from the photoshoot. Direct the next shot — same person, same location, same clothes, but a different pose, angle, or expression.${avoidSection}`,
-            },
-          ]
-        : `Create another shot from the same photoshoot — same person, same location, same clothes, different pose/angle/expression:\n\n${rootPrompt}${avoidSection}`
-
-      const response = await generateText({
-        model: ai.sonnet,
-        maxOutputTokens: 300,
-        system: VARIATION_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userContent }],
-      })
-
-      const variedPrompt = response.text.trim()
-      batchPrompts.push(variedPrompt)
-
-      // Submit via Kontext for subject-consistent generation, anchored to source image
-      const kontextInput = {
-        prompt: variedPrompt,
-        image_url: falImageUrl ?? '',
-        guidance_scale: 7.0,
-        safety_tolerance: '6' as const,
-      }
-      const { request_id } = await fal.queue.submit('fal-ai/flux-pro/kontext', {
-        input: kontextInput,
-      })
-
-      // Offset created_at by 1-2 seconds after source so variations sort right next to it
-      const variationTimestamp = sourceImage?.created_at
-        ? new Date(
-            new Date(sourceImage.created_at).getTime() + (i + 1) * 1000,
-          ).toISOString()
-        : undefined
-
-      const { data: record, error: insertError } = await supabase
-        .from('user_images')
-        .insert({
-          user_id: user.id,
-          request_id,
-          status: 'pending',
-          source: 'ai_generated',
-          title: 'Generating variation...',
-          ...(variationTimestamp && { created_at: variationTimestamp }),
-          generation_metadata: {
-            prompt: variedPrompt,
-            original_prompt: rootPrompt,
-            model,
-            generation_type: 'variation',
-            source_image_id: sourceImageId,
-            submitted_at: new Date().toISOString(),
+    // Use Claude to reimagine based on what it SEES in the image, not just the text prompt
+    const userContent = imageBase64
+      ? [
+          {
+            type: 'image' as const,
+            image: `data:${imageBase64.mediaType};base64,${imageBase64.data}`,
           },
-        })
-        .select()
-        .single()
+          {
+            type: 'text' as const,
+            text: `Look at this shot from the photoshoot. Direct the next shot — same person, same location, same clothes, but a different pose, angle, or expression.${avoidSection}`,
+          },
+        ]
+      : `Create another shot from the same photoshoot — same person, same location, same clothes, different pose/angle/expression:\n\n${rootPrompt}${avoidSection}`
 
-      if (insertError) {
-        throw new Error(`Failed to create image record: ${insertError.message}`)
-      }
+    const response = await generateText({
+      model: ai.sonnet,
+      maxOutputTokens: 300,
+      system: VARIATION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userContent }],
+    })
 
-      results.push({ recordId: record.id, request_id })
+    const variedPrompt = response.text.trim()
+
+    // Submit via Kontext for subject-consistent generation, anchored to source image
+    const kontextInput = {
+      prompt: variedPrompt,
+      image_url: falImageUrl ?? '',
+      guidance_scale: 7.0,
+      safety_tolerance: '6' as const,
+    }
+    const { request_id } = await fal.queue.submit('fal-ai/flux-pro/kontext', {
+      input: kontextInput,
+    })
+
+    // Offset created_at by 1 second after source so variation sorts right next to it
+    const variationTimestamp = sourceImage?.created_at
+      ? new Date(
+          new Date(sourceImage.created_at).getTime() + 1000,
+        ).toISOString()
+      : undefined
+
+    const { data: record, error: insertError } = await supabase
+      .from('user_images')
+      .insert({
+        user_id: user.id,
+        request_id,
+        status: 'pending',
+        source: 'ai_generated',
+        title: 'Generating variation...',
+        ...(variationTimestamp && { created_at: variationTimestamp }),
+        generation_metadata: {
+          prompt: variedPrompt,
+          original_prompt: rootPrompt,
+          model,
+          generation_type: 'variation',
+          source_image_id: sourceImageId,
+          submitted_at: new Date().toISOString(),
+        },
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      throw new Error(`Failed to create image record: ${insertError.message}`)
     }
 
-    return results
+    return [{ recordId: record.id, request_id }]
   })
