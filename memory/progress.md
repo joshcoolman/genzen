@@ -10,8 +10,9 @@
 
 ### Recently committed
 
-- **Suggest fix** (`gen-video`): `suggest-last-frame` was returning identical output every call — caused by re-sending the full first-frame text prompt as context when image grounding was present (text dominated over vision). Fixed by using neutral instruction when image is attached + `temperature: 1.0` for variation.
-- **Kling O1 swap + continuity fix** (`gen-video`): Replaced `fal-ai/wan-flf2v` with `fal-ai/kling-video/o1/image-to-video`. Uses `@Image1`/`@Image2` prompt syntax, `duration: '5'`. Also rewrote `suggest-last-frame` system prompt to enforce minimal frame-to-frame change (same camera, same composition, one subtle progression) — old prompt asked for "clear cinematic evolution" which caused broken morphing. Added `guidance_scale: 2.0` to `generate-last-frame` to keep FLUX close to input image.
+- **Manual last frame UX** (`gen-video`): Removed auto-generate-on-upload chain. Last frame panel now always shows textarea; Suggest button stays for inspiration; button always says "Generate Last Frame" (never "Regenerate"). Button disabled until prompt has text. Fully manual workflow — user controls when generation fires.
+- **Suggest fix** (`gen-video`): `suggest-last-frame` was returning identical output every call — caused by re-sending the full first-frame text prompt as context when image grounding was present. Fixed by neutral instruction when image attached + `temperature: 1.0`. Rewrote system prompt: 10-word max action phrases, no camera/lighting terms.
+- **Kling O1 swap + continuity fix** (`gen-video`): Replaced `fal-ai/wan-flf2v` with `fal-ai/kling-video/o1/image-to-video`. Uses `@Image1`/`@Image2` prompt syntax, `duration: '5'`. Added `guidance_scale: 2.0` to `generate-last-frame` to keep FLUX close to input image.
 - **Video storage simplification** (`gen-video`): Skip video re-upload to Supabase — store FAL CDN URL directly in `generation_metadata.fal_url`. Removed download/buffer/hash/upload chain from `check-pending-video`.
 - **Upload mode for FLF frames** (`gen-video`): FLUX Kontext Pro (first frame) and Image toggle (last frame) let users supply their own images instead of AI-generating. Client-side `cropTo16x9` crops to 1280×720 JPEG via canvas. New `upload-video-frame.server.ts` uploads directly to Supabase storage and inserts a `status: 'completed'` record — no FAL queue, no polling. Preview shows immediately on pick; hover reveals "Change Image" overlay.
 - **AI Video feature** (`gen-video` branch): New `/dashboard/video` route implementing FLF (first-frame → last-frame → video) workflow. See Key Files below for server fn locations. Requires running the DB migration before testing.
@@ -37,7 +38,6 @@
 
 - **Video migrations**: Two migrations must be applied locally before testing: `20260225000000_add_video_source_types.sql` and `20260225000001_allow_video_mime_type.sql`. Run `supabase migration up` (Docker must be running).
 - **Video branch**: `gen-video` branch not yet merged to main
-- **UX backlog**: auto-upload on file pick + auto-generate last frame (pick file → upload → suggest → generate, no button clicks) not yet implemented
 
 ---
 
@@ -72,8 +72,8 @@
 | `src/routes/dashboard/video.tsx`                                | AI Video page — FLF 3-step UI                   |
 | `src/features/ai-video/server/generate-first-frame.server.ts`   | First frame: FLUX Kontext Pro or Kling O3       |
 | `src/features/ai-video/server/generate-last-frame.server.ts`    | Last frame: Kontext Max with first frame ref    |
-| `src/features/ai-video/server/generate-flf-video.server.ts`     | Video: Wan FLF2V queue submit                   |
-| `src/features/ai-video/server/check-pending-video.server.ts`    | Video polling — downloads MP4, stores in bucket |
+| `src/features/ai-video/server/generate-flf-video.server.ts`     | Video: Kling O1 queue submit                    |
+| `src/features/ai-video/server/check-pending-video.server.ts`    | Video polling — stores FAL CDN URL directly     |
 | `src/features/ai-video/server/suggest-last-frame.server.ts`     | Claude-powered last frame prompt suggestion     |
 | `src/features/ai-video/server/upload-video-frame.server.ts`     | Upload image as completed frame (no FAL)        |
 | `supabase/migrations/20260225000000_add_video_source_types.sql` | Adds ai_video_frame + ai_video source values    |
