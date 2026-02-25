@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
@@ -62,6 +63,11 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => DocsRoute,
 } as any)
+const DashboardVideoRoute = DashboardVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/video': typeof DashboardVideoRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/video': typeof DashboardVideoRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/video': typeof DashboardVideoRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
@@ -233,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof DocsRoute
     }
+    '/dashboard/video': {
+      id: '/dashboard/video'
+      path: '/video'
+      fullPath: '/dashboard/video'
+      preLoaderRoute: typeof DashboardVideoRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
@@ -269,6 +288,7 @@ interface DashboardRouteChildren {
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardVideoRoute: typeof DashboardVideoRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -277,6 +297,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardVideoRoute: DashboardVideoRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 

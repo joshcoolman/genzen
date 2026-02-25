@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import {
+  Film,
   Home,
   Image,
   LogOut,
@@ -18,6 +19,7 @@ const navItems = [
   { label: 'Home', href: '/dashboard', icon: Home },
   { label: 'Images', href: '/dashboard/images', icon: Image },
   { label: 'AI Images', href: '/dashboard/ai-images', icon: Sparkles },
+  { label: 'AI Video', href: '/dashboard/video', icon: Film },
   { label: 'Profile', href: '/dashboard/profile', icon: User },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
