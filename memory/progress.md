@@ -10,7 +10,10 @@
 
 ### Recently committed
 
-- **Upload mode for FLF frames** (`gen-video` branch): FLUX Kontext Pro (first frame) and Image toggle (last frame) let users supply their own images instead of AI-generating. Client-side `cropTo16x9` crops to 1280×720 JPEG via canvas. New `upload-video-frame.server.ts` uploads directly to Supabase storage and inserts a `status: 'completed'` record — no FAL queue, no polling. Preview shows immediately on pick; hover reveals "Change Image" overlay. Both paths flow into the existing Wan FLF2V pipeline unchanged.
+- **Suggest fix** (`gen-video`): `suggest-last-frame` was returning identical output every call — caused by re-sending the full first-frame text prompt as context when image grounding was present (text dominated over vision). Fixed by using neutral instruction when image is attached + `temperature: 1.0` for variation.
+- **Kling O1 swap + continuity fix** (`gen-video`): Replaced `fal-ai/wan-flf2v` with `fal-ai/kling-video/o1/image-to-video`. Uses `@Image1`/`@Image2` prompt syntax, `duration: '5'`. Also rewrote `suggest-last-frame` system prompt to enforce minimal frame-to-frame change (same camera, same composition, one subtle progression) — old prompt asked for "clear cinematic evolution" which caused broken morphing. Added `guidance_scale: 2.0` to `generate-last-frame` to keep FLUX close to input image.
+- **Video storage simplification** (`gen-video`): Skip video re-upload to Supabase — store FAL CDN URL directly in `generation_metadata.fal_url`. Removed download/buffer/hash/upload chain from `check-pending-video`.
+- **Upload mode for FLF frames** (`gen-video`): FLUX Kontext Pro (first frame) and Image toggle (last frame) let users supply their own images instead of AI-generating. Client-side `cropTo16x9` crops to 1280×720 JPEG via canvas. New `upload-video-frame.server.ts` uploads directly to Supabase storage and inserts a `status: 'completed'` record — no FAL queue, no polling. Preview shows immediately on pick; hover reveals "Change Image" overlay.
 - **AI Video feature** (`gen-video` branch): New `/dashboard/video` route implementing FLF (first-frame → last-frame → video) workflow. See Key Files below for server fn locations. Requires running the DB migration before testing.
 
 ### Previously committed (main)
@@ -32,8 +35,9 @@
 
 ## Known Issues / Backlog
 
-- **Video migration**: `supabase/migrations/20260225000000_add_video_source_types.sql` must be applied before testing video locally (`supabase migration up` if Docker already running, or `supabase stop --all && supabase start`)
+- **Video migrations**: Two migrations must be applied locally before testing: `20260225000000_add_video_source_types.sql` and `20260225000001_allow_video_mime_type.sql`. Run `supabase migration up` (Docker must be running).
 - **Video branch**: `gen-video` branch not yet merged to main
+- **UX backlog**: auto-upload on file pick + auto-generate last frame (pick file → upload → suggest → generate, no button clicks) not yet implemented
 
 ---
 
