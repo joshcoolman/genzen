@@ -160,15 +160,11 @@ function VideoPage() {
     null,
   )
   const [lastFrameStatus, setLastFrameStatus] = useState<FrameStatus>('idle')
-  const [lastFramePhase, setLastFramePhase] = useState<
-    'analyzing' | 'generating' | null
-  >(null)
   const [lastFrameRecordId, setLastFrameRecordId] = useState<string | null>(
     null,
   )
   const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null)
   const [lastFrameError, setLastFrameError] = useState<string | null>(null)
-  const [showLastFramePrompt, setShowLastFramePrompt] = useState(false)
   const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
 
   // Video state
@@ -187,7 +183,6 @@ function VideoPage() {
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
-    setLastFramePhase(null)
     setVideoStatus('idle')
     setVideoUrl(null)
     setVideoRecordId(null)
@@ -219,58 +214,10 @@ function VideoPage() {
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
-    setLastFramePhase(null)
     resetVideoState()
   }
 
-  // Auto-generate last frame after first frame is ready (FLUX upload mode)
-  async function autoGenerateLastFrame(recordId: string) {
-    if (!session?.access_token) return
-
-    setLastFrameStatus('generating')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
-    setLastFramePhase('analyzing')
-    resetVideoState()
-
-    let prompt = ''
-    try {
-      const suggestion = await suggestLastFrame({
-        data: {
-          accessToken: session.access_token,
-          firstFramePrompt: '',
-          firstFrameRecordId: recordId,
-        },
-      })
-      prompt = suggestion.prompt
-      setLastFramePrompt(prompt)
-    } catch {
-      // proceed without suggestion
-    }
-
-    setLastFramePhase('generating')
-
-    try {
-      const result = await generateLastFrame({
-        data: {
-          prompt: prompt || 'Continuation of the scene',
-          firstFrameRecordId: recordId,
-          accessToken: session.access_token,
-        },
-      })
-      setLastFrameRecordId(result.recordId)
-      setLastFramePhase(null)
-    } catch (err) {
-      setLastFrameStatus('error')
-      setLastFrameError(
-        err instanceof Error ? err.message : 'Failed to generate last frame',
-      )
-      setLastFramePhase(null)
-    }
-  }
-
-  // FLUX mode: auto-upload on file pick, then auto-generate last frame
+  // FLUX mode: auto-upload on file pick
   async function handleFirstFrameFilePick(
     e: React.ChangeEvent<HTMLInputElement>,
   ) {
@@ -286,7 +233,6 @@ function VideoPage() {
       return
     }
 
-    // Show local preview immediately, then upload
     setFirstFrameUrl(dataUrl)
     setFirstFrameStatus('generating')
     setFirstFrameRecordId(null)
@@ -304,9 +250,6 @@ function VideoPage() {
       setFirstFrameRecordId(result.recordId)
       setFirstFrameUrl(result.signedUrl)
       setFirstFrameStatus('completed')
-
-      // Immediately chain into last frame generation
-      await autoGenerateLastFrame(result.recordId)
     } catch (err) {
       setFirstFrameStatus('error')
       setFirstFrameError(
@@ -503,31 +446,27 @@ function VideoPage() {
       return
     }
 
-    // Prompt mode — use current lastFramePrompt or auto-suggest
-    if (isFluxKontextMode) {
-      await autoGenerateLastFrame(firstFrameRecordId)
-    } else {
-      if (!lastFramePrompt.trim()) return
-      setLastFrameStatus('generating')
-      setLastFrameUrl(null)
-      setLastFrameRecordId(null)
-      setLastFrameError(null)
-      resetVideoState()
-      try {
-        const result = await generateLastFrame({
-          data: {
-            prompt: lastFramePrompt,
-            firstFrameRecordId,
-            accessToken: session.access_token,
-          },
-        })
-        setLastFrameRecordId(result.recordId)
-      } catch (err) {
-        setLastFrameStatus('error')
-        setLastFrameError(
-          err instanceof Error ? err.message : 'Failed to generate last frame',
-        )
-      }
+    // Prompt mode — always use whatever is in the textarea
+    if (!lastFramePrompt.trim()) return
+    setLastFrameStatus('generating')
+    setLastFrameUrl(null)
+    setLastFrameRecordId(null)
+    setLastFrameError(null)
+    resetVideoState()
+    try {
+      const result = await generateLastFrame({
+        data: {
+          prompt: lastFramePrompt,
+          firstFrameRecordId,
+          accessToken: session.access_token,
+        },
+      })
+      setLastFrameRecordId(result.recordId)
+    } catch (err) {
+      setLastFrameStatus('error')
+      setLastFrameError(
+        err instanceof Error ? err.message : 'Failed to generate last frame',
+      )
     }
   }
 
@@ -585,12 +524,10 @@ function VideoPage() {
   const canGenerateVideo =
     firstFrameStatus === 'completed' && lastFrameStatus === 'completed'
 
-  const lastFrameGeneratingLabel =
-    lastFramePhase === 'analyzing' ? 'Analyzing...' : 'Generating...'
-
-  const lastFrameRegenerateDisabled =
+  const lastFrameGenerateDisabled =
     lastFrameLocked ||
     lastFrameStatus === 'generating' ||
+    (lastFrameMode === 'prompt' && !lastFramePrompt.trim()) ||
     (lastFrameMode === 'image' && !lastFrameImageData)
 
   return (
@@ -718,7 +655,7 @@ function VideoPage() {
                 ? 'Generate first frame first'
                 : 'Last frame will appear here'
             }
-            generatingLabel={lastFrameGeneratingLabel}
+            generatingLabel="Generating..."
             onChooseImage={
               lastFrameMode === 'image' &&
               lastFrameStatus !== 'generating' &&
@@ -728,35 +665,24 @@ function VideoPage() {
             }
           />
 
-          {/* Prompt section — collapsed by default, show/hide toggle */}
           {lastFrameMode === 'prompt' && !lastFrameLocked && (
-            <div>
+            <div className="relative">
+              <Textarea
+                placeholder="Describe what changes in the scene..."
+                value={lastFramePrompt}
+                onChange={(e) => setLastFramePrompt(e.target.value)}
+                disabled={lastFrameStatus === 'generating'}
+                rows={4}
+              />
               <button
-                onClick={() => setShowLastFramePrompt((v) => !v)}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                onClick={handleSuggestLastFrame}
+                disabled={
+                  suggestingLastFrame || lastFrameStatus === 'generating'
+                }
+                className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {showLastFramePrompt ? 'Hide prompt' : 'Show prompt'}
+                {suggestingLastFrame ? 'Suggesting...' : 'Suggest'}
               </button>
-              {showLastFramePrompt && (
-                <div className="relative mt-2">
-                  <Textarea
-                    placeholder="Describe what changes in the scene..."
-                    value={lastFramePrompt}
-                    onChange={(e) => setLastFramePrompt(e.target.value)}
-                    disabled={lastFrameStatus === 'generating'}
-                    rows={4}
-                  />
-                  <button
-                    onClick={handleSuggestLastFrame}
-                    disabled={
-                      suggestingLastFrame || lastFrameStatus === 'generating'
-                    }
-                    className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {suggestingLastFrame ? 'Suggesting...' : 'Suggest'}
-                  </button>
-                </div>
-              )}
             </div>
           )}
 
@@ -766,14 +692,12 @@ function VideoPage() {
 
           <Button
             onClick={handleGenerateLastFrame}
-            disabled={lastFrameRegenerateDisabled}
+            disabled={lastFrameGenerateDisabled}
             className="w-full"
           >
             {lastFrameStatus === 'generating'
-              ? lastFrameGeneratingLabel
-              : lastFrameStatus === 'completed'
-                ? 'Regenerate Last Frame'
-                : 'Generate Last Frame'}
+              ? 'Generating...'
+              : 'Generate Last Frame'}
           </Button>
         </div>
       </div>
