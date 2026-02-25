@@ -97,14 +97,17 @@ export const suggestLastFrame = createServerFn({ method: 'POST' })
           },
           {
             type: 'text' as const,
-            text: `This is the first frame of the video. The prompt used to generate it was: "${firstFramePrompt}"\n\nWrite a compelling last frame prompt that creates clear cinematic evolution from this frame.`,
+            // Don't re-anchor with the text prompt when we have the image —
+            // it causes Claude to reproduce the same description every time.
+            text: 'This is the first frame. Write a last frame description.',
           },
         ]
-      : `First frame prompt: "${firstFramePrompt}"\n\nWrite a compelling last frame prompt that creates clear cinematic evolution from this scene.`
+      : `First frame prompt: "${firstFramePrompt}"\n\nWrite a last frame description.`
 
     const response = await generateText({
       model: ai.sonnet,
       maxOutputTokens: 300,
+      temperature: 1.0,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userContent }],
     })
