@@ -6,9 +6,14 @@
 
 ---
 
-## Active Branch: `main`
+## Active Branch: `gen-video`
 
 ### Recently committed
+
+- **Upload mode for FLF frames** (`gen-video` branch): FLUX Kontext Pro (first frame) and Image toggle (last frame) let users supply their own images instead of AI-generating. Client-side `cropTo16x9` crops to 1280×720 JPEG via canvas. New `upload-video-frame.server.ts` uploads directly to Supabase storage and inserts a `status: 'completed'` record — no FAL queue, no polling. Preview shows immediately on pick; hover reveals "Change Image" overlay. Both paths flow into the existing Wan FLF2V pipeline unchanged.
+- **AI Video feature** (`gen-video` branch): New `/dashboard/video` route implementing FLF (first-frame → last-frame → video) workflow. See Key Files below for server fn locations. Requires running the DB migration before testing.
+
+### Previously committed (main)
 
 - **AI SDK migration**: Replaced `@anthropic-ai/sdk` with `ai` + `@ai-sdk/anthropic`. All 4 Anthropic server functions now use `generateText()` via shared client in `src/lib/server/ai.server.ts`. FAL calls unchanged.
 - **Pre-commit workflow**: Added `pnpm check -> build -> commit` to CLAUDE.md
@@ -27,7 +32,8 @@
 
 ## Known Issues / Backlog
 
-No active backlog items. Stable state — issues will be added as they come up.
+- **Video migration**: `supabase/migrations/20260225000000_add_video_source_types.sql` must be applied before testing video locally (`supabase migration up` if Docker already running, or `supabase stop --all && supabase start`)
+- **Video branch**: `gen-video` branch not yet merged to main
 
 ---
 
@@ -50,12 +56,20 @@ No active backlog items. Stable state — issues will be added as they come up.
 
 ## Key Files
 
-| File                                                           | Purpose                              |
-| -------------------------------------------------------------- | ------------------------------------ |
-| `src/lib/server/ai.server.ts`                                  | Shared AI SDK client (haiku/sonnet)  |
-| `src/features/ai-images/models.ts`                             | Model list + defaults                |
-| `src/features/ai-images/server/generate-variation.server.ts`   | "More" server function               |
-| `src/features/ai-images/server/generate-image.server.ts`       | Main generation server function      |
-| `src/features/ai-images/server/check-pending-images.server.ts` | Polling / FAL result fetcher         |
-| `src/features/ai-images/components/PendingImageCard.tsx`       | Loading card UI                      |
-| `src/routes/dashboard/ai-images.tsx`                           | Main page — gallery, state, realtime |
+| File                                                            | Purpose                                         |
+| --------------------------------------------------------------- | ----------------------------------------------- |
+| `src/lib/server/ai.server.ts`                                   | Shared AI SDK client (haiku/sonnet)             |
+| `src/features/ai-images/models.ts`                              | Model list + defaults                           |
+| `src/features/ai-images/server/generate-variation.server.ts`    | "More" server function                          |
+| `src/features/ai-images/server/generate-image.server.ts`        | Main generation server function                 |
+| `src/features/ai-images/server/check-pending-images.server.ts`  | Polling / FAL result fetcher (reused by video)  |
+| `src/features/ai-images/components/PendingImageCard.tsx`        | Loading card UI                                 |
+| `src/routes/dashboard/ai-images.tsx`                            | AI Images page — gallery, state, realtime       |
+| `src/routes/dashboard/video.tsx`                                | AI Video page — FLF 3-step UI                   |
+| `src/features/ai-video/server/generate-first-frame.server.ts`   | First frame: FLUX Kontext Pro or Kling O3       |
+| `src/features/ai-video/server/generate-last-frame.server.ts`    | Last frame: Kontext Max with first frame ref    |
+| `src/features/ai-video/server/generate-flf-video.server.ts`     | Video: Wan FLF2V queue submit                   |
+| `src/features/ai-video/server/check-pending-video.server.ts`    | Video polling — downloads MP4, stores in bucket |
+| `src/features/ai-video/server/suggest-last-frame.server.ts`     | Claude-powered last frame prompt suggestion     |
+| `src/features/ai-video/server/upload-video-frame.server.ts`     | Upload image as completed frame (no FAL)        |
+| `supabase/migrations/20260225000000_add_video_source_types.sql` | Adds ai_video_frame + ai_video source values    |
