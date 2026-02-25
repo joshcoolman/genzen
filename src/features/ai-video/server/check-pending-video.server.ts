@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const VIDEO_MODEL = 'fal-ai/wan-flf2v'
+const VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
 
 interface CheckPendingVideoInput {
   accessToken: string

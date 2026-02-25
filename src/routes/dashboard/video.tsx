@@ -778,7 +778,7 @@ function VideoPage() {
           <div className="text-center space-y-2">
             <div className="animate-pulse h-2 w-48 mx-auto bg-muted-foreground/30 rounded-full" />
             <p className="text-sm text-muted-foreground">
-              Wan FLF2V is processing — this takes 30–90 seconds
+              Kling O1 is processing — this takes 30–90 seconds
             </p>
           </div>
         </div>

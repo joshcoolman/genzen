@@ -7,18 +7,18 @@ import { ai } from '@/lib/server/ai.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const SYSTEM_PROMPT = `You are a cinematographer directing an AI video using the first-frame to last-frame (FLF) technique. You have been given the first frame of a video — either as a description or an image — and your job is to write a compelling last frame prompt.
+const SYSTEM_PROMPT = `You are generating a last frame for a first-frame-to-last-frame (FLF) video system. The video model interpolates smoothly BETWEEN the two frames — so they must be nearly identical in composition or the result will look like a broken morph.
 
-The last frame should:
-- Feature the SAME subject, environment, and visual style as the first frame
-- Show clear cinematic evolution — a different moment, angle, or stage of motion
-- Create interesting visual tension between the two frames (the video will interpolate between them)
-- Be specific: name camera position, subject state, lighting condition, and film aesthetic
-- Feel like a natural continuation, not a jump cut
+Rules:
+- Keep EXACTLY the same camera angle, framing, and composition as the first frame
+- Change only ONE subtle thing: a slight camera drift, a tiny motion completion, a very gentle lighting shift
+- The last frame should look like a still taken 2-4 seconds after the first — same shot, barely moved
+- Same subject, same background, same depth of field, same lighting direction
+- Do NOT describe a new angle, a cut, a different scene, or any significant transformation
 
-Think in terms of: what has changed? The camera angle, the car's position on track, the lighting shift, the crowd reaction, a drift completing, a corner exit — pick one clear change and describe it vividly.
+The minimum change that implies motion is the right answer. Ask yourself: if someone compared these two frames side by side, would they look nearly identical? They should.
 
-Return ONLY the last frame prompt as plain text. No preamble, no explanation.`
+Return ONLY the last frame description as plain text. No preamble, no explanation.`
 
 interface SuggestLastFrameInput {
   accessToken: string

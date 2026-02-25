@@ -81,6 +81,7 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
         prompt,
         image_url: falImageUrl,
         safety_tolerance: '6',
+        guidance_scale: 2.0, // low = stays close to input image; high = follows prompt more aggressively
       },
     })
 

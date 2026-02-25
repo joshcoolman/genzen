@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const VIDEO_MODEL = 'fal-ai/wan-flf2v'
+const VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
 
 interface GenerateFlfVideoInput {
   firstFrameRecordId: string
@@ -83,11 +83,17 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       uploadFrameToFal(supabase, lastFrame.storage_path),
     ])
 
+    // Kling O1 FLF: reference frames via @Image1 / @Image2 in the prompt
+    const klingPrompt =
+      prompt ||
+      '@Image1 smoothly transitions to @Image2 with fluid natural motion'
+
     const { request_id } = await fal.queue.submit(VIDEO_MODEL, {
       input: {
         start_image_url: startImageUrl,
         end_image_url: endImageUrl,
-        prompt: prompt || '',
+        prompt: klingPrompt,
+        duration: '5',
       },
     })
 
