@@ -16,9 +16,6 @@ import { cn } from '@/lib/utils'
 const DEFAULT_FIRST_FRAME_PROMPT =
   'A visceral side-mounted camera angle hugging just above the wheel arch of a red-and-white 1980s Formula 1 car blasting out of the Monaco tunnel into blinding Mediterranean sunlight. Tire sidewalls ripple with speed, polished livery shimmers, chrome suspension arms catch the light. Vintage 35mm racing documentary aesthetic, natural motion blur, golden hour.'
 
-const DEFAULT_LAST_FRAME_PROMPT =
-  'The same red-and-white 1980s Formula 1 car cresting the hill at Casino Square, rear wing slicing through hot air, the Monte Carlo harbor blazing in the distance below. Camera drifts wide as the car exits the frame right, crowd barriers streaking past in a blur. Lens flare across the bodywork, cinematic 35mm grain, shallow bokeh pulling focus to the exhaust.'
-
 export const Route = createFileRoute('/dashboard/video')({
   component: VideoPage,
 })
@@ -34,7 +31,6 @@ type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
 type VideoStatus = 'idle' | 'generating' | 'completed' | 'error'
 type LastFrameMode = 'prompt' | 'image'
 
-// Crop image to 16:9 at 1280x720 using centered crop
 function cropTo16x9(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -45,18 +41,15 @@ function cropTo16x9(file: File): Promise<string> {
 
       const targetAspect = 16 / 9
       const srcAspect = img.width / img.height
-
-      let sx = 0
-      let sy = 0
-      let sw = img.width
-      let sh = img.height
+      let sx = 0,
+        sy = 0,
+        sw = img.width,
+        sh = img.height
 
       if (srcAspect > targetAspect) {
-        // Source is wider — crop sides
         sw = Math.round(img.height * targetAspect)
         sx = Math.round((img.width - sw) / 2)
       } else {
-        // Source is taller — crop top/bottom
         sh = Math.round(img.width / targetAspect)
         sy = Math.round((img.height - sh) / 2)
       }
@@ -69,7 +62,6 @@ function cropTo16x9(file: File): Promise<string> {
         reject(new Error('Could not get canvas context'))
         return
       }
-
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1280, 720)
       resolve(canvas.toDataURL('image/jpeg', 0.92))
     }
@@ -87,14 +79,15 @@ function FrameImageArea({
   status,
   imageUrl,
   placeholder,
+  generatingLabel = 'Generating...',
   onChooseImage,
 }: {
   status: FrameStatus
   imageUrl: string | null
   placeholder: string
+  generatingLabel?: string
   onChooseImage?: () => void
 }) {
-  // Show image preview whenever we have a URL and aren't mid-generation
   if (imageUrl && status !== 'generating') {
     return (
       <div className="relative group">
@@ -117,7 +110,7 @@ function FrameImageArea({
   if (status === 'generating') {
     return (
       <div className="aspect-video w-full rounded-md border border-border bg-muted/30 flex items-center justify-center animate-pulse">
-        <p className="text-xs text-muted-foreground">Uploading...</p>
+        <p className="text-xs text-muted-foreground">{generatingLabel}</p>
       </div>
     )
   }
@@ -130,7 +123,6 @@ function FrameImageArea({
     )
   }
 
-  // idle — no image yet
   return (
     <div className="aspect-video w-full rounded-md border border-dashed border-border bg-muted/30 flex items-center justify-center">
       {onChooseImage ? (
@@ -154,9 +146,6 @@ function VideoPage() {
   const [firstFramePrompt, setFirstFramePrompt] = useState(
     DEFAULT_FIRST_FRAME_PROMPT,
   )
-  const [firstFrameImageData, setFirstFrameImageData] = useState<string | null>(
-    null,
-  )
   const [firstFrameStatus, setFirstFrameStatus] = useState<FrameStatus>('idle')
   const [firstFrameRecordId, setFirstFrameRecordId] = useState<string | null>(
     null,
@@ -166,19 +155,21 @@ function VideoPage() {
 
   // Last frame state
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
-  const [lastFramePrompt, setLastFramePrompt] = useState(
-    DEFAULT_LAST_FRAME_PROMPT,
-  )
+  const [lastFramePrompt, setLastFramePrompt] = useState('')
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
     null,
   )
   const [lastFrameStatus, setLastFrameStatus] = useState<FrameStatus>('idle')
-  const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
+  const [lastFramePhase, setLastFramePhase] = useState<
+    'analyzing' | 'generating' | null
+  >(null)
   const [lastFrameRecordId, setLastFrameRecordId] = useState<string | null>(
     null,
   )
   const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null)
   const [lastFrameError, setLastFrameError] = useState<string | null>(null)
+  const [showLastFramePrompt, setShowLastFramePrompt] = useState(false)
+  const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
 
   // Video state
   const [videoStatus, setVideoStatus] = useState<VideoStatus>('idle')
@@ -186,18 +177,17 @@ function VideoPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [videoError, setVideoError] = useState<string | null>(null)
 
-  // Hidden file inputs
   const firstFrameFileInputRef = useRef<HTMLInputElement>(null)
   const lastFrameFileInputRef = useRef<HTMLInputElement>(null)
 
   const isFluxKontextMode = firstFrameModel === FLUX_KONTEXT_MODEL_ID
 
-  // Reset downstream state
   function resetDownstream() {
     setLastFrameStatus('idle')
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
+    setLastFramePhase(null)
     setVideoStatus('idle')
     setVideoUrl(null)
     setVideoRecordId(null)
@@ -211,11 +201,9 @@ function VideoPage() {
     setVideoError(null)
   }
 
-  // Model switch resets first frame + downstream
   function handleModelChange(modelId: string) {
     if (firstFrameStatus === 'generating') return
     setFirstFrameModel(modelId)
-    setFirstFrameImageData(null)
     setFirstFrameStatus('idle')
     setFirstFrameUrl(null)
     setFirstFrameRecordId(null)
@@ -223,7 +211,6 @@ function VideoPage() {
     resetDownstream()
   }
 
-  // Last frame mode toggle resets last frame + video
   function handleLastFrameModeChange(mode: LastFrameMode) {
     if (lastFrameStatus === 'generating') return
     setLastFrameMode(mode)
@@ -232,23 +219,99 @@ function VideoPage() {
     setLastFrameUrl(null)
     setLastFrameRecordId(null)
     setLastFrameError(null)
+    setLastFramePhase(null)
     resetVideoState()
   }
 
-  // File pick handlers
+  // Auto-generate last frame after first frame is ready (FLUX upload mode)
+  async function autoGenerateLastFrame(recordId: string) {
+    if (!session?.access_token) return
+
+    setLastFrameStatus('generating')
+    setLastFrameUrl(null)
+    setLastFrameRecordId(null)
+    setLastFrameError(null)
+    setLastFramePhase('analyzing')
+    resetVideoState()
+
+    let prompt = ''
+    try {
+      const suggestion = await suggestLastFrame({
+        data: {
+          accessToken: session.access_token,
+          firstFramePrompt: '',
+          firstFrameRecordId: recordId,
+        },
+      })
+      prompt = suggestion.prompt
+      setLastFramePrompt(prompt)
+    } catch {
+      // proceed without suggestion
+    }
+
+    setLastFramePhase('generating')
+
+    try {
+      const result = await generateLastFrame({
+        data: {
+          prompt: prompt || 'Continuation of the scene',
+          firstFrameRecordId: recordId,
+          accessToken: session.access_token,
+        },
+      })
+      setLastFrameRecordId(result.recordId)
+      setLastFramePhase(null)
+    } catch (err) {
+      setLastFrameStatus('error')
+      setLastFrameError(
+        err instanceof Error ? err.message : 'Failed to generate last frame',
+      )
+      setLastFramePhase(null)
+    }
+  }
+
+  // FLUX mode: auto-upload on file pick, then auto-generate last frame
   async function handleFirstFrameFilePick(
     e: React.ChangeEvent<HTMLInputElement>,
   ) {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file || !session?.access_token) return
     e.target.value = ''
+
+    let dataUrl: string
     try {
-      const dataUrl = await cropTo16x9(file)
-      setFirstFrameImageData(dataUrl)
-      setFirstFrameStatus('idle')
-      setFirstFrameUrl(dataUrl)
+      dataUrl = await cropTo16x9(file)
     } catch {
       setFirstFrameError('Failed to process image')
+      return
+    }
+
+    // Show local preview immediately, then upload
+    setFirstFrameUrl(dataUrl)
+    setFirstFrameStatus('generating')
+    setFirstFrameRecordId(null)
+    setFirstFrameError(null)
+    resetDownstream()
+
+    try {
+      const result = await uploadVideoFrame({
+        data: {
+          imageBase64: dataUrl,
+          frameType: 'first',
+          accessToken: session.access_token,
+        },
+      })
+      setFirstFrameRecordId(result.recordId)
+      setFirstFrameUrl(result.signedUrl)
+      setFirstFrameStatus('completed')
+
+      // Immediately chain into last frame generation
+      await autoGenerateLastFrame(result.recordId)
+    } catch (err) {
+      setFirstFrameStatus('error')
+      setFirstFrameError(
+        err instanceof Error ? err.message : 'Failed to upload frame',
+      )
     }
   }
 
@@ -268,10 +331,9 @@ function VideoPage() {
     }
   }
 
-  // Poll for first frame completion (only for AI generation, not uploads)
+  // Poll for first frame (Kling mode only)
   const checkFirstFrame = useCallback(async () => {
     if (!session?.access_token || !firstFrameRecordId) return
-
     try {
       await checkPendingImages({
         data: {
@@ -279,18 +341,15 @@ function VideoPage() {
           recordIds: [firstFrameRecordId],
         },
       })
-
       const { data: recordData } = await supabase
         .from('user_images')
         .select('status, storage_path')
         .eq('id', firstFrameRecordId)
         .single()
-
-      const record = recordData as unknown as {
+      const record = recordData as {
         status: string
         storage_path: string | null
       } | null
-
       if (record?.status === 'completed' && record.storage_path) {
         const { data: urlData } = await supabase.storage
           .from('user-images')
@@ -310,16 +369,14 @@ function VideoPage() {
 
   useEffect(() => {
     if (firstFrameStatus !== 'generating' || !firstFrameRecordId) return
-    // In upload mode, generation completes synchronously — no polling needed
-    if (isFluxKontextMode) return
+    if (isFluxKontextMode) return // upload mode completes synchronously
     const interval = setInterval(checkFirstFrame, 3000)
     return () => clearInterval(interval)
   }, [firstFrameStatus, firstFrameRecordId, checkFirstFrame, isFluxKontextMode])
 
-  // Poll for last frame completion
+  // Poll for last frame
   const checkLastFrame = useCallback(async () => {
     if (!session?.access_token || !lastFrameRecordId) return
-
     try {
       await checkPendingImages({
         data: {
@@ -327,18 +384,15 @@ function VideoPage() {
           recordIds: [lastFrameRecordId],
         },
       })
-
       const { data: lastRecordData } = await supabase
         .from('user_images')
         .select('status, storage_path')
         .eq('id', lastFrameRecordId)
         .single()
-
-      const lastRecord = lastRecordData as unknown as {
+      const lastRecord = lastRecordData as {
         status: string
         storage_path: string | null
       } | null
-
       if (lastRecord?.status === 'completed' && lastRecord.storage_path) {
         const { data: urlData } = await supabase.storage
           .from('user-images')
@@ -358,24 +412,18 @@ function VideoPage() {
 
   useEffect(() => {
     if (lastFrameStatus !== 'generating' || !lastFrameRecordId) return
-    // In image upload mode, generation completes synchronously
     if (lastFrameMode === 'image') return
     const interval = setInterval(checkLastFrame, 3000)
     return () => clearInterval(interval)
   }, [lastFrameStatus, lastFrameRecordId, checkLastFrame, lastFrameMode])
 
-  // Poll for video completion
+  // Poll for video
   const checkVideo = useCallback(async () => {
     if (!session?.access_token || !videoRecordId) return
-
     try {
       const result = await checkPendingVideo({
-        data: {
-          accessToken: session.access_token,
-          recordId: videoRecordId,
-        },
+        data: { accessToken: session.access_token, recordId: videoRecordId },
       })
-
       if (result.status === 'completed' && result.videoUrl) {
         setVideoUrl(result.videoUrl)
         setVideoStatus('completed')
@@ -394,40 +442,14 @@ function VideoPage() {
     return () => clearInterval(interval)
   }, [videoStatus, videoRecordId, checkVideo])
 
+  // Explicit generate first frame (Kling mode)
   async function handleGenerateFirstFrame() {
-    if (!session?.access_token) return
-
+    if (!session?.access_token || !firstFramePrompt.trim()) return
     setFirstFrameStatus('generating')
     setFirstFrameUrl(null)
     setFirstFrameRecordId(null)
     setFirstFrameError(null)
     resetDownstream()
-
-    if (isFluxKontextMode) {
-      // Upload mode: no FAL generation, upload image directly
-      if (!firstFrameImageData) return
-      try {
-        const result = await uploadVideoFrame({
-          data: {
-            imageBase64: firstFrameImageData,
-            frameType: 'first',
-            accessToken: session.access_token,
-          },
-        })
-        setFirstFrameRecordId(result.recordId)
-        setFirstFrameUrl(result.signedUrl)
-        setFirstFrameStatus('completed')
-      } catch (err) {
-        setFirstFrameStatus('error')
-        setFirstFrameError(
-          err instanceof Error ? err.message : 'Failed to upload frame',
-        )
-      }
-      return
-    }
-
-    // Prompt-based generation
-    if (!firstFramePrompt.trim()) return
     try {
       const result = await generateFirstFrame({
         data: {
@@ -445,6 +467,7 @@ function VideoPage() {
     }
   }
 
+  // Explicit generate / regenerate last frame (manual trigger)
   async function handleGenerateLastFrame() {
     if (
       !session?.access_token ||
@@ -453,15 +476,13 @@ function VideoPage() {
     )
       return
 
-    setLastFrameStatus('generating')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
-    resetVideoState()
-
     if (lastFrameMode === 'image') {
-      // Upload mode
       if (!lastFrameImageData) return
+      setLastFrameStatus('generating')
+      setLastFrameUrl(null)
+      setLastFrameRecordId(null)
+      setLastFrameError(null)
+      resetVideoState()
       try {
         const result = await uploadVideoFrame({
           data: {
@@ -482,22 +503,31 @@ function VideoPage() {
       return
     }
 
-    // Prompt-based generation
-    if (!lastFramePrompt.trim()) return
-    try {
-      const result = await generateLastFrame({
-        data: {
-          prompt: lastFramePrompt,
-          firstFrameRecordId,
-          accessToken: session.access_token,
-        },
-      })
-      setLastFrameRecordId(result.recordId)
-    } catch (err) {
-      setLastFrameStatus('error')
-      setLastFrameError(
-        err instanceof Error ? err.message : 'Failed to generate last frame',
-      )
+    // Prompt mode — use current lastFramePrompt or auto-suggest
+    if (isFluxKontextMode) {
+      await autoGenerateLastFrame(firstFrameRecordId)
+    } else {
+      if (!lastFramePrompt.trim()) return
+      setLastFrameStatus('generating')
+      setLastFrameUrl(null)
+      setLastFrameRecordId(null)
+      setLastFrameError(null)
+      resetVideoState()
+      try {
+        const result = await generateLastFrame({
+          data: {
+            prompt: lastFramePrompt,
+            firstFrameRecordId,
+            accessToken: session.access_token,
+          },
+        })
+        setLastFrameRecordId(result.recordId)
+      } catch (err) {
+        setLastFrameStatus('error')
+        setLastFrameError(
+          err instanceof Error ? err.message : 'Failed to generate last frame',
+        )
+      }
     }
   }
 
@@ -510,12 +540,10 @@ function VideoPage() {
       lastFrameStatus !== 'completed'
     )
       return
-
     setVideoStatus('generating')
     setVideoUrl(null)
     setVideoRecordId(null)
     setVideoError(null)
-
     try {
       const result = await generateFlfVideo({
         data: {
@@ -536,19 +564,18 @@ function VideoPage() {
 
   async function handleSuggestLastFrame() {
     if (!session?.access_token || firstFrameStatus !== 'completed') return
-
     setSuggestingLastFrame(true)
     try {
       const result = await suggestLastFrame({
         data: {
           accessToken: session.access_token,
-          firstFramePrompt,
+          firstFramePrompt: isFluxKontextMode ? '' : firstFramePrompt,
           firstFrameRecordId: firstFrameRecordId ?? undefined,
         },
       })
       setLastFramePrompt(result.prompt)
     } catch {
-      // fail silently — user still has their existing prompt
+      // fail silently
     } finally {
       setSuggestingLastFrame(false)
     }
@@ -558,20 +585,18 @@ function VideoPage() {
   const canGenerateVideo =
     firstFrameStatus === 'completed' && lastFrameStatus === 'completed'
 
-  const firstFrameGenerateDisabled =
-    firstFrameStatus === 'generating' ||
-    (isFluxKontextMode ? !firstFrameImageData : !firstFramePrompt.trim())
+  const lastFrameGeneratingLabel =
+    lastFramePhase === 'analyzing' ? 'Analyzing...' : 'Generating...'
 
-  const lastFrameGenerateDisabled =
+  const lastFrameRegenerateDisabled =
     lastFrameLocked ||
     lastFrameStatus === 'generating' ||
-    (lastFrameMode === 'image' ? !lastFrameImageData : !lastFramePrompt.trim())
+    (lastFrameMode === 'image' && !lastFrameImageData)
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Video</h1>
 
-      {/* Hidden file inputs */}
       <input
         ref={firstFrameFileInputRef}
         type="file"
@@ -587,7 +612,6 @@ function VideoPage() {
         onChange={handleLastFrameFilePick}
       />
 
-      {/* Frame panels */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* First Frame */}
         <div className="space-y-3">
@@ -617,6 +641,7 @@ function VideoPage() {
             status={firstFrameStatus}
             imageUrl={firstFrameUrl}
             placeholder="First frame will appear here"
+            generatingLabel="Uploading..."
             onChooseImage={
               isFluxKontextMode && firstFrameStatus !== 'generating'
                 ? () => firstFrameFileInputRef.current?.click()
@@ -638,23 +663,22 @@ function VideoPage() {
             <p className="text-xs text-destructive">{firstFrameError}</p>
           )}
 
-          <Button
-            onClick={handleGenerateFirstFrame}
-            disabled={firstFrameGenerateDisabled}
-            className="w-full"
-          >
-            {firstFrameStatus === 'generating'
-              ? isFluxKontextMode
-                ? 'Uploading...'
-                : 'Generating...'
-              : firstFrameStatus === 'completed'
-                ? isFluxKontextMode
-                  ? 'Re-upload First Frame'
-                  : 'Regenerate First Frame'
-                : isFluxKontextMode
-                  ? 'Upload First Frame'
+          {/* Only show button in Kling mode — FLUX auto-uploads on pick */}
+          {!isFluxKontextMode && (
+            <Button
+              onClick={handleGenerateFirstFrame}
+              disabled={
+                firstFrameStatus === 'generating' || !firstFramePrompt.trim()
+              }
+              className="w-full"
+            >
+              {firstFrameStatus === 'generating'
+                ? 'Generating...'
+                : firstFrameStatus === 'completed'
+                  ? 'Regenerate First Frame'
                   : 'Generate First Frame'}
-          </Button>
+            </Button>
+          )}
         </div>
 
         {/* Last Frame */}
@@ -694,6 +718,7 @@ function VideoPage() {
                 ? 'Generate first frame first'
                 : 'Last frame will appear here'
             }
+            generatingLabel={lastFrameGeneratingLabel}
             onChooseImage={
               lastFrameMode === 'image' &&
               lastFrameStatus !== 'generating' &&
@@ -703,25 +728,34 @@ function VideoPage() {
             }
           />
 
-          {lastFrameMode === 'prompt' && (
-            <div className="relative">
-              <Textarea
-                placeholder="Describe how the scene evolves..."
-                value={lastFramePrompt}
-                onChange={(e) => setLastFramePrompt(e.target.value)}
-                disabled={lastFrameStatus === 'generating' || lastFrameLocked}
-                rows={6}
-              />
-              {!lastFrameLocked && (
-                <button
-                  onClick={handleSuggestLastFrame}
-                  disabled={
-                    suggestingLastFrame || lastFrameStatus === 'generating'
-                  }
-                  className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {suggestingLastFrame ? 'Suggesting...' : 'Suggest'}
-                </button>
+          {/* Prompt section — collapsed by default, show/hide toggle */}
+          {lastFrameMode === 'prompt' && !lastFrameLocked && (
+            <div>
+              <button
+                onClick={() => setShowLastFramePrompt((v) => !v)}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showLastFramePrompt ? 'Hide prompt' : 'Show prompt'}
+              </button>
+              {showLastFramePrompt && (
+                <div className="relative mt-2">
+                  <Textarea
+                    placeholder="Describe what changes in the scene..."
+                    value={lastFramePrompt}
+                    onChange={(e) => setLastFramePrompt(e.target.value)}
+                    disabled={lastFrameStatus === 'generating'}
+                    rows={4}
+                  />
+                  <button
+                    onClick={handleSuggestLastFrame}
+                    disabled={
+                      suggestingLastFrame || lastFrameStatus === 'generating'
+                    }
+                    className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {suggestingLastFrame ? 'Suggesting...' : 'Suggest'}
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -732,25 +766,18 @@ function VideoPage() {
 
           <Button
             onClick={handleGenerateLastFrame}
-            disabled={lastFrameGenerateDisabled}
+            disabled={lastFrameRegenerateDisabled}
             className="w-full"
           >
             {lastFrameStatus === 'generating'
-              ? lastFrameMode === 'image'
-                ? 'Uploading...'
-                : 'Generating...'
+              ? lastFrameGeneratingLabel
               : lastFrameStatus === 'completed'
-                ? lastFrameMode === 'image'
-                  ? 'Re-upload Last Frame'
-                  : 'Regenerate Last Frame'
-                : lastFrameMode === 'image'
-                  ? 'Upload Last Frame'
-                  : 'Generate Last Frame'}
+                ? 'Regenerate Last Frame'
+                : 'Generate Last Frame'}
           </Button>
         </div>
       </div>
 
-      {/* Generate Video button — only when both frames ready */}
       {canGenerateVideo && (
         <div className="flex justify-center">
           <Button
@@ -772,7 +799,6 @@ function VideoPage() {
         <p className="text-sm text-destructive text-center">{videoError}</p>
       )}
 
-      {/* Video pending state */}
       {videoStatus === 'generating' && (
         <div className="rounded-lg border border-border bg-muted/30 p-8 flex items-center justify-center">
           <div className="text-center space-y-2">
@@ -784,7 +810,6 @@ function VideoPage() {
         </div>
       )}
 
-      {/* Video player */}
       {videoStatus === 'completed' && videoUrl && (
         <div className="rounded-lg overflow-hidden border border-border bg-black">
           <video

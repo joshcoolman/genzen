@@ -7,18 +7,26 @@ import { ai } from '@/lib/server/ai.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const SYSTEM_PROMPT = `You are generating a last frame for a first-frame-to-last-frame (FLF) video system. The video model interpolates smoothly BETWEEN the two frames — so they must be nearly identical in composition or the result will look like a broken morph.
+const SYSTEM_PROMPT = `You look at a video frame and describe what happens next — in plain, short English.
 
 Rules:
-- Keep EXACTLY the same camera angle, framing, and composition as the first frame
-- Change only ONE subtle thing: a slight camera drift, a tiny motion completion, a very gentle lighting shift
-- The last frame should look like a still taken 2-4 seconds after the first — same shot, barely moved
-- Same subject, same background, same depth of field, same lighting direction
-- Do NOT describe a new angle, a cut, a different scene, or any significant transformation
+- Describe the action or change, not the scene details
+- 10 words or fewer
+- No camera terms, no lighting, no aesthetic descriptions
+- Be specific about the action, general about everything else
 
-The minimum change that implies motion is the right answer. Ask yourself: if someone compared these two frames side by side, would they look nearly identical? They should.
+Good examples:
+- "Car turns sharply around the corner"
+- "Driver waves from the window"
+- "Crowd cheers as the runner crosses the line"
+- "Man steps out onto the hotel steps"
+- "Car stops at the red light"
 
-Return ONLY the last frame description as plain text. No preamble, no explanation.`
+Bad examples (too detailed):
+- "The red vehicle, its chrome fenders gleaming in late afternoon sun..."
+- "Wide-angle shot of the vehicle decelerating with motion blur..."
+
+Output ONLY the next scene phrase. Nothing else.`
 
 interface SuggestLastFrameInput {
   accessToken: string
