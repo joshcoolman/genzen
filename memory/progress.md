@@ -60,20 +60,20 @@
 
 ## Key Files
 
-| File                                                            | Purpose                                         |
-| --------------------------------------------------------------- | ----------------------------------------------- |
-| `src/lib/server/ai.server.ts`                                   | Shared AI SDK client (haiku/sonnet)             |
-| `src/features/ai-images/models.ts`                              | Model list + defaults                           |
-| `src/features/ai-images/server/generate-variation.server.ts`    | "More" server function                          |
-| `src/features/ai-images/server/generate-image.server.ts`        | Main generation server function                 |
-| `src/features/ai-images/server/check-pending-images.server.ts`  | Polling / FAL result fetcher (reused by video)  |
-| `src/features/ai-images/components/PendingImageCard.tsx`        | Loading card UI                                 |
-| `src/routes/dashboard/ai-images.tsx`                            | AI Images page — gallery, state, realtime       |
-| `src/routes/dashboard/video.tsx`                                | AI Video page — FLF 3-step UI                   |
-| `src/features/ai-video/server/generate-first-frame.server.ts`   | First frame: FLUX Kontext Pro or Kling O3       |
-| `src/features/ai-video/server/generate-last-frame.server.ts`    | Last frame: Kontext Max with first frame ref    |
-| `src/features/ai-video/server/generate-flf-video.server.ts`     | Video: Kling O1 queue submit                    |
-| `src/features/ai-video/server/check-pending-video.server.ts`    | Video polling — stores FAL CDN URL directly     |
-| `src/features/ai-video/server/suggest-last-frame.server.ts`     | Claude-powered last frame prompt suggestion     |
-| `src/features/ai-video/server/upload-video-frame.server.ts`     | Upload image as completed frame (no FAL)        |
-| `supabase/migrations/20260225000000_add_video_source_types.sql` | Adds ai_video_frame + ai_video source values    |
+| File                                                            | Purpose                                        |
+| --------------------------------------------------------------- | ---------------------------------------------- |
+| `src/lib/server/ai.server.ts`                                   | Shared AI SDK client (haiku/sonnet)            |
+| `src/features/ai-images/models.ts`                              | Model list + defaults                          |
+| `src/features/ai-images/server/generate-variation.server.ts`    | "More" server function                         |
+| `src/features/ai-images/server/generate-image.server.ts`        | Main generation server function                |
+| `src/features/ai-images/server/check-pending-images.server.ts`  | Polling / FAL result fetcher (reused by video) |
+| `src/features/ai-images/components/PendingImageCard.tsx`        | Loading card UI                                |
+| `src/routes/dashboard/ai-images.tsx`                            | AI Images page — gallery, state, realtime      |
+| `src/routes/dashboard/video.tsx`                                | AI Video page — FLF 3-step UI                  |
+| `src/features/ai-video/server/generate-first-frame.server.ts`   | First frame: FLUX Kontext Pro or Kling O3      |
+| `src/features/ai-video/server/generate-last-frame.server.ts`    | Last frame: Kontext Max with first frame ref   |
+| `src/features/ai-video/server/generate-flf-video.server.ts`     | Video: Kling O1 queue submit                   |
+| `src/features/ai-video/server/check-pending-video.server.ts`    | Video polling — stores FAL CDN URL directly    |
+| `src/features/ai-video/server/suggest-last-frame.server.ts`     | Claude-powered last frame prompt suggestion    |
+| `src/features/ai-video/server/upload-video-frame.server.ts`     | Upload image as completed frame (no FAL)       |
+| `supabase/migrations/20260225000000_add_video_source_types.sql` | Adds ai_video_frame + ai_video source values   |

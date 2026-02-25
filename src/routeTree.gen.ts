@@ -22,6 +22,7 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settin
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
+import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -88,6 +89,12 @@ const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   path: '/ai-images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardVideoWorkspaceIdRoute =
+  DashboardVideoWorkspaceIdRouteImport.update({
+    id: '/$workspaceId',
+    path: '/$workspaceId',
+    getParentRoute: () => DashboardVideoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -99,10 +106,11 @@ export interface FileRoutesByFullPath {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/video': typeof DashboardVideoRoute
+  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,10 +120,11 @@ export interface FileRoutesByTo {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/video': typeof DashboardVideoRoute
+  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,10 +137,11 @@ export interface FileRoutesById {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/video': typeof DashboardVideoRoute
+  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/video/$workspaceId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard'
     | '/docs'
+    | '/dashboard/video/$workspaceId'
   id:
     | '__root__'
     | '/'
@@ -177,6 +189,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/video/$workspaceId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -280,15 +293,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAiImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/video/$workspaceId': {
+      id: '/dashboard/video/$workspaceId'
+      path: '/$workspaceId'
+      fullPath: '/dashboard/video/$workspaceId'
+      preLoaderRoute: typeof DashboardVideoWorkspaceIdRouteImport
+      parentRoute: typeof DashboardVideoRoute
+    }
   }
 }
+
+interface DashboardVideoRouteChildren {
+  DashboardVideoWorkspaceIdRoute: typeof DashboardVideoWorkspaceIdRoute
+}
+
+const DashboardVideoRouteChildren: DashboardVideoRouteChildren = {
+  DashboardVideoWorkspaceIdRoute: DashboardVideoWorkspaceIdRoute,
+}
+
+const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
+  DashboardVideoRouteChildren,
+)
 
 interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardVideoRoute: typeof DashboardVideoRoute
+  DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -297,7 +329,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardVideoRoute: DashboardVideoRoute,
+  DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
