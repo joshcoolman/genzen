@@ -376,14 +376,9 @@ function VideoPage() {
         },
       })
 
-      if (result.status === 'completed' && result.storagePath) {
-        const { data: urlData } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(result.storagePath, 7200)
-        if (urlData) {
-          setVideoUrl(urlData.signedUrl)
-          setVideoStatus('completed')
-        }
+      if (result.status === 'completed' && result.videoUrl) {
+        setVideoUrl(result.videoUrl)
+        setVideoStatus('completed')
       } else if (result.status === 'error') {
         setVideoStatus('error')
         setVideoError(result.error || 'Video generation failed')
