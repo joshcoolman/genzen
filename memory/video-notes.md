@@ -136,6 +136,27 @@ The workspace should be a **scene workspace** where images and videos coexist. A
 
 This reframes the product from "video generator" to "scene builder with animation."
 
+## FAL Workflows (Model Chaining)
+
+FAL workflows let you chain models into a single pipeline via `workflows/execute`. Define a JSON graph of nodes where outputs from one step feed into the next via `$node_id.field.path` syntax.
+
+**Key use case**: Kontext (face consistency) -> Nano Banana Pro edit (overlays/effects). Kontext preserves identity, Nano Banana handles creative edits it's better at.
+
+- Cost = sum of individual models (~$0.04 Kontext + ~$0.15 Nano Banana = ~$0.19/run)
+- Streaming gives intermediate results per step (show Kontext output while Nano Banana processes)
+- JS client: `fal.stream("workflows/execute", { input: { ... } })`
+- No extra fee for workflow orchestration
+
+## Structured / JSON Prompts
+
+Two approaches on FAL:
+
+**FIBO (Bria)** -- only model with true `structured_prompt` API field. Pass typed objects per scene element with `location`, `relationship`, `relative_size`. Has generate (`bria/fibo/generate/structured_prompt`) and edit (`bria/fibo-edit/edit/structured_instruction`) endpoints. Best for precise foreground/background/overlay control.
+
+**Nano Banana Pro** -- no JSON API field, but accepts stringified JSON in the `prompt` string. Works because it's built on Gemini (LLM). Community-discovered technique. Better spatial composition than natural language. Schema includes subject, photography, background as structured keys.
+
+**For overlay effects (HUD, etc.)**: FIBO's structured edit lets you specify foreground objects explicitly. Nano Banana's JSON-as-string gives decent composition control. FAL workflow chaining Kontext + either model is the best of both worlds.
+
 ## Open Questions
 
 - What aspect ratios does FAL support per model?

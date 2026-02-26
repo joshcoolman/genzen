@@ -5,11 +5,13 @@ import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const LAST_FRAME_MODEL = 'fal-ai/flux-pro/kontext/max'
+const KONTEXT_MODEL = 'fal-ai/flux-pro/kontext/max'
+const NANO_BANANA_MODEL = 'fal-ai/nano-banana-pro/edit'
 
 interface GenerateLastFrameInput {
   prompt: string
   firstFrameRecordId: string
+  model?: 'kontext' | 'nano-banana'
   accessToken: string
 }
 
@@ -76,14 +78,24 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
       new Blob([buffer], { type: mediaType }),
     )
 
-    const { request_id } = await fal.queue.submit(LAST_FRAME_MODEL, {
-      input: {
-        prompt,
-        image_url: falImageUrl,
-        safety_tolerance: '6',
-        guidance_scale: 2.0, // low = stays close to input image; high = follows prompt more aggressively
-      },
-    })
+    const useNanoBanana = data.model === 'nano-banana'
+    const modelId = useNanoBanana ? NANO_BANANA_MODEL : KONTEXT_MODEL
+
+    const input = useNanoBanana
+      ? {
+          prompt,
+          image_urls: [falImageUrl],
+          aspect_ratio: '16:9' as const,
+          safety_tolerance: '6' as const,
+        }
+      : {
+          prompt,
+          image_url: falImageUrl,
+          safety_tolerance: '6' as const,
+          guidance_scale: 2.0,
+        }
+
+    const { request_id } = await fal.queue.submit(modelId, { input })
 
     const { data: record, error: insertError } = await supabase
       .from('user_images')
@@ -95,7 +107,7 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
         title: 'Generating last frame...',
         generation_metadata: {
           prompt,
-          model: LAST_FRAME_MODEL,
+          model: modelId,
           frame_type: 'last',
           first_frame_id: firstFrameRecordId,
           submitted_at: new Date().toISOString(),

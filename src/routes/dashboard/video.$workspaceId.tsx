@@ -30,6 +30,12 @@ const FIRST_FRAME_MODELS = [
 
 const FLUX_KONTEXT_MODEL_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 
+const LAST_FRAME_MODELS = [
+  { id: 'kontext' as const, label: 'Kontext' },
+  { id: 'nano-banana' as const, label: 'Nano Banana' },
+]
+
+type LastFrameModelId = 'kontext' | 'nano-banana'
 type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
 type LastFrameMode = 'prompt' | 'image'
 
@@ -272,13 +278,14 @@ function GenerationRow({
 
       {/* Video dialog */}
       <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
-        <DialogContent className="max-w-3xl p-2">
+        <DialogContent className="max-w-3xl p-2 data-[state=open]:!animate-in data-[state=open]:!fade-in-0 data-[state=open]:!zoom-in-95 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-top-0 data-[state=closed]:!animate-out data-[state=closed]:!fade-out-0 data-[state=closed]:!zoom-out-95 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-top-0">
           {generation.video?.url && (
             <video
               src={generation.video.url}
               controls
               autoPlay
-              className="w-full rounded"
+              loop
+              className="aspect-video w-full rounded bg-black"
             />
           )}
         </DialogContent>
@@ -306,6 +313,8 @@ function WorkspaceDetailPage() {
   const [firstFrameError, setFirstFrameError] = useState<string | null>(null)
 
   // Last frame state
+  const [lastFrameModel, setLastFrameModel] =
+    useState<LastFrameModelId>('kontext')
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
   const [lastFramePrompt, setLastFramePrompt] = useState('')
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
@@ -588,6 +597,7 @@ function WorkspaceDetailPage() {
         data: {
           prompt: lastFramePrompt,
           firstFrameRecordId,
+          model: lastFrameModel,
           accessToken: session.access_token,
         },
       })
@@ -843,6 +853,27 @@ function WorkspaceDetailPage() {
               ))}
             </div>
           </div>
+
+          {lastFrameMode === 'prompt' && (
+            <div className="flex gap-1">
+              {LAST_FRAME_MODELS.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setLastFrameModel(m.id)}
+                  disabled={lastFrameStatus === 'generating'}
+                  className={cn(
+                    'px-2 py-1 text-xs rounded border transition-colors',
+                    lastFrameModel === m.id
+                      ? 'border-accent-gold bg-accent-gold/10 text-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                  )}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <FrameImageArea
             status={lastFrameStatus}
