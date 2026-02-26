@@ -2,10 +2,17 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { createWorkspace } from '@/features/ai-video/server/create-workspace.server'
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
 import { getWorkspace } from '@/features/ai-video/server/get-workspace.server'
+import { getWorkspaces } from '@/features/ai-video/server/get-workspaces.server'
 import { moveGenerations } from '@/features/ai-video/server/move-generations.server'
 import { renameWorkspace } from '@/features/ai-video/server/rename-workspace.server'
 import { generateFirstFrame } from '@/features/ai-video/server/generate-first-frame.server'
@@ -445,6 +452,19 @@ function WorkspaceDetailPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isMoving, setIsMoving] = useState(false)
   const [newWorkspaceName, setNewWorkspaceName] = useState('')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false)
+  const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
+    null,
+  )
+  const [availableWorkspaces, setAvailableWorkspaces] = useState<
+    Array<{
+      id: string
+      name: string
+      generationCount: number
+      preview: { heroUrl: string | null }
+    }>
+  >([])
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -1128,56 +1148,208 @@ function WorkspaceDetailPage() {
         <span className="text-sm text-muted-foreground whitespace-nowrap">
           {selectedIds.size} selected
         </span>
-        <input
-          type="text"
-          value={newWorkspaceName}
-          onChange={(e) => setNewWorkspaceName(e.target.value)}
-          placeholder="Workspace name"
-          className="h-8 px-2 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-gold w-44"
-        />
         <Button
           size="sm"
           disabled={isMoving || selectedIds.size === 0}
+          onClick={() => {
+            setNewWorkspaceName('')
+            setCreateDialogOpen(true)
+          }}
+        >
+          New workspace
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={isMoving || selectedIds.size === 0}
           onClick={async () => {
-            if (!session?.access_token || selectedIds.size === 0) return
-            setIsMoving(true)
+            if (!session?.access_token) return
             try {
-              const name = newWorkspaceName.trim() || 'Untitled'
-              const newWs = await createWorkspace({
-                data: { name, accessToken: session.access_token },
+              const all = await getWorkspaces({
+                data: { accessToken: session.access_token },
               })
-              await moveGenerations({
-                data: {
-                  generationIds: [...selectedIds],
-                  targetWorkspaceId: newWs.id,
-                  accessToken: session.access_token,
-                },
-              })
-              setGenerations((prev) =>
-                prev.filter((g) => !selectedIds.has(g.id)),
-              )
-              setSelectedIds(new Set())
-
-              setNewWorkspaceName('')
+              setAvailableWorkspaces(all.filter((ws) => ws.id !== workspaceId))
+              setTargetWorkspaceId(null)
+              setMoveDialogOpen(true)
             } catch (err) {
-              console.error('Failed to move generations:', err)
-            } finally {
-              setIsMoving(false)
+              console.error('Failed to load workspaces:', err)
             }
           }}
         >
-          {isMoving ? 'Moving...' : 'Create workspace'}
+          Move to workspace
         </Button>
         <button
-          onClick={() => {
-            setSelectedIds(new Set())
-            setNewWorkspaceName('')
-          }}
+          onClick={() => setSelectedIds(new Set())}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Cancel
         </button>
       </div>
+
+      {/* Create new workspace dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>New workspace</DialogTitle>
+          </DialogHeader>
+          <input
+            type="text"
+            value={newWorkspaceName}
+            onChange={(e) => setNewWorkspaceName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newWorkspaceName.trim()) {
+                ;(
+                  e.currentTarget
+                    .closest('[role="dialog"]')
+                    ?.querySelector(
+                      '[data-create-confirm]',
+                    ) as HTMLButtonElement | null
+                )?.click()
+              }
+            }}
+            placeholder="Workspace name"
+            autoFocus
+            className="h-9 px-3 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-gold w-full"
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              data-create-confirm
+              disabled={!newWorkspaceName.trim() || isMoving}
+              onClick={async () => {
+                if (
+                  !session?.access_token ||
+                  !newWorkspaceName.trim() ||
+                  selectedIds.size === 0
+                )
+                  return
+                setIsMoving(true)
+                try {
+                  const newWs = await createWorkspace({
+                    data: {
+                      name: newWorkspaceName.trim(),
+                      accessToken: session.access_token,
+                    },
+                  })
+                  await moveGenerations({
+                    data: {
+                      generationIds: [...selectedIds],
+                      targetWorkspaceId: newWs.id,
+                      accessToken: session.access_token,
+                    },
+                  })
+                  setGenerations((prev) =>
+                    prev.filter((g) => !selectedIds.has(g.id)),
+                  )
+                  setSelectedIds(new Set())
+                  setCreateDialogOpen(false)
+                  setNewWorkspaceName('')
+                } catch (err) {
+                  console.error('Failed to create workspace:', err)
+                } finally {
+                  setIsMoving(false)
+                }
+              }}
+            >
+              {isMoving ? 'Creating...' : 'Done'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move to workspace dialog */}
+      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Move to workspace</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto py-2">
+            {availableWorkspaces.length === 0 ? (
+              <p className="col-span-2 text-sm text-muted-foreground text-center py-6">
+                No other workspaces found
+              </p>
+            ) : (
+              availableWorkspaces.map((ws) => (
+                <button
+                  key={ws.id}
+                  onClick={() => setTargetWorkspaceId(ws.id)}
+                  className={cn(
+                    'rounded-lg border p-2 text-left transition-colors',
+                    targetWorkspaceId === ws.id
+                      ? 'border-accent-gold bg-accent-gold/5'
+                      : 'border-border hover:bg-muted/30',
+                  )}
+                >
+                  {ws.preview.heroUrl ? (
+                    <img
+                      src={ws.preview.heroUrl}
+                      alt={ws.name}
+                      className="aspect-video w-full rounded object-cover mb-2"
+                    />
+                  ) : (
+                    <div className="aspect-video w-full rounded bg-muted/30 mb-2" />
+                  )}
+                  <p className="text-sm font-medium truncate">{ws.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {ws.generationCount} generation
+                    {ws.generationCount !== 1 ? 's' : ''}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMoveDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!targetWorkspaceId || isMoving}
+              onClick={async () => {
+                if (
+                  !session?.access_token ||
+                  !targetWorkspaceId ||
+                  selectedIds.size === 0
+                )
+                  return
+                setIsMoving(true)
+                try {
+                  await moveGenerations({
+                    data: {
+                      generationIds: [...selectedIds],
+                      targetWorkspaceId,
+                      accessToken: session.access_token,
+                    },
+                  })
+                  setGenerations((prev) =>
+                    prev.filter((g) => !selectedIds.has(g.id)),
+                  )
+                  setSelectedIds(new Set())
+                  setMoveDialogOpen(false)
+                  setTargetWorkspaceId(null)
+                } catch (err) {
+                  console.error('Failed to move generations:', err)
+                } finally {
+                  setIsMoving(false)
+                }
+              }}
+            >
+              {isMoving ? 'Moving...' : 'Done'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
