@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Settings } from 'lucide-react'
+import { Settings, Sparkles } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -54,16 +54,7 @@ function AiImagesPage() {
     setError(null)
 
     try {
-      let finalPrompt = prompt.trim()
-      if (!finalPrompt) {
-        const data = await generatePromptServer({
-          data: {
-            accessToken: session.access_token,
-            theme: modelSettings.theme,
-          },
-        })
-        finalPrompt = data.prompt
-      }
+      const finalPrompt = prompt.trim()
 
       await Promise.all(
         modelSettings.selectedModels.map((modelId) =>
@@ -171,7 +162,7 @@ function AiImagesPage() {
     setError(null)
     try {
       const data = await generatePromptServer({
-        data: { accessToken: session.access_token, theme: modelSettings.theme },
+        data: { accessToken: session.access_token, theme: 'general' },
       })
       setPrompt(data.prompt)
     } catch (err) {
@@ -219,89 +210,50 @@ function AiImagesPage() {
       <div className="bg-card rounded-lg p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column: Prompt */}
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label
-                  htmlFor="prompt-textarea"
-                  className="block text-sm font-medium text-muted-foreground"
-                >
-                  Prompt
-                </label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRandomPrompt}
-                  disabled={generatingPrompt || loading}
-                  title="Generate a random photography prompt with AI"
-                >
-                  {generatingPrompt ? 'Generating...' : 'Random Prompt'}
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="prompt-theme"
-                    value="general"
-                    checked={modelSettings.theme === 'general'}
-                    onChange={() => modelSettings.setTheme('general')}
-                    disabled={loading}
-                    className="h-3.5 w-3.5 cursor-pointer"
-                  />
-                  <span className="text-muted-foreground">General</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="prompt-theme"
-                    value="fantasy-scifi"
-                    checked={modelSettings.theme === 'fantasy-scifi'}
-                    onChange={() => modelSettings.setTheme('fantasy-scifi')}
-                    disabled={loading}
-                    className="h-3.5 w-3.5 cursor-pointer"
-                  />
-                  <span className="text-muted-foreground">
-                    Fantasy / Sci-Fi
-                  </span>
-                </label>
-              </div>
-              <Textarea
-                id="prompt-textarea"
-                placeholder="Prompt for image, or just click Generate for a surprise"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                disabled={loading}
-                rows={8}
-              />
-            </div>
+          <div className="space-y-3">
+            <Textarea
+              id="prompt-textarea"
+              placeholder="Describe your image..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              disabled={loading}
+              rows={8}
+            />
 
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || modelSettings.selectedModels.length === 0}
-              className="w-full"
-            >
-              {loading
-                ? modelSettings.selectedModels.length > 1
-                  ? `Generating ${modelSettings.selectedModels.length} images...`
-                  : 'Generating...'
-                : modelSettings.selectedModels.length > 1
-                  ? `Generate ${modelSettings.selectedModels.length} images`
-                  : 'Generate'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRandomPrompt}
+                disabled={generatingPrompt}
+                title="Generate a random prompt"
+                className="shrink-0"
+              >
+                <Sparkles className="h-4 w-4 mr-1.5" />
+                {generatingPrompt ? 'Generating...' : 'Prompt'}
+              </Button>
+              <Button
+                onClick={handleGenerate}
+                disabled={
+                  loading ||
+                  !prompt.trim() ||
+                  modelSettings.selectedModels.length === 0
+                }
+                className="flex-1"
+              >
+                {loading
+                  ? modelSettings.selectedModels.length > 1
+                    ? `Generating ${modelSettings.selectedModels.length} images...`
+                    : 'Generating...'
+                  : modelSettings.selectedModels.length > 1
+                    ? `Generate ${modelSettings.selectedModels.length} images`
+                    : 'Generate'}
+              </Button>
+            </div>
 
             {error && (
               <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
                 {error}
               </div>
-            )}
-
-            {loading && (
-              <p className="text-sm text-muted-foreground">
-                {modelSettings.selectedModels.length > 1
-                  ? `Generating ${modelSettings.selectedModels.length} images, this may take a moment...`
-                  : 'Generating image, this may take a moment...'}
-              </p>
             )}
           </div>
 
