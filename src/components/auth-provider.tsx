@@ -10,11 +10,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession)
-      setUser(initialSession?.user ?? null)
-      setLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session: initialSession } }) => {
+        if (initialSession) {
+          // Verify the session is valid against the current Supabase instance.
+          // Catches stale sessions from a different instance (e.g. remote → local).
+          const {
+            data: { user: verifiedUser },
+          } = await supabase.auth.getUser(initialSession.access_token)
+          if (!verifiedUser) {
+            await supabase.auth.signOut()
+            setLoading(false)
+            return
+          }
+        }
+        setSession(initialSession)
+        setUser(initialSession?.user ?? null)
+        setLoading(false)
+      })
 
     const {
       data: { subscription },
