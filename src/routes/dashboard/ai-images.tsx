@@ -1,10 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  ImagePlus,
   RectangleHorizontal,
   RectangleVertical,
   Settings,
   Sparkles,
+  X,
 } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { Button } from '@/components/ui/button'
@@ -17,10 +19,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
+import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
 import { generateVariation } from '@/features/ai-images/server/generate-variation.server'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import {
+  ALL_IMAGE_MODELS,
+  IMAGE_INPUT_MODELS,
+} from '@/features/ai-images/models'
 import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
 import { PendingImageCard } from '@/features/ai-images/components/PendingImageCard'
 import { ImageCard } from '@/features/ai-images/components/ImageCard'
@@ -54,6 +60,21 @@ function AiImagesPage() {
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [loading, setLoading] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [sourceImage, setSourceImage] = useState<{
+    base64: string
+    name: string
+  } | null>(null)
+  const [imageSelectedModels, setImageSelectedModels] = useState<Array<string>>(
+    [],
+  )
+  const [describingImage, setDescribingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const inputMode = sourceImage ? 'image' : 'text'
+  const canGenerate =
+    inputMode === 'image'
+      ? imageSelectedModels.length > 0
+      : !!prompt.trim() && modelSettings.selectedModels.length > 0
 
   const landscapeRatios = ['16:9', '2:1', '3:2', '4:3', '21:9', '1:1']
   const portraitRatios = ['9:16', '1:2', '2:3', '3:4', '1:1']
@@ -96,27 +117,27 @@ function AiImagesPage() {
   }
 
   async function handleGenerate() {
-    if (
-      loading ||
-      !session?.access_token ||
-      modelSettings.selectedModels.length === 0
-    )
-      return
+    if (loading || !session?.access_token || !canGenerate) return
 
     setLoading(true)
     setError(null)
 
     try {
       const finalPrompt = prompt.trim()
+      const modelsToUse =
+        inputMode === 'image'
+          ? imageSelectedModels
+          : modelSettings.selectedModels
 
       await Promise.all(
-        modelSettings.selectedModels.map((modelId) =>
+        modelsToUse.map((modelId) =>
           generateImage({
             data: {
               prompt: finalPrompt,
               model: modelId,
               accessToken: session.access_token,
               aspectRatio,
+              ...(sourceImage ? { sourceImageBase64: sourceImage.base64 } : {}),
             },
           }),
         ),
@@ -126,6 +147,63 @@ function AiImagesPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      setSourceImage({ base64, name: file.name })
+      setImageSelectedModels([])
+      setPrompt('')
+
+      // Snap orientation + aspect ratio to closest match for source image
+      const img = new Image()
+      img.onload = () => {
+        const { naturalWidth: w, naturalHeight: h } = img
+        if (!w || !h) return
+        const ratio = w / h
+        const isLandscape = ratio >= 1
+        const nextOrientation = isLandscape ? 'landscape' : 'portrait'
+        const candidates = isLandscape ? landscapeRatios : portraitRatios
+        function parseRatio(r: string) {
+          const [a, b] = r.split(':').map(Number)
+          return a / b
+        }
+        const closest = candidates.reduce((best, r) =>
+          Math.abs(parseRatio(r) - ratio) < Math.abs(parseRatio(best) - ratio)
+            ? r
+            : best,
+        )
+        setOrientation(nextOrientation)
+        setAspectRatio(closest)
+      }
+      img.src = base64
+
+      // Auto-caption the image and populate the prompt textarea
+      if (session?.access_token) {
+        setDescribingImage(true)
+        captionImage({
+          data: { imageBase64: base64, accessToken: session.access_token },
+        })
+          .then(({ caption }) => setPrompt(caption))
+          .catch(() => {
+            /* leave prompt empty, server will describe on generate */
+          })
+          .finally(() => setDescribingImage(false))
+      }
+    }
+    reader.readAsDataURL(file)
+    // Reset file input so the same file can be re-selected
+    e.target.value = ''
+  }
+
+  function handleClearSourceImage() {
+    setSourceImage(null)
+    setImageSelectedModels([])
+    setPrompt('')
   }
 
   function handleLoadPrompt(img: SavedAiImage) {
@@ -265,25 +343,77 @@ function AiImagesPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column: Prompt */}
           <div className="space-y-3">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            {/* Source image preview strip */}
+            {sourceImage && (
+              <div className="flex items-center gap-2 rounded border border-input bg-muted/50 px-2.5 py-1.5">
+                <img
+                  src={sourceImage.base64}
+                  alt="Source"
+                  className="h-10 w-10 rounded object-cover shrink-0"
+                />
+                <span className="text-xs text-muted-foreground truncate flex-1">
+                  {sourceImage.name}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={handleClearSourceImage}
+                  title="Remove source image"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+
             <Textarea
               id="prompt-textarea"
-              placeholder="Describe your image..."
+              placeholder={
+                describingImage
+                  ? 'Describing image...'
+                  : inputMode === 'image'
+                    ? 'Edit prompt (optional)...'
+                    : 'Describe your image...'
+              }
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              disabled={loading}
-              rows={8}
+              disabled={loading || describingImage}
+              rows={sourceImage ? 6 : 8}
             />
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={handleRandomPrompt}
-                disabled={generatingPrompt}
-                title="Generate a random prompt"
+                disabled={generatingPrompt || inputMode === 'image'}
+                title={
+                  inputMode === 'image'
+                    ? 'Not available in image mode'
+                    : 'Generate a random prompt'
+                }
                 className="shrink-0"
               >
                 <Sparkles className="h-4 w-4 mr-1.5" />
                 {generatingPrompt ? 'Generating...' : 'Prompt'}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                title="Upload source image"
+                className={`shrink-0 ${inputMode === 'image' ? 'border-primary text-primary' : ''}`}
+              >
+                <ImagePlus className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
@@ -317,19 +447,21 @@ function AiImagesPage() {
               </Select>
               <Button
                 onClick={handleGenerate}
-                disabled={
-                  loading ||
-                  !prompt.trim() ||
-                  modelSettings.selectedModels.length === 0
-                }
+                disabled={loading || !canGenerate}
                 className="flex-1"
               >
                 {loading
-                  ? modelSettings.selectedModels.length > 1
-                    ? `Generating ${modelSettings.selectedModels.length} images...`
+                  ? (inputMode === 'image'
+                      ? imageSelectedModels
+                      : modelSettings.selectedModels
+                    ).length > 1
+                    ? `Generating ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images...`
                     : 'Generating...'
-                  : modelSettings.selectedModels.length > 1
-                    ? `Generate ${modelSettings.selectedModels.length} images`
+                  : (inputMode === 'image'
+                        ? imageSelectedModels
+                        : modelSettings.selectedModels
+                      ).length > 1
+                    ? `Generate ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images`
                     : 'Generate'}
               </Button>
             </div>
@@ -343,53 +475,94 @@ function AiImagesPage() {
 
           {/* Right Column: Model Selection */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-medium text-muted-foreground">
-                Models ({modelSettings.selectedModels.length} selected)
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => modelSettings.setSettingsOpen(true)}
-                disabled={loading}
-                title="Configure visible models"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-1">
-              {modelSettings.visibleModels.map((m) => (
-                <label
-                  key={m.id}
-                  className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    value={m.id}
-                    checked={modelSettings.selectedModels.includes(m.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        modelSettings.setSelectedModels([
-                          ...modelSettings.selectedModels,
-                          m.id,
-                        ])
-                      } else {
-                        if (modelSettings.selectedModels.length > 1) {
-                          modelSettings.setSelectedModels(
-                            modelSettings.selectedModels.filter(
-                              (id) => id !== m.id,
-                            ),
-                          )
-                        }
-                      }
-                    }}
+            {inputMode === 'image' ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    Models — image input ({imageSelectedModels.length} selected)
+                  </label>
+                </div>
+                <div className="space-y-1">
+                  {IMAGE_INPUT_MODELS.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        value={m.id}
+                        checked={imageSelectedModels.includes(m.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setImageSelectedModels([
+                              ...imageSelectedModels,
+                              m.id,
+                            ])
+                          } else {
+                            setImageSelectedModels(
+                              imageSelectedModels.filter((id) => id !== m.id),
+                            )
+                          }
+                        }}
+                        disabled={loading}
+                        className="h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <span className="text-xs font-medium">{m.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    Models ({modelSettings.selectedModels.length} selected)
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => modelSettings.setSettingsOpen(true)}
                     disabled={loading}
-                    className="h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
-                  />
-                  <span className="text-xs font-medium">{m.name}</span>
-                </label>
-              ))}
-            </div>
+                    title="Configure visible models"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-1">
+                  {modelSettings.visibleModels.map((m) => (
+                    <label
+                      key={m.id}
+                      className="flex items-center gap-2 rounded border border-input px-2.5 py-1.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        value={m.id}
+                        checked={modelSettings.selectedModels.includes(m.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            modelSettings.setSelectedModels([
+                              ...modelSettings.selectedModels,
+                              m.id,
+                            ])
+                          } else {
+                            if (modelSettings.selectedModels.length > 1) {
+                              modelSettings.setSelectedModels(
+                                modelSettings.selectedModels.filter(
+                                  (id) => id !== m.id,
+                                ),
+                              )
+                            }
+                          }
+                        }}
+                        disabled={loading}
+                        className="h-3.5 w-3.5 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <span className="text-xs font-medium">{m.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

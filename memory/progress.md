@@ -18,6 +18,8 @@
 - **Upload mode for FLF frames** (`gen-video`): FLUX Kontext Pro (first frame) and Image toggle (last frame) let users supply their own images instead of AI-generating. Client-side `cropTo16x9` crops to 1280×720 JPEG via canvas. New `upload-video-frame.server.ts` uploads directly to Supabase storage and inserts a `status: 'completed'` record — no FAL queue, no polling. Preview shows immediately on pick; hover reveals "Change Image" overlay.
 - **AI Video feature** (`gen-video` branch): New `/dashboard/video` route implementing FLF (first-frame → last-frame → video) workflow. See Key Files below for server fn locations. Requires running the DB migration before testing.
 
+- **Image input mode for AI Images** (`main`): Added source image upload to AI Images page. Users click `ImagePlus` icon to pick an image — a thumbnail preview strip appears, model panel switches to "Models — image input" showing only the 4 image-capable models (FLUX Kontext Pro, SD 3.5 Large, Nano Banana Pro, FLUX.2 Flex), and prompt becomes optional. Server (`generate-image.server.ts`) decodes base64, detects mime type, uploads to FAL storage, and routes to correct endpoint/param (`image_url` vs `image_urls`). Clearing the image (✕) restores text mode with previous model selection intact.
+
 ### Previously committed (main)
 
 - **AI SDK migration**: Replaced `@anthropic-ai/sdk` with `ai` + `@ai-sdk/anthropic`. All 4 Anthropic server functions now use `generateText()` via shared client in `src/lib/server/ai.server.ts`. FAL calls unchanged.

@@ -5,6 +5,9 @@ export interface ImageModel {
   name: string
   description: string
   category: ModelCategory
+  supportsImageInput?: boolean
+  imageInputModelId?: string
+  imageInputParam?: 'image_url' | 'image_urls'
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -27,12 +30,16 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'FLUX.2 Flex',
     description: 'Flexible generation',
     category: 'FLUX',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/flux-2-flex/edit',
+    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/flux-pro/kontext',
     name: 'FLUX Kontext Pro',
     description: 'Subject-consistent generation',
     category: 'FLUX',
+    supportsImageInput: true,
   },
   {
     id: 'fal-ai/flux-krea-lora/stream',
@@ -61,6 +68,9 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'Nano Banana Pro',
     description: 'Google SOTA, realism + typography',
     category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/nano-banana-pro/edit',
+    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/recraft/v3/text-to-image',
@@ -99,6 +109,7 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'SD 3.5 Large',
     description: 'Stable Diffusion 3.5',
     category: 'Other',
+    supportsImageInput: true,
   },
 ]
 
@@ -115,6 +126,10 @@ export const DEFAULT_VISIBLE_MODELS = [
 ]
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
+
+export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
+  (m) => m.supportsImageInput,
+)
 
 /**
  * Get visible models by their IDs

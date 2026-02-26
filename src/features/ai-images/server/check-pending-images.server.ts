@@ -57,21 +57,24 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
 
     for (const record of pendingRecords) {
       const { request_id, generation_metadata } = record
-      const { model, prompt } = generation_metadata as {
+      const { model, prompt, fal_model_id } = generation_metadata as {
         model: string
         prompt: string
+        fal_model_id?: string
       }
+      // Use the actual FAL endpoint that was submitted (may differ for image-input models)
+      const falModelId = fal_model_id ?? model
 
       try {
         // Check FAL status
-        const status = await fal.queue.status(model, {
+        const status = await fal.queue.status(falModelId, {
           requestId: request_id,
           logs: false,
         })
 
         if (status.status === 'COMPLETED') {
           // Fetch result
-          const result = await fal.queue.result(model, {
+          const result = await fal.queue.result(falModelId, {
             requestId: request_id,
           })
 
