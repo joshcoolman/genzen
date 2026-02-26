@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
 import { generateFirstFrame } from '@/features/ai-video/server/generate-first-frame.server'
 import { generateLastFrame } from '@/features/ai-video/server/generate-last-frame.server'
 import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.server'
@@ -160,14 +161,17 @@ function GenerationRow({
   generation,
   onLoad,
   onUpdate,
+  onDelete,
   accessToken,
 }: {
   generation: Generation
   onLoad: (gen: Generation) => void
   onUpdate: (id: string, updates: Partial<Generation>) => void
+  onDelete: (id: string) => void
   accessToken: string | undefined
 }) {
   const [videoOpen, setVideoOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const isPending = generation.video?.status === 'pending'
@@ -261,19 +265,45 @@ function GenerationRow({
         )}
       </div>
 
-      {/* Date + load button */}
+      {/* Date + load/delete buttons */}
       <div className="flex flex-1 items-center justify-between min-w-0">
         <span className="text-xs text-muted-foreground">
           {new Date(generation.createdAt).toLocaleString()}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs"
-          onClick={() => onLoad(generation)}
-        >
-          Load
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+            onClick={() => onLoad(generation)}
+          >
+            Load
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-destructive"
+            disabled={deleting}
+            onClick={async () => {
+              if (!accessToken) return
+              if (!window.confirm('Delete this generation?')) return
+              setDeleting(true)
+              try {
+                await deleteGeneration({
+                  data: {
+                    generationId: generation.id,
+                    accessToken,
+                  },
+                })
+                onDelete(generation.id)
+              } catch {
+                setDeleting(false)
+              }
+            }}
+          >
+            {deleting ? '...' : 'Delete'}
+          </Button>
+        </div>
       </div>
 
       {/* Video dialog */}
@@ -684,6 +714,21 @@ function WorkspaceDetailPage() {
     [],
   )
 
+  const handleDeleteGeneration = useCallback(
+    (id: string) => {
+      setGenerations((prev) => prev.filter((gen) => gen.id !== id))
+      // If the deleted generation was loaded in the form, clear form state
+      if (
+        firstFrameRecordId &&
+        generations.find((g) => g.id === id)?.firstFrame?.id ===
+          firstFrameRecordId
+      ) {
+        resetAllState()
+      }
+    },
+    [firstFrameRecordId, generations],
+  )
+
   async function handleSuggestLastFrame() {
     if (!session?.access_token || firstFrameStatus !== 'completed') return
     setSuggestingLastFrame(true)
@@ -960,6 +1005,7 @@ function WorkspaceDetailPage() {
                 generation={gen}
                 onLoad={handleLoadGeneration}
                 onUpdate={handleUpdateGeneration}
+                onDelete={handleDeleteGeneration}
                 accessToken={session?.access_token}
               />
             ))}

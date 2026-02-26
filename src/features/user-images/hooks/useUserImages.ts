@@ -93,6 +93,7 @@ export function useUserImages(
         .from('user_images')
         .select('*')
         .eq('user_id', userId)
+        .in('source', ['upload', 'ai_generated'])
         .order('created_at', { ascending: false })
 
       if (filters?.search_term) {
