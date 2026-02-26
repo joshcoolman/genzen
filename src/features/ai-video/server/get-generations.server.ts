@@ -28,8 +28,8 @@ export const getGenerations = createServerFn({ method: 'POST' })
         `
         id,
         created_at,
-        first_frame:first_frame_id(id, storage_path, generation_metadata),
-        last_frame:last_frame_id(id, storage_path, generation_metadata),
+        first_frame:first_frame_id(id, status, storage_path, generation_metadata),
+        last_frame:last_frame_id(id, status, storage_path, generation_metadata),
         video:video_id(id, status, storage_path, generation_metadata)
         `,
       )
@@ -77,13 +77,32 @@ export const getGenerations = createServerFn({ method: 'POST' })
             (video.generation_metadata?.fal_url as string | undefined) ?? null
         }
 
+        const firstFrameStatus = firstFrame
+          ? ((firstFrame.status ?? 'completed') as
+              | 'pending'
+              | 'completed'
+              | 'failed')
+          : undefined
+        const lastFrameStatus = lastFrame
+          ? ((lastFrame.status ?? 'completed') as
+              | 'pending'
+              | 'completed'
+              | 'failed')
+          : undefined
+
         return {
           id: gen.id as string,
           createdAt: gen.created_at as string,
           firstFrame: firstFrame
-            ? { id: firstFrame.id, url: firstFrameUrl }
+            ? {
+                id: firstFrame.id,
+                url: firstFrameUrl,
+                status: firstFrameStatus,
+              }
             : null,
-          lastFrame: lastFrame ? { id: lastFrame.id, url: lastFrameUrl } : null,
+          lastFrame: lastFrame
+            ? { id: lastFrame.id, url: lastFrameUrl, status: lastFrameStatus }
+            : null,
           video: video
             ? {
                 id: video.id,

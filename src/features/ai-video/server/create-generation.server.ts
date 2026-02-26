@@ -6,7 +6,7 @@ interface CreateGenerationInput {
   workspaceId: string
   firstFrameId: string
   lastFrameId: string
-  videoId: string
+  videoId?: string
   accessToken: string
 }
 
@@ -32,7 +32,7 @@ export const createGeneration = createServerFn({ method: 'POST' })
         user_id: user.id,
         first_frame_id: data.firstFrameId,
         last_frame_id: data.lastFrameId,
-        video_id: data.videoId,
+        video_id: data.videoId ?? null,
       })
       .select()
       .single()

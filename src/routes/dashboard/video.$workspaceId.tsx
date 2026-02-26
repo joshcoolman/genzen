@@ -1,570 +1,148 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { createWorkspace } from '@/features/ai-video/server/create-workspace.server'
-import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
-import { getWorkspace } from '@/features/ai-video/server/get-workspace.server'
-import { getWorkspaces } from '@/features/ai-video/server/get-workspaces.server'
-import { moveGenerations } from '@/features/ai-video/server/move-generations.server'
-import { renameWorkspace } from '@/features/ai-video/server/rename-workspace.server'
+import { useRef, useState } from 'react'
+import type { Generation, LastFrameMode } from '@/features/ai-video/types'
 import { generateFirstFrame } from '@/features/ai-video/server/generate-first-frame.server'
 import { generateLastFrame } from '@/features/ai-video/server/generate-last-frame.server'
 import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.server'
 import { suggestLastFrame } from '@/features/ai-video/server/suggest-last-frame.server'
 import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.server'
-import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
-import { checkPendingVideo } from '@/features/ai-video/server/check-pending-video.server'
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
-import { getGenerations } from '@/features/ai-video/server/get-generations.server'
+import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
 import { useAuth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
-import { cn } from '@/lib/utils'
+import { cropTo16x9 } from '@/features/ai-video/lib/crop-to-16x9'
+import { useFrame } from '@/features/ai-video/hooks/use-frame'
+import { useWorkspaceName } from '@/features/ai-video/hooks/use-workspace-name'
+import { useGenerations } from '@/features/ai-video/hooks/use-generations'
+import { useGenerationSelection } from '@/features/ai-video/hooks/use-generation-selection'
+import { GenerationRow } from '@/features/ai-video/components/GenerationRow'
+import { FramePanel } from '@/features/ai-video/components/FramePanel'
+import { SelectionBar } from '@/features/ai-video/components/SelectionBar'
+import {
+  DEFAULT_FIRST_FRAME_PROMPT,
+  FIRST_FRAME_MODELS,
+  FLUX_KONTEXT_MODEL_ID,
+  LAST_FRAME_MODEL,
+} from '@/features/ai-video/types'
 
 export const Route = createFileRoute('/dashboard/video/$workspaceId')({
   component: WorkspaceDetailPage,
 })
 
-const DEFAULT_FIRST_FRAME_PROMPT =
-  'A visceral side-mounted camera angle hugging just above the wheel arch of a red-and-white 1980s Formula 1 car blasting out of the Monaco tunnel into blinding Mediterranean sunlight. Tire sidewalls ripple with speed, polished livery shimmers, chrome suspension arms catch the light. Vintage 35mm racing documentary aesthetic, natural motion blur, golden hour.'
-
-const FIRST_FRAME_MODELS = [
-  { id: 'fal-ai/flux-pro/kontext/text-to-image', label: 'FLUX Kontext Pro' },
-  { id: 'fal-ai/kling-image/o3/text-to-image', label: 'Kling Image O3' },
-]
-
-const FLUX_KONTEXT_MODEL_ID = 'fal-ai/flux-pro/kontext/text-to-image'
-
-const LAST_FRAME_MODEL = 'nano-banana' as const
-type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
-type LastFrameMode = 'prompt' | 'image'
-
-type Generation = {
-  id: string
-  createdAt: string
-  firstFrame: { id: string; url: string | null } | null
-  lastFrame: { id: string; url: string | null } | null
-  video: {
-    id: string
-    url: string | null
-    status: 'pending' | 'completed' | 'failed'
-  } | null
-}
-
-function cropTo16x9(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const objectUrl = URL.createObjectURL(file)
-
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl)
-
-      const targetAspect = 16 / 9
-      const srcAspect = img.width / img.height
-      let sx = 0,
-        sy = 0,
-        sw = img.width,
-        sh = img.height
-
-      if (srcAspect > targetAspect) {
-        sw = Math.round(img.height * targetAspect)
-        sx = Math.round((img.width - sw) / 2)
-      } else {
-        sh = Math.round(img.width / targetAspect)
-        sy = Math.round((img.height - sh) / 2)
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = 1280
-      canvas.height = 720
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'))
-        return
-      }
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1280, 720)
-      resolve(canvas.toDataURL('image/jpeg', 0.92))
-    }
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl)
-      reject(new Error('Failed to load image'))
-    }
-
-    img.src = objectUrl
-  })
-}
-
-function FrameImageArea({
-  status,
-  imageUrl,
-  placeholder,
-  generatingLabel = 'Generating...',
-  onChooseImage,
-}: {
-  status: FrameStatus
-  imageUrl: string | null
-  placeholder: string
-  generatingLabel?: string
-  onChooseImage?: () => void
-}) {
-  if (imageUrl && status !== 'generating') {
-    return (
-      <div className="relative group">
-        <img
-          src={imageUrl}
-          alt="Frame"
-          className="aspect-video w-full rounded-md object-cover border border-border"
-        />
-        {onChooseImage && (
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-md">
-            <Button variant="outline" size="sm" onClick={onChooseImage}>
-              Change Image
-            </Button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  if (status === 'generating') {
-    return (
-      <div className="aspect-video w-full rounded-md border border-border bg-muted/30 flex items-center justify-center animate-pulse">
-        <p className="text-xs text-muted-foreground">{generatingLabel}</p>
-      </div>
-    )
-  }
-
-  if (status === 'error') {
-    return (
-      <div className="aspect-video w-full rounded-md border border-destructive/50 bg-destructive/10 flex items-center justify-center">
-        <p className="text-xs text-destructive">Generation failed</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="aspect-video w-full rounded-md border border-dashed border-border bg-muted/30 flex items-center justify-center">
-      {onChooseImage ? (
-        <Button variant="outline" size="sm" onClick={onChooseImage}>
-          Choose Image
-        </Button>
-      ) : (
-        <p className="text-xs text-muted-foreground">{placeholder}</p>
-      )}
-    </div>
-  )
-}
-
-function GenerationRow({
-  generation,
-  selected,
-  onToggleSelect,
-  onLoad,
-  onContinue,
-  onUpdate,
-  onDelete,
-  accessToken,
-}: {
-  generation: Generation
-  selected: boolean
-  onToggleSelect: (id: string) => void
-  onLoad: (gen: Generation) => void
-  onContinue: (gen: Generation) => void
-  onUpdate: (id: string, updates: Partial<Generation>) => void
-  onDelete: (id: string) => void
-  accessToken: string | undefined
-}) {
-  const [videoOpen, setVideoOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const isPending = generation.video?.status === 'pending'
-
-  // Poll for pending videos
-  useEffect(() => {
-    if (!isPending || !accessToken || !generation.video) return
-
-    const videoRecordId = generation.video.id
-
-    const poll = async () => {
-      try {
-        const result = await checkPendingVideo({
-          data: { accessToken, recordId: videoRecordId },
-        })
-        if (result.status === 'completed' && result.videoUrl) {
-          onUpdate(generation.id, {
-            video: {
-              id: videoRecordId,
-              url: result.videoUrl,
-              status: 'completed',
-            },
-          })
-        } else if (result.status === 'error') {
-          onUpdate(generation.id, {
-            video: { id: videoRecordId, url: null, status: 'failed' },
-          })
-        }
-      } catch {
-        // keep polling
-      }
-    }
-
-    poll()
-    pollingRef.current = setInterval(poll, 5000)
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-    }
-  }, [isPending, accessToken, generation.video?.id, generation.id, onUpdate])
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-        selected
-          ? 'border-accent-gold bg-accent-gold/5'
-          : 'border-border hover:bg-muted/30',
-      )}
-    >
-      {/* Select checkbox */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleSelect(generation.id)
-        }}
-        className={cn(
-          'shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors',
-          selected
-            ? 'border-accent-gold bg-accent-gold text-black'
-            : 'border-border hover:border-foreground/50',
-        )}
-      >
-        {selected && (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path
-              d="M2.5 6L5 8.5L9.5 3.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </button>
-
-      {/* Thumbnails */}
-      <div className="flex gap-2 shrink-0">
-        {generation.firstFrame?.url ? (
-          <img
-            src={generation.firstFrame.url}
-            alt="First frame"
-            className="w-24 aspect-video rounded object-cover border border-border"
-          />
-        ) : (
-          <div className="w-24 aspect-video rounded border border-dashed border-border bg-muted/30" />
-        )}
-        {generation.lastFrame?.url ? (
-          <img
-            src={generation.lastFrame.url}
-            alt="Last frame"
-            className="w-24 aspect-video rounded object-cover border border-border"
-          />
-        ) : (
-          <div className="w-24 aspect-video rounded border border-dashed border-border bg-muted/30" />
-        )}
-        {generation.video?.status === 'pending' ? (
-          <div className="w-24 aspect-video rounded border border-border bg-muted/30 flex items-center justify-center animate-pulse">
-            <p className="text-[10px] text-muted-foreground">Processing...</p>
-          </div>
-        ) : generation.video?.url ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setVideoOpen(true)
-            }}
-            className="relative group"
-          >
-            <video
-              src={generation.video.url}
-              className="w-24 aspect-video rounded object-cover border border-border"
-              muted
-              preload="metadata"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-white text-xs">Play</span>
-            </div>
-          </button>
-        ) : generation.video?.status === 'failed' ? (
-          <div className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex items-center justify-center">
-            <p className="text-[10px] text-destructive">Failed</p>
-          </div>
-        ) : (
-          <div className="w-24 aspect-video rounded border border-dashed border-border bg-muted/30" />
-        )}
-      </div>
-
-      {/* Date + load/delete buttons */}
-      <div className="flex flex-1 items-center justify-between min-w-0">
-        <span className="text-xs text-muted-foreground">
-          {new Date(generation.createdAt).toLocaleString()}
-        </span>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            disabled={!generation.lastFrame?.url}
-            onClick={() => onContinue(generation)}
-          >
-            Continue
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            onClick={() => onLoad(generation)}
-          >
-            Load
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground hover:text-destructive"
-            disabled={deleting}
-            onClick={async () => {
-              if (!accessToken) return
-              if (!window.confirm('Delete this generation?')) return
-              setDeleting(true)
-              try {
-                await deleteGeneration({
-                  data: {
-                    generationId: generation.id,
-                    accessToken,
-                  },
-                })
-                onDelete(generation.id)
-              } catch {
-                setDeleting(false)
-              }
-            }}
-          >
-            {deleting ? '...' : 'Delete'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Video dialog */}
-      <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
-        <DialogContent className="max-w-3xl p-2 data-[state=open]:!animate-in data-[state=open]:!fade-in-0 data-[state=open]:!zoom-in-95 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-top-0 data-[state=closed]:!animate-out data-[state=closed]:!fade-out-0 data-[state=closed]:!zoom-out-95 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-top-0">
-          {generation.video?.url && (
-            <video
-              src={generation.video.url}
-              controls
-              autoPlay
-              loop
-              className="aspect-video w-full rounded bg-black"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
 function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
   const { session } = useAuth()
+  const accessToken = session?.access_token
 
   // Workspace name
-  const [workspaceName, setWorkspaceName] = useState('')
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editNameValue, setEditNameValue] = useState('')
-  const nameInputRef = useRef<HTMLInputElement>(null)
+  const wsName = useWorkspaceName(workspaceId, accessToken)
 
-  useEffect(() => {
-    if (!session?.access_token) return
-    getWorkspace({
-      data: { workspaceId, accessToken: session.access_token },
-    }).then((ws) => setWorkspaceName(ws.name))
-  }, [workspaceId, session?.access_token])
-
-  const handleStartRename = () => {
-    setEditNameValue(workspaceName)
-    setIsEditingName(true)
-    setTimeout(() => nameInputRef.current?.select(), 0)
-  }
-
-  const handleSaveRename = async () => {
-    setIsEditingName(false)
-    const trimmed = editNameValue.trim()
-    if (!trimmed || trimmed === workspaceName || !session?.access_token) return
-    setWorkspaceName(trimmed)
-    try {
-      await renameWorkspace({
-        data: { workspaceId, name: trimmed, accessToken: session.access_token },
-      })
-    } catch (err) {
-      console.error('Failed to rename workspace:', err)
-    }
-  }
-
-  // First frame state
+  // First frame
   const [firstFrameModel, setFirstFrameModel] = useState(
     FIRST_FRAME_MODELS[0].id,
   )
   const [firstFramePrompt, setFirstFramePrompt] = useState(
     DEFAULT_FIRST_FRAME_PROMPT,
   )
-  const [firstFrameStatus, setFirstFrameStatus] = useState<FrameStatus>('idle')
-  const [firstFrameRecordId, setFirstFrameRecordId] = useState<string | null>(
-    null,
-  )
-  const [firstFrameUrl, setFirstFrameUrl] = useState<string | null>(null)
-  const [firstFrameError, setFirstFrameError] = useState<string | null>(null)
+  const isFluxKontextMode = firstFrameModel === FLUX_KONTEXT_MODEL_ID
 
-  // Last frame state
-  const lastFrameModel = LAST_FRAME_MODEL
+  const firstFrame = useFrame({
+    accessToken,
+    shouldPoll: firstFrame_shouldPoll(),
+  })
+
+  // We need a stable reference for shouldPoll -- it depends on isFluxKontextMode
+  // which is derived from firstFrameModel state. useFrame reads shouldPoll on each
+  // effect cycle so this is fine as a function evaluated at render time.
+  function firstFrame_shouldPoll() {
+    return !isFluxKontextMode
+  }
+
+  // Last frame
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
   const [lastFramePrompt, setLastFramePrompt] = useState('')
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
     null,
   )
-  const [lastFrameStatus, setLastFrameStatus] = useState<FrameStatus>('idle')
-  const [lastFrameRecordId, setLastFrameRecordId] = useState<string | null>(
-    null,
-  )
-  const [lastFrameUrl, setLastFrameUrl] = useState<string | null>(null)
-  const [lastFrameError, setLastFrameError] = useState<string | null>(null)
   const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
 
-  // Generations list
-  const [generations, setGenerations] = useState<Array<Generation>>([])
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const lastFrame = useFrame({
+    accessToken,
+    shouldPoll: lastFrameMode !== 'image',
+  })
 
-  // Selection state
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [isMoving, setIsMoving] = useState(false)
-  const [newWorkspaceName, setNewWorkspaceName] = useState('')
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [moveDialogOpen, setMoveDialogOpen] = useState(false)
-  const [targetWorkspaceId, setTargetWorkspaceId] = useState<string | null>(
-    null,
-  )
-  const [availableWorkspaces, setAvailableWorkspaces] = useState<
-    Array<{
-      id: string
-      name: string
-      generationCount: number
-      preview: { heroUrl: string | null }
-    }>
-  >([])
+  // Generations
+  const gens = useGenerations(workspaceId, accessToken)
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
+  // Selection
+  const selection = useGenerationSelection({
+    workspaceId,
+    accessToken,
+    onMoved: gens.removeByIds,
+  })
 
+  // File input refs
   const firstFrameFileInputRef = useRef<HTMLInputElement>(null)
   const lastFrameFileInputRef = useRef<HTMLInputElement>(null)
 
-  const isFluxKontextMode = firstFrameModel === FLUX_KONTEXT_MODEL_ID
+  // Derived state
+  const lastFrameLocked = firstFrame.status !== 'completed'
+  const lastFrameGenerateDisabled =
+    lastFrameLocked ||
+    lastFrame.status === 'generating' ||
+    (lastFrameMode === 'prompt' && !lastFramePrompt.trim()) ||
+    (lastFrameMode === 'image' && !lastFrameImageData)
 
-  // Load generations on mount
-  useEffect(() => {
-    if (!session?.access_token) return
-    getGenerations({
-      data: { workspaceId, accessToken: session.access_token },
-    })
-      .then(setGenerations)
-      .catch(() => {})
-  }, [workspaceId, session?.access_token])
-
+  // Handlers
   function resetAllState() {
-    setFirstFrameStatus('idle')
-    setFirstFrameUrl(null)
-    setFirstFrameRecordId(null)
-    setFirstFrameError(null)
-    setLastFrameStatus('idle')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
+    firstFrame.reset()
+    lastFrame.reset()
     setLastFramePrompt('')
     setLastFrameImageData(null)
   }
 
   function resetDownstream() {
-    setLastFrameStatus('idle')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
+    lastFrame.reset()
   }
 
   function handleModelChange(modelId: string) {
-    if (firstFrameStatus === 'generating') return
+    if (firstFrame.status === 'generating') return
     setFirstFrameModel(modelId)
-    setFirstFrameStatus('idle')
-    setFirstFrameUrl(null)
-    setFirstFrameRecordId(null)
-    setFirstFrameError(null)
+    firstFrame.reset()
     resetDownstream()
   }
 
   function handleLastFrameModeChange(mode: LastFrameMode) {
-    if (lastFrameStatus === 'generating') return
+    if (lastFrame.status === 'generating') return
     setLastFrameMode(mode)
     setLastFrameImageData(null)
-    setLastFrameStatus('idle')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
+    lastFrame.reset()
   }
 
   async function handleFirstFrameFilePick(
     e: React.ChangeEvent<HTMLInputElement>,
   ) {
     const file = e.target.files?.[0]
-    if (!file || !session?.access_token) return
+    if (!file || !accessToken) return
     e.target.value = ''
 
     let dataUrl: string
     try {
       dataUrl = await cropTo16x9(file)
     } catch {
-      setFirstFrameError('Failed to process image')
+      firstFrame.setFailed('Failed to process image')
       return
     }
 
-    setFirstFrameUrl(dataUrl)
-    setFirstFrameStatus('generating')
-    setFirstFrameRecordId(null)
-    setFirstFrameError(null)
+    firstFrame.setGenerating(dataUrl)
     resetDownstream()
 
     try {
       const result = await uploadVideoFrame({
-        data: {
-          imageBase64: dataUrl,
-          frameType: 'first',
-          accessToken: session.access_token,
-        },
+        data: { imageBase64: dataUrl, frameType: 'first', accessToken },
       })
-      setFirstFrameRecordId(result.recordId)
-      setFirstFrameUrl(result.signedUrl)
-      setFirstFrameStatus('completed')
+      firstFrame.setCompleted(result.signedUrl, result.recordId)
     } catch (err) {
-      setFirstFrameStatus('error')
-      setFirstFrameError(
+      firstFrame.setFailed(
         err instanceof Error ? err.message : 'Failed to upload frame',
       )
     }
@@ -579,118 +157,24 @@ function WorkspaceDetailPage() {
     try {
       const dataUrl = await cropTo16x9(file)
       setLastFrameImageData(dataUrl)
-      setLastFrameStatus('idle')
-      setLastFrameUrl(dataUrl)
+      lastFrame.setStatus('idle')
+      lastFrame.setUrl(dataUrl)
     } catch {
-      setLastFrameError('Failed to process image')
+      lastFrame.setFailed('Failed to process image')
     }
   }
 
-  // Poll for first frame (Kling mode only)
-  const checkFirstFrame = useCallback(async () => {
-    if (!session?.access_token || !firstFrameRecordId) return
-    try {
-      await checkPendingImages({
-        data: {
-          accessToken: session.access_token,
-          recordIds: [firstFrameRecordId],
-        },
-      })
-      const { data: recordData } = await supabase
-        .from('user_images')
-        .select('status, storage_path')
-        .eq('id', firstFrameRecordId)
-        .single()
-      const record = recordData as {
-        status: string
-        storage_path: string | null
-      } | null
-      if (record?.status === 'completed' && record.storage_path) {
-        const { data: urlData } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(record.storage_path, 3600)
-        if (urlData) {
-          setFirstFrameUrl(urlData.signedUrl)
-          setFirstFrameStatus('completed')
-        }
-      } else if (record?.status === 'failed') {
-        setFirstFrameStatus('error')
-        setFirstFrameError('Frame generation failed')
-      }
-    } catch {
-      // keep polling
-    }
-  }, [session?.access_token, firstFrameRecordId])
-
-  useEffect(() => {
-    if (firstFrameStatus !== 'generating' || !firstFrameRecordId) return
-    if (isFluxKontextMode) return
-    const interval = setInterval(checkFirstFrame, 3000)
-    return () => clearInterval(interval)
-  }, [firstFrameStatus, firstFrameRecordId, checkFirstFrame, isFluxKontextMode])
-
-  // Poll for last frame
-  const checkLastFrame = useCallback(async () => {
-    if (!session?.access_token || !lastFrameRecordId) return
-    try {
-      await checkPendingImages({
-        data: {
-          accessToken: session.access_token,
-          recordIds: [lastFrameRecordId],
-        },
-      })
-      const { data: lastRecordData } = await supabase
-        .from('user_images')
-        .select('status, storage_path')
-        .eq('id', lastFrameRecordId)
-        .single()
-      const lastRecord = lastRecordData as {
-        status: string
-        storage_path: string | null
-      } | null
-      if (lastRecord?.status === 'completed' && lastRecord.storage_path) {
-        const { data: urlData } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(lastRecord.storage_path, 3600)
-        if (urlData) {
-          setLastFrameUrl(urlData.signedUrl)
-          setLastFrameStatus('completed')
-        }
-      } else if (lastRecord?.status === 'failed') {
-        setLastFrameStatus('error')
-        setLastFrameError('Frame generation failed')
-      }
-    } catch {
-      // keep polling
-    }
-  }, [session?.access_token, lastFrameRecordId])
-
-  useEffect(() => {
-    if (lastFrameStatus !== 'generating' || !lastFrameRecordId) return
-    if (lastFrameMode === 'image') return
-    const interval = setInterval(checkLastFrame, 3000)
-    return () => clearInterval(interval)
-  }, [lastFrameStatus, lastFrameRecordId, checkLastFrame, lastFrameMode])
-
   async function handleGenerateFirstFrame() {
-    if (!session?.access_token || !firstFramePrompt.trim()) return
-    setFirstFrameStatus('generating')
-    setFirstFrameUrl(null)
-    setFirstFrameRecordId(null)
-    setFirstFrameError(null)
+    if (!accessToken || !firstFramePrompt.trim()) return
+    firstFrame.setGenerating()
     resetDownstream()
     try {
       const result = await generateFirstFrame({
-        data: {
-          prompt: firstFramePrompt,
-          model: firstFrameModel,
-          accessToken: session.access_token,
-        },
+        data: { prompt: firstFramePrompt, model: firstFrameModel, accessToken },
       })
-      setFirstFrameRecordId(result.recordId)
+      firstFrame.setRecordId(result.recordId)
     } catch (err) {
-      setFirstFrameStatus('error')
-      setFirstFrameError(
+      firstFrame.setFailed(
         err instanceof Error ? err.message : 'Failed to generate first frame',
       )
     }
@@ -698,32 +182,56 @@ function WorkspaceDetailPage() {
 
   async function handleGenerateLastFrame() {
     if (
-      !session?.access_token ||
-      !firstFrameRecordId ||
-      firstFrameStatus !== 'completed'
+      !accessToken ||
+      !firstFrame.recordId ||
+      firstFrame.status !== 'completed'
     )
       return
 
+    const capturedFirstFrameUrl = firstFrame.url
+    const capturedFirstFrameRecordId = firstFrame.recordId
+
     if (lastFrameMode === 'image') {
       if (!lastFrameImageData) return
-      setLastFrameStatus('generating')
-      setLastFrameUrl(null)
-      setLastFrameRecordId(null)
-      setLastFrameError(null)
+      lastFrame.setGenerating()
       try {
         const result = await uploadVideoFrame({
           data: {
             imageBase64: lastFrameImageData,
             frameType: 'last',
-            accessToken: session.access_token,
+            accessToken,
           },
         })
-        setLastFrameRecordId(result.recordId)
-        setLastFrameUrl(result.signedUrl)
-        setLastFrameStatus('completed')
+
+        // Create generation record immediately
+        const gen = await createGeneration({
+          data: {
+            workspaceId,
+            firstFrameId: capturedFirstFrameRecordId,
+            lastFrameId: result.recordId,
+            accessToken,
+          },
+        })
+
+        const newGeneration: Generation = {
+          id: gen.id,
+          createdAt: new Date().toISOString(),
+          firstFrame: {
+            id: capturedFirstFrameRecordId,
+            url: capturedFirstFrameUrl,
+            status: 'completed',
+          },
+          lastFrame: {
+            id: result.recordId,
+            url: result.signedUrl,
+            status: 'completed',
+          },
+          video: null,
+        }
+        gens.addGeneration(newGeneration)
+        resetAllState()
       } catch (err) {
-        setLastFrameStatus('error')
-        setLastFrameError(
+        lastFrame.setFailed(
           err instanceof Error ? err.message : 'Failed to upload frame',
         )
       }
@@ -731,126 +239,89 @@ function WorkspaceDetailPage() {
     }
 
     if (!lastFramePrompt.trim()) return
-    setLastFrameStatus('generating')
-    setLastFrameUrl(null)
-    setLastFrameRecordId(null)
-    setLastFrameError(null)
+    lastFrame.setGenerating()
     try {
       const result = await generateLastFrame({
         data: {
           prompt: lastFramePrompt,
-          firstFrameRecordId,
-          model: lastFrameModel,
-          accessToken: session.access_token,
+          firstFrameRecordId: capturedFirstFrameRecordId,
+          model: LAST_FRAME_MODEL,
+          accessToken,
         },
       })
-      setLastFrameRecordId(result.recordId)
+
+      // Create generation record immediately with pending last frame
+      const gen = await createGeneration({
+        data: {
+          workspaceId,
+          firstFrameId: capturedFirstFrameRecordId,
+          lastFrameId: result.recordId,
+          accessToken,
+        },
+      })
+
+      const newGeneration: Generation = {
+        id: gen.id,
+        createdAt: new Date().toISOString(),
+        firstFrame: {
+          id: capturedFirstFrameRecordId,
+          url: capturedFirstFrameUrl,
+          status: 'completed',
+        },
+        lastFrame: {
+          id: result.recordId,
+          url: null,
+          status: 'pending',
+        },
+        video: null,
+      }
+      gens.addGeneration(newGeneration)
+      resetAllState()
     } catch (err) {
-      setLastFrameStatus('error')
-      setLastFrameError(
+      lastFrame.setFailed(
         err instanceof Error ? err.message : 'Failed to generate last frame',
       )
     }
   }
 
-  async function handleGenerateVideo() {
-    if (
-      !session?.access_token ||
-      !firstFrameRecordId ||
-      !lastFrameRecordId ||
-      firstFrameStatus !== 'completed' ||
-      lastFrameStatus !== 'completed'
-    )
-      return
-
-    setIsGeneratingVideo(true)
+  async function handleGenerateVideoFromRow(gen: Generation) {
+    if (!accessToken || !gen.firstFrame?.id || !gen.lastFrame?.id) return
 
     try {
-      // Kick off video generation
       const result = await generateFlfVideo({
         data: {
-          firstFrameRecordId,
-          lastFrameRecordId,
+          firstFrameRecordId: gen.firstFrame.id,
+          lastFrameRecordId: gen.lastFrame.id,
           prompt: '',
-          accessToken: session.access_token,
+          accessToken,
         },
       })
 
-      // Capture current frame data before resetting
-      const capturedFirstFrameUrl = firstFrameUrl
-      const capturedFirstFrameRecordId = firstFrameRecordId
-      const capturedLastFrameUrl = lastFrameUrl
-      const capturedLastFrameRecordId = lastFrameRecordId
-
-      // Create generation record immediately with pending video
-      const gen = await createGeneration({
+      await updateGeneration({
         data: {
-          workspaceId,
-          firstFrameId: capturedFirstFrameRecordId,
-          lastFrameId: capturedLastFrameRecordId,
+          generationId: gen.id,
           videoId: result.recordId,
-          accessToken: session.access_token,
+          accessToken,
         },
       })
 
-      // Add optimistic generation to list
-      const newGeneration: Generation = {
-        id: gen.id,
-        createdAt: new Date().toISOString(),
-        firstFrame: capturedFirstFrameRecordId
-          ? { id: capturedFirstFrameRecordId, url: capturedFirstFrameUrl }
-          : null,
-        lastFrame: capturedLastFrameRecordId
-          ? { id: capturedLastFrameRecordId, url: capturedLastFrameUrl }
-          : null,
+      gens.updateGeneration(gen.id, {
         video: { id: result.recordId, url: null, status: 'pending' },
-      }
-
-      setGenerations((prev) => [newGeneration, ...prev])
-
-      // Reset form for next generation
-      resetAllState()
+      })
     } catch (err) {
-      // Don't reset on error -- let user retry
       console.error('Failed to generate video:', err)
-    } finally {
-      setIsGeneratingVideo(false)
     }
   }
 
-  const handleUpdateGeneration = useCallback(
-    (id: string, updates: Partial<Generation>) => {
-      setGenerations((prev) =>
-        prev.map((gen) => (gen.id === id ? { ...gen, ...updates } : gen)),
-      )
-    },
-    [],
-  )
-
-  const handleDeleteGeneration = useCallback(
-    (id: string) => {
-      setGenerations((prev) => prev.filter((gen) => gen.id !== id))
-      // If the deleted generation was loaded in the form, clear form state
-      if (
-        firstFrameRecordId &&
-        generations.find((g) => g.id === id)?.firstFrame?.id ===
-          firstFrameRecordId
-      ) {
-        resetAllState()
-      }
-    },
-    [firstFrameRecordId, generations],
-  )
-
   async function handleSuggestLastFrame() {
-    if (!session?.access_token || firstFrameStatus !== 'completed') return
+    if (!accessToken || firstFrame.status !== 'completed') return
     setSuggestingLastFrame(true)
     try {
       const result = await suggestLastFrame({
         data: {
-          accessToken: session.access_token,
+          accessToken,
           firstFramePrompt: isFluxKontextMode ? '' : firstFramePrompt,
-          firstFrameRecordId: firstFrameRecordId ?? undefined,
+          firstFrameRecordId: firstFrame.recordId ?? undefined,
         },
       })
       setLastFramePrompt(result.prompt)
@@ -863,16 +334,10 @@ function WorkspaceDetailPage() {
 
   function handleLoadGeneration(gen: Generation) {
     if (gen.firstFrame) {
-      setFirstFrameStatus('completed')
-      setFirstFrameRecordId(gen.firstFrame.id)
-      setFirstFrameUrl(gen.firstFrame.url)
-      setFirstFrameError(null)
+      firstFrame.setCompleted(gen.firstFrame.url ?? '', gen.firstFrame.id)
     }
     if (gen.lastFrame) {
-      setLastFrameStatus('completed')
-      setLastFrameRecordId(gen.lastFrame.id)
-      setLastFrameUrl(gen.lastFrame.url)
-      setLastFrameError(null)
+      lastFrame.setCompleted(gen.lastFrame.url ?? '', gen.lastFrame.id)
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -880,21 +345,20 @@ function WorkspaceDetailPage() {
   function handleContinueGeneration(gen: Generation) {
     if (!gen.lastFrame?.url) return
     resetAllState()
-    setFirstFrameRecordId(gen.lastFrame.id)
-    setFirstFrameUrl(gen.lastFrame.url)
-    setFirstFrameStatus('completed')
+    firstFrame.setCompleted(gen.lastFrame.url, gen.lastFrame.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const lastFrameLocked = firstFrameStatus !== 'completed'
-  const canGenerateVideo =
-    firstFrameStatus === 'completed' && lastFrameStatus === 'completed'
-
-  const lastFrameGenerateDisabled =
-    lastFrameLocked ||
-    lastFrameStatus === 'generating' ||
-    (lastFrameMode === 'prompt' && !lastFramePrompt.trim()) ||
-    (lastFrameMode === 'image' && !lastFrameImageData)
+  function handleDeleteGeneration(id: string) {
+    gens.deleteGeneration(id)
+    if (
+      firstFrame.recordId &&
+      gens.generations.find((g) => g.id === id)?.firstFrame?.id ===
+        firstFrame.recordId
+    ) {
+      resetAllState()
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -906,24 +370,24 @@ function WorkspaceDetailPage() {
           Video
         </Link>
         <span className="text-xs text-muted-foreground">/</span>
-        {isEditingName ? (
+        {wsName.isEditing ? (
           <input
-            ref={nameInputRef}
-            value={editNameValue}
-            onChange={(e) => setEditNameValue(e.target.value)}
-            onBlur={handleSaveRename}
+            ref={wsName.inputRef}
+            value={wsName.editValue}
+            onChange={(e) => wsName.setEditValue(e.target.value)}
+            onBlur={wsName.saveRename}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSaveRename()
-              if (e.key === 'Escape') setIsEditingName(false)
+              if (e.key === 'Enter') wsName.saveRename()
+              if (e.key === 'Escape') wsName.cancelRename()
             }}
             className="text-sm font-medium bg-transparent border-b border-foreground/30 outline-none px-0 py-0 w-48"
           />
         ) : (
           <button
-            onClick={handleStartRename}
+            onClick={wsName.startRename}
             className="text-sm font-medium hover:text-foreground/70 transition-colors cursor-text"
           >
-            {workspaceName || 'Untitled'}
+            {wsName.name || 'Untitled'}
           </button>
         )}
       </div>
@@ -944,174 +408,42 @@ function WorkspaceDetailPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* First Frame */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">First Frame</h2>
-            <div className="flex gap-1">
-              {FIRST_FRAME_MODELS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => handleModelChange(m.id)}
-                  disabled={firstFrameStatus === 'generating'}
-                  className={cn(
-                    'px-2 py-1 text-xs rounded border transition-colors',
-                    firstFrameModel === m.id
-                      ? 'border-accent-gold bg-accent-gold/10 text-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <FramePanel
+          type="first"
+          model={firstFrameModel}
+          onModelChange={handleModelChange}
+          status={firstFrame.status}
+          url={firstFrame.url}
+          error={firstFrame.error}
+          prompt={firstFramePrompt}
+          onPromptChange={setFirstFramePrompt}
+          isFluxKontextMode={isFluxKontextMode}
+          onChooseImage={() => firstFrameFileInputRef.current?.click()}
+          onGenerate={handleGenerateFirstFrame}
+        />
 
-          <FrameImageArea
-            status={firstFrameStatus}
-            imageUrl={firstFrameUrl}
-            placeholder="First frame will appear here"
-            generatingLabel="Uploading..."
-            onChooseImage={
-              isFluxKontextMode && firstFrameStatus !== 'generating'
-                ? () => firstFrameFileInputRef.current?.click()
-                : undefined
-            }
-          />
-
-          {!isFluxKontextMode && (
-            <Textarea
-              placeholder="Describe the opening scene..."
-              value={firstFramePrompt}
-              onChange={(e) => setFirstFramePrompt(e.target.value)}
-              disabled={firstFrameStatus === 'generating'}
-              rows={6}
-            />
-          )}
-
-          {firstFrameError && (
-            <p className="text-xs text-destructive">{firstFrameError}</p>
-          )}
-
-          {!isFluxKontextMode && (
-            <Button
-              onClick={handleGenerateFirstFrame}
-              disabled={
-                firstFrameStatus === 'generating' || !firstFramePrompt.trim()
-              }
-              className="w-full"
-            >
-              {firstFrameStatus === 'generating'
-                ? 'Generating...'
-                : firstFrameStatus === 'completed'
-                  ? 'Regenerate First Frame'
-                  : 'Generate First Frame'}
-            </Button>
-          )}
-        </div>
-
-        {/* Last Frame */}
-        <div
-          className={cn(
-            'space-y-3 transition-opacity',
-            lastFrameLocked && 'opacity-40 pointer-events-none',
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Last Frame</h2>
-            <div className="flex gap-1">
-              {(['prompt', 'image'] as Array<LastFrameMode>).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => handleLastFrameModeChange(mode)}
-                  disabled={lastFrameStatus === 'generating'}
-                  className={cn(
-                    'px-2 py-1 text-xs rounded border transition-colors capitalize',
-                    lastFrameMode === mode
-                      ? 'border-accent-gold bg-accent-gold/10 text-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <FrameImageArea
-            status={lastFrameStatus}
-            imageUrl={lastFrameUrl}
-            placeholder={
-              lastFrameLocked
-                ? 'Generate first frame first'
-                : 'Last frame will appear here'
-            }
-            generatingLabel="Generating..."
-            onChooseImage={
-              lastFrameMode === 'image' &&
-              lastFrameStatus !== 'generating' &&
-              !lastFrameLocked
-                ? () => lastFrameFileInputRef.current?.click()
-                : undefined
-            }
-          />
-
-          {lastFrameMode === 'prompt' && !lastFrameLocked && (
-            <div className="relative">
-              <Textarea
-                placeholder="Describe what changes in the scene..."
-                value={lastFramePrompt}
-                onChange={(e) => setLastFramePrompt(e.target.value)}
-                disabled={lastFrameStatus === 'generating'}
-                rows={4}
-              />
-              <button
-                onClick={handleSuggestLastFrame}
-                disabled={
-                  suggestingLastFrame || lastFrameStatus === 'generating'
-                }
-                className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {suggestingLastFrame ? 'Suggesting...' : 'Suggest'}
-              </button>
-            </div>
-          )}
-
-          {lastFrameError && (
-            <p className="text-xs text-destructive">{lastFrameError}</p>
-          )}
-
-          <Button
-            onClick={handleGenerateLastFrame}
-            disabled={lastFrameGenerateDisabled}
-            className="w-full"
-          >
-            {lastFrameStatus === 'generating'
-              ? 'Generating...'
-              : 'Generate Last Frame'}
-          </Button>
-        </div>
+        <FramePanel
+          type="last"
+          mode={lastFrameMode}
+          onModeChange={handleLastFrameModeChange}
+          status={lastFrame.status}
+          url={lastFrame.url}
+          error={lastFrame.error}
+          locked={lastFrameLocked}
+          prompt={lastFramePrompt}
+          onPromptChange={setLastFramePrompt}
+          suggesting={suggestingLastFrame}
+          onSuggest={handleSuggestLastFrame}
+          onChooseImage={() => lastFrameFileInputRef.current?.click()}
+          onGenerate={handleGenerateLastFrame}
+          generateDisabled={lastFrameGenerateDisabled}
+        />
       </div>
-
-      {canGenerateVideo && (
-        <div className="flex justify-center">
-          <Button
-            onClick={handleGenerateVideo}
-            disabled={isGeneratingVideo}
-            size="lg"
-            className="min-w-[240px]"
-          >
-            {isGeneratingVideo ? 'Starting...' : 'Generate Video'}
-          </Button>
-        </div>
-      )}
 
       {/* Generations list */}
       <div className="space-y-3">
         <h2 className="text-sm font-medium">Generations</h2>
-        {generations.length === 0 ? (
+        {gens.generations.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-6 flex items-center justify-center">
             <p className="text-xs text-muted-foreground">
               Generated videos will appear here
@@ -1119,237 +451,42 @@ function WorkspaceDetailPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {generations.map((gen) => (
+            {gens.generations.map((gen) => (
               <GenerationRow
                 key={gen.id}
                 generation={gen}
-                selected={selectedIds.has(gen.id)}
-                onToggleSelect={toggleSelect}
+                selected={selection.selectedIds.has(gen.id)}
+                onToggleSelect={selection.toggleSelect}
                 onLoad={handleLoadGeneration}
                 onContinue={handleContinueGeneration}
-                onUpdate={handleUpdateGeneration}
+                onUpdate={gens.updateGeneration}
                 onDelete={handleDeleteGeneration}
-                accessToken={session?.access_token}
+                onGenerateVideo={handleGenerateVideoFromRow}
+                accessToken={accessToken}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Floating selection bar */}
-      <div
-        className={cn(
-          'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border border-border bg-background/95 backdrop-blur-sm px-5 py-3 shadow-lg transition-all duration-200',
-          selectedIds.size > 0
-            ? 'translate-y-0 opacity-100'
-            : 'translate-y-4 opacity-0 pointer-events-none',
-        )}
-      >
-        <span className="text-sm text-muted-foreground whitespace-nowrap">
-          {selectedIds.size} selected
-        </span>
-        <Button
-          size="sm"
-          disabled={isMoving || selectedIds.size === 0}
-          onClick={() => {
-            setNewWorkspaceName('')
-            setCreateDialogOpen(true)
-          }}
-        >
-          New workspace
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isMoving || selectedIds.size === 0}
-          onClick={async () => {
-            if (!session?.access_token) return
-            try {
-              const all = await getWorkspaces({
-                data: { accessToken: session.access_token },
-              })
-              setAvailableWorkspaces(all.filter((ws) => ws.id !== workspaceId))
-              setTargetWorkspaceId(null)
-              setMoveDialogOpen(true)
-            } catch (err) {
-              console.error('Failed to load workspaces:', err)
-            }
-          }}
-        >
-          Move to workspace
-        </Button>
-        <button
-          onClick={() => setSelectedIds(new Set())}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-
-      {/* Create new workspace dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>New workspace</DialogTitle>
-          </DialogHeader>
-          <input
-            type="text"
-            value={newWorkspaceName}
-            onChange={(e) => setNewWorkspaceName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newWorkspaceName.trim()) {
-                ;(
-                  e.currentTarget
-                    .closest('[role="dialog"]')
-                    ?.querySelector(
-                      '[data-create-confirm]',
-                    ) as HTMLButtonElement | null
-                )?.click()
-              }
-            }}
-            placeholder="Workspace name"
-            autoFocus
-            className="h-9 px-3 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-gold w-full"
-          />
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCreateDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              data-create-confirm
-              disabled={!newWorkspaceName.trim() || isMoving}
-              onClick={async () => {
-                if (
-                  !session?.access_token ||
-                  !newWorkspaceName.trim() ||
-                  selectedIds.size === 0
-                )
-                  return
-                setIsMoving(true)
-                try {
-                  const newWs = await createWorkspace({
-                    data: {
-                      name: newWorkspaceName.trim(),
-                      accessToken: session.access_token,
-                    },
-                  })
-                  await moveGenerations({
-                    data: {
-                      generationIds: [...selectedIds],
-                      targetWorkspaceId: newWs.id,
-                      accessToken: session.access_token,
-                    },
-                  })
-                  setGenerations((prev) =>
-                    prev.filter((g) => !selectedIds.has(g.id)),
-                  )
-                  setSelectedIds(new Set())
-                  setCreateDialogOpen(false)
-                  setNewWorkspaceName('')
-                } catch (err) {
-                  console.error('Failed to create workspace:', err)
-                } finally {
-                  setIsMoving(false)
-                }
-              }}
-            >
-              {isMoving ? 'Creating...' : 'Done'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Move to workspace dialog */}
-      <Dialog open={moveDialogOpen} onOpenChange={setMoveDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Move to workspace</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto py-2">
-            {availableWorkspaces.length === 0 ? (
-              <p className="col-span-2 text-sm text-muted-foreground text-center py-6">
-                No other workspaces found
-              </p>
-            ) : (
-              availableWorkspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  onClick={() => setTargetWorkspaceId(ws.id)}
-                  className={cn(
-                    'rounded-lg border p-2 text-left transition-colors',
-                    targetWorkspaceId === ws.id
-                      ? 'border-accent-gold bg-accent-gold/5'
-                      : 'border-border hover:bg-muted/30',
-                  )}
-                >
-                  {ws.preview.heroUrl ? (
-                    <img
-                      src={ws.preview.heroUrl}
-                      alt={ws.name}
-                      className="aspect-video w-full rounded object-cover mb-2"
-                    />
-                  ) : (
-                    <div className="aspect-video w-full rounded bg-muted/30 mb-2" />
-                  )}
-                  <p className="text-sm font-medium truncate">{ws.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ws.generationCount} generation
-                    {ws.generationCount !== 1 ? 's' : ''}
-                  </p>
-                </button>
-              ))
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMoveDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              disabled={!targetWorkspaceId || isMoving}
-              onClick={async () => {
-                if (
-                  !session?.access_token ||
-                  !targetWorkspaceId ||
-                  selectedIds.size === 0
-                )
-                  return
-                setIsMoving(true)
-                try {
-                  await moveGenerations({
-                    data: {
-                      generationIds: [...selectedIds],
-                      targetWorkspaceId,
-                      accessToken: session.access_token,
-                    },
-                  })
-                  setGenerations((prev) =>
-                    prev.filter((g) => !selectedIds.has(g.id)),
-                  )
-                  setSelectedIds(new Set())
-                  setMoveDialogOpen(false)
-                  setTargetWorkspaceId(null)
-                } catch (err) {
-                  console.error('Failed to move generations:', err)
-                } finally {
-                  setIsMoving(false)
-                }
-              }}
-            >
-              {isMoving ? 'Moving...' : 'Done'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SelectionBar
+        selectedCount={selection.selectedIds.size}
+        isMoving={selection.isMoving}
+        onNewWorkspace={selection.openCreateDialog}
+        onMoveToWorkspace={selection.openMoveDialog}
+        onCancel={selection.clearSelection}
+        createDialogOpen={selection.createDialogOpen}
+        onCreateDialogChange={selection.setCreateDialogOpen}
+        newWorkspaceName={selection.newWorkspaceName}
+        onNewWorkspaceNameChange={selection.setNewWorkspaceName}
+        onCreateConfirm={selection.handleCreateAndMove}
+        moveDialogOpen={selection.moveDialogOpen}
+        onMoveDialogChange={selection.setMoveDialogOpen}
+        targetWorkspaceId={selection.targetWorkspaceId}
+        onTargetChange={selection.setTargetWorkspaceId}
+        availableWorkspaces={selection.availableWorkspaces}
+        onMoveConfirm={selection.handleMoveToWorkspace}
+      />
     </div>
   )
 }
