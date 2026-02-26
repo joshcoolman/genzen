@@ -229,7 +229,7 @@ function WorkspaceDetailPage() {
           video: null,
         }
         gens.addGeneration(newGeneration)
-        resetAllState()
+        lastFrame.reset()
       } catch (err) {
         lastFrame.setFailed(
           err instanceof Error ? err.message : 'Failed to upload frame',
@@ -276,7 +276,7 @@ function WorkspaceDetailPage() {
         video: null,
       }
       gens.addGeneration(newGeneration)
-      resetAllState()
+      lastFrame.reset()
     } catch (err) {
       lastFrame.setFailed(
         err instanceof Error ? err.message : 'Failed to generate last frame',
@@ -439,6 +439,17 @@ function WorkspaceDetailPage() {
           generateDisabled={lastFrameGenerateDisabled}
         />
       </div>
+
+      {firstFrame.status !== 'idle' && (
+        <div className="flex justify-end">
+          <button
+            onClick={resetAllState}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            + Start new generation
+          </button>
+        </div>
+      )}
 
       {/* Generations list */}
       <div className="space-y-3">
