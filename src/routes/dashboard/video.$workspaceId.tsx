@@ -3,7 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { createWorkspace } from '@/features/ai-video/server/create-workspace.server'
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
+import { getWorkspace } from '@/features/ai-video/server/get-workspace.server'
+import { moveGenerations } from '@/features/ai-video/server/move-generations.server'
+import { renameWorkspace } from '@/features/ai-video/server/rename-workspace.server'
 import { generateFirstFrame } from '@/features/ai-video/server/generate-first-frame.server'
 import { generateLastFrame } from '@/features/ai-video/server/generate-last-frame.server'
 import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.server'
@@ -31,12 +35,7 @@ const FIRST_FRAME_MODELS = [
 
 const FLUX_KONTEXT_MODEL_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 
-const LAST_FRAME_MODELS = [
-  { id: 'kontext' as const, label: 'Kontext' },
-  { id: 'nano-banana' as const, label: 'Nano Banana' },
-]
-
-type LastFrameModelId = 'kontext' | 'nano-banana'
+const LAST_FRAME_MODEL = 'nano-banana' as const
 type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
 type LastFrameMode = 'prompt' | 'image'
 
@@ -159,13 +158,19 @@ function FrameImageArea({
 
 function GenerationRow({
   generation,
+  selected,
+  onToggleSelect,
   onLoad,
+  onContinue,
   onUpdate,
   onDelete,
   accessToken,
 }: {
   generation: Generation
+  selected: boolean
+  onToggleSelect: (id: string) => void
   onLoad: (gen: Generation) => void
+  onContinue: (gen: Generation) => void
   onUpdate: (id: string, updates: Partial<Generation>) => void
   onDelete: (id: string) => void
   accessToken: string | undefined
@@ -213,7 +218,40 @@ function GenerationRow({
   }, [isPending, accessToken, generation.video?.id, generation.id, onUpdate])
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+    <div
+      className={cn(
+        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
+        selected
+          ? 'border-accent-gold bg-accent-gold/5'
+          : 'border-border hover:bg-muted/30',
+      )}
+    >
+      {/* Select checkbox */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleSelect(generation.id)
+        }}
+        className={cn(
+          'shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors',
+          selected
+            ? 'border-accent-gold bg-accent-gold text-black'
+            : 'border-border hover:border-foreground/50',
+        )}
+      >
+        {selected && (
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path
+              d="M2.5 6L5 8.5L9.5 3.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </button>
+
       {/* Thumbnails */}
       <div className="flex gap-2 shrink-0">
         {generation.firstFrame?.url ? (
@@ -275,6 +313,15 @@ function GenerationRow({
             variant="ghost"
             size="sm"
             className="text-xs"
+            disabled={!generation.lastFrame?.url}
+            onClick={() => onContinue(generation)}
+          >
+            Continue
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
             onClick={() => onLoad(generation)}
           >
             Load
@@ -328,6 +375,39 @@ function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
   const { session } = useAuth()
 
+  // Workspace name
+  const [workspaceName, setWorkspaceName] = useState('')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editNameValue, setEditNameValue] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!session?.access_token) return
+    getWorkspace({
+      data: { workspaceId, accessToken: session.access_token },
+    }).then((ws) => setWorkspaceName(ws.name))
+  }, [workspaceId, session?.access_token])
+
+  const handleStartRename = () => {
+    setEditNameValue(workspaceName)
+    setIsEditingName(true)
+    setTimeout(() => nameInputRef.current?.select(), 0)
+  }
+
+  const handleSaveRename = async () => {
+    setIsEditingName(false)
+    const trimmed = editNameValue.trim()
+    if (!trimmed || trimmed === workspaceName || !session?.access_token) return
+    setWorkspaceName(trimmed)
+    try {
+      await renameWorkspace({
+        data: { workspaceId, name: trimmed, accessToken: session.access_token },
+      })
+    } catch (err) {
+      console.error('Failed to rename workspace:', err)
+    }
+  }
+
   // First frame state
   const [firstFrameModel, setFirstFrameModel] = useState(
     FIRST_FRAME_MODELS[0].id,
@@ -343,8 +423,7 @@ function WorkspaceDetailPage() {
   const [firstFrameError, setFirstFrameError] = useState<string | null>(null)
 
   // Last frame state
-  const [lastFrameModel, setLastFrameModel] =
-    useState<LastFrameModelId>('kontext')
+  const lastFrameModel = LAST_FRAME_MODEL
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
   const [lastFramePrompt, setLastFramePrompt] = useState('')
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
@@ -361,6 +440,20 @@ function WorkspaceDetailPage() {
   // Generations list
   const [generations, setGenerations] = useState<Array<Generation>>([])
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isMoving, setIsMoving] = useState(false)
+  const [newWorkspaceName, setNewWorkspaceName] = useState('')
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const firstFrameFileInputRef = useRef<HTMLInputElement>(null)
   const lastFrameFileInputRef = useRef<HTMLInputElement>(null)
@@ -764,6 +857,15 @@ function WorkspaceDetailPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function handleContinueGeneration(gen: Generation) {
+    if (!gen.lastFrame?.url) return
+    resetAllState()
+    setFirstFrameRecordId(gen.lastFrame.id)
+    setFirstFrameUrl(gen.lastFrame.url)
+    setFirstFrameStatus('completed')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const lastFrameLocked = firstFrameStatus !== 'completed'
   const canGenerateVideo =
     firstFrameStatus === 'completed' && lastFrameStatus === 'completed'
@@ -784,7 +886,26 @@ function WorkspaceDetailPage() {
           Video
         </Link>
         <span className="text-xs text-muted-foreground">/</span>
-        <h1 className="text-sm font-medium">Workspace</h1>
+        {isEditingName ? (
+          <input
+            ref={nameInputRef}
+            value={editNameValue}
+            onChange={(e) => setEditNameValue(e.target.value)}
+            onBlur={handleSaveRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveRename()
+              if (e.key === 'Escape') setIsEditingName(false)
+            }}
+            className="text-sm font-medium bg-transparent border-b border-foreground/30 outline-none px-0 py-0 w-48"
+          />
+        ) : (
+          <button
+            onClick={handleStartRename}
+            className="text-sm font-medium hover:text-foreground/70 transition-colors cursor-text"
+          >
+            {workspaceName || 'Untitled'}
+          </button>
+        )}
       </div>
 
       <input
@@ -899,27 +1020,6 @@ function WorkspaceDetailPage() {
             </div>
           </div>
 
-          {lastFrameMode === 'prompt' && (
-            <div className="flex gap-1">
-              {LAST_FRAME_MODELS.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setLastFrameModel(m.id)}
-                  disabled={lastFrameStatus === 'generating'}
-                  className={cn(
-                    'px-2 py-1 text-xs rounded border transition-colors',
-                    lastFrameModel === m.id
-                      ? 'border-accent-gold bg-accent-gold/10 text-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          )}
-
           <FrameImageArea
             status={lastFrameStatus}
             imageUrl={lastFrameUrl}
@@ -1003,7 +1103,10 @@ function WorkspaceDetailPage() {
               <GenerationRow
                 key={gen.id}
                 generation={gen}
+                selected={selectedIds.has(gen.id)}
+                onToggleSelect={toggleSelect}
                 onLoad={handleLoadGeneration}
+                onContinue={handleContinueGeneration}
                 onUpdate={handleUpdateGeneration}
                 onDelete={handleDeleteGeneration}
                 accessToken={session?.access_token}
@@ -1011,6 +1114,69 @@ function WorkspaceDetailPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Floating selection bar */}
+      <div
+        className={cn(
+          'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border border-border bg-background/95 backdrop-blur-sm px-5 py-3 shadow-lg transition-all duration-200',
+          selectedIds.size > 0
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-4 opacity-0 pointer-events-none',
+        )}
+      >
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {selectedIds.size} selected
+        </span>
+        <input
+          type="text"
+          value={newWorkspaceName}
+          onChange={(e) => setNewWorkspaceName(e.target.value)}
+          placeholder="Workspace name"
+          className="h-8 px-2 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-gold w-44"
+        />
+        <Button
+          size="sm"
+          disabled={isMoving || selectedIds.size === 0}
+          onClick={async () => {
+            if (!session?.access_token || selectedIds.size === 0) return
+            setIsMoving(true)
+            try {
+              const name = newWorkspaceName.trim() || 'Untitled'
+              const newWs = await createWorkspace({
+                data: { name, accessToken: session.access_token },
+              })
+              await moveGenerations({
+                data: {
+                  generationIds: [...selectedIds],
+                  targetWorkspaceId: newWs.id,
+                  accessToken: session.access_token,
+                },
+              })
+              setGenerations((prev) =>
+                prev.filter((g) => !selectedIds.has(g.id)),
+              )
+              setSelectedIds(new Set())
+
+              setNewWorkspaceName('')
+            } catch (err) {
+              console.error('Failed to move generations:', err)
+            } finally {
+              setIsMoving(false)
+            }
+          }}
+        >
+          {isMoving ? 'Moving...' : 'Create workspace'}
+        </Button>
+        <button
+          onClick={() => {
+            setSelectedIds(new Set())
+            setNewWorkspaceName('')
+          }}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Cancel
+        </button>
       </div>
     </div>
   )
