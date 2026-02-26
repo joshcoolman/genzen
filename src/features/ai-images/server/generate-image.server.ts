@@ -9,6 +9,7 @@ interface GenerateImageInput {
   prompt: string
   model: string
   accessToken: string
+  aspectRatio?: string
 }
 
 export const generateImage = createServerFn({ method: 'POST' })
@@ -16,7 +17,7 @@ export const generateImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { prompt, model } = data
+    const { prompt, model, aspectRatio } = data
 
     if (!prompt.trim()) {
       throw new Error('Prompt is required')
@@ -28,7 +29,11 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     // Submit to FAL async queue (returns immediately)
     const { request_id } = await fal.queue.submit(model, {
-      input: { prompt, safety_tolerance: 6 },
+      input: {
+        prompt,
+        safety_tolerance: 6,
+        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+      },
     })
 
     // Create Supabase client authenticated as the user
@@ -55,6 +60,7 @@ export const generateImage = createServerFn({ method: 'POST' })
           prompt,
           model,
           submitted_at: new Date().toISOString(),
+          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
         },
       })
       .select()

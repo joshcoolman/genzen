@@ -1,9 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Settings, Sparkles } from 'lucide-react'
+import {
+  RectangleHorizontal,
+  RectangleVertical,
+  Settings,
+  Sparkles,
+} from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
@@ -12,6 +24,7 @@ import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
 import { PendingImageCard } from '@/features/ai-images/components/PendingImageCard'
 import { ImageCard } from '@/features/ai-images/components/ImageCard'
+import { ImageLightbox } from '@/features/ai-images/components/ImageLightbox'
 import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
 import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSettings } from '@/features/ai-images/hooks/use-model-settings'
@@ -35,12 +48,52 @@ function AiImagesPage() {
   const modelSettings = useModelSettings()
 
   const [prompt, setPrompt] = useState('')
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
+    'landscape',
+  )
+  const [aspectRatio, setAspectRatio] = useState('16:9')
   const [loading, setLoading] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  const landscapeRatios = ['16:9', '2:1', '3:2', '4:3', '21:9', '1:1']
+  const portraitRatios = ['9:16', '1:2', '2:3', '3:4', '1:1']
+  const flipMap: Record<string, string> = {
+    '16:9': '9:16',
+    '2:1': '1:2',
+    '3:2': '2:3',
+    '4:3': '3:4',
+    '21:9': '9:16',
+    '9:16': '16:9',
+    '1:2': '2:1',
+    '2:3': '3:2',
+    '3:4': '4:3',
+    '1:1': '1:1',
+  }
+
+  function handleOrientationToggle() {
+    const next = orientation === 'landscape' ? 'portrait' : 'landscape'
+    setOrientation(next)
+    setAspectRatio(
+      flipMap[aspectRatio] ?? (next === 'landscape' ? '16:9' : '9:16'),
+    )
+  }
+
+  const ratioOptions =
+    orientation === 'landscape' ? landscapeRatios : portraitRatios
   const [generatingPrompt, setGeneratingPrompt] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [generatingVariationFor, setGeneratingVariationFor] = useState<
     string | null
   >(null)
+
+  const completedImages = gallery.images.filter(
+    (img) => img.status === 'completed',
+  )
+
+  function handleOpenLightbox(img: SavedAiImage) {
+    const idx = completedImages.findIndex((i) => i.id === img.id)
+    if (idx !== -1) setLightboxIndex(idx)
+  }
 
   async function handleGenerate() {
     if (
@@ -63,6 +116,7 @@ function AiImagesPage() {
               prompt: finalPrompt,
               model: modelId,
               accessToken: session.access_token,
+              aspectRatio,
             },
           }),
         ),
@@ -232,6 +286,36 @@ function AiImagesPage() {
                 {generatingPrompt ? 'Generating...' : 'Prompt'}
               </Button>
               <Button
+                variant="outline"
+                size="icon"
+                onClick={handleOrientationToggle}
+                disabled={loading}
+                title={`Switch to ${orientation === 'landscape' ? 'portrait' : 'landscape'}`}
+                className="shrink-0"
+              >
+                {orientation === 'landscape' ? (
+                  <RectangleHorizontal className="h-4 w-4" />
+                ) : (
+                  <RectangleVertical className="h-4 w-4" />
+                )}
+              </Button>
+              <Select
+                value={aspectRatio}
+                onValueChange={setAspectRatio}
+                disabled={loading}
+              >
+                <SelectTrigger className="w-24 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ratioOptions.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
                 onClick={handleGenerate}
                 disabled={
                   loading ||
@@ -361,6 +445,7 @@ function AiImagesPage() {
                   img={img}
                   imageUrl={gallery.imageUrls[img.id]}
                   generatingVariation={generatingVariationFor === img.id}
+                  onOpen={handleOpenLightbox}
                   onLoadPrompt={handleLoadPrompt}
                   onLoadPromptAndModel={handleLoadPromptAndModel}
                   onMoreLikeThis={handleMoreLikeThis}
@@ -379,6 +464,28 @@ function AiImagesPage() {
         visibleModels={modelSettings.visibleModelIds}
         onSaveVisibleModels={modelSettings.setVisibleModelIds}
       />
+
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          images={completedImages}
+          imageUrls={gallery.imageUrls}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i !== null ? (i + 1) % completedImages.length : null,
+            )
+          }
+          onPrev={() =>
+            setLightboxIndex((i) =>
+              i !== null
+                ? (i - 1 + completedImages.length) % completedImages.length
+                : null,
+            )
+          }
+          getModelName={getModelName}
+        />
+      )}
     </div>
   )
 }

@@ -4,6 +4,7 @@ interface ImageCardProps {
   img: SavedAiImage
   imageUrl: string | undefined
   generatingVariation: boolean
+  onOpen: (img: SavedAiImage) => void
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage) => void
@@ -15,6 +16,7 @@ export function ImageCard({
   img,
   imageUrl,
   generatingVariation,
+  onOpen,
   onLoadPrompt,
   onLoadPromptAndModel,
   onMoreLikeThis,
@@ -24,15 +26,20 @@ export function ImageCard({
   return (
     <div className="group relative overflow-hidden rounded-lg border border-border bg-card">
       <div className="relative">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={img.title}
-            className="aspect-square w-full object-cover"
-          />
-        ) : (
-          <div className="aspect-square w-full bg-muted animate-pulse" />
-        )}
+        <div
+          className="aspect-square w-full bg-black flex items-center justify-center cursor-zoom-in"
+          onClick={() => imageUrl && onOpen(img)}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={img.title}
+              className="w-full h-full object-contain"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted animate-pulse" />
+          )}
+        </div>
         {img.generation_metadata?.generation_type === 'variation' && (
           <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
             Variation
