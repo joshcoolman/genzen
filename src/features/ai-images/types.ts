@@ -3,6 +3,7 @@ export interface SavedAiImage {
   title: string
   storage_path: string | null
   created_at: string
+  sort_order?: number | null
   status: 'pending' | 'processing' | 'completed' | 'failed'
   generation_error: string | null
   generation_metadata: {

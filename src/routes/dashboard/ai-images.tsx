@@ -1,6 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import {
   ImagePlus,
   RectangleHorizontal,
   RectangleVertical,
@@ -8,6 +21,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
+import type { DragEndEvent } from '@dnd-kit/core'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,9 +34,16 @@ import {
 } from '@/components/ui/select'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
+import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { generatePromptServer } from '@/features/ai-images/server/generate-prompt.server'
 import { generatePromptEnhanced } from '@/features/ai-images/server/generate-prompt-enhanced.server'
 import { generateVariation } from '@/features/ai-images/server/generate-variation.server'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   ALL_IMAGE_MODELS,
   IMAGE_INPUT_MODELS,
@@ -68,6 +89,13 @@ function AiImagesPage() {
     [],
   )
   const [describingImage, setDescribingImage] = useState(false)
+  const [editTarget, setEditTarget] = useState<SavedAiImage | null>(null)
+  const [editPrompt, setEditPrompt] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+  const [editOrientation, setEditOrientation] = useState<
+    'landscape' | 'portrait'
+  >('landscape')
+  const [editAspectRatio, setEditAspectRatio] = useState('16:9')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const inputMode = sourceImage ? 'image' : 'text'
@@ -106,6 +134,45 @@ function AiImagesPage() {
   const [generatingVariationFor, setGeneratingVariationFor] = useState<
     string | null
   >(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const sorted = gallery.images
+    const oldIndex = sorted.findIndex((i) => i.id === active.id)
+    const newIndex = sorted.findIndex((i) => i.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    // After drop, the dragged item should land at newIndex
+    // Neighbors in the sorted array (excluding the dragged item) are at newIndex-1 and newIndex
+    const withoutDragged = sorted.filter((_, i) => i !== oldIndex)
+    const insertBefore = oldIndex < newIndex ? newIndex : newIndex
+    const prev = withoutDragged[insertBefore - 1]?.sort_order
+    const next = withoutDragged[insertBefore]?.sort_order
+
+    let newSortOrder: number
+    if (prev != null && next != null) {
+      newSortOrder = (prev + next) / 2
+    } else if (prev != null) {
+      newSortOrder = prev - 1
+    } else if (next != null) {
+      newSortOrder = next + 1
+    } else {
+      newSortOrder = Date.now() / 1000
+    }
+
+    void gallery.reorderImages(active.id as string, newSortOrder)
+  }
 
   const completedImages = gallery.images.filter(
     (img) => img.status === 'completed',
@@ -156,7 +223,7 @@ function AiImagesPage() {
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string
       setSourceImage({ base64, name: file.name })
-      setImageSelectedModels([])
+      setImageSelectedModels(['fal-ai/nano-banana-pro'])
       setPrompt('')
 
       // Snap orientation + aspect ratio to closest match for source image
@@ -204,6 +271,44 @@ function AiImagesPage() {
     setSourceImage(null)
     setImageSelectedModels([])
     setPrompt('')
+  }
+
+  function handleEdit(img: SavedAiImage) {
+    setEditTarget(img)
+    setEditPrompt('')
+    // Seed orientation/ratio from source image metadata if available
+    const srcRatio = img.generation_metadata?.aspect_ratio as string | undefined
+    if (srcRatio) {
+      const [a, b] = srcRatio.split(':').map(Number)
+      const isLandscape = a >= b
+      setEditOrientation(isLandscape ? 'landscape' : 'portrait')
+      setEditAspectRatio(srcRatio)
+    } else {
+      setEditOrientation(orientation)
+      setEditAspectRatio(aspectRatio)
+    }
+  }
+
+  async function handleEditSubmit() {
+    if (!editTarget || !editPrompt.trim() || !session?.access_token) return
+    setEditLoading(true)
+    try {
+      await editImage({
+        data: {
+          accessToken: session.access_token,
+          sourceImageId: editTarget.id,
+          editPrompt: editPrompt.trim(),
+          aspectRatio: editAspectRatio,
+        },
+      })
+      setEditTarget(null)
+      setEditPrompt('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to edit image')
+      setEditTarget(null)
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   function handleLoadPrompt(img: SavedAiImage) {
@@ -583,51 +688,63 @@ function AiImagesPage() {
             </p>
           </div>
         ) : (
-          <div
-            className="grid gap-4"
-            style={{
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            }}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            {gallery.images.map((img) =>
-              img.status === 'pending' ? (
-                <PendingImageCard
-                  key={img.id}
-                  prompt={img.generation_metadata?.prompt ?? ''}
-                  model={getModelName(img.generation_metadata?.model ?? '')}
-                  isVariation={
-                    img.generation_metadata?.generation_type === 'variation'
-                  }
-                  sourceImageUrl={
-                    img.generation_metadata?.source_image_id
-                      ? gallery.imageUrls[
-                          img.generation_metadata.source_image_id
-                        ]
-                      : undefined
-                  }
-                />
-              ) : img.status === 'failed' ? (
-                <FailedImageCard
-                  key={img.id}
-                  img={img}
-                  onDelete={gallery.deleteImage}
-                />
-              ) : (
-                <ImageCard
-                  key={img.id}
-                  img={img}
-                  imageUrl={gallery.imageUrls[img.id]}
-                  generatingVariation={generatingVariationFor === img.id}
-                  onOpen={handleOpenLightbox}
-                  onLoadPrompt={handleLoadPrompt}
-                  onLoadPromptAndModel={handleLoadPromptAndModel}
-                  onMoreLikeThis={handleMoreLikeThis}
-                  onDelete={gallery.deleteImage}
-                  getModelName={getModelName}
-                />
-              ),
-            )}
-          </div>
+            <SortableContext
+              items={gallery.images.map((i) => i.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                }}
+              >
+                {gallery.images.map((img) =>
+                  img.status === 'pending' ? (
+                    <PendingImageCard
+                      key={img.id}
+                      prompt={img.generation_metadata?.prompt ?? ''}
+                      model={getModelName(img.generation_metadata?.model ?? '')}
+                      isVariation={
+                        img.generation_metadata?.generation_type === 'variation'
+                      }
+                      sourceImageUrl={
+                        img.generation_metadata?.source_image_id
+                          ? gallery.imageUrls[
+                              img.generation_metadata.source_image_id
+                            ]
+                          : undefined
+                      }
+                    />
+                  ) : img.status === 'failed' ? (
+                    <FailedImageCard
+                      key={img.id}
+                      img={img}
+                      onDelete={gallery.deleteImage}
+                    />
+                  ) : (
+                    <ImageCard
+                      key={img.id}
+                      img={img}
+                      imageUrl={gallery.imageUrls[img.id]}
+                      generatingVariation={generatingVariationFor === img.id}
+                      onOpen={handleOpenLightbox}
+                      onLoadPrompt={handleLoadPrompt}
+                      onLoadPromptAndModel={handleLoadPromptAndModel}
+                      onMoreLikeThis={handleMoreLikeThis}
+                      onEdit={handleEdit}
+                      onDelete={gallery.deleteImage}
+                      getModelName={getModelName}
+                    />
+                  ),
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -637,6 +754,94 @@ function AiImagesPage() {
         visibleModels={modelSettings.visibleModelIds}
         onSaveVisibleModels={modelSettings.setVisibleModelIds}
       />
+
+      <Dialog
+        open={editTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditTarget(null)
+            setEditPrompt('')
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {editTarget && (
+              <img
+                src={gallery.imageUrls[editTarget.id]}
+                alt="Editing"
+                className="w-full rounded-md object-contain max-h-64 bg-black"
+              />
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const next =
+                    editOrientation === 'landscape' ? 'portrait' : 'landscape'
+                  setEditOrientation(next)
+                  setEditAspectRatio(
+                    flipMap[editAspectRatio] ??
+                      (next === 'landscape' ? '16:9' : '9:16'),
+                  )
+                }}
+                disabled={editLoading}
+                title={`Switch to ${editOrientation === 'landscape' ? 'portrait' : 'landscape'}`}
+                className="shrink-0"
+              >
+                {editOrientation === 'landscape' ? (
+                  <RectangleHorizontal className="h-4 w-4" />
+                ) : (
+                  <RectangleVertical className="h-4 w-4" />
+                )}
+              </Button>
+              <Select
+                value={editAspectRatio}
+                onValueChange={setEditAspectRatio}
+                disabled={editLoading}
+              >
+                <SelectTrigger className="w-24 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(editOrientation === 'landscape'
+                    ? landscapeRatios
+                    : portraitRatios
+                  ).map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Textarea
+              placeholder="Describe the edit — e.g. make the woman smile, change background to sunset..."
+              value={editPrompt}
+              onChange={(e) => setEditPrompt(e.target.value)}
+              disabled={editLoading}
+              rows={3}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  void handleEditSubmit()
+                }
+              }}
+            />
+            <Button
+              onClick={handleEditSubmit}
+              disabled={!editPrompt.trim() || editLoading}
+              className="w-full"
+            >
+              {editLoading ? 'Submitting...' : 'Generate Edit'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {lightboxIndex !== null && (
         <ImageLightbox

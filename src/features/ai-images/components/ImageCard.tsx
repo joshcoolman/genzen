@@ -1,3 +1,6 @@
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 
 interface ImageCardProps {
@@ -8,6 +11,7 @@ interface ImageCardProps {
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage) => void
+  onEdit: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
@@ -20,11 +24,31 @@ export function ImageCard({
   onLoadPrompt,
   onLoadPromptAndModel,
   onMoreLikeThis,
+  onEdit,
   onDelete,
   getModelName,
 }: ImageCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: img.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-border bg-card">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group relative overflow-hidden rounded-lg border border-border bg-card ${isDragging ? 'ring-2 ring-primary' : ''}`}
+    >
       <div className="relative">
         <div
           className="aspect-square w-full bg-black flex items-center justify-center cursor-zoom-in"
@@ -86,6 +110,12 @@ export function ImageCard({
           >
             {generatingVariation ? '...' : 'More'}
           </button>
+          <button
+            onClick={() => onEdit(img)}
+            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
+          >
+            Edit
+          </button>
         </div>
       </div>
       <div className="p-3 space-y-1">
@@ -98,7 +128,17 @@ export function ImageCard({
               ? getModelName(img.generation_metadata.model)
               : ''}
           </span>
-          <span>{new Date(img.created_at).toLocaleDateString()}</span>
+          <div className="flex items-center gap-1">
+            <span>{new Date(img.created_at).toLocaleDateString()}</span>
+            <div
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:text-foreground"
+              title="Drag to reorder"
+            >
+              <GripVertical className="h-3.5 w-3.5" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

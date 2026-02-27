@@ -128,6 +128,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         status: 'pending',
         source: 'ai_generated',
         title: 'Generating...',
+        sort_order: Date.now() / 1000,
         generation_metadata: {
           prompt: effectivePrompt,
           model,

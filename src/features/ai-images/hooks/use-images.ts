@@ -2,17 +2,19 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
+import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 
 interface UseImagesOptions {
   userId: string | undefined
   accessToken: string | undefined
 }
 
-function sortDesc(images: Array<SavedAiImage>): Array<SavedAiImage> {
-  return [...images].sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  )
+function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
+  return [...images].sort((a, b) => {
+    const aOrder = a.sort_order ?? new Date(a.created_at).getTime() / 1000
+    const bOrder = b.sort_order ?? new Date(b.created_at).getTime() / 1000
+    return bOrder - aOrder
+  })
 }
 
 export function useImages({ userId, accessToken }: UseImagesOptions) {
@@ -28,11 +30,11 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
       const { data, error: queryError } = await supabase
         .from('user_images')
         .select(
-          'id, title, storage_path, created_at, status, generation_error, generation_metadata',
+          'id, title, storage_path, created_at, sort_order, status, generation_error, generation_metadata',
         )
         .eq('user_id', userId)
         .eq('source', 'ai_generated')
-        .order('created_at', { ascending: false })
+        .order('sort_order', { ascending: false, nullsFirst: false })
         .limit(20)
 
       if (queryError) throw queryError
@@ -93,10 +95,10 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
                 if (optimisticIdx !== -1) {
                   const updated = [...prev]
                   updated[optimisticIdx] = newImage
-                  return sortDesc(updated)
+                  return sortByOrder(updated)
                 }
               }
-              return sortDesc([...prev, newImage])
+              return sortByOrder([...prev, newImage])
             })
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
@@ -165,7 +167,7 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
   }, [savedImages, accessToken])
 
   function addOptimisticCard(card: SavedAiImage) {
-    setSavedImages((prev) => sortDesc([...prev, card]))
+    setSavedImages((prev) => sortByOrder([...prev, card]))
   }
 
   function replaceOptimisticCard(optimisticId: string, realCard: SavedAiImage) {
@@ -173,7 +175,7 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
       const filtered = prev.filter(
         (i) => i.id !== optimisticId && i.id !== realCard.id,
       )
-      return sortDesc([...filtered, realCard])
+      return sortByOrder([...filtered, realCard])
     })
   }
 
@@ -198,6 +200,27 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
     }
   }
 
+  async function reorderImages(draggedId: string, newSortOrder: number) {
+    if (!accessToken) return
+
+    const prev = savedImages
+    setSavedImages((current) =>
+      sortByOrder(
+        current.map((img) =>
+          img.id === draggedId ? { ...img, sort_order: newSortOrder } : img,
+        ),
+      ),
+    )
+
+    try {
+      await updateImageOrder({
+        data: { accessToken, imageId: draggedId, sortOrder: newSortOrder },
+      })
+    } catch {
+      setSavedImages(prev)
+    }
+  }
+
   return {
     images: savedImages,
     imageUrls,
@@ -206,5 +229,6 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,
+    reorderImages,
   }
 }

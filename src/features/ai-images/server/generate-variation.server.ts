@@ -66,10 +66,10 @@ export const generateVariation = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch the source image's created_at so variations sort next to it, and storage_path for vision grounding
+    // Fetch the source image's sort_order and storage_path for vision grounding
     const { data: sourceImage } = await supabase
       .from('user_images')
-      .select('created_at, storage_path, generation_metadata')
+      .select('sort_order, storage_path, generation_metadata')
       .eq('id', sourceImageId)
       .single()
 
@@ -206,12 +206,9 @@ export const generateVariation = createServerFn({ method: 'POST' })
       input: kontextInput,
     })
 
-    // Offset created_at by 1 second after source so variation sorts right next to it
-    const variationTimestamp = sourceImage?.created_at
-      ? new Date(
-          new Date(sourceImage.created_at).getTime() + 1000,
-        ).toISOString()
-      : undefined
+    // Slot variation just below source via fractional sort_order
+    const variationSortOrder =
+      (sourceImage?.sort_order ?? Date.now() / 1000) - 0.001
 
     const { data: record, error: insertError } = await supabase
       .from('user_images')
@@ -221,7 +218,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
         status: 'pending',
         source: 'ai_generated',
         title: 'Generating variation...',
-        ...(variationTimestamp && { created_at: variationTimestamp }),
+        sort_order: variationSortOrder,
         generation_metadata: {
           prompt: variedPrompt,
           original_prompt: rootPrompt,
