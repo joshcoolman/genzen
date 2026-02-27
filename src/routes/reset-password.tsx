@@ -1,40 +1,31 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
-export const Route = createFileRoute('/signup')({
-  component: SignupPage,
+export const Route = createFileRoute('/reset-password')({
+  component: ResetPasswordPage,
 })
 
-function SignupPage() {
-  const { user, loading, signUp } = useAuth()
+function ResetPasswordPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: '/dashboard' })
-    }
-  }, [user, loading, navigate])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return null
-  }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,34 +38,24 @@ function SignupPage() {
 
     setSubmitting(true)
 
-    const { error: signUpError } = await signUp(email, password)
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    })
 
     setSubmitting(false)
 
-    if (signUpError) {
-      setError(signUpError.message)
+    if (updateError) {
+      setError(updateError.message)
     } else {
-      setSuccess(true)
+      navigate({ to: '/dashboard' })
     }
   }
 
-  if (success) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
         <div className="w-full max-w-sm space-y-6 text-center">
-          <h1 className="text-2xl font-semibold text-accent-gold">
-            Check your email
-          </h1>
-          <p className="text-muted-foreground">
-            We sent a confirmation link to <strong>{email}</strong>. Click it to
-            activate your account.
-          </p>
-          <Link
-            to="/login"
-            className="inline-block text-sm text-accent-gold hover:underline"
-          >
-            Back to sign in
-          </Link>
+          <p className="text-muted-foreground">Verifying reset link...</p>
         </div>
       </div>
     )
@@ -85,36 +66,20 @@ function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-accent-gold">
-            Create an account
+            Set new password
           </h1>
-          <p className="text-muted-foreground mt-1">Sign up to get started</p>
+          <p className="text-muted-foreground mt-1">
+            Enter your new password below
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              htmlFor="email"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label
               htmlFor="password"
               className="block text-sm font-medium text-foreground mb-1"
             >
-              Password
+              New Password
             </label>
             <div className="relative">
               <input
@@ -143,7 +108,7 @@ function SignupPage() {
               htmlFor="confirm-password"
               className="block text-sm font-medium text-foreground mb-1"
             >
-              Confirm Password
+              Confirm New Password
             </label>
             <div className="relative">
               <input
@@ -153,7 +118,7 @@ function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 pr-10 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+                className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
                 placeholder="••••••••"
               />
             </div>
@@ -170,14 +135,13 @@ function SignupPage() {
             disabled={submitting}
             className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
-            {submitting ? '...' : 'Sign Up'}
+            {submitting ? '...' : 'Update Password'}
           </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
           <Link to="/login" className="text-accent-gold hover:underline">
-            Sign in
+            Back to sign in
           </Link>
         </p>
       </div>

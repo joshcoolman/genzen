@@ -15,7 +15,10 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own profile" ON user_profiles
   FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON user_profiles
-  FOR UPDATE USING (auth.uid() = id);
+  FOR UPDATE USING (auth.uid() = id)
+  WITH CHECK (
+    account_status = (SELECT account_status FROM user_profiles WHERE id = auth.uid())
+  );
 
 -- Auto-create profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user()

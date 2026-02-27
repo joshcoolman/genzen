@@ -14,11 +14,15 @@ export const Route = createFileRoute('/dashboard')({
       throw redirect({ to: '/login' })
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('account_status')
       .eq('id', session.user.id)
-      .single()
+      .maybeSingle()
+
+    if (profileError) {
+      throw profileError
+    }
 
     return {
       accountStatus:

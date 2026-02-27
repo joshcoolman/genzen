@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { checkConnections } from '@/lib/server/check-connections'
 
 export const Route = createFileRoute('/dashboard/status')({
+  beforeLoad: ({ context }) => {
+    if ((context as { accountStatus: string }).accountStatus !== 'active') {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
   component: StatusPage,
 })
 
@@ -46,7 +51,16 @@ function StatusPage() {
         }))
       }
 
-      if (!session?.access_token) return
+      if (!session?.access_token) {
+        setStatus((s) => ({
+          ...s,
+          fal: 'error',
+          falError: 'Missing session token',
+          trigger: 'error',
+          triggerError: 'Missing session token',
+        }))
+        return
+      }
       try {
         const serverStatus = await checkConnections({
           data: { accessToken: session.access_token },
