@@ -1,54 +1,64 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Eye, EyeOff } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
+export const Route = createFileRoute('/reset-password')({
+  component: ResetPasswordPage,
 })
 
-function LoginPage() {
-  const { user, loading, signIn } = useAuth()
+function ResetPasswordPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [ready, setReady] = useState(false)
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: '/dashboard' })
-    }
-  }, [user, loading, navigate])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
-
-  if (user) {
-    return null
-  }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
     setSubmitting(true)
 
-    const { error: signInError } = await signIn(email, password)
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    })
 
     setSubmitting(false)
 
-    if (signInError) {
-      setError(signInError.message)
+    if (updateError) {
+      setError(updateError.message)
     } else {
       navigate({ to: '/dashboard' })
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <p className="text-muted-foreground">Verifying reset link...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -56,36 +66,20 @@ function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-accent-gold">
-            Get your zen on.
+            Set new password
           </h1>
-          <p className="text-muted-foreground mt-1">Sign in to continue</p>
+          <p className="text-muted-foreground mt-1">
+            Enter your new password below
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              htmlFor="email"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label
               htmlFor="password"
               className="block text-sm font-medium text-foreground mb-1"
             >
-              Password
+              New Password
             </label>
             <div className="relative">
               <input
@@ -109,6 +103,27 @@ function LoginPage() {
             </div>
           </div>
 
+          <div>
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-foreground mb-1"
+            >
+              Confirm New Password
+            </label>
+            <div className="relative">
+              <input
+                id="confirm-password"
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+
           {error && (
             <div className="text-sm text-red-400 bg-red-900/30 p-3 rounded-md">
               {error}
@@ -120,26 +135,15 @@ function LoginPage() {
             disabled={submitting}
             className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
-            {submitting ? '...' : 'Sign In'}
+            {submitting ? '...' : 'Update Password'}
           </button>
         </form>
 
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-accent-gold hover:underline">
-              Sign up
-            </Link>
-          </p>
-          <p className="text-sm">
-            <Link
-              to="/forgot-password"
-              className="text-muted-foreground hover:text-accent-gold hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link to="/login" className="text-accent-gold hover:underline">
+            Back to sign in
+          </Link>
+        </p>
       </div>
     </div>
   )

@@ -182,6 +182,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          id: string
+          display_name: string | null
+          account_status: 'waitlist' | 'active'
+          created_at: string
+        }
+        Insert: {
+          id: string
+          display_name?: string | null
+          account_status?: 'waitlist' | 'active'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          display_name?: string | null
+          account_status?: 'waitlist' | 'active'
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -227,7 +248,7 @@ export type Database = {
       show_trgm: { Args: { '': string }; Returns: Array<string> }
     }
     Enums: {
-      [_ in never]: never
+      account_status: 'waitlist' | 'active'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -357,6 +378,8 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      account_status: ['waitlist', 'active'],
+    },
   },
 } as const
