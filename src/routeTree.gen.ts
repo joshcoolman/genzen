@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AboutRouteImport } from './routes/about'
@@ -18,6 +20,7 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
+import { Route as DashboardStatusRouteImport } from './routes/dashboard/status'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
@@ -25,9 +28,19 @@ import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-ima
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRoute = DocsRouteImport.update({
@@ -70,6 +83,11 @@ const DashboardVideoRoute = DashboardVideoRouteImport.update({
   path: '/video',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardStatusRoute = DashboardStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -107,11 +125,14 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/status': typeof DashboardStatusRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -122,11 +143,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/status': typeof DashboardStatusRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -139,11 +163,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/docs': typeof DocsRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/status': typeof DashboardStatusRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -158,11 +185,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/docs'
+    | '/forgot-password'
     | '/login'
+    | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/status'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -173,11 +203,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/forgot-password'
     | '/login'
+    | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/status'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
@@ -189,11 +222,14 @@ export interface FileRouteTypes {
     | '/about'
     | '/dashboard'
     | '/docs'
+    | '/forgot-password'
     | '/login'
+    | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
+    | '/dashboard/status'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -207,16 +243,32 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   DocsRoute: typeof DocsRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -273,6 +325,13 @@ declare module '@tanstack/react-router' {
       path: '/video'
       fullPath: '/dashboard/video'
       preLoaderRoute: typeof DashboardVideoRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/status': {
+      id: '/dashboard/status'
+      path: '/status'
+      fullPath: '/dashboard/status'
+      preLoaderRoute: typeof DashboardStatusRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/settings': {
@@ -339,6 +398,7 @@ interface DashboardRouteChildren {
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardStatusRoute: typeof DashboardStatusRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -348,6 +408,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardStatusRoute: DashboardStatusRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
 }
@@ -373,7 +434,9 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   DashboardRoute: DashboardRouteWithChildren,
   DocsRoute: DocsRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

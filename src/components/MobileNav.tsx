@@ -1,34 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { LogOut, Menu } from 'lucide-react'
 import {
-  Film,
-  Home,
-  Image,
-  LogOut,
-  Menu,
-  Settings,
-  Sparkles,
-  User,
-} from 'lucide-react'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
+import { navItems } from '@/lib/nav-items'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { label: 'Home', href: '/dashboard', icon: Home },
-  { label: 'Images', href: '/dashboard/images', icon: Image },
-  { label: 'AI Images', href: '/dashboard/ai-images', icon: Sparkles },
-  { label: 'AI Video', href: '/dashboard/video', icon: Film },
-  { label: 'Profile', href: '/dashboard/profile', icon: User },
-  { label: 'Settings', href: '/dashboard/settings', icon: Settings },
-]
 
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut } = useAuth()
+  const accountStatus = useAccountStatus()
+
+  const visibleItems = navItems.filter(
+    (item) => !item.activeOnly || accountStatus === 'active',
+  )
 
   const handleSignOut = async () => {
     await signOut()
@@ -59,7 +59,7 @@ export function MobileNav({ className }: { className?: string }) {
         >
           {/* Nav items */}
           <nav className="space-y-1 p-4">
-            {navItems.map((item) => {
+            {visibleItems.map((item) => {
               const active = isActive(item.href)
               return (
                 <Link
@@ -77,13 +77,28 @@ export function MobileNav({ className }: { className?: string }) {
                 </Link>
               )
             })}
-            <button
-              onClick={handleSignOut}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors"
-            >
-              <LogOut className="h-4 w-4" />
-              Log out
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Log out?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You'll need to sign in again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOut}>
+                    Log out
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </nav>
         </SheetContent>
       </Sheet>

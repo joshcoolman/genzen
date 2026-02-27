@@ -63,3 +63,7 @@ SELECT
   now()
 FROM auth.users
 WHERE email = 'testuser@gmail.com';
+
+-- Give seed user active status (trigger creates waitlist row; this overrides)
+UPDATE user_profiles SET account_status = 'active'
+WHERE id = (SELECT id FROM auth.users WHERE email = 'testuser@gmail.com');
