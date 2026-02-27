@@ -1,7 +1,8 @@
 ## Session Memory
 
-At the start of every session, read `memory/progress.md` for current branch, recent work, and backlog.
-At the end of every session (or after completing significant work), update `memory/progress.md` — move finished items to "committed", add new backlog items, note any key decisions made.
+At the start of every session, read `memory/progress.md` for architecture reference, key decisions, and how features work.
+Only update `memory/progress.md` when architecture changes (new features, key files, or decisions) — not for routine commits.
+Backlog and task tracking live in GitHub Issues + Project board (`gh issue list`, `gh project`).
 
 ---
 
