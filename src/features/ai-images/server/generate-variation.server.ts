@@ -66,11 +66,17 @@ export const generateVariation = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch the source image's sort_order and storage_path for vision grounding
+    // Validate sourceImageId is a UUID before using in filter strings
+    if (!/^[0-9a-f-]{36}$/i.test(sourceImageId)) {
+      throw new Error('Invalid sourceImageId')
+    }
+
+    // Fetch the source image's sort_order and storage_path — enforce ownership
     const { data: sourceImage } = await supabase
       .from('user_images')
       .select('sort_order, storage_path, generation_metadata')
       .eq('id', sourceImageId)
+      .eq('user_id', user.id)
       .single()
 
     // If the source is itself a variation, use the root original prompt instead of the

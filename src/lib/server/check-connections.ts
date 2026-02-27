@@ -1,8 +1,16 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
+import { requireAuth } from '@/lib/server/auth.server'
 
-export const checkConnections = createServerFn({ method: 'GET' }).handler(
-  async () => {
+interface CheckConnectionsInput {
+  accessToken: string
+}
+
+export const checkConnections = createServerFn({ method: 'POST' })
+  .inputValidator((data: CheckConnectionsInput) => data)
+  .handler(async ({ data }) => {
+    await requireAuth(data.accessToken)
+
     const results: {
       fal: { status: 'connected' | 'error'; error?: string }
       trigger: { status: 'connected' | 'error'; error?: string }
@@ -68,5 +76,4 @@ export const checkConnections = createServerFn({ method: 'GET' }).handler(
     }
 
     return results
-  },
-)
+  })

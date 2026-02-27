@@ -156,7 +156,7 @@ function AiImagesPage() {
     // After drop, the dragged item should land at newIndex
     // Neighbors in the sorted array (excluding the dragged item) are at newIndex-1 and newIndex
     const withoutDragged = sorted.filter((_, i) => i !== oldIndex)
-    const insertBefore = oldIndex < newIndex ? newIndex : newIndex
+    const insertBefore = oldIndex < newIndex ? newIndex : newIndex - 1
     const prev = withoutDragged[insertBefore - 1]?.sort_order
     const next = withoutDragged[insertBefore]?.sort_order
 

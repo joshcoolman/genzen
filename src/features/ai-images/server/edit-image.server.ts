@@ -36,11 +36,12 @@ export const editImage = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch source image storage path
+    // Fetch source image storage path — enforce ownership
     const { data: sourceImage } = await supabase
       .from('user_images')
       .select('storage_path, created_at, generation_metadata')
       .eq('id', sourceImageId)
+      .eq('user_id', user.id)
       .single()
 
     if (!sourceImage?.storage_path) {

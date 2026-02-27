@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -15,7 +16,7 @@ interface GenerateFlfVideoInput {
 }
 
 async function uploadFrameToFal(
-  supabase: any,
+  supabase: SupabaseClient,
   storagePath: string,
 ): Promise<string> {
   const { data: signedUrlData } = await supabase.storage

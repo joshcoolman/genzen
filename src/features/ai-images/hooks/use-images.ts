@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
@@ -22,6 +22,12 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingGallery, setLoadingGallery] = useState(true)
 
+  // Ref so the polling interval can read current images without being a dep
+  const savedImagesRef = useRef(savedImages)
+  useEffect(() => {
+    savedImagesRef.current = savedImages
+  }, [savedImages])
+
   const loadSavedImages = useCallback(async () => {
     if (!userId) return
 
@@ -43,14 +49,21 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
       const images = (data ?? []) as Array<SavedAiImage>
       setSavedImages(images)
 
-      const urls: Record<string, string> = {}
-      for (const img of images) {
-        if (img.status === 'completed' && img.storage_path) {
+      // Batch signed URL generation
+      const completedWithPath = images.filter(
+        (img) => img.status === 'completed' && img.storage_path,
+      )
+      const urlEntries = await Promise.all(
+        completedWithPath.map(async (img) => {
           const { data: urlData } = await supabase.storage
             .from('user-images')
-            .createSignedUrl(img.storage_path, 3600)
-          if (urlData) urls[img.id] = urlData.signedUrl
-        }
+            .createSignedUrl(img.storage_path!, 3600)
+          return urlData ? ([img.id, urlData.signedUrl] as const) : null
+        }),
+      )
+      const urls: Record<string, string> = {}
+      for (const entry of urlEntries) {
+        if (entry) urls[entry[0]] = entry[1]
       }
       setImageUrls(urls)
     } catch {
@@ -123,6 +136,9 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
                     }))
                   }
                 })
+                .catch(() => {
+                  // Signed URL fetch failed — image will show on next full reload
+                })
             }
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           } else if (payload.eventType === 'DELETE') {
@@ -143,17 +159,18 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
     }
   }, [userId])
 
-  // Background polling for pending images
+  // Background polling for pending images — uses a ref so the interval doesn't
+  // reset every time savedImages changes (which would delay the first poll)
   useEffect(() => {
     if (!accessToken) return
 
-    const pendingIds = savedImages
-      .filter((img) => img.status === 'pending')
-      .map((img) => img.id)
-
-    if (pendingIds.length === 0) return
-
     const pollInterval = setInterval(async () => {
+      const pendingIds = savedImagesRef.current
+        .filter((img) => img.status === 'pending')
+        .map((img) => img.id)
+
+      if (pendingIds.length === 0) return
+
       try {
         await checkPendingImages({
           data: { accessToken, recordIds: pendingIds },
@@ -164,7 +181,7 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
     }, 3000)
 
     return () => clearInterval(pollInterval)
-  }, [savedImages, accessToken])
+  }, [accessToken])
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => sortByOrder([...prev, card]))
@@ -194,7 +211,9 @@ export function useImages({ userId, accessToken }: UseImagesOptions) {
 
       if (deleteError) throw deleteError
 
-      await supabase.storage.from('user-images').remove([img.storage_path])
+      if (img.storage_path) {
+        await supabase.storage.from('user-images').remove([img.storage_path])
+      }
     } catch {
       loadSavedImages()
     }

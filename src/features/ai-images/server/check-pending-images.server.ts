@@ -57,6 +57,14 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
 
     for (const record of pendingRecords) {
       const { request_id, generation_metadata } = record
+      if (!generation_metadata || typeof generation_metadata !== 'object') {
+        results.push({
+          recordId: record.id,
+          status: 'error',
+          error: 'Missing generation metadata',
+        })
+        continue
+      }
       const { model, prompt, fal_model_id } = generation_metadata as {
         model: string
         prompt: string

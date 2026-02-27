@@ -19,7 +19,7 @@ interface ConnectionStatus {
 }
 
 function DashboardHome() {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const [status, setStatus] = useState<ConnectionStatus>({
     supabase: 'checking',
     fal: 'checking',
@@ -52,8 +52,11 @@ function DashboardHome() {
       }
 
       // Check FAL and Trigger.dev via server function
+      if (!session?.access_token) return
       try {
-        const serverStatus = await checkConnections()
+        const serverStatus = await checkConnections({
+          data: { accessToken: session.access_token },
+        })
         setStatus((s) => ({
           ...s,
           fal: serverStatus.fal.status,
@@ -76,7 +79,7 @@ function DashboardHome() {
     if (user) {
       runChecks()
     }
-  }, [user])
+  }, [user, session])
 
   return (
     <div className="space-y-8">
