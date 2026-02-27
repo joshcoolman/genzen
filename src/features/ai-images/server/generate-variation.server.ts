@@ -4,41 +4,19 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
 import { ai } from '@/lib/server/ai.server'
+import {
+  IMAGE_VARIATION_SYSTEM,
+  variationUserContent,
+} from '@/lib/prompts/image-variation'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
-
-const VARIATION_SYSTEM_PROMPT = `You are a photographer directing a photoshoot. You are looking at a shot that was just taken and directing the next shot in the SAME session.
-
-STEP 1 — OBSERVE THE IMAGE (do this internally, don't output it):
-Study everything: the subject's face, hair, build, clothing, accessories, the location, lighting, time of day, weather, and visual style. This is your ground truth.
-
-STEP 2 — WRITE THE NEXT SHOT:
-Describe the SAME PERSON in the SAME LOCATION wearing the SAME CLOTHES — but a different moment in the shoot.
-
-KEEP EXACTLY THE SAME:
-- The subject's appearance: face, hair, build, clothing, accessories
-- The location, environment, and setting
-- Lighting conditions and time of day
-- Visual style, color grade, and quality level
-
-CHANGE (pick 1-2 per variation):
-- POSE: completely different body position — if standing straight, try crouching/leaning/sitting/walking. Be specific (e.g., "looking over their shoulder" not just "different pose")
-- CAMERA ANGLE: shoot from above, below, behind, tight close-up, wide establishing shot, profile view, three-quarter angle
-- EXPRESSION and MOOD: laughing, contemplative, intense eye contact, looking away, mid-conversation, candid moment
-- FRAMING: full body vs waist-up vs headshot, centered vs rule-of-thirds, foreground elements
-
-DO NOT CHANGE the environment, background, wardrobe, or setting. This is the same photoshoot, same location, same session.
-
-AVOID THESE ALREADY-USED SHOTS (if listed below):
-The user may provide previous shots from this session. Choose a distinctly different pose, angle, or expression from what's already been captured.
-
-Return ONLY the new prompt as plain text. No explanations, no preamble.`
 
 interface GenerateVariationInput {
   accessToken: string
   prompt: string
   model: string
   sourceImageId: string
+  count?: number
 }
 
 export const generateVariation = createServerFn({ method: 'POST' })
@@ -173,73 +151,73 @@ export const generateVariation = createServerFn({ method: 'POST' })
       usedPrompts.unshift(sourcePrompt)
     }
 
-    const avoidSection =
-      usedPrompts.length > 0
-        ? `\n\nALREADY GENERATED (avoid similar shots):\n${usedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
-        : ''
+    const count = Math.min(data.count ?? 1, 4)
+    const baseSortOrder = sourceImage?.sort_order ?? Date.now() / 1000
+    const results: Array<{ recordId: string; request_id: string }> = []
 
-    // Use Claude to reimagine based on what it SEES in the image, not just the text prompt
-    const userContent = imageBase64
-      ? [
-          {
-            type: 'image' as const,
-            image: `data:${imageBase64.mediaType};base64,${imageBase64.data}`,
-          },
-          {
-            type: 'text' as const,
-            text: `Look at this shot from the photoshoot. Direct the next shot — same person, same location, same clothes, but a different pose, angle, or expression.${avoidSection}`,
-          },
-        ]
-      : `Create another shot from the same photoshoot — same person, same location, same clothes, different pose/angle/expression:\n\n${rootPrompt}${avoidSection}`
+    for (let i = 0; i < count; i++) {
+      // usedPrompts grows each iteration — each new prompt is appended after generation
+      const avoidSection =
+        usedPrompts.length > 0
+          ? `\n\nALREADY GENERATED (avoid similar shots):\n${usedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
+          : ''
 
-    const response = await generateText({
-      model: ai.sonnet,
-      maxOutputTokens: 300,
-      system: VARIATION_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userContent }],
-    })
-
-    const variedPrompt = response.text.trim()
-
-    // Submit via Kontext for subject-consistent generation, anchored to source image
-    const kontextInput = {
-      prompt: variedPrompt,
-      image_url: falImageUrl ?? '',
-      guidance_scale: 7.0,
-      safety_tolerance: '6' as const,
-    }
-    const { request_id } = await fal.queue.submit('fal-ai/flux-pro/kontext', {
-      input: kontextInput,
-    })
-
-    // Slot variation just below source via fractional sort_order
-    const variationSortOrder =
-      (sourceImage?.sort_order ?? Date.now() / 1000) - 0.001
-
-    const { data: record, error: insertError } = await supabase
-      .from('user_images')
-      .insert({
-        user_id: user.id,
-        request_id,
-        status: 'pending',
-        source: 'ai_generated',
-        title: 'Generating variation...',
-        sort_order: variationSortOrder,
-        generation_metadata: {
-          prompt: variedPrompt,
-          original_prompt: rootPrompt,
-          model,
-          generation_type: 'variation',
-          source_image_id: sourceImageId,
-          submitted_at: new Date().toISOString(),
-        },
+      const userContent = variationUserContent({
+        avoidSection,
+        hasImage: !!imageBase64,
+        imageBase64,
+        rootPrompt,
       })
-      .select()
-      .single()
 
-    if (insertError) {
-      throw new Error(`Failed to create image record: ${insertError.message}`)
+      const response = await generateText({
+        model: ai.sonnet,
+        maxOutputTokens: 300,
+        system: IMAGE_VARIATION_SYSTEM,
+        messages: [{ role: 'user', content: userContent }],
+      })
+
+      const variedPrompt = response.text.trim()
+      usedPrompts.push(variedPrompt)
+
+      const editInput = {
+        prompt: variedPrompt,
+        image_urls: [falImageUrl ?? ''],
+        safety_tolerance: '5' as const,
+      }
+      const { request_id } = await fal.queue.submit(
+        'fal-ai/nano-banana-pro/edit',
+        { input: editInput },
+      )
+
+      const variationSortOrder = baseSortOrder - 0.001 * (i + 1)
+
+      const { data: record, error: insertError } = await supabase
+        .from('user_images')
+        .insert({
+          user_id: user.id,
+          request_id,
+          status: 'pending',
+          source: 'ai_generated',
+          title: 'Generating variation...',
+          sort_order: variationSortOrder,
+          generation_metadata: {
+            prompt: variedPrompt,
+            original_prompt: rootPrompt,
+            model,
+            generation_type: 'variation',
+            source_image_id: sourceImageId,
+            submitted_at: new Date().toISOString(),
+          },
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        throw new Error(`Failed to create image record: ${insertError.message}`)
+      }
+
+      results.push({ recordId: record.id, request_id })
     }
 
-    return [{ recordId: record.id, request_id }]
+    return results
   })

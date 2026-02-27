@@ -2,6 +2,11 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 interface ImageCardProps {
   img: SavedAiImage
@@ -10,7 +15,7 @@ interface ImageCardProps {
   onOpen: (img: SavedAiImage) => void
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
-  onMoreLikeThis: (img: SavedAiImage) => void
+  onMoreLikeThis: (img: SavedAiImage, count: number) => void
   onEdit: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   getModelName: (id: string) => string
@@ -103,13 +108,10 @@ export function ImageCard({
           >
             P+M
           </button>
-          <button
-            onClick={() => onMoreLikeThis(img)}
+          <MorePopover
             disabled={generatingVariation}
-            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {generatingVariation ? '...' : 'More'}
-          </button>
+            onSelect={(count) => onMoreLikeThis(img, count)}
+          />
           <button
             onClick={() => onEdit(img)}
             className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
@@ -142,5 +144,41 @@ export function ImageCard({
         </div>
       </div>
     </div>
+  )
+}
+
+function MorePopover({
+  disabled,
+  onSelect,
+}: {
+  disabled: boolean
+  onSelect: (count: number) => void
+}) {
+  const btnClass =
+    'w-full text-left px-3 py-1.5 text-xs hover:bg-accent rounded transition-colors'
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          disabled={disabled}
+          className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {disabled ? '...' : 'More'}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        side="top"
+        align="center"
+        className="w-24 p-1"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <button className={btnClass} onClick={() => onSelect(2)}>
+          +2
+        </button>
+        <button className={btnClass} onClick={() => onSelect(4)}>
+          +4
+        </button>
+      </PopoverContent>
+    </Popover>
   )
 }

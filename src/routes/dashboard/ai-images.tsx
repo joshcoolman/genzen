@@ -328,7 +328,7 @@ function AiImagesPage() {
     }
   }
 
-  async function handleMoreLikeThis(img: SavedAiImage) {
+  async function handleMoreLikeThis(img: SavedAiImage, count: number) {
     if (
       !session?.access_token ||
       !img.generation_metadata?.prompt ||
@@ -339,37 +339,13 @@ function AiImagesPage() {
     setError(null)
     setGeneratingVariationFor(img.id)
 
-    const optimisticId = `optimistic-${img.id}-0`
-    const optimisticCard: SavedAiImage = {
-      id: optimisticId,
-      title: 'Generating variation...',
-      storage_path: null,
-      created_at: new Date(
-        new Date(img.created_at).getTime() + 1000,
-      ).toISOString(),
-      status: 'pending',
-      generation_error: null,
-      generation_metadata: {
-        prompt: img.generation_metadata.prompt,
-        model: img.generation_metadata.model,
-        generation_type: 'variation',
-        source_image_id: img.id,
-      },
-    }
-    gallery.addOptimisticCard(optimisticCard)
-
-    try {
-      const results = await generateVariation({
-        data: {
-          accessToken: session.access_token,
-          prompt: img.generation_metadata.prompt,
-          model: img.generation_metadata.model,
-          sourceImageId: img.id,
-        },
-      })
-
-      const realCard: SavedAiImage = {
-        id: results[0].recordId,
+    const optimisticIds = Array.from(
+      { length: count },
+      (_, i) => `optimistic-${img.id}-${i}`,
+    )
+    for (const optimisticId of optimisticIds) {
+      gallery.addOptimisticCard({
+        id: optimisticId,
         title: 'Generating variation...',
         storage_path: null,
         created_at: new Date(
@@ -380,11 +356,48 @@ function AiImagesPage() {
         generation_metadata: {
           prompt: img.generation_metadata.prompt,
           model: img.generation_metadata.model,
+          generation_type: 'variation',
+          source_image_id: img.id,
         },
+      })
+    }
+
+    try {
+      const results = await generateVariation({
+        data: {
+          accessToken: session.access_token,
+          prompt: img.generation_metadata.prompt,
+          model: img.generation_metadata.model,
+          sourceImageId: img.id,
+          count,
+        },
+      })
+
+      for (let i = 0; i < results.length; i++) {
+        const realCard: SavedAiImage = {
+          id: results[i].recordId,
+          title: 'Generating variation...',
+          storage_path: null,
+          created_at: new Date(
+            new Date(img.created_at).getTime() + 1000,
+          ).toISOString(),
+          status: 'pending',
+          generation_error: null,
+          generation_metadata: {
+            prompt: img.generation_metadata.prompt,
+            model: img.generation_metadata.model,
+          },
+        }
+        gallery.replaceOptimisticCard(optimisticIds[i], realCard)
       }
-      gallery.replaceOptimisticCard(optimisticId, realCard)
+      // Remove any leftover optimistic cards if fewer results returned
+      for (let i = results.length; i < optimisticIds.length; i++) {
+        gallery.removeOptimisticCard(optimisticIds[i])
+      }
     } catch (err) {
-      gallery.removeOptimisticCard(optimisticId)
+      for (const optimisticId of optimisticIds) {
+        gallery.removeOptimisticCard(optimisticId)
+      }
       setError(
         err instanceof Error ? err.message : 'Failed to generate variations',
       )

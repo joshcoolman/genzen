@@ -4,29 +4,9 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { ai } from '@/lib/server/ai.server'
+import { SUGGEST_LAST_FRAME_SYSTEM } from '@/lib/prompts'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
-
-const SYSTEM_PROMPT = `You look at a video frame and describe what happens next — in plain, short English.
-
-Rules:
-- Describe the action or change, not the scene details
-- 10 words or fewer
-- No camera terms, no lighting, no aesthetic descriptions
-- Be specific about the action, general about everything else
-
-Good examples:
-- "Car turns sharply around the corner"
-- "Driver waves from the window"
-- "Crowd cheers as the runner crosses the line"
-- "Man steps out onto the hotel steps"
-- "Car stops at the red light"
-
-Bad examples (too detailed):
-- "The red vehicle, its chrome fenders gleaming in late afternoon sun..."
-- "Wide-angle shot of the vehicle decelerating with motion blur..."
-
-Output ONLY the next scene phrase. Nothing else.`
 
 interface SuggestLastFrameInput {
   accessToken: string
@@ -116,7 +96,7 @@ export const suggestLastFrame = createServerFn({ method: 'POST' })
       model: ai.sonnet,
       maxOutputTokens: 300,
       temperature: 1.0,
-      system: SYSTEM_PROMPT,
+      system: SUGGEST_LAST_FRAME_SYSTEM,
       messages: [{ role: 'user', content: userContent }],
     })
 

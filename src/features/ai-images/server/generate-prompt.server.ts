@@ -4,32 +4,12 @@ import { generatePromptComponents } from '../lib/prompt-generator'
 import type { PromptTheme } from '../lib/prompt-types'
 import { ai } from '@/lib/server/ai.server'
 import { requireAuth } from '@/lib/server/auth.server'
+import { ASSEMBLE_PROMPT_SYSTEM } from '@/lib/prompts'
 
 interface GeneratePromptInput {
   accessToken: string
   theme?: PromptTheme
 }
-
-const ASSEMBLY_PROMPT = `You are a photography prompt assembler. I'll give you modular components, and you create a natural, vivid photography prompt.
-
-FORMAT: [Subject with details], [camera specs] --ar X:Y
-
-RULES:
-- Make it flow naturally and be specific
-- Include all technical specs exactly as provided
-- Add vivid details that make good photos
-- Keep it concise (one sentence for subject)
-- Be creative with the details but stay true to components
-
-EXAMPLES:
-
-Components: person, Korean, woman, young, scientist, examining specimens, 50mm f/1.4, Portra 400, medium shot, 3:2
-Output: A young Korean woman scientist examining bioluminescent specimens under UV light, 50mm f/1.4, Kodak Portra 400, medium shot --ar 3:2
-
-Components: couple, mixed-ethnicity, shopping, at a market, 35mm f/2, Tri-X 400, 16:9
-Output: A mixed-ethnicity couple browsing fresh produce at a bustling street market, 35mm f/2, Kodak Tri-X 400, wide shot --ar 16:9
-
-Return ONLY the assembled prompt (plain text, no markdown).`
 
 /**
  * Generate prompt using modular components + Claude assembly
@@ -90,7 +70,7 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
       const response = await generateText({
         model: ai.haiku,
         maxOutputTokens: 200,
-        system: fantasyPrefix + ASSEMBLY_PROMPT,
+        system: fantasyPrefix + ASSEMBLE_PROMPT_SYSTEM,
         messages: [{ role: 'user', content: componentString }],
       })
 
