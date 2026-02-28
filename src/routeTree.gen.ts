@@ -21,13 +21,9 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
-import { Route as DashboardStatusRouteImport } from './routes/dashboard/status'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
-import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
-import { Route as DashboardEverythingRouteImport } from './routes/dashboard/everything'
-import { Route as DashboardCreditsRouteImport } from './routes/dashboard/credits'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
+import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
 
@@ -91,39 +87,19 @@ const DashboardVideoRoute = DashboardVideoRouteImport.update({
   path: '/video',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardStatusRoute = DashboardStatusRouteImport.update({
-  id: '/status',
-  path: '/status',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardProfileRoute = DashboardProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardImagesRoute = DashboardImagesRouteImport.update({
   id: '/images',
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardEverythingRoute = DashboardEverythingRouteImport.update({
-  id: '/everything',
-  path: '/everything',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardCreditsRoute = DashboardCreditsRouteImport.update({
-  id: '/credits',
-  path: '/credits',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAccountRoute = DashboardAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
@@ -147,13 +123,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/credits': typeof DashboardCreditsRoute
-  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/status': typeof DashboardStatusRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -168,13 +140,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/credits': typeof DashboardCreditsRoute
-  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/status': typeof DashboardStatusRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -191,13 +159,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/credits': typeof DashboardCreditsRoute
-  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
-  '/dashboard/profile': typeof DashboardProfileRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/status': typeof DashboardStatusRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -216,13 +180,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/credits'
-    | '/dashboard/everything'
     | '/dashboard/images'
-    | '/dashboard/profile'
-    | '/dashboard/settings'
-    | '/dashboard/status'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -237,13 +197,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/credits'
-    | '/dashboard/everything'
     | '/dashboard/images'
-    | '/dashboard/profile'
-    | '/dashboard/settings'
-    | '/dashboard/status'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
@@ -259,13 +215,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/credits'
-    | '/dashboard/everything'
     | '/dashboard/images'
-    | '/dashboard/profile'
-    | '/dashboard/settings'
-    | '/dashboard/status'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -371,27 +323,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/status': {
-      id: '/dashboard/status'
-      path: '/status'
-      fullPath: '/dashboard/status'
-      preLoaderRoute: typeof DashboardStatusRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/profile': {
-      id: '/dashboard/profile'
-      path: '/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof DashboardProfileRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/images': {
       id: '/dashboard/images'
       path: '/images'
@@ -399,25 +330,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/everything': {
-      id: '/dashboard/everything'
-      path: '/everything'
-      fullPath: '/dashboard/everything'
-      preLoaderRoute: typeof DashboardEverythingRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/credits': {
-      id: '/dashboard/credits'
-      path: '/credits'
-      fullPath: '/dashboard/credits'
-      preLoaderRoute: typeof DashboardCreditsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
       fullPath: '/dashboard/ai-images'
       preLoaderRoute: typeof DashboardAiImagesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/account': {
+      id: '/dashboard/account'
+      path: '/account'
+      fullPath: '/dashboard/account'
+      preLoaderRoute: typeof DashboardAccountRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/video/': {
@@ -452,25 +376,17 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 )
 
 interface DashboardRouteChildren {
+  DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
-  DashboardCreditsRoute: typeof DashboardCreditsRoute
-  DashboardEverythingRoute: typeof DashboardEverythingRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
-  DashboardProfileRoute: typeof DashboardProfileRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardStatusRoute: typeof DashboardStatusRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
-  DashboardCreditsRoute: DashboardCreditsRoute,
-  DashboardEverythingRoute: DashboardEverythingRoute,
   DashboardImagesRoute: DashboardImagesRoute,
-  DashboardProfileRoute: DashboardProfileRoute,
-  DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardStatusRoute: DashboardStatusRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
 }

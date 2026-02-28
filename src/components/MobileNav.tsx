@@ -62,19 +62,23 @@ export function MobileNav({ className }: { className?: string }) {
             {visibleItems.map((item) => {
               const active = isActive(item.href)
               return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                    active
-                      ? 'border-l-2 border-accent-gold bg-sidebar-hover text-foreground'
-                      : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
+                <div key={item.href}>
+                  {item.dividerBefore && (
+                    <div className="my-2 border-t border-border" />
                   )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
+                  <Link
+                    to={item.href}
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                      active
+                        ? 'border-l-2 border-accent-gold bg-sidebar-hover text-foreground'
+                        : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                </div>
               )
             })}
             <AlertDialog>

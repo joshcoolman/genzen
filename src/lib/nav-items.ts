@@ -1,14 +1,4 @@
-import {
-  Activity,
-  Coins,
-  Film,
-  Home,
-  Image,
-  LayoutGrid,
-  Settings,
-  Sparkles,
-  User,
-} from 'lucide-react'
+import { Film, Image, LayoutGrid, Sparkles, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -16,16 +6,11 @@ export interface NavItem {
   href: string
   icon: LucideIcon
   activeOnly?: boolean
+  dividerBefore?: boolean
 }
 
 export const navItems: Array<NavItem> = [
-  { label: 'Home', href: '/dashboard', icon: Home },
-  {
-    label: 'Everything',
-    href: '/dashboard/everything',
-    icon: LayoutGrid,
-    activeOnly: true,
-  },
+  { label: 'Everything', href: '/dashboard', icon: LayoutGrid },
   {
     label: 'Uploads',
     href: '/dashboard/images',
@@ -45,22 +30,10 @@ export const navItems: Array<NavItem> = [
     activeOnly: true,
   },
   {
-    label: 'Credits',
-    href: '/dashboard/credits',
-    icon: Coins,
+    label: 'Account',
+    href: '/dashboard/account',
+    icon: User,
     activeOnly: true,
-  },
-  { label: 'Profile', href: '/dashboard/profile', icon: User },
-  {
-    label: 'Settings',
-    href: '/dashboard/settings',
-    icon: Settings,
-    activeOnly: true,
-  },
-  {
-    label: 'Status',
-    href: '/dashboard/status',
-    icon: Activity,
-    activeOnly: true,
+    dividerBefore: true,
   },
 ]
