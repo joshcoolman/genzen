@@ -25,6 +25,7 @@ import { Route as DashboardStatusRouteImport } from './routes/dashboard/status'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
+import { Route as DashboardEverythingRouteImport } from './routes/dashboard/everything'
 import { Route as DashboardCreditsRouteImport } from './routes/dashboard/credits'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -110,6 +111,11 @@ const DashboardImagesRoute = DashboardImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardEverythingRoute = DashboardEverythingRouteImport.update({
+  id: '/everything',
+  path: '/everything',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardCreditsRoute = DashboardCreditsRouteImport.update({
   id: '/credits',
   path: '/credits',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/credits': typeof DashboardCreditsRoute
+  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/credits': typeof DashboardCreditsRoute
+  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/credits': typeof DashboardCreditsRoute
+  '/dashboard/everything': typeof DashboardEverythingRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/credits'
+    | '/dashboard/everything'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/credits'
+    | '/dashboard/everything'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-images'
     | '/dashboard/credits'
+    | '/dashboard/everything'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -387,6 +399,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/everything': {
+      id: '/dashboard/everything'
+      path: '/everything'
+      fullPath: '/dashboard/everything'
+      preLoaderRoute: typeof DashboardEverythingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/credits': {
       id: '/dashboard/credits'
       path: '/credits'
@@ -435,6 +454,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardCreditsRoute: typeof DashboardCreditsRoute
+  DashboardEverythingRoute: typeof DashboardEverythingRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -446,6 +466,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardCreditsRoute: DashboardCreditsRoute,
+  DashboardEverythingRoute: DashboardEverythingRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,

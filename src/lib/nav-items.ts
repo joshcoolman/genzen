@@ -4,6 +4,7 @@ import {
   Film,
   Home,
   Image,
+  LayoutGrid,
   Settings,
   Sparkles,
   User,
@@ -36,6 +37,12 @@ export const navItems: Array<NavItem> = [
     label: 'AI Video',
     href: '/dashboard/video',
     icon: Film,
+    activeOnly: true,
+  },
+  {
+    label: 'Everything',
+    href: '/dashboard/everything',
+    icon: LayoutGrid,
     activeOnly: true,
   },
   {
