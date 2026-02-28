@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { PromptTheme } from '@/features/ai-images/lib/prompt-types'
+import type { PromptTheme } from '@/lib/prompt-components/prompt-types'
 import {
   ALL_IMAGE_MODELS,
   DEFAULT_MODEL,

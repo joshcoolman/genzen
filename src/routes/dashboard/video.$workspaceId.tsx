@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import type {
   FrameMode,
@@ -10,6 +10,7 @@ import { generateFirstFrame } from '@/features/ai-video/server/generate-first-fr
 import { generateLastFrame } from '@/features/ai-video/server/generate-last-frame.server'
 import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.server'
 import { suggestLastFrame } from '@/features/ai-video/server/suggest-last-frame.server'
+import { suggestPrompt } from '@/lib/server/suggest-prompt.server'
 import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.server'
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
@@ -25,7 +26,6 @@ import { GenerationRow } from '@/features/ai-video/components/GenerationRow'
 import { FramePanel } from '@/features/ai-video/components/FramePanel'
 import { SelectionBar } from '@/features/ai-video/components/SelectionBar'
 import {
-  DEFAULT_FIRST_FRAME_PROMPT,
   DEFAULT_VIDEO_SETTINGS,
   FIRST_FRAME_MODELS,
   FLUX_KONTEXT_MODEL_ID,
@@ -54,9 +54,8 @@ function WorkspaceDetailPage() {
 
   // First frame
   const [firstFrameMode, setFirstFrameMode] = useState<FrameMode>('prompt')
-  const [firstFramePrompt, setFirstFramePrompt] = useState(
-    DEFAULT_FIRST_FRAME_PROMPT,
-  )
+  const [firstFramePrompt, setFirstFramePrompt] = useState('')
+  const [suggestingFirstFrame, setSuggestingFirstFrame] = useState(false)
   const firstFrameModel = FIRST_FRAME_MODEL_FOR_MODE[firstFrameMode]
   const isImageMode = firstFrameMode === 'image'
 
@@ -413,6 +412,21 @@ function WorkspaceDetailPage() {
     }
   }
 
+  async function handleSuggestFirstFrame() {
+    if (!accessToken) return
+    setSuggestingFirstFrame(true)
+    try {
+      const result = await suggestPrompt({
+        data: { accessToken, context: 'video-first-frame' },
+      })
+      setFirstFramePrompt(result.prompt)
+    } catch {
+      // fail silently
+    } finally {
+      setSuggestingFirstFrame(false)
+    }
+  }
+
   async function handleSuggestLastFrame() {
     if (!accessToken || firstFrame.status !== 'completed') return
     setSuggestingLastFrame(true)
@@ -468,20 +482,8 @@ function WorkspaceDetailPage() {
   return (
     <div className="flex -m-6">
       {/* Main content */}
-      <div className="flex-1 p-6 space-y-8 min-w-0">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/dashboard/video"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Video
-          </Link>
-          {credits.balance !== null && (
-            <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-              {credits.balance} credits
-            </span>
-          )}
-          <span className="text-xs text-muted-foreground">/</span>
+      <div className="flex-1 p-6 space-y-5 min-w-0">
+        <div className="flex items-center gap-2 bg-primary-dark px-6 py-2 -mx-6 -mt-6">
           {wsName.isEditing ? (
             <input
               ref={wsName.inputRef}
@@ -501,6 +503,14 @@ function WorkspaceDetailPage() {
             >
               {wsName.name || 'Untitled'}
             </button>
+          )}
+          {credits.balance !== null && (
+            <>
+              <span className="text-xs text-muted-foreground">/</span>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {credits.balance} credits
+              </span>
+            </>
           )}
         </div>
 
@@ -529,6 +539,8 @@ function WorkspaceDetailPage() {
             error={firstFrame.error}
             prompt={firstFramePrompt}
             onPromptChange={setFirstFramePrompt}
+            suggesting={suggestingFirstFrame}
+            onSuggest={handleSuggestFirstFrame}
             onChooseImage={() => firstFrameFileInputRef.current?.click()}
             onGenerate={handleGenerateFirstFrame}
           />

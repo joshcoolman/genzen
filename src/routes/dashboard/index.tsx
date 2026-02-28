@@ -46,7 +46,7 @@ function DashboardHome() {
           <p className="text-4xl font-semibold tracking-tight tabular-nums mt-4">
             {credits.dollarBalance ?? '--'}
           </p>
-          <div className="flex gap-3 mt-5">
+          <div className="grid gap-3 mt-5">
             <ActionButton asChild>
               <Link to="/dashboard/credits">Manage credits</Link>
             </ActionButton>

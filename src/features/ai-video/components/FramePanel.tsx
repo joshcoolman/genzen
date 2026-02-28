@@ -1,7 +1,9 @@
+import { Sparkles } from 'lucide-react'
 import { FrameImageArea } from './FrameImageArea'
 import type { FrameMode, FrameStatus, LastFrameMode } from '../types'
-import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/ActionButton'
 import { Textarea } from '@/components/ui/textarea'
+import { MiniTabs } from '@/components/MiniTabs'
 import { cn } from '@/lib/utils'
 
 interface FirstFramePanelProps {
@@ -13,6 +15,8 @@ interface FirstFramePanelProps {
   error: string | null
   prompt: string
   onPromptChange: (value: string) => void
+  suggesting?: boolean
+  onSuggest?: () => void
   onChooseImage?: () => void
   onGenerate: () => void
 }
@@ -53,6 +57,8 @@ function FirstFramePanel({
   error,
   prompt,
   onPromptChange,
+  suggesting,
+  onSuggest,
   onChooseImage,
   onGenerate,
 }: FirstFramePanelProps) {
@@ -63,28 +69,16 @@ function FirstFramePanel({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">First Frame</h2>
-        <div className="flex gap-1">
-          {(['prompt', 'image'] as Array<FrameMode>).map((m) => (
-            <button
-              key={m}
-              onClick={() => onModeChange(m)}
-              disabled={status === 'generating'}
-              className={cn(
-                'px-2 py-1 text-xs rounded border transition-colors capitalize',
-                mode === m
-                  ? 'border-accent-gold bg-accent-gold/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              )}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        <MiniTabs
+          options={['prompt', 'image'] as Array<FrameMode>}
+          value={mode}
+          onChange={onModeChange}
+          disabled={status === 'generating'}
+        />
       </div>
 
       {showPromptArea ? (
-        <div className="aspect-video rounded-lg border border-dashed border-border bg-muted/30 overflow-hidden">
+        <div className="relative aspect-video rounded-lg border border-dashed border-border bg-muted/30 overflow-hidden">
           <Textarea
             placeholder="Describe the opening scene..."
             value={prompt}
@@ -92,6 +86,18 @@ function FirstFramePanel({
             className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={6}
           />
+          {onSuggest && (
+            <button
+              onClick={onSuggest}
+              disabled={suggesting}
+              className="absolute bottom-2 right-2 size-7 flex items-center justify-center text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Suggest a prompt"
+            >
+              <Sparkles
+                className={cn('size-3.5', suggesting && 'animate-pulse')}
+              />
+            </button>
+          )}
         </div>
       ) : (
         <FrameImageArea
@@ -108,7 +114,7 @@ function FirstFramePanel({
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {isPromptMode && (
-        <Button
+        <ActionButton
           onClick={onGenerate}
           disabled={status === 'generating' || !prompt.trim()}
           className="w-full"
@@ -118,7 +124,7 @@ function FirstFramePanel({
             : status === 'completed'
               ? 'Regenerate First Frame'
               : 'Generate First Frame'}
-        </Button>
+        </ActionButton>
       )}
     </div>
   )
@@ -141,6 +147,9 @@ function LastFramePanel({
   includeFirstFrame,
   onIncludeFirstFrameChange,
 }: LastFramePanelProps) {
+  const isPromptMode = mode === 'prompt'
+  const showPromptArea = isPromptMode && !locked && status === 'idle'
+
   return (
     <div
       className={cn(
@@ -150,60 +159,69 @@ function LastFramePanel({
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">Last Frame</h2>
-        <div className="flex gap-1">
-          {(['prompt', 'image'] as Array<LastFrameMode>).map((m) => (
-            <button
-              key={m}
-              onClick={() => onModeChange(m)}
-              disabled={status === 'generating'}
-              className={cn(
-                'px-2 py-1 text-xs rounded border transition-colors capitalize',
-                mode === m
-                  ? 'border-accent-gold bg-accent-gold/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
-                'disabled:opacity-50 disabled:cursor-not-allowed',
-              )}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
+        <MiniTabs
+          options={['prompt', 'image'] as Array<LastFrameMode>}
+          value={mode}
+          onChange={onModeChange}
+          disabled={status === 'generating'}
+        />
       </div>
 
-      <FrameImageArea
-        status={status}
-        imageUrl={url}
-        placeholder={
-          locked ? 'Generate first frame first' : 'Last frame will appear here'
-        }
-        generatingLabel="Generating..."
-        onChooseImage={
-          mode === 'image' && status !== 'generating' && !locked
-            ? onChooseImage
-            : undefined
-        }
-      />
-
-      {mode === 'prompt' && !locked && (
-        <div className="relative">
+      {showPromptArea ? (
+        <div className="relative aspect-video rounded-lg border border-dashed border-border bg-muted/30 overflow-hidden">
           <Textarea
             placeholder="Describe what changes in the scene..."
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
-            disabled={status === 'generating'}
-            rows={4}
+            className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            rows={6}
           />
           <button
             onClick={onSuggest}
-            disabled={suggesting || status === 'generating'}
-            className="absolute bottom-2 right-2 text-[10px] text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm px-1.5 py-0.5 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={suggesting}
+            className="absolute bottom-2 right-2 size-7 flex items-center justify-center text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Suggest a prompt"
           >
-            {suggesting ? 'Suggesting...' : 'Suggest'}
+            <Sparkles
+              className={cn('size-3.5', suggesting && 'animate-pulse')}
+            />
           </button>
         </div>
+      ) : (
+        <FrameImageArea
+          status={status}
+          imageUrl={url}
+          placeholder={
+            locked
+              ? 'Generate first frame first'
+              : 'Last frame will appear here'
+          }
+          generatingLabel="Generating..."
+          onChooseImage={
+            mode === 'image' && status !== 'generating' && !locked
+              ? onChooseImage
+              : undefined
+          }
+        />
       )}
 
-      {mode === 'prompt' && !locked && (
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      <ActionButton
+        onClick={onGenerate}
+        disabled={generateDisabled}
+        className="w-full"
+      >
+        {status === 'generating'
+          ? 'Generating...'
+          : mode === 'image' && url
+            ? 'Generate Video'
+            : status === 'completed'
+              ? 'Regenerate Last Frame'
+              : 'Generate Last Frame'}
+      </ActionButton>
+
+      {isPromptMode && !locked && (
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -217,20 +235,6 @@ function LastFramePanel({
           </span>
         </label>
       )}
-
-      {error && <p className="text-xs text-destructive">{error}</p>}
-
-      <Button
-        onClick={onGenerate}
-        disabled={generateDisabled}
-        className="w-full"
-      >
-        {status === 'generating'
-          ? 'Generating...'
-          : mode === 'image' && url
-            ? 'Generate Video'
-            : 'Generate Last Frame'}
-      </Button>
     </div>
   )
 }

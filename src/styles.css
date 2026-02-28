@@ -46,6 +46,8 @@
   --color-accent-sage-hover: var(--accent-sage-hover);
   --color-sidebar-hover: var(--sidebar-hover);
   --color-warm-gold: var(--warm-gold);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
 }
 
 :root {
@@ -77,6 +79,8 @@
   --accent-sage: #8fa888;
   --accent-sage-hover: #9fb898;
   --warm-gold: #d4a853;
+  --primary-dark: #061610;
+  --primary-light: #7edba6;
 
   /* Sidebar specific */
   --sidebar: #111111;
