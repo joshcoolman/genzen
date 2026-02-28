@@ -1,3 +1,12 @@
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export function cropTo16x9(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()

@@ -18,7 +18,7 @@ import { updateGeneration } from '@/features/ai-video/server/update-generation.s
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { CREDIT_COSTS } from '@/features/credits'
-import { cropTo16x9 } from '@/features/ai-video/lib/crop-to-16x9'
+import { cropTo16x9, fileToBase64 } from '@/features/ai-video/lib/crop-to-16x9'
 import { useFrame } from '@/features/ai-video/hooks/use-frame'
 import { useWorkspaceName } from '@/features/ai-video/hooks/use-workspace-name'
 import { useGenerations } from '@/features/ai-video/hooks/use-generations'
@@ -85,6 +85,9 @@ function WorkspaceDetailPage() {
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
     null,
   )
+  const [lastFrameOriginalData, setLastFrameOriginalData] = useState<
+    string | null
+  >(null)
   const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
 
   const lastFrame = useFrame({
@@ -137,6 +140,7 @@ function WorkspaceDetailPage() {
     lastFrame.reset()
     setLastFramePrompt('')
     setLastFrameImageData(null)
+    setLastFrameOriginalData(null)
   }
 
   function resetDownstream() {
@@ -154,6 +158,7 @@ function WorkspaceDetailPage() {
     if (lastFrame.status === 'generating') return
     setLastFrameMode(mode)
     setLastFrameImageData(null)
+    setLastFrameOriginalData(null)
     lastFrame.reset()
   }
 
@@ -164,20 +169,29 @@ function WorkspaceDetailPage() {
     if (!file || !accessToken) return
     e.target.value = ''
 
-    let dataUrl: string
+    let croppedDataUrl: string
+    let originalDataUrl: string
     try {
-      dataUrl = await cropTo16x9(file)
+      ;[originalDataUrl, croppedDataUrl] = await Promise.all([
+        fileToBase64(file),
+        cropTo16x9(file),
+      ])
     } catch {
       firstFrame.setFailed('Failed to process image')
       return
     }
 
-    firstFrame.setGenerating(dataUrl)
+    firstFrame.setGenerating(croppedDataUrl)
     resetDownstream()
 
     try {
       const result = await uploadVideoFrame({
-        data: { imageBase64: dataUrl, frameType: 'first', accessToken },
+        data: {
+          imageBase64: croppedDataUrl,
+          originalBase64: originalDataUrl,
+          frameType: 'first',
+          accessToken,
+        },
       })
       firstFrame.setCompleted(result.signedUrl, result.recordId)
     } catch (err) {
@@ -194,10 +208,14 @@ function WorkspaceDetailPage() {
     if (!file) return
     e.target.value = ''
     try {
-      const dataUrl = await cropTo16x9(file)
-      setLastFrameImageData(dataUrl)
+      const [originalDataUrl, croppedDataUrl] = await Promise.all([
+        fileToBase64(file),
+        cropTo16x9(file),
+      ])
+      setLastFrameImageData(croppedDataUrl)
+      setLastFrameOriginalData(originalDataUrl)
       lastFrame.setStatus('idle')
-      lastFrame.setUrl(dataUrl)
+      lastFrame.setUrl(croppedDataUrl)
     } catch {
       lastFrame.setFailed('Failed to process image')
     }
@@ -238,6 +256,7 @@ function WorkspaceDetailPage() {
         const result = await uploadVideoFrame({
           data: {
             imageBase64: lastFrameImageData,
+            originalBase64: lastFrameOriginalData ?? undefined,
             frameType: 'last',
             accessToken,
           },
