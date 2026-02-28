@@ -17,7 +17,21 @@ function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
   })
 }
 
-export function useImages({ userId, accessToken }: UseImagesOptions) {
+export interface GalleryState {
+  images: Array<SavedAiImage>
+  imageUrls: Record<string, string>
+  loadingGallery: boolean
+  deleteImage: (img: SavedAiImage) => Promise<void>
+  addOptimisticCard: (card: SavedAiImage) => void
+  replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
+  removeOptimisticCard: (optimisticId: string) => void
+  reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
+}
+
+export function useImages({
+  userId,
+  accessToken,
+}: UseImagesOptions): GalleryState {
   const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingGallery, setLoadingGallery] = useState(true)

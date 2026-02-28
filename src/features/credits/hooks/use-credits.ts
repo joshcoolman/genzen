@@ -11,7 +11,7 @@ import { getCredits } from '@/features/credits/server/get-credits.server'
 import { deductCredits } from '@/features/credits/server/deduct-credits.server'
 import { addCredits } from '@/features/credits/server/add-credits.server'
 
-interface CreditsState {
+export interface CreditsState {
   balance: number | null
   dollarBalance: string | null
   usageStats: UsageStats | null

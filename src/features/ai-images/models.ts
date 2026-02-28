@@ -137,3 +137,7 @@ export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
 export function getVisibleModels(ids: Array<string>): Array<ImageModel> {
   return ALL_IMAGE_MODELS.filter((model) => ids.includes(model.id))
 }
+
+export function getModelName(modelId: string): string {
+  return ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ?? modelId
+}

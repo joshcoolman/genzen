@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { PromptTheme } from '@/lib/prompt-components/prompt-types'
+import type { ImageModel } from '@/features/ai-images/models'
 import {
   ALL_IMAGE_MODELS,
   DEFAULT_MODEL,
@@ -7,7 +8,20 @@ import {
   getVisibleModels,
 } from '@/features/ai-images/models'
 
-export function useModelSettings() {
+export interface ModelSettingsState {
+  selectedModels: Array<string>
+  setSelectedModels: React.Dispatch<React.SetStateAction<Array<string>>>
+  visibleModelIds: Array<string>
+  setVisibleModelIds: React.Dispatch<React.SetStateAction<Array<string>>>
+  visibleModels: Array<ImageModel>
+  theme: PromptTheme
+  setTheme: (theme: PromptTheme) => void
+  settingsOpen: boolean
+  setSettingsOpen: (open: boolean) => void
+  toggleSelectedModel: (modelId: string, checked: boolean) => void
+}
+
+export function useModelSettings(): ModelSettingsState {
   const [selectedModels, setSelectedModels] = useState<Array<string>>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('ai-image-selected-models')
@@ -98,6 +112,16 @@ export function useModelSettings() {
     }
   }, [visibleModelIds, selectedModels])
 
+  function toggleSelectedModel(modelId: string, checked: boolean) {
+    if (checked) {
+      setSelectedModels((prev) => [...prev, modelId])
+    } else {
+      if (selectedModels.length > 1) {
+        setSelectedModels((prev) => prev.filter((id) => id !== modelId))
+      }
+    }
+  }
+
   return {
     selectedModels,
     setSelectedModels,
@@ -108,5 +132,6 @@ export function useModelSettings() {
     setTheme,
     settingsOpen,
     setSettingsOpen,
+    toggleSelectedModel,
   }
 }
