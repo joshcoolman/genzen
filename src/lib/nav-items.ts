@@ -21,12 +21,17 @@ export interface NavItem {
 export const navItems: Array<NavItem> = [
   { label: 'Home', href: '/dashboard', icon: Home },
   {
-    label: 'Status',
-    href: '/dashboard/status',
-    icon: Activity,
+    label: 'Everything',
+    href: '/dashboard/everything',
+    icon: LayoutGrid,
     activeOnly: true,
   },
-  { label: 'Images', href: '/dashboard/images', icon: Image, activeOnly: true },
+  {
+    label: 'Uploads',
+    href: '/dashboard/images',
+    icon: Image,
+    activeOnly: true,
+  },
   {
     label: 'AI Images',
     href: '/dashboard/ai-images',
@@ -40,12 +45,6 @@ export const navItems: Array<NavItem> = [
     activeOnly: true,
   },
   {
-    label: 'Everything',
-    href: '/dashboard/everything',
-    icon: LayoutGrid,
-    activeOnly: true,
-  },
-  {
     label: 'Credits',
     href: '/dashboard/credits',
     icon: Coins,
@@ -56,6 +55,12 @@ export const navItems: Array<NavItem> = [
     label: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
+    activeOnly: true,
+  },
+  {
+    label: 'Status',
+    href: '/dashboard/status',
+    icon: Activity,
     activeOnly: true,
   },
 ]
