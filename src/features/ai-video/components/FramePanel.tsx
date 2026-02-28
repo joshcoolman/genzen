@@ -206,7 +206,11 @@ function LastFramePanel({
         disabled={generateDisabled}
         className="w-full"
       >
-        {status === 'generating' ? 'Generating...' : 'Generate Last Frame'}
+        {status === 'generating'
+          ? 'Generating...'
+          : mode === 'image' && url
+            ? 'Generate Video'
+            : 'Generate Last Frame'}
       </Button>
     </div>
   )

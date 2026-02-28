@@ -14,6 +14,9 @@ interface GenerateFlfVideoInput {
   lastFrameRecordId: string
   prompt: string
   accessToken: string
+  duration?: '5' | '10'
+  cfgScale?: number
+  negativePrompt?: string
 }
 
 async function uploadFrameToFal(
@@ -95,16 +98,27 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
     ])
 
     // Kling O1 FLF: reference frames via @Image1 / @Image2 in the prompt
-    const klingPrompt =
-      prompt ||
-      '@Image1 smoothly transitions to @Image2 with fluid natural motion'
+    const klingPrompt = prompt
+      ? `@Image1 ${prompt} @Image2`
+      : '@Image1 smoothly transitions to @Image2 with fluid natural motion'
+
+    const falInput: Record<string, unknown> = {
+      start_image_url: startImageUrl,
+      end_image_url: endImageUrl,
+      prompt: klingPrompt,
+      duration: data.duration || '5',
+    }
+    if (data.cfgScale !== undefined) {
+      falInput.cfg_scale = data.cfgScale
+    }
+    if (data.negativePrompt) {
+      falInput.negative_prompt = data.negativePrompt
+    }
 
     const { request_id } = await fal.queue.submit(VIDEO_MODEL, {
-      input: {
-        start_image_url: startImageUrl,
-        end_image_url: endImageUrl,
-        prompt: klingPrompt,
-        duration: '5',
+      input: falInput as Record<string, unknown> & {
+        prompt: string
+        start_image_url: string
       },
     })
 
@@ -119,6 +133,7 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
         generation_metadata: {
           model: VIDEO_MODEL,
           prompt,
+          transition_prompt: prompt || null,
           first_frame_id: firstFrameRecordId,
           last_frame_id: lastFrameRecordId,
           submitted_at: new Date().toISOString(),

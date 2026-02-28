@@ -38,8 +38,6 @@ export function GenerationRow({
   const lastFramePollingRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   )
-  const autoVideoTriggeredRef = useRef(false)
-
   const isVideoPending = generation.video?.status === 'pending'
   const isLastFramePending = generation.lastFrame?.status === 'pending'
   const lastFrameCompleted =
@@ -125,15 +123,6 @@ export function GenerationRow({
               lastFrame: completedLastFrame,
             }
             onLastFrameCompleted?.(updatedGen)
-
-            if (
-              onGenerateVideo &&
-              !generation.video &&
-              !autoVideoTriggeredRef.current
-            ) {
-              autoVideoTriggeredRef.current = true
-              onGenerateVideo(updatedGen)
-            }
           }
         } else if (record?.status === 'failed') {
           onUpdate(generation.id, {

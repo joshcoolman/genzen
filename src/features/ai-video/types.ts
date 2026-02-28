@@ -19,6 +19,7 @@ export type Generation = {
     url: string | null
     status: 'pending' | 'completed' | 'failed'
   } | null
+  videoPrompt?: string
 }
 
 export interface FrameState {
@@ -39,3 +40,17 @@ export const FIRST_FRAME_MODELS = [
 export const FLUX_KONTEXT_MODEL_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 
 export const LAST_FRAME_MODEL = 'nano-banana' as const
+
+export interface VideoSettings {
+  prompt: string
+  duration: '5' | '10'
+  cfgScale: number
+  negativePrompt: string
+}
+
+export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
+  prompt: '',
+  duration: '5',
+  cfgScale: 0.5,
+  negativePrompt: 'blur, distort, and low quality',
+}

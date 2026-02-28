@@ -113,6 +113,12 @@ export const getGenerations = createServerFn({ method: 'POST' })
                   | 'failed',
               }
             : null,
+          videoPrompt:
+            (video?.generation_metadata?.transition_prompt as
+              | string
+              | undefined) ??
+            (video?.generation_metadata?.prompt as string | undefined) ??
+            undefined,
         }
       }),
     )
