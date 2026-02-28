@@ -18,6 +18,8 @@ type FeedItem = {
   thumbnailUrl: string | null
   label: string
   href: string
+  workspaceId?: string
+  generationId?: string
 }
 
 type Workspace = {
@@ -31,6 +33,11 @@ type Workspace = {
     thumbnailUrls: Array<string>
     prompt: string | null
   }
+  generations: Array<{
+    id: string
+    createdAt: string
+    firstFrameUrl: string | null
+  }>
 }
 
 function buildFeed(
@@ -48,14 +55,18 @@ function buildFeed(
       img.source === 'upload' ? '/dashboard/images' : '/dashboard/ai-images',
   }))
 
-  const vidItems: Array<FeedItem> = workspaces.map((ws) => ({
-    id: ws.id,
-    type: 'ai_video' as const,
-    createdAt: ws.createdAt,
-    thumbnailUrl: ws.preview.heroUrl ?? ws.preview.thumbnailUrls.at(0) ?? null,
-    label: ws.name,
-    href: `/dashboard/video/${ws.id}`,
-  }))
+  const vidItems: Array<FeedItem> = workspaces.flatMap((ws) =>
+    ws.generations.map((gen) => ({
+      id: gen.id,
+      type: 'ai_video' as const,
+      createdAt: gen.createdAt,
+      thumbnailUrl: gen.firstFrameUrl,
+      label: ws.name,
+      href: `/dashboard/video/${ws.id}?generationId=${gen.id}`,
+      workspaceId: ws.id,
+      generationId: gen.id,
+    })),
+  )
 
   return [...imgItems, ...vidItems].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -149,10 +160,11 @@ function EverythingPage() {
               key={item.id}
               item={item}
               onClick={() => {
-                if (item.type === 'ai_video') {
+                if (item.type === 'ai_video' && item.workspaceId) {
                   void navigate({
                     to: '/dashboard/video/$workspaceId',
-                    params: { workspaceId: item.id },
+                    params: { workspaceId: item.workspaceId },
+                    search: { generationId: item.generationId },
                   })
                 } else {
                   void navigate({

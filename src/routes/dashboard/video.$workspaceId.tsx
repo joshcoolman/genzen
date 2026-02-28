@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   FrameMode,
   Generation,
@@ -40,11 +40,16 @@ const FIRST_FRAME_MODEL_FOR_MODE: Record<FrameMode, string> = {
 }
 
 export const Route = createFileRoute('/dashboard/video/$workspaceId')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    generationId:
+      typeof search.generationId === 'string' ? search.generationId : undefined,
+  }),
   component: WorkspaceDetailPage,
 })
 
 function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
+  const { generationId } = Route.useSearch()
   const { session } = useAuth()
   const accessToken = session?.access_token
   const credits = useCredits()
@@ -80,6 +85,17 @@ function WorkspaceDetailPage() {
 
   // Generations
   const gens = useGenerations(workspaceId, accessToken)
+
+  // Auto-load generation from deep link (e.g. navigating from Everything feed)
+  const autoLoadedRef = useRef(false)
+  useEffect(() => {
+    if (autoLoadedRef.current || !generationId || gens.generations.length === 0)
+      return
+    const gen = gens.generations.find((g) => g.id === generationId)
+    if (!gen) return
+    autoLoadedRef.current = true
+    handleLoadGeneration(gen)
+  }, [generationId, gens.generations])
 
   // Selection
   const selection = useGenerationSelection({
