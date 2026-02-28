@@ -6,7 +6,7 @@
  * Uses client-side Canvas API for palette generation.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -217,6 +217,13 @@ export function ColorPaletteDisplay({
   // Stable IDs for dnd-kit sortable context
   const columnIds = Array.from({ length: 6 }, (_, i) => `col-${i}`)
 
+  // Auto-generate palette on mount if none exists
+  useEffect(() => {
+    if (!palette && !isGenerating) {
+      handleGenerate('balanced')
+    }
+  }, [])
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -397,29 +404,15 @@ export function ColorPaletteDisplay({
     }
   }
 
-  // No palette yet - show generate button
+  // No palette yet - auto-generation triggered by useEffect above
   if (!palette) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-full">
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              Generating palette...
-            </span>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => handleGenerate('balanced')}
-              className="gap-2"
-            >
-              Generate Color Palette
-            </Button>
-            {error && <span className="text-sm text-destructive">{error}</span>}
-          </>
-        )}
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">
+          Generating palette...
+        </span>
+        {error && <span className="text-sm text-destructive">{error}</span>}
       </div>
     )
   }

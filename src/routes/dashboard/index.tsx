@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { Settings } from 'lucide-react'
 import type { UserImage } from '@/features/user-images/types'
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
@@ -8,12 +9,24 @@ import { getWorkspaces } from '@/features/ai-video/server/get-workspaces.server'
 import { getVideoUrl } from '@/features/ai-video/server/get-video-url.server'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { SectionCard } from '@/components/SectionCard'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/')({
   component: DashboardHome,
 })
 
-type FeedItemType = 'upload' | 'ai_image' | 'ai_video'
+type FeedItemType =
+  | 'upload'
+  | 'ai_upload'
+  | 'ai_image'
+  | 'ai_video'
+  | 'workspace'
 
 type FeedItem = {
   id: string
@@ -50,21 +63,33 @@ function buildFeed(
   images: Array<UserImage>,
   imageUrls: Record<string, string>,
   workspaces: Array<Workspace>,
+  opts: { showWorkspaces: boolean; showAllUploads: boolean },
 ): Array<FeedItem> {
   const imgItems: Array<FeedItem> = images
     .filter((img) => {
+      if (opts.showAllUploads) return true
       const meta = img.generation_metadata as Record<string, unknown> | null
       return !meta?.frame_type
     })
-    .map((img) => ({
-      id: img.id,
-      type: img.source === 'upload' ? 'upload' : 'ai_image',
-      createdAt: img.created_at,
-      thumbnailUrl: imageUrls[img.id] ?? null,
-      label: img.title,
-      href:
-        img.source === 'upload' ? '/dashboard/images' : '/dashboard/ai-images',
-    }))
+    .map((img) => {
+      const meta = img.generation_metadata as Record<string, unknown> | null
+      const isAiUpload = img.source === 'upload' && !!meta?.frame_type
+      return {
+        id: img.id,
+        type: isAiUpload
+          ? 'ai_upload'
+          : img.source === 'upload'
+            ? 'upload'
+            : 'ai_image',
+        createdAt: img.created_at,
+        thumbnailUrl: imageUrls[img.id] ?? null,
+        label: img.title,
+        href:
+          img.source === 'upload'
+            ? '/dashboard/images'
+            : '/dashboard/ai-images',
+      }
+    })
 
   const vidItems: Array<FeedItem> = workspaces.flatMap((ws) =>
     ws.generations.map((gen) => ({
@@ -80,15 +105,37 @@ function buildFeed(
     })),
   )
 
-  return [...imgItems, ...vidItems].sort(
+  const wsItems: Array<FeedItem> = opts.showWorkspaces
+    ? workspaces.map((ws) => ({
+        id: `ws-${ws.id}`,
+        type: 'workspace' as const,
+        createdAt: ws.createdAt,
+        thumbnailUrl: ws.preview.heroUrl,
+        label: ws.name,
+        href: `/dashboard/video/${ws.id}`,
+        workspaceId: ws.id,
+      }))
+    : []
+
+  return [...wsItems, ...imgItems, ...vidItems].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
 }
 
 const TYPE_LABELS: Record<FeedItemType, string> = {
   upload: 'Upload',
+  ai_upload: 'AI Upload',
   ai_image: 'AI Image',
   ai_video: 'AI Video',
+  workspace: 'Workspace',
+}
+
+const TYPE_COLORS: Record<FeedItemType, string> = {
+  upload: 'bg-emerald-600/80',
+  ai_upload: 'bg-zinc-500/80',
+  ai_image: 'bg-violet-600/80',
+  ai_video: 'bg-blue-600/80',
+  workspace: 'bg-amber-600/80',
 }
 
 function FeedCard({
@@ -126,7 +173,9 @@ function FeedCard({
         alt={item.label}
         className="absolute inset-0 w-full h-full object-cover"
       />
-      <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
+      <div
+        className={`absolute bottom-1.5 left-1.5 ${TYPE_COLORS[item.type]} backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded`}
+      >
         {TYPE_LABELS[item.type]}
       </div>
       {item.type === 'ai_video' && item.videoReady && onPlayVideo && (
@@ -164,6 +213,8 @@ function FeedCard({
   )
 }
 
+type TypeFilter = 'all' | FeedItemType
+
 function DashboardHome() {
   const accountStatus = useAccountStatus()
   const { session } = useAuth()
@@ -180,6 +231,11 @@ function DashboardHome() {
   const [workspacesLoading, setWorkspacesLoading] = useState(true)
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
+  const [viewSettings, setViewSettings] = useState({
+    showWorkspaces: false,
+    showAllUploads: false,
+  })
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
 
   useEffect(() => {
     if (!session?.access_token) return
@@ -220,15 +276,83 @@ function DashboardHome() {
   }
 
   const loading = imagesLoading || workspacesLoading
-  const feed = buildFeed(images, imageUrls, workspaces)
+  const feed = buildFeed(images, imageUrls, workspaces, viewSettings)
+  const filteredFeed =
+    typeFilter === 'all'
+      ? feed
+      : typeFilter === 'upload'
+        ? feed.filter(
+            (item) => item.type === 'upload' || item.type === 'ai_upload',
+          )
+        : feed.filter((item) => item.type === typeFilter)
+
+  const pillFilters: Array<TypeFilter> = [
+    'all',
+    'ai_video',
+    'ai_image',
+    'upload',
+    ...(viewSettings.showWorkspaces ? (['workspace'] as const) : []),
+  ]
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Everything</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Everything</h1>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1.5 rounded-md hover:bg-muted transition-colors">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-52 p-3 space-y-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={viewSettings.showWorkspaces}
+                onCheckedChange={(checked) =>
+                  setViewSettings((s) => ({
+                    ...s,
+                    showWorkspaces: checked === true,
+                  }))
+                }
+              />
+              Show workspaces
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={viewSettings.showAllUploads}
+                onCheckedChange={(checked) =>
+                  setViewSettings((s) => ({
+                    ...s,
+                    showAllUploads: checked === true,
+                  }))
+                }
+              />
+              Show all uploads
+            </label>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {pillFilters.map((f) => (
+          <button
+            key={f}
+            onClick={() => setTypeFilter(f)}
+            className={cn(
+              'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+              typeFilter === f
+                ? 'bg-foreground text-background border-foreground'
+                : 'border-border text-muted-foreground hover:border-foreground/40',
+            )}
+          >
+            {f === 'all' ? 'All' : TYPE_LABELS[f]}
+          </button>
+        ))}
+      </div>
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading...</div>
-      ) : feed.length === 0 ? (
+      ) : filteredFeed.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
           <p className="text-sm text-muted-foreground">No assets yet</p>
         </div>
@@ -239,7 +363,7 @@ function DashboardHome() {
             gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
           }}
         >
-          {feed.map((item) => (
+          {filteredFeed.map((item) => (
             <FeedCard
               key={item.id}
               item={item}
@@ -249,6 +373,12 @@ function DashboardHome() {
                     to: '/dashboard/video/$workspaceId',
                     params: { workspaceId: item.workspaceId },
                     search: { generationId: item.generationId },
+                  })
+                } else if (item.type === 'workspace' && item.workspaceId) {
+                  void navigate({
+                    to: '/dashboard/video/$workspaceId',
+                    params: { workspaceId: item.workspaceId },
+                    search: { generationId: undefined },
                   })
                 } else {
                   void navigate({
