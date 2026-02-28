@@ -1,20 +1,18 @@
-import { FIRST_FRAME_MODELS } from '../types'
 import { FrameImageArea } from './FrameImageArea'
-import type { FrameStatus, LastFrameMode } from '../types'
+import type { FrameMode, FrameStatus, LastFrameMode } from '../types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
 interface FirstFramePanelProps {
   type: 'first'
-  model: string
-  onModelChange: (modelId: string) => void
+  mode: FrameMode
+  onModeChange: (mode: FrameMode) => void
   status: FrameStatus
   url: string | null
   error: string | null
   prompt: string
   onPromptChange: (value: string) => void
-  isFluxKontextMode: boolean
   onChooseImage?: () => void
   onGenerate: () => void
 }
@@ -48,66 +46,68 @@ export function FramePanel(props: FramePanelProps) {
 }
 
 function FirstFramePanel({
-  model,
-  onModelChange,
+  mode,
+  onModeChange,
   status,
   url,
   error,
   prompt,
   onPromptChange,
-  isFluxKontextMode,
   onChooseImage,
   onGenerate,
 }: FirstFramePanelProps) {
+  const isPromptMode = mode === 'prompt'
+  const showPromptArea = isPromptMode && status === 'idle'
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">First Frame</h2>
         <div className="flex gap-1">
-          {FIRST_FRAME_MODELS.map((m) => (
+          {(['prompt', 'image'] as Array<FrameMode>).map((m) => (
             <button
-              key={m.id}
-              onClick={() => onModelChange(m.id)}
+              key={m}
+              onClick={() => onModeChange(m)}
               disabled={status === 'generating'}
               className={cn(
-                'px-2 py-1 text-xs rounded border transition-colors',
-                model === m.id
+                'px-2 py-1 text-xs rounded border transition-colors capitalize',
+                mode === m
                   ? 'border-accent-gold bg-accent-gold/10 text-foreground'
                   : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
             >
-              {m.label}
+              {m}
             </button>
           ))}
         </div>
       </div>
 
-      <FrameImageArea
-        status={status}
-        imageUrl={url}
-        placeholder="First frame will appear here"
-        generatingLabel="Uploading..."
-        onChooseImage={
-          isFluxKontextMode && status !== 'generating'
-            ? onChooseImage
-            : undefined
-        }
-      />
-
-      {!isFluxKontextMode && (
-        <Textarea
-          placeholder="Describe the opening scene..."
-          value={prompt}
-          onChange={(e) => onPromptChange(e.target.value)}
-          disabled={status === 'generating'}
-          rows={6}
+      {showPromptArea ? (
+        <div className="aspect-video rounded-lg border border-dashed border-border bg-muted/30 overflow-hidden">
+          <Textarea
+            placeholder="Describe the opening scene..."
+            value={prompt}
+            onChange={(e) => onPromptChange(e.target.value)}
+            className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+            rows={6}
+          />
+        </div>
+      ) : (
+        <FrameImageArea
+          status={status}
+          imageUrl={url}
+          placeholder="First frame will appear here"
+          generatingLabel={isPromptMode ? 'Generating...' : 'Uploading...'}
+          onChooseImage={
+            !isPromptMode && status !== 'generating' ? onChooseImage : undefined
+          }
         />
       )}
 
       {error && <p className="text-xs text-destructive">{error}</p>}
 
-      {!isFluxKontextMode && (
+      {isPromptMode && (
         <Button
           onClick={onGenerate}
           disabled={status === 'generating' || !prompt.trim()}

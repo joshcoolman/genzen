@@ -1,5 +1,6 @@
 export type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
-export type LastFrameMode = 'prompt' | 'image'
+export type FrameMode = 'prompt' | 'image'
+export type LastFrameMode = FrameMode
 
 export type Generation = {
   id: string

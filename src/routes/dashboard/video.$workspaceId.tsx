@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import type {
+  FrameMode,
   Generation,
   LastFrameMode,
   VideoSettings,
@@ -32,6 +33,12 @@ import {
 } from '@/features/ai-video/types'
 import { VideoSettingsPanel } from '@/features/ai-video/components/VideoSettingsPanel'
 
+// Model mapping: prompt mode uses Kling, image mode uses FLUX Kontext
+const FIRST_FRAME_MODEL_FOR_MODE: Record<FrameMode, string> = {
+  prompt: FIRST_FRAME_MODELS[1].id, // Kling Image O3
+  image: FLUX_KONTEXT_MODEL_ID, // FLUX Kontext Pro
+}
+
 export const Route = createFileRoute('/dashboard/video/$workspaceId')({
   component: WorkspaceDetailPage,
 })
@@ -46,25 +53,17 @@ function WorkspaceDetailPage() {
   const wsName = useWorkspaceName(workspaceId, accessToken)
 
   // First frame
-  const [firstFrameModel, setFirstFrameModel] = useState(
-    FIRST_FRAME_MODELS[0].id,
-  )
+  const [firstFrameMode, setFirstFrameMode] = useState<FrameMode>('prompt')
   const [firstFramePrompt, setFirstFramePrompt] = useState(
     DEFAULT_FIRST_FRAME_PROMPT,
   )
-  const isFluxKontextMode = firstFrameModel === FLUX_KONTEXT_MODEL_ID
+  const firstFrameModel = FIRST_FRAME_MODEL_FOR_MODE[firstFrameMode]
+  const isImageMode = firstFrameMode === 'image'
 
   const firstFrame = useFrame({
     accessToken,
-    shouldPoll: firstFrame_shouldPoll(),
+    shouldPoll: !isImageMode,
   })
-
-  // We need a stable reference for shouldPoll -- it depends on isFluxKontextMode
-  // which is derived from firstFrameModel state. useFrame reads shouldPoll on each
-  // effect cycle so this is fine as a function evaluated at render time.
-  function firstFrame_shouldPoll() {
-    return !isFluxKontextMode
-  }
 
   // Last frame
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
@@ -120,9 +119,9 @@ function WorkspaceDetailPage() {
     lastFrame.reset()
   }
 
-  function handleModelChange(modelId: string) {
+  function handleFirstFrameModeChange(mode: FrameMode) {
     if (firstFrame.status === 'generating') return
-    setFirstFrameModel(modelId)
+    setFirstFrameMode(mode)
     firstFrame.reset()
     resetDownstream()
   }
@@ -421,7 +420,7 @@ function WorkspaceDetailPage() {
       const result = await suggestLastFrame({
         data: {
           accessToken,
-          firstFramePrompt: isFluxKontextMode ? '' : firstFramePrompt,
+          firstFramePrompt: isImageMode ? '' : firstFramePrompt,
           firstFrameRecordId: firstFrame.recordId ?? undefined,
         },
       })
@@ -523,14 +522,13 @@ function WorkspaceDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FramePanel
             type="first"
-            model={firstFrameModel}
-            onModelChange={handleModelChange}
+            mode={firstFrameMode}
+            onModeChange={handleFirstFrameModeChange}
             status={firstFrame.status}
             url={firstFrame.url}
             error={firstFrame.error}
             prompt={firstFramePrompt}
             onPromptChange={setFirstFramePrompt}
-            isFluxKontextMode={isFluxKontextMode}
             onChooseImage={() => firstFrameFileInputRef.current?.click()}
             onGenerate={handleGenerateFirstFrame}
           />
