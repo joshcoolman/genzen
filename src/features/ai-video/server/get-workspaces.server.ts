@@ -28,6 +28,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
         id, name, created_at,
         video_generations(
           id, created_at,
+          video:video_id(id, status),
           first_frame:first_frame_id(id, storage_path, generation_metadata),
           last_frame:last_frame_id(id, storage_path)
         )
@@ -51,6 +52,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
         const gens = w.video_generations as unknown as Array<{
           id: string
           created_at: string
+          video: { id: string; status: string } | null
           first_frame: FrameRow | null
           last_frame: FrameRow | null
         }>
@@ -105,6 +107,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
           id: gen.id,
           createdAt: gen.created_at,
           firstFrameUrl: signedFirstFrameUrls[i] ?? null,
+          videoReady: gen.video?.status === 'completed',
         }))
 
         return {

@@ -24,6 +24,7 @@ type FeedItem = {
   href: string
   workspaceId?: string
   generationId?: string
+  videoReady?: boolean
 }
 
 type Workspace = {
@@ -41,6 +42,7 @@ type Workspace = {
     id: string
     createdAt: string
     firstFrameUrl: string | null
+    videoReady: boolean
   }>
 }
 
@@ -69,6 +71,7 @@ function buildFeed(
       href: `/dashboard/video/${ws.id}?generationId=${gen.id}`,
       workspaceId: ws.id,
       generationId: gen.id,
+      videoReady: gen.videoReady,
     })),
   )
 
@@ -121,7 +124,7 @@ function FeedCard({
       <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
         {TYPE_LABELS[item.type]}
       </div>
-      {item.type === 'ai_video' && onPlayVideo && (
+      {item.type === 'ai_video' && item.videoReady && onPlayVideo && (
         <div
           role="button"
           onClick={(e) => {
@@ -145,6 +148,11 @@ function FeedCard({
               strokeLinejoin="round"
             />
           </svg>
+        </div>
+      )}
+      {item.type === 'ai_video' && !item.videoReady && (
+        <div className="absolute bottom-1.5 right-1.5 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm">
+          Processing...
         </div>
       )}
     </button>
@@ -246,7 +254,7 @@ function DashboardHome() {
                 }
               }}
               onPlayVideo={
-                item.type === 'ai_video' && item.generationId
+                item.type === 'ai_video' && item.videoReady && item.generationId
                   ? () => void handlePlayVideo(item.generationId!)
                   : undefined
               }
