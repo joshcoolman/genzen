@@ -9,6 +9,7 @@ interface VideoSettingsPanelProps {
   onGenerate: () => void
   disabled: boolean
   generating: boolean
+  lastFrameStatus?: 'idle' | 'generating' | 'completed' | 'error'
 }
 
 export function VideoSettingsPanel({
@@ -17,7 +18,10 @@ export function VideoSettingsPanel({
   onGenerate,
   disabled,
   generating,
+  lastFrameStatus,
 }: VideoSettingsPanelProps) {
+  const waitingForLastFrame =
+    lastFrameStatus === 'generating' || lastFrameStatus === 'idle'
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-medium">Video Settings</h2>
@@ -88,12 +92,24 @@ export function VideoSettingsPanel({
         />
       </div>
 
+      {waitingForLastFrame && (
+        <p className="text-xs text-muted-foreground animate-pulse">
+          {lastFrameStatus === 'generating'
+            ? 'Waiting for last frame to complete...'
+            : 'Generate a last frame to enable video'}
+        </p>
+      )}
+
       <Button
         onClick={onGenerate}
         disabled={disabled || generating}
         className="w-full"
       >
-        {generating ? 'Generating Video...' : 'Generate Video'}
+        {generating
+          ? 'Generating Video...'
+          : waitingForLastFrame
+            ? 'Waiting for Last Frame...'
+            : 'Generate Video'}
       </Button>
     </div>
   )

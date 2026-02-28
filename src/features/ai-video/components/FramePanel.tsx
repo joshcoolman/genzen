@@ -34,6 +34,8 @@ interface LastFramePanelProps {
   onChooseImage?: () => void
   onGenerate: () => void
   generateDisabled: boolean
+  includeFirstFrame: boolean
+  onIncludeFirstFrameChange: (value: boolean) => void
 }
 
 type FramePanelProps = FirstFramePanelProps | LastFramePanelProps
@@ -136,6 +138,8 @@ function LastFramePanel({
   onChooseImage,
   onGenerate,
   generateDisabled,
+  includeFirstFrame,
+  onIncludeFirstFrameChange,
 }: LastFramePanelProps) {
   return (
     <div
@@ -197,6 +201,21 @@ function LastFramePanel({
             {suggesting ? 'Suggesting...' : 'Suggest'}
           </button>
         </div>
+      )}
+
+      {mode === 'prompt' && !locked && (
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeFirstFrame}
+            onChange={(e) => onIncludeFirstFrameChange(e.target.checked)}
+            disabled={status === 'generating'}
+            className="accent-accent-gold"
+          />
+          <span className="text-xs text-muted-foreground">
+            Use first frame as reference
+          </span>
+        </label>
       )}
 
       {error && <p className="text-xs text-destructive">{error}</p>}

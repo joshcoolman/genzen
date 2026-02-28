@@ -158,10 +158,8 @@ export function GenerationRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border transition-colors',
-        selected
-          ? 'border-accent-gold bg-accent-gold/5'
-          : 'border-border hover:bg-muted/30',
+        'flex items-center gap-3 p-3 rounded-lg transition-colors bg-sidebar',
+        selected && 'ring-1 ring-accent-gold bg-accent-gold/5',
       )}
     >
       {/* Select checkbox */}
@@ -232,16 +230,24 @@ export function GenerationRow({
               e.stopPropagation()
               setVideoOpen(true)
             }}
-            className="relative group"
+            className="w-24 aspect-video rounded bg-black flex items-center justify-center group"
           >
-            <video
-              src={generation.video.url}
-              className="w-24 aspect-video rounded object-cover border border-border"
-              muted
-              preload="metadata"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="text-white text-xs">Play</span>
+            <div className="w-8 h-8 rounded-full border border-muted-foreground/40 flex items-center justify-center">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                className="ml-0.5 text-muted-foreground"
+              >
+                <path
+                  d="M3.5 2.5L11.5 7L3.5 11.5V2.5Z"
+                  fill="currentColor"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </div>
           </button>
         ) : generation.video?.status === 'failed' ? (

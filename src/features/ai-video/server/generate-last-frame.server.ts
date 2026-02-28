@@ -14,6 +14,7 @@ interface GenerateLastFrameInput {
   firstFrameRecordId: string
   model?: 'kontext' | 'nano-banana'
   accessToken: string
+  includeFirstFrame?: boolean
 }
 
 export const generateLastFrame = createServerFn({ method: 'POST' })
@@ -22,6 +23,7 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
     const user = await requireAuth(data.accessToken)
 
     const { prompt, firstFrameRecordId } = data
+    const shouldIncludeFirstFrame = data.includeFirstFrame !== false
 
     if (!prompt.trim()) {
       throw new Error('Prompt is required')
@@ -49,63 +51,74 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch first frame storage path
-    const { data: firstFrame } = await supabase
-      .from('user_images')
-      .select('storage_path')
-      .eq('id', firstFrameRecordId)
-      .eq('user_id', user.id)
-      .single()
+    let falImageUrl: string | null = null
 
-    if (!firstFrame?.storage_path) {
-      throw new Error('First frame not found or not completed')
+    if (shouldIncludeFirstFrame) {
+      // Fetch first frame storage path
+      const { data: firstFrame } = await supabase
+        .from('user_images')
+        .select('storage_path')
+        .eq('id', firstFrameRecordId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!firstFrame?.storage_path) {
+        throw new Error('First frame not found or not completed')
+      }
+
+      // Create signed URL to fetch the image bytes
+      const { data: signedUrlData } = await supabase.storage
+        .from('user-images')
+        .createSignedUrl(firstFrame.storage_path, 3600)
+
+      if (!signedUrlData?.signedUrl) {
+        throw new Error('Failed to create signed URL for first frame')
+      }
+
+      const imageRes = await fetch(signedUrlData.signedUrl)
+      if (!imageRes.ok) {
+        throw new Error('Failed to fetch first frame image')
+      }
+
+      const buffer = await imageRes.arrayBuffer()
+      const bytes = new Uint8Array(buffer)
+
+      // Detect format from magic bytes
+      let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg'
+      if (bytes[0] === 0x89 && bytes[1] === 0x50) mediaType = 'image/png'
+      else if (bytes[0] === 0x52 && bytes[1] === 0x49) mediaType = 'image/webp'
+
+      // Upload to FAL storage to get a public HTTPS URL (Supabase URLs are auth-gated)
+      falImageUrl = await fal.storage.upload(
+        new Blob([buffer], { type: mediaType }),
+      )
     }
-
-    // Create signed URL to fetch the image bytes
-    const { data: signedUrlData } = await supabase.storage
-      .from('user-images')
-      .createSignedUrl(firstFrame.storage_path, 3600)
-
-    if (!signedUrlData?.signedUrl) {
-      throw new Error('Failed to create signed URL for first frame')
-    }
-
-    const imageRes = await fetch(signedUrlData.signedUrl)
-    if (!imageRes.ok) {
-      throw new Error('Failed to fetch first frame image')
-    }
-
-    const buffer = await imageRes.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
-
-    // Detect format from magic bytes
-    let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg'
-    if (bytes[0] === 0x89 && bytes[1] === 0x50) mediaType = 'image/png'
-    else if (bytes[0] === 0x52 && bytes[1] === 0x49) mediaType = 'image/webp'
-
-    // Upload to FAL storage to get a public HTTPS URL (Supabase URLs are auth-gated)
-    const falImageUrl = await fal.storage.upload(
-      new Blob([buffer], { type: mediaType }),
-    )
 
     const useNanoBanana = data.model === 'nano-banana'
     const modelId = useNanoBanana ? NANO_BANANA_MODEL : KONTEXT_MODEL
 
-    const input = useNanoBanana
-      ? {
-          prompt,
-          image_urls: [falImageUrl],
-          aspect_ratio: '16:9' as const,
-          safety_tolerance: '6' as const,
-        }
-      : {
-          prompt,
-          image_url: falImageUrl,
-          safety_tolerance: '6' as const,
-          guidance_scale: 2.0,
-        }
+    // Build FAL input — omit image reference when not including first frame
+    let input: Record<string, unknown>
+    if (useNanoBanana) {
+      input = {
+        prompt,
+        aspect_ratio: '16:9',
+        safety_tolerance: '6',
+        ...(falImageUrl ? { image_urls: [falImageUrl] } : {}),
+      }
+    } else {
+      input = {
+        prompt,
+        safety_tolerance: '6',
+        aspect_ratio: '16:9',
+        guidance_scale: 2.0,
+        ...(falImageUrl ? { image_url: falImageUrl } : {}),
+      }
+    }
 
-    const { request_id } = await fal.queue.submit(modelId, { input })
+    const { request_id } = await fal.queue.submit(modelId, {
+      input: input as never,
+    })
 
     const { data: record, error: insertError } = await supabase
       .from('user_images')

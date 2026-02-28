@@ -69,6 +69,7 @@ function WorkspaceDetailPage() {
   // Last frame
   const [lastFrameMode, setLastFrameMode] = useState<LastFrameMode>('prompt')
   const [lastFramePrompt, setLastFramePrompt] = useState('')
+  const [includeFirstFrame, setIncludeFirstFrame] = useState(true)
   const [lastFrameImageData, setLastFrameImageData] = useState<string | null>(
     null,
   )
@@ -264,6 +265,7 @@ function WorkspaceDetailPage() {
           firstFrameRecordId: capturedFirstFrameRecordId,
           model: LAST_FRAME_MODEL,
           accessToken,
+          includeFirstFrame,
         },
       })
 
@@ -548,6 +550,8 @@ function WorkspaceDetailPage() {
             onChooseImage={() => lastFrameFileInputRef.current?.click()}
             onGenerate={handleGenerateLastFrame}
             generateDisabled={lastFrameGenerateDisabled}
+            includeFirstFrame={includeFirstFrame}
+            onIncludeFirstFrameChange={setIncludeFirstFrame}
           />
         </div>
 
@@ -632,6 +636,7 @@ function WorkspaceDetailPage() {
             onGenerate={handleGenerateVideo}
             disabled={lastFrame.status !== 'completed' || !lastFrame.recordId}
             generating={generatingVideo}
+            lastFrameStatus={lastFrame.status}
           />
         </aside>
       )}
