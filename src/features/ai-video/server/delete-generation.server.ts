@@ -42,28 +42,49 @@ export const deleteGeneration = createServerFn({ method: 'POST' })
     ].filter(Boolean) as Array<string>
 
     if (imageIds.length > 0) {
-      const { data: images } = await supabase
-        .from('user_images')
-        .select('id, storage_path')
-        .in('id', imageIds)
+      // Check which image records are shared by other generations
+      const { data: otherGens } = await supabase
+        .from('video_generations')
+        .select('first_frame_id, last_frame_id, video_id')
+        .neq('id', data.generationId)
+        .eq('user_id', user.id)
 
-      if (images && images.length > 0) {
-        // Delete storage files
-        const storagePaths = images
-          .map((img) => img.storage_path)
-          .filter(Boolean) as Array<string>
-        if (storagePaths.length > 0) {
-          await supabase.storage.from('user-images').remove(storagePaths)
+      const sharedIds = new Set<string>()
+      if (otherGens) {
+        for (const g of otherGens) {
+          if (g.first_frame_id) sharedIds.add(g.first_frame_id)
+          if (g.last_frame_id) sharedIds.add(g.last_frame_id)
+          if (g.video_id) sharedIds.add(g.video_id)
         }
+      }
 
-        // Delete user_images records
-        await supabase
+      // Only delete image records not referenced by other generations
+      const safeToDeleteIds = imageIds.filter((id) => !sharedIds.has(id))
+
+      if (safeToDeleteIds.length > 0) {
+        const { data: images } = await supabase
           .from('user_images')
-          .delete()
-          .in(
-            'id',
-            images.map((img) => img.id),
-          )
+          .select('id, storage_path')
+          .in('id', safeToDeleteIds)
+
+        if (images && images.length > 0) {
+          // Delete storage files
+          const storagePaths = images
+            .map((img) => img.storage_path)
+            .filter(Boolean) as Array<string>
+          if (storagePaths.length > 0) {
+            await supabase.storage.from('user-images').remove(storagePaths)
+          }
+
+          // Delete user_images records
+          await supabase
+            .from('user_images')
+            .delete()
+            .in(
+              'id',
+              images.map((img) => img.id),
+            )
+        }
       }
     }
 
