@@ -7,6 +7,7 @@ import { checkPendingImages } from '@/features/ai-images/server/check-pending-im
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export function GenerationRow({
   generation,
@@ -33,6 +34,7 @@ export function GenerationRow({
 }) {
   const [videoOpen, setVideoOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [generatingVideo, setGeneratingVideo] = useState(false)
   const videoPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastFramePollingRef = useRef<ReturnType<typeof setInterval> | null>(
@@ -301,27 +303,35 @@ export function GenerationRow({
             size="sm"
             className="text-xs text-muted-foreground hover:text-destructive"
             disabled={deleting}
-            onClick={async () => {
-              if (!accessToken) return
-              if (!window.confirm('Delete this generation?')) return
-              setDeleting(true)
-              try {
-                await deleteGeneration({
-                  data: {
-                    generationId: generation.id,
-                    accessToken,
-                  },
-                })
-                onDelete(generation.id)
-              } catch {
-                setDeleting(false)
-              }
-            }}
+            onClick={() => setDeleteConfirmOpen(true)}
           >
             {deleting ? '...' : 'Delete'}
           </Button>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete this generation?"
+        description="This will permanently delete this generation and its frames. This cannot be undone."
+        confirmLabel="Delete"
+        loading={deleting}
+        onConfirm={async () => {
+          if (!accessToken) return
+          setDeleting(true)
+          try {
+            await deleteGeneration({
+              data: { generationId: generation.id, accessToken },
+            })
+            onDelete(generation.id)
+          } catch {
+            setDeleting(false)
+            setDeleteConfirmOpen(false)
+          }
+        }}
+      />
 
       {/* Video dialog */}
       <VideoPlayerDialog

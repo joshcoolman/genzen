@@ -1,5 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import type {
   FrameMode,
   Generation,
@@ -32,6 +33,8 @@ import {
   LAST_FRAME_MODEL,
 } from '@/features/ai-video/types'
 import { VideoSettingsPanel } from '@/features/ai-video/components/VideoSettingsPanel'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { deleteWorkspace } from '@/features/ai-video/server/delete-workspace.server'
 
 // Model mapping: prompt mode uses Kling, image mode uses FLUX Kontext
 const FIRST_FRAME_MODEL_FOR_MODE: Record<FrameMode, string> = {
@@ -50,9 +53,15 @@ export const Route = createFileRoute('/dashboard/video/$workspaceId')({
 function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
   const { generationId } = Route.useSearch()
+  const navigate = useNavigate()
   const { session } = useAuth()
   const accessToken = session?.access_token
   const credits = useCredits()
+
+  // Workspace delete
+  const [deleteStep, setDeleteStep] = useState(0)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null)
 
   // Workspace name
   const wsName = useWorkspaceName(workspaceId, accessToken)
@@ -493,6 +502,21 @@ function WorkspaceDetailPage() {
     }
   }
 
+  async function handleDeleteWorkspace() {
+    if (!accessToken) return
+    setDeleting(true)
+    setDeleteMessage("Whatever, dude. It's your funeral.")
+    try {
+      await deleteWorkspace({ data: { workspaceId, accessToken } })
+      await new Promise((r) => setTimeout(r, 1500))
+      navigate({ to: '/dashboard/video' })
+    } catch {
+      setDeleting(false)
+      setDeleteMessage(null)
+      setDeleteStep(0)
+    }
+  }
+
   const showSidebar = firstFrame.status === 'completed'
 
   return (
@@ -528,7 +552,45 @@ function WorkspaceDetailPage() {
               </span>
             </>
           )}
+          <button
+            onClick={() => setDeleteStep(1)}
+            className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Delete workspace - step 1 */}
+        <ConfirmDialog
+          open={deleteStep === 1}
+          onOpenChange={(open) => {
+            if (!open) setDeleteStep(0)
+          }}
+          title="Are you absolutely sure?"
+          description="This will delete all generations in this workspace permanently. This cannot be undone."
+          confirmLabel="Delete workspace"
+          onConfirm={() => setDeleteStep(2)}
+        />
+
+        {/* Delete workspace - step 2 */}
+        <ConfirmDialog
+          open={deleteStep === 2}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteStep(0)
+              setDeleteMessage(null)
+            }
+          }}
+          title={deleteMessage ?? 'Are you really sure about this?'}
+          description={
+            deleteMessage
+              ? ''
+              : 'Last chance. Every generation, every frame -- gone forever.'
+          }
+          confirmLabel="Yes, I'm really sure"
+          onConfirm={handleDeleteWorkspace}
+          loading={deleting}
+        />
 
         <input
           ref={firstFrameFileInputRef}
