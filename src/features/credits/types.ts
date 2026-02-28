@@ -23,17 +23,22 @@ export interface UsageStats {
 }
 
 export interface CreditRepository {
-  getBalance: () => Promise<number>
+  getBalance: (userId: string) => Promise<number>
   deductCredits: (
+    userId: string,
     amount: number,
     reason: CreditReason,
   ) => Promise<{ success: boolean; balance: number }>
   addCredits: (
+    userId: string,
     amount: number,
     reason: CreditReason,
   ) => Promise<{ balance: number }>
-  getTransactions: (limit?: number) => Promise<Array<CreditTransaction>>
-  getUsageStats: () => Promise<UsageStats>
+  getTransactions: (
+    userId: string,
+    limit?: number,
+  ) => Promise<Array<CreditTransaction>>
+  getUsageStats: (userId: string) => Promise<UsageStats>
 }
 
 export const CREDIT_COSTS: Record<string, number> = {

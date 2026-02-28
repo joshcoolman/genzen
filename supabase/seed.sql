@@ -64,6 +64,11 @@ SELECT
 FROM auth.users
 WHERE email = 'testuser@gmail.com';
 
--- Give seed user active status (trigger creates waitlist row; this overrides)
-UPDATE user_profiles SET account_status = 'active'
+-- Give seed user active status + credits (trigger creates waitlist row; this overrides)
+UPDATE user_profiles SET account_status = 'active', credit_balance = 50
 WHERE id = (SELECT id FROM auth.users WHERE email = 'testuser@gmail.com');
+
+-- Seed initial credit grant transaction for test user
+INSERT INTO credit_transactions (user_id, amount, reason, balance_after)
+SELECT id, 50, 'initial_grant', 50
+FROM auth.users WHERE email = 'testuser@gmail.com';

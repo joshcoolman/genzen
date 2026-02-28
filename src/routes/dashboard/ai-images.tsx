@@ -23,7 +23,6 @@ import {
 } from 'lucide-react'
 import type { DragEndEvent } from '@dnd-kit/core'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -57,6 +56,8 @@ import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSettings } from '@/features/ai-images/hooks/use-model-settings'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { CREDIT_COSTS } from '@/features/credits'
+import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/ActionButton'
 import { useAuth } from '@/lib/auth'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
@@ -69,7 +70,7 @@ function getModelName(modelId: string) {
 
 function AiImagesPage() {
   const { user, session } = useAuth()
-  const credits = useCredits(session?.access_token)
+  const credits = useCredits()
   const gallery = useImages({
     userId: user?.id,
     accessToken: session?.access_token,
@@ -198,6 +199,8 @@ function AiImagesPage() {
           ? imageSelectedModels
           : modelSettings.selectedModels
 
+      const reason = sourceImage ? 'variation' : 'image_gen'
+      await credits.deduct(CREDIT_COSTS[reason] * modelsToUse.length, reason)
       await Promise.all(
         modelsToUse.map((modelId) =>
           generateImage({
@@ -211,7 +214,6 @@ function AiImagesPage() {
           }),
         ),
       )
-      void credits.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate image')
     } finally {
@@ -296,6 +298,7 @@ function AiImagesPage() {
     if (!editTarget || !editPrompt.trim() || !session?.access_token) return
     setEditLoading(true)
     try {
+      await credits.deduct(CREDIT_COSTS.edit, 'edit')
       await editImage({
         data: {
           accessToken: session.access_token,
@@ -366,6 +369,7 @@ function AiImagesPage() {
     }
 
     try {
+      await credits.deduct(CREDIT_COSTS.variation * count, 'variation')
       const results = await generateVariation({
         data: {
           accessToken: session.access_token,
@@ -570,10 +574,18 @@ function AiImagesPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button
+              <ActionButton
                 onClick={handleGenerate}
+                loading={loading}
+                loadingText={
+                  (inputMode === 'image'
+                    ? imageSelectedModels
+                    : modelSettings.selectedModels
+                  ).length > 1
+                    ? `Generating ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images...`
+                    : 'Generating...'
+                }
                 disabled={
-                  loading ||
                   !canGenerate ||
                   (credits.balance ?? 0) < CREDIT_COSTS.image_gen
                 }
@@ -581,20 +593,13 @@ function AiImagesPage() {
               >
                 {credits.isEmpty
                   ? 'Out of credits'
-                  : loading
-                    ? (inputMode === 'image'
+                  : (inputMode === 'image'
                         ? imageSelectedModels
                         : modelSettings.selectedModels
                       ).length > 1
-                      ? `Generating ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images...`
-                      : 'Generating...'
-                    : (inputMode === 'image'
-                          ? imageSelectedModels
-                          : modelSettings.selectedModels
-                        ).length > 1
-                      ? `Generate ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images`
-                      : `Generate (${CREDIT_COSTS.image_gen} credit)`}
-              </Button>
+                    ? `Generate ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images`
+                    : 'Generate'}
+              </ActionButton>
             </div>
 
             {error && (

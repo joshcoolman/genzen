@@ -10,7 +10,7 @@ interface GetTransactionsInput {
 export const getTransactions = createServerFn({ method: 'POST' })
   .inputValidator((data: GetTransactionsInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
     const repo = getCreditRepository()
-    return repo.getTransactions(data.limit)
+    return repo.getTransactions(user.id, data.limit)
   })

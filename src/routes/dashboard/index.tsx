@@ -1,8 +1,9 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { Receipt } from 'lucide-react'
 import { useAccountStatus } from '@/lib/account-status'
-import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
+
+import { ActionButton } from '@/components/ActionButton'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/PageHeader'
 import { SectionCard } from '@/components/SectionCard'
@@ -13,8 +14,7 @@ export const Route = createFileRoute('/dashboard/')({
 
 function DashboardHome() {
   const accountStatus = useAccountStatus()
-  const { session } = useAuth()
-  const credits = useCredits(session?.access_token)
+  const credits = useCredits()
 
   if (accountStatus !== 'active') {
     return (
@@ -47,12 +47,9 @@ function DashboardHome() {
             {credits.dollarBalance ?? '--'}
           </p>
           <div className="flex gap-3 mt-5">
-            <Button
-              asChild
-              className="bg-accent-gold hover:bg-accent-gold-hover text-black font-medium"
-            >
+            <ActionButton asChild>
               <Link to="/dashboard/credits">Manage credits</Link>
-            </Button>
+            </ActionButton>
             <Button variant="outline" asChild>
               <Link to="/dashboard/credits" className="gap-2">
                 <Receipt className="h-4 w-4" />

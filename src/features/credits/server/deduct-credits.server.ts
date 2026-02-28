@@ -12,7 +12,7 @@ interface DeductCreditsInput {
 export const deductCredits = createServerFn({ method: 'POST' })
   .inputValidator((data: DeductCreditsInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
     const repo = getCreditRepository()
-    return repo.deductCredits(data.amount, data.reason)
+    return repo.deductCredits(user.id, data.amount, data.reason)
   })

@@ -12,7 +12,7 @@ interface AddCreditsInput {
 export const addCredits = createServerFn({ method: 'POST' })
   .inputValidator((data: AddCreditsInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
     const repo = getCreditRepository()
-    return repo.addCredits(data.amount, data.reason)
+    return repo.addCredits(user.id, data.amount, data.reason)
   })

@@ -9,11 +9,11 @@ interface GetCreditsInput {
 export const getCredits = createServerFn({ method: 'POST' })
   .inputValidator((data: GetCreditsInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
     const repo = getCreditRepository()
     const [balance, usageStats] = await Promise.all([
-      repo.getBalance(),
-      repo.getUsageStats(),
+      repo.getBalance(user.id),
+      repo.getUsageStats(user.id),
     ])
     return { balance, usageStats }
   })

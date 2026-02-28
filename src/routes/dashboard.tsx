@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { AccountStatusProvider } from '@/lib/account-status'
+import { CreditsProvider } from '@/features/credits/components/CreditsProvider'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useDashboardRouteMemory } from '@/lib/use-dashboard-route-memory'
@@ -35,7 +36,7 @@ export const Route = createFileRoute('/dashboard')({
 })
 
 function DashboardLayoutRoute() {
-  const { user, loading } = useAuth()
+  const { user, session, loading } = useAuth()
   const { accountStatus } = Route.useRouteContext()
 
   // Remember the last visited dashboard route
@@ -55,9 +56,11 @@ function DashboardLayoutRoute() {
 
   return (
     <AccountStatusProvider status={accountStatus}>
-      <DashboardLayout>
-        <Outlet />
-      </DashboardLayout>
+      <CreditsProvider accessToken={session?.access_token}>
+        <DashboardLayout>
+          <Outlet />
+        </DashboardLayout>
+      </CreditsProvider>
     </AccountStatusProvider>
   )
 }

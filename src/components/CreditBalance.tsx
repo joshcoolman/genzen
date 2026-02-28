@@ -1,11 +1,9 @@
 import { Link } from '@tanstack/react-router'
-import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { cn } from '@/lib/utils'
 
 export function CreditBalance() {
-  const { session } = useAuth()
-  const credits = useCredits(session?.access_token)
+  const credits = useCredits()
 
   if (credits.balance === null) return null
 

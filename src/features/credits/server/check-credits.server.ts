@@ -6,10 +6,10 @@ export async function checkAndDeductCredits(
   accessToken: string,
   reason: CreditReason,
 ): Promise<{ allowed: boolean; balance: number; cost: number }> {
-  await requireAuth(accessToken)
+  const user = await requireAuth(accessToken)
   const repo = getCreditRepository()
   const cost = CREDIT_COSTS[reason] ?? 1
-  const result = await repo.deductCredits(cost, reason)
+  const result = await repo.deductCredits(user.id, cost, reason)
   if (!result.success) {
     return { allowed: false, balance: result.balance, cost }
   }

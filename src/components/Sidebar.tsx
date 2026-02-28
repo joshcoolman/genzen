@@ -14,15 +14,16 @@ import {
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
+
 import { navItems } from '@/lib/nav-items'
 import { cn } from '@/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, session } = useAuth()
+  const { signOut } = useAuth()
   const accountStatus = useAccountStatus()
-  const credits = useCredits(session?.access_token)
+  const credits = useCredits()
 
   const visibleItems = navItems.filter(
     (item) => !item.activeOnly || accountStatus === 'active',

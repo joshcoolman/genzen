@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -10,6 +10,7 @@ import {
   Video,
 } from 'lucide-react'
 import type { CreditReason, CreditTransaction } from '@/features/credits'
+import { ActionButton } from '@/components/ActionButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -18,6 +19,7 @@ import { StatsRow } from '@/components/StatsRow'
 import { SectionCard } from '@/components/SectionCard'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
+
 import { getTransactions } from '@/features/credits/server/get-transactions.server'
 import { CREDIT_PACKS, DOLLARS_PER_CREDIT } from '@/features/credits'
 
@@ -64,28 +66,38 @@ function formatDollars(credits: number) {
 
 function CreditsPage() {
   const { session } = useAuth()
-  const credits = useCredits(session?.access_token)
+  const credits = useCredits()
   const [transactions, setTransactions] = useState<Array<CreditTransaction>>([])
   const [selectedPack, setSelectedPack] = useState<string>(
     CREDIT_PACKS[1].credits.toString(),
   )
   const [couponCode, setCouponCode] = useState('')
-  const [comingSoon, setComingSoon] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
 
   const activePack = CREDIT_PACKS.find(
     (p) => p.credits.toString() === selectedPack,
   )
 
-  useEffect(() => {
+  const refreshTransactions = useCallback(() => {
     if (!session?.access_token) return
     void getTransactions({
       data: { accessToken: session.access_token, limit: 20 },
     }).then(setTransactions)
   }, [session?.access_token])
 
-  function handlePurchase() {
-    setComingSoon(true)
-    setTimeout(() => setComingSoon(false), 2000)
+  useEffect(() => {
+    refreshTransactions()
+  }, [refreshTransactions])
+
+  async function handlePurchase() {
+    if (!activePack || purchasing) return
+    setPurchasing(true)
+    try {
+      await credits.add(activePack.credits, 'pack_purchase')
+      refreshTransactions()
+    } finally {
+      setPurchasing(false)
+    }
   }
 
   return (
@@ -138,14 +150,13 @@ function CreditsPage() {
         title="Add Credits"
         footer={
           <div className="flex items-center gap-3">
-            <Button
+            <ActionButton
               onClick={handlePurchase}
-              className="bg-accent-gold text-primary-foreground hover:bg-accent-gold-hover font-medium"
+              loading={purchasing}
+              loadingText="Adding..."
             >
-              {comingSoon
-                ? 'Coming soon'
-                : `Quick Buy ${activePack ? `$${activePack.price}.00` : ''}`}
-            </Button>
+              Quick Buy {activePack ? `$${activePack.price}.00` : ''}
+            </ActionButton>
             <div className="flex items-center gap-2">
               <Input
                 placeholder="Enter coupon code"
@@ -153,15 +164,7 @@ function CreditsPage() {
                 onChange={(e) => setCouponCode(e.target.value)}
                 className="w-44 h-9"
               />
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!couponCode}
-                onClick={() => {
-                  setComingSoon(true)
-                  setTimeout(() => setComingSoon(false), 2000)
-                }}
-              >
+              <Button variant="outline" size="sm" disabled={!couponCode}>
                 Redeem
               </Button>
             </div>
