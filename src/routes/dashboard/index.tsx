@@ -51,15 +51,20 @@ function buildFeed(
   imageUrls: Record<string, string>,
   workspaces: Array<Workspace>,
 ): Array<FeedItem> {
-  const imgItems: Array<FeedItem> = images.map((img) => ({
-    id: img.id,
-    type: img.source === 'upload' ? 'upload' : 'ai_image',
-    createdAt: img.created_at,
-    thumbnailUrl: imageUrls[img.id] ?? null,
-    label: img.title,
-    href:
-      img.source === 'upload' ? '/dashboard/images' : '/dashboard/ai-images',
-  }))
+  const imgItems: Array<FeedItem> = images
+    .filter((img) => {
+      const meta = img.generation_metadata as Record<string, unknown> | null
+      return !meta?.frame_type
+    })
+    .map((img) => ({
+      id: img.id,
+      type: img.source === 'upload' ? 'upload' : 'ai_image',
+      createdAt: img.created_at,
+      thumbnailUrl: imageUrls[img.id] ?? null,
+      label: img.title,
+      href:
+        img.source === 'upload' ? '/dashboard/images' : '/dashboard/ai-images',
+    }))
 
   const vidItems: Array<FeedItem> = workspaces.flatMap((ws) =>
     ws.generations.map((gen) => ({

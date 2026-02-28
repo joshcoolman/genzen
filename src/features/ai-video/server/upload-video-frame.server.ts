@@ -56,7 +56,7 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       .insert({
         user_id: user.id,
         status: 'completed',
-        source: 'ai_video_frame',
+        source: 'upload',
         title: `Uploaded ${frameType} frame`,
         storage_path: storagePath,
         file_name: fileName,
