@@ -487,6 +487,18 @@ function WorkspaceDetailPage() {
                 onUpdate={gens.updateGeneration}
                 onDelete={handleDeleteGeneration}
                 onGenerateVideo={handleGenerateVideoFromRow}
+                onLastFrameCompleted={(updatedGen) => {
+                  if (
+                    firstFrame.recordId &&
+                    updatedGen.firstFrame?.id === firstFrame.recordId &&
+                    updatedGen.lastFrame?.url
+                  ) {
+                    lastFrame.setCompleted(
+                      updatedGen.lastFrame.url,
+                      updatedGen.lastFrame.id,
+                    )
+                  }
+                }}
                 accessToken={accessToken}
               />
             ))}

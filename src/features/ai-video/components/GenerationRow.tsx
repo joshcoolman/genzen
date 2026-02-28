@@ -17,6 +17,7 @@ export function GenerationRow({
   onUpdate,
   onDelete,
   onGenerateVideo,
+  onLastFrameCompleted,
   accessToken,
 }: {
   generation: Generation
@@ -27,6 +28,7 @@ export function GenerationRow({
   onUpdate: (id: string, updates: Partial<Generation>) => void
   onDelete: (id: string) => void
   onGenerateVideo?: (gen: Generation) => void
+  onLastFrameCompleted?: (gen: Generation) => void
   accessToken: string | undefined
 }) {
   const [videoOpen, setVideoOpen] = useState(false)
@@ -36,6 +38,7 @@ export function GenerationRow({
   const lastFramePollingRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   )
+  const autoVideoTriggeredRef = useRef(false)
 
   const isVideoPending = generation.video?.status === 'pending'
   const isLastFramePending = generation.lastFrame?.status === 'pending'
@@ -110,13 +113,27 @@ export function GenerationRow({
             .from('user-images')
             .createSignedUrl(record.storage_path, 3600)
           if (urlData) {
-            onUpdate(generation.id, {
-              lastFrame: {
-                id: lastFrameRecordId,
-                url: urlData.signedUrl,
-                status: 'completed',
-              },
-            })
+            const completedLastFrame = {
+              id: lastFrameRecordId,
+              url: urlData.signedUrl,
+              status: 'completed' as const,
+            }
+            onUpdate(generation.id, { lastFrame: completedLastFrame })
+
+            const updatedGen: Generation = {
+              ...generation,
+              lastFrame: completedLastFrame,
+            }
+            onLastFrameCompleted?.(updatedGen)
+
+            if (
+              onGenerateVideo &&
+              !generation.video &&
+              !autoVideoTriggeredRef.current
+            ) {
+              autoVideoTriggeredRef.current = true
+              onGenerateVideo(updatedGen)
+            }
           }
         } else if (record?.status === 'failed') {
           onUpdate(generation.id, {
@@ -143,7 +160,10 @@ export function GenerationRow({
     accessToken,
     generation.lastFrame?.id,
     generation.id,
+    generation.video,
     onUpdate,
+    onGenerateVideo,
+    onLastFrameCompleted,
   ])
 
   return (
