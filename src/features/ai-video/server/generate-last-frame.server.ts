@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -19,6 +20,15 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateLastFrameInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'last_frame',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
+    }
+
     const { prompt, firstFrameRecordId } = data
 
     if (!prompt.trim()) {

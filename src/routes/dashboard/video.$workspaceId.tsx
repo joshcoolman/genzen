@@ -9,6 +9,7 @@ import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
 import { useAuth } from '@/lib/auth'
+import { useCredits } from '@/features/credits/hooks/use-credits'
 import { cropTo16x9 } from '@/features/ai-video/lib/crop-to-16x9'
 import { useFrame } from '@/features/ai-video/hooks/use-frame'
 import { useWorkspaceName } from '@/features/ai-video/hooks/use-workspace-name'
@@ -32,6 +33,7 @@ function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
   const { session } = useAuth()
   const accessToken = session?.access_token
+  const credits = useCredits(accessToken)
 
   // Workspace name
   const wsName = useWorkspaceName(workspaceId, accessToken)
@@ -369,6 +371,11 @@ function WorkspaceDetailPage() {
         >
           Video
         </Link>
+        {credits.balance !== null && (
+          <span className="ml-auto text-sm text-muted-foreground tabular-nums">
+            {credits.balance} credits
+          </span>
+        )}
         <span className="text-xs text-muted-foreground">/</span>
         {wsName.isEditing ? (
           <input

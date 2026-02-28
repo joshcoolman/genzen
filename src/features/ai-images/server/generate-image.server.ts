@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { generateText } from 'ai'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 
@@ -20,6 +21,14 @@ export const generateImage = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateImageInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'image_gen',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
+    }
 
     const { prompt, model, aspectRatio, sourceImageBase64 } = data
 

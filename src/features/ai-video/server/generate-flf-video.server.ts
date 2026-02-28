@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -44,6 +45,15 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateFlfVideoInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'video_gen',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
+    }
+
     const { firstFrameRecordId, lastFrameRecordId, prompt } = data
 
     if (!process.env.FAL_KEY) {

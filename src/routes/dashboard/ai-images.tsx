@@ -55,7 +55,8 @@ import { ImageLightbox } from '@/features/ai-images/components/ImageLightbox'
 import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
 import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSettings } from '@/features/ai-images/hooks/use-model-settings'
-import { CreditBalance } from '@/components/CreditBalance'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
 import { useAuth } from '@/lib/auth'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
@@ -68,6 +69,7 @@ function getModelName(modelId: string) {
 
 function AiImagesPage() {
   const { user, session } = useAuth()
+  const credits = useCredits(session?.access_token)
   const gallery = useImages({
     userId: user?.id,
     accessToken: session?.access_token,
@@ -209,6 +211,7 @@ function AiImagesPage() {
           }),
         ),
       )
+      void credits.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate image')
     } finally {
@@ -453,7 +456,11 @@ function AiImagesPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">AI Images</h1>
-        <CreditBalance />
+        {credits.balance !== null && (
+          <span className="text-sm text-muted-foreground tabular-nums">
+            {credits.balance} credits
+          </span>
+        )}
       </div>
 
       {/* Generator */}
@@ -565,22 +572,28 @@ function AiImagesPage() {
               </Select>
               <Button
                 onClick={handleGenerate}
-                disabled={loading || !canGenerate}
+                disabled={
+                  loading ||
+                  !canGenerate ||
+                  (credits.balance ?? 0) < CREDIT_COSTS.image_gen
+                }
                 className="flex-1"
               >
-                {loading
-                  ? (inputMode === 'image'
-                      ? imageSelectedModels
-                      : modelSettings.selectedModels
-                    ).length > 1
-                    ? `Generating ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images...`
-                    : 'Generating...'
-                  : (inputMode === 'image'
+                {credits.isEmpty
+                  ? 'Out of credits'
+                  : loading
+                    ? (inputMode === 'image'
                         ? imageSelectedModels
                         : modelSettings.selectedModels
                       ).length > 1
-                    ? `Generate ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images`
-                    : 'Generate'}
+                      ? `Generating ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images...`
+                      : 'Generating...'
+                    : (inputMode === 'image'
+                          ? imageSelectedModels
+                          : modelSettings.selectedModels
+                        ).length > 1
+                      ? `Generate ${(inputMode === 'image' ? imageSelectedModels : modelSettings.selectedModels).length} images`
+                      : `Generate (${CREDIT_COSTS.image_gen} credit)`}
               </Button>
             </div>
 

@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
+import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
@@ -23,6 +24,18 @@ export const generateVariation = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateVariationInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+
+    // Deduct credits for each variation requested
+    const variationCount = Math.min(data.count ?? 1, 4)
+    for (let c = 0; c < variationCount; c++) {
+      const creditResult = await checkAndDeductCredits(
+        data.accessToken,
+        'variation',
+      )
+      if (!creditResult.allowed) {
+        throw new Error('Insufficient credits')
+      }
+    }
 
     const { prompt, model, sourceImageId } = data
 

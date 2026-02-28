@@ -1,5 +1,6 @@
 import {
   Activity,
+  Coins,
   Film,
   Home,
   Image,
@@ -35,6 +36,12 @@ export const navItems: Array<NavItem> = [
     label: 'AI Video',
     href: '/dashboard/video',
     icon: Film,
+    activeOnly: true,
+  },
+  {
+    label: 'Credits',
+    href: '/dashboard/credits',
+    icon: Coins,
     activeOnly: true,
   },
   { label: 'Profile', href: '/dashboard/profile', icon: User },
