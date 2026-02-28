@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+
 import { navItems } from '@/lib/nav-items'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +23,7 @@ export function Sidebar({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const accountStatus = useAccountStatus()
+  const credits = useCredits()
 
   const visibleItems = navItems.filter(
     (item) => !item.activeOnly || accountStatus === 'active',
@@ -41,7 +44,7 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-[52px] h-[calc(100vh-52px)] w-64 flex-col border-r border-border bg-card',
+        'fixed left-0 top-[52px] h-[calc(100vh-52px)] w-64 flex-col border-r border-border bg-sidebar',
         className,
       )}
     >
@@ -61,7 +64,21 @@ export function Sidebar({ className }: { className?: string }) {
               )}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.label === 'Credits' && credits.balance !== null && (
+                <span
+                  className={cn(
+                    'text-xs tabular-nums',
+                    credits.isEmpty
+                      ? 'text-red-500'
+                      : credits.isLow
+                        ? 'text-yellow-500'
+                        : 'text-muted-foreground',
+                  )}
+                >
+                  {credits.balance}
+                </span>
+              )}
             </Link>
           )
         })}

@@ -25,6 +25,7 @@ import { Route as DashboardStatusRouteImport } from './routes/dashboard/status'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
+import { Route as DashboardCreditsRouteImport } from './routes/dashboard/credits'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
@@ -109,6 +110,11 @@ const DashboardImagesRoute = DashboardImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCreditsRoute = DashboardCreditsRouteImport.update({
+  id: '/credits',
+  path: '/credits',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/credits': typeof DashboardCreditsRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/credits': typeof DashboardCreditsRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/credits': typeof DashboardCreditsRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/ai-images'
+    | '/dashboard/credits'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/ai-images'
+    | '/dashboard/credits'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/ai-images'
+    | '/dashboard/credits'
     | '/dashboard/images'
     | '/dashboard/profile'
     | '/dashboard/settings'
@@ -375,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/credits': {
+      id: '/dashboard/credits'
+      path: '/credits'
+      fullPath: '/dashboard/credits'
+      preLoaderRoute: typeof DashboardCreditsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
@@ -415,6 +434,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 
 interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardCreditsRoute: typeof DashboardCreditsRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -425,6 +445,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardCreditsRoute: DashboardCreditsRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,

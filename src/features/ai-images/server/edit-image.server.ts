@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -16,6 +17,12 @@ export const editImage = createServerFn({ method: 'POST' })
   .inputValidator((data: EditImageInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+
+    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
+    }
+
     const { sourceImageId, editPrompt, aspectRatio } = data
 
     if (!editPrompt.trim()) {

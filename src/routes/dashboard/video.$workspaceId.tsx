@@ -9,6 +9,8 @@ import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
 import { useAuth } from '@/lib/auth'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
 import { cropTo16x9 } from '@/features/ai-video/lib/crop-to-16x9'
 import { useFrame } from '@/features/ai-video/hooks/use-frame'
 import { useWorkspaceName } from '@/features/ai-video/hooks/use-workspace-name'
@@ -32,6 +34,7 @@ function WorkspaceDetailPage() {
   const { workspaceId } = Route.useParams()
   const { session } = useAuth()
   const accessToken = session?.access_token
+  const credits = useCredits()
 
   // Workspace name
   const wsName = useWorkspaceName(workspaceId, accessToken)
@@ -169,6 +172,7 @@ function WorkspaceDetailPage() {
     firstFrame.setGenerating()
     resetDownstream()
     try {
+      await credits.deduct(CREDIT_COSTS.first_frame, 'first_frame')
       const result = await generateFirstFrame({
         data: { prompt: firstFramePrompt, model: firstFrameModel, accessToken },
       })
@@ -195,6 +199,7 @@ function WorkspaceDetailPage() {
       if (!lastFrameImageData) return
       lastFrame.setGenerating()
       try {
+        await credits.deduct(CREDIT_COSTS.video_gen, 'video_gen')
         const result = await uploadVideoFrame({
           data: {
             imageBase64: lastFrameImageData,
@@ -241,6 +246,10 @@ function WorkspaceDetailPage() {
     if (!lastFramePrompt.trim()) return
     lastFrame.setGenerating()
     try {
+      await credits.deduct(
+        CREDIT_COSTS.last_frame + CREDIT_COSTS.video_gen,
+        'video_gen',
+      )
       const result = await generateLastFrame({
         data: {
           prompt: lastFramePrompt,
@@ -369,6 +378,11 @@ function WorkspaceDetailPage() {
         >
           Video
         </Link>
+        {credits.balance !== null && (
+          <span className="ml-auto text-sm text-muted-foreground tabular-nums">
+            {credits.balance} credits
+          </span>
+        )}
         <span className="text-xs text-muted-foreground">/</span>
         {wsName.isEditing ? (
           <input
