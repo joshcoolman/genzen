@@ -17,14 +17,6 @@ export const generateFirstFrame = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const creditResult = await checkAndDeductCredits(
-      data.accessToken,
-      'first_frame',
-    )
-    if (!creditResult.allowed) {
-      throw new Error('Insufficient credits')
-    }
-
     const { prompt, model } = data
 
     if (!prompt.trim()) {
@@ -33,6 +25,14 @@ export const generateFirstFrame = createServerFn({ method: 'POST' })
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'first_frame',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
     }
 
     const { request_id } = await fal.queue.submit(model, {

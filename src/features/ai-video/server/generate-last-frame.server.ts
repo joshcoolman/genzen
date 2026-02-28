@@ -21,14 +21,6 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const creditResult = await checkAndDeductCredits(
-      data.accessToken,
-      'last_frame',
-    )
-    if (!creditResult.allowed) {
-      throw new Error('Insufficient credits')
-    }
-
     const { prompt, firstFrameRecordId } = data
 
     if (!prompt.trim()) {
@@ -37,6 +29,14 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'last_frame',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
     }
 
     const supabase = createClient(

@@ -25,19 +25,8 @@ export const generateVariation = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    // Deduct credits for each variation requested
-    const variationCount = Math.min(data.count ?? 1, 4)
-    for (let c = 0; c < variationCount; c++) {
-      const creditResult = await checkAndDeductCredits(
-        data.accessToken,
-        'variation',
-      )
-      if (!creditResult.allowed) {
-        throw new Error('Insufficient credits')
-      }
-    }
-
     const { prompt, model, sourceImageId } = data
+    const variationCount = Math.min(data.count ?? 1, 4)
 
     if (!prompt.trim()) {
       throw new Error('Prompt is required')
@@ -45,6 +34,16 @@ export const generateVariation = createServerFn({ method: 'POST' })
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    // Deduct credits for all variations atomically
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'variation',
+      variationCount,
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
     }
 
     const supabase = createClient(

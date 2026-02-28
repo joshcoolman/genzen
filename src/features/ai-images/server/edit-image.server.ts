@@ -18,11 +18,6 @@ export const editImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
-    if (!creditResult.allowed) {
-      throw new Error('Insufficient credits')
-    }
-
     const { sourceImageId, editPrompt, aspectRatio } = data
 
     if (!editPrompt.trim()) {
@@ -31,6 +26,11 @@ export const editImage = createServerFn({ method: 'POST' })
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
     }
 
     const supabase = createClient(

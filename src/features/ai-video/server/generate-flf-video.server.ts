@@ -46,18 +46,18 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
+    const { firstFrameRecordId, lastFrameRecordId, prompt } = data
+
+    if (!process.env.FAL_KEY) {
+      throw new Error('FAL_KEY environment variable is not set')
+    }
+
     const creditResult = await checkAndDeductCredits(
       data.accessToken,
       'video_gen',
     )
     if (!creditResult.allowed) {
       throw new Error('Insufficient credits')
-    }
-
-    const { firstFrameRecordId, lastFrameRecordId, prompt } = data
-
-    if (!process.env.FAL_KEY) {
-      throw new Error('FAL_KEY environment variable is not set')
     }
 
     const supabase = createClient(

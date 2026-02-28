@@ -22,14 +22,6 @@ export const generateImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const creditResult = await checkAndDeductCredits(
-      data.accessToken,
-      'image_gen',
-    )
-    if (!creditResult.allowed) {
-      throw new Error('Insufficient credits')
-    }
-
     const { prompt, model, aspectRatio, sourceImageBase64 } = data
 
     if (!sourceImageBase64 && !prompt.trim()) {
@@ -38,6 +30,14 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    const creditResult = await checkAndDeductCredits(
+      data.accessToken,
+      'image_gen',
+    )
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
     }
 
     const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
