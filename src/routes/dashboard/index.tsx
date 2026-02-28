@@ -5,6 +5,8 @@ import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { getWorkspaces } from '@/features/ai-video/server/get-workspaces.server'
+import { getVideoUrl } from '@/features/ai-video/server/get-video-url.server'
+import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { SectionCard } from '@/components/SectionCard'
 
 export const Route = createFileRoute('/dashboard/')({
@@ -81,7 +83,15 @@ const TYPE_LABELS: Record<FeedItemType, string> = {
   ai_video: 'AI Video',
 }
 
-function FeedCard({ item, onClick }: { item: FeedItem; onClick: () => void }) {
+function FeedCard({
+  item,
+  onClick,
+  onPlayVideo,
+}: {
+  item: FeedItem
+  onClick: () => void
+  onPlayVideo?: () => void
+}) {
   if (!item.thumbnailUrl) {
     return (
       <button
@@ -111,6 +121,32 @@ function FeedCard({ item, onClick }: { item: FeedItem; onClick: () => void }) {
       <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
         {TYPE_LABELS[item.type]}
       </div>
+      {item.type === 'ai_video' && onPlayVideo && (
+        <div
+          role="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onPlayVideo()
+          }}
+          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 14 14"
+            fill="none"
+            className="ml-0.5 text-white"
+          >
+            <path
+              d="M3.5 2.5L11.5 7L3.5 11.5V2.5Z"
+              fill="currentColor"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      )}
     </button>
   )
 }
@@ -129,6 +165,8 @@ function DashboardHome() {
 
   const [workspaces, setWorkspaces] = useState<Array<Workspace>>([])
   const [workspacesLoading, setWorkspacesLoading] = useState(true)
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!session?.access_token) return
@@ -155,6 +193,17 @@ function DashboardHome() {
         </SectionCard>
       </div>
     )
+  }
+
+  const handlePlayVideo = async (generationId: string) => {
+    if (!session?.access_token) return
+    const result = await getVideoUrl({
+      data: { generationId, accessToken: session.access_token },
+    })
+    if (result.videoUrl) {
+      setActiveVideoUrl(result.videoUrl)
+      setVideoDialogOpen(true)
+    }
   }
 
   const loading = imagesLoading || workspacesLoading
@@ -196,10 +245,21 @@ function DashboardHome() {
                   })
                 }
               }}
+              onPlayVideo={
+                item.type === 'ai_video' && item.generationId
+                  ? () => void handlePlayVideo(item.generationId!)
+                  : undefined
+              }
             />
           ))}
         </div>
       )}
+
+      <VideoPlayerDialog
+        videoUrl={activeVideoUrl}
+        open={videoDialogOpen}
+        onOpenChange={setVideoDialogOpen}
+      />
     </div>
   )
 }

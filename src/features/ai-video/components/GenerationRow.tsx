@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Generation } from '../types'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { checkPendingVideo } from '@/features/ai-video/server/check-pending-video.server'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
@@ -324,19 +324,11 @@ export function GenerationRow({
       </div>
 
       {/* Video dialog */}
-      <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
-        <DialogContent className="max-w-3xl p-2 data-[state=open]:!animate-in data-[state=open]:!fade-in-0 data-[state=open]:!zoom-in-95 data-[state=open]:!slide-in-from-left-0 data-[state=open]:!slide-in-from-top-0 data-[state=closed]:!animate-out data-[state=closed]:!fade-out-0 data-[state=closed]:!zoom-out-95 data-[state=closed]:!slide-out-to-left-0 data-[state=closed]:!slide-out-to-top-0">
-          {generation.video?.url && (
-            <video
-              src={generation.video.url}
-              controls
-              autoPlay
-              loop
-              className="aspect-video w-full rounded bg-black"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      <VideoPlayerDialog
+        videoUrl={generation.video?.url ?? null}
+        open={videoOpen}
+        onOpenChange={setVideoOpen}
+      />
     </div>
   )
 }
