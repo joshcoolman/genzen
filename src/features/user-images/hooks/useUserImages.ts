@@ -55,11 +55,10 @@ export function useUserImages(
   })
 
   /**
-   * Load signed URLs for images
+   * Load signed URLs for images, updating state incrementally so each URL
+   * is available as soon as it's ready rather than waiting for all of them.
    */
   const loadImageUrls = useCallback(async (images: Array<UserImage>) => {
-    const urls: Record<string, string> = {}
-
     for (const image of images) {
       try {
         const { data, error } = await supabase.storage
@@ -67,14 +66,15 @@ export function useUserImages(
           .createSignedUrl(image.storage_path, 3600)
 
         if (!error) {
-          urls[image.id] = data.signedUrl
+          setState((prev) => ({
+            ...prev,
+            imageUrls: { ...prev.imageUrls, [image.id]: data.signedUrl },
+          }))
         }
       } catch (err) {
         console.error(`Failed to load URL for image ${image.id}:`, err)
       }
     }
-
-    setState((prev) => ({ ...prev, imageUrls: urls }))
   }, [])
 
   /**

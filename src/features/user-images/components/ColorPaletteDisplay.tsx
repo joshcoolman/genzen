@@ -6,7 +6,7 @@
  * Uses client-side Canvas API for palette generation.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -217,12 +217,19 @@ export function ColorPaletteDisplay({
   // Stable IDs for dnd-kit sortable context
   const columnIds = Array.from({ length: 6 }, (_, i) => `col-${i}`)
 
-  // Auto-generate palette on mount if none exists
+  // Auto-generate palette on first open when none exists
+  const autoGenerateRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!palette && !isGenerating) {
+    if (
+      !palette &&
+      !isGenerating &&
+      imageId &&
+      autoGenerateRef.current !== imageId
+    ) {
+      autoGenerateRef.current = imageId
       handleGenerate('balanced')
     }
-  }, [])
+  }, [palette, imageId])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -404,14 +411,27 @@ export function ColorPaletteDisplay({
     }
   }
 
-  // No palette yet - auto-generation triggered by useEffect above
+  // No palette yet
   if (!palette) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 h-full">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">
-          Generating palette...
-        </span>
+        {isGenerating ? (
+          <>
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Generating palette...
+            </span>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={() => handleGenerate('balanced')}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Generate Palette
+          </Button>
+        )}
         {error && <span className="text-sm text-destructive">{error}</span>}
       </div>
     )

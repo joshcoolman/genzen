@@ -50,7 +50,7 @@ export function ImageEditDialog({
       setDescription(image.description ?? '')
       setLocalPalette(image.color_palette as ColorPalette | null)
     }
-  }, [image])
+  }, [image?.id])
 
   useEffect(() => {
     if (open && titleInputRef.current) {
