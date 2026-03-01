@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAiImagesPage } from '@/features/ai-images/hooks/use-ai-images-page'
 import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
+import { BrainstormPanel } from '@/features/ai-images/components/BrainstormPanel'
 import { ImageGallery } from '@/features/ai-images/components/ImageGallery'
 import { EditImageDialog } from '@/features/ai-images/components/EditImageDialog'
 import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
@@ -24,6 +25,8 @@ function AiImagesPage() {
           </span>
         )}
       </div>
+
+      <BrainstormPanel accessToken={page.accessToken} />
 
       <GeneratorPanel
         generator={page.generator}

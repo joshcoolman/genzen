@@ -77,6 +77,7 @@ export function useAiImagesPage() {
   }
 
   return {
+    accessToken,
     credits,
     gallery,
     modelSettings,

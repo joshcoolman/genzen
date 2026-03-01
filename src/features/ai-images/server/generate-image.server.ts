@@ -15,6 +15,7 @@ interface GenerateImageInput {
   accessToken: string
   aspectRatio?: string
   sourceImageBase64?: string
+  sourceImageUrl?: string
 }
 
 export const generateImage = createServerFn({ method: 'POST' })
@@ -22,9 +23,10 @@ export const generateImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { prompt, model, aspectRatio, sourceImageBase64 } = data
+    const { prompt, model, aspectRatio, sourceImageBase64, sourceImageUrl } =
+      data
 
-    if (!sourceImageBase64 && !prompt.trim()) {
+    if (!sourceImageBase64 && !sourceImageUrl && !prompt.trim()) {
       throw new Error('Prompt is required')
     }
 
@@ -47,7 +49,11 @@ export const generateImage = createServerFn({ method: 'POST' })
     let imageUrl: string | null = null
     let imageParam: 'image_url' | 'image_urls' = 'image_url'
 
-    if (sourceImageBase64) {
+    if (sourceImageUrl) {
+      imageUrl = sourceImageUrl
+      falModelId = modelDef?.imageInputModelId ?? model
+      imageParam = modelDef?.imageInputParam ?? 'image_url'
+    } else if (sourceImageBase64) {
       // Strip data URL prefix and decode to buffer
       const base64Data = sourceImageBase64.replace(
         /^data:image\/\w+;base64,/,
@@ -145,6 +151,7 @@ export const generateImage = createServerFn({ method: 'POST' })
           submitted_at: new Date().toISOString(),
           ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
+          ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
         },
       })
       .select()
