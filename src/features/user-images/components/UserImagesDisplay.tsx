@@ -86,12 +86,7 @@ export function UserImagesDisplay() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">My Images</h2>
-          <p className="text-sm text-muted-foreground">
-            {images.length} {images.length === 1 ? 'image' : 'images'}
-          </p>
-        </div>
+        <h2 className="text-2xl font-bold text-foreground">Uploads</h2>
 
         <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
       </div>

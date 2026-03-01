@@ -5,12 +5,12 @@
  */
 
 import { useRef, useState } from 'react'
-import { Loader2, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { computeFileHash } from '../lib/file-hash'
 import { parseFilenameToTitle } from '../lib/filename-parser'
 import { createUserImageSchema } from '../types'
 import type { CreateUserImageInput } from '../types'
-import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/ActionButton'
 
 interface ImageUploadButtonProps {
   onUpload: (input: CreateUserImageInput) => Promise<void>
@@ -83,19 +83,15 @@ export function ImageUploadButton({
 
   return (
     <>
-      <Button onClick={handleClick} disabled={loading} className={className}>
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Uploading...
-          </>
-        ) : (
-          <>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Images
-          </>
-        )}
-      </Button>
+      <ActionButton
+        onClick={handleClick}
+        loading={loading}
+        loadingText="Uploading..."
+        icon={<Upload />}
+        className={className}
+      >
+        Upload Images
+      </ActionButton>
 
       <input
         ref={fileInputRef}

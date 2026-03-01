@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
+import { ActionButton } from '@/components/ActionButton'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -27,10 +29,10 @@ function VideoWorkspacesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Video</h1>
-        <Button onClick={ws.openDialog} size="sm">
+        <h1 className="text-2xl font-semibold">AI Video</h1>
+        <ActionButton onClick={ws.openDialog} icon={<Plus />}>
           New Workspace
-        </Button>
+        </ActionButton>
       </div>
 
       {ws.loading ? (
@@ -38,9 +40,9 @@ function VideoWorkspacesPage() {
       ) : ws.workspaces.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
           <p className="text-sm text-muted-foreground">No workspaces yet</p>
-          <Button onClick={ws.openDialog} variant="outline" size="sm">
+          <ActionButton onClick={ws.openDialog} icon={<Plus />}>
             New Workspace
-          </Button>
+          </ActionButton>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
