@@ -1,11 +1,24 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
+import { C } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js'
 import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
+export const COLOR_GRADES = {
+  desert_chrome:
+    'shadows deep cyan, midtones vivid amber, highlights golden white, skin tones sun-baked and warm, saturation bold, contrast high and crunchy, atmosphere blistering desert heat',
+  iron_city:
+    'shadows cool steel, midtones neutral grey, highlights icy white, skin tones muted natural, contrast high and precise, metallic reflections, atmosphere tense and industrial',
+  verde_bloom:
+    'shadows soft green, midtones peach, highlights white, skin tones glowing and healthy, contrast low, natural diffusion and vibrance, atmosphere calm and romantic',
+}
+
+export const COLOR_GRADING_PROMPT = COLOR_GRADES.verde_bloom;
+
+
 export const BRAINSTORM_PROMPT =
-  'A dynamic full body shot of an unusual hero in an interesting setting, action oriented, suitable for the first frame of a photorealistic video sequence'
+  'A dynamic full body shot of an unusual hero in an interesting setting, establishing shot, suitable for the first frame of a photorealistic video sequence' 
 
 const BRAINSTORM_MODEL = 'fal-ai/flux/schnell'
 const BRAINSTORM_COUNT = 6
