@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FrameState, FrameStatus } from '../types'
-import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
+import { checkPendingImages } from '@/features/ai-images'
 import { supabase } from '@/lib/supabase'
 
 interface UseFrameOptions {

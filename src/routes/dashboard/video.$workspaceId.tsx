@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useVideoWorkspacePage } from '@/features/ai-video/hooks/use-video-workspace-page'
-import { WorkspaceHeader } from '@/features/ai-video/components/WorkspaceHeader'
-import { FramePanel } from '@/features/ai-video/components/FramePanel'
-import { GenerationRow } from '@/features/ai-video/components/GenerationRow'
-import { SelectionBar } from '@/features/ai-video/components/SelectionBar'
-import { VideoSettingsPanel } from '@/features/ai-video/components/VideoSettingsPanel'
+import {
+  FramePanel,
+  GenerationRow,
+  SelectionBar,
+  VideoSettingsPanel,
+  WorkspaceHeader,
+  useVideoWorkspacePage,
+} from '@/features/ai-video'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
 export const Route = createFileRoute('/dashboard/video/$workspaceId')({

@@ -1,12 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useAiImagesPage } from '@/features/ai-images/hooks/use-ai-images-page'
-import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
-import { BrainstormPanel } from '@/features/ai-images/components/BrainstormPanel'
-import { ImageGallery } from '@/features/ai-images/components/ImageGallery'
-import { EditImageDialog } from '@/features/ai-images/components/EditImageDialog'
-import { ModelSettingsDialog } from '@/features/ai-images/components/ModelSettingsDialog'
-import { ImageLightbox } from '@/features/ai-images/components/ImageLightbox'
-import { getModelName } from '@/features/ai-images/models'
+import {
+  BrainstormPanel,
+  EditImageDialog,
+  GeneratorPanel,
+  ImageGallery,
+  ImageLightbox,
+  ModelSettingsDialog,
+  getModelName,
+  useAiImagesPage,
+} from '@/features/ai-images'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,

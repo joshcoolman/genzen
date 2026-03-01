@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
-import { useWorkspaces } from '@/features/ai-video/hooks/use-workspaces'
-import { WorkspaceCard } from '@/features/ai-video/components/WorkspaceCard'
+import { WorkspaceCard, useWorkspaces } from '@/features/ai-video'
 
 export const Route = createFileRoute('/dashboard/video/')({
   component: VideoWorkspacesPage,
