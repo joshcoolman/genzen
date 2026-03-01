@@ -6,7 +6,6 @@ import {
 } from '@tanstack/react-router'
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/components/auth-provider'
-import { GlobalNav } from '@/components/GlobalNav'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -47,7 +46,6 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <AuthProvider>
-      <GlobalNav />
       <Outlet />
     </AuthProvider>
   )

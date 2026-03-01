@@ -34,7 +34,7 @@ export function ImageCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-gold/50 flex flex-col ${
+      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-brand/50 flex flex-col ${
         isDeleting ? 'opacity-50' : ''
       }`}
       onClick={onClick}

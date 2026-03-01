@@ -46,7 +46,7 @@ export function MobileNav({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn('fixed left-4 top-[60px] z-50', className)}>
+    <div className={cn('fixed left-4 top-4 z-50', className)}>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="bg-card">
@@ -55,7 +55,7 @@ export function MobileNav({ className }: { className?: string }) {
         </SheetTrigger>
         <SheetContent
           side="left"
-          className="flex w-64 flex-col bg-card p-0 top-[52px] h-[calc(100vh-52px)]"
+          className="flex w-64 flex-col bg-card p-0 top-0 h-screen"
         >
           {/* Nav items */}
           <nav className="space-y-1 p-4">
@@ -71,7 +71,7 @@ export function MobileNav({ className }: { className?: string }) {
                     className={cn(
                       'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                       active
-                        ? 'border-l-2 border-accent-gold bg-sidebar-hover text-foreground'
+                        ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
                         : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
                     )}
                   >

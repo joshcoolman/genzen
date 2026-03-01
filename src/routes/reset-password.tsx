@@ -65,7 +65,7 @@ function ResetPasswordPage() {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-accent-gold">
+          <h1 className="text-2xl font-semibold text-accent-brand">
             Set new password
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -89,7 +89,7 @@ function ResetPasswordPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 pr-10 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+                className="w-full px-3 py-2 pr-10 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent"
                 placeholder="••••••••"
               />
               <button
@@ -118,7 +118,7 @@ function ResetPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+                className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent"
                 placeholder="••••••••"
               />
             </div>
@@ -133,14 +133,14 @@ function ResetPasswordPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            className="w-full py-2 px-4 bg-accent-brand text-primary-foreground rounded-md hover:bg-accent-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {submitting ? '...' : 'Update Password'}
           </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          <Link to="/login" className="text-accent-gold hover:underline">
+          <Link to="/login" className="text-accent-brand hover:underline">
             Back to sign in
           </Link>
         </p>

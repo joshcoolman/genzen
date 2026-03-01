@@ -347,7 +347,7 @@ function AccountPage() {
               >
                 <RadioGroupItem
                   value={pack.credits.toString()}
-                  className="border-muted-foreground data-[state=checked]:border-accent-gold data-[state=checked]:text-accent-gold"
+                  className="border-muted-foreground data-[state=checked]:border-accent-brand data-[state=checked]:text-accent-brand"
                 />
                 <span className="font-semibold tabular-nums w-20">
                   ${pack.price}
@@ -383,7 +383,7 @@ function AccountPage() {
                   <span
                     className={
                       tx.amount > 0
-                        ? 'text-accent-gold font-medium'
+                        ? 'text-accent-brand font-medium'
                         : 'text-muted-foreground'
                     }
                   >

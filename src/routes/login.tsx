@@ -54,13 +54,6 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
       <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-accent-gold">
-            Get your zen on.
-          </h1>
-          <p className="text-muted-foreground mt-1">Sign in to continue</p>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -75,7 +68,7 @@ function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+              className="w-full px-3 py-2 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
@@ -95,7 +88,7 @@ function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 pr-10 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-gold focus:border-transparent"
+                className="w-full px-3 py-2 pr-10 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-brand focus:border-transparent"
                 placeholder="••••••••"
               />
               <button
@@ -118,25 +111,24 @@ function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2 px-4 bg-accent-gold text-primary-foreground rounded-md hover:bg-accent-gold-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            className="w-full py-2 px-4 bg-accent-brand text-primary-foreground rounded-md hover:bg-accent-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {submitting ? '...' : 'Sign In'}
           </button>
         </form>
 
         <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-accent-gold hover:underline">
-              Sign up
-            </Link>
-          </p>
           <p className="text-sm">
             <Link
               to="/forgot-password"
-              className="text-muted-foreground hover:text-accent-gold hover:underline"
+              className="text-muted-foreground hover:text-accent-brand hover:underline"
             >
               Forgot password?
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <Link to="/signup" className="text-accent-brand hover:underline">
+              Sign up
             </Link>
           </p>
         </div>

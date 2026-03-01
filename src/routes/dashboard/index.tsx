@@ -250,7 +250,7 @@ function DashboardHome() {
         <h1 className="text-2xl font-semibold">Everything</h1>
         <SectionCard>
           <div className="text-center space-y-3">
-            <h2 className="text-xl font-semibold text-accent-gold">
+            <h2 className="text-xl font-semibold text-accent-brand">
               You're on the list
             </h2>
             <p className="text-muted-foreground">
@@ -296,7 +296,22 @@ function DashboardHome() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Everything</h1>
+        <div className="flex flex-wrap gap-2">
+          {pillFilters.map((f) => (
+            <button
+              key={f}
+              onClick={() => setTypeFilter(f)}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                typeFilter === f
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'border-border text-muted-foreground hover:border-foreground/40',
+              )}
+            >
+              {f === 'all' ? 'All' : TYPE_LABELS[f]}
+            </button>
+          ))}
+        </div>
         <Popover>
           <PopoverTrigger asChild>
             <button className="p-1.5 rounded-md hover:bg-muted transition-colors">
@@ -330,23 +345,6 @@ function DashboardHome() {
             </label>
           </PopoverContent>
         </Popover>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {pillFilters.map((f) => (
-          <button
-            key={f}
-            onClick={() => setTypeFilter(f)}
-            className={cn(
-              'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
-              typeFilter === f
-                ? 'bg-foreground text-background border-foreground'
-                : 'border-border text-muted-foreground hover:border-foreground/40',
-            )}
-          >
-            {f === 'all' ? 'All' : TYPE_LABELS[f]}
-          </button>
-        ))}
       </div>
 
       {loading ? (

@@ -228,7 +228,7 @@ function LastFramePanel({
             checked={includeFirstFrame}
             onChange={(e) => onIncludeFirstFrameChange(e.target.checked)}
             disabled={status === 'generating'}
-            className="accent-accent-gold"
+            className="accent-accent-brand"
           />
           <span className="text-xs text-muted-foreground">
             Use first frame as reference

@@ -50,7 +50,7 @@ export function VideoSettingsPanel({
               className={cn(
                 'px-3 py-1.5 text-xs rounded border transition-colors',
                 settings.duration === d
-                  ? 'border-accent-gold bg-accent-gold/10 text-foreground'
+                  ? 'border-accent-brand bg-accent-brand/10 text-foreground'
                   : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
@@ -75,7 +75,7 @@ export function VideoSettingsPanel({
             onChange({ ...settings, cfgScale: parseFloat(e.target.value) })
           }
           disabled={generating}
-          className="w-full accent-accent-gold"
+          className="w-full accent-accent-brand"
         />
       </div>
 

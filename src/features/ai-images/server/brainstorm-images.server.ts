@@ -14,11 +14,10 @@ export const COLOR_GRADES = {
     'shadows soft green, midtones peach, highlights white, skin tones glowing and healthy, contrast low, natural diffusion and vibrance, atmosphere calm and romantic',
 }
 
-export const COLOR_GRADING_PROMPT = COLOR_GRADES.verde_bloom;
-
+export const COLOR_GRADING_PROMPT = COLOR_GRADES.verde_bloom
 
 export const BRAINSTORM_PROMPT =
-  'A dynamic full body shot of an unusual hero in an interesting setting, establishing shot, suitable for the first frame of a photorealistic video sequence' 
+  'A dynamic full body shot of an unusual hero in an interesting setting, establishing shot, suitable for the first frame of a photorealistic video sequence'
 
 const BRAINSTORM_MODEL = 'fal-ai/flux/schnell'
 const BRAINSTORM_COUNT = 6

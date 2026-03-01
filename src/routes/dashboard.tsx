@@ -8,6 +8,13 @@ import { useDashboardRouteMemory } from '@/lib/use-dashboard-route-memory'
 
 export const Route = createFileRoute('/dashboard')({
   beforeLoad: async () => {
+    // Skip auth check on server -- Supabase client uses localStorage
+    // which isn't available during SSR. The component handles the
+    // loading/redirect dance client-side via AuthProvider.
+    if (typeof window === 'undefined') {
+      return { accountStatus: 'active' as const }
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession()

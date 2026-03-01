@@ -112,7 +112,7 @@ export function SelectionBar({
             }}
             placeholder="Workspace name"
             autoFocus
-            className="h-9 px-3 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-gold w-full"
+            className="h-9 px-3 text-sm rounded border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-brand w-full"
           />
           <DialogFooter>
             <Button
@@ -153,7 +153,7 @@ export function SelectionBar({
                   className={cn(
                     'rounded-lg border p-2 text-left transition-colors',
                     targetWorkspaceId === ws.id
-                      ? 'border-accent-gold bg-accent-gold/5'
+                      ? 'border-accent-brand bg-accent-brand/5'
                       : 'border-border hover:bg-muted/30',
                   )}
                 >

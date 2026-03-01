@@ -1,5 +1,5 @@
 import { Loader2, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/ActionButton'
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
 
 interface BrainstormPanelProps {
@@ -19,20 +19,16 @@ export function BrainstormPanel({ accessToken }: BrainstormPanelProps) {
             with Nano Banana Pro.
           </p>
         </div>
-        <Button
-          variant={brainstorm.hasGenerated ? 'outline' : 'default'}
-          size="sm"
+        <ActionButton
           onClick={() => void brainstorm.trigger()}
-          disabled={brainstorm.isGenerating || !accessToken}
+          loading={brainstorm.isGenerating}
+          loadingText="Generating..."
+          disabled={!accessToken}
+          icon={<Sparkles className="size-4" />}
           className="shrink-0"
         >
-          {brainstorm.isGenerating ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
-          )}
           {brainstorm.hasGenerated ? 'Regenerate' : 'Brainstorm'}
-        </Button>
+        </ActionButton>
       </div>
 
       <div className="grid grid-cols-3 gap-2">

@@ -178,7 +178,7 @@ function WorkspaceDetailPage() {
       </div>
 
       {page.showSidebar && (
-        <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-[52px] h-[calc(100vh-52px)] overflow-y-auto p-4">
+        <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-0 h-screen overflow-y-auto p-4">
           <VideoSettingsPanel
             settings={page.videoGen.videoSettings}
             onChange={page.videoGen.setVideoSettings}

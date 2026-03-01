@@ -47,7 +47,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
                 className={cn(
                   'block text-xs py-0.5 transition-colors',
                   activeId === heading.id
-                    ? 'text-accent-gold'
+                    ? 'text-accent-brand'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >

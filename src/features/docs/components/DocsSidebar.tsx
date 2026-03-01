@@ -64,7 +64,7 @@ function CategorySection({
                 className={cn(
                   'block text-sm py-1 px-2 rounded transition-colors',
                   item.slug === currentSlug
-                    ? 'text-accent-gold bg-accent/50'
+                    ? 'text-accent-brand bg-accent/50'
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/30',
                 )}
               >

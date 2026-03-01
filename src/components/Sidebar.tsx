@@ -42,7 +42,7 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-[52px] h-[calc(100vh-52px)] w-64 flex-col border-r border-border bg-sidebar',
+        'fixed left-0 top-0 h-screen w-64 flex-col bg-sidebar',
         className,
       )}
     >
@@ -60,8 +60,8 @@ export function Sidebar({ className }: { className?: string }) {
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                   active
-                    ? 'border-l-2 border-accent-gold bg-sidebar-hover text-foreground'
-                    : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
+                    ? 'border-l-2 border-accent-brand bg-sidebar-selected text-sidebar-selected-text'
+                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function Sidebar({ className }: { className?: string }) {
         })}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">
+            <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors">
               <LogOut className="h-4 w-4" />
               Log out
             </button>

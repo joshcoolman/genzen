@@ -161,7 +161,7 @@ export function GenerationRow({
     <div
       className={cn(
         'flex items-center gap-3 p-3 rounded-lg transition-colors bg-sidebar',
-        selected && 'ring-1 ring-accent-gold bg-accent-gold/5',
+        selected && 'ring-1 ring-accent-brand bg-accent-brand/5',
       )}
     >
       {/* Select checkbox */}
@@ -173,7 +173,7 @@ export function GenerationRow({
         className={cn(
           'shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors',
           selected
-            ? 'border-accent-gold bg-accent-gold text-black'
+            ? 'border-accent-brand bg-accent-brand text-black'
             : 'border-border hover:border-foreground/50',
         )}
       >
@@ -264,9 +264,9 @@ export function GenerationRow({
               onGenerateVideo(generation)
             }}
             disabled={generatingVideo}
-            className="w-24 aspect-video rounded border border-dashed border-accent-gold/50 bg-accent-gold/5 flex items-center justify-center hover:bg-accent-gold/10 transition-colors"
+            className="w-24 aspect-video rounded border border-dashed border-accent-brand/50 bg-accent-brand/5 flex items-center justify-center hover:bg-accent-brand/10 transition-colors"
           >
-            <p className="text-[10px] text-accent-gold font-medium">
+            <p className="text-[10px] text-accent-brand font-medium">
               {generatingVideo ? 'Starting...' : 'Gen Video'}
             </p>
           </button>

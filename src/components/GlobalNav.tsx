@@ -22,10 +22,10 @@ export function GlobalNav() {
     )
 
   return (
-    <nav className="flex items-center justify-between px-6 py-3 bg-background border-b border-border">
+    <nav className="flex items-center justify-between px-6 py-3 bg-background">
       <Link
         to="/"
-        className="text-lg font-semibold text-foreground hover:text-accent-gold transition-colors"
+        className="text-lg font-semibold text-foreground hover:text-accent-brand transition-colors"
       >
         genzen
       </Link>
