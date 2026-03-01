@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type {
+  BrainstormModelKey,
+  BrainstormVibeKey,
+} from '@/features/ai-images/server/brainstorm-images.server'
 import {
   BRAINSTORM_PROMPT,
   brainstormImages,
@@ -16,9 +20,21 @@ interface BrainstormImage {
 
 interface UseBrainstormOptions {
   accessToken: string | undefined
+  subjects?: Array<string>
+  role?: string
+  vibe?: BrainstormVibeKey
+  colorGrade?: string | null
+  model?: BrainstormModelKey
 }
 
-export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
+export function useBrainstorm({
+  accessToken,
+  subjects,
+  role,
+  vibe,
+  colorGrade,
+  model,
+}: UseBrainstormOptions) {
   const [images, setImages] = useState<Array<BrainstormImage>>(
     Array.from({ length: BRAINSTORM_COUNT }, () => ({
       url: null,
@@ -36,6 +52,16 @@ export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
   // Set of request IDs still waiting for a result
   const pendingIds = useRef<Set<string>>(new Set())
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Per-slot prompts from the last brainstorm run
+  const slotPrompts = useRef<Array<string>>(
+    Array.from({ length: BRAINSTORM_COUNT }, () => BRAINSTORM_PROMPT),
+  )
+  // Per-slot subjects for overlay labels
+  const [slotSubjects, setSlotSubjects] = useState<Array<string | null>>(
+    Array.from({ length: BRAINSTORM_COUNT }, () => null),
+  )
+  // Model used in the current brainstorm run (for polling)
+  const activeModel = useRef<BrainstormModelKey>('schnell')
 
   const stopPolling = useCallback(() => {
     if (pollTimer.current) {
@@ -50,7 +76,7 @@ export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
     try {
       const requestIds = Array.from(pendingIds.current)
       const results = await checkBrainstormImages({
-        data: { accessToken, requestIds },
+        data: { accessToken, requestIds, model: activeModel.current },
       })
 
       // Process results and mutate refs OUTSIDE the state updater
@@ -111,8 +137,25 @@ export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
     setRefineCounts(Array.from({ length: BRAINSTORM_COUNT }, () => 0))
 
     try {
-      const { requestIds } = await brainstormImages({ data: { accessToken } })
+      activeModel.current = model ?? 'schnell'
+      const { requestIds, prompts } = await brainstormImages({
+        data: {
+          accessToken,
+          subjects: subjects?.length ? subjects : undefined,
+          role: role || undefined,
+          vibe,
+          colorGrade: colorGrade ?? undefined,
+          model: model ?? 'schnell',
+        },
+      })
 
+      slotPrompts.current = prompts
+      // Even distribution: subjects cycle across slots
+      setSlotSubjects(
+        Array.from({ length: BRAINSTORM_COUNT }, (_, i) =>
+          subjects?.length ? (subjects[i % subjects.length] ?? null) : null,
+        ),
+      )
       requestIds.forEach((id, idx) => {
         requestIdToSlot.current.set(id, idx)
         pendingIds.current.add(id)
@@ -141,7 +184,7 @@ export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
 
     await generateImage({
       data: {
-        prompt: BRAINSTORM_PROMPT,
+        prompt: slotPrompts.current[slotIndex] ?? BRAINSTORM_PROMPT,
         model: 'fal-ai/nano-banana-pro',
         accessToken,
         sourceImageUrl: url,
@@ -152,6 +195,7 @@ export function useBrainstorm({ accessToken }: UseBrainstormOptions) {
   return {
     images,
     refineCounts,
+    slotSubjects,
     isGenerating,
     hasGenerated,
     trigger,

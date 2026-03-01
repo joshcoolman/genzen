@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
@@ -121,9 +122,7 @@ export function ImageCard({
         </div>
       </div>
       <div className="p-3 space-y-1">
-        <p className="text-xs text-muted-foreground line-clamp-2">
-          {img.generation_metadata?.prompt ?? img.title}
-        </p>
+        <PromptText text={img.generation_metadata?.prompt ?? img.title} />
         <div className="flex items-center justify-between text-xs text-muted-foreground/60">
           <span>
             {img.generation_metadata
@@ -144,6 +143,21 @@ export function ImageCard({
         </div>
       </div>
     </div>
+  )
+}
+
+function PromptText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <p
+      className={`text-xs text-muted-foreground cursor-pointer ${expanded ? '' : 'line-clamp-2'}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        setExpanded((v) => !v)
+      }}
+    >
+      {text}
+    </p>
   )
 }
 
