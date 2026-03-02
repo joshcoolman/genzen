@@ -1,5 +1,6 @@
 import { RectangleHorizontal, RectangleVertical } from 'lucide-react'
 import type { EditorState } from '@/features/ai-images/hooks/use-editor'
+import { EDIT_MODELS } from '@/features/ai-images/models'
 import {
   Dialog,
   DialogContent,
@@ -68,6 +69,22 @@ export function EditImageDialog({ editor, imageUrls }: EditImageDialogProps) {
                 {editor.ratioOptions.map((r) => (
                   <SelectItem key={r} value={r}>
                     {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={editor.editModelId}
+              onValueChange={editor.setEditModelId}
+              disabled={editor.editLoading}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {EDIT_MODELS.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
                   </SelectItem>
                 ))}
               </SelectContent>

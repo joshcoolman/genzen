@@ -7,6 +7,7 @@ import {
   flipOrientation,
   getRatioOptions,
 } from '@/features/ai-images/constants'
+import { DEFAULT_EDIT_MODEL } from '@/features/ai-images/models'
 
 interface UseEditorOptions {
   accessToken: string | undefined
@@ -22,9 +23,11 @@ export interface EditorState {
   editLoading: boolean
   editOrientation: 'landscape' | 'portrait'
   editAspectRatio: string
+  editModelId: string
   ratioOptions: Array<string>
   setEditPrompt: (prompt: string) => void
   setEditAspectRatio: (ratio: string) => void
+  setEditModelId: (modelId: string) => void
   openEditor: (img: SavedAiImage) => void
   closeEditor: () => void
   handleEditOrientationToggle: () => void
@@ -45,6 +48,7 @@ export function useEditor({
     'landscape' | 'portrait'
   >(defaultOrientation)
   const [editAspectRatio, setEditAspectRatio] = useState(defaultAspectRatio)
+  const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
 
   const ratioOptions = getRatioOptions(editOrientation)
 
@@ -85,6 +89,7 @@ export function useEditor({
           sourceImageId: editTarget.id,
           editPrompt: editPrompt.trim(),
           aspectRatio: editAspectRatio,
+          editModelId,
         },
       })
       setEditTarget(null)
@@ -103,9 +108,11 @@ export function useEditor({
     editLoading,
     editOrientation,
     editAspectRatio,
+    editModelId,
     ratioOptions,
     setEditPrompt,
     setEditAspectRatio,
+    setEditModelId,
     openEditor,
     closeEditor,
     handleEditOrientationToggle,

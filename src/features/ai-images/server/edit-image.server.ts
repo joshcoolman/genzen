@@ -11,6 +11,7 @@ interface EditImageInput {
   sourceImageId: string
   editPrompt: string
   aspectRatio?: string
+  editModelId?: string
 }
 
 export const editImage = createServerFn({ method: 'POST' })
@@ -18,7 +19,8 @@ export const editImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { sourceImageId, editPrompt, aspectRatio } = data
+    const { sourceImageId, editPrompt, aspectRatio, editModelId } = data
+    const falEditModel = editModelId || 'fal-ai/nano-banana-pro/edit'
 
     if (!editPrompt.trim()) {
       throw new Error('Edit prompt is required')
@@ -84,18 +86,18 @@ export const editImage = createServerFn({ method: 'POST' })
       new Blob([buffer], { type: mimeType }),
     )
 
-    // Submit to nano-banana-pro/edit
-    const { request_id } = await fal.queue.submit(
-      'fal-ai/nano-banana-pro/edit',
-      {
-        input: {
-          prompt: editPrompt.trim(),
-          image_urls: [falImageUrl],
-          safety_tolerance: 6,
-          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-        },
+    // Submit to selected edit model (dynamic ID, bypass typed overloads)
+     
+    const { request_id } = await (fal.queue.submit as any)(falEditModel, {
+      input: {
+        prompt: editPrompt.trim(),
+        image_urls: [falImageUrl],
+        ...(falEditModel.includes('nano-banana')
+          ? { safety_tolerance: 6 }
+          : {}),
+        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
       },
-    )
+    })
 
     // Create pending DB record
     const { data: record, error: insertError } = await supabase
@@ -109,8 +111,8 @@ export const editImage = createServerFn({ method: 'POST' })
         sort_order: Date.now() / 1000,
         generation_metadata: {
           prompt: editPrompt.trim(),
-          model: 'fal-ai/nano-banana-pro',
-          fal_model_id: 'fal-ai/nano-banana-pro/edit',
+          model: falEditModel.replace(/\/edit$/, ''),
+          fal_model_id: falEditModel,
           source_image_id: sourceImageId,
           generation_type: 'edit',
           submitted_at: new Date().toISOString(),

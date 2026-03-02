@@ -71,6 +71,16 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Kling',
   },
 
+  // ByteDance Seedream - verified models
+  {
+    id: 'fal-ai/bytedance/seedream/v4/text-to-image',
+    name: 'Seedream v4',
+    description: 'ByteDance, high-quality realism',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/bytedance/seedream/v4/edit',
+    imageInputParam: 'image_urls',
+  },
   // Specialized - verified models
   {
     id: 'fal-ai/nano-banana-pro',
@@ -129,10 +139,11 @@ export const DEFAULT_VISIBLE_MODELS = [
   ALL_IMAGE_MODELS[2], // FLUX.2 Pro
   ALL_IMAGE_MODELS[3], // FLUX.2 Flex
   ALL_IMAGE_MODELS[4], // FLUX Kontext Pro
-  ALL_IMAGE_MODELS[8], // Nano Banana Pro
-  ALL_IMAGE_MODELS[9], // Recraft V3
-  ALL_IMAGE_MODELS[10], // Grok Imagine
-  ALL_IMAGE_MODELS[11], // ImagineArt 1.5
+  ALL_IMAGE_MODELS[8], // Seedream v4
+  ALL_IMAGE_MODELS[9], // Nano Banana Pro
+  ALL_IMAGE_MODELS[10], // Recraft V3
+  ALL_IMAGE_MODELS[11], // Grok Imagine
+  ALL_IMAGE_MODELS[12], // ImagineArt 1.5
 ]
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
@@ -149,5 +160,35 @@ export function getVisibleModels(ids: Array<string>): Array<ImageModel> {
 }
 
 export function getModelName(modelId: string): string {
-  return ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ?? modelId
+  return (
+    ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ??
+    EDIT_MODELS.find((m) => m.id === modelId)?.name ??
+    modelId
+  )
 }
+
+export interface EditModel {
+  id: string
+  name: string
+  description: string
+}
+
+export const EDIT_MODELS: Array<EditModel> = [
+  {
+    id: 'fal-ai/nano-banana-pro/edit',
+    name: 'Nano Banana Pro',
+    description: 'Realism + typography',
+  },
+  {
+    id: 'fal-ai/bytedance/seedream/v4/edit',
+    name: 'Seedream v4',
+    description: 'ByteDance, high-quality edits',
+  },
+  {
+    id: 'fal-ai/bytedance/seedream/v4.5/edit',
+    name: 'Seedream v4.5',
+    description: 'Multi-image reference editing',
+  },
+]
+
+export const DEFAULT_EDIT_MODEL = EDIT_MODELS[0].id
