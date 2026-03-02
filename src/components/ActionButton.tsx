@@ -1,13 +1,11 @@
 import * as React from 'react'
 import { Loader2 } from 'lucide-react'
-import { Slot } from 'radix-ui'
 import { cn } from '@/lib/utils'
 
 interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
   loadingText?: string
   icon?: React.ReactNode
-  asChild?: boolean
 }
 
 export function ActionButton({
@@ -16,15 +14,13 @@ export function ActionButton({
   loadingText,
   icon,
   disabled,
-  asChild = false,
   className,
   ...props
 }: ActionButtonProps) {
-  const Comp = asChild ? Slot.Root : 'button'
   const isDisabled = disabled || loading
 
   return (
-    <Comp
+    <button
       disabled={isDisabled}
       className={cn(
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer',
@@ -43,6 +39,6 @@ export function ActionButton({
         icon
       ) : null}
       {loading ? (loadingText ?? children) : children}
-    </Comp>
+    </button>
   )
 }

@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router'
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/components/auth-provider'
+import { SpotlightNav } from '@/features/spotlight'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -46,6 +47,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <AuthProvider>
+      <SpotlightNav />
       <Outlet />
     </AuthProvider>
   )
