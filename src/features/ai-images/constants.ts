@@ -18,6 +18,25 @@ export function getRatioOptions(orientation: 'landscape' | 'portrait') {
   return orientation === 'landscape' ? LANDSCAPE_RATIOS : PORTRAIT_RATIOS
 }
 
+export function detectAspectRatio(width: number, height: number): string {
+  const ratio = width / height
+  const all = [...LANDSCAPE_RATIOS, ...PORTRAIT_RATIOS].filter(
+    (r) => r !== '1:1',
+  )
+  all.push('1:1')
+  let best = '1:1'
+  let bestDiff = Infinity
+  for (const r of all) {
+    const [a, b] = r.split(':').map(Number)
+    const diff = Math.abs(ratio - a / b)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = r
+    }
+  }
+  return best
+}
+
 export function flipOrientation(
   orientation: 'landscape' | 'portrait',
   aspectRatio: string,

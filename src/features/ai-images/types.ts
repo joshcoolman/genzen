@@ -13,5 +13,7 @@ export interface SavedAiImage {
     elapsed?: number
     generation_type?: string
     source_image_id?: string
+    aspect_ratio?: string
+    reference_image_ids?: Array<string>
   } | null
 }

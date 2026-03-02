@@ -35,14 +35,23 @@ Outputs wire between nodes via `$nodeId.field.nested.path` syntax:
 
 ```json
 {
-  "input": { "id": "input", "type": "input", "depends": [], "input": { "prompt": "" } },
+  "input": {
+    "id": "input",
+    "type": "input",
+    "depends": [],
+    "input": { "prompt": "" }
+  },
   "gen_image": {
-    "id": "gen_image", "type": "run", "depends": ["input"],
+    "id": "gen_image",
+    "type": "run",
+    "depends": ["input"],
     "app": "fal-ai/flux/dev",
     "input": { "prompt": "$input.prompt" }
   },
   "output": {
-    "id": "output", "type": "display", "depends": ["gen_image"],
+    "id": "output",
+    "type": "display",
+    "depends": ["gen_image"],
     "fields": { "image_url": "$gen_image.images.0.url" }
   }
 }
@@ -51,6 +60,7 @@ Outputs wire between nodes via `$nodeId.field.nested.path` syntax:
 ## Streaming Events
 
 As each step completes, events fire:
+
 - `submit` - step was submitted (includes `app_id`, `request_id`, `node_id`)
 - `completion` - step finished, includes intermediate output
 - `output` - full workflow done
@@ -59,18 +69,20 @@ As each step completes, events fire:
 ## SDK Usage
 
 ```typescript
-import { fal } from "@fal-ai/client";
+import { fal } from '@fal-ai/client'
 
-const stream = await fal.stream("workflows/execute", {
-  input: { prompt: "..." },
-  workflow: { /* graph */ }
-});
+const stream = await fal.stream('workflows/execute', {
+  input: { prompt: '...' },
+  workflow: {
+    /* graph */
+  },
+})
 
 for await (const event of stream) {
-  console.log(event); // fires on each step
+  console.log(event) // fires on each step
 }
 
-const result = await stream.done();
+const result = await stream.done()
 ```
 
 ## Discover Model Input/Output Schemas
@@ -84,6 +96,7 @@ https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=fal-ai/flux/dev
 Two implementation options:
 
 ### Option A: Sequential FAL calls in Trigger.dev (simpler)
+
 1. `fal.subscribe("fal-ai/flux/dev")` -> first frame
 2. `fal.subscribe("fal-ai/flux/dev")` -> last frame
 3. `fal.subscribe("fal-ai/wan-flf2v")` with both URLs -> video
@@ -91,17 +104,18 @@ Two implementation options:
 Easier to debug, clear error handling per step.
 
 ### Option B: Inline FAL Workflow (fewer round-trips)
+
 4-node graph: `input -> gen_first -> gen_last -> gen_video -> output`
 Leverage streaming for real-time progress.
 
 ## Relevant Video Models for Workflows
 
-| Model | Endpoint | Use |
-|---|---|---|
-| Wan 2.1 FLF2V | `fal-ai/wan-flf2v` | First + last frame to video |
-| Veo 3.1 FLF | `fal-ai/veo3.1/first-last-frame-to-video` | Google's version |
-| Seedance 1.0 Pro I2V | `fal-ai/bytedance/seedance/v1/pro/image-to-video` | Supports `end_image_url` |
-| Kling O1 I2V | `fal-ai/kling-video/o1/image-to-video` | Kling's approach |
+| Model                | Endpoint                                          | Use                         |
+| -------------------- | ------------------------------------------------- | --------------------------- |
+| Wan 2.1 FLF2V        | `fal-ai/wan-flf2v`                                | First + last frame to video |
+| Veo 3.1 FLF          | `fal-ai/veo3.1/first-last-frame-to-video`         | Google's version            |
+| Seedance 1.0 Pro I2V | `fal-ai/bytedance/seedance/v1/pro/image-to-video` | Supports `end_image_url`    |
+| Kling O1 I2V         | `fal-ai/kling-video/o1/image-to-video`            | Kling's approach            |
 
 ## Docs
 

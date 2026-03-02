@@ -18,6 +18,7 @@ interface GenerateVariationInput {
   model: string
   sourceImageId: string
   count?: number
+  aspectRatio?: string
 }
 
 export const generateVariation = createServerFn({ method: 'POST' })
@@ -25,7 +26,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { prompt, model, sourceImageId } = data
+    const { prompt, model, sourceImageId, aspectRatio } = data
     const variationCount = Math.min(data.count ?? 1, 4)
 
     if (!prompt.trim()) {
@@ -195,8 +196,9 @@ export const generateVariation = createServerFn({ method: 'POST' })
         prompt: variedPrompt,
         image_urls: [falImageUrl ?? ''],
         safety_tolerance: '5' as const,
+        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
       }
-      const { request_id } = await fal.queue.submit(
+      const { request_id } = await (fal.queue.submit as any)(
         'fal-ai/nano-banana-pro/edit',
         { input: editInput },
       )
@@ -219,6 +221,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
             generation_type: 'variation',
             source_image_id: sourceImageId,
             submitted_at: new Date().toISOString(),
+            ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           },
         })
         .select()

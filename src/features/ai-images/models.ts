@@ -171,6 +171,7 @@ export interface EditModel {
   id: string
   name: string
   description: string
+  supportsMultiImage?: boolean
 }
 
 export const EDIT_MODELS: Array<EditModel> = [
@@ -178,6 +179,19 @@ export const EDIT_MODELS: Array<EditModel> = [
     id: 'fal-ai/nano-banana-pro/edit',
     name: 'Nano Banana Pro',
     description: 'Realism + typography',
+    supportsMultiImage: true,
+  },
+  {
+    id: 'fal-ai/flux-2-pro/edit',
+    name: 'FLUX.2 Pro Edit',
+    description: 'Best photorealism edits',
+    supportsMultiImage: true,
+  },
+  {
+    id: 'fal-ai/flux-2-flex/edit',
+    name: 'FLUX.2 Flex Edit',
+    description: 'Flexible multi-image edits',
+    supportsMultiImage: true,
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',

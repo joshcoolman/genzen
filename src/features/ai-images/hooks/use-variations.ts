@@ -57,6 +57,7 @@ export function useVariations({
           model: img.generation_metadata.model,
           generation_type: 'variation',
           source_image_id: img.id,
+          aspect_ratio: img.generation_metadata.aspect_ratio,
         },
       })
     }
@@ -70,6 +71,7 @@ export function useVariations({
           model: img.generation_metadata.model,
           sourceImageId: img.id,
           count,
+          aspectRatio: img.generation_metadata.aspect_ratio,
         },
       })
 
@@ -86,6 +88,7 @@ export function useVariations({
           generation_metadata: {
             prompt: img.generation_metadata.prompt,
             model: img.generation_metadata.model,
+            aspect_ratio: img.generation_metadata.aspect_ratio,
           },
         }
         gallery.replaceOptimisticCard(optimisticIds[i], realCard)

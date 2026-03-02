@@ -159,11 +159,14 @@ export function useBrainstorm({
 
       slotPrompts.current = prompts
       setPrompts(prompts)
-      // Even distribution: subjects cycle across slots
+      // Detect subject from actual prompt text rather than assuming order
       setSlotSubjects(
-        Array.from({ length: BRAINSTORM_COUNT }, (_, i) =>
-          subjects?.length ? (subjects[i % subjects.length] ?? null) : null,
-        ),
+        prompts.map((prompt) => {
+          if (!subjects?.length) return null
+          const lower = prompt.toLowerCase()
+          const match = subjects.find((s) => lower.includes(s.toLowerCase()))
+          return match ?? null
+        }),
       )
       requestIds.forEach((id, idx) => {
         requestIdToSlot.current.set(id, idx)

@@ -6,12 +6,28 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
+const RATIO_TO_SIZE: Record<string, { width: number; height: number }> = {
+  '16:9': { width: 1920, height: 1080 },
+  '9:16': { width: 1080, height: 1920 },
+  '2:1': { width: 2048, height: 1024 },
+  '1:2': { width: 1024, height: 2048 },
+  '3:2': { width: 1536, height: 1024 },
+  '2:3': { width: 1024, height: 1536 },
+  '4:3': { width: 1536, height: 1152 },
+  '3:4': { width: 1152, height: 1536 },
+  '21:9': { width: 1920, height: 823 },
+  '1:1': { width: 1024, height: 1024 },
+  '5:4': { width: 1280, height: 1024 },
+  '4:5': { width: 1024, height: 1280 },
+}
+
 interface EditImageInput {
   accessToken: string
   sourceImageId: string
   editPrompt: string
   aspectRatio?: string
   editModelId?: string
+  referenceImageIds?: Array<string>
 }
 
 export const editImage = createServerFn({ method: 'POST' })
@@ -19,7 +35,13 @@ export const editImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { sourceImageId, editPrompt, aspectRatio, editModelId } = data
+    const {
+      sourceImageId,
+      editPrompt,
+      aspectRatio,
+      editModelId,
+      referenceImageIds,
+    } = data
     const falEditModel = editModelId || 'fal-ai/nano-banana-pro/edit'
 
     if (!editPrompt.trim()) {
@@ -86,16 +108,47 @@ export const editImage = createServerFn({ method: 'POST' })
       new Blob([buffer], { type: mimeType }),
     )
 
+    // Fetch and upload reference images in parallel
+    const referenceUrls: Array<string> = []
+    if (referenceImageIds?.length) {
+      const refImages = await supabase
+        .from('user_images')
+        .select('id, storage_path')
+        .in('id', referenceImageIds)
+        .eq('user_id', user.id)
+
+      if (refImages.data?.length) {
+        const uploads = await Promise.all(
+          refImages.data.map(async (ref) => {
+            if (!ref.storage_path) return null
+            const { data: signed } = await supabase.storage
+              .from('user-images')
+              .createSignedUrl(ref.storage_path, 3600)
+            if (!signed?.signedUrl) return null
+            const res = await fetch(signed.signedUrl)
+            const buf = await res.arrayBuffer()
+            return fal.storage.upload(new Blob([buf]))
+          }),
+        )
+        referenceUrls.push(...uploads.filter((u): u is string => u !== null))
+      }
+    }
+
     // Submit to selected edit model (dynamic ID, bypass typed overloads)
-     
+    // Use image_size (width/height) for all edit models — FAL's aspect_ratio
+    // enum doesn't include all ratios (e.g. 2:1, 1:2) so width/height is safer
+    const sizeParams = aspectRatio
+      ? { image_size: RATIO_TO_SIZE[aspectRatio] ?? RATIO_TO_SIZE['1:1'] }
+      : {}
+
     const { request_id } = await (fal.queue.submit as any)(falEditModel, {
       input: {
         prompt: editPrompt.trim(),
-        image_urls: [falImageUrl],
+        image_urls: [falImageUrl, ...referenceUrls],
         ...(falEditModel.includes('nano-banana')
           ? { safety_tolerance: 6 }
           : {}),
-        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+        ...sizeParams,
       },
     })
 
@@ -117,6 +170,9 @@ export const editImage = createServerFn({ method: 'POST' })
           generation_type: 'edit',
           submitted_at: new Date().toISOString(),
           ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+          ...(referenceImageIds?.length
+            ? { reference_image_ids: referenceImageIds }
+            : {}),
         },
       })
       .select()

@@ -4,6 +4,7 @@ import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
+  detectAspectRatio,
   flipOrientation,
   getRatioOptions,
 } from '@/features/ai-images/constants'
@@ -14,6 +15,7 @@ interface UseEditorOptions {
   credits: CreditsState
   defaultOrientation: 'landscape' | 'portrait'
   defaultAspectRatio: string
+  imageUrls: Record<string, string>
   setError: (error: string | null) => void
 }
 
@@ -25,9 +27,12 @@ export interface EditorState {
   editAspectRatio: string
   editModelId: string
   ratioOptions: Array<string>
+  referenceImageIds: Array<string>
   setEditPrompt: (prompt: string) => void
   setEditAspectRatio: (ratio: string) => void
   setEditModelId: (modelId: string) => void
+  addReferenceImage: (id: string) => void
+  removeReferenceImage: (id: string) => void
   openEditor: (img: SavedAiImage) => void
   closeEditor: () => void
   handleEditOrientationToggle: () => void
@@ -39,6 +44,7 @@ export function useEditor({
   credits,
   defaultOrientation,
   defaultAspectRatio,
+  imageUrls,
   setError,
 }: UseEditorOptions): EditorState {
   const [editTarget, setEditTarget] = useState<SavedAiImage | null>(null)
@@ -49,27 +55,54 @@ export function useEditor({
   >(defaultOrientation)
   const [editAspectRatio, setEditAspectRatio] = useState(defaultAspectRatio)
   const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
+  const [referenceImageIds, setReferenceImageIds] = useState<Array<string>>([])
 
   const ratioOptions = getRatioOptions(editOrientation)
+
+  function addReferenceImage(id: string) {
+    setReferenceImageIds((prev) =>
+      prev.includes(id) || prev.length >= 4 ? prev : [...prev, id],
+    )
+  }
+
+  function removeReferenceImage(id: string) {
+    setReferenceImageIds((prev) => prev.filter((x) => x !== id))
+  }
+
+  function applyRatio(ratio: string) {
+    const [a, b] = ratio.split(':').map(Number)
+    const isLandscape = a >= b
+    setEditOrientation(isLandscape ? 'landscape' : 'portrait')
+    setEditAspectRatio(ratio)
+  }
 
   function openEditor(img: SavedAiImage) {
     setEditTarget(img)
     setEditPrompt('')
-    const srcRatio = img.generation_metadata?.aspect_ratio as string | undefined
+    setReferenceImageIds([])
+    const srcRatio = img.generation_metadata?.aspect_ratio
     if (srcRatio) {
-      const [a, b] = srcRatio.split(':').map(Number)
-      const isLandscape = a >= b
-      setEditOrientation(isLandscape ? 'landscape' : 'portrait')
-      setEditAspectRatio(srcRatio)
+      applyRatio(srcRatio)
     } else {
-      setEditOrientation(defaultOrientation)
-      setEditAspectRatio(defaultAspectRatio)
+      // Detect from actual image dimensions
+      const url = imageUrls[img.id]
+      if (url) {
+        const probe = new Image()
+        probe.onload = () => {
+          applyRatio(detectAspectRatio(probe.naturalWidth, probe.naturalHeight))
+        }
+        probe.src = url
+      } else {
+        setEditOrientation(defaultOrientation)
+        setEditAspectRatio(defaultAspectRatio)
+      }
     }
   }
 
   function closeEditor() {
     setEditTarget(null)
     setEditPrompt('')
+    setReferenceImageIds([])
   }
 
   function handleEditOrientationToggle() {
@@ -90,6 +123,8 @@ export function useEditor({
           editPrompt: editPrompt.trim(),
           aspectRatio: editAspectRatio,
           editModelId,
+          referenceImageIds:
+            referenceImageIds.length > 0 ? referenceImageIds : undefined,
         },
       })
       setEditTarget(null)
@@ -110,9 +145,12 @@ export function useEditor({
     editAspectRatio,
     editModelId,
     ratioOptions,
+    referenceImageIds,
     setEditPrompt,
     setEditAspectRatio,
     setEditModelId,
+    addReferenceImage,
+    removeReferenceImage,
     openEditor,
     closeEditor,
     handleEditOrientationToggle,

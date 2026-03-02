@@ -55,7 +55,6 @@ export function useImages({
         .eq('user_id', userId)
         .eq('source', 'ai_generated')
         .order('sort_order', { ascending: false, nullsFirst: false })
-        .limit(20)
 
       if (queryError) throw queryError
 

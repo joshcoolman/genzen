@@ -36,6 +36,7 @@ export function useAiImagesPage() {
     credits,
     defaultOrientation: generator.orientation,
     defaultAspectRatio: generator.aspectRatio,
+    imageUrls: gallery.imageUrls,
     setError,
   })
 
