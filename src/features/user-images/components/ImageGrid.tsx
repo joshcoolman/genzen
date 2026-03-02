@@ -9,21 +9,28 @@ import type { ReactNode } from 'react'
 interface ImageGridProps {
   children: ReactNode
   className?: string
+  size?: 'lg' | 'md' | 'sm'
 }
 
 /**
  * Responsive grid container for images
- *
- * Grid breakpoints:
- * - Mobile: 1 column
- * - Tablet: 2 columns
- * - Desktop: 3 columns
- * - Large: 4 columns
  */
-export function ImageGrid({ children, className = '' }: ImageGridProps) {
+export function ImageGrid({
+  children,
+  className = '',
+  size = 'lg',
+}: ImageGridProps) {
+  const minWidth = size === 'sm' ? '80px' : size === 'md' ? '120px' : '220px'
+  const gap = size === 'lg' ? '1rem' : '0.5rem'
+
   return (
     <div
-      className={`grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${className}`}
+      className={className}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
+        gap,
+      }}
     >
       {children}
     </div>

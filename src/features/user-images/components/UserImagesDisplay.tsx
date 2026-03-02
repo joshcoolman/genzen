@@ -4,7 +4,8 @@
  * Main container component that orchestrates the entire user images feature.
  */
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, EyeOff, Info, LayoutGrid } from 'lucide-react'
 import { useUserImages } from '../hooks/useUserImages'
 import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { ImageUploadButton } from './ImageUploadButton'
@@ -12,7 +13,57 @@ import { EmptyState, ImageGrid } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
 import type { CreateUserImageInput } from '../types'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
+
+type SourceFilter = 'all' | 'upload' | 'ai_generated'
+
+const SOURCE_FILTERS: Array<{ value: SourceFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'upload', label: 'Uploads' },
+  { value: 'ai_generated', label: 'AI Images' },
+]
+
+const PREFS_KEY = 'uploads-view-prefs'
+
+interface ViewPrefs {
+  filter: SourceFilter
+  sortAsc: boolean
+  showInfo: boolean
+  thumbSize: 'lg' | 'md' | 'sm'
+}
+
+const DEFAULT_PREFS: ViewPrefs = {
+  filter: 'upload',
+  sortAsc: false,
+  showInfo: true,
+  thumbSize: 'lg',
+}
+
+const THUMB_SIZES = ['lg', 'md', 'sm'] as const
+const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
+  lg: 'LG',
+  md: 'MD',
+  sm: 'SM',
+}
+
+function getStoredPrefs(): ViewPrefs {
+  try {
+    const stored = localStorage.getItem(PREFS_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as Partial<ViewPrefs>
+      return { ...DEFAULT_PREFS, ...parsed }
+    }
+  } catch {}
+  return DEFAULT_PREFS
+}
+
+function storePrefs(update: Partial<ViewPrefs>) {
+  try {
+    const current = getStoredPrefs()
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...update }))
+  } catch {}
+}
 
 /**
  * User images display component
@@ -34,6 +85,53 @@ export function UserImagesDisplay() {
   } = useUserImages(user?.id)
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+
+  const [storedPrefs] = useState(getStoredPrefs)
+  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
+    storedPrefs.thumbSize,
+  )
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>(
+    storedPrefs.filter,
+  )
+
+  const handleSourceFilter = (filter: SourceFilter) => {
+    setSourceFilter(filter)
+    storePrefs({ filter })
+  }
+
+  const handleToggleSort = () => {
+    setSortAsc((v) => {
+      storePrefs({ sortAsc: !v })
+      return !v
+    })
+  }
+
+  const handleToggleInfo = () => {
+    setShowInfo((v) => {
+      storePrefs({ showInfo: !v })
+      return !v
+    })
+  }
+
+  const handleToggleThumbSize = () => {
+    setThumbSize((v) => {
+      const idx = THUMB_SIZES.indexOf(v)
+      const next = THUMB_SIZES[(idx + 1) % THUMB_SIZES.length]
+      storePrefs({ thumbSize: next })
+      return next
+    })
+  }
+
+  const sortedImages = useMemo(() => {
+    let result =
+      sourceFilter === 'all'
+        ? images
+        : images.filter((img) => img.source === sourceFilter)
+    if (sortAsc) result = [...result].reverse()
+    return result
+  }, [images, sortAsc, sourceFilter])
 
   const handleUpload = async (input: CreateUserImageInput) => {
     await create(input)
@@ -64,7 +162,7 @@ export function UserImagesDisplay() {
   const handleNextImage = () => {
     if (editingIndex === null) return
     const nextIndex = editingIndex + 1
-    if (nextIndex < images.length) {
+    if (nextIndex < sortedImages.length) {
       setEditingIndex(nextIndex)
     } else {
       setEditingIndex(0)
@@ -72,7 +170,7 @@ export function UserImagesDisplay() {
   }
 
   const editingImage =
-    editingIndex !== null ? (images[editingIndex] ?? null) : null
+    editingIndex !== null ? (sortedImages[editingIndex] ?? null) : null
 
   if (isLoading) {
     return (
@@ -99,6 +197,60 @@ export function UserImagesDisplay() {
         <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
       </div>
 
+      {/* Toolbar */}
+      <div className="flex items-center justify-between border-t border-border pt-3">
+        <div className="flex flex-wrap gap-2">
+          {SOURCE_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => handleSourceFilter(f.value)}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                sourceFilter === f.value
+                  ? 'bg-foreground text-background border-foreground'
+                  : 'border-border text-muted-foreground hover:border-foreground/40',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleToggleThumbSize}
+            className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-medium">
+              {THUMB_LABELS[thumbSize]}
+            </span>
+          </button>
+          <button
+            onClick={handleToggleSort}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={sortAsc ? 'Sort newest first' : 'Sort oldest first'}
+          >
+            {sortAsc ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+          </button>
+          <button
+            onClick={handleToggleInfo}
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={showInfo ? 'Hide info' : 'Show info'}
+          >
+            {showInfo ? (
+              <Info className="h-4 w-4" />
+            ) : (
+              <EyeOff className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Error Alert */}
       {error && (
         <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-red-400">
@@ -115,9 +267,9 @@ export function UserImagesDisplay() {
       )}
 
       {/* Image Grid or Empty State */}
-      {images.length > 0 ? (
-        <ImageGrid>
-          {images.map((image, index) => (
+      {sortedImages.length > 0 ? (
+        <ImageGrid size={thumbSize}>
+          {sortedImages.map((image, index) => (
             <ImageCard
               key={image.id}
               image={image}
@@ -126,6 +278,8 @@ export function UserImagesDisplay() {
               onDelete={handleDelete}
               isDeleting={isDeleting === image.id}
               isUpdating={isUpdating === image.id}
+              showInfo={showInfo}
+              compact={thumbSize !== 'lg'}
             />
           ))}
         </ImageGrid>

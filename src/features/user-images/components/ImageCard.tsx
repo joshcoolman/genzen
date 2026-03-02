@@ -14,6 +14,8 @@ interface ImageCardProps {
   onDelete: (id: string) => void
   isDeleting?: boolean
   isUpdating?: boolean
+  showInfo?: boolean
+  compact?: boolean
 }
 
 /**
@@ -26,6 +28,8 @@ export function ImageCard({
   onDelete,
   isDeleting,
   isUpdating,
+  showInfo = true,
+  compact = false,
 }: ImageCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -34,13 +38,13 @@ export function ImageCard({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-lg border border-border bg-card transition-opacity cursor-pointer hover:border-accent-brand/50 flex flex-col ${
-        isDeleting ? 'opacity-50' : ''
-      }`}
+      className={`group relative overflow-hidden border border-border bg-card transition-opacity cursor-pointer hover:border-accent-brand/50 flex flex-col ${
+        compact ? 'rounded-md' : 'rounded-lg'
+      } ${isDeleting ? 'opacity-50' : ''}`}
       onClick={onClick}
     >
       {/* Image */}
-      <div className="aspect-square overflow-hidden bg-black">
+      <div className="relative aspect-square overflow-hidden bg-black">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -52,32 +56,38 @@ export function ImageCard({
             Loading...
           </div>
         )}
+
+        {/* Delete overlay */}
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting || isUpdating}
+          className={`absolute right-1.5 top-1.5 rounded-md bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600 disabled:opacity-50 ${
+            compact ? 'p-1' : 'p-1.5'
+          }`}
+          aria-label="Delete image"
+        >
+          <Trash2 className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
+        </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-4 pt-3 pb-2">
-        <h3 className="text-xs font-medium text-foreground line-clamp-2">
-          {image.title}
-        </h3>
-      </div>
-
-      {/* Metadata - pinned to bottom */}
-      <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-        <div className="flex justify-between items-center">
-          <span>{formatFileSize(image.file_size)}</span>
-          <div className="flex items-center gap-2">
-            <span>{new Date(image.created_at).toLocaleDateString()}</span>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting || isUpdating}
-              className="text-red-500 hover:text-red-400 disabled:opacity-50 transition-colors"
-              aria-label="Delete image"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+      {showInfo && !compact && (
+        <>
+          {/* Content */}
+          <div className="flex-1 px-4 pt-3 pb-2">
+            <h3 className="text-xs font-medium text-foreground line-clamp-2">
+              {image.title}
+            </h3>
           </div>
-        </div>
-      </div>
+
+          {/* Metadata - pinned to bottom */}
+          <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
+            <div className="flex justify-between items-center">
+              <span>{formatFileSize(image.file_size)}</span>
+              <span>{new Date(image.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
