@@ -9,6 +9,7 @@ import { ArrowDown, ArrowUp, EyeOff, Info, LayoutGrid } from 'lucide-react'
 import { useUserImages } from '../hooks/useUserImages'
 import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { ImageUploadButton } from './ImageUploadButton'
+import { ImageDownloadButton } from './ImageDownloadButton'
 import { EmptyState, ImageGrid } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
@@ -194,7 +195,10 @@ export function UserImagesDisplay() {
           </p>
         </div>
 
-        <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
+        <div className="flex items-center gap-2">
+          <ImageDownloadButton images={images} imageUrls={imageUrls} />
+          <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
+        </div>
       </div>
 
       {/* Toolbar */}
