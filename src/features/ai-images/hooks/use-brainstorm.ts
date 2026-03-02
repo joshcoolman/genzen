@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type {
-  BrainstormModelKey,
-  BrainstormVibeKey,
-} from '@/features/ai-images/server/brainstorm-images.server'
+import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
 import {
   BRAINSTORM_PROMPT,
-  brainstormImages,
   checkBrainstormImages,
   regenerateBrainstormImages,
+  rewritePrompt,
 } from '@/features/ai-images/server/brainstorm-images.server'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 
@@ -21,10 +18,6 @@ interface BrainstormImage {
 
 interface UseBrainstormOptions {
   accessToken: string | undefined
-  subjects?: Array<string>
-  role?: string
-  vibe?: BrainstormVibeKey
-  colorGrade?: string | null
   model?: BrainstormModelKey
   refineModels?: Array<string>
   aspectRatio?: string
@@ -32,10 +25,6 @@ interface UseBrainstormOptions {
 
 export function useBrainstorm({
   accessToken,
-  subjects,
-  role,
-  vibe,
-  colorGrade,
   model,
   refineModels,
   aspectRatio,
@@ -51,24 +40,18 @@ export function useBrainstorm({
   )
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasGenerated, setHasGenerated] = useState(false)
+  const [lockedSlots, setLockedSlots] = useState<Set<number>>(new Set())
+  const [rewritingSlots, setRewritingSlots] = useState<Set<number>>(new Set())
 
-  // Maps requestId → slot index (stable for one brainstorm run)
   const requestIdToSlot = useRef<Map<string, number>>(new Map())
-  // Set of request IDs still waiting for a result
   const pendingIds = useRef<Set<string>>(new Set())
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Per-slot prompts from the last brainstorm run (exposed as state for debug)
   const [prompts, setPrompts] = useState<Array<string>>(
     Array.from({ length: BRAINSTORM_COUNT }, () => BRAINSTORM_PROMPT),
   )
   const slotPrompts = useRef<Array<string>>(
     Array.from({ length: BRAINSTORM_COUNT }, () => BRAINSTORM_PROMPT),
   )
-  // Per-slot subjects for overlay labels
-  const [slotSubjects, setSlotSubjects] = useState<Array<string | null>>(
-    Array.from({ length: BRAINSTORM_COUNT }, () => null),
-  )
-  // Model used in the current brainstorm run (for polling)
   const activeModel = useRef<BrainstormModelKey>('schnell')
 
   const stopPolling = useCallback(() => {
@@ -87,7 +70,6 @@ export function useBrainstorm({
         data: { accessToken, requestIds, model: activeModel.current },
       })
 
-      // Process results and mutate refs OUTSIDE the state updater
       const updates: Array<{ slot: number; url: string | null }> = []
       for (const result of results) {
         const slot = requestIdToSlot.current.get(result.requestId)
@@ -128,60 +110,62 @@ export function useBrainstorm({
     return stopPolling
   }, [stopPolling])
 
-  async function trigger() {
+  async function generate() {
     if (!accessToken || isGenerating) return
+
+    const unlockedIndices = Array.from(
+      { length: BRAINSTORM_COUNT },
+      (_, i) => i,
+    ).filter((i) => !lockedSlots.has(i))
+
+    if (unlockedIndices.length === 0) return
 
     stopPolling()
     requestIdToSlot.current = new Map()
     pendingIds.current = new Set()
     setIsGenerating(true)
     setHasGenerated(false)
-    setImages(
-      Array.from({ length: BRAINSTORM_COUNT }, () => ({
-        url: null,
-        loading: true,
-      })),
-    )
-    setRefineCounts(Array.from({ length: BRAINSTORM_COUNT }, () => 0))
+    setImages((prev) => {
+      const next = [...prev]
+      for (const i of unlockedIndices) {
+        next[i] = { url: null, loading: true }
+      }
+      return next
+    })
+    setRefineCounts((prev) => {
+      const next = [...prev]
+      for (const i of unlockedIndices) {
+        next[i] = 0
+      }
+      return next
+    })
 
     try {
       activeModel.current = model ?? 'schnell'
-      const { requestIds, prompts } = await brainstormImages({
+      const unlockedPrompts = unlockedIndices.map((i) => slotPrompts.current[i])
+      const { requestIds } = await regenerateBrainstormImages({
         data: {
           accessToken,
-          subjects: subjects?.length ? subjects : undefined,
-          role: role || undefined,
-          vibe,
-          colorGrade: colorGrade ?? undefined,
+          prompts: unlockedPrompts,
           model: model ?? 'schnell',
         },
       })
 
-      slotPrompts.current = prompts
-      setPrompts(prompts)
-      // Detect subject from actual prompt text rather than assuming order
-      setSlotSubjects(
-        prompts.map((prompt) => {
-          if (!subjects?.length) return null
-          const lower = prompt.toLowerCase()
-          const match = subjects.find((s) => lower.includes(s.toLowerCase()))
-          return match ?? null
-        }),
-      )
       requestIds.forEach((id, idx) => {
-        requestIdToSlot.current.set(id, idx)
+        requestIdToSlot.current.set(id, unlockedIndices[idx])
         pendingIds.current.add(id)
       })
 
       pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
     } catch (err) {
-      console.error('[brainstorm] trigger failed:', err)
-      setImages(
-        Array.from({ length: BRAINSTORM_COUNT }, () => ({
-          url: null,
-          loading: false,
-        })),
-      )
+      console.error('[brainstorm] generate failed:', err)
+      setImages((prev) => {
+        const next = [...prev]
+        for (const i of unlockedIndices) {
+          next[i] = { url: null, loading: false }
+        }
+        return next
+      })
       setIsGenerating(false)
     }
   }
@@ -212,47 +196,37 @@ export function useBrainstorm({
     )
   }
 
-  async function regenerate() {
+  async function regenerateSlot(index: number) {
     if (!accessToken || isGenerating) return
 
-    stopPolling()
-    requestIdToSlot.current = new Map()
-    pendingIds.current = new Set()
-    setIsGenerating(true)
-    setHasGenerated(false)
-    setImages(
-      Array.from({ length: BRAINSTORM_COUNT }, () => ({
-        url: null,
-        loading: true,
-      })),
-    )
-    setRefineCounts(Array.from({ length: BRAINSTORM_COUNT }, () => 0))
+    setImages((prev) => {
+      const next = [...prev]
+      next[index] = { url: null, loading: true }
+      return next
+    })
 
     try {
       activeModel.current = model ?? 'schnell'
       const { requestIds } = await regenerateBrainstormImages({
         data: {
           accessToken,
-          prompts: slotPrompts.current,
+          prompts: [slotPrompts.current[index]],
           model: model ?? 'schnell',
         },
       })
 
-      requestIds.forEach((id, idx) => {
-        requestIdToSlot.current.set(id, idx)
-        pendingIds.current.add(id)
-      })
+      requestIdToSlot.current.set(requestIds[0], index)
+      pendingIds.current.add(requestIds[0])
+      setIsGenerating(true)
 
       pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
     } catch (err) {
-      console.error('[brainstorm] regenerate failed:', err)
-      setImages(
-        Array.from({ length: BRAINSTORM_COUNT }, () => ({
-          url: null,
-          loading: false,
-        })),
-      )
-      setIsGenerating(false)
+      console.error('[brainstorm] regenerateSlot failed:', err)
+      setImages((prev) => {
+        const next = [...prev]
+        next[index] = { url: null, loading: false }
+        return next
+      })
     }
   }
 
@@ -265,22 +239,74 @@ export function useBrainstorm({
     setPrompts(empty)
   }
 
+  function toggleLock(index: number) {
+    setLockedSlots((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      } else {
+        next.add(index)
+      }
+      return next
+    })
+  }
+
   function updatePrompt(index: number, value: string) {
     slotPrompts.current[index] = value
     setPrompts([...slotPrompts.current])
+    setLockedSlots((prev) => {
+      if (!prev.has(index)) return prev
+      const next = new Set(prev)
+      next.delete(index)
+      return next
+    })
+  }
+
+  async function rewriteSlotPrompt(index: number) {
+    if (!accessToken) return
+
+    setRewritingSlots((prev) => new Set(prev).add(index))
+
+    try {
+      const { prompt } = await rewritePrompt({
+        data: {
+          accessToken,
+          prompt: slotPrompts.current[index],
+        },
+      })
+      slotPrompts.current[index] = prompt
+      setPrompts([...slotPrompts.current])
+    } catch (err) {
+      console.error('[brainstorm] rewriteSlotPrompt failed:', err)
+    } finally {
+      setRewritingSlots((prev) => {
+        const next = new Set(prev)
+        next.delete(index)
+        return next
+      })
+    }
+  }
+
+  async function rewriteAndGenerateSlot(index: number) {
+    await rewriteSlotPrompt(index)
+    void regenerateSlot(index)
   }
 
   return {
     images,
     prompts,
     refineCounts,
-    slotSubjects,
     isGenerating,
     hasGenerated,
-    trigger,
-    regenerate,
+    lockedSlots,
+    rewritingSlots,
+    generate,
+    regenerateSlot,
     clearPrompts,
     selectImage,
     updatePrompt,
+    toggleLock,
+    rewriteSlotPrompt,
+    rewriteAndGenerateSlot,
   }
 }

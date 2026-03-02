@@ -32,7 +32,6 @@ function AiImagesPage() {
         accessToken={page.accessToken}
         refineModels={page.modelSettings.selectedModels}
         aspectRatio={page.generator.aspectRatio}
-        debug
       />
 
       <GeneratorPanel

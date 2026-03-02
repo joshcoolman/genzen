@@ -1,54 +1,33 @@
-import { useState } from 'react'
-import { Loader2, Sparkles, X } from 'lucide-react'
-import type {
-  BrainstormModelKey,
-  BrainstormVibeKey,
-} from '@/features/ai-images/server/brainstorm-images.server'
+import { useCallback, useRef, useState } from 'react'
+import { Loader2, Lock, Play, RefreshCw, Sparkles, Unlock } from 'lucide-react'
+import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
 import { ActionButton } from '@/components/ActionButton'
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
-
-const COLOR_GRADE_OPTIONS = [
-  { value: '', label: 'None' },
-  { value: 'desert_chrome', label: 'Desert Chrome' },
-  { value: 'iron_city', label: 'Iron City' },
-  { value: 'verde_bloom', label: 'Verde Bloom' },
-] as const
-
-const VIBE_OPTIONS = [
-  { value: 'unusual', label: 'Unusual' },
-  { value: 'cinematic', label: 'Cinematic' },
-  { value: 'gritty', label: 'Gritty' },
-  { value: 'ethereal', label: 'Ethereal' },
-  { value: 'professional', label: 'Professional' },
-] as const
-
-const MAX_CHIPS = 6
 
 interface BrainstormPanelProps {
   accessToken: string | undefined
   refineModels?: Array<string>
   aspectRatio?: string
-  debug?: boolean
 }
 
 export function BrainstormPanel({
   accessToken,
   refineModels,
   aspectRatio: refineAspectRatio,
-  debug = false,
 }: BrainstormPanelProps) {
-  const [subjects, setSubjects] = useState<Array<string>>(['male', 'female'])
-  const [role, setRole] = useState('hero')
-  const [vibe, setVibe] = useState<BrainstormVibeKey>('cinematic')
-  const [colorGrade, setColorGrade] = useState<string | null>(null)
   const [model, setModel] = useState<BrainstormModelKey>('schnell')
+  const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([])
+
+  const focusSlot = useCallback((index: number) => {
+    const el = textareaRefs.current[index]
+    if (el) {
+      el.focus()
+      el.select()
+    }
+  }, [])
 
   const brainstorm = useBrainstorm({
     accessToken,
-    subjects,
-    role,
-    vibe,
-    colorGrade,
     model,
     refineModels,
     aspectRatio: refineAspectRatio,
@@ -60,8 +39,7 @@ export function BrainstormPanel({
         <div>
           <h2 className="text-base font-semibold">Brainstorm</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Generate 6 quick ideas. Click one to refine with your selected
-            models.
+            Generate 6 images from the prompts below. Click an image to refine.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -70,84 +48,42 @@ export function BrainstormPanel({
               onClick={brainstorm.clearPrompts}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              Clear Prompts
+              Reset Prompts
             </button>
           )}
+          <div className="flex items-center gap-3 text-sm">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="brainstorm-model"
+                value="schnell"
+                checked={model === 'schnell'}
+                onChange={() => setModel('schnell')}
+                className="accent-foreground"
+              />
+              Schnell
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="brainstorm-model"
+                value="dev"
+                checked={model === 'dev'}
+                onChange={() => setModel('dev')}
+                className="accent-foreground"
+              />
+              Dev
+            </label>
+          </div>
           <ActionButton
-            onClick={() =>
-              void (brainstorm.hasGenerated
-                ? brainstorm.regenerate()
-                : brainstorm.trigger())
-            }
+            onClick={() => void brainstorm.generate()}
             loading={brainstorm.isGenerating}
             loadingText="Generating..."
             disabled={!accessToken}
             icon={<Sparkles className="size-4" />}
           >
-            {brainstorm.hasGenerated ? 'Regenerate' : 'Brainstorm'}
+            {brainstorm.hasGenerated ? 'Regenerate' : 'Generate'}
           </ActionButton>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <ChipInput
-          values={subjects}
-          onChange={setSubjects}
-          placeholder="Add subjects"
-          className="flex-1 min-w-0"
-        />
-        <input
-          type="text"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          placeholder="Role"
-          className="h-8 w-24 rounded-md border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground"
-        />
-        <select
-          value={vibe}
-          onChange={(e) => setVibe(e.target.value as BrainstormVibeKey)}
-          className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-        >
-          {VIBE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={colorGrade ?? ''}
-          onChange={(e) => setColorGrade(e.target.value || null)}
-          className="h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-        >
-          {COLOR_GRADE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <div className="flex items-center gap-3 text-sm">
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="brainstorm-model"
-              value="schnell"
-              checked={model === 'schnell'}
-              onChange={() => setModel('schnell')}
-              className="accent-foreground"
-            />
-            Schnell
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <input
-              type="radio"
-              name="brainstorm-model"
-              value="dev"
-              checked={model === 'dev'}
-              onChange={() => setModel('dev')}
-              className="accent-foreground"
-            />
-            Dev
-          </label>
         </div>
       </div>
 
@@ -155,9 +91,12 @@ export function BrainstormPanel({
         {brainstorm.images.map((img, i) => (
           <BrainstormSlot
             key={i}
+            index={i}
             image={img}
             refineCount={brainstorm.refineCounts[i] ?? 0}
-            subject={brainstorm.slotSubjects[i]}
+            locked={brainstorm.lockedSlots.has(i)}
+            onToggleLock={() => brainstorm.toggleLock(i)}
+            onRegenerate={() => void brainstorm.regenerateSlot(i)}
             onSelect={() => {
               if (img.url) void brainstorm.selectImage(img.url, i)
             }}
@@ -165,112 +104,83 @@ export function BrainstormPanel({
         ))}
       </div>
 
-      {debug && (
-        <div className="space-y-2 border-t border-border pt-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Prompts (debug)
-          </p>
-          {brainstorm.prompts.map((prompt, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <span className="text-xs text-muted-foreground pt-2 shrink-0 w-4 text-right">
-                {i + 1}
-              </span>
-              <textarea
-                value={prompt}
-                onChange={(e) => brainstorm.updatePrompt(i, e.target.value)}
-                rows={1}
-                className="flex-1 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none overflow-hidden"
-                style={{ fieldSizing: 'content' } as React.CSSProperties}
-              />
+      <div className="space-y-2">
+        {brainstorm.prompts.map((prompt, i) => (
+          <div key={i} className="flex gap-2 items-start">
+            <span className="text-xs text-muted-foreground pt-2 shrink-0 w-4 text-right">
+              {i + 1}
+            </span>
+            <textarea
+              ref={(el) => {
+                textareaRefs.current[i] = el
+              }}
+              value={prompt}
+              onChange={(e) => brainstorm.updatePrompt(i, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && e.metaKey) {
+                  e.preventDefault()
+                  void brainstorm.rewriteAndGenerateSlot(i)
+                  const nextIndex = (i + 1) % brainstorm.prompts.length
+                  setTimeout(() => focusSlot(nextIndex), 50)
+                } else if (e.key === 'Tab') {
+                  e.preventDefault()
+                  const nextIndex = e.shiftKey
+                    ? (i - 1 + brainstorm.prompts.length) %
+                      brainstorm.prompts.length
+                    : (i + 1) % brainstorm.prompts.length
+                  focusSlot(nextIndex)
+                }
+              }}
+              rows={1}
+              className="flex-1 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none overflow-hidden"
+              style={{ fieldSizing: 'content' } as React.CSSProperties}
+            />
+            <div className="shrink-0 mt-1 flex flex-col gap-1">
+              <button
+                onClick={() => void brainstorm.rewriteSlotPrompt(i)}
+                disabled={brainstorm.rewritingSlots.has(i)}
+                className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                title="Rewrite prompt with AI"
+              >
+                {brainstorm.rewritingSlots.has(i) ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="size-3.5" />
+                )}
+              </button>
+              <button
+                onClick={() => void brainstorm.regenerateSlot(i)}
+                disabled={brainstorm.isGenerating}
+                className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                title="Generate image from this prompt"
+              >
+                <Play className="size-3.5" />
+              </button>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface ChipInputProps {
-  values: Array<string>
-  onChange: (values: Array<string>) => void
-  placeholder: string
-  className?: string
-}
-
-function ChipInput({
-  values,
-  onChange,
-  placeholder,
-  className,
-}: ChipInputProps) {
-  const [input, setInput] = useState('')
-
-  function add(value: string) {
-    const trimmed = value.trim()
-    if (!trimmed || values.length >= MAX_CHIPS) return
-    if (values.includes(trimmed)) return
-    onChange([...values, trimmed])
-    setInput('')
-  }
-
-  function remove(index: number) {
-    onChange(values.filter((_, i) => i !== index))
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      add(input)
-    }
-    if (e.key === 'Backspace' && !input && values.length > 0) {
-      remove(values.length - 1)
-    }
-  }
-
-  return (
-    <div
-      className={`flex flex-wrap items-center gap-1.5 bg-muted/50 rounded-md border border-border px-2 py-1.5 ${className ?? ''}`}
-    >
-      {values.map((value, i) => (
-        <span
-          key={i}
-          className="inline-flex items-center gap-1 bg-background border border-border rounded px-2 py-0.5 text-xs font-medium"
-        >
-          {value}
-          <button
-            onClick={() => remove(i)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <X className="size-3" />
-          </button>
-        </span>
-      ))}
-      {values.length < MAX_CHIPS && (
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => add(input)}
-          placeholder={values.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[80px] bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
 interface BrainstormSlotProps {
+  index: number
   image: { url: string | null; loading: boolean }
   refineCount: number
-  subject: string | null
+  locked: boolean
+  onToggleLock: () => void
+  onRegenerate: () => void
   onSelect: () => void
 }
 
 function BrainstormSlot({
+  index,
   image,
   refineCount,
-  subject,
+  locked,
+  onToggleLock,
+  onRegenerate,
   onSelect,
 }: BrainstormSlotProps) {
   if (image.loading) {
@@ -288,28 +198,47 @@ function BrainstormSlot({
   }
 
   return (
-    <button
-      onClick={onSelect}
-      className="aspect-video rounded-md overflow-hidden relative group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    <div
+      className={`aspect-video rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
     >
-      <img
-        src={image.url}
-        alt="Brainstorm idea"
-        className="w-full h-full object-cover transition-opacity group-hover:opacity-80"
-      />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-        <span className="text-white text-xs font-medium">Refine</span>
+      <button
+        onClick={onSelect}
+        className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <img
+          src={image.url}
+          alt={`Brainstorm idea ${index + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </button>
+      <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
+        {index + 1}
       </div>
-      {subject && (
-        <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none max-w-[80%] truncate">
-          {subject}
-        </div>
-      )}
       {refineCount > 0 && (
-        <div className="absolute bottom-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none">
+        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
           {refineCount}x
         </div>
       )}
-    </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleLock()
+        }}
+        className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+        title={locked ? 'Unlock slot' : 'Lock slot'}
+      >
+        {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRegenerate()
+        }}
+        className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+        title="Regenerate this slot"
+      >
+        <RefreshCw className="size-3" />
+      </button>
+    </div>
   )
 }
