@@ -26,17 +26,18 @@ const MAX_CHIPS = 6
 
 interface BrainstormPanelProps {
   accessToken: string | undefined
+  refineModels?: Array<string>
+  aspectRatio?: string
+  debug?: boolean
 }
 
-export function BrainstormPanel({ accessToken }: BrainstormPanelProps) {
-  const [subjects, setSubjects] = useState<Array<string>>([
-    'male',
-    'female',
-    'monster',
-    'plant',
-    'insect',
-    'reptile',
-  ])
+export function BrainstormPanel({
+  accessToken,
+  refineModels,
+  aspectRatio: refineAspectRatio,
+  debug = false,
+}: BrainstormPanelProps) {
+  const [subjects, setSubjects] = useState<Array<string>>(['male', 'female'])
   const [role, setRole] = useState('hero')
   const [vibe, setVibe] = useState<BrainstormVibeKey>('cinematic')
   const [colorGrade, setColorGrade] = useState<string | null>(null)
@@ -49,6 +50,8 @@ export function BrainstormPanel({ accessToken }: BrainstormPanelProps) {
     vibe,
     colorGrade,
     model,
+    refineModels,
+    aspectRatio: refineAspectRatio,
   })
 
   return (
@@ -57,20 +60,33 @@ export function BrainstormPanel({ accessToken }: BrainstormPanelProps) {
         <div>
           <h2 className="text-base font-semibold">Brainstorm</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Generate 6 quick ideas with Flux Schnell. Click one to refine it
-            with Nano Banana Pro.
+            Generate 6 quick ideas. Click one to refine with your selected
+            models.
           </p>
         </div>
-        <ActionButton
-          onClick={() => void brainstorm.trigger()}
-          loading={brainstorm.isGenerating}
-          loadingText="Generating..."
-          disabled={!accessToken}
-          icon={<Sparkles className="size-4" />}
-          className="shrink-0"
-        >
-          {brainstorm.hasGenerated ? 'Regenerate' : 'Brainstorm'}
-        </ActionButton>
+        <div className="flex items-center gap-2 shrink-0">
+          {brainstorm.hasGenerated && (
+            <button
+              onClick={brainstorm.clearPrompts}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Clear Prompts
+            </button>
+          )}
+          <ActionButton
+            onClick={() =>
+              void (brainstorm.hasGenerated
+                ? brainstorm.regenerate()
+                : brainstorm.trigger())
+            }
+            loading={brainstorm.isGenerating}
+            loadingText="Generating..."
+            disabled={!accessToken}
+            icon={<Sparkles className="size-4" />}
+          >
+            {brainstorm.hasGenerated ? 'Regenerate' : 'Brainstorm'}
+          </ActionButton>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -148,6 +164,28 @@ export function BrainstormPanel({ accessToken }: BrainstormPanelProps) {
           />
         ))}
       </div>
+
+      {debug && (
+        <div className="space-y-2 border-t border-border pt-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Prompts (debug)
+          </p>
+          {brainstorm.prompts.map((prompt, i) => (
+            <div key={i} className="flex gap-2 items-start">
+              <span className="text-xs text-muted-foreground pt-2 shrink-0 w-4 text-right">
+                {i + 1}
+              </span>
+              <textarea
+                value={prompt}
+                onChange={(e) => brainstorm.updatePrompt(i, e.target.value)}
+                rows={1}
+                className="flex-1 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none overflow-hidden"
+                style={{ fieldSizing: 'content' } as React.CSSProperties}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

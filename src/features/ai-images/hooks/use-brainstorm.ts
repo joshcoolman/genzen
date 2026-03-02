@@ -7,6 +7,7 @@ import {
   BRAINSTORM_PROMPT,
   brainstormImages,
   checkBrainstormImages,
+  regenerateBrainstormImages,
 } from '@/features/ai-images/server/brainstorm-images.server'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 
@@ -25,6 +26,8 @@ interface UseBrainstormOptions {
   vibe?: BrainstormVibeKey
   colorGrade?: string | null
   model?: BrainstormModelKey
+  refineModels?: Array<string>
+  aspectRatio?: string
 }
 
 export function useBrainstorm({
@@ -34,6 +37,8 @@ export function useBrainstorm({
   vibe,
   colorGrade,
   model,
+  refineModels,
+  aspectRatio,
 }: UseBrainstormOptions) {
   const [images, setImages] = useState<Array<BrainstormImage>>(
     Array.from({ length: BRAINSTORM_COUNT }, () => ({
@@ -52,7 +57,10 @@ export function useBrainstorm({
   // Set of request IDs still waiting for a result
   const pendingIds = useRef<Set<string>>(new Set())
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Per-slot prompts from the last brainstorm run
+  // Per-slot prompts from the last brainstorm run (exposed as state for debug)
+  const [prompts, setPrompts] = useState<Array<string>>(
+    Array.from({ length: BRAINSTORM_COUNT }, () => BRAINSTORM_PROMPT),
+  )
   const slotPrompts = useRef<Array<string>>(
     Array.from({ length: BRAINSTORM_COUNT }, () => BRAINSTORM_PROMPT),
   )
@@ -150,6 +158,7 @@ export function useBrainstorm({
       })
 
       slotPrompts.current = prompts
+      setPrompts(prompts)
       // Even distribution: subjects cycle across slots
       setSlotSubjects(
         Array.from({ length: BRAINSTORM_COUNT }, (_, i) =>
@@ -162,7 +171,8 @@ export function useBrainstorm({
       })
 
       pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
-    } catch {
+    } catch (err) {
+      console.error('[brainstorm] trigger failed:', err)
       setImages(
         Array.from({ length: BRAINSTORM_COUNT }, () => ({
           url: null,
@@ -176,29 +186,98 @@ export function useBrainstorm({
   async function selectImage(url: string, slotIndex: number) {
     if (!accessToken) return
 
+    const models = refineModels?.length ? refineModels : ['fal-ai/flux-2-pro']
+
     setRefineCounts((prev) => {
       const next = [...prev]
-      next[slotIndex] = (next[slotIndex] ?? 0) + 1
+      next[slotIndex] = (next[slotIndex] ?? 0) + models.length
       return next
     })
 
-    await generateImage({
-      data: {
-        prompt: slotPrompts.current[slotIndex] ?? BRAINSTORM_PROMPT,
-        model: 'fal-ai/nano-banana-pro',
-        accessToken,
-        sourceImageUrl: url,
-      },
-    })
+    await Promise.all(
+      models.map((modelId) =>
+        generateImage({
+          data: {
+            prompt: slotPrompts.current[slotIndex] ?? BRAINSTORM_PROMPT,
+            model: modelId,
+            accessToken,
+            sourceImageUrl: url,
+            ...(aspectRatio ? { aspectRatio } : {}),
+          },
+        }),
+      ),
+    )
+  }
+
+  async function regenerate() {
+    if (!accessToken || isGenerating) return
+
+    stopPolling()
+    requestIdToSlot.current = new Map()
+    pendingIds.current = new Set()
+    setIsGenerating(true)
+    setHasGenerated(false)
+    setImages(
+      Array.from({ length: BRAINSTORM_COUNT }, () => ({
+        url: null,
+        loading: true,
+      })),
+    )
+    setRefineCounts(Array.from({ length: BRAINSTORM_COUNT }, () => 0))
+
+    try {
+      activeModel.current = model ?? 'schnell'
+      const { requestIds } = await regenerateBrainstormImages({
+        data: {
+          accessToken,
+          prompts: slotPrompts.current,
+          model: model ?? 'schnell',
+        },
+      })
+
+      requestIds.forEach((id, idx) => {
+        requestIdToSlot.current.set(id, idx)
+        pendingIds.current.add(id)
+      })
+
+      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
+    } catch (err) {
+      console.error('[brainstorm] regenerate failed:', err)
+      setImages(
+        Array.from({ length: BRAINSTORM_COUNT }, () => ({
+          url: null,
+          loading: false,
+        })),
+      )
+      setIsGenerating(false)
+    }
+  }
+
+  function clearPrompts() {
+    const empty = Array.from(
+      { length: BRAINSTORM_COUNT },
+      () => BRAINSTORM_PROMPT,
+    )
+    slotPrompts.current = empty
+    setPrompts(empty)
+  }
+
+  function updatePrompt(index: number, value: string) {
+    slotPrompts.current[index] = value
+    setPrompts([...slotPrompts.current])
   }
 
   return {
     images,
+    prompts,
     refineCounts,
     slotSubjects,
     isGenerating,
     hasGenerated,
     trigger,
+    regenerate,
+    clearPrompts,
     selectImage,
+    updatePrompt,
   }
 }

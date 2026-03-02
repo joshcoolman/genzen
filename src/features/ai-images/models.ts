@@ -26,6 +26,15 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'FLUX',
   },
   {
+    id: 'fal-ai/flux-2-pro',
+    name: 'FLUX.2 Pro',
+    description: 'Best photorealism',
+    category: 'FLUX',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/flux-2-pro/edit',
+    imageInputParam: 'image_urls',
+  },
+  {
     id: 'fal-ai/flux-2-flex',
     name: 'FLUX.2 Flex',
     description: 'Flexible generation',
@@ -113,16 +122,17 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   },
 ]
 
-// Default visible models - curated selection of 8 most useful models
+// Default visible models - curated selection of most useful models
 export const DEFAULT_VISIBLE_MODELS = [
   ALL_IMAGE_MODELS[0], // FLUX Schnell
   ALL_IMAGE_MODELS[1], // FLUX Dev
-  ALL_IMAGE_MODELS[2], // FLUX.2 Flex
-  ALL_IMAGE_MODELS[3], // FLUX Kontext Pro
-  ALL_IMAGE_MODELS[7], // Nano Banana Pro
-  ALL_IMAGE_MODELS[8], // Recraft V3
-  ALL_IMAGE_MODELS[9], // Grok Imagine
-  ALL_IMAGE_MODELS[10], // ImagineArt 1.5
+  ALL_IMAGE_MODELS[2], // FLUX.2 Pro
+  ALL_IMAGE_MODELS[3], // FLUX.2 Flex
+  ALL_IMAGE_MODELS[4], // FLUX Kontext Pro
+  ALL_IMAGE_MODELS[8], // Nano Banana Pro
+  ALL_IMAGE_MODELS[9], // Recraft V3
+  ALL_IMAGE_MODELS[10], // Grok Imagine
+  ALL_IMAGE_MODELS[11], // ImagineArt 1.5
 ]
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id

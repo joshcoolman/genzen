@@ -107,9 +107,12 @@ export const generateImage = createServerFn({ method: 'POST' })
     }
 
     // Build FAL input (effectivePrompt and imageUrl are finalized above)
+    // FLUX 2 Pro edit expects safety_tolerance as string "1"-"5";
+    // other models accept numeric values up to 6.
+    const isEditEndpoint = falModelId.endsWith('/edit')
     const falInput: Record<string, unknown> = {
       prompt: effectivePrompt,
-      safety_tolerance: 6,
+      safety_tolerance: isEditEndpoint ? '5' : 6,
       ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
       ...(imageUrl
         ? imageParam === 'image_urls'

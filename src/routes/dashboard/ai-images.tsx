@@ -28,7 +28,12 @@ function AiImagesPage() {
         )}
       </div>
 
-      <BrainstormPanel accessToken={page.accessToken} />
+      <BrainstormPanel
+        accessToken={page.accessToken}
+        refineModels={page.modelSettings.selectedModels}
+        aspectRatio={page.generator.aspectRatio}
+        debug
+      />
 
       <GeneratorPanel
         generator={page.generator}
