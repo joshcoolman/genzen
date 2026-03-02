@@ -6,6 +6,7 @@
 
 import { useState } from 'react'
 import { useUserImages } from '../hooks/useUserImages'
+import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { ImageUploadButton } from './ImageUploadButton'
 import { EmptyState, ImageGrid } from './ImageGrid'
 import { ImageCard } from './ImageCard'
@@ -37,6 +38,8 @@ export function UserImagesDisplay() {
   const handleUpload = async (input: CreateUserImageInput) => {
     await create(input)
   }
+
+  useClipboardPaste({ onUpload: handleUpload, enabled: !isCreating })
 
   const handleUpdate = async (
     id: string,
@@ -86,7 +89,12 @@ export function UserImagesDisplay() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">Uploads</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Uploads</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Cmd+V to paste from clipboard
+          </p>
+        </div>
 
         <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
       </div>

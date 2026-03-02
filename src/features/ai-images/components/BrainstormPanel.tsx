@@ -1,7 +1,21 @@
 import { useCallback, useRef, useState } from 'react'
-import { Loader2, Lock, Play, RefreshCw, Sparkles, Unlock } from 'lucide-react'
+import {
+  Loader2,
+  Lock,
+  Pencil,
+  Play,
+  RefreshCw,
+  Sparkles,
+  Unlock,
+} from 'lucide-react'
 import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
 import { ActionButton } from '@/components/ActionButton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
 
 interface BrainstormPanelProps {
@@ -16,6 +30,7 @@ export function BrainstormPanel({
   aspectRatio: refineAspectRatio,
 }: BrainstormPanelProps) {
   const [model, setModel] = useState<BrainstormModelKey>('schnell')
+  const [editInstruction, setEditInstruction] = useState('')
   const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([])
 
   const focusSlot = useCallback((index: number) => {
@@ -131,7 +146,7 @@ export function BrainstormPanel({
                   focusSlot(nextIndex)
                 }
               }}
-              rows={1}
+              rows={2}
               className="flex-1 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none overflow-hidden"
               style={{ fieldSizing: 'content' } as React.CSSProperties}
             />
@@ -149,6 +164,21 @@ export function BrainstormPanel({
                 )}
               </button>
               <button
+                onClick={() => {
+                  brainstorm.setEditingSlot(i)
+                  setEditInstruction('')
+                }}
+                disabled={brainstorm.editingSlots.has(i)}
+                className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                title="Edit prompt with specific instruction"
+              >
+                {brainstorm.editingSlots.has(i) ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Pencil className="size-3.5" />
+                )}
+              </button>
+              <button
                 onClick={() => void brainstorm.regenerateSlot(i)}
                 disabled={brainstorm.isGenerating}
                 className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
@@ -160,6 +190,60 @@ export function BrainstormPanel({
           </div>
         ))}
       </div>
+
+      <Dialog
+        open={brainstorm.editingSlot !== null}
+        onOpenChange={(open) => {
+          if (!open) brainstorm.setEditingSlot(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Prompt</DialogTitle>
+          </DialogHeader>
+          {brainstorm.editingSlot !== null && (
+            <div className="space-y-4">
+              {brainstorm.images[brainstorm.editingSlot]?.url && (
+                <img
+                  src={brainstorm.images[brainstorm.editingSlot].url!}
+                  alt={`Brainstorm ${brainstorm.editingSlot + 1}`}
+                  className="w-full max-w-xs mx-auto rounded-md"
+                />
+              )}
+              <input
+                type="text"
+                value={editInstruction}
+                onChange={(e) => setEditInstruction(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && editInstruction.trim()) {
+                    const slot = brainstorm.editingSlot!
+                    void brainstorm.editSlotPrompt(slot, editInstruction.trim())
+                    brainstorm.setEditingSlot(null)
+                    setEditInstruction('')
+                  }
+                }}
+                placeholder="e.g. move subject to the left"
+                className="w-full rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                autoFocus
+              />
+              <div className="flex justify-end">
+                <ActionButton
+                  onClick={() => {
+                    if (!editInstruction.trim()) return
+                    const slot = brainstorm.editingSlot!
+                    void brainstorm.editSlotPrompt(slot, editInstruction.trim())
+                    brainstorm.setEditingSlot(null)
+                    setEditInstruction('')
+                  }}
+                  disabled={!editInstruction.trim()}
+                >
+                  Apply Edit
+                </ActionButton>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

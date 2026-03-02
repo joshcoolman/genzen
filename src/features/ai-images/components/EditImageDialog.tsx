@@ -7,7 +7,6 @@ import {
   X,
 } from 'lucide-react'
 import type { EditorState } from '@/features/ai-images/hooks/use-editor'
-import type { SavedAiImage } from '@/features/ai-images/types'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import {
   Dialog,
@@ -28,16 +27,19 @@ import { Button } from '@/components/ui/button'
 interface EditImageDialogProps {
   editor: EditorState
   imageUrls: Record<string, string>
-  selectableImages: Array<SavedAiImage>
+  aiImages: Array<{ id: string }>
+  uploadImages: Array<{ id: string }>
 }
 
 export function EditImageDialog({
   editor,
   imageUrls,
-  selectableImages,
+  aiImages,
+  uploadImages,
 }: EditImageDialogProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pendingSelection, setPendingSelection] = useState<Array<string>>([])
+  const [pickerFilter, setPickerFilter] = useState<'ai' | 'uploads'>('ai')
 
   const currentModel = EDIT_MODELS.find((m) => m.id === editor.editModelId)
   const multiImageSupported = currentModel?.supportsMultiImage ?? false
@@ -70,8 +72,9 @@ export function EditImageDialog({
     setPickerOpen(false)
   }
 
-  // Filter out the edit target from selectable images
-  const pickableImages = selectableImages.filter(
+  // Filter images based on picker tab, excluding the edit target
+  const sourceImages = pickerFilter === 'ai' ? aiImages : uploadImages
+  const pickableImages = sourceImages.filter(
     (img) => img.id !== editor.editTarget?.id,
   )
 
@@ -93,10 +96,39 @@ export function EditImageDialog({
         {pickerOpen ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Select up to 4 reference images
-              </p>
-              <span className="text-xs tabular-nums text-muted-foreground">
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPickerFilter('ai')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    pickerFilter === 'ai'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  AI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickerFilter('uploads')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    pickerFilter === 'uploads'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  Uploads
+                </button>
+              </div>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ${
+                  pendingSelection.length === 0
+                    ? 'bg-muted text-muted-foreground'
+                    : pendingSelection.length >= 4
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-emerald-600 text-white'
+                }`}
+              >
                 {pendingSelection.length}/4
               </span>
             </div>

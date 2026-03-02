@@ -3,6 +3,7 @@ import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-
 import {
   BRAINSTORM_PROMPT,
   checkBrainstormImages,
+  editPrompt,
   regenerateBrainstormImages,
   rewritePrompt,
 } from '@/features/ai-images/server/brainstorm-images.server'
@@ -42,6 +43,8 @@ export function useBrainstorm({
   const [hasGenerated, setHasGenerated] = useState(false)
   const [lockedSlots, setLockedSlots] = useState<Set<number>>(new Set())
   const [rewritingSlots, setRewritingSlots] = useState<Set<number>>(new Set())
+  const [editingSlot, setEditingSlot] = useState<number | null>(null)
+  const [editingSlots, setEditingSlots] = useState<Set<number>>(new Set())
 
   const requestIdToSlot = useRef<Map<string, number>>(new Map())
   const pendingIds = useRef<Set<string>>(new Set())
@@ -268,18 +271,45 @@ export function useBrainstorm({
     setRewritingSlots((prev) => new Set(prev).add(index))
 
     try {
-      const { prompt } = await rewritePrompt({
+      const result = await rewritePrompt({
         data: {
           accessToken,
           prompt: slotPrompts.current[index],
         },
       })
+      const { prompt } = result
       slotPrompts.current[index] = prompt
       setPrompts([...slotPrompts.current])
     } catch (err) {
       console.error('[brainstorm] rewriteSlotPrompt failed:', err)
     } finally {
       setRewritingSlots((prev) => {
+        const next = new Set(prev)
+        next.delete(index)
+        return next
+      })
+    }
+  }
+
+  async function editSlotPrompt(index: number, editInstruction: string) {
+    if (!accessToken) return
+
+    setEditingSlots((prev) => new Set(prev).add(index))
+
+    try {
+      const { prompt } = await editPrompt({
+        data: {
+          accessToken,
+          prompt: slotPrompts.current[index],
+          editInstruction,
+        },
+      })
+      slotPrompts.current[index] = prompt
+      setPrompts([...slotPrompts.current])
+    } catch (err) {
+      console.error('[brainstorm] editSlotPrompt failed:', err)
+    } finally {
+      setEditingSlots((prev) => {
         const next = new Set(prev)
         next.delete(index)
         return next
@@ -300,6 +330,9 @@ export function useBrainstorm({
     hasGenerated,
     lockedSlots,
     rewritingSlots,
+    editingSlot,
+    setEditingSlot,
+    editingSlots,
     generate,
     regenerateSlot,
     clearPrompts,
@@ -308,5 +341,6 @@ export function useBrainstorm({
     toggleLock,
     rewriteSlotPrompt,
     rewriteAndGenerateSlot,
+    editSlotPrompt,
   }
 }

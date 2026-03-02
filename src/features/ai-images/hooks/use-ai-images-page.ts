@@ -10,6 +10,7 @@ import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
 import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 
 export function useAiImagesPage() {
   const { user, session } = useAuth()
@@ -20,6 +21,8 @@ export function useAiImagesPage() {
     userId: user?.id,
     accessToken,
   })
+
+  const userImages = useUserImages(user?.id)
 
   const modelSettings = useModelSettings()
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +84,7 @@ export function useAiImagesPage() {
     accessToken,
     credits,
     gallery,
+    userImages,
     modelSettings,
     generator,
     editor,

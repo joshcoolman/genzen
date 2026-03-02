@@ -65,8 +65,9 @@ function AiImagesPage() {
 
       <EditImageDialog
         editor={page.editor}
-        imageUrls={page.gallery.imageUrls}
-        selectableImages={page.completedImages}
+        imageUrls={{ ...page.gallery.imageUrls, ...page.userImages.imageUrls }}
+        aiImages={page.completedImages}
+        uploadImages={page.userImages.images}
       />
 
       {page.lightbox.isOpen && (

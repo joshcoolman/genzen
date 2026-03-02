@@ -6,9 +6,7 @@
 
 import { useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
-import { computeFileHash } from '../lib/file-hash'
-import { parseFilenameToTitle } from '../lib/filename-parser'
-import { createUserImageSchema } from '../types'
+import { processAndUploadFiles } from '../lib/process-files'
 import type { CreateUserImageInput } from '../types'
 import { ActionButton } from '@/components/ActionButton'
 
@@ -50,25 +48,7 @@ export function ImageUploadButton({
     setIsProcessing(true)
 
     try {
-      for (const file of Array.from(files)) {
-        const file_hash = await computeFileHash(file)
-        const title = parseFilenameToTitle(file.name)
-
-        const input: CreateUserImageInput = {
-          file,
-          file_hash,
-          title,
-          description: null,
-        }
-
-        const validationResult = createUserImageSchema.safeParse(input)
-        if (!validationResult.success) {
-          console.error('Validation failed:', validationResult.error)
-          continue
-        }
-
-        await onUpload(input)
-      }
+      await processAndUploadFiles(Array.from(files), onUpload)
     } catch (error) {
       console.error('Upload failed:', error)
     } finally {

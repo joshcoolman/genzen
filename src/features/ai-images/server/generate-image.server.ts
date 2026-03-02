@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -113,7 +114,11 @@ export const generateImage = createServerFn({ method: 'POST' })
     const falInput: Record<string, unknown> = {
       prompt: effectivePrompt,
       safety_tolerance: isEditEndpoint ? '5' : 6,
-      ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+      ...(aspectRatio
+        ? modelDef?.sizeParam === 'image_size'
+          ? { image_size: RATIO_TO_SIZE[aspectRatio] ?? RATIO_TO_SIZE['1:1'] }
+          : { aspect_ratio: aspectRatio }
+        : {}),
       ...(imageUrl
         ? imageParam === 'image_urls'
           ? { image_urls: [imageUrl] }

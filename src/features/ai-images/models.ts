@@ -8,6 +8,7 @@ export interface ImageModel {
   supportsImageInput?: boolean
   imageInputModelId?: string
   imageInputParam?: 'image_url' | 'image_urls'
+  sizeParam?: 'image_size' | 'aspect_ratio'
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -80,6 +81,7 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/bytedance/seedream/v4/edit',
     imageInputParam: 'image_urls',
+    sizeParam: 'image_size',
   },
   // Specialized - verified models
   {

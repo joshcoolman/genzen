@@ -40,12 +40,12 @@ export function ImageCard({
       onClick={onClick}
     >
       {/* Image */}
-      <div className="aspect-square overflow-hidden bg-sidebar-hover">
+      <div className="aspect-square overflow-hidden bg-black">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={image.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-muted-foreground">

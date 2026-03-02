@@ -45,6 +45,26 @@ export const rewritePrompt = createServerFn({ method: 'POST' })
     return { prompt: text.trim() }
   })
 
+interface EditPromptInput {
+  accessToken: string
+  prompt: string
+  editInstruction: string
+}
+
+export const editPrompt = createServerFn({ method: 'POST' })
+  .inputValidator((data: EditPromptInput) => data)
+  .handler(async ({ data }) => {
+    await requireAuth(data.accessToken)
+
+    const { text } = await generateText({
+      model: ai.haiku,
+      system: `You are editing an image generation prompt. The user wants this change: ${data.editInstruction}. Revise the prompt to incorporate the edit. Return ONLY the revised prompt, no quotes or explanation.`,
+      prompt: data.prompt,
+    })
+
+    return { prompt: text.trim() }
+  })
+
 interface RegenerateBrainstormInput {
   accessToken: string
   prompts: Array<string>

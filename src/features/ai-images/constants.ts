@@ -37,6 +37,22 @@ export function detectAspectRatio(width: number, height: number): string {
   return best
 }
 
+export const RATIO_TO_SIZE: Record<string, { width: number; height: number }> =
+  {
+    '16:9': { width: 1920, height: 1080 },
+    '9:16': { width: 1080, height: 1920 },
+    '2:1': { width: 2048, height: 1024 },
+    '1:2': { width: 1024, height: 2048 },
+    '3:2': { width: 1536, height: 1024 },
+    '2:3': { width: 1024, height: 1536 },
+    '4:3': { width: 1536, height: 1152 },
+    '3:4': { width: 1152, height: 1536 },
+    '21:9': { width: 1920, height: 823 },
+    '1:1': { width: 1024, height: 1024 },
+    '5:4': { width: 1280, height: 1024 },
+    '4:5': { width: 1024, height: 1280 },
+  }
+
 export function flipOrientation(
   orientation: 'landscape' | 'portrait',
   aspectRatio: string,
