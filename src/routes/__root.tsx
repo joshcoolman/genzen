@@ -7,6 +7,7 @@ import {
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/components/auth-provider'
 import { SpotlightNav } from '@/features/spotlight'
+import { StatusBar } from '@/features/status-bar'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -48,6 +49,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <SpotlightNav />
+      <StatusBar />
       <Outlet />
     </AuthProvider>
   )
