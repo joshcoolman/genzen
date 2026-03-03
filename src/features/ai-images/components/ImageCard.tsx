@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { GripVertical } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import {
   Popover,
@@ -14,8 +12,6 @@ interface ImageCardProps {
   imageUrl: string | undefined
   generatingVariation: boolean
   onOpen: (img: SavedAiImage) => void
-  onLoadPrompt: (img: SavedAiImage) => void
-  onLoadPromptAndModel: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage, count: number) => void
   onEdit: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
@@ -27,34 +23,13 @@ export function ImageCard({
   imageUrl,
   generatingVariation,
   onOpen,
-  onLoadPrompt,
-  onLoadPromptAndModel,
   onMoreLikeThis,
   onEdit,
   onDelete,
   getModelName,
 }: ImageCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: img.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`group relative overflow-hidden rounded-lg border border-border bg-card ${isDragging ? 'ring-2 ring-primary' : ''}`}
-    >
+    <div className="group relative overflow-hidden rounded-lg border border-border bg-card">
       <div className="relative">
         <div
           className="aspect-square w-full bg-black flex items-center justify-center cursor-zoom-in"
@@ -96,68 +71,63 @@ export function ImageCard({
             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
           </svg>
         </button>
-        <div className="absolute inset-x-0 bottom-0 flex gap-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => onLoadPrompt(img)}
-            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-          >
-            Prompt
-          </button>
-          <button
-            onClick={() => onLoadPromptAndModel(img)}
-            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-          >
-            P+M
-          </button>
-          <MorePopover
-            disabled={generatingVariation}
-            onSelect={(count) => onMoreLikeThis(img, count)}
-          />
-          <button
-            onClick={() => onEdit(img)}
-            className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors"
-          >
-            Edit
-          </button>
-        </div>
       </div>
-      <div className="p-3 space-y-1">
-        <PromptText text={img.generation_metadata?.prompt ?? img.title} />
+      <div className="flex gap-1 p-1.5">
+        <MorePopover
+          disabled={generatingVariation}
+          onSelect={(count) => onMoreLikeThis(img, count)}
+        />
+        <button
+          onClick={() => onEdit(img)}
+          className="flex-1 rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+        >
+          Edit
+        </button>
+      </div>
+      <div className="px-3 pb-3 space-y-2">
+        <div className="relative">
+          <div className="absolute top-0 right-0">
+            <CopyPromptButton
+              text={img.generation_metadata?.prompt ?? img.title}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground pr-6">
+            {img.generation_metadata?.prompt ?? img.title}
+          </p>
+        </div>
+        <hr className="border-border" />
         <div className="flex items-center justify-between text-xs text-muted-foreground/60">
           <span>
             {img.generation_metadata
               ? getModelName(img.generation_metadata.model)
               : ''}
           </span>
-          <div className="flex items-center gap-1">
-            <span>{new Date(img.created_at).toLocaleDateString()}</span>
-            <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing p-0.5 rounded hover:text-foreground"
-              title="Drag to reorder"
-            >
-              <GripVertical className="h-3.5 w-3.5" />
-            </div>
-          </div>
+          <span>{new Date(img.created_at).toLocaleDateString()}</span>
         </div>
       </div>
     </div>
   )
 }
 
-function PromptText({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
+function CopyPromptButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
   return (
-    <p
-      className={`text-xs text-muted-foreground cursor-pointer ${expanded ? '' : 'line-clamp-2'}`}
+    <button
       onClick={(e) => {
         e.stopPropagation()
-        setExpanded((v) => !v)
+        navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
       }}
+      className="text-muted-foreground/60 hover:text-foreground transition-colors"
+      aria-label="Copy prompt"
     >
-      {text}
-    </p>
+      {copied ? (
+        <Check className="h-4 w-4 text-green-500" />
+      ) : (
+        <Copy className="h-4 w-4" />
+      )}
+    </button>
   )
 }
 
@@ -175,7 +145,7 @@ function MorePopover({
       <PopoverTrigger asChild>
         <button
           disabled={disabled}
-          className="flex-1 rounded bg-background/80 backdrop-blur-sm px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-background/95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {disabled ? '...' : 'More'}
         </button>

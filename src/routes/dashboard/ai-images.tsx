@@ -47,7 +47,6 @@ function AiImagesPage() {
         imageUrls={page.gallery.imageUrls}
         loadingGallery={page.gallery.loadingGallery}
         generatingVariationFor={page.variations.generatingVariationFor}
-        onReorder={(id, order) => void page.gallery.reorderImages(id, order)}
         onOpenLightbox={page.lightbox.open}
         onLoadPrompt={page.handleLoadPrompt}
         onLoadPromptAndModel={page.handleLoadPromptAndModel}

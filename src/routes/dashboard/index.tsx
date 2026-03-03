@@ -126,8 +126,8 @@ function buildFeed(
 const TYPE_LABELS: Record<FeedItemType, string> = {
   upload: 'Upload',
   ai_upload: 'AI Upload',
-  ai_image: 'AI Image',
-  ai_video: 'AI Video',
+  ai_image: 'Image',
+  ai_video: 'Video',
   workspace: 'Workspace',
 }
 
@@ -344,9 +344,9 @@ function DashboardHome() {
 
   const pillFilters: Array<TypeFilter> = [
     'all',
-    'ai_video',
-    'ai_image',
     'upload',
+    'ai_image',
+    'ai_video',
     ...(viewSettings.showWorkspaces ? (['workspace'] as const) : []),
   ]
 
@@ -438,7 +438,7 @@ function DashboardHome() {
               hoverBorder="hover:border-foreground/30"
               fallback={<EmptyThumbnail label={item.label} type={item.type} />}
             >
-              <TypeBadge type={item.type} />
+              {typeFilter === 'all' && <TypeBadge type={item.type} />}
               {item.type === 'ai_video' &&
                 item.videoReady &&
                 item.generationId && (
