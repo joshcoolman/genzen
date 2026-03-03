@@ -39,6 +39,7 @@ interface UseImageCollectionReturn {
   add: (image: CollectedImage) => void
   addMany: (images: Array<CollectedImage>) => void
   remove: (id: string) => void
+  retainOnly: (validIds: Set<string>) => void
   clear: () => void
   count: number
 }
@@ -72,6 +73,14 @@ export function useImageCollection(): UseImageCollectionReturn {
     setImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
+  const retainOnly = useCallback((validIds: Set<string>) => {
+    setImages((prev) => {
+      const filtered = prev.filter((img) => validIds.has(img.id))
+      if (filtered.length === prev.length) return prev
+      return filtered
+    })
+  }, [])
+
   const clear = useCallback(() => {
     setImages([])
   }, [])
@@ -82,6 +91,7 @@ export function useImageCollection(): UseImageCollectionReturn {
     add,
     addMany,
     remove,
+    retainOnly,
     clear,
     count: images.length,
   }

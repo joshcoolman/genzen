@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { processAndUploadFiles } from '../lib/process-files'
 import { useImageCollection } from './useImageCollection'
 import { useImageUpload } from './useImageUpload'
@@ -28,6 +28,24 @@ export function useDescribePage(): UseDescribePageReturn {
   const existingImages = useExistingImages(user?.id)
   const [isPickerOpen, setPickerOpen] = useState(false)
 
+  // Validate collection against Supabase on mount -- prune stale references
+  const hasValidated = useRef(false)
+  useEffect(() => {
+    if (hasValidated.current || collection.count === 0) return
+    hasValidated.current = true
+    const ids = collection.images.map((img) => img.id)
+    void (async () => {
+      const { data } = await supabase
+        .from('user_images')
+        .select('id')
+        .in('id', ids)
+      if (data) {
+        const validIds = new Set(data.map((row) => row.id))
+        collection.retainOnly(validIds)
+      }
+    })()
+  }, [collection])
+
   const handleUpload = useCallback(
     async (input: CreateUserImageInput) => {
       const collected = await upload(input)
@@ -55,22 +73,21 @@ export function useDescribePage(): UseDescribePageReturn {
       const image = collection.images.find((img) => img.id === id)
       if (!image) return
 
-      if (image.addedInSession) {
-        // Destructive: delete from Supabase storage + DB, then remove from collection
-        supabase
-          .from('user_images')
-          .select('storage_path')
-          .eq('id', id)
-          .single()
-          .then(({ data }) => {
-            if (data?.storage_path) {
-              supabase.storage.from(BUCKET_NAME).remove([data.storage_path])
-            }
-            supabase.from('user_images').delete().eq('id', id)
-          })
-      }
-
       collection.remove(id)
+
+      if (image.addedInSession) {
+        void (async () => {
+          const { data } = await supabase
+            .from('user_images')
+            .select('storage_path')
+            .eq('id', id)
+            .single()
+          if (data?.storage_path) {
+            await supabase.storage.from(BUCKET_NAME).remove([data.storage_path])
+          }
+          await supabase.from('user_images').delete().eq('id', id)
+        })()
+      }
     },
     [collection.images, collection.remove],
   )
