@@ -21,6 +21,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
+import { Route as DashboardDescribeRouteImport } from './routes/dashboard/describe'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -86,6 +87,11 @@ const DashboardImagesRoute = DashboardImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardDescribeRoute = DashboardDescribeRouteImport.update({
+  id: '/describe',
+  path: '/describe',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/describe'
     | '/dashboard/images'
     | '/dashboard/video'
     | '/docs/$'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/describe'
     | '/dashboard/images'
     | '/docs/$'
     | '/dashboard'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/describe'
     | '/dashboard/images'
     | '/dashboard/video'
     | '/docs/$'
@@ -310,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/describe': {
+      id: '/dashboard/describe'
+      path: '/describe'
+      fullPath: '/dashboard/describe'
+      preLoaderRoute: typeof DashboardDescribeRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
@@ -358,6 +377,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardDescribeRoute: typeof DashboardDescribeRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -366,6 +386,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardDescribeRoute: DashboardDescribeRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

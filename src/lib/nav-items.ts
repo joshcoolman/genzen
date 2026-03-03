@@ -1,4 +1,4 @@
-import { Film, Image, LayoutGrid, Sparkles, User } from 'lucide-react'
+import { Film, Image, LayoutGrid, ScanEye, Sparkles, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -27,6 +27,12 @@ export const navItems: Array<NavItem> = [
     label: 'AI Video',
     href: '/dashboard/video',
     icon: Film,
+    activeOnly: true,
+  },
+  {
+    label: 'Describe',
+    href: '/dashboard/describe',
+    icon: ScanEye,
     activeOnly: true,
   },
   {
