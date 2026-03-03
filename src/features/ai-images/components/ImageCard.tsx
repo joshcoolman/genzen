@@ -50,6 +50,11 @@ export function ImageCard({
             Variation
           </span>
         )}
+        {img.generation_metadata && (
+          <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+            {getModelName(img.generation_metadata.model)}
+          </span>
+        )}
         <button
           onClick={() => onDelete(img)}
           className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
@@ -84,7 +89,7 @@ export function ImageCard({
           Edit
         </button>
       </div>
-      <div className="px-3 pb-3 space-y-2">
+      <div className="px-3 pb-3">
         <div className="relative">
           <div className="absolute top-0 right-0">
             <CopyPromptButton
@@ -94,15 +99,6 @@ export function ImageCard({
           <p className="text-xs text-muted-foreground pr-6">
             {img.generation_metadata?.prompt ?? img.title}
           </p>
-        </div>
-        <hr className="border-border" />
-        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
-          <span>
-            {img.generation_metadata
-              ? getModelName(img.generation_metadata.model)
-              : ''}
-          </span>
-          <span>{new Date(img.created_at).toLocaleDateString()}</span>
         </div>
       </div>
     </div>
