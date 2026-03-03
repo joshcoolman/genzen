@@ -74,6 +74,7 @@ export function useImageUpload(
           title: newImage.title,
           url: urlData?.signedUrl ?? '',
           source: newImage.source,
+          addedInSession: true,
         }
       } catch (err) {
         const message =

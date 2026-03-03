@@ -19,7 +19,7 @@ export function DescribePageContent({ page }: DescribePageContentProps) {
 
       <ImageCollectionGrid
         images={page.collection.images}
-        onRemove={page.collection.remove}
+        onRemove={page.handleRemove}
       />
 
       <ExistingImagePicker

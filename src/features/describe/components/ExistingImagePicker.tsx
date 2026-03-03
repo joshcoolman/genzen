@@ -41,6 +41,16 @@ export function ExistingImagePicker({
     return images.filter((img) => img.source === sourceFilter)
   }, [images, sourceFilter])
 
+  const alreadyCollectedImages = useMemo(
+    () => filteredImages.filter((img) => alreadyCollectedIds.has(img.id)),
+    [filteredImages, alreadyCollectedIds],
+  )
+
+  const availableImages = useMemo(
+    () => filteredImages.filter((img) => !alreadyCollectedIds.has(img.id)),
+    [filteredImages, alreadyCollectedIds],
+  )
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -62,6 +72,7 @@ export function ExistingImagePicker({
           title: img.title,
           url: imageUrls[img.id] ?? '',
           source: img.source,
+          addedInSession: false,
         }),
       )
     onConfirm(selected)
@@ -118,34 +129,43 @@ export function ExistingImagePicker({
               No images found
             </div>
           ) : (
-            <ImageGrid size="md">
-              {filteredImages.map((image) => {
-                const isSelected = selectedIds.has(image.id)
-                const isAlreadyCollected = alreadyCollectedIds.has(image.id)
+            <>
+              {alreadyCollectedImages.length > 0 && (
+                <>
+                  <div className="mb-2">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Already collected
+                    </p>
+                    <ImageGrid size="md">
+                      {alreadyCollectedImages.map((image) => (
+                        <ImageCard
+                          key={image.id}
+                          src={imageUrls[image.id] ?? null}
+                          alt={image.title}
+                          onClick={() => {}}
+                          compact
+                        />
+                      ))}
+                    </ImageGrid>
+                  </div>
+                  <hr className="border-border my-3" />
+                </>
+              )}
+              <ImageGrid size="md">
+                {availableImages.map((image) => {
+                  const isSelected = selectedIds.has(image.id)
 
-                return (
-                  <div
-                    key={image.id}
-                    style={
-                      isAlreadyCollected
-                        ? { opacity: 0.2, filter: 'grayscale(100%)' }
-                        : undefined
-                    }
-                  >
+                  return (
                     <ImageCard
+                      key={image.id}
                       src={imageUrls[image.id] ?? null}
                       alt={image.title}
-                      onClick={() => {
-                        if (!isAlreadyCollected) toggleSelect(image.id)
-                      }}
-                      objectFit="cover"
+                      onClick={() => toggleSelect(image.id)}
                       compact
                       hoverBorder={
-                        isAlreadyCollected
-                          ? ''
-                          : isSelected
-                            ? 'border-accent-brand'
-                            : 'hover:border-accent-brand/50'
+                        isSelected
+                          ? 'border-accent-brand'
+                          : 'hover:border-accent-brand/50'
                       }
                     >
                       {isSelected && (
@@ -154,10 +174,10 @@ export function ExistingImagePicker({
                         </div>
                       )}
                     </ImageCard>
-                  </div>
-                )
-              })}
-            </ImageGrid>
+                  )
+                })}
+              </ImageGrid>
+            </>
           )}
         </div>
 

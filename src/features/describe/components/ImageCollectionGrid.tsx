@@ -39,7 +39,7 @@ export function ImageCollectionGrid({
               e.stopPropagation()
               onRemove(image.id)
             }}
-            className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/90"
+            className="absolute top-1 right-1 rounded-full bg-black/70 p-1 text-white hover:bg-black/90"
           >
             <X className="size-3" />
           </button>

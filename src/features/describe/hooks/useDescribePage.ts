@@ -6,6 +6,9 @@ import { useClipboardPaste } from './useClipboardPaste'
 import { useExistingImages } from './useExistingImages'
 import type { CreateUserImageInput } from '../types'
 import { useAuth } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
+
+const BUCKET_NAME = 'user-images'
 
 export interface UseDescribePageReturn {
   collection: ReturnType<typeof useImageCollection>
@@ -15,6 +18,7 @@ export interface UseDescribePageReturn {
   setPickerOpen: (open: boolean) => void
   openPicker: () => void
   handleFilesSelected: (files: FileList) => void
+  handleRemove: (id: string) => void
 }
 
 export function useDescribePage(): UseDescribePageReturn {
@@ -46,6 +50,31 @@ export function useDescribePage(): UseDescribePageReturn {
     setPickerOpen(true)
   }, [existingImages.refresh])
 
+  const handleRemove = useCallback(
+    (id: string) => {
+      const image = collection.images.find((img) => img.id === id)
+      if (!image) return
+
+      if (image.addedInSession) {
+        // Destructive: delete from Supabase storage + DB, then remove from collection
+        supabase
+          .from('user_images')
+          .select('storage_path')
+          .eq('id', id)
+          .single()
+          .then(({ data }) => {
+            if (data?.storage_path) {
+              supabase.storage.from(BUCKET_NAME).remove([data.storage_path])
+            }
+            supabase.from('user_images').delete().eq('id', id)
+          })
+      }
+
+      collection.remove(id)
+    },
+    [collection.images, collection.remove],
+  )
+
   return {
     collection,
     existingImages,
@@ -54,5 +83,6 @@ export function useDescribePage(): UseDescribePageReturn {
     setPickerOpen,
     openPicker,
     handleFilesSelected,
+    handleRemove,
   }
 }

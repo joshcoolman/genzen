@@ -15,6 +15,7 @@ export interface CollectedImage {
   title: string
   url: string
   source: string
+  addedInSession: boolean
 }
 
 const ALLOWED_MIME_TYPES = [
