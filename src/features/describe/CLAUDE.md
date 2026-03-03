@@ -4,7 +4,7 @@ Route: `/dashboard/describe` -- tool for collecting images and generating descri
 
 ### Status: Phase 1 Complete (Image Collection)
 
-Upload, paste, and select-from-library all working. Images persist to Supabase (`user-images` bucket + `user_images` table). Collection is pure client state (Set of IDs).
+Upload, paste, and select-from-library all working. Images persist to Supabase (`user-images` bucket + `user_images` table). Collection persisted to localStorage with 1-hour TTL.
 
 ### Phase 2 (Not Started)
 
@@ -22,7 +22,7 @@ lib/
   process-files.ts                # Validate + upload pipeline
 hooks/
   useDescribePage.ts              # Master hook -- composes all below
-  useImageCollection.ts           # Client state: add/addMany/remove/clear
+  useImageCollection.ts           # Client state: add/addMany/remove/retainOnly/clear + localStorage
   useImageUpload.ts               # Supabase storage upload + DB insert -> CollectedImage
   useClipboardPaste.ts            # Document paste listener -> upload callback
   useExistingImages.ts            # Fetch user's existing images + signed URLs
@@ -39,8 +39,12 @@ index.ts                          # Barrel: DescribePageContent, useDescribePage
 - **Self-contained**: No imports from other feature modules. Fresh copies of utilities.
 - **Shared components OK**: Uses `@/components/ImageCard`, `ImageGrid`, `ActionButton`, shadcn Dialog
 - **Collection = references**: Just IDs pointing to `user_images` rows, no separate table
+- **localStorage persistence**: Collection saved to `describe-collection` key with 1-hour TTL. Validated against Supabase on mount to prune stale references.
+- **Newest first**: New images prepend to collection (most recent at top)
+- **addedInSession flag**: `CollectedImage.addedInSession` tracks origin. `true` = pasted/uploaded in Describe, `false` = selected from library picker.
+- **Destructive remove**: Removing a session-added image deletes from Supabase storage + DB. Removing a library-selected image only drops the collection reference.
 - **Picker dialog**: 66vw width (inline style to beat shadcn specificity), scrollable grid with fixed footer
-- **Already-collected items**: 20% opacity + grayscale, non-clickable
+- **Already-collected items**: Shown in separate section above available images
 
 ### Route File Pattern
 
