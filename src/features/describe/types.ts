@@ -18,6 +18,12 @@ export interface CollectedImage {
   addedInSession: boolean
 }
 
+export interface SelectedImage {
+  id: string
+  url: string
+  title: string
+}
+
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',

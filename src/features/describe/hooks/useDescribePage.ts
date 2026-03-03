@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { processAndUploadFiles } from '../lib/process-files'
 import { useImageCollection } from './useImageCollection'
 import { useImageUpload } from './useImageUpload'
-import { useClipboardPaste } from './useClipboardPaste'
 import { useExistingImages } from './useExistingImages'
+import { useImageDescriber } from './useImageDescriber'
+import type { UseImageDescriberReturn } from './useImageDescriber'
 import type { CreateUserImageInput } from '../types'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -17,8 +18,10 @@ export interface UseDescribePageReturn {
   isPickerOpen: boolean
   setPickerOpen: (open: boolean) => void
   openPicker: () => void
-  handleFilesSelected: (files: FileList) => void
+  handleFilesSelected: (files: Array<File>) => void
+  handleImagePasted: (file: File) => void
   handleRemove: (id: string) => void
+  describer: UseImageDescriberReturn
 }
 
 export function useDescribePage(): UseDescribePageReturn {
@@ -27,6 +30,7 @@ export function useDescribePage(): UseDescribePageReturn {
   const { upload, isUploading } = useImageUpload(user?.id)
   const existingImages = useExistingImages(user?.id)
   const [isPickerOpen, setPickerOpen] = useState(false)
+  const describer = useImageDescriber()
 
   // Validate collection against Supabase on mount -- prune stale references
   const hasValidated = useRef(false)
@@ -54,11 +58,16 @@ export function useDescribePage(): UseDescribePageReturn {
     [upload, collection.add],
   )
 
-  useClipboardPaste({ onUpload: handleUpload, enabled: !isPickerOpen })
-
   const handleFilesSelected = useCallback(
-    (files: FileList) => {
-      processAndUploadFiles(Array.from(files), handleUpload)
+    (files: Array<File>) => {
+      processAndUploadFiles(files, handleUpload)
+    },
+    [handleUpload],
+  )
+
+  const handleImagePasted = useCallback(
+    (file: File) => {
+      processAndUploadFiles([file], handleUpload)
     },
     [handleUpload],
   )
@@ -100,6 +109,8 @@ export function useDescribePage(): UseDescribePageReturn {
     setPickerOpen,
     openPicker,
     handleFilesSelected,
+    handleImagePasted,
     handleRemove,
+    describer,
   }
 }

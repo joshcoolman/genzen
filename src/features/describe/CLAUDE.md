@@ -24,11 +24,12 @@ hooks/
   useDescribePage.ts              # Master hook -- composes all below
   useImageCollection.ts           # Client state: add/addMany/remove/retainOnly/clear + localStorage
   useImageUpload.ts               # Supabase storage upload + DB insert -> CollectedImage
-  useClipboardPaste.ts            # Document paste listener -> upload callback
   useExistingImages.ts            # Fetch user's existing images + signed URLs
+  useImageDescriber.ts            # Image-to-image pipeline: describe -> generate
 components/
-  DescribePageContent.tsx         # Page layout (toolbar + grid + picker)
-  CollectionToolbar.tsx           # Upload button, library picker button, paste hint
+  DescribePageContent.tsx         # Page layout (toolbar + grid + picker + describer)
+  CollectionToolbar.tsx           # FileUploadButton + ClipboardPasteButton + Library button
+  ImageDescriberCard.tsx          # Describer pipeline UI with paste/upload/library source inputs
   ImageCollectionGrid.tsx         # Grid of collected images with remove overlay
   ExistingImagePicker.tsx         # Dialog: source filter tabs, checkbox select, confirm
 index.ts                          # Barrel: DescribePageContent, useDescribePage
@@ -37,7 +38,8 @@ index.ts                          # Barrel: DescribePageContent, useDescribePage
 ### Key Decisions
 
 - **Self-contained**: No imports from other feature modules. Fresh copies of utilities.
-- **Shared components OK**: Uses `@/components/ImageCard`, `ImageGrid`, `ActionButton`, shadcn Dialog
+- **Shared components OK**: Uses `@/components/ImageCard`, `ImageGrid`, `ActionButton`, `FileUploadButton`, `ClipboardPasteButton`, shadcn Dialog
+- **Input primitives**: `FileUploadButton` and `ClipboardPasteButton` are shared components at `@/components/`. Both used in CollectionToolbar (collection uploads to Supabase) and ImageDescriberCard (sends data URL directly to server, no Supabase upload).
 - **Collection = references**: Just IDs pointing to `user_images` rows, no separate table
 - **localStorage persistence**: Collection saved to `describe-collection` key with 1-hour TTL. Validated against Supabase on mount to prune stale references.
 - **Newest first**: New images prepend to collection (most recent at top)
