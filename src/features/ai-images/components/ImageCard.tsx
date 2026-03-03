@@ -11,6 +11,7 @@ interface ImageCardProps {
   img: SavedAiImage
   imageUrl: string | undefined
   generatingVariation: boolean
+  hidePrompts: boolean
   onOpen: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage, count: number) => void
   onEdit: (img: SavedAiImage) => void
@@ -22,6 +23,7 @@ export function ImageCard({
   img,
   imageUrl,
   generatingVariation,
+  hidePrompts,
   onOpen,
   onMoreLikeThis,
   onEdit,
@@ -89,18 +91,20 @@ export function ImageCard({
           Edit
         </button>
       </div>
-      <div className="px-3 pb-3">
-        <div className="relative">
-          <div className="absolute top-0 right-0">
-            <CopyPromptButton
-              text={img.generation_metadata?.prompt ?? img.title}
-            />
+      {!hidePrompts && (
+        <div className="px-3 pb-3">
+          <div className="relative">
+            <div className="absolute top-0 right-0">
+              <CopyPromptButton
+                text={img.generation_metadata?.prompt ?? img.title}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground pr-6">
+              {img.generation_metadata?.prompt ?? img.title}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground pr-6">
-            {img.generation_metadata?.prompt ?? img.title}
-          </p>
         </div>
-      </div>
+      )}
     </div>
   )
 }
