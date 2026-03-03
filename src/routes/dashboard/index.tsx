@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Settings } from 'lucide-react'
+import { LayoutGrid, Settings } from 'lucide-react'
 import type { UserImage } from '@/features/user-images/types'
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
@@ -8,6 +8,8 @@ import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { SectionCard } from '@/components/SectionCard'
+import { ImageCard } from '@/components/ImageCard'
+import { ImageGrid } from '@/components/ImageGrid'
 import {
   Popover,
   PopoverContent,
@@ -137,82 +139,103 @@ const TYPE_COLORS: Record<FeedItemType, string> = {
   workspace: 'bg-amber-600/80',
 }
 
-function FeedCard({
-  item,
-  onClick,
-  onPlayVideo,
-}: {
-  item: FeedItem
-  onClick: () => void
-  onPlayVideo?: () => void
-}) {
-  if (!item.thumbnailUrl) {
-    return (
-      <button
-        onClick={onClick}
-        className="aspect-square rounded-lg border border-dashed border-border flex flex-col items-center justify-center gap-2 hover:border-foreground/30 transition-colors p-4"
-      >
-        <p className="text-xs font-medium text-muted-foreground text-center line-clamp-2">
-          {item.label}
-        </p>
-        <span className="text-[10px] text-muted-foreground/60">
-          {TYPE_LABELS[item.type]}
-        </span>
-      </button>
-    )
-  }
+type TypeFilter = 'all' | FeedItemType
 
+const DASH_PREFS_KEY = 'dashboard-view-prefs'
+const THUMB_SIZES = ['lg', 'md', 'sm'] as const
+const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
+  lg: 'LG',
+  md: 'MD',
+  sm: 'SM',
+}
+
+interface DashPrefs {
+  thumbSize: 'lg' | 'md' | 'sm'
+}
+
+function getDashPrefs(): DashPrefs {
+  try {
+    const stored = localStorage.getItem(DASH_PREFS_KEY)
+    if (stored) return { thumbSize: 'lg', ...JSON.parse(stored) }
+  } catch {}
+  return { thumbSize: 'lg' }
+}
+
+function storeDashPrefs(update: Partial<DashPrefs>) {
+  try {
+    const current = getDashPrefs()
+    localStorage.setItem(
+      DASH_PREFS_KEY,
+      JSON.stringify({ ...current, ...update }),
+    )
+  } catch {}
+}
+
+function TypeBadge({ type }: { type: FeedItemType }) {
   return (
-    <button
-      onClick={onClick}
-      className="group relative aspect-square rounded-lg border border-border overflow-hidden hover:border-foreground/30 transition-colors"
+    <div
+      className={`absolute bottom-1.5 left-1.5 ${TYPE_COLORS[type]} backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded`}
     >
-      <img
-        src={item.thumbnailUrl}
-        alt={item.label}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <div
-        className={`absolute bottom-1.5 left-1.5 ${TYPE_COLORS[item.type]} backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded`}
-      >
-        {TYPE_LABELS[item.type]}
-      </div>
-      {item.type === 'ai_video' && item.videoReady && onPlayVideo && (
-        <div
-          role="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onPlayVideo()
-          }}
-          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
-        >
-          <svg
-            width="10"
-            height="10"
-            viewBox="0 0 14 14"
-            fill="none"
-            className="ml-0.5 text-white"
-          >
-            <path
-              d="M3.5 2.5L11.5 7L3.5 11.5V2.5Z"
-              fill="currentColor"
-              stroke="currentColor"
-              strokeWidth="1"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-      )}
-      {item.type === 'ai_video' && !item.videoReady && (
-        <div className="absolute bottom-1.5 right-1.5 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm">
-          Processing...
-        </div>
-      )}
-    </button>
+      {TYPE_LABELS[type]}
+    </div>
   )
 }
 
-type TypeFilter = 'all' | FeedItemType
+function VideoPlayButton({ onClick }: { onClick: () => void }) {
+  return (
+    <div
+      role="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+    >
+      <svg
+        width="10"
+        height="10"
+        viewBox="0 0 14 14"
+        fill="none"
+        className="ml-0.5 text-white"
+      >
+        <path
+          d="M3.5 2.5L11.5 7L3.5 11.5V2.5Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  )
+}
+
+function VideoProcessing() {
+  return (
+    <div className="absolute bottom-1.5 right-1.5 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm">
+      Processing...
+    </div>
+  )
+}
+
+function EmptyThumbnail({
+  label,
+  type,
+}: {
+  label: string
+  type: FeedItemType
+}) {
+  return (
+    <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-4">
+      <p className="text-xs font-medium text-muted-foreground text-center line-clamp-2">
+        {label}
+      </p>
+      <span className="text-[10px] text-muted-foreground/60">
+        {TYPE_LABELS[type]}
+      </span>
+    </div>
+  )
+}
 
 function DashboardHome() {
   const accountStatus = useAccountStatus()
@@ -235,6 +258,20 @@ function DashboardHome() {
     showAllUploads: false,
   })
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+
+  const [storedPrefs] = useState(getDashPrefs)
+  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
+    storedPrefs.thumbSize,
+  )
+
+  const handleToggleThumbSize = () => {
+    setThumbSize((v) => {
+      const idx = THUMB_SIZES.indexOf(v)
+      const next = THUMB_SIZES[(idx + 1) % THUMB_SIZES.length]
+      storeDashPrefs({ thumbSize: next })
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!session?.access_token) return
@@ -274,6 +311,26 @@ function DashboardHome() {
     }
   }
 
+  const handleItemClick = (item: FeedItem) => {
+    if (item.type === 'ai_video' && item.workspaceId) {
+      void navigate({
+        to: '/dashboard/video/$workspaceId',
+        params: { workspaceId: item.workspaceId },
+        search: { generationId: item.generationId },
+      })
+    } else if (item.type === 'workspace' && item.workspaceId) {
+      void navigate({
+        to: '/dashboard/video/$workspaceId',
+        params: { workspaceId: item.workspaceId },
+        search: { generationId: undefined },
+      })
+    } else {
+      void navigate({
+        to: item.href as '/dashboard/images' | '/dashboard/ai-images',
+      })
+    }
+  }
+
   const loading = imagesLoading || workspacesLoading
   const feed = buildFeed(images, imageUrls, workspaces, viewSettings)
   const filteredFeed =
@@ -292,6 +349,8 @@ function DashboardHome() {
     'upload',
     ...(viewSettings.showWorkspaces ? (['workspace'] as const) : []),
   ]
+
+  const compact = thumbSize !== 'lg'
 
   return (
     <div className="space-y-6">
@@ -312,39 +371,51 @@ function DashboardHome() {
             </button>
           ))}
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="p-1.5 rounded-md hover:bg-muted transition-colors">
-              <Settings className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-52 p-3 space-y-3">
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={viewSettings.showWorkspaces}
-                onCheckedChange={(checked) =>
-                  setViewSettings((s) => ({
-                    ...s,
-                    showWorkspaces: checked === true,
-                  }))
-                }
-              />
-              Show workspaces
-            </label>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={viewSettings.showAllUploads}
-                onCheckedChange={(checked) =>
-                  setViewSettings((s) => ({
-                    ...s,
-                    showAllUploads: checked === true,
-                  }))
-                }
-              />
-              Show all uploads
-            </label>
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleToggleThumbSize}
+            className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-medium">
+              {THUMB_LABELS[thumbSize]}
+            </span>
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="p-1.5 rounded-md hover:bg-muted transition-colors">
+                <Settings className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-52 p-3 space-y-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={viewSettings.showWorkspaces}
+                  onCheckedChange={(checked) =>
+                    setViewSettings((s) => ({
+                      ...s,
+                      showWorkspaces: checked === true,
+                    }))
+                  }
+                />
+                Show workspaces
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={viewSettings.showAllUploads}
+                  onCheckedChange={(checked) =>
+                    setViewSettings((s) => ({
+                      ...s,
+                      showAllUploads: checked === true,
+                    }))
+                  }
+                />
+                Show all uploads
+              </label>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {loading ? (
@@ -354,45 +425,33 @@ function DashboardHome() {
           <p className="text-sm text-muted-foreground">No assets yet</p>
         </div>
       ) : (
-        <div
-          className="grid gap-3"
-          style={{
-            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          }}
-        >
+        <ImageGrid size={thumbSize}>
           {filteredFeed.map((item) => (
-            <FeedCard
+            <ImageCard
               key={item.id}
-              item={item}
-              onClick={() => {
-                if (item.type === 'ai_video' && item.workspaceId) {
-                  void navigate({
-                    to: '/dashboard/video/$workspaceId',
-                    params: { workspaceId: item.workspaceId },
-                    search: { generationId: item.generationId },
-                  })
-                } else if (item.type === 'workspace' && item.workspaceId) {
-                  void navigate({
-                    to: '/dashboard/video/$workspaceId',
-                    params: { workspaceId: item.workspaceId },
-                    search: { generationId: undefined },
-                  })
-                } else {
-                  void navigate({
-                    to: item.href as
-                      | '/dashboard/images'
-                      | '/dashboard/ai-images',
-                  })
-                }
-              }}
-              onPlayVideo={
-                item.type === 'ai_video' && item.videoReady && item.generationId
-                  ? () => void handlePlayVideo(item.generationId!)
-                  : undefined
-              }
-            />
+              src={item.thumbnailUrl}
+              alt={item.label}
+              onClick={() => handleItemClick(item)}
+              objectFit="cover"
+              compact={compact}
+              asButton
+              hoverBorder="hover:border-foreground/30"
+              fallback={<EmptyThumbnail label={item.label} type={item.type} />}
+            >
+              <TypeBadge type={item.type} />
+              {item.type === 'ai_video' &&
+                item.videoReady &&
+                item.generationId && (
+                  <VideoPlayButton
+                    onClick={() => void handlePlayVideo(item.generationId!)}
+                  />
+                )}
+              {item.type === 'ai_video' && !item.videoReady && (
+                <VideoProcessing />
+              )}
+            </ImageCard>
           ))}
-        </div>
+        </ImageGrid>
       )}
 
       <VideoPlayerDialog

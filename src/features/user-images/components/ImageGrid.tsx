@@ -1,41 +1,4 @@
-/**
- * Image Grid Component
- *
- * Responsive grid layout for displaying image cards.
- */
-
-import type { ReactNode } from 'react'
-
-interface ImageGridProps {
-  children: ReactNode
-  className?: string
-  size?: 'lg' | 'md' | 'sm'
-}
-
-/**
- * Responsive grid container for images
- */
-export function ImageGrid({
-  children,
-  className = '',
-  size = 'lg',
-}: ImageGridProps) {
-  const minWidth = size === 'sm' ? '80px' : size === 'md' ? '120px' : '220px'
-  const gap = size === 'lg' ? '1rem' : '0.5rem'
-
-  return (
-    <div
-      className={className}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
-        gap,
-      }}
-    >
-      {children}
-    </div>
-  )
-}
+export { ImageGrid } from '@/components/ImageGrid'
 
 /**
  * Empty state component
