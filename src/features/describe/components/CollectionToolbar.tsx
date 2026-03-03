@@ -1,9 +1,11 @@
-import { useRef } from 'react'
-import { ImagePlus, Library, Upload } from 'lucide-react'
+import { Library } from 'lucide-react'
 import { ActionButton } from '@/components/ActionButton'
+import { FileUploadButton } from '@/components/FileUploadButton'
+import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
 
 interface CollectionToolbarProps {
-  onFilesSelected: (files: FileList) => void
+  onFilesSelected: (files: Array<File>) => void
+  onImagePasted: (file: File) => void
   onOpenPicker: () => void
   isUploading: boolean
   collectionCount: number
@@ -11,40 +13,22 @@ interface CollectionToolbarProps {
 
 export function CollectionToolbar({
   onFilesSelected,
+  onImagePasted,
   onOpenPicker,
   isUploading,
   collectionCount,
 }: CollectionToolbarProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   return (
     <div className="flex items-center gap-3">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) {
-            onFilesSelected(e.target.files)
-            e.target.value = ''
-          }
-        }}
-      />
+      <FileUploadButton onFilesSelected={onFilesSelected} />
 
-      <ActionButton
-        onClick={() => fileInputRef.current?.click()}
-        icon={<Upload />}
-        loading={isUploading}
-        loadingText="Uploading..."
-      >
-        Upload
-      </ActionButton>
+      <ClipboardPasteButton onImagePasted={onImagePasted} />
 
       <ActionButton
         onClick={onOpenPicker}
         icon={<Library />}
+        loading={isUploading}
+        loadingText="Uploading..."
         className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
       >
         Select from Library
@@ -56,11 +40,6 @@ export function CollectionToolbar({
           collected
         </span>
       )}
-
-      <span className="text-xs text-muted-foreground">
-        <ImagePlus className="mr-1 inline size-3" />
-        Paste to add
-      </span>
     </div>
   )
 }
