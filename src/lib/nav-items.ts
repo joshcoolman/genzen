@@ -1,4 +1,12 @@
-import { Film, Image, LayoutGrid, ScanEye, Sparkles, User } from 'lucide-react'
+import {
+  Film,
+  Image,
+  LayoutGrid,
+  ScanEye,
+  Sparkles,
+  Trash2,
+  User,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -36,10 +44,16 @@ export const navItems: Array<NavItem> = [
     activeOnly: true,
   },
   {
+    label: 'Trash',
+    href: '/dashboard/trash',
+    icon: Trash2,
+    activeOnly: true,
+    dividerBefore: true,
+  },
+  {
     label: 'Account',
     href: '/dashboard/account',
     icon: User,
     activeOnly: true,
-    dividerBefore: true,
   },
 ]

@@ -94,6 +94,7 @@ export function useUserImages(
         .select('*')
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
       if (filters?.search_term) {
@@ -300,21 +301,16 @@ export function useUserImages(
           images: prev.images.filter((img) => img.id !== id),
         }))
 
-        // Delete database record
+        // Soft delete — set deleted_at timestamp
         const { error: deleteError } = await supabase
           .from('user_images')
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq('id', id)
           .eq('user_id', userId)
 
         if (deleteError) {
           throw new Error(deleteError.message)
         }
-
-        // Delete storage file (best effort)
-        await supabase.storage
-          .from(BUCKET_NAME)
-          .remove([imageToDelete.storage_path])
 
         setState((prev) => ({ ...prev, isDeleting: null }))
       } catch (err) {

@@ -20,6 +20,7 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
+import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardDescribeRouteImport } from './routes/dashboard/describe'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
@@ -82,6 +83,11 @@ const DashboardVideoRoute = DashboardVideoRouteImport.update({
   path: '/video',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTrashRoute = DashboardTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardImagesRoute = DashboardImagesRouteImport.update({
   id: '/images',
   path: '/images',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
+  '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
+  '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/images': typeof DashboardImagesRoute
+  '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/describe'
     | '/dashboard/images'
+    | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/describe'
     | '/dashboard/images'
+    | '/dashboard/trash'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/describe'
     | '/dashboard/images'
+    | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
@@ -315,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/trash': {
+      id: '/dashboard/trash'
+      path: '/trash'
+      fullPath: '/dashboard/trash'
+      preLoaderRoute: typeof DashboardTrashRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/images': {
       id: '/dashboard/images'
       path: '/images'
@@ -379,6 +398,7 @@ interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardDescribeRoute: typeof DashboardDescribeRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
+  DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -388,6 +408,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardDescribeRoute: DashboardDescribeRoute,
   DashboardImagesRoute: DashboardImagesRoute,
+  DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
 }

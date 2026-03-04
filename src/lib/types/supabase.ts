@@ -129,6 +129,7 @@ export type Database = {
         Row: {
           color_palette: Json | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           file_hash: string
           file_name: string
@@ -147,6 +148,7 @@ export type Database = {
         Insert: {
           color_palette?: Json | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_hash: string
           file_name: string
@@ -165,6 +167,7 @@ export type Database = {
         Update: {
           color_palette?: Json | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           file_hash?: string
           file_name?: string

@@ -5,6 +5,7 @@ export interface SavedAiImage {
   created_at: string
   sort_order?: number | null
   status: 'pending' | 'processing' | 'completed' | 'failed'
+  deleted_at?: string | null
   generation_error: string | null
   generation_metadata: {
     prompt: string

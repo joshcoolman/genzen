@@ -54,6 +54,7 @@ export function useImages({
         )
         .eq('user_id', userId)
         .eq('source', 'ai_generated')
+        .is('deleted_at', null)
         .order('sort_order', { ascending: false, nullsFirst: false })
 
       if (queryError) throw queryError
@@ -128,6 +129,17 @@ export function useImages({
             })
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
+            if (updatedImage.deleted_at) {
+              setSavedImages((prev) =>
+                prev.filter((img) => img.id !== updatedImage.id),
+              )
+              setImageUrls((prev) => {
+                const next = { ...prev }
+                delete next[updatedImage.id]
+                return next
+              })
+              return
+            }
             setSavedImages((prev) =>
               prev.map((img) =>
                 img.id === updatedImage.id ? updatedImage : img,
@@ -219,14 +231,10 @@ export function useImages({
     try {
       const { error: deleteError } = await supabase
         .from('user_images')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', img.id)
 
       if (deleteError) throw deleteError
-
-      if (img.storage_path) {
-        await supabase.storage.from('user-images').remove([img.storage_path])
-      }
     } catch {
       loadSavedImages()
     }
