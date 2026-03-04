@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchModels } from '../server/fetch-models.server'
-import { fetchPricing } from '../server/fetch-pricing.server'
-import type { FalModel, FalModelPricing, ModelCategory } from '../types'
+import type { FalModel, ModelCategory } from '../types'
 
 // Module-level cache — survives unmount/remount
 const cache: Record<
@@ -26,10 +25,6 @@ export function useModels() {
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const [selectedModel, setSelectedModel] = useState<FalModel | null>(null)
-  const [pricing, setPricing] = useState<FalModelPricing | null>(null)
-  const [pricingLoading, setPricingLoading] = useState(false)
 
   const load = useCallback(
     async (opts: { append?: boolean; cursor?: string } = {}) => {
@@ -136,27 +131,6 @@ export function useModels() {
     load()
   }, [category, search, load])
 
-  const openDetail = useCallback(async (model: FalModel) => {
-    setSelectedModel(model)
-    setPricing(null)
-    setPricingLoading(true)
-    try {
-      const result = await fetchPricing({
-        data: { endpoint_id: model.endpoint_id },
-      })
-      setPricing(result)
-    } catch (err) {
-      console.error('Failed to fetch pricing:', err)
-    } finally {
-      setPricingLoading(false)
-    }
-  }, [])
-
-  const closeDetail = useCallback(() => {
-    setSelectedModel(null)
-    setPricing(null)
-  }, [])
-
   return {
     pages,
     loading,
@@ -168,10 +142,5 @@ export function useModels() {
     hasMore,
     loadMore,
     reload,
-    selectedModel,
-    openDetail,
-    closeDetail,
-    pricing,
-    pricingLoading,
   }
 }

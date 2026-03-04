@@ -10,13 +10,9 @@ import {
 
 interface RecentlyAddedCarouselProps {
   models: Array<FalModel>
-  onModelClick: (model: FalModel) => void
 }
 
-export function RecentlyAddedCarousel({
-  models,
-  onModelClick,
-}: RecentlyAddedCarouselProps) {
+export function RecentlyAddedCarousel({ models }: RecentlyAddedCarouselProps) {
   const recentModels = useMemo(() => {
     return [...models]
       .filter((m) => m.date)
@@ -42,11 +38,7 @@ export function RecentlyAddedCarousel({
               className="pl-3"
               style={{ flex: '0 0 auto' }}
             >
-              <button
-                type="button"
-                onClick={() => onModelClick(model)}
-                className="w-[300px] rounded-lg border bg-card text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
+              <div className="w-[300px] rounded-lg border bg-card text-left">
                 <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-muted">
                   {model.thumbnail_url ? (
                     <img
@@ -70,7 +62,7 @@ export function RecentlyAddedCarousel({
                     </p>
                   )}
                 </div>
-              </button>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>

@@ -3,7 +3,6 @@ import { RefreshCw, Search } from 'lucide-react'
 import { useModels } from '../hooks/use-models'
 import { CategoryTabs } from './CategoryTabs'
 import { ModelCard } from './ModelCard'
-import { ModelDetailSheet } from './ModelDetailSheet'
 import { RecentlyAddedCarousel } from './RecentlyAddedCarousel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -46,9 +45,7 @@ export function ModelsPage() {
         </div>
       </div>
 
-      {showCarousel && (
-        <RecentlyAddedCarousel models={allModels} onModelClick={m.openDetail} />
-      )}
+      {showCarousel && <RecentlyAddedCarousel models={allModels} />}
 
       {m.loading ? (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -92,11 +89,7 @@ export function ModelsPage() {
                 )}
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {page.map((model) => (
-                    <ModelCard
-                      key={model.endpoint_id}
-                      model={model}
-                      onClick={() => m.openDetail(model)}
-                    />
+                    <ModelCard key={model.endpoint_id} model={model} />
                   ))}
                 </div>
               </div>
@@ -116,13 +109,6 @@ export function ModelsPage() {
           )}
         </>
       )}
-
-      <ModelDetailSheet
-        model={m.selectedModel}
-        pricing={m.pricing}
-        pricingLoading={m.pricingLoading}
-        onClose={m.closeDetail}
-      />
     </div>
   )
 }
