@@ -6,7 +6,6 @@ import {
   ImageGallery,
   ImageLightbox,
   ModelSettingsDialog,
-  getModelName,
   useAiImagesPage,
 } from '@/features/ai-images'
 
@@ -77,7 +76,7 @@ function AiImagesPage() {
           onClose={page.lightbox.close}
           onNext={page.lightbox.next}
           onPrev={page.lightbox.prev}
-          getModelName={getModelName}
+          onDelete={page.lightbox.deleteAndAdvance}
         />
       )}
     </div>

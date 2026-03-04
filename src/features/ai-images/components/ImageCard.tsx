@@ -96,12 +96,29 @@ export function ImageCard({
           <div className="relative">
             <div className="absolute top-0 right-0">
               <CopyPromptButton
-                text={img.generation_metadata?.prompt ?? img.title}
+                text={
+                  img.generation_metadata?.generation_type === 'variation' &&
+                  img.generation_metadata.original_prompt
+                    ? `${img.generation_metadata.original_prompt}\n\nVariation: ${img.generation_metadata.prompt}`
+                    : (img.generation_metadata?.prompt ?? img.title)
+                }
               />
             </div>
-            <p className="text-xs text-muted-foreground pr-6">
-              {img.generation_metadata?.prompt ?? img.title}
-            </p>
+            {img.generation_metadata?.generation_type === 'variation' &&
+            img.generation_metadata.original_prompt ? (
+              <div className="pr-6 space-y-1.5">
+                <p className="text-xs text-muted-foreground">
+                  {img.generation_metadata.original_prompt}
+                </p>
+                <p className="text-xs text-muted-foreground/60 italic">
+                  Variation: {img.generation_metadata.prompt}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground pr-6">
+                {img.generation_metadata?.prompt ?? img.title}
+              </p>
+            )}
           </div>
         </div>
       )}

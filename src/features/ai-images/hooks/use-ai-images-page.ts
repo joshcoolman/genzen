@@ -47,7 +47,7 @@ export function useAiImagesPage() {
     (img) => img.status === 'completed',
   )
 
-  const lightbox = useLightbox(completedImages)
+  const lightbox = useLightbox(completedImages, gallery.deleteImage)
 
   const variations = useVariations({
     accessToken,

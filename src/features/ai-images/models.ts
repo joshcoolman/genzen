@@ -85,12 +85,30 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   },
   // Specialized - verified models
   {
+    id: 'fal-ai/nano-banana',
+    name: 'Nano Banana',
+    description: 'Google, fast + cheap',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/nano-banana/edit',
+    imageInputParam: 'image_urls',
+  },
+  {
     id: 'fal-ai/nano-banana-pro',
     name: 'Nano Banana Pro',
     description: 'Google SOTA, realism + typography',
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-pro/edit',
+    imageInputParam: 'image_urls',
+  },
+  {
+    id: 'fal-ai/nano-banana-2',
+    name: 'Nano Banana 2',
+    description: 'Google, reasoning-guided generation',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/nano-banana-2/edit',
     imageInputParam: 'image_urls',
   },
   {
@@ -142,10 +160,12 @@ export const DEFAULT_VISIBLE_MODELS = [
   ALL_IMAGE_MODELS[3], // FLUX.2 Flex
   ALL_IMAGE_MODELS[4], // FLUX Kontext Pro
   ALL_IMAGE_MODELS[8], // Seedream v4
-  ALL_IMAGE_MODELS[9], // Nano Banana Pro
-  ALL_IMAGE_MODELS[10], // Recraft V3
-  ALL_IMAGE_MODELS[11], // Grok Imagine
-  ALL_IMAGE_MODELS[12], // ImagineArt 1.5
+  ALL_IMAGE_MODELS[9], // Nano Banana
+  ALL_IMAGE_MODELS[10], // Nano Banana Pro
+  ALL_IMAGE_MODELS[11], // Nano Banana 2
+  ALL_IMAGE_MODELS[12], // Recraft V3
+  ALL_IMAGE_MODELS[13], // Grok Imagine
+  ALL_IMAGE_MODELS[14], // ImagineArt 1.5
 ]
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
@@ -178,9 +198,21 @@ export interface EditModel {
 
 export const EDIT_MODELS: Array<EditModel> = [
   {
+    id: 'fal-ai/nano-banana/edit',
+    name: 'Nano Banana',
+    description: 'Fast + cheap edits',
+    supportsMultiImage: true,
+  },
+  {
     id: 'fal-ai/nano-banana-pro/edit',
     name: 'Nano Banana Pro',
     description: 'Realism + typography',
+    supportsMultiImage: true,
+  },
+  {
+    id: 'fal-ai/nano-banana-2/edit',
+    name: 'Nano Banana 2',
+    description: 'Reasoning-guided edits',
     supportsMultiImage: true,
   },
   {

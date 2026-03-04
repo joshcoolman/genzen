@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { useHotkey } from '@tanstack/react-hotkeys'
+import { ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 
 interface ImageLightboxProps {
@@ -9,7 +9,7 @@ interface ImageLightboxProps {
   onClose: () => void
   onNext: () => void
   onPrev: () => void
-  getModelName: (id: string) => string
+  onDelete?: () => void
 }
 
 export function ImageLightbox({
@@ -19,21 +19,16 @@ export function ImageLightbox({
   onClose,
   onNext,
   onPrev,
-  getModelName,
+  onDelete,
 }: ImageLightboxProps) {
-  // Parent only renders this when currentIndex is valid
   const img = images[currentIndex]
   const imageUrl = imageUrls[img.id]
 
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-      if (e.key === 'ArrowRight') onNext()
-      if (e.key === 'ArrowLeft') onPrev()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose, onNext, onPrev])
+  useHotkey('Escape', onClose)
+  useHotkey('ArrowRight', onNext)
+  useHotkey('ArrowLeft', onPrev)
+  useHotkey('Delete', () => onDelete?.())
+  useHotkey('Backspace', () => onDelete?.())
 
   return (
     <div
@@ -63,9 +58,9 @@ export function ImageLightbox({
         </button>
       )}
 
-      {/* Image */}
+      {/* Image with delete overlay */}
       <div
-        className="flex items-center justify-center max-h-[85vh] max-w-[85vw]"
+        className="relative flex items-center justify-center max-h-[85vh] max-w-[85vw]"
         onClick={(e) => e.stopPropagation()}
       >
         {imageUrl ? (
@@ -76,6 +71,15 @@ export function ImageLightbox({
           />
         ) : (
           <div className="w-64 h-64 bg-muted animate-pulse rounded" />
+        )}
+        {onDelete && (
+          <button
+            className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-red-400 hover:bg-black/70 transition-colors"
+            onClick={onDelete}
+            aria-label="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         )}
       </div>
 
@@ -92,26 +96,6 @@ export function ImageLightbox({
           <ChevronRight className="h-8 w-8" />
         </button>
       )}
-
-      {/* Caption */}
-      <div
-        className="absolute bottom-0 inset-x-0 px-6 py-4 bg-gradient-to-t from-black/60 to-transparent text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="text-sm text-white/80 line-clamp-2 max-w-2xl mx-auto">
-          {img.generation_metadata?.prompt ?? img.title}
-        </p>
-        <p className="text-xs text-white/50 mt-1">
-          {img.generation_metadata
-            ? getModelName(img.generation_metadata.model)
-            : ''}
-          {images.length > 1 && (
-            <span className="ml-3">
-              {currentIndex + 1} / {images.length}
-            </span>
-          )}
-        </p>
-      </div>
     </div>
   )
 }
