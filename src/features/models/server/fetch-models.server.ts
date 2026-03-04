@@ -27,7 +27,7 @@ export const fetchModels = createServerFn({ method: 'GET' })
       params.set('q', data.q)
     }
     if (data.next_cursor) {
-      params.set('next_cursor', data.next_cursor)
+      params.set('cursor', data.next_cursor)
     }
 
     const res = await fetch(

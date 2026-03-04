@@ -1,19 +1,36 @@
-import { Search } from 'lucide-react'
+import { useMemo } from 'react'
+import { RefreshCw, Search } from 'lucide-react'
 import { useModels } from '../hooks/use-models'
 import { CategoryTabs } from './CategoryTabs'
 import { ModelCard } from './ModelCard'
 import { ModelDetailSheet } from './ModelDetailSheet'
+import { RecentlyAddedCarousel } from './RecentlyAddedCarousel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 
 export function ModelsPage() {
   const m = useModels()
+  const totalModels = m.pages.reduce((sum, page) => sum + page.length, 0)
+  const allModels = useMemo(() => m.pages.flat(), [m.pages])
+  const showCarousel =
+    !m.loading && m.category === 'all' && !m.search && allModels.length > 0
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Models</h1>
+        {m.pages.length > 1 && (
+          <button
+            type="button"
+            onClick={m.reload}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Reload
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -28,6 +45,10 @@ export function ModelsPage() {
           />
         </div>
       </div>
+
+      {showCarousel && (
+        <RecentlyAddedCarousel models={allModels} onModelClick={m.openDetail} />
+      )}
 
       {m.loading ? (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -44,7 +65,7 @@ export function ModelsPage() {
             </div>
           ))}
         </div>
-      ) : m.models.length === 0 ? (
+      ) : totalModels === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-muted-foreground">No models found</p>
           {m.search && (
@@ -55,15 +76,32 @@ export function ModelsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {m.models.map((model) => (
-              <ModelCard
-                key={model.endpoint_id}
-                model={model}
-                onClick={() => m.openDetail(model)}
-              />
-            ))}
-          </div>
+          {m.pages.map((page, pageIndex) => {
+            if (page.length === 0) return null
+
+            return (
+              <div key={pageIndex}>
+                {pageIndex > 0 && (
+                  <div className="flex items-center gap-3 py-2">
+                    <Separator className="flex-1" />
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      Page {pageIndex + 1}
+                    </span>
+                    <Separator className="flex-1" />
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {page.map((model) => (
+                    <ModelCard
+                      key={model.endpoint_id}
+                      model={model}
+                      onClick={() => m.openDetail(model)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
 
           {m.hasMore && (
             <div className="flex justify-center pt-4">
