@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { ModelCard } from './ModelCard'
 import type { FalModel } from '../types'
 import {
   Carousel,
@@ -32,37 +33,13 @@ export function RecentlyAddedCarousel({ models }: RecentlyAddedCarouselProps) {
         className="w-full"
       >
         <CarouselContent className="-ml-3">
-          {recentModels.map((model) => (
+          {recentModels.map((model, i) => (
             <CarouselItem
               key={model.endpoint_id}
               className="pl-3"
-              style={{ flex: '0 0 auto' }}
+              style={{ flex: '0 0 300px' }}
             >
-              <div className="w-[300px] rounded-lg border bg-card text-left">
-                <div className="aspect-square w-full overflow-hidden rounded-t-lg bg-muted">
-                  {model.thumbnail_url ? (
-                    <img
-                      src={model.thumbnail_url}
-                      alt={model.display_name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                      No preview
-                    </div>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="truncate text-sm font-medium">
-                    {model.display_name}
-                  </p>
-                  {model.description && (
-                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                      {model.description}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <ModelCard model={model} colorIndex={i} />
             </CarouselItem>
           ))}
         </CarouselContent>
