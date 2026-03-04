@@ -80,11 +80,19 @@ export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
       throw new Error('FAL_KEY environment variable is not set')
     }
 
-    const modelId = BRAINSTORM_MODELS[data.model ?? DEFAULT_MODEL]
+    const modelKey = data.model ?? DEFAULT_MODEL
+    const modelId = BRAINSTORM_MODELS[modelKey]
     const submissions = await Promise.all(
       data.prompts.map((prompt) =>
         fal.queue.submit(modelId, {
-          input: { prompt },
+          input: {
+            prompt,
+            enable_safety_checker: false,
+            safety_tolerance: 6,
+            ...(modelKey === 'dev'
+              ? { num_inference_steps: 28, guidance_scale: 3.5 }
+              : {}),
+          },
         }),
       ),
     )

@@ -1,3 +1,12 @@
+// Brainstorm settings
+export const BRAINSTORM_DEFAULT_ROWS = 2
+export const BRAINSTORM_MAX_ROWS = 6
+export const BRAINSTORM_DEFAULT_IMAGES_PER_PROMPT = 1
+export const BRAINSTORM_MAX_IMAGES_PER_PROMPT = 2
+export const BRAINSTORM_ROW_COUNT_KEY = 'genzen:brainstorm-row-count'
+export const BRAINSTORM_IMAGES_PER_PROMPT_KEY =
+  'genzen:brainstorm-images-per-prompt'
+
 export const LANDSCAPE_RATIOS = ['16:9', '2:1', '3:2', '4:3', '21:9', '1:1']
 export const PORTRAIT_RATIOS = ['9:16', '1:2', '2:3', '3:4', '1:1']
 

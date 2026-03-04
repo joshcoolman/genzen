@@ -3,13 +3,17 @@ import {
   ClipboardPaste,
   Loader2,
   Lock,
+  Minus,
   Pencil,
+  Plus,
   RefreshCw,
+  Settings,
   Sparkles,
   Unlock,
   Wand2,
 } from 'lucide-react'
 import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
+import type { BrainstormImage } from '@/features/ai-images/hooks/use-brainstorm'
 import { ActionButton } from '@/components/ActionButton'
 import {
   Dialog,
@@ -17,7 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
+import { useBrainstormSettings } from '@/features/ai-images/hooks/use-brainstorm-settings'
+import { BRAINSTORM_MAX_ROWS } from '@/features/ai-images/constants'
 
 interface BrainstormPanelProps {
   accessToken: string | undefined
@@ -36,6 +47,8 @@ export function BrainstormPanel({
   const [pasteText, setPasteText] = useState('')
   const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([])
 
+  const settings = useBrainstormSettings()
+
   const focusSlot = useCallback((index: number) => {
     const el = textareaRefs.current[index]
     if (el) {
@@ -49,7 +62,11 @@ export function BrainstormPanel({
     model,
     refineModels,
     aspectRatio: refineAspectRatio,
+    slotCount: settings.rowCount,
+    imagesPerPrompt: settings.imagesPerPrompt,
   })
+
+  const totalImages = settings.rowCount * settings.imagesPerPrompt
 
   return (
     <div className="bg-card rounded-lg p-6 space-y-4">
@@ -57,10 +74,77 @@ export function BrainstormPanel({
         <div>
           <h2 className="text-base font-semibold">Brainstorm</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Generate 6 images from the prompts below. Click an image to refine.
+            Generate {totalImages} image{totalImages !== 1 ? 's' : ''} from{' '}
+            {settings.rowCount} prompt{settings.rowCount !== 1 ? 's' : ''}.
+            Click an image to refine.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                title="Brainstorm settings"
+              >
+                <Settings className="size-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56" align="end">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Prompts</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() =>
+                        settings.setRowCount(settings.rowCount - 1)
+                      }
+                      disabled={settings.rowCount <= 1}
+                      className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <Minus className="size-3" />
+                    </button>
+                    <span className="text-sm font-medium w-4 text-center">
+                      {settings.rowCount}
+                    </span>
+                    <button
+                      onClick={() =>
+                        settings.setRowCount(settings.rowCount + 1)
+                      }
+                      disabled={settings.rowCount >= BRAINSTORM_MAX_ROWS}
+                      className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      <Plus className="size-3" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Images per prompt</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => settings.setImagesPerPrompt(1)}
+                      className={`px-2 py-0.5 text-xs rounded border ${
+                        settings.imagesPerPrompt === 1
+                          ? 'border-foreground/40 bg-muted text-foreground'
+                          : 'border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      1
+                    </button>
+                    <button
+                      onClick={() => settings.setImagesPerPrompt(2)}
+                      className={`px-2 py-0.5 text-xs rounded border ${
+                        settings.imagesPerPrompt === 2
+                          ? 'border-foreground/40 bg-muted text-foreground'
+                          : 'border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      2
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <button
             onClick={() => {
               setPasteText('')
@@ -132,13 +216,14 @@ export function BrainstormPanel({
           <BrainstormRow
             key={i}
             index={i}
-            image={brainstorm.images[i]}
+            slotImages={brainstorm.images[i] ?? []}
             prompt={prompt}
             refineCount={brainstorm.refineCounts[i] ?? 0}
             locked={brainstorm.lockedSlots.has(i)}
             rewriting={brainstorm.rewritingSlots.has(i)}
             editing={brainstorm.editingSlots.has(i)}
             isGenerating={brainstorm.isGenerating}
+            imagesPerPrompt={settings.imagesPerPrompt}
             onUpdatePrompt={(val) => brainstorm.updatePrompt(i, val)}
             onRewritePrompt={() => void brainstorm.rewriteSlotPrompt(i)}
             onEditPrompt={() => {
@@ -146,10 +231,12 @@ export function BrainstormPanel({
               setEditInstruction('')
             }}
             onRegenerate={() => void brainstorm.regenerateSlot(i)}
+            onRegenerateImage={(imgIdx) =>
+              void brainstorm.regenerateSlot(i, imgIdx)
+            }
             onToggleLock={() => brainstorm.toggleLock(i)}
-            onSelect={() => {
-              const img = brainstorm.images[i]
-              if (img.url) void brainstorm.selectImage(img.url, i)
+            onSelect={(url) => {
+              if (url) void brainstorm.selectImage(url, i)
             }}
             onRewriteAndGenerate={() =>
               void brainstorm.rewriteAndGenerateSlot(i)
@@ -175,9 +262,9 @@ export function BrainstormPanel({
           </DialogHeader>
           {brainstorm.editingSlot !== null && (
             <div className="space-y-4">
-              {brainstorm.images[brainstorm.editingSlot]?.url && (
+              {brainstorm.images[brainstorm.editingSlot]?.[0]?.url && (
                 <img
-                  src={brainstorm.images[brainstorm.editingSlot].url!}
+                  src={brainstorm.images[brainstorm.editingSlot][0].url!}
                   alt={`Brainstorm ${brainstorm.editingSlot + 1}`}
                   className="w-full max-w-xs mx-auto rounded-md"
                 />
@@ -252,19 +339,21 @@ export function BrainstormPanel({
 
 interface BrainstormRowProps {
   index: number
-  image: { url: string | null; loading: boolean }
+  slotImages: Array<BrainstormImage>
   prompt: string
   refineCount: number
   locked: boolean
   rewriting: boolean
   editing: boolean
   isGenerating: boolean
+  imagesPerPrompt: number
   onUpdatePrompt: (value: string) => void
   onRewritePrompt: () => void
   onEditPrompt: () => void
   onRegenerate: () => void
+  onRegenerateImage: (imageIndex: number) => void
   onToggleLock: () => void
-  onSelect: () => void
+  onSelect: (url: string) => void
   onRewriteAndGenerate: () => void
   textareaRef: (el: HTMLTextAreaElement | null) => void
   focusSlot: (index: number) => void
@@ -273,17 +362,19 @@ interface BrainstormRowProps {
 
 function BrainstormRow({
   index,
-  image,
+  slotImages,
   prompt,
   refineCount,
   locked,
   rewriting,
   editing,
   isGenerating,
+  imagesPerPrompt,
   onUpdatePrompt,
   onRewritePrompt,
   onEditPrompt,
   onRegenerate,
+  onRegenerateImage,
   onToggleLock,
   onSelect,
   onRewriteAndGenerate,
@@ -291,70 +382,31 @@ function BrainstormRow({
   focusSlot,
   totalSlots,
 }: BrainstormRowProps) {
-  const imageContent = (() => {
-    if (image.loading) {
-      return (
-        <div className="w-[230px] h-[230px] shrink-0 bg-muted rounded-md flex items-center justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      )
-    }
-
-    if (!image.url) {
-      return (
-        <div className="w-[230px] h-[230px] shrink-0 bg-muted/50 rounded-md border border-dashed border-border" />
-      )
-    }
-
-    return (
-      <div
-        className={`w-[230px] h-[230px] shrink-0 bg-muted rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
-      >
-        <button
-          onClick={onSelect}
-          className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex items-center justify-center"
-        >
-          <img
-            src={image.url}
-            alt={`Brainstorm idea ${index + 1}`}
-            className="max-w-full max-h-full object-contain"
-          />
-        </button>
-        <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
-          {index + 1}
-        </div>
-        {refineCount > 0 && (
-          <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
-            {refineCount}x
-          </div>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleLock()
-          }}
-          className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
-          title={locked ? 'Unlock slot' : 'Lock slot'}
-        >
-          {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onRegenerate()
-          }}
-          className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
-          title="Regenerate this slot"
-        >
-          <RefreshCw className="size-3" />
-        </button>
-      </div>
-    )
-  })()
-
   return (
     <div className="flex items-start gap-3">
-      {imageContent}
+      <div
+        className={`flex gap-1.5 shrink-0 ${imagesPerPrompt === 2 ? 'w-[464px]' : 'w-[230px]'}`}
+      >
+        {Array.from({ length: imagesPerPrompt }, (_, imgIdx) => {
+          const image = slotImages[imgIdx] ?? { url: null, loading: false }
+          return (
+            <SlotImage
+              key={imgIdx}
+              index={index}
+              imageIndex={imgIdx}
+              image={image}
+              locked={locked}
+              refineCount={imgIdx === 0 ? refineCount : 0}
+              showBadge={imgIdx === 0}
+              onSelect={() => {
+                if (image.url) onSelect(image.url)
+              }}
+              onToggleLock={onToggleLock}
+              onRegenerate={() => onRegenerateImage(imgIdx)}
+            />
+          )
+        })}
+      </div>
       <textarea
         ref={textareaRef}
         value={prompt}
@@ -421,6 +473,90 @@ function BrainstormRow({
           )}
         </button>
       </div>
+    </div>
+  )
+}
+
+interface SlotImageProps {
+  index: number
+  imageIndex: number
+  image: BrainstormImage
+  locked: boolean
+  refineCount: number
+  showBadge: boolean
+  onSelect: () => void
+  onToggleLock: () => void
+  onRegenerate: () => void
+}
+
+function SlotImage({
+  index,
+  image,
+  locked,
+  refineCount,
+  showBadge,
+  onSelect,
+  onToggleLock,
+  onRegenerate,
+}: SlotImageProps) {
+  if (image.loading) {
+    return (
+      <div className="w-[230px] h-[230px] shrink-0 bg-muted rounded-md flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!image.url) {
+    return (
+      <div className="w-[230px] h-[230px] shrink-0 bg-muted/50 rounded-md border border-dashed border-border" />
+    )
+  }
+
+  return (
+    <div
+      className={`w-[230px] h-[230px] shrink-0 bg-muted rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
+    >
+      <button
+        onClick={onSelect}
+        className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex items-center justify-center"
+      >
+        <img
+          src={image.url}
+          alt={`Brainstorm idea ${index + 1}`}
+          className="max-w-full max-h-full object-contain"
+        />
+      </button>
+      {showBadge && (
+        <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
+          {index + 1}
+        </div>
+      )}
+      {refineCount > 0 && (
+        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
+          {refineCount}x
+        </div>
+      )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleLock()
+        }}
+        className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+        title={locked ? 'Unlock slot' : 'Lock slot'}
+      >
+        {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRegenerate()
+        }}
+        className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+        title="Regenerate this image"
+      >
+        <RefreshCw className="size-3" />
+      </button>
     </div>
   )
 }
