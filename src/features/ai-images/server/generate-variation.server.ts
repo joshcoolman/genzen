@@ -83,11 +83,35 @@ export const generateVariation = createServerFn({ method: 'POST' })
         ? sourceMetadata.original_prompt
         : prompt
 
-    const signedUrl = sourceImage?.storage_path
+    // Compute root image ID — the original image that started this variation family
+    const rootImageId =
+      typeof sourceMetadata?.root_image_id === 'string'
+        ? sourceMetadata.root_image_id
+        : sourceMetadata?.generation_type === 'variation' &&
+            typeof sourceMetadata.source_image_id === 'string'
+          ? sourceMetadata.source_image_id
+          : sourceImageId
+
+    // Use root image for FAL instead of immediate parent to prevent quality drift
+    let imageStoragePath = sourceImage?.storage_path
+    if (rootImageId !== sourceImageId) {
+      const { data: rootImage } = await supabase
+        .from('user_images')
+        .select('storage_path')
+        .eq('id', rootImageId)
+        .eq('user_id', user.id)
+        .single()
+      if (rootImage?.storage_path) {
+        imageStoragePath = rootImage.storage_path
+      }
+      // If root is gone, fall back to sourceImage's storage_path (already set)
+    }
+
+    const signedUrl = imageStoragePath
       ? (
           await supabase.storage
             .from('user-images')
-            .createSignedUrl(sourceImage.storage_path, 3600)
+            .createSignedUrl(imageStoragePath, 3600)
         ).data?.signedUrl
       : undefined
 
@@ -136,19 +160,14 @@ export const generateVariation = createServerFn({ method: 'POST' })
     }
 
     // Fetch all existing variation prompts in this family so Claude can avoid repeats.
-    // Find variations that share the same root source image (or are the source itself).
-    const rootSourceId =
-      sourceMetadata?.generation_type === 'variation' &&
-      typeof sourceMetadata.source_image_id === 'string'
-        ? sourceMetadata.source_image_id
-        : sourceImageId
+    // Prefer root_image_id filter; fall back to source_image_id for older variations.
     const { data: existingVariations } = await supabase
       .from('user_images')
       .select('generation_metadata')
       .eq('user_id', user.id)
       .filter('generation_metadata->>generation_type', 'eq', 'variation')
       .or(
-        `generation_metadata->>source_image_id.eq.${rootSourceId},generation_metadata->>source_image_id.eq.${sourceImageId}`,
+        `generation_metadata->>root_image_id.eq.${rootImageId},generation_metadata->>source_image_id.eq.${rootImageId},generation_metadata->>source_image_id.eq.${sourceImageId}`,
       )
       .limit(20)
     const usedPrompts = (existingVariations ?? [])
@@ -220,6 +239,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
             model,
             generation_type: 'variation',
             source_image_id: sourceImageId,
+            root_image_id: rootImageId,
             submitted_at: new Date().toISOString(),
             ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           },

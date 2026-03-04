@@ -20,8 +20,10 @@ function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
 export interface GalleryState {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
+  rootImageMeta: Record<string, { hidden: boolean }>
   loadingGallery: boolean
   deleteImage: (img: SavedAiImage) => Promise<void>
+  restoreRootImage: (rootId: string) => Promise<void>
   addOptimisticCard: (card: SavedAiImage) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
@@ -34,6 +36,9 @@ export function useImages({
 }: UseImagesOptions): GalleryState {
   const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+  const [rootImageMeta, setRootImageMeta] = useState<
+    Record<string, { hidden: boolean }>
+  >({})
   const [loadingGallery, setLoadingGallery] = useState(true)
 
   // Ref so the polling interval can read current images without being a dep
@@ -55,6 +60,7 @@ export function useImages({
         .eq('user_id', userId)
         .eq('source', 'ai_generated')
         .is('deleted_at', null)
+        .eq('hidden', false)
         .order('sort_order', { ascending: false, nullsFirst: false })
 
       if (queryError) throw queryError
@@ -80,6 +86,45 @@ export function useImages({
         if (entry) urls[entry[0]] = entry[1]
       }
       setImageUrls(urls)
+
+      // Fetch root image URLs for variations (including hidden roots)
+      const rootIds = new Set<string>()
+      for (const img of images) {
+        const meta = img.generation_metadata
+        if (meta?.generation_type === 'variation') {
+          const rootId = meta.root_image_id ?? meta.source_image_id
+          if (rootId && !urls[rootId]) rootIds.add(rootId)
+        }
+      }
+      if (rootIds.size > 0) {
+        const { data: rootRows } = await supabase
+          .from('user_images')
+          .select('id, storage_path, hidden')
+          .in('id', Array.from(rootIds))
+          .is('deleted_at', null)
+        if (rootRows) {
+          const meta: Record<string, { hidden: boolean }> = {}
+          const rootUrlEntries = await Promise.all(
+            rootRows
+              .filter((r) => r.storage_path)
+              .map(async (r) => {
+                const { data: urlData } = await supabase.storage
+                  .from('user-images')
+                  .createSignedUrl(r.storage_path, 3600)
+                return urlData ? ([r.id, urlData.signedUrl] as const) : null
+              }),
+          )
+          for (const r of rootRows) {
+            meta[r.id] = { hidden: !!r.hidden }
+          }
+          const rootUrls: Record<string, string> = {}
+          for (const entry of rootUrlEntries) {
+            if (entry) rootUrls[entry[0]] = entry[1]
+          }
+          setImageUrls((prev) => ({ ...prev, ...rootUrls }))
+          setRootImageMeta(meta)
+        }
+      }
     } catch {
       console.error('Failed to load saved AI images')
     } finally {
@@ -129,7 +174,8 @@ export function useImages({
             })
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
-            if (updatedImage.deleted_at) {
+            const rawUpdate = payload.new as Record<string, unknown>
+            if (updatedImage.deleted_at || rawUpdate.hidden === true) {
               setSavedImages((prev) =>
                 prev.filter((img) => img.id !== updatedImage.id),
               )
@@ -229,14 +275,87 @@ export function useImages({
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
 
     try {
-      const { error: deleteError } = await supabase
+      // Check if this image has living variations (is a root/source)
+      const { count: variationCount } = await supabase
         .from('user_images')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', img.id)
+        .select('id', { count: 'exact', head: true })
+        .or(
+          `generation_metadata->>root_image_id.eq.${img.id},generation_metadata->>source_image_id.eq.${img.id}`,
+        )
+        .is('deleted_at', null)
+        .eq('hidden', false)
 
-      if (deleteError) throw deleteError
+      if (variationCount && variationCount > 0) {
+        // Hide instead of soft-delete — variations still need this image
+        const { error: hideError } = await supabase
+          .from('user_images')
+          .update({ hidden: true })
+          .eq('id', img.id)
+        if (hideError) throw hideError
+      } else {
+        // Normal soft delete
+        const { error: deleteError } = await supabase
+          .from('user_images')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', img.id)
+        if (deleteError) throw deleteError
+      }
+
+      // If this image is a variation, check if its root should be cleaned up
+      const metadata = img.generation_metadata
+      if (metadata?.generation_type === 'variation') {
+        const rootId = metadata.root_image_id ?? metadata.source_image_id
+        if (rootId) {
+          await cleanupHiddenRoot(rootId, img.id)
+        }
+      }
     } catch {
       loadSavedImages()
+    }
+  }
+
+  async function cleanupHiddenRoot(rootId: string, excludeId: string) {
+    // Check if root is hidden
+    const { data: rootImage } = await supabase
+      .from('user_images')
+      .select('id, storage_path, hidden')
+      .eq('id', rootId)
+      .single()
+
+    if (!rootImage?.hidden) return
+
+    // Check for other living variations
+    const { count } = await supabase
+      .from('user_images')
+      .select('id', { count: 'exact', head: true })
+      .or(
+        `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
+      )
+      .is('deleted_at', null)
+      .neq('id', excludeId)
+
+    if (count === 0) {
+      // No more living variations — permanently delete the hidden root
+      await supabase.from('user_images').delete().eq('id', rootId)
+      if (rootImage.storage_path) {
+        await supabase.storage
+          .from('user-images')
+          .remove([rootImage.storage_path])
+      }
+    }
+  }
+
+  async function restoreRootImage(rootId: string) {
+    const { error } = await supabase
+      .from('user_images')
+      .update({ hidden: false })
+      .eq('id', rootId)
+    if (!error) {
+      setRootImageMeta((prev) => {
+        const next = { ...prev }
+        delete next[rootId]
+        return next
+      })
     }
   }
 
@@ -264,8 +383,10 @@ export function useImages({
   return {
     images: savedImages,
     imageUrls,
+    rootImageMeta,
     loadingGallery,
     deleteImage,
+    restoreRootImage,
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,

@@ -12,6 +12,9 @@ interface ImageCardProps {
   imageUrl: string | undefined
   generatingVariation: boolean
   hidePrompts: boolean
+  rootImageUrl?: string
+  rootIsHidden?: boolean
+  onRestore?: () => void
   onOpen: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage, count: number) => void
   onEdit: (img: SavedAiImage) => void
@@ -24,6 +27,9 @@ export function ImageCard({
   imageUrl,
   generatingVariation,
   hidePrompts,
+  rootImageUrl,
+  rootIsHidden,
+  onRestore,
   onOpen,
   onMoreLikeThis,
   onEdit,
@@ -120,6 +126,24 @@ export function ImageCard({
               </p>
             )}
           </div>
+        </div>
+      )}
+      {rootImageUrl && (
+        <div className="px-3 pb-3 flex items-center gap-2">
+          <img
+            src={rootImageUrl}
+            className="w-8 h-8 rounded object-cover border border-border"
+            alt="Original"
+          />
+          <span className="text-[10px] text-muted-foreground">Original</span>
+          {rootIsHidden && onRestore && (
+            <button
+              onClick={onRestore}
+              className="text-[10px] text-primary hover:underline ml-auto cursor-pointer"
+            >
+              Restore
+            </button>
+          )}
         </div>
       )}
     </div>

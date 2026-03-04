@@ -31,6 +31,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         .select('*')
         .eq('user_id', userId)
         .not('deleted_at', 'is', null)
+        .eq('hidden', false)
         .in('source', ['upload', 'ai_generated'])
         .order('deleted_at', { ascending: false })
 
@@ -81,6 +82,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as UserImage
+            const rawUpdate = payload.new as Record<string, unknown>
+            if (rawUpdate.hidden === true) {
+              // Hidden images should not appear in trash
+              setImages((prev) => prev.filter((img) => img.id !== updated.id))
+              return
+            }
             if (updated.deleted_at) {
               // Item was trashed — add to list if not already present
               setImages((prev) => {
@@ -161,6 +168,48 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
 
       // Delete storage file
       await supabase.storage.from(BUCKET_NAME).remove([image.storage_path])
+
+      // If this was a variation, check if its hidden root should be cleaned up
+      const metadata = image.generation_metadata as Record<
+        string,
+        unknown
+      > | null
+      if (metadata?.generation_type === 'variation') {
+        const rootId =
+          (typeof metadata.root_image_id === 'string'
+            ? metadata.root_image_id
+            : null) ??
+          (typeof metadata.source_image_id === 'string'
+            ? metadata.source_image_id
+            : null)
+        if (rootId) {
+          // Check if root is hidden and has no more living variations
+          const { data: rootImage } = await supabase
+            .from('user_images')
+            .select('id, storage_path, hidden')
+            .eq('id', rootId)
+            .single()
+
+          if (rootImage?.hidden) {
+            const { count } = await supabase
+              .from('user_images')
+              .select('id', { count: 'exact', head: true })
+              .or(
+                `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
+              )
+              .is('deleted_at', null)
+
+            if (count === 0) {
+              await supabase.from('user_images').delete().eq('id', rootId)
+              if (rootImage.storage_path) {
+                await supabase.storage
+                  .from(BUCKET_NAME)
+                  .remove([rootImage.storage_path])
+              }
+            }
+          }
+        }
+      }
     },
     [images, fetchTrashed],
   )

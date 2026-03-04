@@ -15,6 +15,7 @@ export interface SavedAiImage {
     generation_type?: string
     original_prompt?: string
     source_image_id?: string
+    root_image_id?: string
     aspect_ratio?: string
     reference_image_ids?: Array<string>
   } | null

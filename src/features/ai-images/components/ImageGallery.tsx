@@ -10,6 +10,7 @@ const HIDE_PROMPTS_KEY = 'ai-images-hide-prompts'
 interface ImageGalleryProps {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
+  rootImageMeta: Record<string, { hidden: boolean }>
   loadingGallery: boolean
   generatingVariationFor: string | null
   onOpenLightbox: (img: SavedAiImage) => void
@@ -18,17 +19,20 @@ interface ImageGalleryProps {
   onMoreLikeThis: (img: SavedAiImage, count: number) => void
   onEdit: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
+  onRestoreRoot: (rootId: string) => void
 }
 
 export function ImageGallery({
   images,
   imageUrls,
+  rootImageMeta,
   loadingGallery,
   generatingVariationFor,
   onOpenLightbox,
   onMoreLikeThis,
   onEdit,
   onDelete,
+  onRestoreRoot,
 }: ImageGalleryProps) {
   const [hidePrompts, setHidePrompts] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -76,38 +80,57 @@ export function ImageGallery({
             gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           }}
         >
-          {images.map((img) =>
-            img.status === 'pending' ? (
-              <PendingImageCard
-                key={img.id}
-                prompt={img.generation_metadata?.prompt ?? ''}
-                model={getModelName(img.generation_metadata?.model ?? '')}
-                isVariation={
-                  img.generation_metadata?.generation_type === 'variation'
-                }
-                sourceImageUrl={
-                  img.generation_metadata?.source_image_id
-                    ? imageUrls[img.generation_metadata.source_image_id]
-                    : undefined
-                }
-              />
-            ) : img.status === 'failed' ? (
-              <FailedImageCard key={img.id} img={img} onDelete={onDelete} />
-            ) : (
+          {images.map((img) => {
+            const rootId =
+              img.generation_metadata?.generation_type === 'variation'
+                ? (img.generation_metadata.root_image_id ??
+                  img.generation_metadata.source_image_id ??
+                  '')
+                : ''
+            const rootMeta = rootId ? rootImageMeta[rootId] : undefined
+
+            if (img.status === 'pending') {
+              return (
+                <PendingImageCard
+                  key={img.id}
+                  prompt={img.generation_metadata?.prompt ?? ''}
+                  model={getModelName(img.generation_metadata?.model ?? '')}
+                  isVariation={
+                    img.generation_metadata?.generation_type === 'variation'
+                  }
+                  sourceImageUrl={
+                    img.generation_metadata?.source_image_id
+                      ? imageUrls[img.generation_metadata.source_image_id]
+                      : undefined
+                  }
+                />
+              )
+            }
+
+            if (img.status === 'failed') {
+              return (
+                <FailedImageCard key={img.id} img={img} onDelete={onDelete} />
+              )
+            }
+
+            return (
               <ImageCard
                 key={img.id}
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 generatingVariation={generatingVariationFor === img.id}
                 hidePrompts={hidePrompts}
+                rootImageUrl={rootId ? imageUrls[rootId] : undefined}
+                rootIsHidden={rootMeta?.hidden}
+                onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
                 onOpen={onOpenLightbox}
                 onMoreLikeThis={onMoreLikeThis}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 getModelName={getModelName}
               />
-            ),
-          )}
+            )
+          })}
         </div>
       )}
     </div>

@@ -135,10 +135,15 @@ export type Database = {
           file_name: string
           file_size: number
           generation_metadata: Json | null
+          generation_error: string | null
           height: number | null
+          hidden: boolean
           id: string
           mime_type: string
+          request_id: string | null
+          sort_order: number | null
           source: string
+          status: string
           storage_path: string
           title: string
           updated_at: string
@@ -150,16 +155,21 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
-          file_hash: string
-          file_name: string
-          file_size: number
+          file_hash?: string
+          file_name?: string
+          file_size?: number
           generation_metadata?: Json | null
+          generation_error?: string | null
           height?: number | null
+          hidden?: boolean
           id?: string
-          mime_type: string
+          mime_type?: string
+          request_id?: string | null
+          sort_order?: number | null
           source?: string
-          storage_path: string
-          title: string
+          status?: string
+          storage_path?: string
+          title?: string
           updated_at?: string
           user_id: string
           width?: number | null
@@ -173,10 +183,15 @@ export type Database = {
           file_name?: string
           file_size?: number
           generation_metadata?: Json | null
+          generation_error?: string | null
           height?: number | null
+          hidden?: boolean
           id?: string
           mime_type?: string
+          request_id?: string | null
+          sort_order?: number | null
           source?: string
+          status?: string
           storage_path?: string
           title?: string
           updated_at?: string

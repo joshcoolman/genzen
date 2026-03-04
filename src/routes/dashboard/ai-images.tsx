@@ -44,6 +44,7 @@ function AiImagesPage() {
       <ImageGallery
         images={page.gallery.images}
         imageUrls={page.gallery.imageUrls}
+        rootImageMeta={page.gallery.rootImageMeta}
         loadingGallery={page.gallery.loadingGallery}
         generatingVariationFor={page.variations.generatingVariationFor}
         onOpenLightbox={page.lightbox.open}
@@ -52,6 +53,7 @@ function AiImagesPage() {
         onMoreLikeThis={page.variations.handleMoreLikeThis}
         onEdit={page.editor.openEditor}
         onDelete={page.gallery.deleteImage}
+        onRestoreRoot={page.gallery.restoreRootImage}
       />
 
       <ModelSettingsDialog
