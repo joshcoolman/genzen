@@ -127,109 +127,40 @@ export function BrainstormPanel({
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="grid grid-cols-2 gap-2 shrink-0 w-1/2">
-          {brainstorm.images.map((img, i) => (
-            <BrainstormSlot
-              key={i}
-              index={i}
-              image={img}
-              refineCount={brainstorm.refineCounts[i] ?? 0}
-              locked={brainstorm.lockedSlots.has(i)}
-              onToggleLock={() => brainstorm.toggleLock(i)}
-              onRegenerate={() => void brainstorm.regenerateSlot(i)}
-              onSelect={() => {
-                if (img.url) void brainstorm.selectImage(img.url, i)
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="flex-1 space-y-2">
-          {brainstorm.prompts.map((prompt, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <span className="text-xs text-muted-foreground pt-2 shrink-0 w-4 text-right">
-                {i + 1}
-              </span>
-              <textarea
-                ref={(el) => {
-                  textareaRefs.current[i] = el
-                }}
-                value={prompt}
-                readOnly={brainstorm.lockedSlots.has(i)}
-                onChange={(e) => brainstorm.updatePrompt(i, e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.metaKey) {
-                    e.preventDefault()
-                    void brainstorm.rewriteAndGenerateSlot(i)
-                    const nextIndex = (i + 1) % brainstorm.prompts.length
-                    setTimeout(() => focusSlot(nextIndex), 50)
-                  } else if (e.key === 'Tab') {
-                    e.preventDefault()
-                    const nextIndex = e.shiftKey
-                      ? (i - 1 + brainstorm.prompts.length) %
-                        brainstorm.prompts.length
-                      : (i + 1) % brainstorm.prompts.length
-                    focusSlot(nextIndex)
-                  }
-                }}
-                rows={2}
-                className={`flex-1 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none overflow-hidden ${brainstorm.lockedSlots.has(i) ? 'opacity-60 cursor-not-allowed' : ''}`}
-                style={{ fieldSizing: 'content' } as React.CSSProperties}
-              />
-              <div className="shrink-0 mt-1 flex flex-col gap-1">
-                <button
-                  onClick={() => void brainstorm.rewriteSlotPrompt(i)}
-                  disabled={brainstorm.rewritingSlots.has(i)}
-                  className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                  title="Rewrite prompt with AI"
-                >
-                  {brainstorm.rewritingSlots.has(i) ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-3.5" />
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    brainstorm.setEditingSlot(i)
-                    setEditInstruction('')
-                  }}
-                  disabled={brainstorm.editingSlots.has(i)}
-                  className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                  title="Edit prompt with specific instruction"
-                >
-                  {brainstorm.editingSlots.has(i) ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Pencil className="size-3.5" />
-                  )}
-                </button>
-                <button
-                  onClick={() => void brainstorm.regenerateSlot(i)}
-                  disabled={brainstorm.isGenerating}
-                  className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                  title="Generate image from this prompt"
-                >
-                  <RefreshCw className="size-3.5" />
-                </button>
-                <button
-                  onClick={() => brainstorm.toggleLock(i)}
-                  className={`size-6 flex items-center justify-center rounded-md transition-colors ${brainstorm.lockedSlots.has(i) ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-                  title={
-                    brainstorm.lockedSlots.has(i) ? 'Unlock slot' : 'Lock slot'
-                  }
-                >
-                  {brainstorm.lockedSlots.has(i) ? (
-                    <Lock className="size-3.5" />
-                  ) : (
-                    <Unlock className="size-3.5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="space-y-2">
+        {brainstorm.prompts.map((prompt, i) => (
+          <BrainstormRow
+            key={i}
+            index={i}
+            image={brainstorm.images[i]}
+            prompt={prompt}
+            refineCount={brainstorm.refineCounts[i] ?? 0}
+            locked={brainstorm.lockedSlots.has(i)}
+            rewriting={brainstorm.rewritingSlots.has(i)}
+            editing={brainstorm.editingSlots.has(i)}
+            isGenerating={brainstorm.isGenerating}
+            onUpdatePrompt={(val) => brainstorm.updatePrompt(i, val)}
+            onRewritePrompt={() => void brainstorm.rewriteSlotPrompt(i)}
+            onEditPrompt={() => {
+              brainstorm.setEditingSlot(i)
+              setEditInstruction('')
+            }}
+            onRegenerate={() => void brainstorm.regenerateSlot(i)}
+            onToggleLock={() => brainstorm.toggleLock(i)}
+            onSelect={() => {
+              const img = brainstorm.images[i]
+              if (img.url) void brainstorm.selectImage(img.url, i)
+            }}
+            onRewriteAndGenerate={() =>
+              void brainstorm.rewriteAndGenerateSlot(i)
+            }
+            textareaRef={(el) => {
+              textareaRefs.current[i] = el
+            }}
+            focusSlot={focusSlot}
+            totalSlots={brainstorm.prompts.length}
+          />
+        ))}
       </div>
 
       <Dialog
@@ -319,81 +250,177 @@ export function BrainstormPanel({
   )
 }
 
-interface BrainstormSlotProps {
+interface BrainstormRowProps {
   index: number
   image: { url: string | null; loading: boolean }
+  prompt: string
   refineCount: number
   locked: boolean
-  onToggleLock: () => void
+  rewriting: boolean
+  editing: boolean
+  isGenerating: boolean
+  onUpdatePrompt: (value: string) => void
+  onRewritePrompt: () => void
+  onEditPrompt: () => void
   onRegenerate: () => void
+  onToggleLock: () => void
   onSelect: () => void
+  onRewriteAndGenerate: () => void
+  textareaRef: (el: HTMLTextAreaElement | null) => void
+  focusSlot: (index: number) => void
+  totalSlots: number
 }
 
-function BrainstormSlot({
+function BrainstormRow({
   index,
   image,
+  prompt,
   refineCount,
   locked,
-  onToggleLock,
+  rewriting,
+  editing,
+  isGenerating,
+  onUpdatePrompt,
+  onRewritePrompt,
+  onEditPrompt,
   onRegenerate,
+  onToggleLock,
   onSelect,
-}: BrainstormSlotProps) {
-  if (image.loading) {
+  onRewriteAndGenerate,
+  textareaRef,
+  focusSlot,
+  totalSlots,
+}: BrainstormRowProps) {
+  const imageContent = (() => {
+    if (image.loading) {
+      return (
+        <div className="w-[230px] h-[230px] shrink-0 bg-muted rounded-md flex items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )
+    }
+
+    if (!image.url) {
+      return (
+        <div className="w-[230px] h-[230px] shrink-0 bg-muted/50 rounded-md border border-dashed border-border" />
+      )
+    }
+
     return (
-      <div className="aspect-square bg-muted rounded-md flex items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <div
+        className={`w-[230px] h-[230px] shrink-0 bg-muted rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
+      >
+        <button
+          onClick={onSelect}
+          className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex items-center justify-center"
+        >
+          <img
+            src={image.url}
+            alt={`Brainstorm idea ${index + 1}`}
+            className="max-w-full max-h-full object-contain"
+          />
+        </button>
+        <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
+          {index + 1}
+        </div>
+        {refineCount > 0 && (
+          <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
+            {refineCount}x
+          </div>
+        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleLock()
+          }}
+          className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+          title={locked ? 'Unlock slot' : 'Lock slot'}
+        >
+          {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRegenerate()
+          }}
+          className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
+          title="Regenerate this slot"
+        >
+          <RefreshCw className="size-3" />
+        </button>
       </div>
     )
-  }
-
-  if (!image.url) {
-    return (
-      <div className="aspect-square bg-muted/50 rounded-md border border-dashed border-border" />
-    )
-  }
+  })()
 
   return (
-    <div
-      className={`aspect-square bg-muted rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
-    >
-      <button
-        onClick={onSelect}
-        className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex items-center justify-center"
-      >
-        <img
-          src={image.url}
-          alt={`Brainstorm idea ${index + 1}`}
-          className="max-w-full max-h-full object-contain"
-        />
-      </button>
-      <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
-        {index + 1}
+    <div className="flex items-start gap-3">
+      {imageContent}
+      <textarea
+        ref={textareaRef}
+        value={prompt}
+        readOnly={locked}
+        onChange={(e) => onUpdatePrompt(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.metaKey) {
+            e.preventDefault()
+            onRewriteAndGenerate()
+            const nextIndex = (index + 1) % totalSlots
+            setTimeout(() => focusSlot(nextIndex), 50)
+          } else if (e.key === 'Tab') {
+            e.preventDefault()
+            const nextIndex = e.shiftKey
+              ? (index - 1 + totalSlots) % totalSlots
+              : (index + 1) % totalSlots
+            focusSlot(nextIndex)
+          }
+        }}
+        className={`flex-1 h-[230px] rounded-md border border-border bg-muted/50 px-2 py-1.5 text-xs font-mono text-foreground resize-none ${locked ? 'opacity-60 cursor-not-allowed' : ''}`}
+      />
+      <div className="shrink-0 mt-1 flex flex-col gap-1">
+        <button
+          onClick={onRewritePrompt}
+          disabled={rewriting}
+          className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          title="Rewrite prompt with AI"
+        >
+          {rewriting ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="size-3.5" />
+          )}
+        </button>
+        <button
+          onClick={onEditPrompt}
+          disabled={editing}
+          className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          title="Edit prompt with specific instruction"
+        >
+          {editing ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Pencil className="size-3.5" />
+          )}
+        </button>
+        <button
+          onClick={onRegenerate}
+          disabled={isGenerating}
+          className="size-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          title="Generate image from this prompt"
+        >
+          <RefreshCw className="size-3.5" />
+        </button>
+        <button
+          onClick={onToggleLock}
+          className={`size-6 flex items-center justify-center rounded-md transition-colors ${locked ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+          title={locked ? 'Unlock slot' : 'Lock slot'}
+        >
+          {locked ? (
+            <Lock className="size-3.5" />
+          ) : (
+            <Unlock className="size-3.5" />
+          )}
+        </button>
       </div>
-      {refineCount > 0 && (
-        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
-          {refineCount}x
-        </div>
-      )}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleLock()
-        }}
-        className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
-        title={locked ? 'Unlock slot' : 'Lock slot'}
-      >
-        {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onRegenerate()
-        }}
-        className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
-        title="Regenerate this slot"
-      >
-        <RefreshCw className="size-3" />
-      </button>
     </div>
   )
 }
