@@ -1,4 +1,5 @@
 import {
+  Boxes,
   Film,
   Image,
   LayoutGrid,
@@ -41,6 +42,12 @@ export const navItems: Array<NavItem> = [
     label: 'Describe',
     href: '/dashboard/describe',
     icon: ScanEye,
+    activeOnly: true,
+  },
+  {
+    label: 'Models',
+    href: '/dashboard/models',
+    icon: Boxes,
     activeOnly: true,
   },
   {
