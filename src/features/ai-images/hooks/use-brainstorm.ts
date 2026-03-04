@@ -234,12 +234,12 @@ export function useBrainstorm({
   }
 
   function clearPrompts() {
-    const empty = Array.from(
-      { length: BRAINSTORM_COUNT },
-      () => BRAINSTORM_PROMPT,
-    )
-    slotPrompts.current = empty
-    setPrompts(empty)
+    for (let i = 0; i < BRAINSTORM_COUNT; i++) {
+      if (!lockedSlots.has(i)) {
+        slotPrompts.current[i] = BRAINSTORM_PROMPT
+      }
+    }
+    setPrompts([...slotPrompts.current])
   }
 
   function toggleLock(index: number) {
@@ -252,6 +252,15 @@ export function useBrainstorm({
       }
       return next
     })
+  }
+
+  function setAllPrompts(value: string) {
+    for (let i = 0; i < BRAINSTORM_COUNT; i++) {
+      if (!lockedSlots.has(i)) {
+        slotPrompts.current[i] = value
+      }
+    }
+    setPrompts([...slotPrompts.current])
   }
 
   function updatePrompt(index: number, value: string) {
@@ -317,6 +326,40 @@ export function useBrainstorm({
     }
   }
 
+  async function rewriteAllPrompts() {
+    if (!accessToken) return
+
+    const indices = Array.from(
+      { length: BRAINSTORM_COUNT },
+      (_, i) => i,
+    ).filter((i) => !lockedSlots.has(i))
+    if (indices.length === 0) return
+    setRewritingSlots(new Set(indices))
+
+    await Promise.allSettled(
+      indices.map(async (i) => {
+        try {
+          const result = await rewritePrompt({
+            data: {
+              accessToken,
+              prompt: slotPrompts.current[i],
+            },
+          })
+          slotPrompts.current[i] = result.prompt
+          setPrompts([...slotPrompts.current])
+        } catch (err) {
+          console.error(`[brainstorm] rewriteAllPrompts slot ${i} failed:`, err)
+        } finally {
+          setRewritingSlots((prev) => {
+            const next = new Set(prev)
+            next.delete(i)
+            return next
+          })
+        }
+      }),
+    )
+  }
+
   async function rewriteAndGenerateSlot(index: number) {
     await rewriteSlotPrompt(index)
     void regenerateSlot(index)
@@ -338,8 +381,10 @@ export function useBrainstorm({
     clearPrompts,
     selectImage,
     updatePrompt,
+    setAllPrompts,
     toggleLock,
     rewriteSlotPrompt,
+    rewriteAllPrompts,
     rewriteAndGenerateSlot,
     editSlotPrompt,
   }
