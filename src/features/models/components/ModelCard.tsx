@@ -46,7 +46,7 @@ export function ModelCard({ model, colorIndex }: ModelCardProps) {
     >
       <h3
         className="text-base font-medium leading-tight"
-        style={c ? { color: c.muted } : undefined}
+        style={c ? { color: c.text } : undefined}
       >
         {model.display_name}
       </h3>
