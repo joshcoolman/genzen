@@ -3,6 +3,7 @@ import {
   Film,
   Image,
   LayoutGrid,
+  PencilLine,
   ScanEye,
   Sparkles,
   Trash2,
@@ -42,6 +43,12 @@ export const navItems: Array<NavItem> = [
     label: 'Describe',
     href: '/dashboard/describe',
     icon: ScanEye,
+    activeOnly: true,
+  },
+  {
+    label: 'Edit Image',
+    href: '/dashboard/edit-image',
+    icon: PencilLine,
     activeOnly: true,
   },
   {

@@ -157,8 +157,13 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
 
           results.push({ recordId: record.id, status: 'completed' })
         } else {
-          // IN_PROGRESS or IN_QUEUE — still pending
-          results.push({ recordId: record.id, status: 'pending' })
+          const statusStr = status.status as string
+          if (statusStr === 'IN_QUEUE' || statusStr === 'IN_PROGRESS') {
+            results.push({ recordId: record.id, status: 'pending' })
+          } else {
+            // FAILED or any other terminal non-success state
+            throw new Error(`FAL job ${statusStr}`)
+          }
         }
       } catch (error) {
         console.error(`Error checking request ${request_id}:`, error)

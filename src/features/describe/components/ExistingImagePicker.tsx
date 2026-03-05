@@ -22,6 +22,8 @@ interface ExistingImagePickerProps {
   isLoading: boolean
   alreadyCollectedIds: Set<string>
   onConfirm: (images: Array<CollectedImage>) => void
+  max?: number
+  excludeIds?: Set<string>
 }
 
 export function ExistingImagePicker({
@@ -32,14 +34,21 @@ export function ExistingImagePicker({
   isLoading,
   alreadyCollectedIds,
   onConfirm,
+  max,
+  excludeIds,
 }: ExistingImagePickerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
   const filteredImages = useMemo(() => {
-    if (sourceFilter === 'all') return images
-    return images.filter((img) => img.source === sourceFilter)
-  }, [images, sourceFilter])
+    let result =
+      sourceFilter === 'all'
+        ? images
+        : images.filter((img) => img.source === sourceFilter)
+    if (excludeIds?.size)
+      result = result.filter((img) => !excludeIds.has(img.id))
+    return result
+  }, [images, sourceFilter, excludeIds])
 
   const alreadyCollectedImages = useMemo(
     () => filteredImages.filter((img) => alreadyCollectedIds.has(img.id)),
@@ -57,6 +66,7 @@ export function ExistingImagePicker({
       if (next.has(id)) {
         next.delete(id)
       } else {
+        if (max !== undefined && next.size >= max) return prev
         next.add(id)
       }
       return next
@@ -182,12 +192,19 @@ export function ExistingImagePicker({
         </div>
 
         <DialogFooter className="shrink-0 border-t border-border pt-4">
-          <ActionButton
-            onClick={handleConfirm}
-            disabled={selectedIds.size === 0}
-          >
-            Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
-          </ActionButton>
+          <div className="flex items-center gap-3">
+            {max !== undefined && (
+              <span className="text-xs text-muted-foreground">
+                {selectedIds.size}/{max} selected
+              </span>
+            )}
+            <ActionButton
+              onClick={handleConfirm}
+              disabled={selectedIds.size === 0}
+            >
+              Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
+            </ActionButton>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

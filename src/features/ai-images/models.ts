@@ -193,49 +193,66 @@ export interface EditModel {
   id: string
   name: string
   description: string
-  supportsMultiImage?: boolean
+  maxRefImages: number
+  sizeParam: 'aspect_ratio' | 'image_size'
 }
 
 export const EDIT_MODELS: Array<EditModel> = [
   {
+    id: 'fal-ai/gpt-image-1.5/edit',
+    name: 'GPT Image 1.5',
+    description: 'OpenAI, high-quality edits',
+    maxRefImages: 4,
+    sizeParam: 'image_size',
+  },
+  {
     id: 'fal-ai/nano-banana/edit',
     name: 'Nano Banana',
     description: 'Fast + cheap edits',
-    supportsMultiImage: true,
+    maxRefImages: 4,
+    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/nano-banana-pro/edit',
     name: 'Nano Banana Pro',
     description: 'Realism + typography',
-    supportsMultiImage: true,
+    maxRefImages: 4,
+    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/nano-banana-2/edit',
     name: 'Nano Banana 2',
     description: 'Reasoning-guided edits',
-    supportsMultiImage: true,
+    maxRefImages: 14,
+    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/flux-2-pro/edit',
     name: 'FLUX.2 Pro Edit',
     description: 'Best photorealism edits',
-    supportsMultiImage: true,
+    maxRefImages: 8,
+    sizeParam: 'image_size',
   },
   {
     id: 'fal-ai/flux-2-flex/edit',
     name: 'FLUX.2 Flex Edit',
     description: 'Flexible multi-image edits',
-    supportsMultiImage: true,
+    maxRefImages: 4,
+    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',
     name: 'Seedream v4',
     description: 'ByteDance, high-quality edits',
+    maxRefImages: 4,
+    sizeParam: 'image_size',
   },
   {
     id: 'fal-ai/bytedance/seedream/v4.5/edit',
     name: 'Seedream v4.5',
     description: 'Multi-image reference editing',
+    maxRefImages: 9,
+    sizeParam: 'image_size',
   },
 ]
 
