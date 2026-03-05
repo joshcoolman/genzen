@@ -162,7 +162,10 @@ export function EditPageContent({ page }: EditPageContentProps) {
       </div>
 
       {/* Results */}
-      <EditResultsGrid results={results.results} />
+      <EditResultsGrid
+        results={results.results}
+        onDelete={results.deleteResult}
+      />
 
       {/* Dialogs */}
       <SingleImagePicker

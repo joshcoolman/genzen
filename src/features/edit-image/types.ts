@@ -10,4 +10,5 @@ export interface EditResult {
   url?: string
   modelName: string
   modelId: string
+  prompt?: string
 }

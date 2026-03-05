@@ -104,6 +104,7 @@ export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
           modelName: getModelName(modelId),
           modelId,
           url: urlMap[r.id],
+          prompt: (meta.prompt as string | undefined) ?? undefined,
         }
       })
 
@@ -215,6 +216,7 @@ export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
       status: 'pending',
       modelName: getModelName(p.modelId),
       modelId: p.modelId,
+      prompt: params.editPrompt,
     }))
     setResults((prev) => [...pendingEntries, ...prev])
 
@@ -264,5 +266,13 @@ export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
     }
   }, [])
 
-  return { results, isSubmitting, error, submit }
+  const deleteResult = useCallback(async (id: string) => {
+    setResults((prev) => prev.filter((r) => r.id !== id))
+    await supabase
+      .from('user_images')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+  }, [])
+
+  return { results, isSubmitting, error, submit, deleteResult }
 }
