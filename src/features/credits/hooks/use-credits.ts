@@ -22,6 +22,7 @@ export interface CreditsState {
   ) => Promise<{ success: boolean; balance: number }>
   add: (amount: number, reason: CreditReason) => Promise<{ balance: number }>
   refresh: () => Promise<void>
+  showInsufficientCredits: (cost: number) => void
   isLow: boolean
   isEmpty: boolean
 }
@@ -34,6 +35,7 @@ const defaultState: CreditsState = {
   deduct: async () => ({ success: false, balance: 0 }),
   add: async () => ({ balance: 0 }),
   refresh: async () => {},
+  showInsufficientCredits: () => {},
   isLow: false,
   isEmpty: false,
 }

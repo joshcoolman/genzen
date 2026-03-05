@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/popover'
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
 import { useBrainstormSettings } from '@/features/ai-images/hooks/use-brainstorm-settings'
+import { useCredits } from '@/features/credits/hooks/use-credits'
 import { BRAINSTORM_MAX_ROWS } from '@/features/ai-images/constants'
 
 interface BrainstormPanelProps {
@@ -47,6 +48,7 @@ export function BrainstormPanel({
   const [pasteText, setPasteText] = useState('')
   const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([])
 
+  const credits = useCredits()
   const settings = useBrainstormSettings()
 
   const focusSlot = useCallback((index: number) => {
@@ -59,6 +61,7 @@ export function BrainstormPanel({
 
   const brainstorm = useBrainstorm({
     accessToken,
+    credits,
     model,
     refineModels,
     aspectRatio: refineAspectRatio,

@@ -10,16 +10,15 @@ import {
   Video,
 } from 'lucide-react'
 import type { CreditReason, CreditTransaction } from '@/features/credits'
-import { ActionButton } from '@/components/ActionButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { StatsRow } from '@/components/StatsRow'
 import { SectionCard } from '@/components/SectionCard'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { getTransactions } from '@/features/credits/server/get-transactions.server'
-import { CREDIT_PACKS, DOLLARS_PER_CREDIT } from '@/features/credits'
+import { DOLLARS_PER_CREDIT } from '@/features/credits'
+import { CreditPackSelector } from '@/features/credits/components/CreditPackSelector'
 import { supabase } from '@/lib/supabase'
 import { checkConnections } from '@/lib/server/check-connections'
 
@@ -143,15 +142,8 @@ function AccountPage() {
 
   // Credits state
   const [transactions, setTransactions] = useState<Array<CreditTransaction>>([])
-  const [selectedPack, setSelectedPack] = useState<string>(
-    CREDIT_PACKS[1].credits.toString(),
-  )
   const [couponCode, setCouponCode] = useState('')
-  const [purchasing, setPurchasing] = useState(false)
-
-  const activePack = CREDIT_PACKS.find(
-    (p) => p.credits.toString() === selectedPack,
-  )
+  const [clearingCredits, setClearingCredits] = useState(false)
 
   const refreshTransactions = useCallback(() => {
     if (!session?.access_token) return
@@ -164,14 +156,14 @@ function AccountPage() {
     refreshTransactions()
   }, [refreshTransactions])
 
-  async function handlePurchase() {
-    if (!activePack || purchasing) return
-    setPurchasing(true)
+  async function handleClearCredits() {
+    if (!credits.balance || clearingCredits) return
+    setClearingCredits(true)
     try {
-      await credits.add(activePack.credits, 'pack_purchase')
+      await credits.deduct(credits.balance, 'image_gen')
       refreshTransactions()
     } finally {
-      setPurchasing(false)
+      setClearingCredits(false)
     }
   }
 
@@ -307,57 +299,37 @@ function AccountPage() {
             },
           ]}
         />
+        {import.meta.env.DEV &&
+          credits.balance !== null &&
+          credits.balance > 0 && (
+            <button
+              onClick={handleClearCredits}
+              disabled={clearingCredits}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              {clearingCredits ? 'Clearing...' : 'Dev: Clear Credits'}
+            </button>
+          )}
 
         <SectionCard
           title="Add Credits"
           footer={
-            <div className="flex items-center gap-3">
-              <ActionButton
-                onClick={handlePurchase}
-                loading={purchasing}
-                loadingText="Adding..."
-              >
-                Quick Buy {activePack ? `$${activePack.price}.00` : ''}
-              </ActionButton>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Enter coupon code"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  className="w-44 h-9"
-                />
-                <Button variant="outline" size="sm" disabled={!couponCode}>
-                  Redeem
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Enter coupon code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="w-44 h-9"
+              />
+              <Button variant="outline" size="sm" disabled={!couponCode}>
+                Redeem
+              </Button>
             </div>
           }
         >
-          <RadioGroup
-            value={selectedPack}
-            onValueChange={setSelectedPack}
-            className="space-y-0 -mx-6 -my-6"
-          >
-            {CREDIT_PACKS.map((pack, i) => (
-              <label
-                key={pack.credits}
-                className={`flex items-center gap-4 px-6 py-2.5 cursor-pointer transition-colors hover:bg-muted/50 ${
-                  i < CREDIT_PACKS.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <RadioGroupItem
-                  value={pack.credits.toString()}
-                  className="border-muted-foreground data-[state=checked]:border-accent-brand data-[state=checked]:text-accent-brand"
-                />
-                <span className="font-semibold tabular-nums w-20">
-                  ${pack.price}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {pack.credits} credits &middot; {pack.description}
-                </span>
-              </label>
-            ))}
-          </RadioGroup>
+          <div className="-mx-6 -my-6">
+            <CreditPackSelector onPurchaseComplete={refreshTransactions} />
+          </div>
         </SectionCard>
 
         <SectionCard title="Recent Activity">

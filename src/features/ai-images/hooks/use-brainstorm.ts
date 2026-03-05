@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
+import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import {
   BRAINSTORM_PROMPT,
   checkBrainstormImages,
@@ -8,6 +9,7 @@ import {
   rewritePrompt,
 } from '@/features/ai-images/server/brainstorm-images.server'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
+import { CREDIT_COSTS } from '@/features/credits'
 
 const POLL_INTERVAL_MS = 2000
 
@@ -18,6 +20,7 @@ export interface BrainstormImage {
 
 interface UseBrainstormOptions {
   accessToken: string | undefined
+  credits: CreditsState
   model?: BrainstormModelKey
   refineModels?: Array<string>
   aspectRatio?: string
@@ -31,6 +34,7 @@ function makeEmptySlotImages(count: number): Array<BrainstormImage> {
 
 export function useBrainstorm({
   accessToken,
+  credits,
   model,
   refineModels,
   aspectRatio,
@@ -191,6 +195,14 @@ export function useBrainstorm({
 
     if (unlockedIndices.length === 0) return
 
+    // Pre-flight credit check: 1 credit per image
+    const totalImages = unlockedIndices.length * imagesPerPrompt
+    const cost = CREDIT_COSTS.image_gen * totalImages
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost, () => void generate())
+      return
+    }
+
     stopPolling()
     requestIdToSlot.current = new Map()
     pendingIds.current = new Set()
@@ -257,6 +269,16 @@ export function useBrainstorm({
     if (!accessToken) return
 
     const models = refineModels?.length ? refineModels : ['fal-ai/flux-2-pro']
+
+    // Pre-flight credit check for refine (goes through generateImage which checks server-side)
+    const refineCost = CREDIT_COSTS.image_gen * models.length
+    if (credits.balance !== null && credits.balance < refineCost) {
+      credits.showInsufficientCredits(
+        refineCost,
+        () => void selectImage(url, slotIndex),
+      )
+      return
+    }
 
     setRefineCounts((prev) => {
       const next = [...prev]

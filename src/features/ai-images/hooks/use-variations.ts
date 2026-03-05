@@ -35,6 +35,17 @@ export function useVariations({
     )
       return
 
+    const cost = CREDIT_COSTS.variation * count
+
+    // Pre-flight credit check
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(
+        cost,
+        () => void handleMoreLikeThis(img, count),
+      )
+      return
+    }
+
     setError(null)
     setGeneratingVariationFor(img.id)
 
@@ -63,7 +74,6 @@ export function useVariations({
     }
 
     try {
-      await credits.deduct(CREDIT_COSTS.variation * count, 'variation')
       const results = await generateVariation({
         data: {
           accessToken,
@@ -96,13 +106,26 @@ export function useVariations({
       for (let i = results.length; i < optimisticIds.length; i++) {
         gallery.removeOptimisticCard(optimisticIds[i])
       }
+      // Refresh balance after server-side deduction
+      await credits.refresh()
     } catch (err) {
       for (const optimisticId of optimisticIds) {
         gallery.removeOptimisticCard(optimisticId)
       }
-      setError(
-        err instanceof Error ? err.message : 'Failed to generate variations',
-      )
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : String(err)
+      if (message.includes('Insufficient credits')) {
+        credits.showInsufficientCredits(
+          cost,
+          () => void handleMoreLikeThis(img, count),
+        )
+      } else {
+        setError(message)
+      }
     } finally {
       setGeneratingVariationFor(null)
     }

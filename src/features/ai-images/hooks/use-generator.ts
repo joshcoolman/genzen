@@ -88,16 +88,22 @@ export function useGenerator({
   async function handleGenerate() {
     if (loading || !accessToken || !canGenerate) return
 
+    const modelsToUse = activeModels
+    const reason = sourceImage ? 'variation' : 'image_gen'
+    const cost = CREDIT_COSTS[reason] * modelsToUse.length
+
+    // Pre-flight credit check
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost, () => void handleGenerate())
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
       const finalPrompt = prompt.trim()
-      const modelsToUse = activeModels
-
-      const reason = sourceImage ? 'variation' : 'image_gen'
-      await credits.deduct(CREDIT_COSTS[reason] * modelsToUse.length, reason)
-      await Promise.all(
+      const results = await Promise.allSettled(
         modelsToUse.map((modelId) =>
           generateImage({
             data: {
@@ -110,8 +116,26 @@ export function useGenerator({
           }),
         ),
       )
+      const firstError = results.find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      )
+      if (firstError) {
+        throw firstError.reason
+      }
+      // Refresh balance after server-side deduction
+      await credits.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate image')
+      const message =
+        err instanceof Error
+          ? err.message
+          : typeof err === 'string'
+            ? err
+            : String(err)
+      if (message.includes('Insufficient credits')) {
+        credits.showInsufficientCredits(cost, () => void handleGenerate())
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }
