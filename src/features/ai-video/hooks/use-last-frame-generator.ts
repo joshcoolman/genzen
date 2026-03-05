@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { Generation, LastFrameMode } from '@/features/ai-video/types'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { LAST_FRAME_MODEL } from '@/features/ai-video/types'
@@ -41,11 +41,11 @@ export interface LastFrameGeneratorState {
   lastFrameImageData: string | null
   lastFrameOriginalData: string | null
   suggestingLastFrame: boolean
-  lastFrameFileInputRef: React.RefObject<HTMLInputElement | null>
   generateDisabled: boolean
   lastFrameLocked: boolean
-  handleModeChange: (mode: LastFrameMode) => void
-  handleFilePick: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+  setSourceFile: (file: File) => void
+  setSourceFromUrl: (url: string, name: string) => void
+  activatePromptMode: () => void
   handleGenerate: () => Promise<void>
   handleSuggest: () => Promise<void>
   resetLastFrameState: () => void
@@ -71,7 +71,6 @@ export function useLastFrameGenerator({
     string | null
   >(null)
   const [suggestingLastFrame, setSuggestingLastFrame] = useState(false)
-  const lastFrameFileInputRef = useRef<HTMLInputElement>(null)
 
   const lastFrameLocked = firstFrame.status !== 'completed'
   const generateDisabled =
@@ -80,29 +79,55 @@ export function useLastFrameGenerator({
     (lastFrameMode === 'prompt' && !lastFramePrompt.trim()) ||
     (lastFrameMode === 'image' && !lastFrameImageData)
 
-  function handleModeChange(mode: LastFrameMode) {
-    if (lastFrame.status === 'generating') return
-    setLastFrameMode(mode)
-    setLastFrameImageData(null)
-    setLastFrameOriginalData(null)
-    lastFrame.reset()
+  function setSourceFile(file: File) {
+    processFile(file)
   }
 
-  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
+  async function processFile(file: File) {
     try {
       const [originalDataUrl, croppedDataUrl] = await Promise.all([
         fileToBase64(file),
         cropTo16x9(file),
       ])
+      setLastFrameMode('image')
       setLastFrameImageData(croppedDataUrl)
       setLastFrameOriginalData(originalDataUrl)
       lastFrame.setStatus('idle')
       lastFrame.setUrl(croppedDataUrl)
     } catch {
       lastFrame.setFailed('Failed to process image')
+    }
+  }
+
+  function setSourceFromUrl(url: string, _name: string) {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const file = new File([blob], 'library-image.png', {
+          type: 'image/png',
+        })
+        processFile(file)
+      }, 'image/png')
+    }
+    img.src = url
+  }
+
+  function activatePromptMode() {
+    if (lastFrame.status === 'generating') return
+    setLastFrameMode('prompt')
+    setLastFrameImageData(null)
+    setLastFrameOriginalData(null)
+    lastFrame.reset()
+    if (!lastFramePrompt.trim()) {
+      handleSuggest()
     }
   }
 
@@ -245,11 +270,11 @@ export function useLastFrameGenerator({
     lastFrameImageData,
     lastFrameOriginalData,
     suggestingLastFrame,
-    lastFrameFileInputRef,
     generateDisabled,
     lastFrameLocked,
-    handleModeChange,
-    handleFilePick,
+    setSourceFile,
+    setSourceFromUrl,
+    activatePromptMode,
     handleGenerate,
     handleSuggest,
     resetLastFrameState,

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { FrameMode } from '@/features/ai-video/types'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { FIRST_FRAME_MODEL_FOR_MODE } from '@/features/ai-video/constants'
@@ -29,11 +29,11 @@ export interface FirstFrameGeneratorState {
   setFirstFramePrompt: (prompt: string) => void
   suggestingFirstFrame: boolean
   firstFrameModel: string
-  firstFrameFileInputRef: React.RefObject<HTMLInputElement | null>
-  handleModeChange: (mode: FrameMode) => void
-  handleFilePick: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
   handleGenerate: () => Promise<void>
   handleSuggest: () => Promise<void>
+  setSourceFile: (file: File) => void
+  setSourceFromUrl: (url: string, name: string) => void
+  activatePromptMode: () => void
 }
 
 export function useFirstFrameGenerator({
@@ -46,21 +46,11 @@ export function useFirstFrameGenerator({
 }: UseFirstFrameGeneratorOptions): FirstFrameGeneratorState {
   const [firstFramePrompt, setFirstFramePrompt] = useState('')
   const [suggestingFirstFrame, setSuggestingFirstFrame] = useState(false)
-  const firstFrameFileInputRef = useRef<HTMLInputElement>(null)
 
   const firstFrameModel = FIRST_FRAME_MODEL_FOR_MODE[firstFrameMode]
 
-  function handleModeChange(mode: FrameMode) {
-    if (firstFrame.status === 'generating') return
-    setFirstFrameMode(mode)
-    firstFrame.reset()
-    onResetDownstream()
-  }
-
-  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !accessToken) return
-    e.target.value = ''
+  async function processFile(file: File) {
+    if (!accessToken) return
 
     let croppedDataUrl: string
     let originalDataUrl: string
@@ -74,6 +64,7 @@ export function useFirstFrameGenerator({
       return
     }
 
+    setFirstFrameMode('image')
     firstFrame.setGenerating(croppedDataUrl)
     onResetDownstream()
 
@@ -91,6 +82,41 @@ export function useFirstFrameGenerator({
       firstFrame.setFailed(
         err instanceof Error ? err.message : 'Failed to upload frame',
       )
+    }
+  }
+
+  function setSourceFile(file: File) {
+    processFile(file)
+  }
+
+  function setSourceFromUrl(url: string, _name: string) {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const file = new File([blob], 'library-image.png', {
+          type: 'image/png',
+        })
+        processFile(file)
+      }, 'image/png')
+    }
+    img.src = url
+  }
+
+  function activatePromptMode() {
+    if (firstFrame.status === 'generating') return
+    setFirstFrameMode('prompt')
+    firstFrame.reset()
+    onResetDownstream()
+    if (!firstFramePrompt.trim()) {
+      handleSuggest()
     }
   }
 
@@ -131,10 +157,10 @@ export function useFirstFrameGenerator({
     setFirstFramePrompt,
     suggestingFirstFrame,
     firstFrameModel,
-    firstFrameFileInputRef,
-    handleModeChange,
-    handleFilePick,
     handleGenerate,
     handleSuggest,
+    setSourceFile,
+    setSourceFromUrl,
+    activatePromptMode,
   }
 }

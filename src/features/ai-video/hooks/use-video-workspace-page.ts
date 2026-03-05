@@ -10,6 +10,7 @@ import { useWorkspaceDelete } from '@/features/ai-video/hooks/use-workspace-dele
 import { useFirstFrameGenerator } from '@/features/ai-video/hooks/use-first-frame-generator'
 import { useLastFrameGenerator } from '@/features/ai-video/hooks/use-last-frame-generator'
 import { useVideoGenerator } from '@/features/ai-video/hooks/use-video-generator'
+import { useUserImages } from '@/features/user-images'
 
 interface UseVideoWorkspacePageOptions {
   workspaceId: string
@@ -24,7 +25,9 @@ export function useVideoWorkspacePage({
 }: UseVideoWorkspacePageOptions) {
   const { session } = useAuth()
   const accessToken = session?.access_token
+  const userId = session?.user.id
   const credits = useCredits()
+  const userImages = useUserImages(userId)
 
   // Orchestrator owns firstFrameMode to break circular dep between useFrame and useFirstFrameGenerator
   const [firstFrameMode, setFirstFrameMode] = useState<FrameMode>('prompt')
@@ -166,6 +169,7 @@ export function useVideoWorkspacePage({
     showSidebar,
     firstFrameMode,
     isImageMode,
+    userImages,
     resetAllState,
     handleLoadGeneration,
     handleContinueGeneration,

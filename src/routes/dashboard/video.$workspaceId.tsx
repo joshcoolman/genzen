@@ -24,6 +24,12 @@ function WorkspaceDetailPage() {
 
   const page = useVideoWorkspacePage({ workspaceId, generationId, navigate })
 
+  const userImagesData = {
+    images: page.userImages.images,
+    imageUrls: page.userImages.imageUrls,
+    isLoading: page.userImages.isLoading,
+  }
+
   return (
     <div className="flex -m-6">
       <div className="flex-1 p-6 space-y-5 min-w-0">
@@ -62,43 +68,26 @@ function WorkspaceDetailPage() {
           loading={page.wsDelete.deleting}
         />
 
-        <input
-          ref={page.firstFrameGen.firstFrameFileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={page.firstFrameGen.handleFilePick}
-        />
-        <input
-          ref={page.lastFrameGen.lastFrameFileInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={page.lastFrameGen.handleFilePick}
-        />
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FramePanel
             type="first"
             mode={page.firstFrameMode}
-            onModeChange={page.firstFrameGen.handleModeChange}
             status={page.firstFrame.status}
             url={page.firstFrame.url}
             error={page.firstFrame.error}
             prompt={page.firstFrameGen.firstFramePrompt}
             onPromptChange={page.firstFrameGen.setFirstFramePrompt}
             suggesting={page.firstFrameGen.suggestingFirstFrame}
-            onSuggest={page.firstFrameGen.handleSuggest}
-            onChooseImage={() =>
-              page.firstFrameGen.firstFrameFileInputRef.current?.click()
-            }
+            onActivatePrompt={page.firstFrameGen.activatePromptMode}
+            onFileSelected={page.firstFrameGen.setSourceFile}
+            onImageFromUrl={page.firstFrameGen.setSourceFromUrl}
             onGenerate={page.firstFrameGen.handleGenerate}
+            userImages={userImagesData}
           />
 
           <FramePanel
             type="last"
             mode={page.lastFrameGen.lastFrameMode}
-            onModeChange={page.lastFrameGen.handleModeChange}
             status={page.lastFrame.status}
             url={page.lastFrame.url}
             error={page.lastFrame.error}
@@ -106,14 +95,14 @@ function WorkspaceDetailPage() {
             prompt={page.lastFrameGen.lastFramePrompt}
             onPromptChange={page.lastFrameGen.setLastFramePrompt}
             suggesting={page.lastFrameGen.suggestingLastFrame}
-            onSuggest={page.lastFrameGen.handleSuggest}
-            onChooseImage={() =>
-              page.lastFrameGen.lastFrameFileInputRef.current?.click()
-            }
+            onActivatePrompt={page.lastFrameGen.activatePromptMode}
+            onFileSelected={page.lastFrameGen.setSourceFile}
+            onImageFromUrl={page.lastFrameGen.setSourceFromUrl}
             onGenerate={page.lastFrameGen.handleGenerate}
             generateDisabled={page.lastFrameGen.generateDisabled}
             includeFirstFrame={page.lastFrameGen.includeFirstFrame}
             onIncludeFirstFrameChange={page.lastFrameGen.setIncludeFirstFrame}
+            userImages={userImagesData}
           />
         </div>
 

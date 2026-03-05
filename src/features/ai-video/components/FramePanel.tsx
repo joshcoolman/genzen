@@ -1,30 +1,44 @@
-import { Sparkles } from 'lucide-react'
 import { FrameImageArea } from './FrameImageArea'
 import type { FrameMode, FrameStatus, LastFrameMode } from '../types'
 import { ActionButton } from '@/components/ActionButton'
 import { Textarea } from '@/components/ui/textarea'
-import { MiniTabs } from '@/components/MiniTabs'
+import { LibraryPickerButton } from '@/components/LibraryPickerButton'
+import { FileUploadButton } from '@/components/FileUploadButton'
+import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
+import { PromptButton } from '@/components/PromptButton'
 import { cn } from '@/lib/utils'
+
+interface UserImagesData {
+  images: Array<{
+    id: string
+    title: string
+    source: string
+    storage_path: string
+    [key: string]: unknown
+  }>
+  imageUrls: Record<string, string>
+  isLoading: boolean
+}
 
 interface FirstFramePanelProps {
   type: 'first'
   mode: FrameMode
-  onModeChange: (mode: FrameMode) => void
   status: FrameStatus
   url: string | null
   error: string | null
   prompt: string
   onPromptChange: (value: string) => void
   suggesting?: boolean
-  onSuggest?: () => void
-  onChooseImage?: () => void
+  onActivatePrompt: () => void
+  onFileSelected: (file: File) => void
+  onImageFromUrl: (url: string, name: string) => void
   onGenerate: () => void
+  userImages: UserImagesData
 }
 
 interface LastFramePanelProps {
   type: 'last'
   mode: LastFrameMode
-  onModeChange: (mode: LastFrameMode) => void
   status: FrameStatus
   url: string | null
   error: string | null
@@ -32,12 +46,14 @@ interface LastFramePanelProps {
   prompt: string
   onPromptChange: (value: string) => void
   suggesting: boolean
-  onSuggest: () => void
-  onChooseImage?: () => void
+  onActivatePrompt: () => void
+  onFileSelected: (file: File) => void
+  onImageFromUrl: (url: string, name: string) => void
   onGenerate: () => void
   generateDisabled: boolean
   includeFirstFrame: boolean
   onIncludeFirstFrameChange: (value: boolean) => void
+  userImages: UserImagesData
 }
 
 type FramePanelProps = FirstFramePanelProps | LastFramePanelProps
@@ -51,30 +67,52 @@ export function FramePanel(props: FramePanelProps) {
 
 function FirstFramePanel({
   mode,
-  onModeChange,
   status,
   url,
   error,
   prompt,
   onPromptChange,
   suggesting,
-  onSuggest,
-  onChooseImage,
+  onActivatePrompt,
+  onFileSelected,
+  onImageFromUrl,
+  userImages,
   onGenerate,
 }: FirstFramePanelProps) {
   const isPromptMode = mode === 'prompt'
   const showPromptArea = isPromptMode && status === 'idle'
+  const buttonsDisabled = status === 'generating'
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">First Frame</h2>
-        <MiniTabs
-          options={['prompt', 'image'] as Array<FrameMode>}
-          value={mode}
-          onChange={onModeChange}
-          disabled={status === 'generating'}
-        />
+        <div className="flex gap-1">
+          <LibraryPickerButton
+            images={userImages.images}
+            imageUrls={userImages.imageUrls}
+            isLoading={userImages.isLoading}
+            onSelect={(img) => onImageFromUrl(img.url, img.title)}
+            className="size-7"
+          />
+          <FileUploadButton
+            onFilesSelected={(files) => {
+              if (files[0]) onFileSelected(files[0])
+            }}
+            multiple={false}
+            className="size-7"
+          />
+          <ClipboardPasteButton
+            onImagePasted={onFileSelected}
+            className="size-7"
+          />
+          <PromptButton
+            onPrompt={onActivatePrompt}
+            loading={suggesting}
+            disabled={buttonsDisabled}
+            className="size-7"
+          />
+        </div>
       </div>
 
       {showPromptArea ? (
@@ -86,18 +124,6 @@ function FirstFramePanel({
             className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={6}
           />
-          {onSuggest && (
-            <button
-              onClick={onSuggest}
-              disabled={suggesting}
-              className="absolute bottom-2 right-2 size-7 flex items-center justify-center text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Suggest a prompt"
-            >
-              <Sparkles
-                className={cn('size-3.5', suggesting && 'animate-pulse')}
-              />
-            </button>
-          )}
         </div>
       ) : (
         <FrameImageArea
@@ -105,9 +131,6 @@ function FirstFramePanel({
           imageUrl={url}
           placeholder="First frame will appear here"
           generatingLabel={isPromptMode ? 'Generating...' : 'Uploading...'}
-          onChooseImage={
-            !isPromptMode && status !== 'generating' ? onChooseImage : undefined
-          }
         />
       )}
 
@@ -132,7 +155,6 @@ function FirstFramePanel({
 
 function LastFramePanel({
   mode,
-  onModeChange,
   status,
   url,
   error,
@@ -140,8 +162,10 @@ function LastFramePanel({
   prompt,
   onPromptChange,
   suggesting,
-  onSuggest,
-  onChooseImage,
+  onActivatePrompt,
+  onFileSelected,
+  onImageFromUrl,
+  userImages,
   onGenerate,
   generateDisabled,
   includeFirstFrame,
@@ -149,6 +173,7 @@ function LastFramePanel({
 }: LastFramePanelProps) {
   const isPromptMode = mode === 'prompt'
   const showPromptArea = isPromptMode && !locked && status === 'idle'
+  const buttonsDisabled = status === 'generating' || locked
 
   return (
     <div
@@ -159,12 +184,32 @@ function LastFramePanel({
     >
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">Last Frame</h2>
-        <MiniTabs
-          options={['prompt', 'image'] as Array<LastFrameMode>}
-          value={mode}
-          onChange={onModeChange}
-          disabled={status === 'generating'}
-        />
+        <div className="flex gap-1">
+          <LibraryPickerButton
+            images={userImages.images}
+            imageUrls={userImages.imageUrls}
+            isLoading={userImages.isLoading}
+            onSelect={(img) => onImageFromUrl(img.url, img.title)}
+            className="size-7"
+          />
+          <FileUploadButton
+            onFilesSelected={(files) => {
+              if (files[0]) onFileSelected(files[0])
+            }}
+            multiple={false}
+            className="size-7"
+          />
+          <ClipboardPasteButton
+            onImagePasted={onFileSelected}
+            className="size-7"
+          />
+          <PromptButton
+            onPrompt={onActivatePrompt}
+            loading={suggesting}
+            disabled={buttonsDisabled}
+            className="size-7"
+          />
+        </div>
       </div>
 
       {showPromptArea ? (
@@ -176,16 +221,6 @@ function LastFramePanel({
             className="h-full w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
             rows={6}
           />
-          <button
-            onClick={onSuggest}
-            disabled={suggesting}
-            className="absolute bottom-2 right-2 size-7 flex items-center justify-center text-muted-foreground hover:text-foreground bg-background/80 backdrop-blur-sm rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Suggest a prompt"
-          >
-            <Sparkles
-              className={cn('size-3.5', suggesting && 'animate-pulse')}
-            />
-          </button>
         </div>
       ) : (
         <FrameImageArea
@@ -197,11 +232,6 @@ function LastFramePanel({
               : 'Last frame will appear here'
           }
           generatingLabel="Generating..."
-          onChooseImage={
-            mode === 'image' && status !== 'generating' && !locked
-              ? onChooseImage
-              : undefined
-          }
         />
       )}
 
