@@ -93,7 +93,7 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       .insert({
         user_id: user.id,
         status: 'completed',
-        source: 'upload',
+        source: 'ai_video_frame',
         title: `Uploaded ${frameType} frame`,
         storage_path: recordStoragePath,
         file_name: recordFileName,
