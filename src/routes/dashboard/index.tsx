@@ -324,9 +324,14 @@ function DashboardHome() {
         params: { workspaceId: item.workspaceId },
         search: { generationId: undefined },
       })
+    } else if (item.href === '/dashboard/images') {
+      void navigate({
+        to: '/dashboard/images',
+        search: { imageId: item.id },
+      })
     } else {
       void navigate({
-        to: item.href as '/dashboard/images' | '/dashboard/ai-images',
+        to: item.href as '/dashboard/ai-images',
       })
     }
   }

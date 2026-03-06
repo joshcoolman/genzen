@@ -4,8 +4,9 @@
  * Main container component that orchestrates the entire user images feature.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, EyeOff, Info, LayoutGrid } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { useUserImages } from '../hooks/useUserImages'
 import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { ImageUploadButton } from './ImageUploadButton'
@@ -69,8 +70,13 @@ function storePrefs(update: Partial<ViewPrefs>) {
 /**
  * User images display component
  */
-export function UserImagesDisplay() {
+interface UserImagesDisplayProps {
+  deepLinkImageId?: string
+}
+
+export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const {
     images,
     imageUrls,
@@ -86,6 +92,10 @@ export function UserImagesDisplay() {
   } = useUserImages(user?.id)
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [highlightedImageId, setHighlightedImageId] = useState<string | null>(
+    null,
+  )
+  const deepLinkConsumed = useRef(false)
 
   const [storedPrefs] = useState(getStoredPrefs)
   const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
@@ -134,6 +144,30 @@ export function UserImagesDisplay() {
     return result
   }, [images, sortAsc, sourceFilter])
 
+  // Deep link: open lightbox for a specific image when navigating from Everything
+  useEffect(() => {
+    if (!deepLinkImageId || isLoading || deepLinkConsumed.current) return
+    deepLinkConsumed.current = true
+
+    // Switch to 'all' filter (state only, don't persist to localStorage)
+    setSourceFilter('all')
+
+    // Find the image in the full (unsorted) images list with 'all' filter
+    const allImages = sortAsc ? [...images].reverse() : images
+    const idx = allImages.findIndex((img) => img.id === deepLinkImageId)
+    if (idx !== -1) {
+      setEditingIndex(idx)
+      setHighlightedImageId(deepLinkImageId)
+    }
+
+    // Clear the URL param so refresh doesn't re-trigger
+    void navigate({
+      to: '/dashboard/images',
+      search: { imageId: undefined },
+      replace: true,
+    })
+  }, [deepLinkImageId, isLoading, images, sortAsc, navigate])
+
   const handleUpload = async (input: CreateUserImageInput) => {
     await create(input)
   }
@@ -158,6 +192,21 @@ export function UserImagesDisplay() {
 
   const handleCloseEdit = () => {
     setEditingIndex(null)
+
+    if (highlightedImageId) {
+      const id = highlightedImageId
+      setHighlightedImageId(null)
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-image-id="${id}"]`)
+        if (el) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+          el.classList.add('ring-2', 'ring-primary')
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-primary')
+          }, 2000)
+        }
+      })
+    }
   }
 
   const handleNextImage = () => {
@@ -274,17 +323,18 @@ export function UserImagesDisplay() {
       {sortedImages.length > 0 ? (
         <ImageGrid size={thumbSize}>
           {sortedImages.map((image, index) => (
-            <ImageCard
-              key={image.id}
-              image={image}
-              imageUrl={imageUrls[image.id] || ''}
-              onClick={() => handleOpenEdit(index)}
-              onDelete={handleDelete}
-              isDeleting={isDeleting === image.id}
-              isUpdating={isUpdating === image.id}
-              showInfo={showInfo}
-              compact={thumbSize !== 'lg'}
-            />
+            <div key={image.id} data-image-id={image.id}>
+              <ImageCard
+                image={image}
+                imageUrl={imageUrls[image.id] || ''}
+                onClick={() => handleOpenEdit(index)}
+                onDelete={handleDelete}
+                isDeleting={isDeleting === image.id}
+                isUpdating={isUpdating === image.id}
+                showInfo={showInfo}
+                compact={thumbSize !== 'lg'}
+              />
+            </div>
           ))}
         </ImageGrid>
       ) : (
