@@ -1,4 +1,4 @@
-import { BookOpen, Check, Layers, Loader2, Plus, X } from 'lucide-react'
+import { BookOpen, Layers, X } from 'lucide-react'
 import { COMBINE_MODELS } from '../hooks/useCombinePage'
 import type { UseCombinePageReturn } from '../hooks/useCombinePage'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
@@ -21,7 +21,6 @@ export function CombineCard({ page }: CombineCardProps) {
     orientation,
     aspectRatio,
     model,
-    results,
     isGenerating,
     error,
     canCombine,
@@ -37,7 +36,6 @@ export function CombineCard({ page }: CombineCardProps) {
     addFile,
     removeImage,
     combine,
-    saveResult,
   } = page
 
   return (
@@ -93,105 +91,44 @@ export function CombineCard({ page }: CombineCardProps) {
         />
       </div>
 
-      {/* Source images + prompt | Results */}
-      <div className="grid grid-cols-2 gap-6 items-start">
-        {/* Left: source images + prompt */}
-        <div className="space-y-3">
-          {sourceImages.length === 0 ? (
-            <div className="rounded-lg border border-border bg-card flex items-center justify-center py-12">
-              <p className="text-xs text-muted-foreground">
-                Select images to combine
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {sourceImages.map((img) => (
-                <div
-                  key={img.id}
-                  className="relative rounded-lg border border-border bg-card overflow-hidden group"
-                >
-                  <img
-                    src={img.url}
-                    alt={img.title}
-                    className="w-full aspect-square object-cover"
-                  />
-                  <button
-                    onClick={() => removeImage(img.id)}
-                    className="absolute top-1 right-1 flex items-center justify-center size-5 rounded-full bg-background/80 border border-border text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="size-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <Textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe how to combine these images..."
-            rows={3}
-            className="resize-none text-sm"
-          />
-        </div>
-
-        {/* Right: Results */}
-        <div className="space-y-3">
-          {results.length === 0 && !isGenerating && (
-            <div
-              className="rounded-lg border border-border bg-card flex items-center justify-center"
-              style={{
-                aspectRatio: `${aspectRatio
-                  .split(':')
-                  .map(Number)
-                  .reduce((a, b) => a / b)}`,
-              }}
-            >
-              <p className="text-xs text-muted-foreground">No results yet</p>
-            </div>
-          )}
-          {isGenerating && (
-            <div
-              className="rounded-lg border border-border bg-card flex items-center justify-center"
-              style={{
-                aspectRatio: `${aspectRatio
-                  .split(':')
-                  .map(Number)
-                  .reduce((a, b) => a / b)}`,
-              }}
-            >
-              <div className="text-center space-y-2">
-                <Loader2 className="size-5 animate-spin mx-auto text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Combining...</p>
-              </div>
-            </div>
-          )}
-          {results.map((result, index) => (
-            <div
-              key={`${result.url}-${index}`}
-              className="relative rounded-lg border border-border bg-card overflow-hidden"
-            >
-              <img
-                src={result.url}
-                alt={`Combined result ${index + 1}`}
-                className="w-full"
-              />
-              <button
-                onClick={() => saveResult(index)}
-                disabled={result.isSaving || result.isSaved}
-                className="absolute bottom-2 right-2 flex items-center justify-center size-8 rounded-md bg-background/80 border border-border text-foreground hover:bg-background transition-colors disabled:opacity-50"
+      {/* Source images + prompt */}
+      <div className="space-y-3">
+        {sourceImages.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card flex items-center justify-center py-12">
+            <p className="text-xs text-muted-foreground">
+              Select images to combine
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-6 gap-2">
+            {sourceImages.map((img) => (
+              <div
+                key={img.id}
+                className="relative rounded-lg border border-border bg-card overflow-hidden group"
               >
-                {result.isSaving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : result.isSaved ? (
-                  <Check className="size-4" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
+                <img
+                  src={img.url}
+                  alt={img.title}
+                  className="w-full aspect-square object-cover"
+                />
+                <button
+                  onClick={() => removeImage(img.id)}
+                  className="absolute top-1 right-1 flex items-center justify-center size-5 rounded-full bg-background/80 border border-border text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Describe how to combine these images..."
+          rows={3}
+          className="resize-none text-sm"
+        />
       </div>
 
       {error && <ErrorBanner message={error} />}

@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react'
 import { outpaintImage } from '../server/outpaint-image.server'
 import type { SelectedImage } from '@/components/LibraryPickerButton'
+import type { GenerationResult } from '@/lib/types/generation-result'
 import { useAuth } from '@/lib/auth'
 import { detectAspectRatio } from '@/features/ai-images/constants'
-import { saveGeneratedImage } from '@/features/describe/server/save-generated-image.server'
+import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
+import { getModelName } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
 
 const BUCKET_NAME = 'user-images'
@@ -13,12 +15,6 @@ interface SourceImage {
   url: string
   title: string
   storagePath?: string
-}
-
-interface OutpaintResult {
-  url: string
-  isSaving: boolean
-  isSaved: boolean
 }
 
 export const OUTPAINT_MODELS = [
@@ -45,7 +41,7 @@ export interface UseOutpaintPageReturn {
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   model: string
-  results: Array<OutpaintResult>
+  recentResults: Array<GenerationResult>
   isGenerating: boolean
   error: string | null
   canOutpaint: boolean
@@ -67,12 +63,13 @@ export interface UseOutpaintPageReturn {
   selectImage: (image: SelectedImage) => void
   selectFile: (file: File) => void
   outpaint: () => Promise<void>
-  saveResult: (index: number) => Promise<void>
+  deleteResult: (id: string) => Promise<void>
   reset: () => void
 }
 
 export function useOutpaintPage(): UseOutpaintPageReturn {
   const { user, session } = useAuth()
+  const accessToken = session?.access_token ?? ''
   const [sourceImage, setSourceImage] = useState<SourceImage | null>(null)
   const [sourceNativeRatio, setSourceNativeRatio] = useState<string | null>(
     null,
@@ -82,9 +79,19 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [model, setModel] = useState(OUTPAINT_MODELS[0].id)
-  const [results, setResults] = useState<Array<OutpaintResult>>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const {
+    results: recentResults,
+    addPendingResult,
+    replaceTempId,
+    deleteResult,
+  } = useGenerationResults({
+    userId: user?.id,
+    accessToken,
+    generationType: 'outpaint',
+  })
 
   // Existing images for library picker
   const [images, setImages] = useState<
@@ -169,19 +176,22 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     !!sourceImage && !!sourceNativeRatio && aspectRatio !== sourceNativeRatio
 
   const outpaint = useCallback(async () => {
-    const accessToken = session?.access_token
     if (!sourceImage || !accessToken || !canOutpaint) return
 
     setIsGenerating(true)
     setError(null)
 
+    const tempId = `temp-outpaint-${Date.now()}`
+    addPendingResult({
+      id: tempId,
+      status: 'pending',
+      label: getModelName(model),
+      prompt: 'Outpaint',
+    })
+
     try {
-      // If the source image URL is a signed Supabase URL, use it directly.
-      // If it's an object URL (from file upload), we need to get the actual URL.
       let sourceUrl = sourceImage.url
 
-      // For object URLs, we need to upload the file first or use a different approach.
-      // Since the server needs a fetchable URL, for object URLs we read as data URL.
       if (sourceUrl.startsWith('blob:')) {
         const res = await fetch(sourceUrl)
         const blob = await res.blob()
@@ -202,56 +212,25 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
         },
       })
 
-      setResults((prev) => [
-        { url: result.imageUrl, isSaving: false, isSaved: false },
-        ...prev,
-      ])
+      replaceTempId(tempId, result.recordId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to outpaint image')
     } finally {
       setIsGenerating(false)
     }
-  }, [sourceImage, session?.access_token, canOutpaint, aspectRatio, model])
-
-  const saveResult = useCallback(
-    async (index: number) => {
-      const accessToken = session?.access_token
-      const result = results[index]
-      if (!accessToken || result.isSaving || result.isSaved) return
-
-      setResults((prev) =>
-        prev.map((r, i) => (i === index ? { ...r, isSaving: true } : r)),
-      )
-
-      try {
-        await saveGeneratedImage({
-          data: {
-            accessToken,
-            imageUrl: result.url,
-            prompt: 'Outpaint',
-            model: model.replace(/\/edit$/, ''),
-            aspectRatio,
-          },
-        })
-        setResults((prev) =>
-          prev.map((r, i) =>
-            i === index ? { ...r, isSaving: false, isSaved: true } : r,
-          ),
-        )
-      } catch (err) {
-        console.error('Failed to save outpainted image:', err)
-        setResults((prev) =>
-          prev.map((r, i) => (i === index ? { ...r, isSaving: false } : r)),
-        )
-      }
-    },
-    [results, session?.access_token, model, aspectRatio],
-  )
+  }, [
+    sourceImage,
+    accessToken,
+    canOutpaint,
+    aspectRatio,
+    model,
+    addPendingResult,
+    replaceTempId,
+  ])
 
   const reset = useCallback(() => {
     setSourceImage(null)
     setSourceNativeRatio(null)
-    setResults([])
     setError(null)
   }, [])
 
@@ -261,7 +240,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     orientation,
     aspectRatio,
     model,
-    results,
+    recentResults,
     isGenerating,
     error,
     canOutpaint,
@@ -277,7 +256,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     selectImage,
     selectFile,
     outpaint,
-    saveResult,
+    deleteResult,
     reset,
   }
 }

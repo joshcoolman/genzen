@@ -1,7 +1,7 @@
 import { Minus, Plus, X } from 'lucide-react'
 import { EditModelSelector } from './EditModelSelector'
-import { EditResultsGrid } from './EditResultsGrid'
 import type { UseEditPageReturn } from '../hooks/useEditPage'
+import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { ExistingImagePicker } from '@/features/describe/components/ExistingImagePicker'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
@@ -165,7 +165,7 @@ export function EditPageContent({ page }: EditPageContentProps) {
       </div>
 
       {/* Results */}
-      <EditResultsGrid
+      <GenerationResultsGrid
         results={results.results}
         onDelete={results.deleteResult}
       />

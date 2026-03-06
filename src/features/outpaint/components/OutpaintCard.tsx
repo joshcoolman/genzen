@@ -1,4 +1,4 @@
-import { Check, Expand, Loader2, Plus } from 'lucide-react'
+import { Expand } from 'lucide-react'
 import { OUTPAINT_MODELS } from '../hooks/useOutpaintPage'
 import { OutpaintPreview } from './OutpaintPreview'
 import type { UseOutpaintPageReturn } from '../hooks/useOutpaintPage'
@@ -19,7 +19,6 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
     orientation,
     aspectRatio,
     model,
-    results,
     isGenerating,
     error,
     canOutpaint,
@@ -30,7 +29,6 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
     selectImage,
     selectFile,
     outpaint,
-    saveResult,
     reset,
   } = page
 
@@ -83,73 +81,12 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
         />
       </div>
 
-      {/* Preview + Results side by side */}
-      <div className="grid grid-cols-2 gap-6 items-start">
-        {/* Preview */}
-        <OutpaintPreview
-          sourceImageUrl={sourceImage?.url ?? null}
-          sourceTitle={sourceImage?.title ?? ''}
-          aspectRatio={aspectRatio}
-        />
-
-        {/* Results */}
-        <div className="space-y-3">
-          {results.length === 0 && !isGenerating && (
-            <div
-              className="rounded-lg border border-border bg-card flex items-center justify-center"
-              style={{
-                aspectRatio: `${aspectRatio
-                  .split(':')
-                  .map(Number)
-                  .reduce((a, b) => a / b)}`,
-              }}
-            >
-              <p className="text-xs text-muted-foreground">No results yet</p>
-            </div>
-          )}
-          {isGenerating && (
-            <div
-              className="rounded-lg border border-border bg-card flex items-center justify-center"
-              style={{
-                aspectRatio: `${aspectRatio
-                  .split(':')
-                  .map(Number)
-                  .reduce((a, b) => a / b)}`,
-              }}
-            >
-              <div className="text-center space-y-2">
-                <Loader2 className="size-5 animate-spin mx-auto text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Generating...</p>
-              </div>
-            </div>
-          )}
-          {results.map((result, index) => (
-            <div
-              key={`${result.url}-${index}`}
-              className="relative rounded-lg border border-border bg-card overflow-hidden"
-            >
-              <img
-                src={result.url}
-                alt={`Outpaint result ${index + 1}`}
-                className="w-full"
-              />
-              <button
-                onClick={() => saveResult(index)}
-                disabled={result.isSaving || result.isSaved}
-                className="absolute bottom-2 right-2 flex items-center justify-center size-8 rounded-md bg-background/80 border border-border text-foreground hover:bg-background transition-colors disabled:opacity-50"
-              >
-                {result.isSaving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : result.isSaved ? (
-                  <Check className="size-4" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Preview */}
+      <OutpaintPreview
+        sourceImageUrl={sourceImage?.url ?? null}
+        sourceTitle={sourceImage?.title ?? ''}
+        aspectRatio={aspectRatio}
+      />
 
       {error && (
         <ErrorBanner

@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 import { EDIT_MODELS } from '@/features/ai-images/models'
+import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -20,7 +21,7 @@ interface OutpaintImageInput {
 export const outpaintImage = createServerFn({ method: 'POST' })
   .inputValidator((data: OutpaintImageInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
 
     if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
@@ -63,7 +64,7 @@ export const outpaintImage = createServerFn({ method: 'POST' })
             image_size: RATIO_TO_SIZE[data.aspectRatio] ?? RATIO_TO_SIZE['1:1'],
           }
 
-    const result = await fal.subscribe(data.model, {
+    const { request_id } = await (fal.queue.submit as any)(data.model, {
       input: {
         prompt: OUTPAINT_PROMPT,
         image_urls: [falImageUrl],
@@ -72,12 +73,15 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       },
     })
 
-    const imageUrl = (result.data as { images?: Array<{ url: string }> })
-      .images?.[0]?.url
+    const { recordId } = await createPendingGeneration({
+      accessToken: data.accessToken,
+      userId: user.id,
+      requestId: request_id,
+      generationType: 'outpaint',
+      falModelId: data.model,
+      prompt: OUTPAINT_PROMPT,
+      aspectRatio: data.aspectRatio,
+    })
 
-    if (!imageUrl) {
-      throw new Error('No image returned from outpaint')
-    }
-
-    return { imageUrl }
+    return { recordId }
   })

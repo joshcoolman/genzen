@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -17,7 +18,7 @@ interface GenerateFromDescriptionInput {
 export const generateFromDescription = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateFromDescriptionInput) => data)
   .handler(async ({ data }) => {
-    await requireAuth(data.accessToken)
+    const user = await requireAuth(data.accessToken)
 
     if (!data.prompt.trim()) {
       throw new Error('Prompt is required')
@@ -51,16 +52,19 @@ export const generateFromDescription = createServerFn({ method: 'POST' })
       }
     }
 
-    const result = await fal.subscribe(modelId, {
+    const { request_id } = await (fal.queue.submit as any)(modelId, {
       input: falInput,
     })
 
-    const imageUrl = (result.data as { images?: Array<{ url: string }> })
-      .images?.[0]?.url
+    const { recordId } = await createPendingGeneration({
+      accessToken: data.accessToken,
+      userId: user.id,
+      requestId: request_id,
+      generationType: 'describe',
+      falModelId: modelId,
+      prompt: data.prompt,
+      aspectRatio: data.aspectRatio,
+    })
 
-    if (!imageUrl) {
-      throw new Error('No image returned from generation')
-    }
-
-    return { imageUrl }
+    return { recordId }
   })

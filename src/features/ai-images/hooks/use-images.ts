@@ -66,7 +66,13 @@ export function useImages({
       if (queryError) throw queryError
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const images = (data ?? []) as Array<SavedAiImage>
+      const allImages = (data ?? []) as Array<SavedAiImage>
+      // Exclude images that belong to feature-specific galleries
+      const FEATURE_TYPES = new Set(['edit', 'outpaint', 'combine', 'describe'])
+      const images = allImages.filter((img) => {
+        const genType = img.generation_metadata?.generation_type
+        return !genType || !FEATURE_TYPES.has(genType)
+      })
       setSavedImages(images)
 
       // Batch signed URL generation
@@ -153,6 +159,17 @@ export function useImages({
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newImage = payload.new as SavedAiImage
+            // Skip images that belong to feature-specific galleries
+            const FEATURE_TYPES = new Set([
+              'edit',
+              'outpaint',
+              'combine',
+              'describe',
+            ])
+            const insertGenType = newImage.generation_metadata
+              ?.generation_type
+            if (insertGenType && FEATURE_TYPES.has(insertGenType)) return
+
             setSavedImages((prev) => {
               if (prev.some((img) => img.id === newImage.id)) return prev
               const metadata = newImage.generation_metadata

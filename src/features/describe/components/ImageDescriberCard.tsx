@@ -1,4 +1,4 @@
-import { Check, Loader2, Plus, RefreshCw } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { DESCRIBER_MODELS } from '../hooks/useImageDescriber'
 import type { UseImageDescriberReturn } from '../hooks/useImageDescriber'
 import type { useExistingImages } from '../hooks/useExistingImages'
@@ -25,8 +25,6 @@ export function ImageDescriberCard({
     orientation,
     aspectRatio,
     setOrientation,
-    isSaving,
-    isSaved,
     selectImage,
     selectFile,
     setModel,
@@ -34,13 +32,12 @@ export function ImageDescriberCard({
     regenerateDescription,
     regenerateImage,
     reset,
-    saveImage,
   } = describer
 
   const canRegenDescription =
-    sourceImage && (status === 'complete' || status === 'error')
+    sourceImage && (status === 'pending' || status === 'error')
   const canRegenImage =
-    description && (status === 'complete' || status === 'error')
+    description && (status === 'pending' || status === 'error')
 
   return (
     <div className="space-y-4">
@@ -154,10 +151,13 @@ export function ImageDescriberCard({
             )}
           </div>
           <div className="relative aspect-square rounded-lg border border-border bg-card overflow-hidden flex items-center justify-center">
-            {status === 'generating' && (
+            {(status === 'generating' ||
+              (status === 'pending' && !generatedImageUrl)) && (
               <div className="text-center space-y-2">
                 <Loader2 className="size-5 animate-spin mx-auto text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Generating...</p>
+                <p className="text-xs text-muted-foreground">
+                  {status === 'generating' ? 'Submitting...' : 'Generating...'}
+                </p>
               </div>
             )}
             {generatedImageUrl && (
@@ -171,21 +171,6 @@ export function ImageDescriberCard({
               <p className="text-xs text-muted-foreground">
                 Waiting for description
               </p>
-            )}
-            {status === 'complete' && generatedImageUrl && (
-              <button
-                onClick={saveImage}
-                disabled={isSaving || isSaved}
-                className="absolute bottom-2 right-2 flex items-center justify-center size-8 rounded-md bg-background/80 border border-border text-foreground hover:bg-background transition-colors disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : isSaved ? (
-                  <Check className="size-4" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-              </button>
             )}
           </div>
         </div>

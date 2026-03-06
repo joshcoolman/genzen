@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { describeImage } from '../server/describe-image.server'
 import { generateFromDescription } from '../server/generate-from-description.server'
-import { saveGeneratedImage } from '../server/save-generated-image.server'
 import type { SelectedImage } from '../types'
+import type { GenerationResult } from '@/lib/types/generation-result'
 import { useAuth } from '@/lib/auth'
+import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
+import { getModelName } from '@/features/ai-images/models'
 
 type PipelineStatus =
   | 'idle'
   | 'selecting'
   | 'describing'
   | 'generating'
-  | 'complete'
+  | 'pending'
   | 'error'
 
 export interface DescriberModel {
@@ -32,7 +34,7 @@ interface ImageDescriberState {
   sourceImage: SelectedImage | null
   sourceFile: File | null
   description: string | null
-  generatedImageUrl: string | null
+  latestRecordId: string | null
   error: string | null
 }
 
@@ -41,7 +43,7 @@ const INITIAL_STATE: ImageDescriberState = {
   sourceImage: null,
   sourceFile: null,
   description: null,
-  generatedImageUrl: null,
+  latestRecordId: null,
   error: null,
 }
 
@@ -55,8 +57,8 @@ export interface UseImageDescriberReturn {
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   setOrientation: (o: 'landscape' | 'portrait') => void
-  isSaving: boolean
-  isSaved: boolean
+  recentResults: Array<GenerationResult>
+  deleteResult: (id: string) => Promise<void>
   selectImage: (image: SelectedImage) => void
   selectFile: (file: File) => void
   setModel: (model: string) => void
@@ -64,23 +66,38 @@ export interface UseImageDescriberReturn {
   regenerateDescription: () => void
   regenerateImage: () => void
   reset: () => void
-  saveImage: () => Promise<void>
 }
 
 export function useImageDescriber(): UseImageDescriberReturn {
-  const { session } = useAuth()
+  const { user, session } = useAuth()
+  const accessToken = session?.access_token ?? ''
   const [state, setState] = useState<ImageDescriberState>(INITIAL_STATE)
   const [model, setModel] = useState(DESCRIBER_MODELS[0].id)
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     'landscape',
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
-  const [isSaving, setIsSaving] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
   const abortRef = useRef(false)
-  // Counter to trigger regeneration
   const genTrigger = useRef(0)
   const [genCount, setGenCount] = useState(0)
+
+  const {
+    results: recentResults,
+    addPendingResult,
+    replaceTempId,
+    deleteResult,
+  } = useGenerationResults({
+    userId: user?.id,
+    accessToken,
+    generationType: 'describe',
+  })
+
+  // Derive generatedImageUrl from the latest result matching latestRecordId
+  const latestResult = state.latestRecordId
+    ? recentResults.find((r) => r.id === state.latestRecordId)
+    : undefined
+  const generatedImageUrl =
+    latestResult?.status === 'complete' ? (latestResult.url ?? null) : null
 
   const selectImage = useCallback((image: SelectedImage) => {
     setState({
@@ -88,7 +105,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
       sourceImage: image,
       sourceFile: null,
       description: null,
-      generatedImageUrl: null,
+      latestRecordId: null,
       error: null,
     })
   }, [])
@@ -100,7 +117,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
       sourceImage: { id: objectUrl, url: objectUrl, title: file.name },
       sourceFile: file,
       description: null,
-      generatedImageUrl: null,
+      latestRecordId: null,
       error: null,
     })
   }, [])
@@ -108,53 +125,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
   const reset = useCallback(() => {
     abortRef.current = true
     setState(INITIAL_STATE)
-    setIsSaving(false)
-    setIsSaved(false)
   }, [])
-
-  const saveImage = useCallback(async () => {
-    const accessToken = session?.access_token
-    if (
-      state.status !== 'complete' ||
-      !state.generatedImageUrl ||
-      !state.description ||
-      !accessToken ||
-      isSaving ||
-      isSaved
-    )
-      return
-
-    setIsSaving(true)
-    try {
-      await saveGeneratedImage({
-        data: {
-          accessToken,
-          imageUrl: state.generatedImageUrl,
-          prompt: state.description,
-          model,
-          aspectRatio,
-        },
-      })
-      setIsSaved(true)
-    } catch (err) {
-      console.error('Failed to save generated image:', err)
-      setState((s) => ({
-        ...s,
-        error: err instanceof Error ? err.message : 'Failed to save image',
-      }))
-    } finally {
-      setIsSaving(false)
-    }
-  }, [
-    state.status,
-    state.generatedImageUrl,
-    state.description,
-    session?.access_token,
-    isSaving,
-    isSaved,
-    model,
-    aspectRatio,
-  ])
 
   const regenerateDescription = useCallback(() => {
     if (!state.sourceImage) return
@@ -163,6 +134,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
       ...s,
       status: 'describing',
       description: null,
+      latestRecordId: null,
       error: null,
     }))
   }, [state.sourceImage])
@@ -173,7 +145,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
     setState((s) => ({
       ...s,
       status: 'generating',
-      generatedImageUrl: null,
+      latestRecordId: null,
       error: null,
     }))
     genTrigger.current += 1
@@ -184,14 +156,12 @@ export function useImageDescriber(): UseImageDescriberReturn {
   useEffect(() => {
     if (state.status !== 'describing' || !state.sourceImage) return
 
-    const accessToken = session?.access_token
     if (!accessToken) return
 
     abortRef.current = false
 
     void (async () => {
       try {
-        // If source came from a file, read as data URL instead of using the object URL
         let imageUrl = state.sourceImage!.url
         if (state.sourceFile) {
           imageUrl = await new Promise<string>((resolve, reject) => {
@@ -221,16 +191,24 @@ export function useImageDescriber(): UseImageDescriberReturn {
         }))
       }
     })()
-  }, [state.status, state.sourceImage, state.sourceFile, session?.access_token])
+  }, [state.status, state.sourceImage, state.sourceFile, accessToken])
 
   // Auto-generate when description is received (or regenerate triggered)
   useEffect(() => {
     if (state.status !== 'generating' || !state.description) return
 
-    const accessToken = session?.access_token
     if (!accessToken) return
 
     abortRef.current = false
+
+    const tempId = `temp-describe-${Date.now()}`
+
+    addPendingResult({
+      id: tempId,
+      status: 'pending',
+      label: getModelName(model),
+      prompt: state.description,
+    })
 
     void (async () => {
       try {
@@ -243,11 +221,11 @@ export function useImageDescriber(): UseImageDescriberReturn {
           },
         })
         if (abortRef.current) return
-        setIsSaved(false)
+        replaceTempId(tempId, result.recordId)
         setState((s) => ({
           ...s,
-          status: 'complete',
-          generatedImageUrl: result.imageUrl,
+          status: 'pending',
+          latestRecordId: result.recordId,
         }))
       } catch (err) {
         if (abortRef.current) return
@@ -263,24 +241,30 @@ export function useImageDescriber(): UseImageDescriberReturn {
   }, [
     state.status,
     state.description,
-    session?.access_token,
+    accessToken,
     model,
     aspectRatio,
     genCount,
+    addPendingResult,
+    replaceTempId,
   ])
 
+  // Derive effective status: if we're pending and the result completed, reflect that
+  const effectiveStatus =
+    state.status === 'pending' && generatedImageUrl ? 'pending' : state.status
+
   return {
-    status: state.status,
+    status: effectiveStatus,
     sourceImage: state.sourceImage,
     description: state.description,
-    generatedImageUrl: state.generatedImageUrl,
+    generatedImageUrl,
     error: state.error,
     model,
     orientation,
     aspectRatio,
     setOrientation,
-    isSaving,
-    isSaved,
+    recentResults,
+    deleteResult,
     selectImage,
     selectFile,
     setModel,
@@ -288,6 +272,5 @@ export function useImageDescriber(): UseImageDescriberReturn {
     regenerateDescription,
     regenerateImage,
     reset,
-    saveImage,
   }
 }

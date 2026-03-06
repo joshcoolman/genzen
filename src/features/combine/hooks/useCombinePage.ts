@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react'
 import { combineImages } from '../server/combine-images.server'
 import type { CollectedImage } from '@/features/describe/types'
+import type { GenerationResult } from '@/lib/types/generation-result'
 import { useExistingImages } from '@/features/describe/hooks/useExistingImages'
 import { useAuth } from '@/lib/auth'
-import { saveGeneratedImage } from '@/features/describe/server/save-generated-image.server'
-import { EDIT_MODELS } from '@/features/ai-images/models'
+import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
+import { EDIT_MODELS, getModelName } from '@/features/ai-images/models'
 
 const DEFAULT_PROMPT =
   'Combine these images into a unique and creative layout that blends their elements harmoniously.'
@@ -13,12 +14,6 @@ interface SourceImage {
   id: string
   url: string
   title: string
-}
-
-interface CombineResult {
-  url: string
-  isSaving: boolean
-  isSaved: boolean
 }
 
 export const COMBINE_MODELS = EDIT_MODELS.map((m) => ({
@@ -33,7 +28,7 @@ export interface UseCombinePageReturn {
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   model: string
-  results: Array<CombineResult>
+  recentResults: Array<GenerationResult>
   isGenerating: boolean
   error: string | null
   canCombine: boolean
@@ -49,11 +44,12 @@ export interface UseCombinePageReturn {
   addFile: (file: File) => void
   removeImage: (id: string) => void
   combine: () => Promise<void>
-  saveResult: (index: number) => Promise<void>
+  deleteResult: (id: string) => Promise<void>
 }
 
 export function useCombinePage(): UseCombinePageReturn {
   const { user, session } = useAuth()
+  const accessToken = session?.access_token ?? ''
   const [sourceImages, setSourceImages] = useState<Array<SourceImage>>([])
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
@@ -61,9 +57,19 @@ export function useCombinePage(): UseCombinePageReturn {
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [model, setModel] = useState(COMBINE_MODELS[0].id)
-  const [results, setResults] = useState<Array<CombineResult>>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const {
+    results: recentResults,
+    addPendingResult,
+    replaceTempId,
+    deleteResult,
+  } = useGenerationResults({
+    userId: user?.id,
+    accessToken,
+    generationType: 'combine',
+  })
 
   const existingImages = useExistingImages(user?.id)
 
@@ -105,14 +111,20 @@ export function useCombinePage(): UseCombinePageReturn {
   const canCombine = sourceImages.length >= 2 && prompt.trim().length > 0
 
   const combine = useCallback(async () => {
-    const accessToken = session?.access_token
     if (!accessToken || !canCombine) return
 
     setIsGenerating(true)
     setError(null)
 
+    const tempId = `temp-combine-${Date.now()}`
+    addPendingResult({
+      id: tempId,
+      status: 'pending',
+      label: getModelName(model),
+      prompt,
+    })
+
     try {
-      // Convert blob URLs to data URLs for server
       const sourceUrls = await Promise.all(
         sourceImages.map(async (img) => {
           if (img.url.startsWith('blob:')) {
@@ -139,10 +151,7 @@ export function useCombinePage(): UseCombinePageReturn {
         },
       })
 
-      setResults((prev) => [
-        { url: result.imageUrl, isSaving: false, isSaved: false },
-        ...prev,
-      ])
+      replaceTempId(tempId, result.recordId)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to combine images')
     } finally {
@@ -150,47 +159,14 @@ export function useCombinePage(): UseCombinePageReturn {
     }
   }, [
     sourceImages,
-    session?.access_token,
+    accessToken,
     canCombine,
     prompt,
     aspectRatio,
     model,
+    addPendingResult,
+    replaceTempId,
   ])
-
-  const saveResult = useCallback(
-    async (index: number) => {
-      const accessToken = session?.access_token
-      const result = results[index]
-      if (!accessToken || result.isSaving || result.isSaved) return
-
-      setResults((prev) =>
-        prev.map((r, i) => (i === index ? { ...r, isSaving: true } : r)),
-      )
-
-      try {
-        await saveGeneratedImage({
-          data: {
-            accessToken,
-            imageUrl: result.url,
-            prompt: 'Combine',
-            model: model.replace(/\/edit$/, ''),
-            aspectRatio,
-          },
-        })
-        setResults((prev) =>
-          prev.map((r, i) =>
-            i === index ? { ...r, isSaving: false, isSaved: true } : r,
-          ),
-        )
-      } catch (err) {
-        console.error('Failed to save combined image:', err)
-        setResults((prev) =>
-          prev.map((r, i) => (i === index ? { ...r, isSaving: false } : r)),
-        )
-      }
-    },
-    [results, session?.access_token, model, aspectRatio],
-  )
 
   return {
     sourceImages,
@@ -198,7 +174,7 @@ export function useCombinePage(): UseCombinePageReturn {
     orientation,
     aspectRatio,
     model,
-    results,
+    recentResults,
     isGenerating,
     error,
     canCombine,
@@ -214,6 +190,6 @@ export function useCombinePage(): UseCombinePageReturn {
     addFile,
     removeImage,
     combine,
-    saveResult,
+    deleteResult,
   }
 }
