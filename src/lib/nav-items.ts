@@ -3,6 +3,7 @@ import {
   Expand,
   Film,
   Image,
+  Layers,
   LayoutGrid,
   PencilLine,
   ScanEye,
@@ -56,6 +57,12 @@ export const navItems: Array<NavItem> = [
     label: 'Outpaint',
     href: '/dashboard/outpaint',
     icon: Expand,
+    activeOnly: true,
+  },
+  {
+    label: 'Combine',
+    href: '/dashboard/combine',
+    icon: Layers,
     activeOnly: true,
   },
   {

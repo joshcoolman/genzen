@@ -26,6 +26,7 @@ import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
 import { Route as DashboardDescribeRouteImport } from './routes/dashboard/describe'
+import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -116,6 +117,11 @@ const DashboardDescribeRoute = DashboardDescribeRouteImport.update({
   path: '/describe',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCombineRoute = DashboardCombineRouteImport.update({
+  id: '/combine',
+  path: '/combine',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
@@ -405,6 +417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDescribeRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/combine': {
+      id: '/dashboard/combine'
+      path: '/combine'
+      fullPath: '/dashboard/combine'
+      preLoaderRoute: typeof DashboardCombineRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
@@ -453,6 +472,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardCombineRoute: typeof DashboardCombineRoute
   DashboardDescribeRoute: typeof DashboardDescribeRoute
   DashboardEditImageRoute: typeof DashboardEditImageRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
@@ -466,6 +486,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardCombineRoute: DashboardCombineRoute,
   DashboardDescribeRoute: DashboardDescribeRoute,
   DashboardEditImageRoute: DashboardEditImageRoute,
   DashboardImagesRoute: DashboardImagesRoute,

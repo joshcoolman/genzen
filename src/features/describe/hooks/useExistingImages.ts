@@ -22,6 +22,7 @@ export function useExistingImages(
 
   const loadImageUrls = useCallback(async (imgs: Array<UserImage>) => {
     for (const image of imgs) {
+      if (!image.storage_path) continue
       try {
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
