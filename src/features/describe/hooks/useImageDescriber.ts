@@ -27,8 +27,6 @@ export const DESCRIBER_MODELS: Array<DescriberModel> = [
   { id: 'fal-ai/imagen4/preview', name: 'Imagen 4' },
 ]
 
-export const ASPECT_RATIOS = ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3']
-
 interface ImageDescriberState {
   status: PipelineStatus
   sourceImage: SelectedImage | null
@@ -54,12 +52,11 @@ export interface UseImageDescriberReturn {
   generatedImageUrl: string | null
   error: string | null
   model: string
+  orientation: 'landscape' | 'portrait'
   aspectRatio: string
-  isPickerOpen: boolean
+  setOrientation: (o: 'landscape' | 'portrait') => void
   isSaving: boolean
   isSaved: boolean
-  openPicker: () => void
-  closePicker: () => void
   selectImage: (image: SelectedImage) => void
   selectFile: (file: File) => void
   setModel: (model: string) => void
@@ -73,9 +70,11 @@ export interface UseImageDescriberReturn {
 export function useImageDescriber(): UseImageDescriberReturn {
   const { session } = useAuth()
   const [state, setState] = useState<ImageDescriberState>(INITIAL_STATE)
-  const [isPickerOpen, setPickerOpen] = useState(false)
   const [model, setModel] = useState(DESCRIBER_MODELS[0].id)
-  const [aspectRatio, setAspectRatio] = useState('1:1')
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
+    'landscape',
+  )
+  const [aspectRatio, setAspectRatio] = useState('16:9')
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const abortRef = useRef(false)
@@ -83,20 +82,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
   const genTrigger = useRef(0)
   const [genCount, setGenCount] = useState(0)
 
-  const openPicker = useCallback(() => {
-    setState((s) => ({ ...s, status: 'selecting' }))
-    setPickerOpen(true)
-  }, [])
-
-  const closePicker = useCallback(() => {
-    setPickerOpen(false)
-    if (state.status === 'selecting') {
-      setState(INITIAL_STATE)
-    }
-  }, [state.status])
-
   const selectImage = useCallback((image: SelectedImage) => {
-    setPickerOpen(false)
     setState({
       status: 'describing',
       sourceImage: image,
@@ -290,12 +276,11 @@ export function useImageDescriber(): UseImageDescriberReturn {
     generatedImageUrl: state.generatedImageUrl,
     error: state.error,
     model,
+    orientation,
     aspectRatio,
-    isPickerOpen,
+    setOrientation,
     isSaving,
     isSaved,
-    openPicker,
-    closePicker,
     selectImage,
     selectFile,
     setModel,

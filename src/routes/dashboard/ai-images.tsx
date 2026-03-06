@@ -38,6 +38,7 @@ function AiImagesPage() {
         modelSettings={page.modelSettings}
         promptTools={page.promptTools}
         credits={page.credits}
+        userImages={page.userImages}
         error={page.error}
       />
 

@@ -1,15 +1,20 @@
-import { Check, ImagePlus, Loader2, Plus, RefreshCw } from 'lucide-react'
-import { ASPECT_RATIOS, DESCRIBER_MODELS } from '../hooks/useImageDescriber'
+import { Check, Loader2, Plus, RefreshCw } from 'lucide-react'
+import { DESCRIBER_MODELS } from '../hooks/useImageDescriber'
 import type { UseImageDescriberReturn } from '../hooks/useImageDescriber'
-import { ActionButton } from '@/components/ActionButton'
-import { FileUploadButton } from '@/components/FileUploadButton'
-import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
+import type { useExistingImages } from '../hooks/useExistingImages'
+import { ImageSourceButtons } from '@/components/ImageSourceButtons'
+import { ErrorBanner } from '@/components/ErrorBanner'
+import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 
 interface ImageDescriberCardProps {
   describer: UseImageDescriberReturn
+  existingImages: ReturnType<typeof useExistingImages>
 }
 
-export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
+export function ImageDescriberCard({
+  describer,
+  existingImages,
+}: ImageDescriberCardProps) {
   const {
     status,
     sourceImage,
@@ -17,10 +22,12 @@ export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
     generatedImageUrl,
     error,
     model,
+    orientation,
     aspectRatio,
+    setOrientation,
     isSaving,
     isSaved,
-    openPicker,
+    selectImage,
     selectFile,
     setModel,
     setAspectRatio,
@@ -37,8 +44,6 @@ export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
 
   return (
     <div className="space-y-4">
-      <hr className="border-border" />
-
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-foreground">
           Image-to-Image Pipeline
@@ -63,21 +68,13 @@ export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground">Ratio</label>
-          <select
-            value={aspectRatio}
-            onChange={(e) => setAspectRatio(e.target.value)}
-            disabled={status === 'generating'}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
-          >
-            {ASPECT_RATIOS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
+        <AspectRatioSelect
+          orientation={orientation}
+          aspectRatio={aspectRatio}
+          onOrientationChange={setOrientation}
+          onAspectRatioChange={setAspectRatio}
+          disabled={status === 'generating'}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -97,21 +94,17 @@ export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <ClipboardPasteButton onImagePasted={selectFile} />
-            <FileUploadButton
-              onFilesSelected={(files) => {
-                if (files[0]) selectFile(files[0])
-              }}
-              multiple={false}
-            />
-            <ActionButton
-              onClick={openPicker}
-              icon={<ImagePlus className="size-4" />}
-            >
-              Library
-            </ActionButton>
-          </div>
+          <ImageSourceButtons
+            onFileSelected={selectFile}
+            library={{
+              images: existingImages.images,
+              imageUrls: existingImages.imageUrls,
+              isLoading: existingImages.isLoading,
+              onSelect: selectImage,
+              onOpen: existingImages.refresh,
+            }}
+            className="flex items-center gap-2"
+          />
         </div>
 
         {/* Column 2: Description */}
@@ -199,12 +192,10 @@ export function ImageDescriberCard({ describer }: ImageDescriberCardProps) {
       </div>
 
       {error && (
-        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
-          <p className="text-xs text-destructive">{error}</p>
-          <ActionButton onClick={reset} className="mt-2 text-xs">
-            Try Again
-          </ActionButton>
-        </div>
+        <ErrorBanner
+          message={error}
+          action={{ label: 'Try Again', onClick: reset }}
+        />
       )}
     </div>
   )

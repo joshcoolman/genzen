@@ -1,10 +1,11 @@
-import { ImageIcon, Minus, Plus, X } from 'lucide-react'
+import { Minus, Plus, X } from 'lucide-react'
 import { EditModelSelector } from './EditModelSelector'
 import { EditResultsGrid } from './EditResultsGrid'
 import type { UseEditPageReturn } from '../hooks/useEditPage'
-import { SingleImagePicker } from '@/features/describe/components/SingleImagePicker'
 import { ExistingImagePicker } from '@/features/describe/components/ExistingImagePicker'
 import { ActionButton } from '@/components/ActionButton'
+import { ImageSourceButtons } from '@/components/ImageSourceButtons'
+import { SourceImagePreview } from '@/components/SourceImagePreview'
 
 interface EditPageContentProps {
   page: UseEditPageReturn
@@ -21,7 +22,7 @@ export function EditPageContent({ page }: EditPageContentProps) {
     refImages,
     refPickerOpen,
     setRefPickerOpen,
-    openSourcePicker,
+    handleSourceFile,
     openRefPicker,
     removeRefImage,
     handleRefImagesConfirm,
@@ -39,46 +40,47 @@ export function EditPageContent({ page }: EditPageContentProps) {
       <div className="flex gap-8 items-start">
         {/* Left column */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Source image + prompt side by side */}
-          <div className="flex gap-4">
-            {/* Source image */}
-            <div className="space-y-1.5">
-              <p className="text-xs text-muted-foreground">Source image</p>
-              <button
-                onClick={openSourcePicker}
-                className={`flex h-44 w-44 items-center justify-center rounded-md border transition-colors ${
-                  sourceImage.sourceImage
-                    ? 'border-accent-brand/50 p-0 overflow-hidden'
-                    : 'border-dashed border-border hover:border-accent-brand/50 bg-card'
-                }`}
-              >
-                {sourceImage.sourceImage ? (
-                  <img
-                    src={sourceImage.sourceImage.url}
-                    alt={sourceImage.sourceImage.title}
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
-                    <ImageIcon className="size-7" />
-                    <span className="text-xs">Select</span>
-                  </div>
-                )}
-              </button>
-            </div>
-
-            {/* Prompt */}
-            <div className="flex-1 space-y-1.5">
-              <label className="text-xs text-muted-foreground">
-                Edit prompt
-              </label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the edit you want to make..."
-                className="h-44 w-full rounded-md border border-border bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-brand resize-none"
+          {/* Source image */}
+          <div className="space-y-1.5">
+            <p className="text-xs text-muted-foreground">Source image</p>
+            {sourceImage.sourceImage ? (
+              <SourceImagePreview
+                src={sourceImage.sourceImage.url}
+                name={sourceImage.sourceImage.title}
+                onRemove={sourceImage.clearSourceImage}
               />
-            </div>
+            ) : (
+              <ImageSourceButtons
+                onFileSelected={handleSourceFile}
+                library={{
+                  images: existingImages.images,
+                  imageUrls: existingImages.imageUrls,
+                  isLoading: existingImages.isLoading,
+                  onSelect: (img) => sourceImage.setSourceFromLibrary(img),
+                  onOpen: () => existingImages.refresh(),
+                }}
+                className="flex items-center gap-1"
+              />
+            )}
+            {sourceImage.isUploading && (
+              <p className="text-xs text-muted-foreground">Uploading...</p>
+            )}
+            {sourceImage.uploadError && (
+              <p className="text-xs text-destructive">
+                {sourceImage.uploadError}
+              </p>
+            )}
+          </div>
+
+          {/* Prompt */}
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Edit prompt</label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe the edit you want to make..."
+              className="h-44 w-full rounded-md border border-border bg-card px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent-brand resize-none"
+            />
           </div>
 
           {/* Reference images below */}
@@ -168,19 +170,7 @@ export function EditPageContent({ page }: EditPageContentProps) {
         onDelete={results.deleteResult}
       />
 
-      {/* Dialogs */}
-      <SingleImagePicker
-        open={sourceImage.pickerOpen}
-        onOpenChange={sourceImage.setPickerOpen}
-        images={existingImages.images}
-        imageUrls={existingImages.imageUrls}
-        isLoading={existingImages.isLoading}
-        onSelect={(img) => {
-          sourceImage.setSourceImage(img)
-          sourceImage.setPickerOpen(false)
-        }}
-      />
-
+      {/* Ref image picker dialog */}
       <ExistingImagePicker
         open={refPickerOpen}
         onOpenChange={setRefPickerOpen}

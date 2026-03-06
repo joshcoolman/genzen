@@ -1,11 +1,5 @@
 import { useState } from 'react'
-import {
-  Check,
-  ImagePlus,
-  RectangleHorizontal,
-  RectangleVertical,
-  X,
-} from 'lucide-react'
+import { Check, ImagePlus, X } from 'lucide-react'
 import type { EditorState } from '@/features/ai-images/hooks/use-editor'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import {
@@ -23,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 
 interface EditImageDialogProps {
   editor: EditorState
@@ -237,36 +232,13 @@ export function EditImageDialog({
             )}
 
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={editor.handleEditOrientationToggle}
+              <AspectRatioSelect
+                orientation={editor.editOrientation}
+                aspectRatio={editor.editAspectRatio}
+                onOrientationChange={editor.setEditOrientation}
+                onAspectRatioChange={editor.setEditAspectRatio}
                 disabled={editor.editLoading}
-                title={`Switch to ${editor.editOrientation === 'landscape' ? 'portrait' : 'landscape'}`}
-                className="shrink-0"
-              >
-                {editor.editOrientation === 'landscape' ? (
-                  <RectangleHorizontal className="h-4 w-4" />
-                ) : (
-                  <RectangleVertical className="h-4 w-4" />
-                )}
-              </Button>
-              <Select
-                value={editor.editAspectRatio}
-                onValueChange={editor.setEditAspectRatio}
-                disabled={editor.editLoading}
-              >
-                <SelectTrigger className="w-24 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {editor.ratioOptions.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
               <Select
                 value={editor.editModelId}
                 onValueChange={editor.setEditModelId}

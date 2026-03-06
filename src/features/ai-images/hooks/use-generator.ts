@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -31,10 +31,11 @@ export interface GeneratorState {
   activeModels: Array<string>
   canGenerate: boolean
   ratioOptions: Array<string>
-  fileInputRef: React.RefObject<HTMLInputElement | null>
+  setOrientation: (o: 'landscape' | 'portrait') => void
   handleOrientationToggle: () => void
   handleGenerate: () => Promise<void>
-  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  setSourceFile: (file: File) => void
+  setSourceFromUrl: (url: string, name: string) => void
   handleClearSourceImage: () => void
   toggleImageModel: (modelId: string, checked: boolean) => void
 }
@@ -59,7 +60,6 @@ export function useGenerator({
     [],
   )
   const [describingImage, setDescribingImage] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const inputMode = sourceImage ? 'image' : 'text'
   const activeModels =
@@ -141,51 +141,74 @@ export function useGenerator({
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      setSourceImage({ base64, name: file.name })
-      setImageSelectedModels(['fal-ai/nano-banana-pro'])
-      setPrompt('')
+  function applySourceBase64(base64: string, name: string) {
+    setSourceImage({ base64, name })
+    setImageSelectedModels(['fal-ai/nano-banana-pro'])
+    setPrompt('')
 
-      const img = new Image()
-      img.onload = () => {
-        const { naturalWidth: w, naturalHeight: h } = img
-        if (!w || !h) return
-        const ratio = w / h
-        const isLandscape = ratio >= 1
-        const nextOrientation = isLandscape ? 'landscape' : 'portrait'
-        const candidates = isLandscape ? LANDSCAPE_RATIOS : PORTRAIT_RATIOS
-        function parseRatio(r: string) {
-          const [a, b] = r.split(':').map(Number)
-          return a / b
-        }
-        const closest = candidates.reduce((best, r) =>
-          Math.abs(parseRatio(r) - ratio) < Math.abs(parseRatio(best) - ratio)
-            ? r
-            : best,
-        )
-        setOrientation(nextOrientation)
-        setAspectRatio(closest)
+    const img = new Image()
+    img.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = img
+      if (!w || !h) return
+      const ratio = w / h
+      const isLandscape = ratio >= 1
+      const nextOrientation = isLandscape ? 'landscape' : 'portrait'
+      const candidates = isLandscape ? LANDSCAPE_RATIOS : PORTRAIT_RATIOS
+      function parseRatio(r: string) {
+        const [a, b] = r.split(':').map(Number)
+        return a / b
       }
-      img.src = base64
-
-      if (accessToken) {
-        setDescribingImage(true)
-        captionImage({
-          data: { imageBase64: base64, accessToken },
-        })
-          .then(({ caption }) => setPrompt(caption))
-          .catch(() => {})
-          .finally(() => setDescribingImage(false))
-      }
+      const closest = candidates.reduce((best, r) =>
+        Math.abs(parseRatio(r) - ratio) < Math.abs(parseRatio(best) - ratio)
+          ? r
+          : best,
+      )
+      setOrientation(nextOrientation)
+      setAspectRatio(closest)
     }
-    reader.readAsDataURL(file)
-    e.target.value = ''
+    img.src = base64
+
+    if (accessToken) {
+      setDescribingImage(true)
+      captionImage({
+        data: { imageBase64: base64, accessToken },
+      })
+        .then(({ caption }) => setPrompt(caption))
+        .catch(() => {})
+        .finally(() => setDescribingImage(false))
+    }
   }
+
+  const setSourceFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string
+        applySourceBase64(base64, file.name)
+      }
+      reader.readAsDataURL(file)
+    },
+    [accessToken],
+  )
+
+  const setSourceFromUrl = useCallback(
+    (url: string, name: string) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return
+        ctx.drawImage(img, 0, 0)
+        const base64 = canvas.toDataURL('image/png')
+        applySourceBase64(base64, name)
+      }
+      img.src = url
+    },
+    [accessToken],
+  )
 
   function handleClearSourceImage() {
     setSourceImage(null)
@@ -197,6 +220,7 @@ export function useGenerator({
     prompt,
     setPrompt,
     orientation,
+    setOrientation,
     aspectRatio,
     setAspectRatio,
     loading,
@@ -207,10 +231,10 @@ export function useGenerator({
     activeModels,
     canGenerate,
     ratioOptions,
-    fileInputRef,
     handleOrientationToggle,
     handleGenerate,
-    handleFileChange,
+    setSourceFile,
+    setSourceFromUrl,
     handleClearSourceImage,
     toggleImageModel,
   }

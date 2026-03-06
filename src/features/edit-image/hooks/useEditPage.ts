@@ -10,7 +10,7 @@ export function useEditPage() {
   const { user, session } = useAuth()
   const accessToken = session?.access_token ?? ''
 
-  const sourceImage = useEditSourceImage()
+  const sourceImage = useEditSourceImage(user?.id)
   const editModels = useEditModels()
   const results = useEditResults({ userId: user?.id, accessToken })
   const existingImages = useExistingImages(user?.id)
@@ -19,10 +19,12 @@ export function useEditPage() {
   const [refImages, setRefImages] = useState<Array<CollectedImage>>([])
   const [refPickerOpen, setRefPickerOpen] = useState(false)
 
-  const openSourcePicker = useCallback(() => {
-    existingImages.refresh()
-    sourceImage.setPickerOpen(true)
-  }, [existingImages, sourceImage])
+  const handleSourceFile = useCallback(
+    (file: File) => {
+      void sourceImage.setSourceFile(file)
+    },
+    [sourceImage],
+  )
 
   const openRefPicker = useCallback(() => {
     existingImages.refresh()
@@ -39,7 +41,6 @@ export function useEditPage() {
         const existingIds = new Set(prev.map((img) => img.id))
         const newImages = images.filter((img) => !existingIds.has(img.id))
         const combined = [...prev, ...newImages]
-        // Cap at maxRefImages
         return combined.slice(0, editModels.maxRefImages)
       })
     },
@@ -82,7 +83,7 @@ export function useEditPage() {
     refImages: cappedRefImages,
     refPickerOpen,
     setRefPickerOpen,
-    openSourcePicker,
+    handleSourceFile,
     openRefPicker,
     removeRefImage,
     handleRefImagesConfirm,

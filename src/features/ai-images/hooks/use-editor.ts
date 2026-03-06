@@ -5,7 +5,6 @@ import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   detectAspectRatio,
-  flipOrientation,
   getRatioOptions,
 } from '@/features/ai-images/constants'
 import { DEFAULT_EDIT_MODEL } from '@/features/ai-images/models'
@@ -35,7 +34,7 @@ export interface EditorState {
   removeReferenceImage: (id: string) => void
   openEditor: (img: SavedAiImage) => void
   closeEditor: () => void
-  handleEditOrientationToggle: () => void
+  setEditOrientation: (o: 'landscape' | 'portrait') => void
   handleEditSubmit: () => Promise<void>
 }
 
@@ -105,12 +104,6 @@ export function useEditor({
     setReferenceImageIds([])
   }
 
-  function handleEditOrientationToggle() {
-    const flipped = flipOrientation(editOrientation, editAspectRatio)
-    setEditOrientation(flipped.orientation)
-    setEditAspectRatio(flipped.aspectRatio)
-  }
-
   async function handleEditSubmit() {
     if (!editTarget || !editPrompt.trim() || !accessToken) return
     setEditLoading(true)
@@ -153,7 +146,7 @@ export function useEditor({
     removeReferenceImage,
     openEditor,
     closeEditor,
-    handleEditOrientationToggle,
+    setEditOrientation,
     handleEditSubmit,
   }
 }
