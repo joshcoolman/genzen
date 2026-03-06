@@ -5,7 +5,9 @@ import {
   BRAINSTORM_IMAGES_PER_PROMPT_KEY,
   BRAINSTORM_MAX_IMAGES_PER_PROMPT,
   BRAINSTORM_MAX_ROWS,
+  BRAINSTORM_REFINE_MODEL_KEY,
   BRAINSTORM_ROW_COUNT_KEY,
+  DEFAULT_REFINE_MODEL,
 } from '@/features/ai-images/constants'
 
 export function useBrainstormSettings() {
@@ -18,6 +20,14 @@ export function useBrainstormSettings() {
       }
     }
     return BRAINSTORM_DEFAULT_ROWS
+  })
+
+  const [refineModel, setRefineModel] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(BRAINSTORM_REFINE_MODEL_KEY)
+      if (stored) return stored
+    }
+    return DEFAULT_REFINE_MODEL
   })
 
   const [imagesPerPrompt, setImagesPerPrompt] = useState<number>(() => {
@@ -46,6 +56,12 @@ export function useBrainstormSettings() {
     }
   }, [imagesPerPrompt])
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(BRAINSTORM_REFINE_MODEL_KEY, refineModel)
+    }
+  }, [refineModel])
+
   return {
     rowCount,
     setRowCount: (n: number) =>
@@ -55,5 +71,7 @@ export function useBrainstormSettings() {
       setImagesPerPrompt(
         Math.max(1, Math.min(BRAINSTORM_MAX_IMAGES_PER_PROMPT, n)),
       ),
+    refineModel,
+    setRefineModel,
   }
 }

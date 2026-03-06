@@ -14,35 +14,35 @@ Sources: [Higgsfield Homepage](https://higgsfield.ai), [JanitorAI Guide](https:/
 
 ### Image Generation Models
 
-| Model | Positioning | Notes |
-|-------|------------|-------|
+| Model                              | Positioning                                 | Notes                                                                            |
+| ---------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
 | **Soul 2.0** (highlighted/default) | Fashion-aware, culture-native ultra-realism | Higgsfield's flagship proprietary model. Curated presets, Soul ID character lock |
-| **Soul Cinema** | Cinematic film-grade aesthetic | Variant tuned for cinematic stills |
-| **Nano Banana 2** | "Best 4K image model ever" | Ultra-high-resolution generation |
-| **Nano Banana Pro** | High-quality 4K images | Production-grade realism |
-| **Seedream 5.0 Lite** | Intelligent visual reasoning | ByteDance model integration |
-| **Seedream 4.5** | High-aesthetic generation | Earlier Seedream variant |
-| **Flux 2** | Fast general-purpose | BFL open model |
-| **GPT Image 1.5** | OpenAI integration | Multi-purpose editing/generation |
+| **Soul Cinema**                    | Cinematic film-grade aesthetic              | Variant tuned for cinematic stills                                               |
+| **Nano Banana 2**                  | "Best 4K image model ever"                  | Ultra-high-resolution generation                                                 |
+| **Nano Banana Pro**                | High-quality 4K images                      | Production-grade realism                                                         |
+| **Seedream 5.0 Lite**              | Intelligent visual reasoning                | ByteDance model integration                                                      |
+| **Seedream 4.5**                   | High-aesthetic generation                   | Earlier Seedream variant                                                         |
+| **Flux 2**                         | Fast general-purpose                        | BFL open model                                                                   |
+| **GPT Image 1.5**                  | OpenAI integration                          | Multi-purpose editing/generation                                                 |
 
 ### Video Generation Models
 
-| Model | Positioning | Notes |
-|-------|------------|-------|
-| **Sora 2** | Advanced video + realistic motion | OpenAI video model |
-| **Kling 3.0 Motion Control** | Precise character actions up to 30s | Kuaishou model |
-| **Kling 2.6** | Cinematic videos with audio | Earlier Kling variant |
-| **WAN 2.6** | Multi-shot sequences with synced audio | Alibaba model |
-| **Veo 3.1** | Google video model | Latest Veo integration |
-| **MiniMax Hailuo 02** | Short-form video | MiniMax model |
+| Model                        | Positioning                            | Notes                  |
+| ---------------------------- | -------------------------------------- | ---------------------- |
+| **Sora 2**                   | Advanced video + realistic motion      | OpenAI video model     |
+| **Kling 3.0 Motion Control** | Precise character actions up to 30s    | Kuaishou model         |
+| **Kling 2.6**                | Cinematic videos with audio            | Earlier Kling variant  |
+| **WAN 2.6**                  | Multi-shot sequences with synced audio | Alibaba model          |
+| **Veo 3.1**                  | Google video model                     | Latest Veo integration |
+| **MiniMax Hailuo 02**        | Short-form video                       | MiniMax model          |
 
 ### Proprietary Models
 
-| Model | Purpose |
-|-------|---------|
-| **Higgsfield DOP** | Director of Photography -- camera depth, motion, pacing, angles |
-| **Higgsfield Popcorn** | AI storyboarding and visual consistency engine |
-| **Topaz** | Upscaling engine (1080p to 8K) |
+| Model                  | Purpose                                                         |
+| ---------------------- | --------------------------------------------------------------- |
+| **Higgsfield DOP**     | Director of Photography -- camera depth, motion, pacing, angles |
+| **Higgsfield Popcorn** | AI storyboarding and visual consistency engine                  |
+| **Topaz**              | Upscaling engine (1080p to 8K)                                  |
 
 Sources: [Higgsfield Homepage](https://higgsfield.ai), [JanitorAI Guide](https://janitorai.org.uk/higgsfield-ai-ultimate-guide-to-ai-image-video-tools/)
 
@@ -50,26 +50,26 @@ Sources: [Higgsfield Homepage](https://higgsfield.ai), [JanitorAI Guide](https:/
 
 ## Purpose-Built Workflows and Tools
 
-| Tool / Studio | Category | What It Does |
-|---------------|----------|--------------|
-| **Cinema Studio 2.0** | Video | Virtual camera rig with ARRI, RED, Sony bodies; 35mm/50mm/85mm lenses; anamorphic support; 50+ camera motion presets (dolly, crane, orbit, crash zoom, bullet time) |
-| **Soul ID** | Character | Upload a photo, lock identity across all generations -- face, clothing, pose, lighting remain consistent |
-| **Shots** | Storyboard | Single image to 9-panel cinematic grid with all essential camera angles; near 100% identity retention |
-| **Popcorn** | Storyboard | Text to multi-frame visual sequence (4-8 frames); character-level consistency tracking across frames |
-| **Fashion Factory** | Image | Outfit generation and styling workflows |
-| **AI Influencer Studio** | Character | Create viral character personas |
-| **Photodump Studio** | Content | One selfie to 30+ content pieces (Instadump) |
-| **UGC Factory** | Video | User-generated content creation pipeline |
-| **Lipsync Studio** | Video | Synchronized talking avatar clips |
-| **Click to Ad** | Commercial | URL input to automated video ad output |
-| **Angles 2.0** | Image | Generate any angle view from any image in seconds |
-| **Draw to Edit** | Editing | Sketch-to-realistic image conversion |
-| **Face Swap** | Editing | Maintains lighting, angles, skin tone |
-| **Character Swap 2.0** | Editing | Full-person replacement in images/video |
-| **Recast Studio** | Video | Style transformation for existing video |
-| **Video Upscale** | Enhancement | 1080p to 8K upscaling |
-| **Moodboard** | Workflow | Define style direction with reference images |
-| **Speak** | Audio | AI voice-over in multiple languages |
+| Tool / Studio            | Category    | What It Does                                                                                                                                                        |
+| ------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Cinema Studio 2.0**    | Video       | Virtual camera rig with ARRI, RED, Sony bodies; 35mm/50mm/85mm lenses; anamorphic support; 50+ camera motion presets (dolly, crane, orbit, crash zoom, bullet time) |
+| **Soul ID**              | Character   | Upload a photo, lock identity across all generations -- face, clothing, pose, lighting remain consistent                                                            |
+| **Shots**                | Storyboard  | Single image to 9-panel cinematic grid with all essential camera angles; near 100% identity retention                                                               |
+| **Popcorn**              | Storyboard  | Text to multi-frame visual sequence (4-8 frames); character-level consistency tracking across frames                                                                |
+| **Fashion Factory**      | Image       | Outfit generation and styling workflows                                                                                                                             |
+| **AI Influencer Studio** | Character   | Create viral character personas                                                                                                                                     |
+| **Photodump Studio**     | Content     | One selfie to 30+ content pieces (Instadump)                                                                                                                        |
+| **UGC Factory**          | Video       | User-generated content creation pipeline                                                                                                                            |
+| **Lipsync Studio**       | Video       | Synchronized talking avatar clips                                                                                                                                   |
+| **Click to Ad**          | Commercial  | URL input to automated video ad output                                                                                                                              |
+| **Angles 2.0**           | Image       | Generate any angle view from any image in seconds                                                                                                                   |
+| **Draw to Edit**         | Editing     | Sketch-to-realistic image conversion                                                                                                                                |
+| **Face Swap**            | Editing     | Maintains lighting, angles, skin tone                                                                                                                               |
+| **Character Swap 2.0**   | Editing     | Full-person replacement in images/video                                                                                                                             |
+| **Recast Studio**        | Video       | Style transformation for existing video                                                                                                                             |
+| **Video Upscale**        | Enhancement | 1080p to 8K upscaling                                                                                                                                               |
+| **Moodboard**            | Workflow    | Define style direction with reference images                                                                                                                        |
+| **Speak**                | Audio       | AI voice-over in multiple languages                                                                                                                                 |
 
 Sources: [Higgsfield Homepage](https://higgsfield.ai), [Shots Blog](https://higgsfield.ai/blog/shots-next-gen-storyboard-generator), [Popcorn Blog](https://higgsfield.ai/blog/The-AI-Storyboard-Generator-That-Feels-Like-Directing)
 
@@ -93,25 +93,28 @@ Sources: [Higgsfield Blog - Camera Control](https://higgsfield.ai/blog/turn-your
 
 ## Pricing and Credit Model
 
-| Plan | Monthly Price | Annual Price (per month) | Credits/Month |
-|------|--------------|--------------------------|---------------|
-| **Free** | $0 | $0 | Limited trial credits |
-| **Basic** | $9 | ~$9 | 150 |
-| **Pro** | $29 | ~$17.40 | 600 |
-| **Ultimate** | $49 | ~$29.40 | 1,200 |
-| **Creator** | $249 | ~$149.40 | 6,000 |
+| Plan         | Monthly Price | Annual Price (per month) | Credits/Month         |
+| ------------ | ------------- | ------------------------ | --------------------- |
+| **Free**     | $0            | $0                       | Limited trial credits |
+| **Basic**    | $9            | ~$9                      | 150                   |
+| **Pro**      | $29           | ~$17.40                  | 600                   |
+| **Ultimate** | $49           | ~$29.40                  | 1,200                 |
+| **Creator**  | $249          | ~$149.40                 | 6,000                 |
 
 **Credit Packs** (one-time, expire after 90 days):
+
 - $5 for 80 credits
 - $80 for 1,700 credits
 
 **Key details:**
+
 - All credits (subscription and purchased) expire after 3 months
 - Annual billing gives ~40% discount
 - Credit cost varies by model and resolution
 - No live chat support on any tier, including Creator ($249/month)
 
 **Per-generation costs (via Segmind API):**
+
 - Text-to-Image (Soul): $0.12-$0.23
 - Image-to-Video: $0.16-$0.70
 - Speech-to-Video: $0.86-$4.22
@@ -165,16 +168,16 @@ Sources: [VidPros Review](https://vidpros.com/higgsfield-ai-review/), [Filmora R
 
 ## Relevance to GenZen
 
-| Higgsfield Feature | GenZen Parallel | Opportunity |
-|--------------------|----------------|-------------|
-| Camera/Lens Selector | No equivalent | Add camera simulation presets to generation UI -- map focal length, depth-of-field, and lens type to prompt modifiers or model parameters |
-| Soul ID (identity lock) | No character consistency system | Explore reference-based identity preservation across generations -- could integrate with existing multi-ref editing |
-| Shots (1-to-9 angles) | Variations feature exists | Extend variations to offer structured angle grids rather than random re-rolls |
-| Popcorn (storyboarding) | No equivalent | Multi-frame consistent generation as a new workflow -- could build on existing brainstorm feature |
-| Studio packaging pattern | Features exist but as separate pages | Package common multi-step workflows (e.g., "Product Ad Studio" = generate + edit + outpaint) as named templates |
-| 70+ style presets | Model selector exists | Add curated style presets as a layer on top of model selection -- presets that combine model + prompt modifiers + aspect ratio |
-| Earn/monetization | No equivalent | Community gallery with featured content could drive engagement |
-| Cinema camera controls | N/A (no video focus yet) | If video expands, camera motion presets would be high-value |
-| Credit expiration (90 days) | Credit system exists | Consider whether credit expiration drives urgency or frustration -- Higgsfield gets complaints about this |
+| Higgsfield Feature          | GenZen Parallel                      | Opportunity                                                                                                                               |
+| --------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Camera/Lens Selector        | No equivalent                        | Add camera simulation presets to generation UI -- map focal length, depth-of-field, and lens type to prompt modifiers or model parameters |
+| Soul ID (identity lock)     | No character consistency system      | Explore reference-based identity preservation across generations -- could integrate with existing multi-ref editing                       |
+| Shots (1-to-9 angles)       | Variations feature exists            | Extend variations to offer structured angle grids rather than random re-rolls                                                             |
+| Popcorn (storyboarding)     | No equivalent                        | Multi-frame consistent generation as a new workflow -- could build on existing brainstorm feature                                         |
+| Studio packaging pattern    | Features exist but as separate pages | Package common multi-step workflows (e.g., "Product Ad Studio" = generate + edit + outpaint) as named templates                           |
+| 70+ style presets           | Model selector exists                | Add curated style presets as a layer on top of model selection -- presets that combine model + prompt modifiers + aspect ratio            |
+| Earn/monetization           | No equivalent                        | Community gallery with featured content could drive engagement                                                                            |
+| Cinema camera controls      | N/A (no video focus yet)             | If video expands, camera motion presets would be high-value                                                                               |
+| Credit expiration (90 days) | Credit system exists                 | Consider whether credit expiration drives urgency or frustration -- Higgsfield gets complaints about this                                 |
 
 **Key takeaway**: Higgsfield's core innovation is translating professional cinema/photography language into AI generation controls, and packaging multi-step pipelines as purpose-built studios. GenZen could adopt the preset/studio pattern for its existing features and explore structured angle/storyboard generation as new workflows.

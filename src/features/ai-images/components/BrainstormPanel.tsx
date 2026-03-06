@@ -30,16 +30,15 @@ import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
 import { useBrainstormSettings } from '@/features/ai-images/hooks/use-brainstorm-settings'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { BRAINSTORM_MAX_ROWS } from '@/features/ai-images/constants'
+import { REFINE_CAPABLE_MODELS } from '@/features/ai-images/models'
 
 interface BrainstormPanelProps {
   accessToken: string | undefined
-  refineModels?: Array<string>
   aspectRatio?: string
 }
 
 export function BrainstormPanel({
   accessToken,
-  refineModels,
   aspectRatio: refineAspectRatio,
 }: BrainstormPanelProps) {
   const [model, setModel] = useState<BrainstormModelKey>('schnell')
@@ -63,7 +62,7 @@ export function BrainstormPanel({
     accessToken,
     credits,
     model,
-    refineModels,
+    refineModel: settings.refineModel,
     aspectRatio: refineAspectRatio,
     slotCount: settings.rowCount,
     imagesPerPrompt: settings.imagesPerPrompt,
@@ -145,6 +144,20 @@ export function BrainstormPanel({
                     </button>
                   </div>
                 </div>
+                <div className="space-y-1">
+                  <span className="text-sm">Refine model</span>
+                  <select
+                    value={settings.refineModel}
+                    onChange={(e) => settings.setRefineModel(e.target.value)}
+                    className="w-full rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground"
+                  >
+                    {REFINE_CAPABLE_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </PopoverContent>
           </Popover>
@@ -221,7 +234,7 @@ export function BrainstormPanel({
             index={i}
             slotImages={brainstorm.images[i] ?? []}
             prompt={prompt}
-            refineCount={brainstorm.refineCounts[i] ?? 0}
+            refineCounts={brainstorm.refineCounts[i] ?? []}
             locked={brainstorm.lockedSlots.has(i)}
             rewriting={brainstorm.rewritingSlots.has(i)}
             editing={brainstorm.editingSlots.has(i)}
@@ -238,8 +251,8 @@ export function BrainstormPanel({
               void brainstorm.regenerateSlot(i, imgIdx)
             }
             onToggleLock={() => brainstorm.toggleLock(i)}
-            onSelect={(url) => {
-              if (url) void brainstorm.selectImage(url, i)
+            onSelect={(url, imgIdx) => {
+              if (url) void brainstorm.selectImage(url, i, imgIdx)
             }}
             onRewriteAndGenerate={() =>
               void brainstorm.rewriteAndGenerateSlot(i)
@@ -344,7 +357,7 @@ interface BrainstormRowProps {
   index: number
   slotImages: Array<BrainstormImage>
   prompt: string
-  refineCount: number
+  refineCounts: Array<number>
   locked: boolean
   rewriting: boolean
   editing: boolean
@@ -356,7 +369,7 @@ interface BrainstormRowProps {
   onRegenerate: () => void
   onRegenerateImage: (imageIndex: number) => void
   onToggleLock: () => void
-  onSelect: (url: string) => void
+  onSelect: (url: string, imageIndex: number) => void
   onRewriteAndGenerate: () => void
   textareaRef: (el: HTMLTextAreaElement | null) => void
   focusSlot: (index: number) => void
@@ -367,7 +380,7 @@ function BrainstormRow({
   index,
   slotImages,
   prompt,
-  refineCount,
+  refineCounts,
   locked,
   rewriting,
   editing,
@@ -399,10 +412,10 @@ function BrainstormRow({
               imageIndex={imgIdx}
               image={image}
               locked={locked}
-              refineCount={imgIdx === 0 ? refineCount : 0}
+              refineCount={refineCounts[imgIdx] ?? 0}
               showBadge={imgIdx === 0}
               onSelect={() => {
-                if (image.url) onSelect(image.url)
+                if (image.url) onSelect(image.url, imgIdx)
               }}
               onToggleLock={onToggleLock}
               onRegenerate={() => onRegenerateImage(imgIdx)}
@@ -520,41 +533,35 @@ function SlotImage({
     <div
       className={`w-[230px] h-[230px] shrink-0 bg-muted rounded-md overflow-hidden relative ${locked ? 'ring-2 ring-foreground/40' : ''}`}
     >
-      <button
-        onClick={onSelect}
-        className="w-full h-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex items-center justify-center"
-      >
+      <div className="w-full h-full flex items-center justify-center">
         <img
           src={image.url}
           alt={`Brainstorm idea ${index + 1}`}
           className="max-w-full max-h-full object-contain"
         />
-      </button>
+      </div>
       {showBadge && (
         <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-xs font-bold rounded size-5 flex items-center justify-center leading-none pointer-events-none">
           {index + 1}
         </div>
       )}
-      {refineCount > 0 && (
-        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-xs font-medium rounded px-1.5 py-0.5 leading-none pointer-events-none">
-          {refineCount}x
-        </div>
-      )}
       <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleLock()
-        }}
+        onClick={onSelect}
+        className="absolute top-1.5 right-1.5 flex items-center gap-1 rounded bg-black/70 text-white text-xs font-medium px-1.5 py-1 leading-none hover:bg-black/90 transition-colors"
+        title="Refine this image"
+      >
+        <Wand2 className="size-3" />
+        Refine{refineCount > 0 ? ` (${refineCount})` : ''}
+      </button>
+      <button
+        onClick={onToggleLock}
         className="absolute bottom-1.5 left-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
         title={locked ? 'Unlock slot' : 'Lock slot'}
       >
         {locked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
       </button>
       <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onRegenerate()
-        }}
+        onClick={onRegenerate}
         className="absolute bottom-1.5 right-1.5 size-6 flex items-center justify-center rounded-full bg-black/70 text-white hover:bg-black/90"
         title="Regenerate this image"
       >

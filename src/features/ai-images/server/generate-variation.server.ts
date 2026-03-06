@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
+import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
@@ -211,12 +212,13 @@ export const generateVariation = createServerFn({ method: 'POST' })
       const variedPrompt = response.text.trim()
       usedPrompts.push(variedPrompt)
 
-      const editInput = {
+      const editInput = await buildFalInput({
+        modelId: 'fal-ai/nano-banana-pro/edit',
         prompt: variedPrompt,
-        image_urls: [falImageUrl ?? ''],
-        safety_tolerance: '5' as const,
-        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-      }
+        aspectRatio,
+        imageUrls: [falImageUrl ?? ''],
+        safetyLevel: 'permissive',
+      })
       const { request_id } = await (fal.queue.submit as any)(
         'fal-ai/nano-banana-pro/edit',
         { input: editInput },

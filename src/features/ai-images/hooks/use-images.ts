@@ -166,8 +166,7 @@ export function useImages({
               'combine',
               'describe',
             ])
-            const insertGenType = newImage.generation_metadata
-              ?.generation_type
+            const insertGenType = newImage.generation_metadata?.generation_type
             if (insertGenType && FEATURE_TYPES.has(insertGenType)) return
 
             setSavedImages((prev) => {

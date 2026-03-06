@@ -22,7 +22,7 @@ interface UseBrainstormOptions {
   accessToken: string | undefined
   credits: CreditsState
   model?: BrainstormModelKey
-  refineModels?: Array<string>
+  refineModel: string
   aspectRatio?: string
   slotCount: number
   imagesPerPrompt: number
@@ -36,7 +36,7 @@ export function useBrainstorm({
   accessToken,
   credits,
   model,
-  refineModels,
+  refineModel,
   aspectRatio,
   slotCount,
   imagesPerPrompt,
@@ -47,8 +47,10 @@ export function useBrainstorm({
       makeEmptySlotImages(imagesPerPrompt),
     ),
   )
-  const [refineCounts, setRefineCounts] = useState<Array<number>>(
-    Array.from({ length: slotCount }, () => 0),
+  const [refineCounts, setRefineCounts] = useState<Array<Array<number>>>(() =>
+    Array.from({ length: slotCount }, () =>
+      Array.from({ length: imagesPerPrompt }, () => 0),
+    ),
   )
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasGenerated, setHasGenerated] = useState(false)
@@ -92,8 +94,19 @@ export function useBrainstorm({
       })
     })
     setRefineCounts((prev) => {
-      if (prev.length === slotCount) return prev
-      return Array.from({ length: slotCount }, (_, i) => prev[i] ?? 0)
+      if (prev.length === slotCount && prev[0]?.length === imagesPerPrompt)
+        return prev
+      return Array.from({ length: slotCount }, (_, i) => {
+        const existing = prev[i]
+        if (existing) {
+          if (existing.length === imagesPerPrompt) return existing
+          return Array.from(
+            { length: imagesPerPrompt },
+            (_, j) => existing[j] ?? 0,
+          )
+        }
+        return Array.from({ length: imagesPerPrompt }, () => 0)
+      })
     })
     // Resize prompts
     const currentLen = slotPrompts.current.length
@@ -115,71 +128,82 @@ export function useBrainstorm({
     })
   }, [slotCount, imagesPerPrompt])
 
+  const accessTokenRef = useRef(accessToken)
+  useEffect(() => {
+    accessTokenRef.current = accessToken
+  }, [accessToken])
+
   const stopPolling = useCallback(() => {
     if (pollTimer.current) {
-      clearTimeout(pollTimer.current)
+      clearInterval(pollTimer.current)
       pollTimer.current = null
     }
   }, [])
 
-  const poll = useCallback(async () => {
-    if (!accessToken || pendingIds.current.size === 0) return
+  const startPolling = useCallback(() => {
+    stopPolling()
+    let polling = false
+    pollTimer.current = setInterval(async () => {
+      const token = accessTokenRef.current
+      if (!token || pendingIds.current.size === 0 || polling) return
+      polling = true
 
-    try {
-      const requestIds = Array.from(pendingIds.current)
-      const results = await checkBrainstormImages({
-        data: { accessToken, requestIds, model: activeModel.current },
-      })
-
-      const updates: Array<{
-        slot: number
-        imageIndex: number
-        url: string | null
-      }> = []
-      for (const result of results) {
-        const mapping = requestIdToSlot.current.get(result.requestId)
-        if (!mapping) continue
-
-        if (result.status === 'completed' && result.url) {
-          updates.push({
-            slot: mapping.slot,
-            imageIndex: mapping.imageIndex,
-            url: result.url,
-          })
-          pendingIds.current.delete(result.requestId)
-        } else if (result.status === 'failed') {
-          updates.push({
-            slot: mapping.slot,
-            imageIndex: mapping.imageIndex,
-            url: null,
-          })
-          pendingIds.current.delete(result.requestId)
-        }
-      }
-
-      if (updates.length > 0) {
-        setImages((prev) => {
-          const next = prev.map((row) => [...row])
-          for (const { slot, imageIndex, url } of updates) {
-            if (next[slot]) {
-              next[slot][imageIndex] = { url, loading: false }
-            }
-          }
-          return next
+      try {
+        const requestIds = Array.from(pendingIds.current)
+        const results = await checkBrainstormImages({
+          data: { accessToken: token, requestIds, model: activeModel.current },
         })
-      }
 
-      if (pendingIds.current.size > 0) {
-        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
-      } else {
-        setIsGenerating(false)
-        setHasGenerated(true)
+        const updates: Array<{
+          slot: number
+          imageIndex: number
+          url: string | null
+        }> = []
+        for (const result of results) {
+          const mapping = requestIdToSlot.current.get(result.requestId)
+          if (!mapping) continue
+
+          if (result.status === 'completed' && result.url) {
+            updates.push({
+              slot: mapping.slot,
+              imageIndex: mapping.imageIndex,
+              url: result.url,
+            })
+            pendingIds.current.delete(result.requestId)
+          } else if (result.status === 'failed') {
+            updates.push({
+              slot: mapping.slot,
+              imageIndex: mapping.imageIndex,
+              url: null,
+            })
+            pendingIds.current.delete(result.requestId)
+          }
+        }
+
+        if (updates.length > 0) {
+          setImages((prev) => {
+            const next = prev.map((row) => [...row])
+            for (const { slot, imageIndex, url } of updates) {
+              if (next[slot]) {
+                next[slot][imageIndex] = { url, loading: false }
+              }
+            }
+            return next
+          })
+        }
+
+        if (pendingIds.current.size === 0) {
+          stopPolling()
+          setIsGenerating(false)
+          setHasGenerated(true)
+        }
+      } catch (err) {
+        console.error('[brainstorm] poll error:', err)
+      } finally {
+        polling = false
       }
-    } catch {
-      stopPolling()
-      setIsGenerating(false)
-    }
-  }, [accessToken, stopPolling])
+    }, POLL_INTERVAL_MS)
+  }, [stopPolling])
 
   useEffect(() => {
     return stopPolling
@@ -199,7 +223,7 @@ export function useBrainstorm({
     const totalImages = unlockedIndices.length * imagesPerPrompt
     const cost = CREDIT_COSTS.image_gen * totalImages
     if (credits.balance !== null && credits.balance < cost) {
-      credits.showInsufficientCredits(cost, () => void generate())
+      credits.showInsufficientCredits(cost)
       return
     }
 
@@ -219,9 +243,9 @@ export function useBrainstorm({
       return next
     })
     setRefineCounts((prev) => {
-      const next = [...prev]
+      const next = prev.map((row) => [...row])
       for (const i of unlockedIndices) {
-        next[i] = 0
+        next[i] = Array.from({ length: imagesPerPrompt }, () => 0)
       }
       return next
     })
@@ -251,7 +275,7 @@ export function useBrainstorm({
         pendingIds.current.add(id)
       })
 
-      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
+      startPolling()
     } catch (err) {
       console.error('[brainstorm] generate failed:', err)
       setImages((prev) => {
@@ -265,40 +289,36 @@ export function useBrainstorm({
     }
   }
 
-  async function selectImage(url: string, slotIndex: number) {
+  async function selectImage(
+    url: string,
+    slotIndex: number,
+    imageIndex: number,
+  ) {
     if (!accessToken) return
 
-    const models = refineModels?.length ? refineModels : ['fal-ai/flux-2-pro']
-
-    // Pre-flight credit check for refine (goes through generateImage which checks server-side)
-    const refineCost = CREDIT_COSTS.image_gen * models.length
+    const refineCost = CREDIT_COSTS.image_gen
     if (credits.balance !== null && credits.balance < refineCost) {
-      credits.showInsufficientCredits(
-        refineCost,
-        () => void selectImage(url, slotIndex),
-      )
+      credits.showInsufficientCredits(refineCost)
       return
     }
 
     setRefineCounts((prev) => {
-      const next = [...prev]
-      next[slotIndex] = (next[slotIndex] ?? 0) + models.length
+      const next = prev.map((row) => [...row])
+      if (next[slotIndex]) {
+        next[slotIndex][imageIndex] = (next[slotIndex][imageIndex] ?? 0) + 1
+      }
       return next
     })
 
-    await Promise.all(
-      models.map((modelId) =>
-        generateImage({
-          data: {
-            prompt: slotPrompts.current[slotIndex] ?? BRAINSTORM_PROMPT,
-            model: modelId,
-            accessToken,
-            sourceImageUrl: url,
-            ...(aspectRatio ? { aspectRatio } : {}),
-          },
-        }),
-      ),
-    )
+    await generateImage({
+      data: {
+        prompt: slotPrompts.current[slotIndex] ?? BRAINSTORM_PROMPT,
+        model: refineModel,
+        accessToken,
+        sourceImageUrl: url,
+        ...(aspectRatio ? { aspectRatio } : {}),
+      },
+    })
   }
 
   async function regenerateSlot(index: number, imageIndex?: number) {
@@ -341,7 +361,7 @@ export function useBrainstorm({
       })
       setIsGenerating(true)
 
-      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
+      startPolling()
     } catch (err) {
       console.error('[brainstorm] regenerateSlot failed:', err)
       setImages((prev) => {

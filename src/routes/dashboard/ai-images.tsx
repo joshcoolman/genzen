@@ -29,7 +29,6 @@ function AiImagesPage() {
 
       <BrainstormPanel
         accessToken={page.accessToken}
-        refineModels={page.modelSettings.selectedModels}
         aspectRatio={page.generator.aspectRatio}
       />
 

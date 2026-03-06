@@ -10,15 +10,15 @@ AI image platforms have converged on several distinct pipeline patterns. Most pl
 
 ### Pipeline Comparison Table
 
-| Pipeline Archetype | Primary Platforms | Flow | Best For |
-|---|---|---|---|
-| **Prompt-and-Pray** | Midjourney, Ideogram, DALL-E | Prompt -> batch generate -> pick winner -> re-roll | Exploration, inspiration |
-| **Brainstorm -> Refine -> Upscale** | Leonardo AI, Freepik Mystic | Generate batch -> select -> Canvas edit -> Alchemy upscale -> export | Production assets |
-| **Sketch -> Render -> Iterate** | Krea AI, Playground AI | Draw on canvas -> real-time AI render -> adjust -> export | Concept art, spatial control |
-| **Describe -> Generate -> Iterate** | ChatGPT + DALL-E, Ideogram Magic Prompt | Upload ref or describe -> AI expands prompt -> generate -> refine | Users who think visually, not verbally |
-| **Reference -> Generate -> Consistency** | Midjourney (--cref), Leonardo Character Ref, Scenario Multi-LoRA | Upload character ref -> generate scenes -> maintain identity | Brand assets, storyboards, character work |
-| **Node-Based Pipeline** | ComfyUI, Runway Workflows, Krea Nodes | Chain model nodes visually -> custom multi-stage pipeline | Power users, batch production |
-| **First-Last-Frame -> Video** | GenZen, Runway, Kling | Generate first frame -> generate last frame -> interpolate video | AI video from static images |
+| Pipeline Archetype                       | Primary Platforms                                                | Flow                                                                 | Best For                                  |
+| ---------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
+| **Prompt-and-Pray**                      | Midjourney, Ideogram, DALL-E                                     | Prompt -> batch generate -> pick winner -> re-roll                   | Exploration, inspiration                  |
+| **Brainstorm -> Refine -> Upscale**      | Leonardo AI, Freepik Mystic                                      | Generate batch -> select -> Canvas edit -> Alchemy upscale -> export | Production assets                         |
+| **Sketch -> Render -> Iterate**          | Krea AI, Playground AI                                           | Draw on canvas -> real-time AI render -> adjust -> export            | Concept art, spatial control              |
+| **Describe -> Generate -> Iterate**      | ChatGPT + DALL-E, Ideogram Magic Prompt                          | Upload ref or describe -> AI expands prompt -> generate -> refine    | Users who think visually, not verbally    |
+| **Reference -> Generate -> Consistency** | Midjourney (--cref), Leonardo Character Ref, Scenario Multi-LoRA | Upload character ref -> generate scenes -> maintain identity         | Brand assets, storyboards, character work |
+| **Node-Based Pipeline**                  | ComfyUI, Runway Workflows, Krea Nodes                            | Chain model nodes visually -> custom multi-stage pipeline            | Power users, batch production             |
+| **First-Last-Frame -> Video**            | GenZen, Runway, Kling                                            | Generate first frame -> generate last frame -> interpolate video     | AI video from static images               |
 
 ### Platform-Specific Pipeline Details
 
@@ -64,20 +64,21 @@ The core UX challenge: users think visually but must communicate verbally. Platf
 
 Based on UX research from NNGroup and industry analysis, six distinct patterns help users overcome the "articulation barrier":
 
-| Pattern | Description | Platform Examples |
-|---|---|---|
-| **Style Galleries** | Visual grid of style options; click to apply | Ideogram (rendering modes), Leonardo (style presets), Playground (style chips) |
-| **Prompt Rewrite / Magic Prompt** | AI auto-expands simple input into detailed prompt | Ideogram Magic Prompt, Leonardo AI Prompt Generator, DALL-E prompt enhancement |
-| **Targeted Rewrite** | AI improves specific aspects (lighting, composition) while preserving user intent | ChatGPT 4o image editing, Adobe Firefly Generative Fill |
-| **Related Prompts** | System suggests variations of user's prompt | GenZen "More" variations (Claude generates 2 variant prompts) |
-| **Visual Prompt Builders** | Structured UI with dropdowns/sliders replacing free text | Higgsfield lens selector, Krea AI Strength slider |
-| **Parametrization** | Expose specific controls (aspect ratio, style weight, chaos) as named parameters | Midjourney `--ar`, `--stylize`, `--chaos`, `--weird` |
+| Pattern                           | Description                                                                       | Platform Examples                                                              |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Style Galleries**               | Visual grid of style options; click to apply                                      | Ideogram (rendering modes), Leonardo (style presets), Playground (style chips) |
+| **Prompt Rewrite / Magic Prompt** | AI auto-expands simple input into detailed prompt                                 | Ideogram Magic Prompt, Leonardo AI Prompt Generator, DALL-E prompt enhancement |
+| **Targeted Rewrite**              | AI improves specific aspects (lighting, composition) while preserving user intent | ChatGPT 4o image editing, Adobe Firefly Generative Fill                        |
+| **Related Prompts**               | System suggests variations of user's prompt                                       | GenZen "More" variations (Claude generates 2 variant prompts)                  |
+| **Visual Prompt Builders**        | Structured UI with dropdowns/sliders replacing free text                          | Higgsfield lens selector, Krea AI Strength slider                              |
+| **Parametrization**               | Expose specific controls (aspect ratio, style weight, chaos) as named parameters  | Midjourney `--ar`, `--stylize`, `--chaos`, `--weird`                           |
 
 Source: [Prompt Augmentation UX Patterns](https://www.uxtigers.com/post/prompt-augmentation)
 
 ### Camera and Cinematography Controls
 
 Higgsfield Cinema Studio is the leading example of replacing text prompts with structured cinematographic inputs. Users select:
+
 - **Lens focal length**: 35mm (environmental), 50mm (balanced), 85mm (portrait/product)
 - **Camera movement presets**: 20+ options including dolly-in, orbit, crane-up, FPV drone sweep
 - **Focus behavior**: Selective depth-of-field with rack focus transitions
@@ -90,6 +91,7 @@ Source: [Higgsfield Cinema Studio](https://higgsfield.ai/cinematic-video-generat
 ### Prompt Enhancement as Default Behavior
 
 Multiple platforms now auto-enhance prompts by default:
+
 - **Ideogram Magic Prompt**: "coffee cup" becomes "a steaming ceramic coffee cup on a wooden table, soft morning light streaming through a window, warm tones, shallow depth of field"
 - **Leonardo AI Prompt Generator**: Writes prompts or improves existing ones with detail and specificity
 - **Freepik Mystic**: Parameter optimization happens within the workflow pipeline itself
@@ -105,12 +107,12 @@ The pattern: auto-enhancement should be transparent and overridable. Users who w
 
 Nielsen Norman Group identified four stages through contextual inquiry research with image generation users:
 
-| Stage | Activity | Time Spent | Key Insight |
-|---|---|---|---|
-| **1. Define** | Establish goal, overcome blank page | Low | Users reference past images, chatbots, or prompt libraries to start |
-| **2. Explore** | Generate 20-80 images per session | High | "AI-generated ideas often came as a pleasant surprise" -- users discover better concepts than their original vision |
-| **3. Refine** | Tweak specific details | High (frustrating) | Greatest pain point: "Midjourney is a generator, not an editor" -- limited control over small adjustments |
-| **4. Export** | Finalize, upscale, add text | Low | Often happens in external tools (Photoshop) |
+| Stage          | Activity                            | Time Spent         | Key Insight                                                                                                         |
+| -------------- | ----------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **1. Define**  | Establish goal, overcome blank page | Low                | Users reference past images, chatbots, or prompt libraries to start                                                 |
+| **2. Explore** | Generate 20-80 images per session   | High               | "AI-generated ideas often came as a pleasant surprise" -- users discover better concepts than their original vision |
+| **3. Refine**  | Tweak specific details              | High (frustrating) | Greatest pain point: "Midjourney is a generator, not an editor" -- limited control over small adjustments           |
+| **4. Export**  | Finalize, upscale, add text         | Low                | Often happens in external tools (Photoshop)                                                                         |
 
 Source: [NN/G: 4 Stages of AI Image Generation](https://www.nngroup.com/articles/ai-imagegen-stages/)
 
@@ -122,12 +124,14 @@ Source: [NN/G: 4 Stages of AI Image Generation](https://www.nngroup.com/articles
 Based on cross-platform analysis, the most engaging AI image tools share these characteristics:
 
 **1. Fast Iteration Cycles**
+
 - Krea's sub-50ms real-time rendering eliminates wait time entirely
 - Ideogram 2a Turbo generates in ~5 seconds vs. Midjourney's 30-60 seconds
 - Midjourney Draft Mode trades quality for speed during exploration
 - Pattern: reduce time-to-result below the "context switch threshold" (~10 seconds)
 
 **2. Surprise and Serendipity by Design**
+
 - Ideogram's Random style explores 4.3 billion style presets
 - Midjourney's `--chaos` parameter intentionally increases variation
 - CHI 2025 research found that "embracing the serendipity of genAI-generated 'happy accidents' enhanced the richness of design exploration"
@@ -137,21 +141,25 @@ Based on cross-platform analysis, the most engaging AI image tools share these c
 Source: [CHI 2025: Creative Reflections on Image-Making with AI](https://dl.acm.org/doi/10.1145/3706598.3713529)
 
 **3. Low-Cost Exploration**
+
 - Generous free tiers or "relax mode" unlimited generation (Midjourney)
 - Per-image pricing low enough to encourage experimentation
 - Pattern: make the marginal cost of "one more try" feel negligible
 
 **4. Visual Feedback Over Text Feedback**
+
 - Krea's live canvas updates provide continuous visual feedback
 - Midjourney's 4-image grid enables visual comparison
 - Pattern: show results visually, not through status messages
 
 **5. Shareable Results as Social Currency**
+
 - Midjourney's default-public model creates ambient discovery
 - Community galleries serve as both inspiration and prompt libraries
 - Pattern: the desire to share drives more generation cycles
 
 **6. Compositional Control**
+
 - Layer-based editing (recommended by UX Studio research)
 - Lasso-style selection for targeted regeneration (Adobe Generative Fill)
 - Reusable object/character systems for consistency
@@ -171,14 +179,14 @@ Source: [Krea AI for Creative Pros](https://chasejarvis.com/blog/krea-ai/)
 
 ### Character Consistency Approaches
 
-| Approach | Platform | How It Works | Consistency Level |
-|---|---|---|---|
-| **Character Reference Tags** | Midjourney `--cref` | Upload reference image URL; AI matches face, body, clothing | Moderate (features preserved, styling varies) |
-| **Character Reference Upload** | Leonardo AI | Upload headshots; system maintains identity across generations | Moderate-High |
-| **Multi-LoRA Composition** | Scenario | Train separate LoRA per character; compose in scene | High (requires training step) |
-| **Conversational Session** | ChatGPT 4o | Keep character in conversation context; reference across generations | 87% higher consistency than separate sessions |
-| **Custom Model Training** | Leonardo AI, Scenario | Fine-tune on brand/character imagery | Highest (requires dataset) |
-| **Style Codes** | Ideogram | Save reusable style identifiers; apply to any prompt | Style consistency only (not character) |
+| Approach                       | Platform              | How It Works                                                         | Consistency Level                             |
+| ------------------------------ | --------------------- | -------------------------------------------------------------------- | --------------------------------------------- |
+| **Character Reference Tags**   | Midjourney `--cref`   | Upload reference image URL; AI matches face, body, clothing          | Moderate (features preserved, styling varies) |
+| **Character Reference Upload** | Leonardo AI           | Upload headshots; system maintains identity across generations       | Moderate-High                                 |
+| **Multi-LoRA Composition**     | Scenario              | Train separate LoRA per character; compose in scene                  | High (requires training step)                 |
+| **Conversational Session**     | ChatGPT 4o            | Keep character in conversation context; reference across generations | 87% higher consistency than separate sessions |
+| **Custom Model Training**      | Leonardo AI, Scenario | Fine-tune on brand/character imagery                                 | Highest (requires dataset)                    |
+| **Style Codes**                | Ideogram              | Save reusable style identifiers; apply to any prompt                 | Style consistency only (not character)        |
 
 Source: [Midjourney Character Consistency](https://venturebeat.com/ai/midjourney-debuts-feature-for-generating-consistent-characters-across-multiple-gen-ai-images), [Scenario Multi-Character Scenes](https://help.scenario.com/en/articles/generate-multi-character-scenes/)
 
@@ -210,26 +218,28 @@ Source: [Midjourney Character Consistency](https://venturebeat.com/ai/midjourney
 
 ### Interface Paradigms
 
-| Paradigm | Platforms | Pros | Cons |
-|---|---|---|---|
-| **Single-Page Generator** | Ideogram, GenZen, DALL-E | Low friction, fast to start | Limited advanced controls |
-| **Canvas/Editor** | Krea, Playground, Leonardo AI Canvas | Spatial control, post-generation editing | Steeper learning curve |
-| **Chat-Based** | ChatGPT 4o, Gemini | Natural language, conversational refinement | Hard to express spatial/visual intent |
-| **Discord/CLI** | Midjourney (legacy) | Community discovery, shareable | High entry barrier, no visual controls |
-| **Node-Based** | ComfyUI, Runway Workflows, Krea Nodes | Maximum flexibility, composable pipelines | Requires technical understanding |
-| **Integrated Suite** | Adobe Firefly (in Photoshop), Freepik | Fits existing workflows | Tied to parent platform |
+| Paradigm                  | Platforms                             | Pros                                        | Cons                                   |
+| ------------------------- | ------------------------------------- | ------------------------------------------- | -------------------------------------- |
+| **Single-Page Generator** | Ideogram, GenZen, DALL-E              | Low friction, fast to start                 | Limited advanced controls              |
+| **Canvas/Editor**         | Krea, Playground, Leonardo AI Canvas  | Spatial control, post-generation editing    | Steeper learning curve                 |
+| **Chat-Based**            | ChatGPT 4o, Gemini                    | Natural language, conversational refinement | Hard to express spatial/visual intent  |
+| **Discord/CLI**           | Midjourney (legacy)                   | Community discovery, shareable              | High entry barrier, no visual controls |
+| **Node-Based**            | ComfyUI, Runway Workflows, Krea Nodes | Maximum flexibility, composable pipelines   | Requires technical understanding       |
+| **Integrated Suite**      | Adobe Firefly (in Photoshop), Freepik | Fits existing workflows                     | Tied to parent platform                |
 
 ### Progressive Disclosure in Practice
 
 The most effective platforms layer complexity across 2-3 tiers:
 
 **Tier 1 -- Immediate (visible by default):**
+
 - Text prompt input
 - Generate button
 - Model selector (if multiple)
 - Aspect ratio
 
 **Tier 2 -- One Click Away (expandable panel):**
+
 - Negative prompts
 - Style/rendering mode
 - Guidance/creativity scale
@@ -237,6 +247,7 @@ The most effective platforms layer complexity across 2-3 tiers:
 - Reference image upload
 
 **Tier 3 -- Power User (separate view or mode):**
+
 - Node-based workflow editor
 - Custom model training
 - API access
@@ -246,6 +257,7 @@ The most effective platforms layer complexity across 2-3 tiers:
 Source: [Progressive Disclosure in AI Interfaces](https://aipositive.substack.com/p/progressive-disclosure-matters)
 
 **Practical examples:**
+
 - **Ideogram**: Clean prompt box + style selector (Tier 1) -> rendering modes, aspect ratio, Magic Prompt toggle (Tier 2) -> CSV batch, API (Tier 3)
 - **Leonardo AI**: Prompt + generate (Tier 1) -> negative prompts, creativity slider, style presets (Tier 2) -> custom model training, Canvas editor (Tier 3)
 - **Krea AI**: Prompt + canvas + generate (Tier 1) -> AI Strength slider, node connections (Tier 2) -> full Krea Nodes pipeline editor (Tier 3)
@@ -255,16 +267,19 @@ Source: [Progressive Disclosure in AI Interfaces](https://aipositive.substack.co
 Platforms take different positions on this spectrum:
 
 **Highly Opinionated (fewer knobs):**
+
 - ChatGPT 4o: no model selection, no parameters, just describe what you want
 - Freepik Mystic: the "workflow" makes all optimization decisions internally
 - DALL-E: minimal controls, prompt is everything
 
 **Balanced:**
+
 - Ideogram: sensible defaults + Magic Prompt, with rendering modes and reference images available
 - GenZen: model picker + aspect ratio + brainstorm mode, with "More" variations for refinement
 - Leonardo AI: presets and templates reduce decision fatigue while exposing controls
 
 **Full Control:**
+
 - Midjourney: 20+ parameters available via flags
 - ComfyUI: every pipeline step is explicit and configurable
 - Krea Nodes: full visual programming environment
@@ -272,6 +287,7 @@ Platforms take different positions on this spectrum:
 ### Mobile vs. Desktop
 
 Most platforms are desktop-first due to the visual nature of the work, but mobile is growing:
+
 - Midjourney launched iOS/Android apps in 2025
 - Ideogram has an official iOS app
 - Krea and Leonardo remain desktop-focused
@@ -313,12 +329,12 @@ The mobile pattern is: simplified generation (Tier 1 controls only) for on-the-g
 
 ### Priority Recommendations
 
-| Priority | Feature | Rationale | Complexity |
-|---|---|---|---|
-| **P0** | Prompt enhancement (auto-expand) | Every competitor has this; biggest UX gap | Low (reuse Claude integration) |
-| **P1** | Style reference in main generation | Table stakes for 2026; extends existing Edit Image refs | Medium |
-| **P1** | Promote Outpaint to core feature | Addresses #1 pain point (refine stage) | Medium (already in R&D) |
-| **P2** | Character reference / consistency | Growing user expectation; competitive necessity | Medium-High |
-| **P2** | Progressive disclosure (advanced panel) | Enables power features without cluttering default UX | Low |
-| **P3** | Random/Surprise style mode | High engagement, low effort | Low |
-| **P3** | Batch generation / permutations | Production workflow feature | Medium |
+| Priority | Feature                                 | Rationale                                               | Complexity                     |
+| -------- | --------------------------------------- | ------------------------------------------------------- | ------------------------------ |
+| **P0**   | Prompt enhancement (auto-expand)        | Every competitor has this; biggest UX gap               | Low (reuse Claude integration) |
+| **P1**   | Style reference in main generation      | Table stakes for 2026; extends existing Edit Image refs | Medium                         |
+| **P1**   | Promote Outpaint to core feature        | Addresses #1 pain point (refine stage)                  | Medium (already in R&D)        |
+| **P2**   | Character reference / consistency       | Growing user expectation; competitive necessity         | Medium-High                    |
+| **P2**   | Progressive disclosure (advanced panel) | Enables power features without cluttering default UX    | Low                            |
+| **P3**   | Random/Surprise style mode              | High engagement, low effort                             | Low                            |
+| **P3**   | Batch generation / permutations         | Production workflow feature                             | Medium                         |

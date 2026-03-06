@@ -11,6 +11,8 @@ export const BRAINSTORM_MAX_IMAGES_PER_PROMPT = 2
 export const BRAINSTORM_ROW_COUNT_KEY = 'genzen:brainstorm-row-count'
 export const BRAINSTORM_IMAGES_PER_PROMPT_KEY =
   'genzen:brainstorm-images-per-prompt'
+export const BRAINSTORM_REFINE_MODEL_KEY = 'genzen:brainstorm-refine-model'
+export const DEFAULT_REFINE_MODEL = 'fal-ai/nano-banana-2'
 
 export {
   LANDSCAPE_RATIOS,

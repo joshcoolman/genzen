@@ -12,17 +12,17 @@ Sources: [Freepik Homepage](https://www.freepik.com), [Freepik AI Suite](https:/
 
 ## Models Offered
 
-| Model | Type | Positioning | Notes |
-|-------|------|------------|-------|
+| Model                                | Type  | Positioning                              | Notes                                                                |
+| ------------------------------------ | ----- | ---------------------------------------- | -------------------------------------------------------------------- |
 | **Mystic 2.5** (highlighted/default) | Image | Hyper-realistic, pixel-perfect 2K output | Co-developed with Magnific.ai; finetune of SD + Flux + Magnific tech |
-| **Flux** | Image | Photorealistic general-purpose | BFL open model |
-| **Flux 2** | Image | Latest Flux generation | Updated BFL model |
-| **Google Imagen 3** | Image | Google's image model | Integrated via API |
-| **Google Nano Banana Pro** | Image | High-quality 4K | Google model family |
-| **Ideogram** | Image | Stylized, illustrative, artistic | Strong typography/text handling |
-| **Runway** | Video | Video generation | Integrated for video workflows |
-| **Veo 3** | Video | Google video model | Early access on higher tiers |
-| **Classic** | Image | Baseline generation | Legacy model option |
+| **Flux**                             | Image | Photorealistic general-purpose           | BFL open model                                                       |
+| **Flux 2**                           | Image | Latest Flux generation                   | Updated BFL model                                                    |
+| **Google Imagen 3**                  | Image | Google's image model                     | Integrated via API                                                   |
+| **Google Nano Banana Pro**           | Image | High-quality 4K                          | Google model family                                                  |
+| **Ideogram**                         | Image | Stylized, illustrative, artistic         | Strong typography/text handling                                      |
+| **Runway**                           | Video | Video generation                         | Integrated for video workflows                                       |
+| **Veo 3**                            | Video | Google video model                       | Early access on higher tiers                                         |
+| **Classic**                          | Image | Baseline generation                      | Legacy model option                                                  |
 
 Freepik positions itself as "an aggregator of the world's best models" -- users select models from a dropdown rather than needing to understand underlying architecture.
 
@@ -32,22 +32,22 @@ Sources: [Freepik AI Image Generator](https://www.freepik.com/ai/image-generator
 
 ## Purpose-Built Workflows and Tools
 
-| Tool | Category | What It Does |
-|------|----------|--------------|
-| **AI Image Generator** | Generation | Text-to-image with model selector (Mystic, Flux, Ideogram, Imagen, etc.) |
-| **Pikaso - Sketch to Image** | Generation | Real-time sketch-to-image with dual-window (sketch left, AI output right); updates live as you draw |
-| **Pikaso - Reimagine** | Editing | Take any existing photo and transform its style (watercolor, seasonal shifts, etc.) with precision control |
-| **Retouch** | Editing | Real-time inpainting -- erase unwanted elements, fix details, add missing objects via text description |
-| **Image Upscaler** | Enhancement | Upscale to 10K resolution; Creative mode (Magnific-powered) or Precision mode |
-| **Background Removal** | Editing | One-click background removal |
-| **Image Extender** | Editing | Expand image canvas / outpainting |
-| **Object Removal** | Editing | Remove specific elements and people from photos |
-| **AI Video Generator** | Video | Text/image-to-video generation |
-| **AI Audio Generator** | Audio | Text-to-audio for video workflows |
-| **Logo Generator** | Design | AI-powered logo creation |
-| **Product Mockups** | Commercial | AI mockup generation for e-commerce |
-| **Freepik Spaces** | Collaboration | Node-based infinite canvas for chaining AI tools; real-time multi-user collaboration |
-| **Brand Kits** | Enterprise | Automatic color/font application to preserve visual identity |
+| Tool                         | Category      | What It Does                                                                                               |
+| ---------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| **AI Image Generator**       | Generation    | Text-to-image with model selector (Mystic, Flux, Ideogram, Imagen, etc.)                                   |
+| **Pikaso - Sketch to Image** | Generation    | Real-time sketch-to-image with dual-window (sketch left, AI output right); updates live as you draw        |
+| **Pikaso - Reimagine**       | Editing       | Take any existing photo and transform its style (watercolor, seasonal shifts, etc.) with precision control |
+| **Retouch**                  | Editing       | Real-time inpainting -- erase unwanted elements, fix details, add missing objects via text description     |
+| **Image Upscaler**           | Enhancement   | Upscale to 10K resolution; Creative mode (Magnific-powered) or Precision mode                              |
+| **Background Removal**       | Editing       | One-click background removal                                                                               |
+| **Image Extender**           | Editing       | Expand image canvas / outpainting                                                                          |
+| **Object Removal**           | Editing       | Remove specific elements and people from photos                                                            |
+| **AI Video Generator**       | Video         | Text/image-to-video generation                                                                             |
+| **AI Audio Generator**       | Audio         | Text-to-audio for video workflows                                                                          |
+| **Logo Generator**           | Design        | AI-powered logo creation                                                                                   |
+| **Product Mockups**          | Commercial    | AI mockup generation for e-commerce                                                                        |
+| **Freepik Spaces**           | Collaboration | Node-based infinite canvas for chaining AI tools; real-time multi-user collaboration                       |
+| **Brand Kits**               | Enterprise    | Automatic color/font application to preserve visual identity                                               |
 
 Sources: [Freepik AI Tools](https://www.freepik.com/ai), [Freepik Blog - Retouch](https://www.freepik.com/blog/freepik-retouch/), [Freepik Spaces](https://www.freepik.com/spaces), [AlternativeTo](https://alternativeto.net/software/freepik-pikaso/about/)
 
@@ -73,24 +73,25 @@ Sources: [Freepik Spaces - BetaNews](https://betanews.com/article/freepik-launch
 
 ### Plan Tiers (2026)
 
-| Plan | Monthly Price | Annual Price (per month) | AI Credits/Month | Key Features |
-|------|--------------|--------------------------|------------------|--------------|
-| **Free** | $0 | $0 | 20 images/day | Basic model access |
-| **Essential** | $9 | $5.75 | 7,000 (84K annual) | Unlimited image generation, premium stock |
-| **Premium** | ~$14 | $12 | 18,000 (216K annual) | Faster generation, more models |
-| **Premium+** | ~$25 | $24.50 | 45,000 (540K annual) | Unlimited generation, advanced editing |
-| **Pro** | $250 | $158.33 | 300,000 (3.6M annual) | Merchandise licensing, video/audio credits, Veo 3 early access |
+| Plan          | Monthly Price | Annual Price (per month) | AI Credits/Month      | Key Features                                                   |
+| ------------- | ------------- | ------------------------ | --------------------- | -------------------------------------------------------------- |
+| **Free**      | $0            | $0                       | 20 images/day         | Basic model access                                             |
+| **Essential** | $9            | $5.75                    | 7,000 (84K annual)    | Unlimited image generation, premium stock                      |
+| **Premium**   | ~$14          | $12                      | 18,000 (216K annual)  | Faster generation, more models                                 |
+| **Premium+**  | ~$25          | $24.50                   | 45,000 (540K annual)  | Unlimited generation, advanced editing                         |
+| **Pro**       | $250          | $158.33                  | 300,000 (3.6M annual) | Merchandise licensing, video/audio credits, Veo 3 early access |
 
 ### Credit Cost Examples
 
-| Action | Credit Cost |
-|--------|------------|
-| Standard image generation | 50-500 credits |
-| High-quality image (Mystic) | Higher end of range |
-| 9-second HD video | 2,600+ credits |
-| Upscaling | Varies by resolution |
+| Action                      | Credit Cost          |
+| --------------------------- | -------------------- |
+| Standard image generation   | 50-500 credits       |
+| High-quality image (Mystic) | Higher end of range  |
+| 9-second HD video           | 2,600+ credits       |
+| Upscaling                   | Varies by resolution |
 
 **Key details:**
+
 - Credits are separate from stock downloads -- they only apply to AI tools
 - Unused credits do not roll over
 - Annual plans front-load all credits at once
@@ -148,16 +149,16 @@ Sources: [Eesel Blog](https://www.eesel.ai/blog/freepik-ai-reviews), [Tom's Guid
 
 ## Relevance to GenZen
 
-| Freepik Feature | GenZen Parallel | Opportunity |
-|-----------------|----------------|-------------|
-| Mystic (proprietary model) | Uses FAL AI models | GenZen could fine-tune or partner on a house model optimized for its users' most common workflows |
-| Freepik Spaces (node canvas) | No equivalent | Node-based workflow builder could let users chain GenZen features (generate -> edit -> outpaint -> describe) visually |
-| Real-time sketch (Pikaso) | No equivalent | Real-time sketch-to-image could complement the existing generation workflow as an alternative input method |
-| Stock + AI integration | No stock library | Not directly replicable, but user's own uploaded images could serve as a "personal stock library" alongside generation |
-| Unlimited generation pricing | Credit system | Consider whether unlimited generation tiers would drive growth vs. current credit model -- Freepik's move signals market pressure toward volume pricing |
-| All-in-one edit pipeline | Edit Image + Outpaint exist | Tighter integration between generate, edit, outpaint, and describe as a continuous pipeline rather than separate pages |
-| Brand kits | No equivalent | For team/enterprise users, preset brand colors/fonts/styles applied automatically to generations |
-| Model aggregation dropdown | Model selector exists | GenZen already has this pattern -- validate that the UX is as simple as Freepik's |
-| Upscale to 10K | No upscaling | Image upscaling/enhancement is a commonly requested feature in the space and could complement existing generation |
+| Freepik Feature              | GenZen Parallel             | Opportunity                                                                                                                                             |
+| ---------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mystic (proprietary model)   | Uses FAL AI models          | GenZen could fine-tune or partner on a house model optimized for its users' most common workflows                                                       |
+| Freepik Spaces (node canvas) | No equivalent               | Node-based workflow builder could let users chain GenZen features (generate -> edit -> outpaint -> describe) visually                                   |
+| Real-time sketch (Pikaso)    | No equivalent               | Real-time sketch-to-image could complement the existing generation workflow as an alternative input method                                              |
+| Stock + AI integration       | No stock library            | Not directly replicable, but user's own uploaded images could serve as a "personal stock library" alongside generation                                  |
+| Unlimited generation pricing | Credit system               | Consider whether unlimited generation tiers would drive growth vs. current credit model -- Freepik's move signals market pressure toward volume pricing |
+| All-in-one edit pipeline     | Edit Image + Outpaint exist | Tighter integration between generate, edit, outpaint, and describe as a continuous pipeline rather than separate pages                                  |
+| Brand kits                   | No equivalent               | For team/enterprise users, preset brand colors/fonts/styles applied automatically to generations                                                        |
+| Model aggregation dropdown   | Model selector exists       | GenZen already has this pattern -- validate that the UX is as simple as Freepik's                                                                       |
+| Upscale to 10K               | No upscaling                | Image upscaling/enhancement is a commonly requested feature in the space and could complement existing generation                                       |
 
 **Key takeaway**: Freepik's competitive advantage is breadth -- stock + AI + collaboration + editing in one platform. GenZen can't replicate the stock library, but can learn from the all-in-one pipeline approach (tighter feature chaining) and the node-based Spaces collaboration pattern. The shift to unlimited generation pricing is a market signal worth monitoring closely.

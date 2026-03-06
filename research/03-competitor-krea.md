@@ -14,17 +14,17 @@ Sources: [Krea Homepage](https://www.krea.ai), [AI Tools DevPro Guide](https://a
 
 ### Image Generation Models (20+ available)
 
-| Model | Positioning | Notes |
-|-------|------------|-------|
-| **Flux.1 Krea** (highlighted) | Distilled, open-sourced Krea-optimized model | 3s generation for 1024px at FP16 -- industry fastest |
-| **Flux 1.1 Pro** | Advanced yet efficient | BFL model |
-| **Flux 1.1 Pro Ultra** | BFL's highest quality text-to-image | Premium tier |
-| **Flux 2 / 2 Flex / 2 Klein / 2 Max / 2 Pro** | Latest Flux family | Full range of BFL models |
-| **Flux Kontext / Kontext Pro** | Frontier editing models | Optimized for Krea's editing pipeline |
-| **Ideogram 3.0** | Highly aesthetic, general-purpose | Strong typography |
-| **Google Imagen 3** | Google's image model | Integrated |
-| **Google Imagen 4** | Latest Google model | Cutting-edge integration |
-| **Stable Diffusion** | Foundation model | Supports custom model uploads |
+| Model                                         | Positioning                                  | Notes                                                |
+| --------------------------------------------- | -------------------------------------------- | ---------------------------------------------------- |
+| **Flux.1 Krea** (highlighted)                 | Distilled, open-sourced Krea-optimized model | 3s generation for 1024px at FP16 -- industry fastest |
+| **Flux 1.1 Pro**                              | Advanced yet efficient                       | BFL model                                            |
+| **Flux 1.1 Pro Ultra**                        | BFL's highest quality text-to-image          | Premium tier                                         |
+| **Flux 2 / 2 Flex / 2 Klein / 2 Max / 2 Pro** | Latest Flux family                           | Full range of BFL models                             |
+| **Flux Kontext / Kontext Pro**                | Frontier editing models                      | Optimized for Krea's editing pipeline                |
+| **Ideogram 3.0**                              | Highly aesthetic, general-purpose            | Strong typography                                    |
+| **Google Imagen 3**                           | Google's image model                         | Integrated                                           |
+| **Google Imagen 4**                           | Latest Google model                          | Cutting-edge integration                             |
+| **Stable Diffusion**                          | Foundation model                             | Supports custom model uploads                        |
 
 ### Image Editing Models (10+)
 
@@ -44,23 +44,23 @@ Sources: [Krea Model Library](https://www.krea.ai/models), [Krea Image](https://
 
 ## Purpose-Built Workflows and Tools
 
-| Tool | Category | What It Does |
-|------|----------|--------------|
-| **Real-Time Generation (RTG)** | Generation | Live canvas where images evolve as you type, sketch, or adjust parameters; sub-50ms latency; no submit button |
-| **Text-to-Image** | Generation | Standard prompt-to-image with 20+ model options |
-| **Canvas Editor** | Editing | Drag-and-drop design interface for arranging and composing elements |
-| **Inpainting / Masking** | Editing | AI-powered erase, redraw, or modify specific image regions |
-| **Add/Remove Objects** | Editing | Targeted object manipulation within images |
-| **Style Transfer** | Editing | Apply artistic or custom visual styles to images |
-| **Upscale and Enhance** | Enhancement | "Magni-Krea" engine upscales to 8K (Pro) or 22K (Max) while hallucinating missing detail |
-| **Logo Illusions** | Creative | Embeds vector logos into scenic photography or artistic styles using ControlNet depth mapping |
-| **AI Patterns** | Creative | Infinite canvas generation of seamless textures for 3D modeling, fashion, product design |
-| **Text-to-Video** | Video | Short video generation (4-10 second clips); Krea Video 2.0 with consistent character physics |
-| **Text-to-3D** | 3D | 3D model generation from text (limited quality per reviews) |
-| **Lipsync** | Video | Audio-visual lip synchronization for video avatars |
-| **LoRA Training** | Customization | Train custom models: 50 images (Basic), 2,000 images (Max) |
-| **Node Workflows** | Automation | Visual node-based workflow automation (Pro+) |
-| **Prompt Builder** | UX | Guided suggestions for crafting better prompts |
+| Tool                           | Category      | What It Does                                                                                                  |
+| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Real-Time Generation (RTG)** | Generation    | Live canvas where images evolve as you type, sketch, or adjust parameters; sub-50ms latency; no submit button |
+| **Text-to-Image**              | Generation    | Standard prompt-to-image with 20+ model options                                                               |
+| **Canvas Editor**              | Editing       | Drag-and-drop design interface for arranging and composing elements                                           |
+| **Inpainting / Masking**       | Editing       | AI-powered erase, redraw, or modify specific image regions                                                    |
+| **Add/Remove Objects**         | Editing       | Targeted object manipulation within images                                                                    |
+| **Style Transfer**             | Editing       | Apply artistic or custom visual styles to images                                                              |
+| **Upscale and Enhance**        | Enhancement   | "Magni-Krea" engine upscales to 8K (Pro) or 22K (Max) while hallucinating missing detail                      |
+| **Logo Illusions**             | Creative      | Embeds vector logos into scenic photography or artistic styles using ControlNet depth mapping                 |
+| **AI Patterns**                | Creative      | Infinite canvas generation of seamless textures for 3D modeling, fashion, product design                      |
+| **Text-to-Video**              | Video         | Short video generation (4-10 second clips); Krea Video 2.0 with consistent character physics                  |
+| **Text-to-3D**                 | 3D            | 3D model generation from text (limited quality per reviews)                                                   |
+| **Lipsync**                    | Video         | Audio-visual lip synchronization for video avatars                                                            |
+| **LoRA Training**              | Customization | Train custom models: 50 images (Basic), 2,000 images (Max)                                                    |
+| **Node Workflows**             | Automation    | Visual node-based workflow automation (Pro+)                                                                  |
+| **Prompt Builder**             | UX            | Guided suggestions for crafting better prompts                                                                |
 
 Sources: [Krea Homepage](https://www.krea.ai), [AI Tools DevPro Guide](https://aitoolsdevpro.com/ai-tools/krea-ai-guide/), [AllAboutAI Review](https://www.allaboutai.com/ai-reviews/krea-ai/), [Krea Pricing](https://www.krea.ai/pricing)
 
@@ -88,19 +88,19 @@ Sources: [AI Tools DevPro Guide](https://aitoolsdevpro.com/ai-tools/krea-ai-guid
 
 ### Individual Plans
 
-| Plan | Monthly Price | Compute Units/Month | Key Features |
-|------|--------------|---------------------|--------------|
-| **Free** | $0 | 100/day | Real-time generation, limited models, 2K upscaling, no commercial license |
-| **Basic** | $9 | 5,000 | Commercial license, full image/3D/lipsync models, LoRA (50 images), 4K upscaling, selected video models |
-| **Pro** | $35 | 20,000 | All video models, node workflow automation, bulk compute discounts, 8K upscaling |
-| **Max** | $70 | 60,000 | Unlimited LoRA training (2,000 images), unlimited concurrent generations, unlimited relaxed generations, 22K upscaling |
+| Plan      | Monthly Price | Compute Units/Month | Key Features                                                                                                           |
+| --------- | ------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Free**  | $0            | 100/day             | Real-time generation, limited models, 2K upscaling, no commercial license                                              |
+| **Basic** | $9            | 5,000               | Commercial license, full image/3D/lipsync models, LoRA (50 images), 4K upscaling, selected video models                |
+| **Pro**   | $35           | 20,000              | All video models, node workflow automation, bulk compute discounts, 8K upscaling                                       |
+| **Max**   | $70           | 60,000              | Unlimited LoRA training (2,000 images), unlimited concurrent generations, unlimited relaxed generations, 22K upscaling |
 
 ### Team Plans
 
-| Plan | Monthly Price | Compute Units/Month | Key Features |
-|------|--------------|---------------------|--------------|
-| **Business** | $200 (base) | 80,000 | Up to 50 seats included, custom roles, private node sharing, usage analytics |
-| **Enterprise** | Custom | Custom | SAML SSO, audit logs, dedicated support with SLA, analytics API |
+| Plan           | Monthly Price | Compute Units/Month | Key Features                                                                 |
+| -------------- | ------------- | ------------------- | ---------------------------------------------------------------------------- |
+| **Business**   | $200 (base)   | 80,000              | Up to 50 seats included, custom roles, private node sharing, usage analytics |
+| **Enterprise** | Custom        | Custom              | SAML SSO, audit logs, dedicated support with SLA, analytics API              |
 
 ### Compute Packs (one-time, expire in 90 days)
 
@@ -111,6 +111,7 @@ Sources: [AI Tools DevPro Guide](https://aitoolsdevpro.com/ai-tools/krea-ai-guid
 $0.002 per standard generation. Rate limits: 5 concurrent (Pro), 50+ (Enterprise).
 
 **Key details:**
+
 - Monthly compute units do not roll over (except Business/Enterprise)
 - Business plan is team-based, not per-seat -- all members get full benefits
 - Free tier requires no credit card
@@ -171,17 +172,17 @@ Sources: [Trustpilot](https://www.trustpilot.com/review/krea.ai), [Product Hunt 
 
 ## Relevance to GenZen
 
-| Krea Feature | GenZen Parallel | Opportunity |
-|-------------|----------------|-------------|
-| Real-time canvas | No equivalent | A real-time preview mode during prompt editing could dramatically improve the ideation loop -- even a lower-fidelity live preview would be valuable |
-| Upscale to 22K | No upscaling | Image enhancement/upscaling is a gap in GenZen's pipeline. FAL AI offers upscaling models that could be integrated |
-| Logo Illusions | No equivalent | A "creative mini app" pattern -- purpose-built tools for specific creative tasks -- could be adopted for GenZen's R&D features (Combine, Outpaint, Describe) |
-| AI Patterns | No equivalent | Seamless texture generation could be a niche but valuable addition, especially for design-oriented users |
-| LoRA training | No equivalent | Custom model training is deep personalization. GenZen could explore lighter alternatives (reference-based style lock) using existing multi-ref capabilities |
-| Compute unit transparency | Credit system exists | Making per-operation costs visible (e.g., "this generation costs 5 credits") improves trust and reduces billing anxiety |
-| Node workflows | No equivalent | Visual workflow automation (Pro feature on Krea) could be a future GenZen differentiator, similar to Freepik Spaces |
-| Canvas-first interface | Form/page-based UI | A spatial canvas mode for composing and editing could complement GenZen's current page-based workflow |
-| Free tier (no credit card) | No free tier details | A generous free tier with daily compute units is an effective growth driver -- 750K WAU demonstrates this |
-| 3-second Flux generation | Depends on FAL AI speed | Generation speed is a competitive metric. GenZen should benchmark its generation times against Krea's 3s standard |
+| Krea Feature               | GenZen Parallel         | Opportunity                                                                                                                                                  |
+| -------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Real-time canvas           | No equivalent           | A real-time preview mode during prompt editing could dramatically improve the ideation loop -- even a lower-fidelity live preview would be valuable          |
+| Upscale to 22K             | No upscaling            | Image enhancement/upscaling is a gap in GenZen's pipeline. FAL AI offers upscaling models that could be integrated                                           |
+| Logo Illusions             | No equivalent           | A "creative mini app" pattern -- purpose-built tools for specific creative tasks -- could be adopted for GenZen's R&D features (Combine, Outpaint, Describe) |
+| AI Patterns                | No equivalent           | Seamless texture generation could be a niche but valuable addition, especially for design-oriented users                                                     |
+| LoRA training              | No equivalent           | Custom model training is deep personalization. GenZen could explore lighter alternatives (reference-based style lock) using existing multi-ref capabilities  |
+| Compute unit transparency  | Credit system exists    | Making per-operation costs visible (e.g., "this generation costs 5 credits") improves trust and reduces billing anxiety                                      |
+| Node workflows             | No equivalent           | Visual workflow automation (Pro feature on Krea) could be a future GenZen differentiator, similar to Freepik Spaces                                          |
+| Canvas-first interface     | Form/page-based UI      | A spatial canvas mode for composing and editing could complement GenZen's current page-based workflow                                                        |
+| Free tier (no credit card) | No free tier details    | A generous free tier with daily compute units is an effective growth driver -- 750K WAU demonstrates this                                                    |
+| 3-second Flux generation   | Depends on FAL AI speed | Generation speed is a competitive metric. GenZen should benchmark its generation times against Krea's 3s standard                                            |
 
 **Key takeaway**: Krea's core differentiation is real-time interactivity -- making AI generation feel like a live creative instrument instead of a batch process. GenZen could adopt a lighter version of this (live prompt preview) without rebuilding its entire UI. The upscaling gap is the most actionable opportunity: FAL AI has upscaling models that could be integrated quickly. The "mini app" pattern (Logo Illusions, Patterns) also shows how purpose-built tools for specific creative tasks can drive engagement beyond general-purpose generation.
