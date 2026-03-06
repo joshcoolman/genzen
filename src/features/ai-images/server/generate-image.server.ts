@@ -17,6 +17,11 @@ interface GenerateImageInput {
   aspectRatio?: string
   sourceImageBase64?: string
   sourceImageUrl?: string
+  isRefine?: boolean
+}
+
+function buildRefinePrompt(userPrompt: string): string {
+  return `Re-imagine this: ${userPrompt}`
 }
 
 export const generateImage = createServerFn({ method: 'POST' })
@@ -24,8 +29,14 @@ export const generateImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    const { prompt, model, aspectRatio, sourceImageBase64, sourceImageUrl } =
-      data
+    const {
+      prompt,
+      model,
+      aspectRatio,
+      sourceImageBase64,
+      sourceImageUrl,
+      isRefine,
+    } = data
 
     if (!sourceImageBase64 && !sourceImageUrl && !prompt.trim()) {
       throw new Error('Prompt is required')
@@ -104,6 +115,14 @@ export const generateImage = createServerFn({ method: 'POST' })
       falModelId = modelDef?.imageInputModelId ?? model
     }
 
+    // Save the user-facing prompt before any model-specific wrapping
+    const metadataPrompt = effectivePrompt
+
+    // Apply refine wrapping for FAL only
+    if (sourceImageUrl && isRefine) {
+      effectivePrompt = buildRefinePrompt(effectivePrompt)
+    }
+
     // Build FAL input using schema-driven param resolution
     const falInput = await buildFalInput({
       modelId: falModelId,
@@ -140,7 +159,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         title: 'Generating...',
         sort_order: Date.now() / 1000,
         generation_metadata: {
-          prompt: effectivePrompt,
+          prompt: metadataPrompt,
           model,
           fal_model_id: falModelId,
           submitted_at: new Date().toISOString(),

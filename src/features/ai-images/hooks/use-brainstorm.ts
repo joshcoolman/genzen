@@ -316,6 +316,7 @@ export function useBrainstorm({
         model: refineModel,
         accessToken,
         sourceImageUrl: url,
+        isRefine: true,
         ...(aspectRatio ? { aspectRatio } : {}),
       },
     })

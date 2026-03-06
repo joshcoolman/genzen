@@ -72,148 +72,141 @@ export function BrainstormPanel({
 
   return (
     <div className="bg-card rounded-lg p-6 space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-base font-semibold">Brainstorm</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Generate {totalImages} image{totalImages !== 1 ? 's' : ''} from{' '}
-            {settings.rowCount} prompt{settings.rowCount !== 1 ? 's' : ''}.
-            Click an image to refine.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                title="Brainstorm settings"
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-base font-semibold">Brainstorm</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Generate {totalImages} image{totalImages !== 1 ? 's' : ''} from{' '}
+              {settings.rowCount} prompt{settings.rowCount !== 1 ? 's' : ''}.
+              Click an image to refine.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Brainstorm settings"
+                >
+                  <Settings className="size-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56" align="end">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Prompts</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() =>
+                          settings.setRowCount(settings.rowCount - 1)
+                        }
+                        disabled={settings.rowCount <= 1}
+                        className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+                      >
+                        <Minus className="size-3" />
+                      </button>
+                      <span className="text-sm font-medium w-4 text-center">
+                        {settings.rowCount}
+                      </span>
+                      <button
+                        onClick={() =>
+                          settings.setRowCount(settings.rowCount + 1)
+                        }
+                        disabled={settings.rowCount >= BRAINSTORM_MAX_ROWS}
+                        className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+                      >
+                        <Plus className="size-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Images per prompt</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => settings.setImagesPerPrompt(1)}
+                        className={`px-2 py-0.5 text-xs rounded border ${
+                          settings.imagesPerPrompt === 1
+                            ? 'border-foreground/40 bg-muted text-foreground'
+                            : 'border-border text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        1
+                      </button>
+                      <button
+                        onClick={() => settings.setImagesPerPrompt(2)}
+                        className={`px-2 py-0.5 text-xs rounded border ${
+                          settings.imagesPerPrompt === 2
+                            ? 'border-foreground/40 bg-muted text-foreground'
+                            : 'border-border text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        2
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Sketch</span>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value as BrainstormModelKey)}
+                className="rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground"
               >
-                <Settings className="size-3" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56" align="end">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Prompts</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() =>
-                        settings.setRowCount(settings.rowCount - 1)
-                      }
-                      disabled={settings.rowCount <= 1}
-                      className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <Minus className="size-3" />
-                    </button>
-                    <span className="text-sm font-medium w-4 text-center">
-                      {settings.rowCount}
-                    </span>
-                    <button
-                      onClick={() =>
-                        settings.setRowCount(settings.rowCount + 1)
-                      }
-                      disabled={settings.rowCount >= BRAINSTORM_MAX_ROWS}
-                      className="size-6 flex items-center justify-center rounded border border-border text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
-                    >
-                      <Plus className="size-3" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Images per prompt</span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => settings.setImagesPerPrompt(1)}
-                      className={`px-2 py-0.5 text-xs rounded border ${
-                        settings.imagesPerPrompt === 1
-                          ? 'border-foreground/40 bg-muted text-foreground'
-                          : 'border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      1
-                    </button>
-                    <button
-                      onClick={() => settings.setImagesPerPrompt(2)}
-                      className={`px-2 py-0.5 text-xs rounded border ${
-                        settings.imagesPerPrompt === 2
-                          ? 'border-foreground/40 bg-muted text-foreground'
-                          : 'border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      2
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-sm">Refine model</span>
-                  <select
-                    value={settings.refineModel}
-                    onChange={(e) => settings.setRefineModel(e.target.value)}
-                    className="w-full rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground"
-                  >
-                    {REFINE_CAPABLE_MODELS.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-          <button
-            onClick={() => {
-              setPasteText('')
-              setPasteDialogOpen(true)
-            }}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            <ClipboardPaste className="size-3" />
-            Paste All
-          </button>
-          <button
-            onClick={() => void brainstorm.rewriteAllPrompts()}
-            disabled={brainstorm.rewritingSlots.size > 0}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 disabled:opacity-50"
-          >
-            {brainstorm.rewritingSlots.size > 0 ? (
-              <Loader2 className="size-3 animate-spin" />
-            ) : (
-              <Wand2 className="size-3" />
-            )}
-            Enhance All
-          </button>
-          {brainstorm.hasGenerated && (
+                <option value="schnell">Schnell</option>
+                <option value="dev">Dev</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">Refine</span>
+              <select
+                value={settings.refineModel}
+                onChange={(e) => settings.setRefineModel(e.target.value)}
+                className="rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground"
+              >
+                {REFINE_CAPABLE_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <button
-              onClick={brainstorm.clearPrompts}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => {
+                setPasteText('')
+                setPasteDialogOpen(true)
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
             >
-              Reset Prompts
+              <ClipboardPaste className="size-3.5" />
+              Paste All
             </button>
-          )}
-          <div className="flex items-center gap-3 text-sm">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="brainstorm-model"
-                value="schnell"
-                checked={model === 'schnell'}
-                onChange={() => setModel('schnell')}
-                className="accent-foreground"
-              />
-              Schnell
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="radio"
-                name="brainstorm-model"
-                value="dev"
-                checked={model === 'dev'}
-                onChange={() => setModel('dev')}
-                className="accent-foreground"
-              />
-              Dev
-            </label>
+            <button
+              onClick={() => void brainstorm.rewriteAllPrompts()}
+              disabled={brainstorm.rewritingSlots.size > 0}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {brainstorm.rewritingSlots.size > 0 ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="size-3.5" />
+              )}
+              Enhance All
+            </button>
+            {brainstorm.hasGenerated && (
+              <button
+                onClick={brainstorm.clearPrompts}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Reset Prompts
+              </button>
+            )}
           </div>
           <ActionButton
             onClick={() => void brainstorm.generate()}
