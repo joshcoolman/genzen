@@ -1,5 +1,5 @@
 interface OutpaintPreviewProps {
-  sourceImageUrl: string
+  sourceImageUrl: string | null
   sourceTitle: string
   aspectRatio: string
 }
@@ -13,17 +13,23 @@ export function OutpaintPreview({
   const ratio = w / h
 
   return (
-    <div className="w-full max-w-[400px]">
+    <div className="w-full">
       <div
         className="relative w-full rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 overflow-hidden"
         style={{ aspectRatio: `${ratio}` }}
       >
         <div className="absolute inset-0 flex items-center justify-center p-2">
-          <img
-            src={sourceImageUrl}
-            alt={sourceTitle}
-            className="max-h-full max-w-full object-contain"
-          />
+          {sourceImageUrl ? (
+            <img
+              src={sourceImageUrl}
+              alt={sourceTitle}
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Select an image to preview
+            </p>
+          )}
         </div>
       </div>
     </div>
