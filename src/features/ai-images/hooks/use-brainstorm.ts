@@ -115,71 +115,82 @@ export function useBrainstorm({
     })
   }, [slotCount, imagesPerPrompt])
 
+  const accessTokenRef = useRef(accessToken)
+  useEffect(() => {
+    accessTokenRef.current = accessToken
+  }, [accessToken])
+
   const stopPolling = useCallback(() => {
     if (pollTimer.current) {
-      clearTimeout(pollTimer.current)
+      clearInterval(pollTimer.current)
       pollTimer.current = null
     }
   }, [])
 
-  const poll = useCallback(async () => {
-    if (!accessToken || pendingIds.current.size === 0) return
+  const startPolling = useCallback(() => {
+    stopPolling()
+    let polling = false
+    pollTimer.current = setInterval(async () => {
+      const token = accessTokenRef.current
+      if (!token || pendingIds.current.size === 0 || polling) return
+      polling = true
 
-    try {
-      const requestIds = Array.from(pendingIds.current)
-      const results = await checkBrainstormImages({
-        data: { accessToken, requestIds, model: activeModel.current },
-      })
-
-      const updates: Array<{
-        slot: number
-        imageIndex: number
-        url: string | null
-      }> = []
-      for (const result of results) {
-        const mapping = requestIdToSlot.current.get(result.requestId)
-        if (!mapping) continue
-
-        if (result.status === 'completed' && result.url) {
-          updates.push({
-            slot: mapping.slot,
-            imageIndex: mapping.imageIndex,
-            url: result.url,
-          })
-          pendingIds.current.delete(result.requestId)
-        } else if (result.status === 'failed') {
-          updates.push({
-            slot: mapping.slot,
-            imageIndex: mapping.imageIndex,
-            url: null,
-          })
-          pendingIds.current.delete(result.requestId)
-        }
-      }
-
-      if (updates.length > 0) {
-        setImages((prev) => {
-          const next = prev.map((row) => [...row])
-          for (const { slot, imageIndex, url } of updates) {
-            if (next[slot]) {
-              next[slot][imageIndex] = { url, loading: false }
-            }
-          }
-          return next
+      try {
+        const requestIds = Array.from(pendingIds.current)
+        const results = await checkBrainstormImages({
+          data: { accessToken: token, requestIds, model: activeModel.current },
         })
-      }
 
-      if (pendingIds.current.size > 0) {
-        pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
-      } else {
-        setIsGenerating(false)
-        setHasGenerated(true)
+        const updates: Array<{
+          slot: number
+          imageIndex: number
+          url: string | null
+        }> = []
+        for (const result of results) {
+          const mapping = requestIdToSlot.current.get(result.requestId)
+          if (!mapping) continue
+
+          if (result.status === 'completed' && result.url) {
+            updates.push({
+              slot: mapping.slot,
+              imageIndex: mapping.imageIndex,
+              url: result.url,
+            })
+            pendingIds.current.delete(result.requestId)
+          } else if (result.status === 'failed') {
+            updates.push({
+              slot: mapping.slot,
+              imageIndex: mapping.imageIndex,
+              url: null,
+            })
+            pendingIds.current.delete(result.requestId)
+          }
+        }
+
+        if (updates.length > 0) {
+          setImages((prev) => {
+            const next = prev.map((row) => [...row])
+            for (const { slot, imageIndex, url } of updates) {
+              if (next[slot]) {
+                next[slot][imageIndex] = { url, loading: false }
+              }
+            }
+            return next
+          })
+        }
+
+        if (pendingIds.current.size === 0) {
+          stopPolling()
+          setIsGenerating(false)
+          setHasGenerated(true)
+        }
+      } catch (err) {
+        console.error('[brainstorm] poll error:', err)
+      } finally {
+        polling = false
       }
-    } catch {
-      stopPolling()
-      setIsGenerating(false)
-    }
-  }, [accessToken, stopPolling])
+    }, POLL_INTERVAL_MS)
+  }, [stopPolling])
 
   useEffect(() => {
     return stopPolling
@@ -251,7 +262,7 @@ export function useBrainstorm({
         pendingIds.current.add(id)
       })
 
-      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
+      startPolling()
     } catch (err) {
       console.error('[brainstorm] generate failed:', err)
       setImages((prev) => {
@@ -341,7 +352,7 @@ export function useBrainstorm({
       })
       setIsGenerating(true)
 
-      pollTimer.current = setTimeout(() => void poll(), POLL_INTERVAL_MS)
+      startPolling()
     } catch (err) {
       console.error('[brainstorm] regenerateSlot failed:', err)
       setImages((prev) => {

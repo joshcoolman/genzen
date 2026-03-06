@@ -7,8 +7,6 @@ export interface ImageModel {
   category: ModelCategory
   supportsImageInput?: boolean
   imageInputModelId?: string
-  imageInputParam?: 'image_url' | 'image_urls'
-  sizeParam?: 'image_size' | 'aspect_ratio'
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -33,7 +31,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'FLUX',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-pro/edit',
-    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/flux-2-flex',
@@ -42,7 +39,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'FLUX',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-flex/edit',
-    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/flux-pro/kontext',
@@ -80,8 +76,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/bytedance/seedream/v4/edit',
-    imageInputParam: 'image_urls',
-    sizeParam: 'image_size',
   },
   // Specialized - verified models
   {
@@ -91,7 +85,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana/edit',
-    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/nano-banana-pro',
@@ -100,7 +93,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-pro/edit',
-    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/nano-banana-2',
@@ -109,7 +101,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
-    imageInputParam: 'image_urls',
   },
   {
     id: 'fal-ai/recraft/v3/text-to-image',
@@ -138,8 +129,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
 
   // Other - verified models
   {
-    id: 'fal-ai/qwen-image',
-    name: 'Qwen Image',
+    id: 'fal-ai/qwen-image-2/pro/text-to-image',
+    name: 'Qwen Image 2 Pro',
     description: 'Complex text rendering',
     category: 'Other',
   },
@@ -194,7 +185,6 @@ export interface EditModel {
   name: string
   description: string
   maxRefImages: number
-  sizeParam: 'aspect_ratio' | 'image_size'
 }
 
 export const EDIT_MODELS: Array<EditModel> = [
@@ -203,56 +193,48 @@ export const EDIT_MODELS: Array<EditModel> = [
     name: 'GPT Image 1.5',
     description: 'OpenAI, high-quality edits',
     maxRefImages: 4,
-    sizeParam: 'image_size',
   },
   {
     id: 'fal-ai/nano-banana/edit',
     name: 'Nano Banana',
     description: 'Fast + cheap edits',
     maxRefImages: 4,
-    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/nano-banana-pro/edit',
     name: 'Nano Banana Pro',
     description: 'Realism + typography',
     maxRefImages: 4,
-    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/nano-banana-2/edit',
     name: 'Nano Banana 2',
     description: 'Reasoning-guided edits',
     maxRefImages: 14,
-    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/flux-2-pro/edit',
     name: 'FLUX.2 Pro Edit',
     description: 'Best photorealism edits',
     maxRefImages: 8,
-    sizeParam: 'image_size',
   },
   {
     id: 'fal-ai/flux-2-flex/edit',
     name: 'FLUX.2 Flex Edit',
     description: 'Flexible multi-image edits',
     maxRefImages: 4,
-    sizeParam: 'aspect_ratio',
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',
     name: 'Seedream v4',
     description: 'ByteDance, high-quality edits',
     maxRefImages: 4,
-    sizeParam: 'image_size',
   },
   {
     id: 'fal-ai/bytedance/seedream/v4.5/edit',
     name: 'Seedream v4.5',
     description: 'Multi-image reference editing',
     maxRefImages: 9,
-    sizeParam: 'image_size',
   },
 ]
 

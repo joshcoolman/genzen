@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { generateText } from 'ai'
+import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { ai } from '@/lib/server/ai.server'
 
@@ -83,18 +84,18 @@ export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
     const modelKey = data.model ?? DEFAULT_MODEL
     const modelId = BRAINSTORM_MODELS[modelKey]
     const submissions = await Promise.all(
-      data.prompts.map((prompt) =>
-        fal.queue.submit(modelId, {
-          input: {
-            prompt,
-            enable_safety_checker: false,
-            safety_tolerance: 6,
-            ...(modelKey === 'dev'
+      data.prompts.map(async (prompt) => {
+        const falInput = await buildFalInput({
+          modelId,
+          prompt,
+          safetyLevel: 'permissive',
+          extraParams:
+            modelKey === 'dev'
               ? { num_inference_steps: 28, guidance_scale: 3.5 }
-              : {}),
-          },
-        }),
-      ),
+              : undefined,
+        })
+        return (fal.queue.submit as any)(modelId, { input: falInput })
+      }),
     )
 
     return {

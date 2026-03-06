@@ -1,10 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
+import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
-import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
-import { EDIT_MODELS } from '@/features/ai-images/models'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -33,9 +32,6 @@ export const editImage = createServerFn({ method: 'POST' })
     } = data
     const falEditModel = editModelId || 'fal-ai/gpt-image-1.5/edit'
     const numImagesToGenerate = Math.min(Math.max(numImages ?? 1, 1), 3)
-    const modelDef = EDIT_MODELS.find((m) => m.id === falEditModel)
-    const sizeParam = modelDef?.sizeParam ?? 'image_size'
-
     if (!editPrompt.trim()) {
       throw new Error('Edit prompt is required')
     }
@@ -126,38 +122,18 @@ export const editImage = createServerFn({ method: 'POST' })
       }
     }
 
-    // Submit to selected edit model (dynamic ID, bypass typed overloads)
-    // GPT Image 1.5 requires a string enum for image_size, not a {width,height} object
-    const gptImageSizeMap: Record<string, string> = {
-      '1:1': '1024x1024',
-      '3:2': '1536x1024',
-      '16:9': '1536x1024',
-      '4:3': '1536x1024',
-      '2:1': '1536x1024',
-      '21:9': '1536x1024',
-      '2:3': '1024x1536',
-      '9:16': '1024x1536',
-      '3:4': '1024x1536',
-      '1:2': '1024x1536',
-    }
-    const sizeParams = aspectRatio
-      ? sizeParam === 'aspect_ratio'
-        ? { aspect_ratio: aspectRatio }
-        : falEditModel === 'fal-ai/gpt-image-1.5/edit'
-          ? { image_size: gptImageSizeMap[aspectRatio] ?? '1024x1024' }
-          : { image_size: RATIO_TO_SIZE[aspectRatio] ?? RATIO_TO_SIZE['1:1'] }
-      : {}
+    // Submit to selected edit model using schema-driven param resolution
+    const falInput = await buildFalInput({
+      modelId: falEditModel,
+      prompt: editPrompt.trim(),
+      aspectRatio,
+      imageUrls: [falImageUrl, ...referenceUrls],
+      safetyLevel: 'permissive',
+      extraParams: { num_images: numImagesToGenerate },
+    })
 
     const { request_id } = await (fal.queue.submit as any)(falEditModel, {
-      input: {
-        prompt: editPrompt.trim(),
-        image_urls: [falImageUrl, ...referenceUrls],
-        num_images: numImagesToGenerate,
-        ...(falEditModel.includes('nano-banana')
-          ? { safety_tolerance: 6 }
-          : {}),
-        ...sizeParams,
-      },
+      input: falInput,
     })
 
     // Create pending DB record

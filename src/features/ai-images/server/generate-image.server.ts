@@ -2,11 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { generateText } from 'ai'
 import { createClient } from '@supabase/supabase-js'
+import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -48,12 +48,10 @@ export const generateImage = createServerFn({ method: 'POST' })
     let falModelId = model
     let effectivePrompt = prompt.trim()
     let imageUrl: string | null = null
-    let imageParam: 'image_url' | 'image_urls' = 'image_url'
 
     if (sourceImageUrl) {
       imageUrl = sourceImageUrl
       falModelId = modelDef?.imageInputModelId ?? model
-      imageParam = modelDef?.imageInputParam ?? 'image_url'
     } else if (sourceImageBase64) {
       // Strip data URL prefix and decode to buffer
       const base64Data = sourceImageBase64.replace(
@@ -104,30 +102,19 @@ export const generateImage = createServerFn({ method: 'POST' })
 
       // Use image-mode endpoint if specified
       falModelId = modelDef?.imageInputModelId ?? model
-      imageParam = modelDef?.imageInputParam ?? 'image_url'
     }
 
-    // Build FAL input (effectivePrompt and imageUrl are finalized above)
-    // FLUX 2 Pro edit expects safety_tolerance as string "1"-"5";
-    // other models accept numeric values up to 6.
-    const isEditEndpoint = falModelId.endsWith('/edit')
-    const falInput: Record<string, unknown> = {
+    // Build FAL input using schema-driven param resolution
+    const falInput = await buildFalInput({
+      modelId: falModelId,
       prompt: effectivePrompt,
-      safety_tolerance: isEditEndpoint ? '5' : 6,
-      ...(aspectRatio
-        ? modelDef?.sizeParam === 'image_size'
-          ? { image_size: RATIO_TO_SIZE[aspectRatio] ?? RATIO_TO_SIZE['1:1'] }
-          : { aspect_ratio: aspectRatio }
-        : {}),
-      ...(imageUrl
-        ? imageParam === 'image_urls'
-          ? { image_urls: [imageUrl] }
-          : { image_url: imageUrl }
-        : {}),
-    }
+      aspectRatio,
+      imageUrl: imageUrl ?? undefined,
+      safetyLevel: 'permissive',
+    })
 
     // Submit to FAL async queue (returns immediately)
-    const { request_id } = await fal.queue.submit(falModelId, {
+    const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
     })
 
