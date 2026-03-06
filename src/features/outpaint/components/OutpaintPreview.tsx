@@ -1,0 +1,31 @@
+interface OutpaintPreviewProps {
+  sourceImageUrl: string
+  sourceTitle: string
+  aspectRatio: string
+}
+
+export function OutpaintPreview({
+  sourceImageUrl,
+  sourceTitle,
+  aspectRatio,
+}: OutpaintPreviewProps) {
+  const [w, h] = aspectRatio.split(':').map(Number)
+  const ratio = w / h
+
+  return (
+    <div className="w-full max-w-[400px]">
+      <div
+        className="relative w-full rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 overflow-hidden"
+        style={{ aspectRatio: `${ratio}` }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <img
+            src={sourceImageUrl}
+            alt={sourceTitle}
+            className="max-h-full max-w-full object-contain"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}

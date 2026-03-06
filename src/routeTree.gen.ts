@@ -21,6 +21,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
+import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
@@ -90,6 +91,11 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   path: '/trash',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardOutpaintRoute = DashboardOutpaintRouteImport.update({
+  id: '/outpaint',
+  path: '/outpaint',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardModelsRoute = DashboardModelsRouteImport.update({
   id: '/models',
   path: '/models',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -212,6 +221,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/outpaint'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/outpaint'
     | '/dashboard/trash'
     | '/docs/$'
     | '/dashboard'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/outpaint'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -358,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTrashRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/outpaint': {
+      id: '/dashboard/outpaint'
+      path: '/outpaint'
+      fullPath: '/dashboard/outpaint'
+      preLoaderRoute: typeof DashboardOutpaintRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/models': {
       id: '/dashboard/models'
       path: '/models'
@@ -438,6 +457,7 @@ interface DashboardRouteChildren {
   DashboardEditImageRoute: typeof DashboardEditImageRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
+  DashboardOutpaintRoute: typeof DashboardOutpaintRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -450,6 +470,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEditImageRoute: DashboardEditImageRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,
+  DashboardOutpaintRoute: DashboardOutpaintRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

@@ -1,5 +1,6 @@
 import {
   Boxes,
+  Expand,
   Film,
   Image,
   LayoutGrid,
@@ -49,6 +50,12 @@ export const navItems: Array<NavItem> = [
     label: 'Edit Image',
     href: '/dashboard/edit-image',
     icon: PencilLine,
+    activeOnly: true,
+  },
+  {
+    label: 'Outpaint',
+    href: '/dashboard/outpaint',
+    icon: Expand,
     activeOnly: true,
   },
   {
