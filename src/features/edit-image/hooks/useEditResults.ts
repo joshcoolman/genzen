@@ -2,6 +2,9 @@ import { useCallback } from 'react'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { getModelName } from '@/features/ai-images/models'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 interface SubmitParams {
   accessToken: string
@@ -19,6 +22,7 @@ interface UseEditResultsOptions {
 }
 
 export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
+  const credits = useCredits()
   const {
     results,
     isSubmitting,
@@ -42,6 +46,13 @@ export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
       }
       if (!params.sourceImageId) {
         setError('Select a source image first.')
+        return
+      }
+
+      const cost =
+        CREDIT_COSTS.edit * params.modelIds.length * params.generationsPerModel
+      if (credits.balance !== null && credits.balance < cost) {
+        credits.showInsufficientCredits(cost)
         return
       }
 
@@ -89,7 +100,11 @@ export function useEditResults({ userId, accessToken }: UseEditResultsOptions) {
           }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Submission failed')
+        if (isCreditError(err)) {
+          credits.showInsufficientCredits(cost)
+        } else {
+          setError(err instanceof Error ? err.message : 'Submission failed')
+        }
       } finally {
         setIsSubmitting(false)
       }

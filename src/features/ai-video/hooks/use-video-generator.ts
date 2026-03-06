@@ -6,6 +6,7 @@ import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
 import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 interface UseVideoGeneratorOptions {
   accessToken: string | undefined
@@ -59,6 +60,12 @@ export function useVideoGenerator({
     )
       return
 
+    const cost = CREDIT_COSTS.video_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     setGeneratingVideo(true)
     try {
       await credits.deduct(CREDIT_COSTS.video_gen, 'video_gen')
@@ -106,6 +113,7 @@ export function useVideoGenerator({
           duration: videoSettings.duration,
           cfgScale: videoSettings.cfgScale,
           negativePrompt: videoSettings.negativePrompt,
+          videoModel: videoSettings.videoModel,
         },
       })
 
@@ -121,7 +129,12 @@ export function useVideoGenerator({
         video: { id: result.recordId, url: null, status: 'pending' },
       })
     } catch (err) {
-      console.error('Failed to generate video:', err)
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+        credits.refresh()
+      } else {
+        console.error('Failed to generate video:', err)
+      }
     } finally {
       setGeneratingVideo(false)
     }
@@ -129,6 +142,12 @@ export function useVideoGenerator({
 
   async function handleGenerateVideoFromRow(gen: Generation) {
     if (!accessToken || !gen.firstFrame?.id || !gen.lastFrame?.id) return
+
+    const cost = CREDIT_COSTS.video_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
 
     try {
       const result = await generateFlfVideo({
@@ -140,6 +159,7 @@ export function useVideoGenerator({
           duration: videoSettings.duration,
           cfgScale: videoSettings.cfgScale,
           negativePrompt: videoSettings.negativePrompt,
+          videoModel: videoSettings.videoModel,
         },
       })
 
@@ -155,7 +175,12 @@ export function useVideoGenerator({
         video: { id: result.recordId, url: null, status: 'pending' },
       })
     } catch (err) {
-      console.error('Failed to generate video:', err)
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+        credits.refresh()
+      } else {
+        console.error('Failed to generate video:', err)
+      }
     }
   }
 

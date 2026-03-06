@@ -7,6 +7,7 @@ import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.
 import { suggestLastFrame } from '@/features/ai-video/server/suggest-last-frame.server'
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 import { cropTo16x9, fileToBase64 } from '@/features/ai-video/lib/crop-to-16x9'
 
 interface UseLastFrameGeneratorOptions {
@@ -190,9 +191,16 @@ export function useLastFrameGenerator({
     }
 
     if (!lastFramePrompt.trim()) return
+
+    const cost = CREDIT_COSTS.last_frame
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     lastFrame.setGenerating()
     try {
-      await credits.deduct(CREDIT_COSTS.last_frame, 'last_frame')
+      await credits.deduct(cost, 'last_frame')
       const result = await generateLastFrame({
         data: {
           prompt: lastFramePrompt,
@@ -230,9 +238,13 @@ export function useLastFrameGenerator({
       addGeneration(newGeneration)
       lastFrame.reset()
     } catch (err) {
-      lastFrame.setFailed(
-        err instanceof Error ? err.message : 'Failed to generate last frame',
-      )
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+      } else {
+        lastFrame.setFailed(
+          err instanceof Error ? err.message : 'Failed to generate last frame',
+        )
+      }
     }
   }
 

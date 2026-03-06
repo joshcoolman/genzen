@@ -1,3 +1,4 @@
+import { ALL_VIDEO_MODELS } from '../video-models'
 import type { VideoSettings } from '../types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +26,29 @@ export function VideoSettingsPanel({
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-medium">Video Settings</h2>
+
+      <div className="space-y-1.5">
+        <label className="text-xs text-muted-foreground">Model</label>
+        <div className="flex flex-wrap gap-1">
+          {ALL_VIDEO_MODELS.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => onChange({ ...settings, videoModel: m.id })}
+              disabled={generating}
+              title={m.description}
+              className={cn(
+                'px-3 py-1.5 text-xs rounded border transition-colors',
+                settings.videoModel === m.id
+                  ? 'border-accent-brand bg-accent-brand/10 text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-1.5">
         <label className="text-xs text-muted-foreground">

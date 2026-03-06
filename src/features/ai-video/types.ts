@@ -47,6 +47,7 @@ export interface VideoSettings {
   duration: '5' | '10'
   cfgScale: number
   negativePrompt: string
+  videoModel: string
 }
 
 export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
@@ -54,4 +55,5 @@ export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
   duration: '5',
   cfgScale: 0.5,
   negativePrompt: 'blur, distort, and low quality',
+  videoModel: 'fal-ai/kling-video/v3/pro/image-to-video',
 }

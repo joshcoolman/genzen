@@ -5,9 +5,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
+import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
 
-const VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
+fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 interface GenerateFlfVideoInput {
   firstFrameRecordId: string
@@ -17,6 +17,7 @@ interface GenerateFlfVideoInput {
   duration?: '5' | '10'
   cfgScale?: number
   negativePrompt?: string
+  videoModel?: string
 }
 
 async function uploadFrameToFal(
@@ -115,7 +116,9 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       falInput.negative_prompt = data.negativePrompt
     }
 
-    const { request_id } = await fal.queue.submit(VIDEO_MODEL, {
+    const videoModel = data.videoModel || DEFAULT_VIDEO_MODEL
+
+    const { request_id } = await fal.queue.submit(videoModel, {
       input: falInput as Record<string, unknown> & {
         prompt: string
         start_image_url: string
@@ -131,7 +134,7 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
         source: 'ai_video',
         title: 'Generating video...',
         generation_metadata: {
-          model: VIDEO_MODEL,
+          model: videoModel,
           prompt,
           transition_prompt: prompt || null,
           first_frame_id: firstFrameRecordId,

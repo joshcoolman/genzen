@@ -6,6 +6,9 @@ import { useExistingImages } from '@/features/describe/hooks/useExistingImages'
 import { useAuth } from '@/lib/auth'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { EDIT_MODELS, getModelName } from '@/features/ai-images/models'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 const DEFAULT_PROMPT =
   'Combine these images into a unique and creative layout that blends their elements harmoniously.'
@@ -49,6 +52,7 @@ export interface UseCombinePageReturn {
 
 export function useCombinePage(): UseCombinePageReturn {
   const { user, session } = useAuth()
+  const credits = useCredits()
   const accessToken = session?.access_token ?? ''
   const [sourceImages, setSourceImages] = useState<Array<SourceImage>>([])
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
@@ -113,6 +117,12 @@ export function useCombinePage(): UseCombinePageReturn {
   const combine = useCallback(async () => {
     if (!accessToken || !canCombine) return
 
+    const cost = CREDIT_COSTS.image_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     setIsGenerating(true)
     setError(null)
 
@@ -153,7 +163,13 @@ export function useCombinePage(): UseCombinePageReturn {
 
       replaceTempId(tempId, result.recordId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to combine images')
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+      } else {
+        setError(
+          err instanceof Error ? err.message : 'Failed to combine images',
+        )
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -164,6 +180,7 @@ export function useCombinePage(): UseCombinePageReturn {
     prompt,
     aspectRatio,
     model,
+    credits,
     addPendingResult,
     replaceTempId,
   ])
