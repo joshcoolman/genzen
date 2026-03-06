@@ -140,20 +140,3 @@ export interface ColorPalette {
     version: 3
   }
 }
-
-/**
- * Type guard to check if palette is v3 format (array of 8 colors)
- */
-export function isColorPaletteV3(palette: unknown): palette is ColorPalette {
-  if (!palette || typeof palette !== 'object') return false
-  const p = palette as Record<string, unknown>
-  return (
-    'colors' in p &&
-    Array.isArray(p.colors) &&
-    'metadata' in p &&
-    typeof p.metadata === 'object' &&
-    p.metadata !== null &&
-    'version' in (p.metadata as Record<string, unknown>) &&
-    (p.metadata as Record<string, unknown>).version === 3
-  )
-}

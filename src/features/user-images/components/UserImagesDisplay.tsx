@@ -349,7 +349,6 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
         onClose={handleCloseEdit}
         onSave={handleUpdate}
         onNext={handleNextImage}
-        userId={user?.id || ''}
       />
     </div>
   )

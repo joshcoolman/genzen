@@ -2,12 +2,10 @@
  * Image Edit Dialog
  *
  * Full-screen overlay for editing image title and description.
- * Two-column layout: image + inputs on left, tabbed palette on right.
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { ColorPaletteDisplay } from './ColorPaletteDisplay'
-import type { ColorPalette, UserImage } from '../types'
+import type { UserImage } from '../types'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 
@@ -22,7 +20,6 @@ interface ImageEditDialogProps {
     description: string | null,
   ) => Promise<void>
   onNext: () => void
-  userId: string
 }
 
 /**
@@ -35,12 +32,10 @@ export function ImageEditDialog({
   onClose,
   onSave,
   onNext,
-  userId,
 }: ImageEditDialogProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [localPalette, setLocalPalette] = useState<ColorPalette | null>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -48,7 +43,6 @@ export function ImageEditDialog({
     if (image) {
       setTitle(image.title)
       setDescription(image.description ?? '')
-      setLocalPalette(image.color_palette as ColorPalette | null)
     }
   }, [image?.id])
 
@@ -142,73 +136,56 @@ export function ImageEditDialog({
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 lg:p-[90px]"
     >
-      {/* Modal container - min 800px, always side-by-side */}
-      <div className="relative w-full h-full min-w-[800px] bg-background rounded-lg border border-border shadow-2xl overflow-hidden">
-        {/* Two-column layout - always side-by-side */}
-        <div className="h-full grid grid-cols-2 gap-0">
-          {/* Left column: Image + Title + Description */}
-          <div className="flex flex-col p-6 overflow-y-auto">
-            {/* Image */}
-            <div className="flex-1 min-h-0 flex items-center justify-center mb-6">
-              <img
-                src={imageUrl}
-                alt={title}
-                className="max-h-full max-w-full object-contain rounded-lg"
-              />
-            </div>
-
-            {/* Title Input */}
-            <div className="space-y-2 mb-4">
-              <label
-                htmlFor="title"
-                className="text-sm font-medium text-foreground"
-              >
-                Title
-              </label>
-              <Input
-                ref={titleInputRef}
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={handleTitleKeyDown}
-                placeholder="Image title"
-                maxLength={200}
-                disabled={isSaving}
-                className="bg-background"
-              />
-            </div>
-
-            {/* Description Textarea */}
-            <div className="space-y-2">
-              <label
-                htmlFor="description"
-                className="text-sm font-medium text-foreground"
-              >
-                Description (optional)
-              </label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={handleDescriptionKeyDown}
-                placeholder="Image description"
-                maxLength={1000}
-                rows={3}
-                disabled={isSaving}
-                className="bg-background"
-              />
-            </div>
+      <div className="relative w-full h-full max-w-2xl bg-background rounded-lg border border-border shadow-2xl overflow-hidden">
+        <div className="h-full flex flex-col p-6 overflow-y-auto">
+          {/* Image */}
+          <div className="flex-1 min-h-0 flex items-center justify-center mb-6">
+            <img
+              src={imageUrl}
+              alt={title}
+              className="max-h-full max-w-full object-contain rounded-lg"
+            />
           </div>
 
-          {/* Right column: Tabbed palette */}
-          <div className="border-l border-border bg-card flex flex-col min-h-0 overflow-hidden">
-            <ColorPaletteDisplay
-              palette={localPalette}
-              imageId={image.id}
-              imageUrl={imageUrl}
-              userId={userId}
-              onPaletteGenerated={setLocalPalette}
-              onClose={onClose}
+          {/* Title Input */}
+          <div className="space-y-2 mb-4">
+            <label
+              htmlFor="title"
+              className="text-sm font-medium text-foreground"
+            >
+              Title
+            </label>
+            <Input
+              ref={titleInputRef}
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
+              placeholder="Image title"
+              maxLength={200}
+              disabled={isSaving}
+              className="bg-background"
+            />
+          </div>
+
+          {/* Description Textarea */}
+          <div className="space-y-2">
+            <label
+              htmlFor="description"
+              className="text-sm font-medium text-foreground"
+            >
+              Description (optional)
+            </label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={handleDescriptionKeyDown}
+              placeholder="Image description"
+              maxLength={1000}
+              rows={3}
+              disabled={isSaving}
+              className="bg-background"
             />
           </div>
         </div>
