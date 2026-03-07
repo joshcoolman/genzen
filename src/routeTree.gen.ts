@@ -21,6 +21,8 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
+import { Route as DashboardShotsRouteImport } from './routes/dashboard/shots'
+import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/prompt-studio'
 import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
@@ -92,6 +94,16 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   path: '/trash',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardShotsRoute = DashboardShotsRouteImport.update({
+  id: '/shots',
+  path: '/shots',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPromptStudioRoute = DashboardPromptStudioRouteImport.update({
+  id: '/prompt-studio',
+  path: '/prompt-studio',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardOutpaintRoute = DashboardOutpaintRouteImport.update({
   id: '/outpaint',
   path: '/outpaint',
@@ -160,6 +172,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
+  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -182,6 +196,8 @@ export interface FileRoutesByTo {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
+  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -206,6 +222,8 @@ export interface FileRoutesById {
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
+  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -232,6 +250,8 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/outpaint'
+    | '/dashboard/prompt-studio'
+    | '/dashboard/shots'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -254,6 +274,8 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/outpaint'
+    | '/dashboard/prompt-studio'
+    | '/dashboard/shots'
     | '/dashboard/trash'
     | '/docs/$'
     | '/dashboard'
@@ -277,6 +299,8 @@ export interface FileRouteTypes {
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/outpaint'
+    | '/dashboard/prompt-studio'
+    | '/dashboard/shots'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -382,6 +406,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTrashRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/shots': {
+      id: '/dashboard/shots'
+      path: '/shots'
+      fullPath: '/dashboard/shots'
+      preLoaderRoute: typeof DashboardShotsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/prompt-studio': {
+      id: '/dashboard/prompt-studio'
+      path: '/prompt-studio'
+      fullPath: '/dashboard/prompt-studio'
+      preLoaderRoute: typeof DashboardPromptStudioRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/outpaint': {
       id: '/dashboard/outpaint'
       path: '/outpaint'
@@ -478,6 +516,8 @@ interface DashboardRouteChildren {
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
   DashboardOutpaintRoute: typeof DashboardOutpaintRoute
+  DashboardPromptStudioRoute: typeof DashboardPromptStudioRoute
+  DashboardShotsRoute: typeof DashboardShotsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -492,6 +532,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,
   DashboardOutpaintRoute: DashboardOutpaintRoute,
+  DashboardPromptStudioRoute: DashboardPromptStudioRoute,
+  DashboardShotsRoute: DashboardShotsRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

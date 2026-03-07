@@ -1,6 +1,7 @@
 import { Minus, Plus, X } from 'lucide-react'
-import { EditModelSelector } from './EditModelSelector'
 import type { UseEditPageReturn } from '../hooks/useEditPage'
+import { ModelMultiSelect } from '@/components/ModelMultiSelect'
+import { EDIT_MODELS } from '@/features/ai-images/models'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { ExistingImagePicker } from '@/features/describe/components/ExistingImagePicker'
 import { ActionButton } from '@/components/ActionButton'
@@ -133,8 +134,9 @@ export function EditPageContent({ page }: EditPageContentProps) {
         <div className="w-80 shrink-0 space-y-4">
           <div className="space-y-1.5">
             <p className="text-xs text-muted-foreground">Models</p>
-            <EditModelSelector
-              selectedModelIds={editModels.selectedModelIds}
+            <ModelMultiSelect
+              models={EDIT_MODELS}
+              selectedIds={editModels.selectedModelIds}
               onToggle={editModels.toggleModel}
             />
           </div>
