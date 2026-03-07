@@ -1,11 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
-import { generateText } from 'ai'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
-import { ai } from '@/lib/server/ai.server'
+import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -86,21 +85,7 @@ export const generateImage = createServerFn({ method: 'POST' })
       // If no user prompt, ask Haiku for a plain factual description of the image
       if (!effectivePrompt) {
         try {
-          const { text } = await generateText({
-            model: ai.haiku,
-            system:
-              'You are an image description engine for an image-to-image generation pipeline. The generative model will receive both your description and the source image. Your job is to anchor the generation, not reconstruct the image from text.\n\nDescribe the image the way a human would at a glance — the essentials only.\n\nInclude:\n- Shot type and framing\n- Subject basics (age range, gender, hair, clothing in broad strokes)\n- Background in 2-3 words\n- Lighting quality\n- Any single standout visual detail\n\nRules:\n- Keep it under 40 words\n- No interpretation, no emotion, no narrative\n- No specific facial expressions\n- Broad strokes, not forensic detail\n- Comma-separated phrases or one short sentence',
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'image', image: base64Data, mimeType },
-                  { type: 'text', text: 'Describe this image.' },
-                ],
-              },
-            ],
-          })
-          effectivePrompt = text.trim()
+          effectivePrompt = await describeImage(base64Data, 'anchor')
         } catch {
           effectivePrompt = 'image'
         }
