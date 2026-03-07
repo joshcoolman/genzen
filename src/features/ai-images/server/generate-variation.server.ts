@@ -213,14 +213,14 @@ export const generateVariation = createServerFn({ method: 'POST' })
       usedPrompts.push(variedPrompt)
 
       const editInput = await buildFalInput({
-        modelId: 'fal-ai/nano-banana-pro/edit',
+        modelId: 'fal-ai/nano-banana-2/edit',
         prompt: variedPrompt,
         aspectRatio,
         imageUrls: [falImageUrl ?? ''],
         safetyLevel: 'permissive',
       })
       const { request_id } = await (fal.queue.submit as any)(
-        'fal-ai/nano-banana-pro/edit',
+        'fal-ai/nano-banana-2/edit',
         { input: editInput },
       )
 
