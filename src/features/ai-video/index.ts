@@ -4,6 +4,7 @@ export type { Generation } from './types'
 // Hooks
 export { useVideoWorkspacePage } from './hooks/use-video-workspace-page'
 export { useWorkspaces } from './hooks/use-workspaces'
+export { useActiveWorkspace } from './hooks/use-active-workspace'
 
 // Server
 export { getWorkspaces } from './server/get-workspaces.server'
@@ -16,3 +17,4 @@ export { GenerationRow } from './components/GenerationRow'
 export { SelectionBar } from './components/SelectionBar'
 export { VideoSettingsPanel } from './components/VideoSettingsPanel'
 export { WorkspaceCard } from './components/WorkspaceCard'
+export { WorkspaceStrip } from './components/WorkspaceStrip'

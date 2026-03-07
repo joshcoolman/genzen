@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 interface CreateGenerationInput {
   workspaceId: string
   firstFrameId: string
-  lastFrameId: string
+  lastFrameId?: string
   videoId?: string
   accessToken: string
 }
@@ -31,7 +31,7 @@ export const createGeneration = createServerFn({ method: 'POST' })
         workspace_id: data.workspaceId,
         user_id: user.id,
         first_frame_id: data.firstFrameId,
-        last_frame_id: data.lastFrameId,
+        last_frame_id: data.lastFrameId ?? null,
         video_id: data.videoId ?? null,
       })
       .select()

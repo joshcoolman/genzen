@@ -6,6 +6,9 @@ import type { GenerationResult } from '@/lib/types/generation-result'
 import { useAuth } from '@/lib/auth'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { getModelName } from '@/features/ai-images/models'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 type PipelineStatus =
   | 'idle'
@@ -70,6 +73,7 @@ export interface UseImageDescriberReturn {
 
 export function useImageDescriber(): UseImageDescriberReturn {
   const { user, session } = useAuth()
+  const credits = useCredits()
   const accessToken = session?.access_token ?? ''
   const [state, setState] = useState<ImageDescriberState>(INITIAL_STATE)
   const [model, setModel] = useState(DESCRIBER_MODELS[0].id)
@@ -199,6 +203,13 @@ export function useImageDescriber(): UseImageDescriberReturn {
 
     if (!accessToken) return
 
+    const cost = CREDIT_COSTS.image_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      setState((s) => ({ ...s, status: 'error', error: null }))
+      return
+    }
+
     abortRef.current = false
 
     const tempId = `temp-describe-${Date.now()}`
@@ -229,12 +240,17 @@ export function useImageDescriber(): UseImageDescriberReturn {
         }))
       } catch (err) {
         if (abortRef.current) return
-        setState((s) => ({
-          ...s,
-          status: 'error',
-          error:
-            err instanceof Error ? err.message : 'Failed to generate image',
-        }))
+        if (isCreditError(err)) {
+          credits.showInsufficientCredits(cost)
+          setState((s) => ({ ...s, status: 'error', error: null }))
+        } else {
+          setState((s) => ({
+            ...s,
+            status: 'error',
+            error:
+              err instanceof Error ? err.message : 'Failed to generate image',
+          }))
+        }
       }
     })()
     // genCount included to re-trigger on regenerate
@@ -245,6 +261,7 @@ export function useImageDescriber(): UseImageDescriberReturn {
     model,
     aspectRatio,
     genCount,
+    credits,
     addPendingResult,
     replaceTempId,
   ])

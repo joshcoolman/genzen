@@ -5,7 +5,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
+const LEGACY_VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
 
 interface CheckPendingVideoInput {
   accessToken: string
@@ -44,7 +44,11 @@ export const checkPendingVideo = createServerFn({ method: 'POST' })
     }
 
     try {
-      const status = await fal.queue.status(VIDEO_MODEL, {
+      const model =
+        (record.generation_metadata as { model?: string } | null)?.model ||
+        LEGACY_VIDEO_MODEL
+
+      const status = await fal.queue.status(model, {
         requestId: record.request_id,
         logs: false,
       })
@@ -53,7 +57,7 @@ export const checkPendingVideo = createServerFn({ method: 'POST' })
         return { status: 'pending' as const }
       }
 
-      const result = await fal.queue.result(VIDEO_MODEL, {
+      const result = await fal.queue.result(model, {
         requestId: record.request_id,
       })
 

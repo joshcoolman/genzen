@@ -4,19 +4,20 @@ import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
+import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-schema.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-const VIDEO_MODEL = 'fal-ai/kling-video/o1/image-to-video'
-
 interface GenerateFlfVideoInput {
   firstFrameRecordId: string
-  lastFrameRecordId: string
+  lastFrameRecordId?: string
   prompt: string
   accessToken: string
-  duration?: '5' | '10'
+  duration?: string
   cfgScale?: number
   negativePrompt?: string
+  videoModel?: string
 }
 
 async function uploadFrameToFal(
@@ -42,6 +43,10 @@ async function uploadFrameToFal(
   else if (bytes[0] === 0x52 && bytes[1] === 0x49) mediaType = 'image/webp'
 
   return fal.storage.upload(new Blob([buffer], { type: mediaType }))
+}
+
+function isKlingModel(modelId: string): boolean {
+  return modelId.includes('kling-video')
 }
 
 export const generateFlfVideo = createServerFn({ method: 'POST' })
@@ -73,52 +78,77 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch both frame records
+    // Fetch frame records
+    const frameIds = [firstFrameRecordId]
+    if (lastFrameRecordId) frameIds.push(lastFrameRecordId)
+
     const { data: frames } = await supabase
       .from('user_images')
       .select('id, storage_path')
-      .in('id', [firstFrameRecordId, lastFrameRecordId])
+      .in('id', frameIds)
       .eq('user_id', user.id)
       .eq('status', 'completed')
 
     const firstFrame = frames?.find((f) => f.id === firstFrameRecordId)
-    const lastFrame = frames?.find((f) => f.id === lastFrameRecordId)
+    const lastFrame = lastFrameRecordId
+      ? frames?.find((f) => f.id === lastFrameRecordId)
+      : null
 
     if (!firstFrame?.storage_path) {
       throw new Error('First frame not found or not completed')
     }
-    if (!lastFrame?.storage_path) {
+    if (lastFrameRecordId && !lastFrame?.storage_path) {
       throw new Error('Last frame not found or not completed')
     }
 
-    // Upload both frames to FAL storage for public URLs
-    const [startImageUrl, endImageUrl] = await Promise.all([
-      uploadFrameToFal(supabase, firstFrame.storage_path),
-      uploadFrameToFal(supabase, lastFrame.storage_path),
-    ])
+    // Upload frames to FAL storage
+    const startImageUrl = await uploadFrameToFal(
+      supabase,
+      firstFrame.storage_path,
+    )
+    const endImageUrl = lastFrame?.storage_path
+      ? await uploadFrameToFal(supabase, lastFrame.storage_path)
+      : null
 
-    // Kling O1 FLF: reference frames via @Image1 / @Image2 in the prompt
-    const klingPrompt = prompt
-      ? `@Image1 ${prompt} @Image2`
-      : '@Image1 smoothly transitions to @Image2 with fluid natural motion'
+    const videoModel = data.videoModel || DEFAULT_VIDEO_MODEL
 
-    const falInput: Record<string, unknown> = {
-      start_image_url: startImageUrl,
-      end_image_url: endImageUrl,
-      prompt: klingPrompt,
-      duration: data.duration || '5',
+    // Fetch schema to build correct params automatically
+    const schema = await fetchVideoModelSchema(videoModel)
+
+    const falInput: Record<string, unknown> = {}
+
+    // Prompt — Kling models have special FLF prompt format
+    if (isKlingModel(videoModel) && endImageUrl) {
+      falInput.prompt = prompt
+        ? `@Image1 ${prompt} @Image2`
+        : '@Image1 smoothly transitions to @Image2 with fluid natural motion'
+    } else {
+      falInput.prompt = prompt || 'Natural motion with cinematic quality'
     }
-    if (data.cfgScale !== undefined) {
+
+    // Image params — use schema-detected parameter names
+    falInput[schema.imageParam] = startImageUrl
+    if (endImageUrl && schema.endImageParam) {
+      falInput[schema.endImageParam] = endImageUrl
+    }
+
+    // Duration — respect integer vs string type from schema
+    const duration = data.duration || '5'
+    falInput.duration = schema.durationIsInteger
+      ? parseInt(duration, 10)
+      : duration
+
+    // Optional params — only send if the model supports them
+    if (data.cfgScale !== undefined && schema.supportsCfgScale) {
       falInput.cfg_scale = data.cfgScale
     }
-    if (data.negativePrompt) {
+    if (data.negativePrompt && schema.supportsNegativePrompt) {
       falInput.negative_prompt = data.negativePrompt
     }
 
-    const { request_id } = await fal.queue.submit(VIDEO_MODEL, {
+    const { request_id } = await fal.queue.submit(videoModel, {
       input: falInput as Record<string, unknown> & {
         prompt: string
-        start_image_url: string
       },
     })
 
@@ -131,11 +161,11 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
         source: 'ai_video',
         title: 'Generating video...',
         generation_metadata: {
-          model: VIDEO_MODEL,
+          model: videoModel,
           prompt,
           transition_prompt: prompt || null,
           first_frame_id: firstFrameRecordId,
-          last_frame_id: lastFrameRecordId,
+          last_frame_id: lastFrameRecordId || null,
           submitted_at: new Date().toISOString(),
         },
       })

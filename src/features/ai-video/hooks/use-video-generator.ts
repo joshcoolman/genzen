@@ -6,6 +6,7 @@ import { generateFlfVideo } from '@/features/ai-video/server/generate-flf-video.
 import { createGeneration } from '@/features/ai-video/server/create-generation.server'
 import { updateGeneration } from '@/features/ai-video/server/update-generation.server'
 import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 interface UseVideoGeneratorOptions {
   accessToken: string | undefined
@@ -53,20 +54,26 @@ export function useVideoGenerator({
     if (
       !accessToken ||
       !firstFrame.recordId ||
-      !lastFrame.recordId ||
-      firstFrame.status !== 'completed' ||
-      lastFrame.status !== 'completed'
+      firstFrame.status !== 'completed'
     )
       return
 
+    const hasLastFrame = lastFrame.recordId && lastFrame.status === 'completed'
+
+    const cost = CREDIT_COSTS.video_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     setGeneratingVideo(true)
     try {
-      await credits.deduct(CREDIT_COSTS.video_gen, 'video_gen')
-
       let genRecord = generations.find(
         (g) =>
           g.firstFrame?.id === firstFrame.recordId &&
-          g.lastFrame?.id === lastFrame.recordId &&
+          (hasLastFrame
+            ? g.lastFrame?.id === lastFrame.recordId
+            : !g.lastFrame) &&
           !g.video,
       )
 
@@ -75,7 +82,7 @@ export function useVideoGenerator({
           data: {
             workspaceId,
             firstFrameId: firstFrame.recordId,
-            lastFrameId: lastFrame.recordId,
+            lastFrameId: hasLastFrame ? lastFrame.recordId! : undefined,
             accessToken,
           },
         })
@@ -87,11 +94,13 @@ export function useVideoGenerator({
             url: firstFrame.url,
             status: 'completed',
           },
-          lastFrame: {
-            id: lastFrame.recordId,
-            url: lastFrame.url,
-            status: 'completed',
-          },
+          lastFrame: hasLastFrame
+            ? {
+                id: lastFrame.recordId!,
+                url: lastFrame.url,
+                status: 'completed',
+              }
+            : null,
           video: null,
         }
         addGeneration(genRecord)
@@ -100,12 +109,13 @@ export function useVideoGenerator({
       const result = await generateFlfVideo({
         data: {
           firstFrameRecordId: firstFrame.recordId,
-          lastFrameRecordId: lastFrame.recordId,
+          lastFrameRecordId: hasLastFrame ? lastFrame.recordId! : undefined,
           prompt: videoSettings.prompt,
           accessToken,
           duration: videoSettings.duration,
           cfgScale: videoSettings.cfgScale,
           negativePrompt: videoSettings.negativePrompt,
+          videoModel: videoSettings.videoModel,
         },
       })
 
@@ -120,26 +130,39 @@ export function useVideoGenerator({
       updateGenerationRecord(genRecord.id, {
         video: { id: result.recordId, url: null, status: 'pending' },
       })
+      await credits.refresh()
     } catch (err) {
-      console.error('Failed to generate video:', err)
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+        credits.refresh()
+      } else {
+        console.error('Failed to generate video:', err)
+      }
     } finally {
       setGeneratingVideo(false)
     }
   }
 
   async function handleGenerateVideoFromRow(gen: Generation) {
-    if (!accessToken || !gen.firstFrame?.id || !gen.lastFrame?.id) return
+    if (!accessToken || !gen.firstFrame?.id) return
+
+    const cost = CREDIT_COSTS.video_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
 
     try {
       const result = await generateFlfVideo({
         data: {
           firstFrameRecordId: gen.firstFrame.id,
-          lastFrameRecordId: gen.lastFrame.id,
+          lastFrameRecordId: gen.lastFrame?.id || undefined,
           prompt: videoSettings.prompt,
           accessToken,
           duration: videoSettings.duration,
           cfgScale: videoSettings.cfgScale,
           negativePrompt: videoSettings.negativePrompt,
+          videoModel: videoSettings.videoModel,
         },
       })
 
@@ -154,8 +177,14 @@ export function useVideoGenerator({
       updateGenerationRecord(gen.id, {
         video: { id: result.recordId, url: null, status: 'pending' },
       })
+      await credits.refresh()
     } catch (err) {
-      console.error('Failed to generate video:', err)
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+        credits.refresh()
+      } else {
+        console.error('Failed to generate video:', err)
+      }
     }
   }
 

@@ -7,6 +7,9 @@ import { detectAspectRatio } from '@/features/ai-images/constants'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { getModelName } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
+import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 
 const BUCKET_NAME = 'user-images'
 
@@ -69,6 +72,7 @@ export interface UseOutpaintPageReturn {
 
 export function useOutpaintPage(): UseOutpaintPageReturn {
   const { user, session } = useAuth()
+  const credits = useCredits()
   const accessToken = session?.access_token ?? ''
   const [sourceImage, setSourceImage] = useState<SourceImage | null>(null)
   const [sourceNativeRatio, setSourceNativeRatio] = useState<string | null>(
@@ -178,6 +182,12 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
   const outpaint = useCallback(async () => {
     if (!sourceImage || !accessToken || !canOutpaint) return
 
+    const cost = CREDIT_COSTS.image_gen
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     setIsGenerating(true)
     setError(null)
 
@@ -214,7 +224,13 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
 
       replaceTempId(tempId, result.recordId)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to outpaint image')
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+      } else {
+        setError(
+          err instanceof Error ? err.message : 'Failed to outpaint image',
+        )
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -224,6 +240,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     canOutpaint,
     aspectRatio,
     model,
+    credits,
     addPendingResult,
     replaceTempId,
   ])

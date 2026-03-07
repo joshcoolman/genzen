@@ -6,6 +6,7 @@ import { generateFirstFrame } from '@/features/ai-video/server/generate-first-fr
 import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.server'
 import { suggestPrompt } from '@/lib/server/suggest-prompt.server'
 import { CREDIT_COSTS } from '@/features/credits'
+import { isCreditError } from '@/features/credits/handle-credit-error'
 import { cropTo16x9, fileToBase64 } from '@/features/ai-video/lib/crop-to-16x9'
 
 interface UseFirstFrameGeneratorOptions {
@@ -122,18 +123,29 @@ export function useFirstFrameGenerator({
 
   async function handleGenerate() {
     if (!accessToken || !firstFramePrompt.trim()) return
+
+    const cost = CREDIT_COSTS.first_frame
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      return
+    }
+
     firstFrame.setGenerating()
     onResetDownstream()
     try {
-      await credits.deduct(CREDIT_COSTS.first_frame, 'first_frame')
       const result = await generateFirstFrame({
         data: { prompt: firstFramePrompt, model: firstFrameModel, accessToken },
       })
       firstFrame.setRecordId(result.recordId)
+      await credits.refresh()
     } catch (err) {
-      firstFrame.setFailed(
-        err instanceof Error ? err.message : 'Failed to generate first frame',
-      )
+      if (isCreditError(err)) {
+        credits.showInsufficientCredits(cost)
+      } else {
+        firstFrame.setFailed(
+          err instanceof Error ? err.message : 'Failed to generate first frame',
+        )
+      }
     }
   }
 

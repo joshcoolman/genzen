@@ -13,13 +13,31 @@ interface WorkspaceHeaderProps {
   }
   creditBalance: number | null
   onDelete: () => void
+  variant?: 'full' | 'minimal'
 }
 
 export function WorkspaceHeader({
   wsName,
   creditBalance,
   onDelete,
+  variant = 'full',
 }: WorkspaceHeaderProps) {
+  if (variant === 'minimal') {
+    return (
+      <div className="flex items-center gap-2 bg-primary-dark px-6 py-2 -mx-6 -mt-6">
+        <span className="text-sm font-medium">AI Video</span>
+        {creditBalance !== null && (
+          <>
+            <span className="text-xs text-muted-foreground">/</span>
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {creditBalance} credits
+            </span>
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center gap-2 bg-primary-dark px-6 py-2 -mx-6 -mt-6">
       {wsName.isEditing ? (
