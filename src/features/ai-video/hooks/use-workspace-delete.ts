@@ -5,6 +5,7 @@ interface UseWorkspaceDeleteOptions {
   workspaceId: string
   accessToken: string | undefined
   navigate: (opts: { to: string }) => unknown
+  onDeleted?: () => void
 }
 
 export interface WorkspaceDeleteState {
@@ -21,6 +22,7 @@ export function useWorkspaceDelete({
   workspaceId,
   accessToken,
   navigate,
+  onDeleted,
 }: UseWorkspaceDeleteOptions): WorkspaceDeleteState {
   const [deleteStep, setDeleteStep] = useState(0)
   const [deleting, setDeleting] = useState(false)
@@ -41,7 +43,11 @@ export function useWorkspaceDelete({
     try {
       await deleteWorkspace({ data: { workspaceId, accessToken } })
       await new Promise((r) => setTimeout(r, 1500))
-      navigate({ to: '/dashboard/video' })
+      if (onDeleted) {
+        onDeleted()
+      } else {
+        navigate({ to: '/dashboard/video' })
+      }
     } catch {
       setDeleting(false)
       setDeleteMessage(null)

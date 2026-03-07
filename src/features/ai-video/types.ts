@@ -44,7 +44,7 @@ export const LAST_FRAME_MODEL = 'nano-banana' as const
 
 export interface VideoSettings {
   prompt: string
-  duration: '5' | '10'
+  duration: string
   cfgScale: number
   negativePrompt: string
   videoModel: string

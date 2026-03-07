@@ -16,12 +16,14 @@ interface UseVideoWorkspacePageOptions {
   workspaceId: string
   generationId: string | undefined
   navigate: (opts: { to: string }) => void
+  onDeleted?: () => void
 }
 
 export function useVideoWorkspacePage({
   workspaceId,
   generationId,
   navigate,
+  onDeleted,
 }: UseVideoWorkspacePageOptions) {
   const { session } = useAuth()
   const accessToken = session?.access_token
@@ -39,6 +41,7 @@ export function useVideoWorkspacePage({
     workspaceId,
     accessToken,
     navigate,
+    onDeleted,
   })
 
   // Frame hooks first (no dependency on generators)

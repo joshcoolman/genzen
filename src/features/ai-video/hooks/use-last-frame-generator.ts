@@ -43,7 +43,6 @@ export interface LastFrameGeneratorState {
   lastFrameOriginalData: string | null
   suggestingLastFrame: boolean
   generateDisabled: boolean
-  lastFrameLocked: boolean
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
   activatePromptMode: () => void
@@ -200,7 +199,6 @@ export function useLastFrameGenerator({
 
     lastFrame.setGenerating()
     try {
-      await credits.deduct(cost, 'last_frame')
       const result = await generateLastFrame({
         data: {
           prompt: lastFramePrompt,
@@ -237,6 +235,7 @@ export function useLastFrameGenerator({
       }
       addGeneration(newGeneration)
       lastFrame.reset()
+      await credits.refresh()
     } catch (err) {
       if (isCreditError(err)) {
         credits.showInsufficientCredits(cost)
@@ -283,7 +282,6 @@ export function useLastFrameGenerator({
     lastFrameOriginalData,
     suggestingLastFrame,
     generateDisabled,
-    lastFrameLocked,
     setSourceFile,
     setSourceFromUrl,
     activatePromptMode,

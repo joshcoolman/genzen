@@ -1,4 +1,4 @@
-import { ALL_VIDEO_MODELS } from '../video-models'
+import { ALL_VIDEO_MODELS, getVideoModel } from '../video-models'
 import type { VideoSettings } from '../types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +10,7 @@ interface VideoSettingsPanelProps {
   onGenerate: () => void
   disabled: boolean
   generating: boolean
-  lastFrameStatus?: 'idle' | 'generating' | 'completed' | 'error'
+  firstFrameReady: boolean
 }
 
 export function VideoSettingsPanel({
@@ -19,10 +19,21 @@ export function VideoSettingsPanel({
   onGenerate,
   disabled,
   generating,
-  lastFrameStatus,
+  firstFrameReady,
 }: VideoSettingsPanelProps) {
-  const waitingForLastFrame =
-    lastFrameStatus === 'generating' || lastFrameStatus === 'idle'
+  const selectedModel = getVideoModel(settings.videoModel)
+  const durations = selectedModel?.durations ?? ['5', '10']
+
+  function handleModelChange(modelId: string) {
+    const model = getVideoModel(modelId)
+    const modelDurations = model?.durations ?? ['5', '10']
+    const newSettings: VideoSettings = { ...settings, videoModel: modelId }
+    if (!modelDurations.includes(settings.duration)) {
+      newSettings.duration = modelDurations[0]
+    }
+    onChange(newSettings)
+  }
+
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-medium">Video Settings</h2>
@@ -33,7 +44,7 @@ export function VideoSettingsPanel({
           {ALL_VIDEO_MODELS.map((m) => (
             <button
               key={m.id}
-              onClick={() => onChange({ ...settings, videoModel: m.id })}
+              onClick={() => handleModelChange(m.id)}
               disabled={generating}
               title={m.description}
               className={cn(
@@ -48,6 +59,11 @@ export function VideoSettingsPanel({
             </button>
           ))}
         </div>
+        {selectedModel && !selectedModel.supportsFlf && (
+          <p className="text-xs text-muted-foreground">
+            This model supports first frame only
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -66,7 +82,7 @@ export function VideoSettingsPanel({
       <div className="space-y-1.5">
         <label className="text-xs text-muted-foreground">Duration</label>
         <div className="flex gap-1">
-          {(['5', '10'] as const).map((d) => (
+          {durations.map((d) => (
             <button
               key={d}
               onClick={() => onChange({ ...settings, duration: d })}
@@ -85,42 +101,46 @@ export function VideoSettingsPanel({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="text-xs text-muted-foreground">
-          CFG Scale ({settings.cfgScale.toFixed(2)})
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={settings.cfgScale}
-          onChange={(e) =>
-            onChange({ ...settings, cfgScale: parseFloat(e.target.value) })
-          }
-          disabled={generating}
-          className="w-full accent-accent-brand"
-        />
-      </div>
+      {selectedModel?.supportsCfgScale !== false && (
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">
+            CFG Scale ({settings.cfgScale.toFixed(2)})
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={settings.cfgScale}
+            onChange={(e) =>
+              onChange({ ...settings, cfgScale: parseFloat(e.target.value) })
+            }
+            disabled={generating}
+            className="w-full accent-accent-brand"
+          />
+        </div>
+      )}
 
-      <div className="space-y-1.5">
-        <label className="text-xs text-muted-foreground">Negative Prompt</label>
-        <Textarea
-          placeholder="Things to avoid in the video..."
-          value={settings.negativePrompt}
-          onChange={(e) =>
-            onChange({ ...settings, negativePrompt: e.target.value })
-          }
-          disabled={generating}
-          rows={2}
-        />
-      </div>
+      {selectedModel?.supportsNegativePrompt !== false && (
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">
+            Negative Prompt
+          </label>
+          <Textarea
+            placeholder="Things to avoid in the video..."
+            value={settings.negativePrompt}
+            onChange={(e) =>
+              onChange({ ...settings, negativePrompt: e.target.value })
+            }
+            disabled={generating}
+            rows={2}
+          />
+        </div>
+      )}
 
-      {waitingForLastFrame && (
+      {!firstFrameReady && (
         <p className="text-xs text-muted-foreground animate-pulse">
-          {lastFrameStatus === 'generating'
-            ? 'Waiting for last frame to complete...'
-            : 'Generate a last frame to enable video'}
+          Generate a first frame to enable video
         </p>
       )}
 
@@ -129,11 +149,7 @@ export function VideoSettingsPanel({
         disabled={disabled || generating}
         className="w-full"
       >
-        {generating
-          ? 'Generating Video...'
-          : waitingForLastFrame
-            ? 'Waiting for Last Frame...'
-            : 'Generate Video'}
+        {generating ? 'Generating Video...' : 'Generate Video'}
       </Button>
     </div>
   )

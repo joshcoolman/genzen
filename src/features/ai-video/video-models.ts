@@ -4,6 +4,9 @@ export interface VideoModel {
   description: string
   supportsFlf: boolean
   supportsI2V: boolean
+  durations: Array<string>
+  supportsCfgScale: boolean
+  supportsNegativePrompt: boolean
 }
 
 export const ALL_VIDEO_MODELS: Array<VideoModel> = [
@@ -13,6 +16,9 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     description: 'Best quality, cinematic visuals + native audio',
     supportsFlf: true,
     supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: true,
+    supportsNegativePrompt: true,
   },
   {
     id: 'fal-ai/kling-video/o3/standard/image-to-video',
@@ -20,6 +26,9 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     description: 'First/last frame transitions',
     supportsFlf: true,
     supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: true,
+    supportsNegativePrompt: true,
   },
   {
     id: 'fal-ai/kling-video/v2.6/pro/image-to-video',
@@ -27,6 +36,9 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     description: 'Cinematic visuals + native audio',
     supportsFlf: true,
     supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: true,
+    supportsNegativePrompt: true,
   },
   {
     id: 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
@@ -34,6 +46,9 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     description: 'Fast, fluid motion',
     supportsFlf: true,
     supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: true,
+    supportsNegativePrompt: true,
   },
   {
     id: 'fal-ai/kling-video/o1/image-to-video',
@@ -41,6 +56,39 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     description: 'Original model, proven reliability',
     supportsFlf: true,
     supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: true,
+    supportsNegativePrompt: true,
+  },
+  {
+    id: 'fal-ai/ltx-2.3/image-to-video',
+    name: 'LTX-2.3 Pro',
+    description: 'Fast, high-quality image-to-video',
+    supportsFlf: true,
+    supportsI2V: true,
+    durations: ['6', '8', '10'],
+    supportsCfgScale: false,
+    supportsNegativePrompt: false,
+  },
+  {
+    id: 'fal-ai/sora-2/image-to-video',
+    name: 'Sora 2',
+    description: 'OpenAI video generation from images',
+    supportsFlf: false,
+    supportsI2V: true,
+    durations: ['4', '8', '12'],
+    supportsCfgScale: false,
+    supportsNegativePrompt: false,
+  },
+  {
+    id: 'fal-ai/wan-25-preview/image-to-video',
+    name: 'WAN 2.5',
+    description: 'Preview model with natural motion',
+    supportsFlf: false,
+    supportsI2V: true,
+    durations: ['5', '10'],
+    supportsCfgScale: false,
+    supportsNegativePrompt: true,
   },
 ]
 

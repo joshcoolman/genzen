@@ -6,7 +6,6 @@ import { LibraryPickerButton } from '@/components/LibraryPickerButton'
 import { FileUploadButton } from '@/components/FileUploadButton'
 import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
 import { PromptButton } from '@/components/PromptButton'
-import { cn } from '@/lib/utils'
 
 interface UserImagesData {
   images: Array<{
@@ -42,7 +41,6 @@ interface LastFramePanelProps {
   status: FrameStatus
   url: string | null
   error: string | null
-  locked: boolean
   prompt: string
   onPromptChange: (value: string) => void
   suggesting: boolean
@@ -158,7 +156,6 @@ function LastFramePanel({
   status,
   url,
   error,
-  locked,
   prompt,
   onPromptChange,
   suggesting,
@@ -172,18 +169,13 @@ function LastFramePanel({
   onIncludeFirstFrameChange,
 }: LastFramePanelProps) {
   const isPromptMode = mode === 'prompt'
-  const showPromptArea = isPromptMode && !locked && status === 'idle'
-  const buttonsDisabled = status === 'generating' || locked
+  const showPromptArea = isPromptMode && status === 'idle'
+  const buttonsDisabled = status === 'generating'
 
   return (
-    <div
-      className={cn(
-        'space-y-3 transition-opacity',
-        locked && 'opacity-40 pointer-events-none',
-      )}
-    >
+    <div className="space-y-3 transition-opacity">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium">Last Frame</h2>
+        <h2 className="text-sm font-medium">Last Frame (Optional)</h2>
         <div className="flex gap-1">
           <LibraryPickerButton
             images={userImages.images}
@@ -226,11 +218,7 @@ function LastFramePanel({
         <FrameImageArea
           status={status}
           imageUrl={url}
-          placeholder={
-            locked
-              ? 'Generate first frame first'
-              : 'Last frame will appear here'
-          }
+          placeholder="Optional - add a last frame for transitions"
           generatingLabel="Generating..."
         />
       )}
@@ -251,7 +239,7 @@ function LastFramePanel({
               : 'Generate Last Frame'}
       </ActionButton>
 
-      {isPromptMode && !locked && (
+      {isPromptMode && (
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"

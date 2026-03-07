@@ -133,11 +133,11 @@ export function useFirstFrameGenerator({
     firstFrame.setGenerating()
     onResetDownstream()
     try {
-      await credits.deduct(cost, 'first_frame')
       const result = await generateFirstFrame({
         data: { prompt: firstFramePrompt, model: firstFrameModel, accessToken },
       })
       firstFrame.setRecordId(result.recordId)
+      await credits.refresh()
     } catch (err) {
       if (isCreditError(err)) {
         credits.showInsufficientCredits(cost)
