@@ -21,6 +21,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
+import { Route as DashboardStyleTrainerRouteImport } from './routes/dashboard/style-trainer'
 import { Route as DashboardShotsRouteImport } from './routes/dashboard/shots'
 import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/prompt-studio'
 import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
@@ -29,6 +30,7 @@ import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
 import { Route as DashboardDescribeRouteImport } from './routes/dashboard/describe'
 import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
+import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -94,6 +96,11 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   path: '/trash',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardStyleTrainerRoute = DashboardStyleTrainerRouteImport.update({
+  id: '/style-trainer',
+  path: '/style-trainer',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardShotsRoute = DashboardShotsRouteImport.update({
   id: '/shots',
   path: '/shots',
@@ -134,6 +141,11 @@ const DashboardCombineRoute = DashboardCombineRouteImport.update({
   path: '/combine',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
+  id: '/characters',
+  path: '/characters',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
@@ -166,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -174,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
+  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -190,6 +204,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -198,6 +213,7 @@ export interface FileRoutesByTo {
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
+  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -216,6 +232,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -224,6 +241,7 @@ export interface FileRoutesById {
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
+  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
@@ -244,6 +262,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
@@ -252,6 +271,7 @@ export interface FileRouteTypes {
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
+    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -268,6 +288,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
@@ -276,6 +297,7 @@ export interface FileRouteTypes {
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
+    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/docs/$'
     | '/dashboard'
@@ -293,6 +315,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/describe'
     | '/dashboard/edit-image'
@@ -301,6 +324,7 @@ export interface FileRouteTypes {
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
+    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
@@ -406,6 +430,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTrashRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/style-trainer': {
+      id: '/dashboard/style-trainer'
+      path: '/style-trainer'
+      fullPath: '/dashboard/style-trainer'
+      preLoaderRoute: typeof DashboardStyleTrainerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/shots': {
       id: '/dashboard/shots'
       path: '/shots'
@@ -462,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCombineRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/characters': {
+      id: '/dashboard/characters'
+      path: '/characters'
+      fullPath: '/dashboard/characters'
+      preLoaderRoute: typeof DashboardCharactersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
@@ -510,6 +548,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardCharactersRoute: typeof DashboardCharactersRoute
   DashboardCombineRoute: typeof DashboardCombineRoute
   DashboardDescribeRoute: typeof DashboardDescribeRoute
   DashboardEditImageRoute: typeof DashboardEditImageRoute
@@ -518,6 +557,7 @@ interface DashboardRouteChildren {
   DashboardOutpaintRoute: typeof DashboardOutpaintRoute
   DashboardPromptStudioRoute: typeof DashboardPromptStudioRoute
   DashboardShotsRoute: typeof DashboardShotsRoute
+  DashboardStyleTrainerRoute: typeof DashboardStyleTrainerRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -526,6 +566,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardCharactersRoute: DashboardCharactersRoute,
   DashboardCombineRoute: DashboardCombineRoute,
   DashboardDescribeRoute: DashboardDescribeRoute,
   DashboardEditImageRoute: DashboardEditImageRoute,
@@ -534,6 +575,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardOutpaintRoute: DashboardOutpaintRoute,
   DashboardPromptStudioRoute: DashboardPromptStudioRoute,
   DashboardShotsRoute: DashboardShotsRoute,
+  DashboardStyleTrainerRoute: DashboardStyleTrainerRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

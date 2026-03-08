@@ -18,6 +18,7 @@ interface ImageSourceButtonsProps {
     imageUrls: Record<string, string>
     isLoading: boolean
     onSelect: (image: SelectedImage) => void
+    onSelectMultiple?: (images: Array<SelectedImage>) => void
     onOpen?: () => void
   }
   multiple?: boolean
@@ -38,6 +39,8 @@ export function ImageSourceButtons({
           imageUrls={library.imageUrls}
           isLoading={library.isLoading}
           onSelect={library.onSelect}
+          onSelectMultiple={library.onSelectMultiple}
+          multiple={multiple}
           onOpen={library.onOpen}
           className="shrink-0"
         />

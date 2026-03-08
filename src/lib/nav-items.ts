@@ -7,11 +7,13 @@ import {
   Layers,
   LayoutGrid,
   MessageSquare,
+  Palette,
   PencilLine,
   ScanEye,
   Sparkles,
   Trash2,
   User,
+  Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -71,6 +73,18 @@ export const navItems: Array<NavItem> = [
     label: 'Shots',
     href: '/dashboard/shots',
     icon: Grid3X3,
+    activeOnly: true,
+  },
+  {
+    label: 'Characters',
+    href: '/dashboard/characters',
+    icon: Users,
+    activeOnly: true,
+  },
+  {
+    label: 'Style Trainer',
+    href: '/dashboard/style-trainer',
+    icon: Palette,
     activeOnly: true,
   },
   {

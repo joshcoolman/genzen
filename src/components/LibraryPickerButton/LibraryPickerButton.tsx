@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { BookOpen, ImageIcon } from 'lucide-react'
+import { BookOpen, Check, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ImageCard } from '@/components/ImageCard'
 import { ImageGrid } from '@/components/ImageGrid'
@@ -31,6 +31,8 @@ interface LibraryPickerButtonProps {
   imageUrls: Record<string, string>
   isLoading: boolean
   onSelect: (image: SelectedImage) => void
+  onSelectMultiple?: (images: Array<SelectedImage>) => void
+  multiple?: boolean
   onOpen?: () => void
   className?: string
 }
@@ -40,11 +42,14 @@ export function LibraryPickerButton({
   imageUrls,
   isLoading,
   onSelect,
+  onSelectMultiple,
+  multiple = false,
   onOpen,
   className,
 }: LibraryPickerButtonProps) {
   const [open, setOpen] = useState(false)
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const filteredImages = useMemo(() => {
     if (sourceFilter === 'all') return images
@@ -53,10 +58,11 @@ export function LibraryPickerButton({
 
   const handleOpen = useCallback(() => {
     onOpen?.()
+    setSelectedIds(new Set())
     setOpen(true)
   }, [onOpen])
 
-  const handleSelect = useCallback(
+  const handleSingleSelect = useCallback(
     (image: UserImageRow) => {
       const url = imageUrls[image.id]
       if (!url) return
@@ -65,6 +71,37 @@ export function LibraryPickerButton({
     },
     [imageUrls, onSelect],
   )
+
+  const handleToggle = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
+
+  const handleConfirmMultiple = useCallback(() => {
+    const selected = images
+      .filter((img) => selectedIds.has(img.id))
+      .map((img) => ({
+        id: img.id,
+        url: imageUrls[img.id] ?? '',
+        title: img.title,
+      }))
+      .filter((img) => img.url)
+
+    if (onSelectMultiple) {
+      onSelectMultiple(selected)
+    } else {
+      selected.forEach((img) => onSelect(img))
+    }
+    setSelectedIds(new Set())
+    setOpen(false)
+  }, [images, imageUrls, selectedIds, onSelect, onSelectMultiple])
 
   const filterButtons: Array<{ value: SourceFilter; label: string }> = [
     { value: 'all', label: 'All' },
@@ -89,7 +126,15 @@ export function LibraryPickerButton({
           style={{ width: '66vw', maxWidth: '66vw', maxHeight: '80vh' }}
         >
           <DialogHeader>
-            <DialogTitle>Library</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Library</DialogTitle>
+              {multiple && selectedIds.size > 0 && (
+                <Button size="sm" onClick={handleConfirmMultiple}>
+                  Add {selectedIds.size} image
+                  {selectedIds.size !== 1 ? 's' : ''}
+                </Button>
+              )}
+            </div>
           </DialogHeader>
 
           <div className="flex gap-2">
@@ -122,15 +167,39 @@ export function LibraryPickerButton({
               </div>
             ) : (
               <ImageGrid size="md">
-                {filteredImages.map((image) => (
-                  <ImageCard
-                    key={image.id}
-                    src={imageUrls[image.id] ?? null}
-                    alt={image.title}
-                    onClick={() => handleSelect(image)}
-                    compact
-                  />
-                ))}
+                {filteredImages.map((image) => {
+                  const isSelected = selectedIds.has(image.id)
+                  return (
+                    <ImageCard
+                      key={image.id}
+                      src={imageUrls[image.id] ?? null}
+                      alt={image.title}
+                      onClick={() =>
+                        multiple
+                          ? handleToggle(image.id)
+                          : handleSingleSelect(image)
+                      }
+                      compact
+                      hoverBorder={
+                        isSelected
+                          ? 'border-accent-brand'
+                          : 'hover:border-accent-brand/50'
+                      }
+                    >
+                      {multiple && (
+                        <div
+                          className={`absolute top-2 right-2 size-5 rounded border flex items-center justify-center transition-colors ${
+                            isSelected
+                              ? 'bg-accent-brand border-accent-brand text-black'
+                              : 'bg-background/80 border-border'
+                          }`}
+                        >
+                          {isSelected && <Check className="size-3" />}
+                        </div>
+                      )}
+                    </ImageCard>
+                  )
+                })}
               </ImageGrid>
             )}
           </div>
