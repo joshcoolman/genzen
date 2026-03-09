@@ -46,13 +46,14 @@ export async function buildFalInput(
     if (schema.sizeParam === 'aspect_ratio') {
       input.aspect_ratio = opts.aspectRatio
     } else if (schema.sizeParam === 'image_size') {
-      if (schema.imageSizeAcceptsObject) {
+      if (isResolutionEnum(schema.imageSizeEnumValues)) {
+        // Models with fixed resolution strings (GPT Image 1.5) — check first
+        // since anyOf schemas may also advertise an ImageSize $ref
+        input.image_size = RATIO_TO_RESOLUTION[opts.aspectRatio] ?? '1024x1024'
+      } else if (schema.imageSizeAcceptsObject) {
         // Models that accept {width, height} objects (FLUX, Qwen, etc.)
         input.image_size =
           RATIO_TO_SIZE[opts.aspectRatio] ?? RATIO_TO_SIZE['1:1']
-      } else if (isResolutionEnum(schema.imageSizeEnumValues)) {
-        // Models with fixed resolution strings (GPT Image 1.5)
-        input.image_size = RATIO_TO_RESOLUTION[opts.aspectRatio] ?? '1024x1024'
       } else {
         // Named size enum (square_hd, landscape_4_3, etc.) — fall back to object
         input.image_size =
