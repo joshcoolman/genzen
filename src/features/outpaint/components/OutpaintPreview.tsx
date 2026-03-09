@@ -13,10 +13,10 @@ export function OutpaintPreview({
   const ratio = w / h
 
   return (
-    <div className="w-full">
+    <div className="flex w-full justify-center">
       <div
-        className="relative w-full rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 overflow-hidden"
-        style={{ aspectRatio: `${ratio}` }}
+        className="relative w-full max-h-[400px] rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 overflow-hidden"
+        style={{ aspectRatio: `${ratio}`, maxWidth: `${400 * ratio}px` }}
       >
         <div className="absolute inset-0 flex items-center justify-center p-2">
           {sourceImageUrl ? (
