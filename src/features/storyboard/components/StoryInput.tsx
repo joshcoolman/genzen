@@ -7,21 +7,18 @@ import {
 import type { UseStoryboardPageReturn } from '../hooks/useStoryboardPage'
 import { ActionButton } from '@/components/ActionButton'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
+import { LibraryPickerDialog } from '@/components/LibraryPickerButton'
 import { useAuth } from '@/lib/auth'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 interface StoryInputProps {
   page: UseStoryboardPageReturn
 }
 
 export function StoryInput({ page }: StoryInputProps) {
+  const { session } = useAuth()
+  const userId = session?.user?.id
+  const library = useUserImages(userId)
   const [librarySlotIndex, setLibrarySlotIndex] = useState<number | null>(null)
 
   return (
@@ -151,19 +148,22 @@ export function StoryInput({ page }: StoryInputProps) {
         </div>
       </div>
 
-      {/* Library picker dialog */}
-      {librarySlotIndex !== null && (
-        <LibraryPickerDialog
-          open={true}
-          onOpenChange={(open) => {
-            if (!open) setLibrarySlotIndex(null)
-          }}
-          onSelect={(imageId, url) => {
-            page.setStyleFrameSlot(librarySlotIndex, imageId, url)
+      {/* Shared library picker dialog */}
+      <LibraryPickerDialog
+        open={librarySlotIndex !== null}
+        onOpenChange={(open) => {
+          if (!open) setLibrarySlotIndex(null)
+        }}
+        images={library.images}
+        imageUrls={library.imageUrls}
+        isLoading={library.isLoading}
+        onSelect={(selected) => {
+          if (librarySlotIndex !== null) {
+            page.setStyleFrameSlot(librarySlotIndex, selected.id, selected.url)
             setLibrarySlotIndex(null)
-          }}
-        />
-      )}
+          }
+        }}
+      />
     </div>
   )
 }
@@ -199,16 +199,6 @@ function StyleFrameSlotCard({
         alt="Style frame"
         className="h-full w-full object-cover"
       />
-      {/* Library swap -- top left */}
-      <button
-        type="button"
-        onClick={onOpenLibrary}
-        className="absolute top-1.5 left-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all opacity-0 group-hover:opacity-100"
-        aria-label="Select from library"
-      >
-        <ImageIcon className="h-3.5 w-3.5" />
-      </button>
-      {/* Delete -- top right */}
       <button
         type="button"
         onClick={onClear}
@@ -218,97 +208,5 @@ function StyleFrameSlotCard({
         <X className="h-3.5 w-3.5" />
       </button>
     </div>
-  )
-}
-
-interface LibraryPickerDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSelect: (imageId: string, url: string) => void
-}
-
-function LibraryPickerDialog({
-  open,
-  onOpenChange,
-  onSelect,
-}: LibraryPickerDialogProps) {
-  const { session } = useAuth()
-  const userId = session?.user?.id
-  const library = useUserImages(userId)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  const handleConfirm = () => {
-    if (!selectedId) return
-    const url = library.imageUrls[selectedId]
-    if (url) {
-      onSelect(selectedId, url)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="flex flex-col"
-        style={{ width: '66vw', maxWidth: '66vw', maxHeight: '80vh' }}
-      >
-        <DialogHeader>
-          <DialogTitle>Select from Library</DialogTitle>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto min-h-0 pr-1">
-          {library.isLoading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              Loading images...
-            </div>
-          ) : library.images.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              No images found
-            </div>
-          ) : (
-            <div
-              className="grid gap-3"
-              style={{
-                gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-              }}
-            >
-              {library.images.map((img) => {
-                const url = library.imageUrls[img.id]
-                const isSelected = selectedId === img.id
-                return (
-                  <button
-                    key={img.id}
-                    type="button"
-                    onClick={() => setSelectedId(img.id)}
-                    className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-colors ${
-                      isSelected
-                        ? 'border-primary ring-1 ring-primary'
-                        : 'border-border hover:border-muted-foreground/50'
-                    }`}
-                  >
-                    {url ? (
-                      <img
-                        src={url}
-                        alt={img.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-muted">
-                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="shrink-0 border-t border-border pt-4">
-          <ActionButton onClick={handleConfirm} disabled={!selectedId}>
-            Select Image
-          </ActionButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

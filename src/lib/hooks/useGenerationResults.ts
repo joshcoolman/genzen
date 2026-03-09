@@ -205,6 +205,10 @@ export function useGenerationResults({
       .eq('id', id)
   }, [])
 
+  const dismissResult = useCallback((id: string) => {
+    setResults((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
   return {
     results,
     isSubmitting,
@@ -214,5 +218,6 @@ export function useGenerationResults({
     addPendingResult,
     replaceTempId,
     deleteResult,
+    dismissResult,
   }
 }

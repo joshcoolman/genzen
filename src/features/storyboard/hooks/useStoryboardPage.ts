@@ -5,6 +5,33 @@ import type { GenerationResult } from '@/lib/types/generation-result'
 import { MOCK_GRADIENTS } from '@/lib/constants/mock-gradients'
 import { useAuth } from '@/lib/auth'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
+import { supabase } from '@/lib/supabase'
+
+const LS_SLOTS_KEY = 'storyboard_slot_ids'
+const LS_STORY_KEY = 'storyboard_story'
+
+function loadSlotIds(): Array<string | null> {
+  try {
+    const raw = localStorage.getItem(LS_SLOTS_KEY)
+    if (!raw) return [null, null, null, null]
+    const parsed = JSON.parse(raw) as Array<string | null>
+    if (Array.isArray(parsed) && parsed.length === 4) return parsed
+  } catch {}
+  return [null, null, null, null]
+}
+
+function saveSlotIds(slots: Array<StyleFrameSlot | null>) {
+  const ids = slots.map((s) => s?.imageId ?? null)
+  localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(ids))
+}
+
+function loadStory(): string | null {
+  try {
+    return localStorage.getItem(LS_STORY_KEY)
+  } catch {
+    return null
+  }
+}
 
 export type StoryboardTab = 'story' | 'elements' | 'scenes'
 export type ReferenceCategory = 'character' | 'object' | 'environment'
@@ -150,7 +177,7 @@ export interface UseStoryboardPageReturn {
   setStyleFrameSlot: (index: number, imageId: string, url: string) => void
   generateStoryFrame: () => void
   selectStoryFrame: (id: string) => void
-  deleteStoryFrame: (id: string) => Promise<void>
+  deleteStoryFrame: (id: string) => void
   generateReferences: () => void
   removeReference: (id: string) => void
   editReference: (id: string, instruction: string) => void
@@ -183,12 +210,20 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
   })
 
   const [tab, setTab] = useState<StoryboardTab>('story')
-  const [story, setStory] = useState(SAMPLE_STORY)
+  const [story, setStoryState] = useState(() => loadStory() ?? SAMPLE_STORY)
   const [scenes, setScenes] = useState<Array<Scene>>([])
   const [references, setReferences] = useState<Array<Reference>>([])
   const [styleTags, setStyleTags] = useState<Array<string>>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [isRefining, setIsRefining] = useState(false)
+
+  // Persist story to localStorage
+  const setStory = useCallback((text: string) => {
+    setStoryState(text)
+    try {
+      localStorage.setItem(LS_STORY_KEY, text)
+    } catch {}
+  }, [])
 
   // Model selections
   const [styleFrameModelId, setStyleFrameModelId] = useState(
@@ -205,6 +240,59 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
 
   // Track which generation IDs we've already auto-slotted
   const slottedIdsRef = useRef<Set<string>>(new Set())
+  const restoredRef = useRef(false)
+
+  // Restore slots from localStorage on mount
+  useEffect(() => {
+    if (restoredRef.current) return
+    restoredRef.current = true
+
+    const savedIds = loadSlotIds()
+    const idsToResolve = savedIds.filter((id): id is string => id !== null)
+    if (idsToResolve.length === 0) return
+
+    // Mark these as already slotted so auto-slot doesn't overwrite them
+    for (const id of idsToResolve) {
+      slottedIdsRef.current.add(id)
+    }
+
+    // Fetch storage paths and signed URLs for saved slot IDs
+    async function restoreSlots() {
+      const { data: images } = await supabase
+        .from('user_images')
+        .select('id, storage_path')
+        .in('id', idsToResolve)
+        .is('deleted_at', null)
+
+      if (!images?.length) return
+
+      const urlMap: Record<string, string> = {}
+      await Promise.all(
+        images
+          .filter((img) => img.storage_path)
+          .map(async (img) => {
+            const { data: signed } = await supabase.storage
+              .from('user-images')
+              .createSignedUrl(img.storage_path!, 3600)
+            if (signed) urlMap[img.id] = signed.signedUrl
+          }),
+      )
+
+      setStyleFrameSlots(
+        savedIds.map((id) => {
+          if (!id || !urlMap[id]) return null
+          return { imageId: id, url: urlMap[id] }
+        }),
+      )
+    }
+
+    void restoreSlots()
+  }, [])
+
+  // Persist slots to localStorage whenever they change
+  useEffect(() => {
+    saveSlotIds(styleFrameSlots)
+  }, [styleFrameSlots])
 
   // Story frame selection
   const [selectedStoryFrameId, setSelectedStoryFrameId] = useState<
@@ -281,7 +369,7 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
       setStory(MOCK_REFINED_STORY)
       setIsRefining(false)
     }, 800)
-  }, [])
+  }, [setStory])
 
   const clearStyleFrameSlot = useCallback((index: number) => {
     setStyleFrameSlots((prev) => {
@@ -333,8 +421,8 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
   }, [])
 
   const deleteStoryFrame = useCallback(
-    async (id: string) => {
-      await storyFrameGen.deleteResult(id)
+    (id: string) => {
+      storyFrameGen.dismissResult(id)
       if (effectiveSelectedStoryId === id) {
         setSelectedStoryFrameId(null)
       }
