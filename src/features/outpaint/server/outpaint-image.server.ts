@@ -2,14 +2,28 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
-import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
-import { EDIT_MODELS } from '@/features/ai-images/models'
+import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 const OUTPAINT_PROMPT =
   'Seamlessly extend this image, continuing the existing scene, lighting, and style naturally into the expanded area.'
+
+/** Aspect ratios the nano-banana edit models accept natively */
+const NANO_BANANA_RATIOS = new Set([
+  'auto',
+  '21:9',
+  '16:9',
+  '3:2',
+  '4:3',
+  '5:4',
+  '1:1',
+  '4:5',
+  '3:4',
+  '2:3',
+  '9:16',
+])
 
 interface OutpaintImageInput {
   accessToken: string
@@ -54,23 +68,34 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       new Blob([buffer], { type: mimeType }),
     )
 
-    const modelDef = EDIT_MODELS.find((m) => m.id === data.model)
-    const sizeParam = modelDef?.sizeParam ?? 'aspect_ratio'
+    const isNanoBanana = data.model.includes('nano-banana')
 
-    const sizeParams =
-      sizeParam === 'aspect_ratio'
-        ? { aspect_ratio: data.aspectRatio }
-        : {
-            image_size: RATIO_TO_SIZE[data.aspectRatio] ?? RATIO_TO_SIZE['1:1'],
-          }
+    let falInput: Record<string, unknown>
+
+    if (isNanoBanana) {
+      const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
+      const prompt = supported
+        ? OUTPAINT_PROMPT
+        : `Seamlessly extend this image to fill a ${data.aspectRatio} frame, continuing the existing scene, lighting, and style naturally into the expanded area.`
+
+      falInput = {
+        prompt,
+        image_urls: [falImageUrl],
+        aspect_ratio: supported ? data.aspectRatio : 'auto',
+        safety_tolerance: 6,
+      }
+    } else {
+      falInput = await buildFalInput({
+        modelId: data.model,
+        prompt: OUTPAINT_PROMPT,
+        aspectRatio: data.aspectRatio,
+        imageUrls: [falImageUrl],
+        safetyLevel: 'default',
+      })
+    }
 
     const { request_id } = await (fal.queue.submit as any)(data.model, {
-      input: {
-        prompt: OUTPAINT_PROMPT,
-        image_urls: [falImageUrl],
-        ...(data.model.includes('nano-banana') ? { safety_tolerance: 6 } : {}),
-        ...sizeParams,
-      },
+      input: falInput,
     })
 
     const { recordId } = await createPendingGeneration({
