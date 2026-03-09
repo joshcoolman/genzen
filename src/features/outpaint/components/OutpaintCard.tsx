@@ -1,4 +1,4 @@
-import { Expand } from 'lucide-react'
+import { Expand, LocateFixed } from 'lucide-react'
 import { OUTPAINT_MODELS } from '../hooks/useOutpaintPage'
 import { OutpaintPreview } from './OutpaintPreview'
 import type { UseOutpaintPageReturn } from '../hooks/useOutpaintPage'
@@ -19,6 +19,7 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
     orientation,
     aspectRatio,
     model,
+    offset,
     isGenerating,
     error,
     canOutpaint,
@@ -26,11 +27,15 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
     setOrientation,
     setAspectRatio,
     setModel,
+    setOffset,
+    resetOffset,
     selectImage,
     selectFile,
     outpaint,
     reset,
   } = page
+
+  const isOffCenter = offset.x !== 0.5 || offset.y !== 0.5
 
   return (
     <div className="space-y-4">
@@ -86,7 +91,23 @@ export function OutpaintCard({ page }: OutpaintCardProps) {
         sourceImageUrl={sourceImage?.url ?? null}
         sourceTitle={sourceImage?.title ?? ''}
         aspectRatio={aspectRatio}
+        sourceNativeRatio={sourceNativeRatio}
+        offset={offset}
+        onOffsetChange={setOffset}
       />
+
+      {isOffCenter && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={resetOffset}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <LocateFixed className="size-3.5" />
+            Center
+          </button>
+        </div>
+      )}
 
       {error && (
         <ErrorBanner

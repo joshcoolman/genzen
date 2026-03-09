@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { MOCK_GRADIENTS } from '@/lib/constants/mock-gradients'
 
 export type CharactersStep = 'generate' | 'angles' | 'saved'
 
@@ -13,26 +14,14 @@ export interface MockSavedCharacter {
   gradient: string
 }
 
-const GRADIENTS = [
-  'from-rose-500 to-orange-400',
-  'from-violet-500 to-purple-400',
-  'from-blue-500 to-cyan-400',
-  'from-emerald-500 to-teal-400',
-  'from-amber-500 to-yellow-400',
-  'from-pink-500 to-fuchsia-400',
-  'from-sky-500 to-indigo-400',
-  'from-lime-500 to-green-400',
-  'from-red-500 to-rose-400',
-]
-
 const MOCK_SAVED_CHARACTERS: Array<MockSavedCharacter> = [
-  { id: 'saved-1', name: 'Aria', gradient: GRADIENTS[0] },
-  { id: 'saved-2', name: 'Marcus', gradient: GRADIENTS[1] },
-  { id: 'saved-3', name: 'Luna', gradient: GRADIENTS[2] },
+  { id: 'saved-1', name: 'Aria', gradient: MOCK_GRADIENTS[0] },
+  { id: 'saved-2', name: 'Marcus', gradient: MOCK_GRADIENTS[1] },
+  { id: 'saved-3', name: 'Luna', gradient: MOCK_GRADIENTS[2] },
 ]
 
 function generateMockFaces(count: number): Array<MockCharacter> {
-  return GRADIENTS.slice(0, count).map((gradient, i) => ({
+  return MOCK_GRADIENTS.slice(0, count).map((gradient, i) => ({
     id: `face-${i + 1}`,
     gradient,
   }))

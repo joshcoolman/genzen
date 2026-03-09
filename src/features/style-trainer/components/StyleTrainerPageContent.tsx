@@ -6,11 +6,12 @@ import {
   RotateCcw,
   Save,
   Sparkles,
-  X,
 } from 'lucide-react'
 import type { UseStyleTrainerPageReturn } from '../hooks/useStyleTrainerPage'
 import { ActionButton } from '@/components/ActionButton'
+import { EmptyStateCard } from '@/components/EmptyStateCard'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
+import { RemoveButton } from '@/components/RemoveButton'
 
 interface StyleTrainerPageContentProps {
   page: UseStyleTrainerPageReturn
@@ -153,13 +154,7 @@ function CollectStep({ page }: { page: UseStyleTrainerPageReturn }) {
                     alt=""
                     className="aspect-square rounded-md object-cover bg-muted"
                   />
-                  <button
-                    type="button"
-                    onClick={() => page.removeImage(img.id)}
-                    className="absolute -top-1 -right-1 size-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
-                  >
-                    <X className="size-3" />
-                  </button>
+                  <RemoveButton onRemove={() => page.removeImage(img.id)} />
                 </div>
               ) : (
                 <div
@@ -214,13 +209,11 @@ function ConfigureStep({ page }: { page: UseStyleTrainerPageReturn }) {
                     alt=""
                     className="aspect-square rounded object-cover bg-muted"
                   />
-                  <button
-                    type="button"
-                    onClick={() => page.removeImage(img.id)}
-                    className="absolute -top-1 -right-1 size-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="size-2.5" />
-                  </button>
+                  <RemoveButton
+                    onRemove={() => page.removeImage(img.id)}
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
                 </div>
               ))}
             </div>
@@ -364,9 +357,9 @@ function LibraryStep({ page }: { page: UseStyleTrainerPageReturn }) {
             ))}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 py-12 text-center">
+          <EmptyStateCard>
             <p className="text-sm text-muted-foreground">No saved styles yet</p>
-          </div>
+          </EmptyStateCard>
         )}
         <div className="flex justify-start">
           <ActionButton

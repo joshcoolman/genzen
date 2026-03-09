@@ -45,10 +45,16 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "sharp": "^0.34.5",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.0.6",
     "vite-tsconfig-paths": "^5.1.4",
     "zod": "^4.3.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
   },
   "devDependencies": {
     "@tanstack/devtools-vite": "^0.3.11",
@@ -61,6 +67,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/sharp": "^0.32.0",
     "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.39.3",
     "jsdom": "^27.0.0",

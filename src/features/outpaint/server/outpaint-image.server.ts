@@ -1,9 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
+import sharp from 'sharp'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
+import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -30,6 +32,113 @@ interface OutpaintImageInput {
   sourceImageUrl: string
   aspectRatio: string
   model: string
+  offset?: { x: number; y: number }
+}
+
+/**
+ * Compose source image at an offset position on a target-sized canvas.
+ * Supports offsets outside 0–1 (image partially outside frame).
+ * Visible portion is composited; empty areas are filled with neutral gray.
+ */
+async function composeAtOffset(
+  sourceBuffer: Buffer,
+  aspectRatio: string,
+  offset: { x: number; y: number },
+): Promise<Buffer> {
+  const target =
+    RATIO_TO_SIZE[aspectRatio] ??
+    (() => {
+      throw new Error(`Unknown aspect ratio: ${aspectRatio}`)
+    })()
+
+  const meta = await sharp(sourceBuffer).metadata()
+  const srcW = meta.width || 1
+  const srcH = meta.height || 1
+
+  // Scale source to fit within target (fill one axis)
+  const scaleX = target.width / srcW
+  const scaleY = target.height / srcH
+  const scale = Math.min(scaleX, scaleY)
+  const fitW = Math.round(srcW * scale)
+  const fitH = Math.round(srcH * scale)
+
+  const resized = await sharp(sourceBuffer)
+    .resize(fitW, fitH, { fit: 'fill' })
+    .toBuffer()
+
+  const spareX = target.width - fitW
+  const spareY = target.height - fitH
+
+  // offset can be outside 0–1 when image is dragged past bounds
+  const left = Math.round(offset.x * spareX)
+  const top = Math.round(offset.y * spareY)
+
+  // If offset is within 0–1, use the fast edge-repeat path
+  if (
+    left >= 0 &&
+    top >= 0 &&
+    left + fitW <= target.width &&
+    top + fitH <= target.height
+  ) {
+    const composed = await sharp(resized)
+      .extend({
+        left,
+        top,
+        right: target.width - fitW - left,
+        bottom: target.height - fitH - top,
+        extendWith: 'repeat',
+      })
+      .png()
+      .toBuffer()
+    return composed
+  }
+
+  // Out-of-bounds: crop the visible portion of the resized image
+  let cropLeft = 0
+  let cropTop = 0
+  let cropW = fitW
+  let cropH = fitH
+  let compLeft = left
+  let compTop = top
+
+  if (left < 0) {
+    cropLeft = -left
+    cropW -= cropLeft
+    compLeft = 0
+  }
+  if (top < 0) {
+    cropTop = -top
+    cropH -= cropTop
+    compTop = 0
+  }
+  if (compLeft + cropW > target.width) {
+    cropW = target.width - compLeft
+  }
+  if (compTop + cropH > target.height) {
+    cropH = target.height - compTop
+  }
+
+  // Ensure valid dimensions
+  cropW = Math.max(1, cropW)
+  cropH = Math.max(1, cropH)
+
+  const cropped = await sharp(resized)
+    .extract({ left: cropLeft, top: cropTop, width: cropW, height: cropH })
+    .toBuffer()
+
+  const composed = await sharp({
+    create: {
+      width: target.width,
+      height: target.height,
+      channels: 4,
+      background: { r: 128, g: 128, b: 128, alpha: 255 },
+    },
+  })
+    .composite([{ input: cropped, left: compLeft, top: compTop }])
+    .png()
+    .toBuffer()
+
+  return composed
 }
 
 export const outpaintImage = createServerFn({ method: 'POST' })
@@ -49,23 +158,37 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    // Source image URL is a signed Supabase URL or data URL — fetch and upload to FAL
+    // Source image URL is a signed Supabase URL or data URL — fetch into buffer
     const imageRes = await fetch(data.sourceImageUrl)
-    const buffer = await imageRes.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
+    const buffer = Buffer.from(await imageRes.arrayBuffer())
 
+    let uploadBuffer: Buffer
     let mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
       'image/jpeg'
-    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+
+    if (data.offset) {
+      // Compose at offset — always outputs PNG
+      uploadBuffer = await composeAtOffset(
+        buffer,
+        data.aspectRatio,
+        data.offset,
+      )
       mimeType = 'image/png'
-    } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-      mimeType = 'image/webp'
-    } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-      mimeType = 'image/gif'
+    } else {
+      // Center (default behavior) — pass through original
+      uploadBuffer = buffer
+      const bytes = new Uint8Array(buffer)
+      if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+        mimeType = 'image/png'
+      } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
+        mimeType = 'image/webp'
+      } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
+        mimeType = 'image/gif'
+      }
     }
 
     const falImageUrl = await fal.storage.upload(
-      new Blob([buffer], { type: mimeType }),
+      new Blob([uploadBuffer], { type: mimeType }),
     )
 
     const isNanoBanana = data.model.includes('nano-banana')

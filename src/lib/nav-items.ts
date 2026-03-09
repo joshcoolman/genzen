@@ -11,6 +11,7 @@ import {
   PencilLine,
   ScanEye,
   Sparkles,
+  SquarePlay,
   Trash2,
   User,
   Users,
@@ -79,6 +80,12 @@ export const navItems: Array<NavItem> = [
     label: 'Characters',
     href: '/dashboard/characters',
     icon: Users,
+    activeOnly: true,
+  },
+  {
+    label: 'Storyboard',
+    href: '/dashboard/storyboard',
+    icon: SquarePlay,
     activeOnly: true,
   },
   {

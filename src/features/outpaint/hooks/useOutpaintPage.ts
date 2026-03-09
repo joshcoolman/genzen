@@ -38,12 +38,20 @@ export const OUTPAINT_MODELS = [
   },
 ]
 
+export interface ImageOffset {
+  x: number
+  y: number
+}
+
+const CENTER_OFFSET: ImageOffset = { x: 0.5, y: 0.5 }
+
 export interface UseOutpaintPageReturn {
   sourceImage: SourceImage | null
   sourceNativeRatio: string | null
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   model: string
+  offset: ImageOffset
   recentResults: Array<GenerationResult>
   isGenerating: boolean
   error: string | null
@@ -63,6 +71,8 @@ export interface UseOutpaintPageReturn {
   setOrientation: (o: 'landscape' | 'portrait') => void
   setAspectRatio: (ratio: string) => void
   setModel: (model: string) => void
+  setOffset: (offset: ImageOffset) => void
+  resetOffset: () => void
   selectImage: (image: SelectedImage) => void
   selectFile: (file: File) => void
   outpaint: () => Promise<void>
@@ -83,6 +93,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [model, setModel] = useState(OUTPAINT_MODELS[0].id)
+  const [offset, setOffset] = useState<ImageOffset>(CENTER_OFFSET)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -149,6 +160,8 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     img.src = url
   }, [])
 
+  const resetOffset = useCallback(() => setOffset(CENTER_OFFSET), [])
+
   const selectImage = useCallback(
     (image: SelectedImage) => {
       setSourceImage({
@@ -157,9 +170,10 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
         title: image.title,
       })
       detectRatio(image.url)
+      resetOffset()
       setError(null)
     },
-    [detectRatio],
+    [detectRatio, resetOffset],
   )
 
   const selectFile = useCallback(
@@ -171,9 +185,18 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
         title: file.name,
       })
       detectRatio(objectUrl)
+      resetOffset()
       setError(null)
     },
-    [detectRatio],
+    [detectRatio, resetOffset],
+  )
+
+  const handleSetAspectRatio = useCallback(
+    (ratio: string) => {
+      setAspectRatio(ratio)
+      resetOffset()
+    },
+    [resetOffset],
   )
 
   const canOutpaint =
@@ -219,6 +242,10 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
           sourceImageUrl: sourceUrl,
           aspectRatio,
           model,
+          offset:
+            offset.x !== 0.5 || offset.y !== 0.5
+              ? { x: offset.x, y: offset.y }
+              : undefined,
         },
       })
 
@@ -240,6 +267,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     canOutpaint,
     aspectRatio,
     model,
+    offset,
     credits,
     addPendingResult,
     replaceTempId,
@@ -257,6 +285,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     orientation,
     aspectRatio,
     model,
+    offset,
     recentResults,
     isGenerating,
     error,
@@ -268,8 +297,10 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
       refresh: fetchImages,
     },
     setOrientation,
-    setAspectRatio,
+    setAspectRatio: handleSetAspectRatio,
     setModel,
+    setOffset,
+    resetOffset,
     selectImage,
     selectFile,
     outpaint,

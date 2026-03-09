@@ -6,17 +6,21 @@ import { Lightbox } from '@/components/Lightbox'
 
 interface GenerationResultCardProps {
   result: GenerationResult
+  selected?: boolean
   onOpen: () => void
   onDelete: () => void
 }
 
 function GenerationResultCard({
   result,
+  selected,
   onOpen,
   onDelete,
 }: GenerationResultCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-border bg-card">
+    <div
+      className={`group relative overflow-hidden rounded-lg border bg-card ${selected ? 'border-primary ring-1 ring-primary' : 'border-border'}`}
+    >
       <div className="relative">
         <div
           className="aspect-square w-full bg-black flex items-center justify-center cursor-zoom-in"
@@ -79,12 +83,16 @@ function GenerationResultCard({
 interface GenerationResultsGridProps {
   results: Array<GenerationResult>
   onDelete: (id: string) => void
+  onSelect?: (id: string) => void
+  selectedId?: string | null
   title?: string
 }
 
 export function GenerationResultsGrid({
   results,
   onDelete,
+  onSelect,
+  selectedId,
   title = 'Results',
 }: GenerationResultsGridProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -137,7 +145,8 @@ export function GenerationResultsGrid({
           <GenerationResultCard
             key={result.id}
             result={result}
-            onOpen={() => handleOpen(result)}
+            selected={selectedId === result.id}
+            onOpen={() => (onSelect ? onSelect(result.id) : handleOpen(result))}
             onDelete={() => onDelete(result.id)}
           />
         ))}
