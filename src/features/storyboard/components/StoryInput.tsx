@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Image, ImageIcon, Layers, Loader2, Wand2, X } from 'lucide-react'
+import { ImageIcon, Layers, Loader2, Wand2, X } from 'lucide-react'
 import {
   STORY_FRAME_MODELS,
   STYLE_FRAME_MODELS,
@@ -20,6 +20,7 @@ export function StoryInput({ page }: StoryInputProps) {
   const userId = session?.user?.id
   const library = useUserImages(userId)
   const [librarySlotIndex, setLibrarySlotIndex] = useState<number | null>(null)
+  const [stylePrompt, setStylePrompt] = useState('')
 
   return (
     <div className="flex flex-col items-center">
@@ -33,7 +34,7 @@ export function StoryInput({ page }: StoryInputProps) {
           className="w-full resize-none rounded-md border border-border bg-card px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         />
 
-        {/* Refine + Generate Style Frame row */}
+        {/* Refine + Extract Elements row */}
         <div className="flex items-center gap-2">
           <ActionButton
             onClick={page.refineStory}
@@ -45,16 +46,26 @@ export function StoryInput({ page }: StoryInputProps) {
           >
             Refine Story
           </ActionButton>
-          <ActionButton
-            onClick={page.generateStyleFrame}
-            disabled={!page.story.trim() || page.isGeneratingStyle}
-            loading={page.isGeneratingStyle}
-            loadingText="Generating..."
-            icon={<Image className="size-4" />}
-            className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-          >
-            Generate Style Frame
-          </ActionButton>
+        </div>
+
+        {/* Style frame prompt input */}
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={stylePrompt}
+            onChange={(e) => setStylePrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (
+                e.key === 'Enter' &&
+                stylePrompt.trim() &&
+                !page.isGeneratingStyle
+              ) {
+                page.generateStyleFrame(stylePrompt.trim())
+              }
+            }}
+            placeholder="Describe a style frame to generate..."
+            className="h-9 flex-1 rounded-md border border-border bg-card px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
           <select
             value={page.styleFrameModelId}
             onChange={(e) => page.setStyleFrameModelId(e.target.value)}
@@ -66,6 +77,17 @@ export function StoryInput({ page }: StoryInputProps) {
               </option>
             ))}
           </select>
+          <ActionButton
+            onClick={() =>
+              page.generateStyleFrame(stylePrompt.trim() || undefined)
+            }
+            disabled={page.isGeneratingStyle || !page.story.trim()}
+            loading={page.isGeneratingStyle}
+            loadingText="Generating..."
+            className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          >
+            Generate
+          </ActionButton>
         </div>
 
         {/* 4 Style Frame Slots */}

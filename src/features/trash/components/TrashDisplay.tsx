@@ -3,7 +3,7 @@ import { RotateCcw, Trash2, X } from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
 import { useAuth } from '@/lib/auth'
 import { ImageGrid } from '@/components/ImageGrid'
-import { ImageCard } from '@/components/ImageCard'
+import { ImageResultCard } from '@/components/ImageResultCard'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -125,9 +125,9 @@ export function TrashDisplay() {
       ) : (
         <ImageGrid layout="list" size="md">
           {images.map((image) => (
-            <ImageCard
+            <ImageResultCard
               key={image.id}
-              src={imageUrls[image.id] ?? null}
+              url={imageUrls[image.id] ?? null}
               alt={image.title}
               onClick={() => {}}
               layout="list"

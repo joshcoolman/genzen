@@ -1,73 +1,57 @@
-## Storyboard: Story tab -- two-tier generation (style frames + story frame)
+# Continue: Shots Pipeline Rebuild
 
-Branch: `feature/storyboard-blockout` (uncommitted changes, build passes)
+## What was being worked on
 
-### What was built this session
+Complete rebuild of `src/features/shots/` from a mock 3-step wizard into a real AI pipeline: select image → describe via LLM vision → generate variation prompts → generate images via FAL.
 
-Wired up real FAL AI generation for the Story tab's style frame feature. Previously all mocks.
+## Changes made so far
 
-**New file:** `src/features/storyboard/server/generate-style-frame.server.ts`
+**New server functions (3 files):**
 
-- Server action: takes story text + auth, builds "cinematic establishing shot" prompt, submits to FAL Schnell at 16:9, creates `user_images` record with `generation_type: 'style_frame'`
+- `server/describe-shot-image.server.ts` -- wraps `describeImage('reconstruct')` as a TanStack server fn
+- `server/generate-shot-prompts.server.ts` -- Haiku generates asterisk-delimited variation prompts from description + template
+- `server/generate-shot-images.server.ts` -- batch FAL submit via `buildFalInput()` + `createPendingGeneration()`, 1 credit per image
 
-**Updated:** `src/features/storyboard/hooks/useStoryboardPage.ts`
+**Hook rewrite (`hooks/useShotsPage.ts`):**
 
-- Uses `useAuth()` + `useGenerationResults({ generationType: 'style_frame' })` for automatic polling, realtime subscription, signed URL resolution
-- Selection state: `selectedStyleFrameId`, auto-selects latest completed, click to select from grid
-- Exposes `styleFrameResults`, `selectStyleFrame`, `deleteStyleFrame` for the grid UI
-- Style tags still mock (`MOCK_STYLE_TAGS`) -- not derived from images yet
+- Auto-describes image on selection (useEffect with ref tracking)
+- `SHOT_MODELS` array: Kontext Pro (default) + Nano Banana 2
+- `promptCount` state (1-10) with `buildTemplate(count)` helper auto-updating template text
+- Single `generateImages()` action chains: prompt generation → split by `*` → FAL batch submit
+- `canGenerate` / `isGenerating` derived state for button enablement
+- Uses `useGenerationResults({ generationType: 'shot' })` for results + polling
 
-**Updated:** `src/features/storyboard/components/StoryInput.tsx`
+**Component rewrites:**
 
-- Large preview shows selected style frame image (or spinner while pending)
-- `GenerationResultsGrid` below with select (click), delete (trash), selection highlight ring
-- Button stays enabled for regeneration (only disabled while generating)
+- `ShotsPipelineStep.tsx` -- collapsible (chevron toggle, `defaultOpen` prop), no Run button in header
+- `ShotsPageContent.tsx` -- 3-column layout:
+  - Left (w-64): ImageSourceButtons + image preview + Reset
+  - Middle (w-80): 3 collapsible steps + single "Generate Images" button
+    - "Image Description" -- auto-runs, expand to edit
+    - "Prompt Template" -- +/- stepper for count, editable template text
+    - "Prompts" -- slide view (1 of N) with prev/next, each prompt editable, only shows after generation
+  - Right (flex-1): model dropdown (Kontext Pro / Nano Banana 2) + `GenerationResultsGrid` (shared component with Lightbox click-to-view + delete)
 
-**Updated:** `src/components/GenerationResultsGrid.tsx`
+**Updated:** `index.ts` (added ShotsPipelineStep export), `CLAUDE.md` (full rewrite)
 
-- Added optional `onSelect`/`selectedId` props -- when `onSelect` provided, clicking a card calls it instead of opening lightbox; selected card gets `border-primary ring-1 ring-primary`
+## Key decisions
 
-### Next step: Two-tier generation system
+- Reuse `GenerationResultsGrid` from `src/components/` for results display -- gets Lightbox (view + delete + keyboard nav) for free
+- `generationType: 'shot'` in DB metadata to filter results
+- Kontext Pro (`fal-ai/flux-pro/kontext`) default model; Nano Banana 2 (`fal-ai/nano-banana-2/edit`) as alternative
+- Prompts delimited by `*` in raw LLM output, split client-side
+- No separate "Run All" vs "Generate" -- single button chains everything
+- Split Prompts step hidden entirely (internal detail)
 
-The user discovered through interaction that the Story tab needs two tiers:
+## Outstanding work
 
-**Tier 1 -- Style Frames (explore)**
+- **Not yet committed** -- all changes are unstaged on `main` branch
+- Storyboard files also have uncommitted changes from a prior session (StoryInput.tsx, useStoryboardPage.ts, etc.)
+- Could add: image lightbox for the source image preview, more models in dropdown, persist model selection to localStorage
+- The prompt slide view could support adding/removing individual prompts before generating
 
-- Fast Schnell generations for mood/style discovery
-- User generates, keeps favorites, deletes rejects
-- Capped at 14 images (nano-banana-2's `maxRefImages` limit)
-- Already built and working
+## Git state
 
-**Tier 2 -- Story Frame (refine)**
-
-- Below the style frames section
-- "Generate Story Frame" button sends ALL style frames as reference images to nano-banana-2's edit endpoint
-- Also sends: the story text as prompt context
-- Produces one refined image that synthesizes the visual DNA from all the mood anchors
-- Same grid pattern (generate, keep/delete, select)
-- The selected story frame is what flows into the Elements tab as THE visual reference
-
-**Implementation plan:**
-
-1. New server action `generate-story-frame.server.ts` -- uses `fal-ai/nano-banana-2/edit` with `image_urls` (signed URLs of all style frames) + story-derived prompt
-2. New `useGenerationResults({ generationType: 'story_frame' })` in the hook
-3. UI: "Story Frame" section below style frames in `StoryInput.tsx` with its own `GenerationResultsGrid`
-4. The selected story frame's `recordId`/URL flows to elements step
-
-**Key references for wiring:**
-
-- `src/features/ai-images/server/edit-image.server.ts` -- existing edit endpoint that supports ref images via `image_urls`
-- `src/features/edit-image/hooks/useEditModels.ts` -- nano-banana-2 `maxRefImages: 14`
-- `src/features/ai-images/server/fal-params.server.ts` -- `buildFalInput()` handles `image_urls` for nano-banana models
-- `src/lib/hooks/useGenerationResults.ts` -- shared polling/realtime hook (already used for style frames)
-
-### Other state from prior sessions
-
-- Mock style tags still hardcoded -- eventually derive from LLM or image analysis
-- Other mocks remain: refine story, extract elements, generate scenes (all setTimeout)
-- Issue #57 -- cinematic style presets from sandbox (not started)
-- Scene frames still use gradient PlaceholderCards
-
-### Git state
-
-Branch `feature/storyboard-blockout`, storyboard + shared component changes uncommitted. `pnpm build` passes.
+- Branch: `main`, all changes uncommitted and unstaged
+- Mix of shots pipeline work + prior storyboard changes in the diff
+- `pnpm build` passes clean

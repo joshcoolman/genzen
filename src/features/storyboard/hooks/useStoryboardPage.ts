@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { generateStyleFrame as generateStyleFrameServer } from '../server/generate-style-frame.server'
 import { generateStoryFrame as generateStoryFrameServer } from '../server/generate-story-frame.server'
+import { extractStoryElements as extractStoryElementsServer } from '../server/extract-story-elements.server'
+import { refineStory as refineStoryServer } from '../server/refine-story.server'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import { MOCK_GRADIENTS } from '@/lib/constants/mock-gradients'
 import { useAuth } from '@/lib/auth'
@@ -148,6 +150,9 @@ export interface UseStoryboardPageReturn {
   scenes: Array<Scene>
   references: Array<Reference>
   styleTags: Array<string>
+  // Story elements (extracted visual elements for targeted generation)
+  storyElements: Array<string>
+  isExtractingElements: boolean
   // Style frame slots (4 fixed)
   styleFrameSlots: Array<StyleFrameSlot | null>
   styleFrameModelId: string
@@ -172,7 +177,8 @@ export interface UseStoryboardPageReturn {
   setTab: (tab: StoryboardTab) => void
   setStory: (story: string) => void
   refineStory: () => void
-  generateStyleFrame: () => void
+  extractElements: () => void
+  generateStyleFrame: (element?: string) => void
   clearStyleFrameSlot: (index: number) => void
   setStyleFrameSlot: (index: number, imageId: string, url: string) => void
   generateStoryFrame: () => void
@@ -216,6 +222,8 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
   const [styleTags, setStyleTags] = useState<Array<string>>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [isRefining, setIsRefining] = useState(false)
+  const [storyElements, setStoryElements] = useState<Array<string>>([])
+  const [isExtractingElements, setIsExtractingElements] = useState(false)
 
   // Persist story to localStorage
   const setStory = useCallback((text: string) => {
@@ -273,7 +281,7 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
           .map(async (img) => {
             const { data: signed } = await supabase.storage
               .from('user-images')
-              .createSignedUrl(img.storage_path!, 3600)
+              .createSignedUrl(img.storage_path, 3600)
             if (signed) urlMap[img.id] = signed.signedUrl
           }),
       )
@@ -363,13 +371,35 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
     return categories.every((cat) => references.some((r) => r.category === cat))
   }, [references])
 
-  const refineStory = useCallback(() => {
+  const refineStory = useCallback(async () => {
+    if (!accessToken || !story.trim()) return
     setIsRefining(true)
-    setTimeout(() => {
-      setStory(MOCK_REFINED_STORY)
+    try {
+      const result = await refineStoryServer({
+        data: { story, accessToken },
+      })
+      setStory(result.story)
+    } catch (err) {
+      console.error('Story refinement failed:', err)
+    } finally {
       setIsRefining(false)
-    }, 800)
-  }, [setStory])
+    }
+  }, [accessToken, story, setStory])
+
+  const extractElements = useCallback(async () => {
+    if (!accessToken || !story.trim()) return
+    setIsExtractingElements(true)
+    try {
+      const result = await extractStoryElementsServer({
+        data: { story, accessToken },
+      })
+      setStoryElements(result.elements)
+    } catch (err) {
+      console.error('Element extraction failed:', err)
+    } finally {
+      setIsExtractingElements(false)
+    }
+  }, [accessToken, story])
 
   const clearStyleFrameSlot = useCallback((index: number) => {
     setStyleFrameSlots((prev) => {
@@ -390,31 +420,34 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
     [],
   )
 
-  const generateStyleFrame = useCallback(async () => {
-    if (!accessToken || !story.trim()) return
+  const generateStyleFrame = useCallback(
+    async (element?: string) => {
+      if (!accessToken || !story.trim()) return
 
-    styleFrameGen.setIsSubmitting(true)
-    try {
-      const result = await generateStyleFrameServer({
-        data: { story, accessToken, modelId: styleFrameModelId },
-      })
+      styleFrameGen.setIsSubmitting(true)
+      try {
+        const result = await generateStyleFrameServer({
+          data: { story, accessToken, modelId: styleFrameModelId, element },
+        })
 
-      styleFrameGen.addPendingResult({
-        id: result.recordId,
-        status: 'pending',
-        label: 'Style Frame',
-      })
+        styleFrameGen.addPendingResult({
+          id: result.recordId,
+          status: 'pending',
+          label: element ?? 'Style Frame',
+        })
 
-      setStyleTags(MOCK_STYLE_TAGS)
-    } catch (err) {
-      console.error('Style frame generation failed:', err)
-      styleFrameGen.setError(
-        err instanceof Error ? err.message : 'Generation failed',
-      )
-    } finally {
-      styleFrameGen.setIsSubmitting(false)
-    }
-  }, [accessToken, story, styleFrameModelId, styleFrameGen])
+        setStyleTags(MOCK_STYLE_TAGS)
+      } catch (err) {
+        console.error('Style frame generation failed:', err)
+        styleFrameGen.setError(
+          err instanceof Error ? err.message : 'Generation failed',
+        )
+      } finally {
+        styleFrameGen.setIsSubmitting(false)
+      }
+    },
+    [accessToken, story, styleFrameModelId, styleFrameGen],
+  )
 
   const selectStoryFrame = useCallback((id: string) => {
     setSelectedStoryFrameId(id)
@@ -536,6 +569,7 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
     setScenes([])
     setReferences([])
     setStyleTags([])
+    setStoryElements([])
     setIsGenerating(false)
     setIsRefining(false)
   }, [])
@@ -547,6 +581,8 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
       scenes,
       references,
       styleTags,
+      storyElements,
+      isExtractingElements,
       styleFrameSlots,
       styleFrameModelId,
       setStyleFrameModelId,
@@ -567,6 +603,7 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
       setTab,
       setStory,
       refineStory,
+      extractElements,
       generateStyleFrame,
       clearStyleFrameSlot,
       setStyleFrameSlot,
@@ -588,6 +625,8 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
       scenes,
       references,
       styleTags,
+      storyElements,
+      isExtractingElements,
       styleFrameSlots,
       styleFrameModelId,
       isGeneratingStyle,
@@ -604,6 +643,7 @@ export function useStoryboardPage(): UseStoryboardPageReturn {
       hasScenes,
       filledSlotCount,
       refineStory,
+      extractElements,
       generateStyleFrame,
       clearStyleFrameSlot,
       setStyleFrameSlot,

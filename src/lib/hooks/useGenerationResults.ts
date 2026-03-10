@@ -18,6 +18,9 @@ interface DbRow {
   storage_path: string | null
   status: string
   generation_metadata: Record<string, unknown> | null
+  title: string | null
+  file_size: number | null
+  created_at: string | null
 }
 
 function inferModelId(meta: Record<string, unknown>): string {
@@ -62,7 +65,9 @@ export function useGenerationResults({
     async function load() {
       const { data, error: queryError } = await supabase
         .from('user_images')
-        .select('id, storage_path, status, generation_metadata')
+        .select(
+          'id, storage_path, status, generation_metadata, title, file_size, created_at',
+        )
         .eq('user_id', userId!)
         .eq('source', 'ai_generated')
         .is('deleted_at', null)
@@ -103,6 +108,9 @@ export function useGenerationResults({
           label: getModelName(modelId),
           url: urlMap[r.id],
           prompt: (meta.prompt as string | undefined) ?? undefined,
+          title: r.title ?? undefined,
+          fileSize: r.file_size ?? undefined,
+          createdAt: r.created_at ?? undefined,
         }
       })
 
@@ -165,6 +173,7 @@ export function useGenerationResults({
   }, [userId, generationType])
 
   // Background polling for pending records
+  // Directly updates state from poll results instead of relying solely on realtime
   useEffect(() => {
     if (!accessToken) return
 
@@ -176,9 +185,58 @@ export function useGenerationResults({
       if (pendingIds.length === 0) return
 
       try {
-        await checkPendingImages({
+        const pollResults = await checkPendingImages({
           data: { accessToken, recordIds: pendingIds },
         })
+
+        if (!pollResults || pollResults.length === 0) return
+
+        const completedIds = pollResults
+          .filter((r) => r.status === 'completed')
+          .map((r) => r.recordId)
+        const failedIds = pollResults
+          .filter((r) => r.status === 'failed' || r.status === 'error')
+          .map((r) => r.recordId)
+
+        // Mark failed results immediately
+        if (failedIds.length > 0) {
+          setResults((prev) =>
+            prev.map((r) =>
+              failedIds.includes(r.id) ? { ...r, status: 'failed' } : r,
+            ),
+          )
+        }
+
+        // Fetch signed URLs for completed results and update state
+        if (completedIds.length > 0) {
+          const { data: completedRows } = await supabase
+            .from('user_images')
+            .select('id, storage_path')
+            .in('id', completedIds)
+            .eq('status', 'completed')
+
+          if (completedRows) {
+            const urlMap: Record<string, string> = {}
+            await Promise.all(
+              completedRows
+                .filter((r) => r.storage_path)
+                .map(async (r) => {
+                  const { data: signed } = await supabase.storage
+                    .from('user-images')
+                    .createSignedUrl(r.storage_path, 3600)
+                  if (signed) urlMap[r.id] = signed.signedUrl
+                }),
+            )
+
+            setResults((prev) =>
+              prev.map((r) =>
+                completedIds.includes(r.id) && urlMap[r.id]
+                  ? { ...r, status: 'complete', url: urlMap[r.id] }
+                  : r,
+              ),
+            )
+          }
+        }
       } catch (err) {
         console.error(`${generationType} poll error:`, err)
       }

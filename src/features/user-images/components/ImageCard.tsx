@@ -1,6 +1,5 @@
-import { Trash2 } from 'lucide-react'
 import type { UserImage } from '../types'
-import { ImageCard as SharedImageCard } from '@/components/ImageCard'
+import { ImageResultCard } from '@/components/ImageResultCard'
 
 interface ImageCardProps {
   image: UserImage
@@ -19,25 +18,19 @@ export function ImageCard({
   onClick,
   onDelete,
   isDeleting,
-  isUpdating,
-  showInfo = true,
   compact = false,
 }: ImageCardProps) {
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDelete(image.id)
-  }
-
   return (
-    <SharedImageCard
-      src={imageUrl || null}
+    <ImageResultCard
+      url={imageUrl || null}
       alt={image.title}
       onClick={onClick}
       objectFit="contain"
       compact={compact}
       dimmed={isDeleting}
+      onDelete={() => onDelete(image.id)}
       footer={
-        showInfo && !compact ? (
+        !compact ? (
           <>
             <div className="flex-1 px-4 pt-3 pb-2">
               <h3 className="text-xs font-medium text-foreground line-clamp-2">
@@ -53,18 +46,7 @@ export function ImageCard({
           </>
         ) : undefined
       }
-    >
-      <button
-        onClick={handleDelete}
-        disabled={isDeleting || isUpdating}
-        className={`absolute right-1.5 top-1.5 rounded-md bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-600 disabled:opacity-50 ${
-          compact ? 'p-1' : 'p-1.5'
-        }`}
-        aria-label="Delete image"
-      >
-        <Trash2 className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
-      </button>
-    </SharedImageCard>
+    />
   )
 }
 

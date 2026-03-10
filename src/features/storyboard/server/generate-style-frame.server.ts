@@ -11,11 +11,17 @@ interface GenerateStyleFrameInput {
   story: string
   accessToken: string
   modelId?: string
+  element?: string
 }
 
-function buildStyleFramePrompt(story: string): string {
+function buildStyleFramePrompt(story: string, element?: string): string {
   const trimmed = story.trim().slice(0, 500)
-  return `A cinematic establishing shot that captures the visual mood and atmosphere of this story: ${trimmed}`
+  console.log('element', element)
+  console.log('trimmed', trimmed)
+  if (element) {
+    return `A cinematic establishing shot of ${element} from this story: ${trimmed}`
+  }
+  return `A cinematic establishing shot that captures the visual mood and atmosphere of this story: ${trimmed}. You are free to focus on an element or interesting aspect of the story and do not need to express the entire story in one image.`
 }
 
 export const generateStyleFrame = createServerFn({ method: 'POST' })
@@ -40,7 +46,7 @@ export const generateStyleFrame = createServerFn({ method: 'POST' })
     }
 
     const modelId = data.modelId || 'fal-ai/flux/schnell'
-    const prompt = buildStyleFramePrompt(data.story)
+    const prompt = buildStyleFramePrompt(data.story, data.element)
 
     const falInput = await buildFalInput({
       modelId,

@@ -6,6 +6,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { ImageResultCard } from '@/components/ImageResultCard'
 
 interface ImageCardProps {
   img: SavedAiImage
@@ -37,54 +38,23 @@ export function ImageCard({
   getModelName,
 }: ImageCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-border bg-card">
-      <div className="relative">
-        <div
-          className="aspect-square w-full bg-black flex items-center justify-center cursor-zoom-in"
-          onClick={() => imageUrl && onOpen(img)}
-        >
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={img.title}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="w-full h-full bg-muted animate-pulse" />
-          )}
-        </div>
-        {img.generation_metadata?.generation_type === 'variation' && (
-          <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
-            Variation
-          </span>
-        )}
-        {img.generation_metadata && (
-          <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
-            {getModelName(img.generation_metadata.model)}
-          </span>
-        )}
-        <button
-          onClick={() => onDelete(img)}
-          className="absolute top-1.5 right-1.5 rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-          aria-label="Delete image"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 6h18" />
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-          </svg>
-        </button>
-      </div>
+    <ImageResultCard
+      url={imageUrl}
+      alt={img.title}
+      status="complete"
+      label={
+        img.generation_metadata
+          ? getModelName(img.generation_metadata.model)
+          : undefined
+      }
+      topLeftBadge={
+        img.generation_metadata?.generation_type === 'variation'
+          ? 'Variation'
+          : undefined
+      }
+      onDelete={() => onDelete(img)}
+      onClick={() => imageUrl && onOpen(img)}
+    >
       <div className="flex gap-1 p-1.5">
         <MorePopover
           disabled={generatingVariation}
@@ -146,7 +116,7 @@ export function ImageCard({
           )}
         </div>
       )}
-    </div>
+    </ImageResultCard>
   )
 }
 

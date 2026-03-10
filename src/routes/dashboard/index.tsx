@@ -8,7 +8,7 @@ import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { SectionCard } from '@/components/SectionCard'
-import { ImageCard } from '@/components/ImageCard'
+import { ImageResultCard } from '@/components/ImageResultCard'
 import { ImageGrid } from '@/components/ImageGrid'
 import {
   Popover,
@@ -432,9 +432,9 @@ function DashboardHome() {
       ) : (
         <ImageGrid size={thumbSize}>
           {filteredFeed.map((item) => (
-            <ImageCard
+            <ImageResultCard
               key={item.id}
-              src={item.thumbnailUrl}
+              url={item.thumbnailUrl}
               alt={item.label}
               onClick={() => handleItemClick(item)}
               objectFit="cover"
@@ -442,19 +442,22 @@ function DashboardHome() {
               asButton
               hoverBorder="hover:border-foreground/30"
               fallback={<EmptyThumbnail label={item.label} type={item.type} />}
-            >
-              {typeFilter === 'all' && <TypeBadge type={item.type} />}
-              {item.type === 'ai_video' &&
-                item.videoReady &&
-                item.generationId && (
-                  <VideoPlayButton
-                    onClick={() => void handlePlayVideo(item.generationId!)}
-                  />
-                )}
-              {item.type === 'ai_video' && !item.videoReady && (
-                <VideoProcessing />
-              )}
-            </ImageCard>
+              imageOverlay={
+                <>
+                  {typeFilter === 'all' && <TypeBadge type={item.type} />}
+                  {item.type === 'ai_video' &&
+                    item.videoReady &&
+                    item.generationId && (
+                      <VideoPlayButton
+                        onClick={() => void handlePlayVideo(item.generationId!)}
+                      />
+                    )}
+                  {item.type === 'ai_video' && !item.videoReady && (
+                    <VideoProcessing />
+                  )}
+                </>
+              }
+            />
           ))}
         </ImageGrid>
       )}

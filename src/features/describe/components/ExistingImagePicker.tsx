@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ActionButton } from '@/components/ActionButton'
-import { ImageCard } from '@/components/ImageCard'
+import { ImageResultCard } from '@/components/ImageResultCard'
 import { ImageGrid } from '@/components/ImageGrid'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
@@ -148,11 +148,10 @@ export function ExistingImagePicker({
                     </p>
                     <ImageGrid size="md">
                       {alreadyCollectedImages.map((image) => (
-                        <ImageCard
+                        <ImageResultCard
                           key={image.id}
-                          src={imageUrls[image.id] ?? null}
+                          url={imageUrls[image.id] ?? null}
                           alt={image.title}
-                          onClick={() => {}}
                           compact
                         />
                       ))}
@@ -166,9 +165,9 @@ export function ExistingImagePicker({
                   const isSelected = selectedIds.has(image.id)
 
                   return (
-                    <ImageCard
+                    <ImageResultCard
                       key={image.id}
-                      src={imageUrls[image.id] ?? null}
+                      url={imageUrls[image.id] ?? null}
                       alt={image.title}
                       onClick={() => toggleSelect(image.id)}
                       compact
@@ -177,13 +176,14 @@ export function ExistingImagePicker({
                           ? 'border-accent-brand'
                           : 'hover:border-accent-brand/50'
                       }
-                    >
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 rounded-full bg-accent-brand p-0.5">
-                          <Check className="size-3 text-black" />
-                        </div>
-                      )}
-                    </ImageCard>
+                      imageOverlay={
+                        isSelected ? (
+                          <div className="absolute top-1 right-1 rounded-full bg-accent-brand p-0.5">
+                            <Check className="size-3 text-black" />
+                          </div>
+                        ) : undefined
+                      }
+                    />
                   )
                 })}
               </ImageGrid>

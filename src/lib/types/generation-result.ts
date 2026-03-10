@@ -4,4 +4,7 @@ export interface GenerationResult {
   url?: string
   label: string
   prompt?: string
+  title?: string
+  fileSize?: number
+  createdAt?: string
 }
