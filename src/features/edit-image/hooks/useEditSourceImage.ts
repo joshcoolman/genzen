@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react'
 import type { SelectedImage } from '../types'
 import { detectAspectRatio } from '@/features/ai-images/constants'
-import { useImageUpload } from '@/features/describe/hooks/useImageUpload'
-import { computeFileHash } from '@/features/describe/lib/file-hash'
-import { parseFilenameToTitle } from '@/features/describe/lib/filename-parser'
+import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
+import { computeFileHash } from '@/features/user-images/lib/file-hash'
+import { parseFilenameToTitle } from '@/features/user-images/lib/filename-parser'
 
 export function useEditSourceImage(userId: string | undefined) {
   const [sourceImage, setSourceImageState] = useState<SelectedImage | null>(

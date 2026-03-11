@@ -23,8 +23,8 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4 overflow-hidden">
-      {/* Left column: Input image */}
-      <div className="flex w-64 shrink-0 flex-col gap-3">
+      {/* Left column: Source image + pipeline steps */}
+      <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto">
         <ImageSourceButtons
           onFileSelected={page.setSourceImage}
           library={{
@@ -36,7 +36,7 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
           }}
           className="flex flex-wrap items-center gap-2"
         />
-        <div className="flex-1 rounded-lg border border-border bg-card overflow-hidden flex items-center justify-center">
+        <div className="aspect-square w-full rounded-lg border border-border bg-card overflow-hidden flex items-center justify-center">
           {page.sourceImageUrl ? (
             <img
               src={page.sourceImageUrl}
@@ -59,10 +59,6 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
             Reset
           </button>
         )}
-      </div>
-
-      {/* Middle column: Pipeline steps */}
-      <div className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto">
         {/* Image Description - auto-runs, collapsible to edit */}
         <ShotsPipelineStep
           title="Image Description"

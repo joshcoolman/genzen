@@ -23,6 +23,14 @@ export interface CreateUserImageInput {
   file_hash: string
 }
 
+export interface CollectedImage {
+  id: string
+  title: string
+  url: string
+  source: string
+  addedInSession: boolean
+}
+
 /**
  * Data required to update an existing user image
  */

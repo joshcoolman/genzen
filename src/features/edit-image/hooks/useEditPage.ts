@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react'
 import { useEditSourceImage } from './useEditSourceImage'
 import { useEditModels } from './useEditModels'
 import { useEditResults } from './useEditResults'
-import type { CollectedImage } from '@/features/describe/types'
-import { useExistingImages } from '@/features/describe/hooks/useExistingImages'
+import type { CollectedImage } from '@/features/user-images/types'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { useAuth } from '@/lib/auth'
 
 export function useEditPage() {
