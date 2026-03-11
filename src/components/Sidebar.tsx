@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { LogOut } from 'lucide-react'
+import { LogOut, PanelLeft, PanelLeftClose } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,8 +11,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
+import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 
 import { navItems } from '@/lib/nav-items'
 import { cn } from '@/lib/utils'
@@ -22,6 +29,7 @@ export function Sidebar({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const accountStatus = useAccountStatus()
+  const { isCollapsed, toggleCollapsed } = useSidebarCollapsed()
 
   const visibleItems = navItems.filter(
     (item) => !item.activeOnly || accountStatus === 'active',
@@ -42,57 +50,119 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 h-screen w-64 flex-col bg-sidebar',
+        'fixed left-0 top-0 h-screen flex-col bg-sidebar transition-all duration-300',
+        isCollapsed ? 'w-16' : 'w-16 md:w-52',
         className,
       )}
     >
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {visibleItems.map((item) => {
-          const active = isActive(item.href)
-          return (
-            <div key={item.href}>
-              {item.dividerBefore && (
-                <div className="my-2 border-t border-border" />
-              )}
-              <Link
-                to={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                  active
-                    ? 'border-l-2 border-accent-brand bg-sidebar-selected text-sidebar-selected-text'
-                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+      <TooltipProvider delayDuration={200}>
+        <nav className="flex-1 space-y-1 p-4">
+          {/* Toggle button - only visible on md+ screens */}
+          <div className="mb-2 hidden md:flex justify-end">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleCollapsed}
+                  className="rounded-md p-2 text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors"
+                  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                  {isCollapsed ? (
+                    <PanelLeft className="h-4 w-4" />
+                  ) : (
+                    <PanelLeftClose className="h-4 w-4" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs" sideOffset={8}>
+                {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          {visibleItems.map((item) => {
+            const active = isActive(item.href)
+            return (
+              <div key={item.href}>
+                {item.dividerBefore && (
+                  <div className="my-2 border-t border-border" />
                 )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.href}
+                      className={cn(
+                        'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                        'gap-3',
+                        isCollapsed ? 'justify-center' : 'justify-center md:justify-start',
+                        active
+                          ? cn(
+                              'bg-sidebar-selected text-sidebar-selected-text',
+                              !isCollapsed && 'md:border-l-2 md:border-accent-brand'
+                            )
+                          : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                      )}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!isCollapsed && (
+                        <span className="hidden flex-1 md:inline">
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className={cn('text-xs', !isCollapsed && 'md:hidden')}
+                    sideOffset={8}
+                  >
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            )
+          })}
+          <AlertDialog>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className={cn(
+                      'flex w-full items-center rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors gap-3',
+                      isCollapsed ? 'justify-center' : 'justify-center md:justify-start'
+                    )}
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <span className="hidden md:inline">Log out</span>
+                    )}
+                  </button>
+                </AlertDialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent
+                side="right"
+                className={cn('text-xs', !isCollapsed && 'md:hidden')}
+                sideOffset={8}
               >
-                <item.icon className="h-4 w-4" />
-                <span className="flex-1">{item.label}</span>
-              </Link>
-            </div>
-          )
-        })}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors">
-              <LogOut className="h-4 w-4" />
-              Log out
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Log out?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You'll need to sign in again to access your account.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleSignOut}>
                 Log out
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </nav>
+              </TooltipContent>
+            </Tooltip>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Log out?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  You'll need to sign in again to access your account.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSignOut}>
+                  Log out
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </nav>
+      </TooltipProvider>
     </aside>
   )
 }
