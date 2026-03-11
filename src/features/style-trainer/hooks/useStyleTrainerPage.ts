@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { SelectedImage } from '@/components/LibraryPickerButton'
 import { useAuth } from '@/lib/auth'
-import { useExistingImages } from '@/features/describe/hooks/useExistingImages'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 
 export type StyleTrainerStep =
   | 'collect'

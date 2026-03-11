@@ -2,8 +2,10 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 ## Key Files
 
-- `types.ts` -- UserImage type (from Supabase), Zod schemas, ColorPalette/ShadeScale types
+- `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
 - `hooks/useUserImages.ts` -- CRUD hook: fetch, create, update, soft-delete images via Supabase client
+- `hooks/useExistingImages.ts` -- Fetch user's existing images + signed URLs (used by edit-image, shots, combine, style-trainer)
+- `hooks/useImageUpload.ts` -- Supabase storage upload + DB insert, returns CollectedImage (used by edit-image)
 - `hooks/useClipboardPaste.ts` -- Global paste listener that uploads clipboard images
 - `hooks/useDownloadImages.ts` -- Batch download as ZIP (uses JSZip + file-saver)
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection
@@ -16,6 +18,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 - `components/ImageUploadButton.tsx` -- File picker button with multi-file support
 - `components/ImageDownloadButton.tsx` -- Dropdown for downloading all/uploads/AI-generated as ZIP
 - `components/ImageEditDialog.tsx` -- Full-screen lightbox for editing title/description
+- `components/ExistingImagePicker.tsx` -- Dialog with source filter tabs, checkbox select (used by edit-image, combine)
 
 ## Route
 

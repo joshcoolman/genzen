@@ -4,7 +4,7 @@ import { generateShotPrompts } from '../server/generate-shot-prompts.server'
 import { generateShotImages } from '../server/generate-shot-images.server'
 import type { SelectedImage } from '@/components/LibraryPickerButton'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
-import { useExistingImages } from '@/features/describe/hooks/useExistingImages'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { useAuth } from '@/lib/auth'
 
 type StepStatus = 'idle' | 'running' | 'complete' | 'error'

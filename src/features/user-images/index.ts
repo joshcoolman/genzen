@@ -10,6 +10,7 @@ export type {
   CreateUserImageInput,
   UpdateUserImageInput,
   UserImageFilters,
+  CollectedImage,
 } from './types'
 
 // Validation Schemas
@@ -25,9 +26,12 @@ export { parseFilenameToTitle, sanitizeFilename } from './lib/filename-parser'
 
 // Hooks
 export { useUserImages } from './hooks/useUserImages'
+export { useExistingImages } from './hooks/useExistingImages'
+export { useImageUpload } from './hooks/useImageUpload'
 
 // Components
 export { UserImagesDisplay } from './components/UserImagesDisplay'
 export { ImageUploadButton } from './components/ImageUploadButton'
 export { ImageCard } from './components/ImageCard'
 export { ImageGrid, EmptyState } from './components/ImageGrid'
+export { ExistingImagePicker } from './components/ExistingImagePicker'

@@ -29,7 +29,6 @@ import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpai
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
-import { Route as DashboardDescribeRouteImport } from './routes/dashboard/describe'
 import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
 import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
@@ -137,11 +136,6 @@ const DashboardEditImageRoute = DashboardEditImageRouteImport.update({
   path: '/edit-image',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardDescribeRoute = DashboardDescribeRouteImport.update({
-  id: '/describe',
-  path: '/describe',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardCombineRoute = DashboardCombineRouteImport.update({
   id: '/combine',
   path: '/combine',
@@ -186,7 +180,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
@@ -213,7 +206,6 @@ export interface FileRoutesByTo {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
@@ -242,7 +234,6 @@ export interface FileRoutesById {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/describe': typeof DashboardDescribeRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
@@ -273,7 +264,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/characters'
     | '/dashboard/combine'
-    | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
@@ -300,7 +290,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/characters'
     | '/dashboard/combine'
-    | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
@@ -328,7 +317,6 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/characters'
     | '/dashboard/combine'
-    | '/dashboard/describe'
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
@@ -498,13 +486,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEditImageRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/describe': {
-      id: '/dashboard/describe'
-      path: '/describe'
-      fullPath: '/dashboard/describe'
-      preLoaderRoute: typeof DashboardDescribeRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/combine': {
       id: '/dashboard/combine'
       path: '/combine'
@@ -569,7 +550,6 @@ interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardCharactersRoute: typeof DashboardCharactersRoute
   DashboardCombineRoute: typeof DashboardCombineRoute
-  DashboardDescribeRoute: typeof DashboardDescribeRoute
   DashboardEditImageRoute: typeof DashboardEditImageRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
@@ -588,7 +568,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardCharactersRoute: DashboardCharactersRoute,
   DashboardCombineRoute: DashboardCombineRoute,
-  DashboardDescribeRoute: DashboardDescribeRoute,
   DashboardEditImageRoute: DashboardEditImageRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,

@@ -24,11 +24,11 @@ export function useExistingImages(
     for (const image of imgs) {
       if (!image.storage_path) continue
       try {
-        const { data, error } = await supabase.storage
+        const { data, error: urlError } = await supabase.storage
           .from(BUCKET_NAME)
           .createSignedUrl(image.storage_path, 3600)
 
-        if (!error) {
+        if (!urlError) {
           setImageUrls((prev) => ({ ...prev, [image.id]: data.signedUrl }))
         }
       } catch (err) {
