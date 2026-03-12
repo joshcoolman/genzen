@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import type { FrameMode, Generation } from '@/features/ai-video/types'
+import { useEffect, useRef } from 'react'
+import type { Generation } from '@/features/ai-video/types'
+
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useFrame } from '@/features/ai-video/hooks/use-frame'
@@ -31,10 +32,6 @@ export function useVideoWorkspacePage({
   const credits = useCredits()
   const userImages = useUserImages(userId)
 
-  // Orchestrator owns firstFrameMode to break circular dep between useFrame and useFirstFrameGenerator
-  const [firstFrameMode, setFirstFrameMode] = useState<FrameMode>('prompt')
-  const isImageMode = firstFrameMode === 'image'
-
   const wsName = useWorkspaceName(workspaceId, accessToken)
 
   const wsDelete = useWorkspaceDelete({
@@ -47,7 +44,7 @@ export function useVideoWorkspacePage({
   // Frame hooks first (no dependency on generators)
   const firstFrame = useFrame({
     accessToken,
-    shouldPoll: !isImageMode,
+    shouldPoll: false,
   })
 
   const lastFrame = useFrame({
@@ -65,22 +62,16 @@ export function useVideoWorkspacePage({
 
   const firstFrameGen = useFirstFrameGenerator({
     accessToken,
-    credits,
     firstFrame,
-    firstFrameMode,
-    setFirstFrameMode,
     onResetDownstream: () => lastFrame.reset(),
   })
 
   const lastFrameGen = useLastFrameGenerator({
     accessToken,
-    credits,
     firstFrame,
     lastFrame,
     workspaceId,
     addGeneration: gens.addGeneration,
-    isImageMode,
-    firstFramePrompt: firstFrameGen.firstFramePrompt,
   })
 
   const videoGen = useVideoGenerator({
@@ -155,8 +146,6 @@ export function useVideoWorkspacePage({
     }
   }
 
-  const showSidebar = firstFrame.status === 'completed'
-
   return {
     accessToken,
     credits,
@@ -169,9 +158,6 @@ export function useVideoWorkspacePage({
     videoGen,
     gens,
     selection,
-    showSidebar,
-    firstFrameMode,
-    isImageMode,
     userImages,
     resetAllState,
     handleLoadGeneration,

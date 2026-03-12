@@ -21,7 +21,10 @@ import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 
+import { NavMore } from '@/components/NavMore'
+import { NavSettings } from '@/components/NavSettings'
 import { navItems } from '@/lib/nav-items'
+import { useNavVisibility } from '@/lib/use-nav-visibility'
 import { cn } from '@/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
@@ -30,9 +33,21 @@ export function Sidebar({ className }: { className?: string }) {
   const { signOut } = useAuth()
   const accountStatus = useAccountStatus()
   const { isCollapsed, toggleCollapsed } = useSidebarCollapsed()
+  const { isItemHidden, showMoreNav } = useNavVisibility()
 
-  const visibleItems = navItems.filter(
-    (item) => !item.activeOnly || accountStatus === 'active',
+  const accountItem = navItems.find((item) => item.id === 'account')!
+
+  const mainItems = navItems.filter((item) => item.id !== 'account')
+
+  const visibleItems = mainItems.filter(
+    (item) =>
+      (!item.activeOnly || accountStatus === 'active') &&
+      !isItemHidden(item.id),
+  )
+
+  const hiddenItems = mainItems.filter(
+    (item) =>
+      (!item.activeOnly || accountStatus === 'active') && isItemHidden(item.id),
   )
 
   const handleSignOut = async () => {
@@ -126,6 +141,49 @@ export function Sidebar({ className }: { className?: string }) {
               </div>
             )
           })}
+          {showMoreNav && (
+            <NavMore
+              isCollapsed={isCollapsed}
+              variant="sidebar"
+              hiddenItems={hiddenItems}
+            />
+          )}
+          <div className="my-2 border-t border-border" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to={accountItem.href}
+                className={cn(
+                  'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                  'gap-3',
+                  isCollapsed
+                    ? 'justify-center'
+                    : 'justify-center md:justify-start',
+                  isActive(accountItem.href)
+                    ? cn(
+                        'bg-sidebar-selected text-sidebar-selected-text',
+                        !isCollapsed && 'md:border-l-2 md:border-accent-brand',
+                      )
+                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                )}
+              >
+                <accountItem.icon className="h-4 w-4 shrink-0" />
+                {!isCollapsed && (
+                  <span className="hidden flex-1 md:inline">
+                    {accountItem.label}
+                  </span>
+                )}
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent
+              side="right"
+              className={cn('text-xs', !isCollapsed && 'md:hidden')}
+              sideOffset={8}
+            >
+              {accountItem.label}
+            </TooltipContent>
+          </Tooltip>
+          <NavSettings isCollapsed={isCollapsed} variant="sidebar" />
           <AlertDialog>
             <Tooltip>
               <TooltipTrigger asChild>

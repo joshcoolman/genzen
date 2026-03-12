@@ -146,6 +146,19 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       falInput.negative_prompt = data.negativePrompt
     }
 
+    // Log what we're sending for debugging model-specific failures
+    const debugInput = {
+      ...falInput,
+      // Truncate URLs to keep logs readable
+      [schema.imageParam]: '[start_image]',
+      ...(schema.endImageParam && falInput[schema.endImageParam]
+        ? { [schema.endImageParam]: '[end_image]' }
+        : {}),
+    }
+    console.log(
+      `[video-gen] model=${videoModel} schema=${JSON.stringify({ imageParam: schema.imageParam, endImageParam: schema.endImageParam, durationIsInteger: schema.durationIsInteger })} input=${JSON.stringify(debugInput)}`,
+    )
+
     const { request_id } = await fal.queue.submit(videoModel, {
       input: falInput as Record<string, unknown> & {
         prompt: string
@@ -167,6 +180,7 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
           first_frame_id: firstFrameRecordId,
           last_frame_id: lastFrameRecordId || null,
           submitted_at: new Date().toISOString(),
+          fal_input_debug: debugInput,
         },
       })
       .select()

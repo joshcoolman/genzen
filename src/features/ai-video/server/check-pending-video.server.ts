@@ -48,21 +48,40 @@ export const checkPendingVideo = createServerFn({ method: 'POST' })
         (record.generation_metadata as { model?: string } | null)?.model ||
         LEGACY_VIDEO_MODEL
 
-      const status = await fal.queue.status(model, {
-        requestId: record.request_id,
-        logs: false,
-      })
+      let queueStatus
+      try {
+        queueStatus = await fal.queue.status(model, {
+          requestId: record.request_id,
+          logs: true,
+        })
+      } catch (statusErr) {
+        console.error(
+          `[video-check] status() threw for model=${model} requestId=${record.request_id}: ${statusErr instanceof Error ? statusErr.message : statusErr}`,
+        )
+        throw statusErr
+      }
 
-      if (status.status !== 'COMPLETED') {
+      if (queueStatus.status !== 'COMPLETED') {
         return { status: 'pending' as const }
       }
 
-      const result = await fal.queue.result(model, {
-        requestId: record.request_id,
-      })
+      let result
+      try {
+        result = await fal.queue.result(model, {
+          requestId: record.request_id,
+        })
+      } catch (resultErr) {
+        console.error(
+          `[video-check] result() threw for model=${model} requestId=${record.request_id}: ${resultErr instanceof Error ? resultErr.message : resultErr}`,
+        )
+        throw resultErr
+      }
 
       const videoUrl = (result.data as { video?: { url?: string } }).video?.url
       if (!videoUrl) {
+        console.error(
+          `[video-check] No video URL in result. model=${model} keys=${JSON.stringify(Object.keys(result.data as object))} data=${JSON.stringify(result.data).slice(0, 500)}`,
+        )
         throw new Error('No video URL in FAL result')
       }
 
@@ -86,18 +105,21 @@ export const checkPendingVideo = createServerFn({ method: 'POST' })
 
       return { status: 'completed' as const, videoUrl }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      console.error(
+        `[video-check] Error for record=${record.id} model=${(record.generation_metadata as { model?: string } | null)?.model}: ${errorMsg}`,
+      )
       await supabase
         .from('user_images')
         .update({
           status: 'failed',
-          generation_error:
-            error instanceof Error ? error.message : 'Unknown error',
+          generation_error: errorMsg,
         })
         .eq('id', record.id)
 
       return {
         status: 'error' as const,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMsg,
       }
     }
   })

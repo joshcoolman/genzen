@@ -127,36 +127,21 @@ function VideoCreationView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FramePanel
             type="first"
-            mode={page.firstFrameMode}
             status={page.firstFrame.status}
             url={page.firstFrame.url}
             error={page.firstFrame.error}
-            prompt={page.firstFrameGen.firstFramePrompt}
-            onPromptChange={page.firstFrameGen.setFirstFramePrompt}
-            suggesting={page.firstFrameGen.suggestingFirstFrame}
-            onActivatePrompt={page.firstFrameGen.activatePromptMode}
             onFileSelected={page.firstFrameGen.setSourceFile}
             onImageFromUrl={page.firstFrameGen.setSourceFromUrl}
-            onGenerate={page.firstFrameGen.handleGenerate}
             userImages={userImagesData}
           />
 
           <FramePanel
             type="last"
-            mode={page.lastFrameGen.lastFrameMode}
             status={page.lastFrame.status}
             url={page.lastFrame.url}
             error={page.lastFrame.error}
-            prompt={page.lastFrameGen.lastFramePrompt}
-            onPromptChange={page.lastFrameGen.setLastFramePrompt}
-            suggesting={page.lastFrameGen.suggestingLastFrame}
-            onActivatePrompt={page.lastFrameGen.activatePromptMode}
             onFileSelected={page.lastFrameGen.setSourceFile}
             onImageFromUrl={page.lastFrameGen.setSourceFromUrl}
-            onGenerate={page.lastFrameGen.handleGenerate}
-            generateDisabled={page.lastFrameGen.generateDisabled}
-            includeFirstFrame={page.lastFrameGen.includeFirstFrame}
-            onIncludeFirstFrameChange={page.lastFrameGen.setIncludeFirstFrame}
             userImages={userImagesData}
           />
         </div>
@@ -230,21 +215,18 @@ function VideoCreationView({
         />
       </div>
 
-      {page.showSidebar && (
-        <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-0 h-screen overflow-y-auto p-4">
-          <VideoSettingsPanel
-            settings={page.videoGen.videoSettings}
-            onChange={page.videoGen.setVideoSettings}
-            onGenerate={page.videoGen.handleGenerateVideo}
-            disabled={
-              page.firstFrame.status !== 'completed' ||
-              !page.firstFrame.recordId
-            }
-            generating={page.videoGen.generatingVideo}
-            firstFrameReady={page.firstFrame.status === 'completed'}
-          />
-        </aside>
-      )}
+      <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-0 h-screen overflow-y-auto p-4">
+        <VideoSettingsPanel
+          settings={page.videoGen.videoSettings}
+          onChange={page.videoGen.setVideoSettings}
+          onGenerate={page.videoGen.handleGenerateVideo}
+          disabled={
+            page.firstFrame.status !== 'completed' || !page.firstFrame.recordId
+          }
+          generating={page.videoGen.generatingVideo}
+          firstFrameReady={page.firstFrame.status === 'completed'}
+        />
+      </aside>
 
       <Dialog open={aws.dialogOpen} onOpenChange={aws.setDialogOpen}>
         <DialogContent>
