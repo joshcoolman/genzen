@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ChevronRight, SquareLibrary } from 'lucide-react'
 import type { NavItem } from '@/lib/nav-items'
@@ -24,13 +25,27 @@ export function NavMore({
   variant = 'sidebar',
   hiddenItems,
 }: NavMoreProps) {
+  const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(null)
+
+  const handleEnter = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpen(true)
+  }, [])
+
+  const handleLeave = useCallback(() => {
+    closeTimer.current = setTimeout(() => setOpen(false), 150)
+  }, [])
+
   if (hiddenItems.length === 0) return null
 
-  const button = (
+  const trigger = (
     <PopoverTrigger asChild>
-      <button
+      <div
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
         className={cn(
-          'flex w-full items-center rounded-md px-3 py-2 text-sm transition-colors gap-3',
+          'flex w-full cursor-pointer items-center rounded-md px-3 py-2 text-sm transition-colors gap-3',
           variant === 'sidebar'
             ? 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text'
             : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
@@ -41,7 +56,7 @@ export function NavMore({
         {variant === 'mobile' && (
           <>
             <span className="flex-1">More</span>
-            <ChevronRight className="h-3 w-3 opacity-50" />
+            <ChevronRight className="h-3 w-3 translate-y-px opacity-50" />
           </>
         )}
         {variant === 'sidebar' && !isCollapsed && (
@@ -50,15 +65,15 @@ export function NavMore({
             <ChevronRight className="hidden h-3 w-3 translate-y-px opacity-50 md:inline" />
           </>
         )}
-      </button>
+      </div>
     </PopoverTrigger>
   )
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       {variant === 'sidebar' ? (
         <Tooltip>
-          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
           <TooltipContent
             side="right"
             className={cn('text-xs', !isCollapsed && 'md:hidden')}
@@ -68,13 +83,16 @@ export function NavMore({
           </TooltipContent>
         </Tooltip>
       ) : (
-        button
+        trigger
       )}
       <PopoverContent
         side={variant === 'sidebar' ? 'right' : 'bottom'}
         align="start"
         className="w-48 p-2"
         sideOffset={8}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="space-y-0.5">
           {hiddenItems.map((item) => (
