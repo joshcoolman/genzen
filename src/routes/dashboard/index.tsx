@@ -437,7 +437,7 @@ function DashboardHome() {
               url={item.thumbnailUrl}
               alt={item.label}
               onClick={() => handleItemClick(item)}
-              objectFit="cover"
+              objectFit={compact ? 'cover' : 'contain'}
               compact={compact}
               asButton
               hoverBorder="hover:border-foreground/30"

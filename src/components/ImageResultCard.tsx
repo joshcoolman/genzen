@@ -61,7 +61,7 @@ export function ImageResultCard({
   children,
 }: ImageResultCardProps) {
   const El = asButton ? 'button' : 'div'
-  const bgClass = objectFit === 'contain' ? 'bg-black' : ''
+  const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
   const cursorClass = onClick ? 'cursor-pointer' : ''
 
   // List layout: horizontal row

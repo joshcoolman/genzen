@@ -185,7 +185,6 @@ export const generateVariation = createServerFn({ method: 'POST' })
     }
 
     const count = Math.min(data.count ?? 1, 4)
-    const baseSortOrder = sourceImage?.sort_order ?? Date.now() / 1000
     const results: Array<{ recordId: string; request_id: string }> = []
 
     for (let i = 0; i < count; i++) {
@@ -224,7 +223,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
         { input: editInput },
       )
 
-      const variationSortOrder = baseSortOrder - 0.001 * (i + 1)
+      const variationSortOrder = Date.now() / 1000 - 0.001 * (i + 1)
 
       const { data: record, error: insertError } = await supabase
         .from('user_images')
@@ -239,6 +238,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
             prompt: variedPrompt,
             original_prompt: rootPrompt,
             model,
+            fal_model_id: 'fal-ai/nano-banana-2/edit',
             generation_type: 'variation',
             source_image_id: sourceImageId,
             root_image_id: rootImageId,

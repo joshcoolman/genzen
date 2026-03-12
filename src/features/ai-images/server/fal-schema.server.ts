@@ -7,6 +7,7 @@ export interface FalModelSchema {
   sizeParam: 'image_size' | 'aspect_ratio' | null
   imageSizeAcceptsObject: boolean
   imageSizeEnumValues?: Array<string>
+  aspectRatioEnumValues?: Array<string>
   safetyParam: 'safety_tolerance' | 'enable_safety_checker' | null
   safetyToleranceMax: string | null
   imageInputParam: 'image_url' | 'image_urls' | null
@@ -16,6 +17,7 @@ const DEFAULT_SCHEMA: FalModelSchema = {
   sizeParam: 'image_size',
   imageSizeAcceptsObject: true,
   imageSizeEnumValues: undefined,
+  aspectRatioEnumValues: undefined,
   safetyParam: 'enable_safety_checker',
   safetyToleranceMax: null,
   imageInputParam: null,
@@ -118,8 +120,20 @@ function parseSchemaProperties(
   let imageSizeAcceptsObject = false
   let imageSizeEnumValues: Array<string> | undefined
 
+  let aspectRatioEnumValues: Array<string> | undefined
+
   if (props['aspect_ratio']) {
     sizeParam = 'aspect_ratio'
+    const ratioProp = props['aspect_ratio']
+    if (ratioProp.enum) {
+      aspectRatioEnumValues = ratioProp.enum
+    } else if (ratioProp.anyOf) {
+      for (const variant of ratioProp.anyOf) {
+        if (variant.enum) {
+          aspectRatioEnumValues = variant.enum
+        }
+      }
+    }
   } else if (props['image_size']) {
     sizeParam = 'image_size'
     const sizeProp = props['image_size']
@@ -175,6 +189,7 @@ function parseSchemaProperties(
     sizeParam,
     imageSizeAcceptsObject,
     imageSizeEnumValues,
+    aspectRatioEnumValues,
     safetyParam,
     safetyToleranceMax,
     imageInputParam,

@@ -44,7 +44,9 @@ export async function buildFalInput(
   // Size params
   if (opts.aspectRatio && schema.sizeParam) {
     if (schema.sizeParam === 'aspect_ratio') {
-      input.aspect_ratio = opts.aspectRatio
+      input.aspect_ratio = schema.aspectRatioEnumValues
+        ? findClosestRatio(opts.aspectRatio, schema.aspectRatioEnumValues)
+        : opts.aspectRatio
     } else if (schema.sizeParam === 'image_size') {
       if (isResolutionEnum(schema.imageSizeEnumValues)) {
         // Models with fixed resolution strings (GPT Image 1.5) — check first
@@ -96,4 +98,37 @@ function isResolutionEnum(values?: Array<string>): boolean {
   if (!values?.length) return false
   // Resolution enums contain "WIDTHxHEIGHT" patterns like "1024x1024"
   return values.some((v) => /^\d+x\d+$/.test(v))
+}
+
+function parseRatioValue(ratio: string): number | null {
+  const parts = ratio.split(':')
+  if (parts.length !== 2) return null
+  const [a, b] = parts.map(Number)
+  if (!a || !b) return null
+  return a / b
+}
+
+function findClosestRatio(
+  requested: string,
+  validRatios: Array<string>,
+): string {
+  if (validRatios.includes(requested)) return requested
+
+  const requestedValue = parseRatioValue(requested)
+  if (requestedValue === null) return validRatios[0] ?? requested
+
+  let closest = validRatios[0]
+  let closestDiff = Infinity
+
+  for (const ratio of validRatios) {
+    const value = parseRatioValue(ratio)
+    if (value === null) continue
+    const diff = Math.abs(value - requestedValue)
+    if (diff < closestDiff) {
+      closestDiff = diff
+      closest = ratio
+    }
+  }
+
+  return closest ?? requested
 }
