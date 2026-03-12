@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = 50
 interface UseGenerationResultsOptions {
   userId: string | undefined
   accessToken: string
-  generationType: string
+  generationType: string | Array<string>
   limit?: number
   sourceImageIds?: Array<string>
 }
@@ -34,14 +34,19 @@ function inferModelId(meta: Record<string, unknown>): string {
 
 function matchesType(
   row: { generation_metadata: unknown },
-  generationType: string,
+  generationType: string | Array<string>,
 ): boolean {
-  return (
-    row.generation_metadata !== null &&
-    typeof row.generation_metadata === 'object' &&
-    (row.generation_metadata as Record<string, unknown>).generation_type ===
-      generationType
+  if (
+    row.generation_metadata === null ||
+    typeof row.generation_metadata !== 'object'
   )
+    return false
+  const type = (row.generation_metadata as Record<string, unknown>)
+    .generation_type as string | undefined
+  if (!type) return false
+  return Array.isArray(generationType)
+    ? generationType.includes(type)
+    : type === generationType
 }
 
 export function useGenerationResults({
@@ -130,15 +135,18 @@ export function useGenerationResults({
     }
 
     void load()
-  }, [userId, generationType, limit, sourceImageIds?.join(',')])
+  }, [userId, JSON.stringify(generationType), limit, sourceImageIds?.join(',')])
 
   // Realtime subscription
   useEffect(() => {
     if (!userId) return
 
     const channelKey = sourceImageIds?.length ? sourceImageIds.join('_') : 'all'
+    const typeKey = Array.isArray(generationType)
+      ? generationType.join('_')
+      : generationType
     const channel = supabase
-      .channel(`gen_results_${generationType}_${channelKey}`)
+      .channel(`gen_results_${typeKey}_${channelKey}`)
       .on(
         'postgres_changes',
         {
@@ -188,7 +196,7 @@ export function useGenerationResults({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId, generationType, sourceImageIds?.join(',')])
+  }, [userId, JSON.stringify(generationType), sourceImageIds?.join(',')])
 
   // Background polling for pending records
   // Directly updates state from poll results instead of relying solely on realtime

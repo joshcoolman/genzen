@@ -28,13 +28,10 @@ export function useEditChildren(
 
       if (!data) return
 
-      // Build a map of all edit images: source_image_id -> children
+      // Build a map of all child images (edits, variations, etc.) by source_image_id
       const allEdits = data.filter((row) => {
         const meta = row.generation_metadata as Record<string, unknown> | null
-        return (
-          meta?.generation_type === 'edit' &&
-          typeof meta?.source_image_id === 'string'
-        )
+        return typeof meta?.source_image_id === 'string'
       })
 
       if (allEdits.length === 0) {
@@ -128,7 +125,7 @@ export function useEditChildren(
           }
           if (updated.status !== 'completed' || !updated.storage_path) return
           const meta = updated.generation_metadata
-          if (meta?.generation_type !== 'edit') return
+          if (typeof meta?.source_image_id !== 'string') return
           const parentId = meta?.source_image_id as string | undefined
           if (!parentId) return
           // Check if this edit belongs to any root parent's descendant tree

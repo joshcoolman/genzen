@@ -58,14 +58,11 @@ export function useFocusedEdit(imageId: string) {
 
       if (!data) return
 
-      // Build parent -> children map from all edit images
+      // Build parent -> children map from all images with a source_image_id
       const childrenOf: Record<string, Array<string>> = {}
       for (const row of data) {
         const meta = row.generation_metadata as Record<string, unknown> | null
-        if (
-          meta?.generation_type === 'edit' &&
-          typeof meta?.source_image_id === 'string'
-        ) {
+        if (typeof meta?.source_image_id === 'string') {
           const srcId = meta.source_image_id
           if (!childrenOf[srcId]) childrenOf[srcId] = []
           childrenOf[srcId].push(row.id)
@@ -98,7 +95,7 @@ export function useFocusedEdit(imageId: string) {
   const results = useGenerationResults({
     userId: user?.id,
     accessToken: accessToken ?? '',
-    generationType: 'edit',
+    generationType: ['edit', 'variation'],
     sourceImageIds: sourceChain,
     limit: 50,
   })
