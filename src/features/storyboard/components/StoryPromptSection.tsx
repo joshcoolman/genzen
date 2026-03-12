@@ -63,6 +63,12 @@ export function StoryPromptSection({ sb }: StoryPromptSectionProps) {
           </span>
         )}
       </div>
+
+      {sb.error && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {sb.error}
+        </div>
+      )}
     </div>
   )
 }

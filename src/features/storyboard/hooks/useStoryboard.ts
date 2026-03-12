@@ -24,6 +24,7 @@ export interface UseStoryboardReturn {
   isGeneratingScenes: boolean
   isSaving: boolean
   isLoading: boolean
+  error: string | null
   // Derived
   hasScenes: boolean
   generatingSceneIds: Set<string>
@@ -54,6 +55,7 @@ export function useStoryboard(): UseStoryboardReturn {
   const [isGeneratingScenes, setIsGeneratingScenes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [generatingSceneIds, setGeneratingSceneIds] = useState<Set<string>>(
     new Set(),
   )
@@ -183,6 +185,7 @@ export function useStoryboard(): UseStoryboardReturn {
   const generateScenesAction = useCallback(async () => {
     if (!accessToken || !storyPrompt.trim()) return
     setIsGeneratingScenes(true)
+    setError(null)
     try {
       const story = refinedStory ?? storyPrompt
       const result = await generateScenesServer({
@@ -191,7 +194,9 @@ export function useStoryboard(): UseStoryboardReturn {
       setScenes(result.scenes)
       setStatus('scenes_generated')
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Scene generation failed'
       console.error('Scene generation failed:', err)
+      setError(msg)
     } finally {
       setIsGeneratingScenes(false)
     }
@@ -276,12 +281,7 @@ export function useStoryboard(): UseStoryboardReturn {
   // Auto-save after scene generation and frame completions
   const prevScenesRef = useRef(scenes)
   useEffect(() => {
-    if (
-      scenes.length > 0 &&
-      scenes !== prevScenesRef.current &&
-      storyboardId &&
-      !isSaving
-    ) {
+    if (scenes.length > 0 && scenes !== prevScenesRef.current && !isSaving) {
       prevScenesRef.current = scenes
       // Debounced save
       const timer = setTimeout(() => {
@@ -289,7 +289,7 @@ export function useStoryboard(): UseStoryboardReturn {
       }, 2000)
       return () => clearTimeout(timer)
     }
-  }, [scenes, storyboardId, isSaving, save])
+  }, [scenes, isSaving, save])
 
   const reset = useCallback(() => {
     setStoryboardId(null)
@@ -313,6 +313,7 @@ export function useStoryboard(): UseStoryboardReturn {
       isGeneratingScenes,
       isSaving,
       isLoading,
+      error,
       hasScenes: scenes.length > 0,
       generatingSceneIds,
       setStoryPrompt,
@@ -336,6 +337,7 @@ export function useStoryboard(): UseStoryboardReturn {
       isGeneratingScenes,
       isSaving,
       isLoading,
+      error,
       generatingSceneIds,
       refineStory,
       generateScenesAction,
