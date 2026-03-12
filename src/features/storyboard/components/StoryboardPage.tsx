@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { StoryPromptSection } from './StoryPromptSection'
+import { CharacterPanel } from './CharacterPanel'
 import { SceneList } from './SceneList'
 import { TimelineStrip } from './TimelineStrip'
 import type { UseStoryboardReturn } from '../hooks/useStoryboard'
@@ -27,6 +28,9 @@ export function StoryboardPage({ sb }: StoryboardPageProps) {
       <div className="mx-auto max-w-4xl space-y-8 px-4">
         {/* Story prompt section */}
         <StoryPromptSection sb={sb} />
+
+        {/* Character panel (appears after scene generation) */}
+        {sb.hasScenes && <CharacterPanel sb={sb} />}
 
         {/* Scenes section (appears after generation) */}
         {sb.hasScenes && <SceneList sb={sb} />}

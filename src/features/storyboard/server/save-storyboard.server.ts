@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
-import type { Scene, StoryboardStatus } from '../types'
+import type { Scene, StoryboardCharacter, StoryboardStatus } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
 
 interface SaveStoryboardInput {
@@ -10,6 +10,7 @@ interface SaveStoryboardInput {
   story_prompt: string
   refined_story?: string | null
   scenes: Array<Scene>
+  characters?: Array<StoryboardCharacter>
   status: StoryboardStatus
 }
 
@@ -34,6 +35,7 @@ export const saveStoryboard = createServerFn({ method: 'POST' })
       story_prompt: data.story_prompt,
       refined_story: data.refined_story ?? null,
       scenes: JSON.stringify(data.scenes),
+      characters: JSON.stringify(data.characters ?? []),
       status: data.status,
     }
 
