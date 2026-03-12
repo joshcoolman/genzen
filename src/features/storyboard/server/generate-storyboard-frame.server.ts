@@ -7,30 +7,21 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
-interface GenerateStyleFrameInput {
-  story: string
+interface GenerateStoryboardFrameInput {
+  visualDescription: string
+  sceneId: string
+  storyboardId: string
   accessToken: string
   modelId?: string
-  element?: string
 }
 
-function buildStyleFramePrompt(story: string, element?: string): string {
-  const trimmed = story.trim().slice(0, 500)
-  console.log('element', element)
-  console.log('trimmed', trimmed)
-  if (element) {
-    return `A cinematic establishing shot of ${element} from this story: ${trimmed}`
-  }
-  return `A cinematic establishing shot that captures the visual mood and atmosphere of this story: ${trimmed}. You are free to focus on an element or interesting aspect of the story and do not need to express the entire story in one image.`
-}
-
-export const generateStyleFrame = createServerFn({ method: 'POST' })
-  .inputValidator((data: GenerateStyleFrameInput) => data)
+export const generateStoryboardFrame = createServerFn({ method: 'POST' })
+  .inputValidator((data: GenerateStoryboardFrameInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    if (!data.story.trim()) {
-      throw new Error('Story text is required')
+    if (!data.visualDescription.trim()) {
+      throw new Error('Visual description is required')
     }
 
     if (!process.env.FAL_KEY) {
@@ -46,7 +37,7 @@ export const generateStyleFrame = createServerFn({ method: 'POST' })
     }
 
     const modelId = data.modelId || 'fal-ai/flux/schnell'
-    const prompt = buildStyleFramePrompt(data.story, data.element)
+    const prompt = data.visualDescription.trim()
 
     const falInput = await buildFalInput({
       modelId,
@@ -76,13 +67,15 @@ export const generateStyleFrame = createServerFn({ method: 'POST' })
         request_id,
         status: 'pending',
         source: 'ai_generated',
-        title: 'Style Frame',
+        title: 'Storyboard Frame',
         sort_order: Date.now() / 1000,
         generation_metadata: {
           prompt,
           model: modelId,
           fal_model_id: modelId,
-          generation_type: 'style_frame',
+          generation_type: 'storyboard_frame',
+          storyboard_id: data.storyboardId,
+          scene_id: data.sceneId,
           submitted_at: new Date().toISOString(),
           aspect_ratio: '16:9',
         },
@@ -94,5 +87,5 @@ export const generateStyleFrame = createServerFn({ method: 'POST' })
       throw new Error(`Failed to create image record: ${insertError.message}`)
     }
 
-    return { recordId: record.id, request_id }
+    return { recordId: record.id, request_id, sceneId: data.sceneId }
   })

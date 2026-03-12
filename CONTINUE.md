@@ -1,66 +1,57 @@
-# Continue: Focused Edit Mode + Edit Chaining
+# Continue: Storyboard Feature Rebuild
 
 ## What was being worked on
 
-Branch: `focused-edit-mode` — focused edit workflow at `/dashboard/edit/$imageId`, regenerate with different model, and edit chaining (promote result as new source).
+Complete rebuild of `src/features/storyboard/` from a clunky 3-tab flow (Story/Elements/Scenes with mostly mocked data) to a linear pipeline: story prompt -> scene breakdown -> frame generation.
 
 ## Changes made so far
 
-**Focused Edit Mode (bulk of the diff):**
+**New files created:**
 
-- New route `src/routes/dashboard/edit.$imageId.tsx` — dedicated edit page per image
-- New component `src/features/ai-images/components/FocusedEditView.tsx` — source image preview, edit prompt textarea (height matches image), aspect ratio + model selectors, Generate Edit button, previous edits grid
-- New hook `src/features/ai-images/hooks/use-focused-edit.ts` — fetches source image from Supabase, detects aspect ratio, manages edit prompt/model state, calls `editImage()` server fn
-- New hook `src/features/ai-images/hooks/use-edit-children.ts` — fetches child edit images for a given source image
-- Deleted `EditImageDialog.tsx` and `use-editor.ts` — replaced by focused edit approach
+- `types.ts` — Scene and Storyboard interfaces, FRAME_MODELS constant
+- `hooks/useStoryboard.ts` — single hook managing story editing, scene generation (Claude Haiku), frame generation (FAL), auto-save to Supabase, image URL resolution via realtime + polling
+- `components/StoryboardPage.tsx` — main layout with progressive reveal (story section, then scenes, then timeline strip)
+- `components/StoryPromptSection.tsx` — auto-growing textarea, Refine Story + Generate Scenes buttons
+- `components/SceneCard.tsx` — editable visual_description/caption (auto-grow, text-xs text-muted-foreground), gray placeholder, per-scene Generate/Regenerate button
+- `components/SceneList.tsx` — scene list with model selector dropdown + Generate All Frames
+- `components/TimelineStrip.tsx` — sticky bottom thumbnail strip, gray placeholders (not gradients), click-to-scroll
+- `server/generate-scenes.server.ts` — Claude Haiku structured JSON scene generation, respects duration hints in user prompt
+- `server/generate-storyboard-frame.server.ts` — FAL queue submission per scene, stores in user_images with generation_type: 'storyboard_frame'
+- `server/save-storyboard.server.ts` — upsert storyboard (scenes as JSONB)
+- `server/load-storyboard.server.ts` — load most recent or by ID
+- `supabase/migrations/20260311000000_storyboards.sql` — storyboards table with RLS, status check constraint, updated_at trigger
 
-**Edit Image Server Changes:**
+**Deleted (old 3-tab flow):**
 
-- `src/features/ai-images/server/edit-image.server.ts` — accepts `sourceImageId`, `editPrompt`, `aspectRatio`, `editModelId`
-- `src/lib/server/fal-image-upload.server.ts` — FAL image upload utility
+- StoryboardTabs, ReferenceBoard, ReferenceCard, StoryInput, StoryboardPageContent, SceneRow
+- useStoryboardPage hook (663 lines of mostly mock data)
+- generate-style-frame, generate-story-frame, extract-story-elements server files
 
-**Regenerate with Different Model:**
+**Updated:**
 
-- `GenerationResultsGrid.tsx` — `onRegenerate` + `regenerateModels` props; `RegenerateButton` with `RefreshCw` icon + model popover on complete results with prompts
-- `use-focused-edit.ts` — `handleRegenerate(prompt, modelId)` deducts credits, calls `editImage()`, adds pending result
-
-**Edit Chaining (Promote Result as Source) — latest work:**
-
-- `src/lib/hooks/useGenerationResults.ts` — changed `sourceImageId?: string` to `sourceImageIds?: string[]`; DB load filter and realtime filter now check against array of IDs; channel name uses joined IDs
-- `src/features/ai-images/hooks/use-focused-edit.ts` — added `activeSourceId` (defaults to `imageId`), `sourceChain: string[]` (starts as `[imageId]`), `originalImage` state; `handleSubmit`/`handleRegenerate` use `activeSourceId` instead of `imageId`; new `promoteToSource(result)` fetches metadata from Supabase, swaps source image display, appends to chain, detects aspect ratio; new `resetToOriginal()` restores original source; exports `isChained` boolean
-- `src/features/ai-images/components/FocusedEditView.tsx` — "Reset to Original" button (with `RotateCcw` icon) appears in toolbar when `isChained`; `onAdd` wired to `promoteToSource` on `GenerationResultsGrid`
-- `src/components/GenerationResultsGrid.tsx` — already had `onAdd` prop with Plus button (no changes needed this session)
-
-**Other changes in the diff (from prior work on this branch):**
-
-- `ImageCard.tsx` / `ImageGallery.tsx` — "Edit" action navigates to `/dashboard/edit/$imageId`
-- `use-ai-images-page.ts` — removed old editor hook usage
-- `DashboardLayout.tsx` / `Sidebar.tsx` / `use-sidebar-collapsed.ts` — sidebar refinements
-- `generation-result.ts` — added `prompt` and `title` fields to `GenerationResult` type
-- `combine/` — combine feature server + hook updates
-- `src/lib/prompts/edit-enhancement.ts` + `src/lib/prompts/index.ts` — edit prompt enhancement system prompt
-- `routeTree.gen.ts` — auto-generated, includes new edit route
+- `index.ts` — exports StoryboardPage + useStoryboard
+- `storyboard.tsx` route — uses new hook/component
+- `CLAUDE.md` — updated feature docs
 
 ## Key decisions
 
-- `sourceImageIds` is an array so chained edits (different `source_image_id` values) all appear in the same grid
-- `sourceChain` only grows — promoting a result appends its ID, never removes previous IDs, so all edits remain visible
-- `resetToOriginal` restores the original image display and resets `activeSourceId` but does NOT shrink `sourceChain` — all chained edits stay visible in the grid
-- Regenerate button uses `imageOverlay` prop (inside image area) rather than `overlayActions` (top-right hover)
-- Promote button uses existing `onAdd` prop / Plus icon on `GenerationResultsGrid`
+- **No gradients on placeholders** — use plain gray `bg-muted` everywhere
+- **Auto-grow textareas** — all textareas expand with content, no fixed rows with scrolling
+- **Text style** — `text-xs text-muted-foreground` for textarea content to maximize space
+- **User-facing copy** — lead users to just describe what happens, not use technical terms like "scene-by-scene" or specify durations. Placeholder: "What's the story? Just tell us what happens..."
+- **Duration handling** — system prompt respects duration hints if present, but defaults to 8-12 scenes if not specified
+- **JSONB for scenes** — scenes stored as JSONB in storyboards table, never queried independently
+- **Reuses existing infra** — useGenerationResults for FAL polling, buildFalInput for params, credits system, refine-story server fn kept as-is
 
-## Known issues / outstanding work
+## Outstanding work
 
-- **Not committed** — all changes unstaged on `focused-edit-mode` branch
-- `pnpm build` passes clean
-- Visual verification needed: test the full chain flow (edit -> promote -> edit again -> reset)
-- The Plus "Use as Source" button appears on all results in any grid that passes `onAdd` — may want to restrict to only complete results with URLs (currently handled in `GenerationResultCard`)
-- Consider: visual indicator on the source image showing it's a promoted result (not the original)
-- Consider: showing which model was used on each result card
+- **Migration not yet applied** — need `supabase db push` or `supabase migration up` before testing persistence
+- **End-to-end testing** — the full flow (prompt -> refine -> generate scenes -> generate frames) needs live testing with Supabase + FAL
+- **No "Open in Shots" action yet** — conceptual bridge to Shots feature for angle variations from hero frames
+- **No storyboard list/picker** — currently loads most recent storyboard, no way to manage multiple storyboards
+- **Save on scene generation** — first save needs to happen after scenes are generated (currently auto-saves require storyboardId to exist)
 
 ## Git state
 
-- Branch: `focused-edit-mode`
-- All changes uncommitted/unstaged
-- Last commit: `45ce0c1 Merge branch 'update-shots'`
-- Build passes
+- Branch: `story-board-refactor`
+- Status: committed and pushed

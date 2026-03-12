@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { StoryboardPageContent, useStoryboardPage } from '@/features/storyboard'
+import { StoryboardPage, useStoryboard } from '@/features/storyboard'
 
 export const Route = createFileRoute('/dashboard/storyboard')({
-  component: StoryboardPage,
+  component: StoryboardRoute,
 })
 
-function StoryboardPage() {
-  const page = useStoryboardPage()
-  return <StoryboardPageContent page={page} />
+function StoryboardRoute() {
+  const sb = useStoryboard()
+  return <StoryboardPage sb={sb} />
 }

@@ -1,2 +1,2 @@
-export { StoryboardPageContent } from './components/StoryboardPageContent'
-export { useStoryboardPage } from './hooks/useStoryboardPage'
+export { StoryboardPage } from './components/StoryboardPage'
+export { useStoryboard } from './hooks/useStoryboard'

@@ -1,54 +1,53 @@
 import { Images } from 'lucide-react'
-import { SceneRow } from './SceneRow'
-import type { UseStoryboardPageReturn } from '../hooks/useStoryboardPage'
+import { FRAME_MODELS } from '../types'
+import { SceneCard } from './SceneCard'
+import type { UseStoryboardReturn } from '../hooks/useStoryboard'
 import { ActionButton } from '@/components/ActionButton'
 
 interface SceneListProps {
-  page: UseStoryboardPageReturn
+  sb: UseStoryboardReturn
 }
 
-export function SceneList({ page }: SceneListProps) {
+export function SceneList({ sb }: SceneListProps) {
+  const anyGenerating = sb.generatingSceneIds.size > 0
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        {page.references.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {page.references.map((ref) => (
-              <span
-                key={ref.id}
-                className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs text-muted-foreground"
-              >
-                {ref.label}
-              </span>
+        <h2 className="text-lg font-semibold">{sb.scenes.length} Scenes</h2>
+        <div className="flex items-center gap-2">
+          <select
+            value={sb.frameModelId}
+            onChange={(e) => sb.setFrameModelId(e.target.value)}
+            className="h-9 rounded-md border border-border bg-card px-2 text-xs text-muted-foreground"
+          >
+            {FRAME_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
             ))}
-          </div>
-        ) : (
-          <div />
-        )}
-        <ActionButton
-          onClick={page.generateAllFrames}
-          loading={page.isGenerating}
-          loadingText="Generating all..."
-          icon={<Images className="size-4" />}
-        >
-          Generate All Frames
-        </ActionButton>
+          </select>
+          <ActionButton
+            onClick={sb.generateAllFrames}
+            loading={anyGenerating}
+            loadingText="Generating..."
+            icon={<Images className="size-4" />}
+          >
+            Generate All Frames
+          </ActionButton>
+        </div>
       </div>
 
-      <div className="flex flex-col items-center">
-        <div className="w-2/3 space-y-6">
-          {page.scenes.map((scene, i) => (
-            <SceneRow
-              key={scene.id}
-              scene={scene}
-              index={i}
-              onPromptChange={(prompt) =>
-                page.updateScenePrompt(scene.id, prompt)
-              }
-              onRegenerate={() => page.regenerateFrame(scene.id)}
-            />
-          ))}
-        </div>
+      <div className="space-y-4">
+        {sb.scenes.map((scene) => (
+          <SceneCard
+            key={scene.id}
+            scene={scene}
+            isGenerating={sb.generatingSceneIds.has(scene.id)}
+            onUpdate={(updates) => sb.updateScene(scene.id, updates)}
+            onGenerateFrame={() => sb.generateFrame(scene.id)}
+          />
+        ))}
       </div>
     </div>
   )

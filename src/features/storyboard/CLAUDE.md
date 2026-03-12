@@ -1,38 +1,42 @@
-Storyboard feature -- story to visual references to 14 scene sketches with editable prompts and frame placeholders (currently mock/UI-only).
+Storyboard feature -- linear pipeline: story prompt -> scene breakdown -> frame generation.
 
 ## Key Files
 
 - `index.ts` -- barrel exports
-- `hooks/useStoryboardPage.ts` -- state machine for 3-step flow (write, references, scenes); mock data for refined story, 8 references, 14 scene prompts
-- `components/StoryboardPageContent.tsx` -- step routing
-- `components/StoryInput.tsx` -- story textarea with "Refine Story" and "Generate References" buttons
-- `components/ReferenceBoard.tsx` -- categorized reference grid (Characters, Objects, Environments) with "Generate Scenes" action
-- `components/ReferenceCard.tsx` -- PlaceholderCard with RemoveButton, loading overlay, and inline edit input
-- `components/SceneList.tsx` -- 14-row scene grid with reference summary pills and "Generate All Frames" action
-- `components/SceneRow.tsx` -- prompt textarea (left) + PlaceholderCard frame (right) + regenerate button
+- `types.ts` -- Scene, Storyboard interfaces, FRAME_MODELS
+- `hooks/useStoryboard.ts` -- state management: story editing, scene generation, frame tracking, auto-save
+- `components/StoryboardPage.tsx` -- main page layout with progressive reveal
+- `components/StoryPromptSection.tsx` -- story textarea with Refine + Generate Scenes buttons
+- `components/SceneList.tsx` -- scene list with model selector + Generate All Frames
+- `components/SceneCard.tsx` -- single scene: editable visual_description/caption, frame image, generate button
+- `components/TimelineStrip.tsx` -- sticky bottom thumbnail strip for scene navigation
+- `server/refine-story.server.ts` -- Claude Haiku expands rough prompt into cinematic narrative
+- `server/generate-scenes.server.ts` -- Claude Haiku breaks story into 8-12 structured scenes (JSON)
+- `server/generate-storyboard-frame.server.ts` -- FAL image generation per scene's visual_description
+- `server/save-storyboard.server.ts` -- upsert storyboard to Supabase
+- `server/load-storyboard.server.ts` -- load most recent or specific storyboard
 
 ## Route
 
 `src/routes/dashboard/storyboard.tsx`
 
+## Data Model
+
+- `storyboards` table: id, user_id, title, story_prompt, refined_story, scenes (JSONB), status
+- Generated frames stored in `user_images` with `generation_type: 'storyboard_frame'`
+- Scene JSONB includes: visual_description (doubles as image prompt), framing, camera, caption, image_id
+
 ## Flow
 
 ```
-write → [refine story] → references → [edit references] → scenes
+story prompt -> [refine] -> [generate scenes] -> edit scenes -> [generate frames]
 ```
 
 ## Shared Dependencies
 
 - `@/components/ActionButton` -- primary action buttons
-- `@/components/PlaceholderCard` -- gradient placeholder with aspect ratio + label
-- `@/components/RemoveButton` -- destructive X button for removing items
-- `@/lib/constants/mock-gradients` -- shared gradient array for placeholders
-
-## Quirks / Notes
-
-- Fully mocked -- all generation uses setTimeout, frames are gradient placeholders
-- Sample story pre-populated for immediate testing
-- "Refine Story" replaces text with a polished mock version
-- References require >= 1 per category (character, object, environment) to proceed to scenes
-- Each reference can be edited (shows loading then appends "(edited)") or removed
-- "Back to story" preserves story text but clears references
+- `@/components/PlaceholderCard` -- gradient placeholder with aspect ratio
+- `@/lib/hooks/useGenerationResults` -- tracks FAL generation status via realtime + polling
+- `@/features/ai-images/server/fal-params.server` -- buildFalInput() for FAL submissions
+- `@/features/credits/server/check-credits.server` -- credit gating
+- `@/lib/server/ai.server` -- AI model instances
