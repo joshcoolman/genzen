@@ -122,8 +122,9 @@ function CollectStep({ page }: { page: UseStyleTrainerPageReturn }) {
   const belowMin = count < MIN_IMAGES
 
   const slots = Array.from({ length: MAX_IMAGES }, (_, i) => {
-    const img = page.referenceImages[i]
-    return img ?? null
+    return page.referenceImages[i] as
+      | (typeof page.referenceImages)[number]
+      | null
   })
 
   return (

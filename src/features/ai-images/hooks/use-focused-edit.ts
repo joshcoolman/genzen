@@ -59,13 +59,14 @@ export function useFocusedEdit(imageId: string) {
       if (!data) return
 
       // Build parent -> children map from all images with a source_image_id
-      const childrenOf: Record<string, Array<string>> = {}
+      const childrenOf = new Map<string, Array<string>>()
       for (const row of data) {
         const meta = row.generation_metadata as Record<string, unknown> | null
         if (typeof meta?.source_image_id === 'string') {
           const srcId = meta.source_image_id
-          if (!childrenOf[srcId]) childrenOf[srcId] = []
-          childrenOf[srcId].push(row.id)
+          const siblings = childrenOf.get(srcId) ?? []
+          siblings.push(row.id)
+          childrenOf.set(srcId, siblings)
         }
       }
 
@@ -75,7 +76,7 @@ export function useFocusedEdit(imageId: string) {
       const queue = [imageId]
       while (queue.length > 0) {
         const current = queue.shift()!
-        for (const childId of childrenOf[current] ?? []) {
+        for (const childId of childrenOf.get(current) ?? []) {
           if (!visited.has(childId)) {
             visited.add(childId)
             chain.push(childId)
@@ -136,7 +137,7 @@ export function useFocusedEdit(imageId: string) {
         id: data.id,
         title: data.title,
         storagePath: data.storage_path,
-        prompt: (meta?.prompt as string) ?? null,
+        prompt: (meta?.prompt as string | undefined) ?? null,
         aspectRatio: srcRatio ?? null,
         url: signed.signedUrl,
       }
@@ -272,7 +273,7 @@ export function useFocusedEdit(imageId: string) {
         id: data.id,
         title: data.title,
         storagePath: data.storage_path,
-        prompt: (meta?.prompt as string) ?? result.prompt ?? null,
+        prompt: (meta?.prompt as string | undefined) ?? result.prompt ?? null,
         aspectRatio: srcRatio ?? null,
         url,
       })

@@ -98,14 +98,11 @@ export function useBrainstorm({
         return prev
       return Array.from({ length: slotCount }, (_, i) => {
         const existing = prev[i]
-        if (existing) {
-          if (existing.length === imagesPerPrompt) return existing
-          return Array.from(
-            { length: imagesPerPrompt },
-            (_, j) => existing[j] ?? 0,
-          )
-        }
-        return Array.from({ length: imagesPerPrompt }, () => 0)
+        if (existing.length === imagesPerPrompt) return existing
+        return Array.from(
+          { length: imagesPerPrompt },
+          (_, j) => existing[j] ?? 0,
+        )
       })
     })
     // Resize prompts

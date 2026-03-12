@@ -215,7 +215,7 @@ export function useGenerationResults({
           data: { accessToken, recordIds: pendingIds },
         })
 
-        if (!pollResults || pollResults.length === 0) return
+        if (pollResults.length === 0) return
 
         const completedIds = pollResults
           .filter((r) => r.status === 'completed')

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- defensive checks on external OpenAPI JSON */
 /**
  * Fetches and caches FAL model OpenAPI schemas at runtime.
  * Used by buildFalInput() to auto-detect correct params per model.
@@ -104,11 +105,11 @@ function findInputSchema(spec: OpenAPISpec): SchemaObject | null {
 function resolveRef(spec: OpenAPISpec, ref: string): SchemaObject | null {
   // refs look like "#/components/schemas/SomeName"
   const parts = ref.replace('#/', '').split('/')
-  let obj: unknown = spec
+  let obj: unknown = spec as unknown
   for (const p of parts) {
-    obj = (obj as Record<string, unknown>)?.[p]
+    obj = (obj as Record<string, unknown> | undefined)?.[p]
   }
-  return (obj as SchemaObject) ?? null
+  return (obj as SchemaObject | null) ?? null
 }
 
 function parseSchemaProperties(

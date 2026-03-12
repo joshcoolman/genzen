@@ -46,7 +46,10 @@ export function ImageGallery({
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
     if (typeof window === 'undefined') return 'contain'
-    return (localStorage.getItem(DISPLAY_MODE_KEY) as DisplayMode) || 'contain'
+    return (
+      (localStorage.getItem(DISPLAY_MODE_KEY) as DisplayMode | null) ??
+      'contain'
+    )
   })
 
   const toggleHidePrompts = () => {

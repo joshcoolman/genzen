@@ -59,7 +59,7 @@ export const generateScenes = createServerFn({ method: 'POST' })
     }
 
     // Normalize and add IDs
-     
+
     const normalized = scenes.map((s: any, i: number) => ({
       id: crypto.randomUUID(),
       scene_number: (s.scene_number as number | undefined) ?? i + 1,

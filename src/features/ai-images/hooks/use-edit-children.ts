@@ -40,12 +40,13 @@ export function useEditChildren(
       }
 
       // Walk the tree: find all descendants of each parent ID
-      const childrenOf: Record<string, typeof allEdits> = {}
+      const childrenOf = new Map<string, typeof allEdits>()
       for (const row of allEdits) {
         const meta = row.generation_metadata as Record<string, unknown>
         const srcId = meta.source_image_id as string
-        if (!childrenOf[srcId]) childrenOf[srcId] = []
-        childrenOf[srcId].push(row)
+        const siblings = childrenOf.get(srcId) ?? []
+        siblings.push(row)
+        childrenOf.set(srcId, siblings)
       }
 
       // Build index for recency ordering (data is already sorted created_at desc)
@@ -60,7 +61,7 @@ export function useEditChildren(
         const visited = new Set<string>()
         while (queue.length > 0) {
           const current = queue.shift()!
-          for (const row of childrenOf[current] ?? []) {
+          for (const row of childrenOf.get(current) ?? []) {
             if (visited.has(row.id)) continue
             visited.add(row.id)
             if (row.storage_path) {
@@ -126,7 +127,7 @@ export function useEditChildren(
           if (updated.status !== 'completed' || !updated.storage_path) return
           const meta = updated.generation_metadata
           if (typeof meta?.source_image_id !== 'string') return
-          const parentId = meta?.source_image_id as string | undefined
+          const parentId = meta.source_image_id as string | undefined
           if (!parentId) return
           // Check if this edit belongs to any root parent's descendant tree
           // For realtime, check if the parent is either a root or already a known child

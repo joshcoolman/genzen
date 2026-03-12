@@ -47,7 +47,7 @@ export async function buildFalInput(
       input.aspect_ratio = schema.aspectRatioEnumValues
         ? findClosestRatio(opts.aspectRatio, schema.aspectRatioEnumValues)
         : opts.aspectRatio
-    } else if (schema.sizeParam === 'image_size') {
+    } else {
       if (isResolutionEnum(schema.imageSizeEnumValues)) {
         // Models with fixed resolution strings (GPT Image 1.5) — check first
         // since anyOf schemas may also advertise an ImageSize $ref
@@ -130,5 +130,5 @@ function findClosestRatio(
     }
   }
 
-  return closest ?? requested
+  return closest
 }

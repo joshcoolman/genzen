@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- defensive checks on external OpenAPI JSON */
 /**
  * Fetches and caches FAL video model OpenAPI schemas at runtime.
  * Auto-detects correct parameter names and types per model,
@@ -108,11 +109,11 @@ function findInputSchema(spec: OpenAPISpec): SchemaObject | null {
 
 function resolveRef(spec: OpenAPISpec, ref: string): SchemaObject | null {
   const parts = ref.replace('#/', '').split('/')
-  let obj: unknown = spec
+  let obj: unknown = spec as unknown
   for (const p of parts) {
-    obj = (obj as Record<string, unknown>)?.[p]
+    obj = (obj as Record<string, unknown> | undefined)?.[p]
   }
-  return (obj as SchemaObject) ?? null
+  return (obj as SchemaObject | null) ?? null
 }
 
 function parseVideoSchemaProperties(
