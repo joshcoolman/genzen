@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import {
   Popover,
   PopoverContent,
@@ -13,12 +15,13 @@ interface ImageCardProps {
   imageUrl: string | undefined
   generatingVariation: boolean
   hidePrompts: boolean
+  objectFit?: 'contain' | 'cover'
   rootImageUrl?: string
   rootIsHidden?: boolean
+  editChildren?: EditChildrenMap[string]
   onRestore?: () => void
   onOpen: (img: SavedAiImage) => void
   onMoreLikeThis: (img: SavedAiImage, count: number) => void
-  onEdit: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
@@ -28,20 +31,24 @@ export function ImageCard({
   imageUrl,
   generatingVariation,
   hidePrompts,
+  objectFit,
   rootImageUrl,
   rootIsHidden,
+  editChildren,
   onRestore,
   onOpen,
   onMoreLikeThis,
-  onEdit,
   onDelete,
   getModelName,
 }: ImageCardProps) {
+  const navigate = useNavigate()
+
   return (
     <ImageResultCard
       url={imageUrl}
       alt={img.title}
       status="complete"
+      objectFit={objectFit}
       label={
         img.generation_metadata
           ? getModelName(img.generation_metadata.model)
@@ -61,7 +68,12 @@ export function ImageCard({
           onSelect={(count) => onMoreLikeThis(img, count)}
         />
         <button
-          onClick={() => onEdit(img)}
+          onClick={() =>
+            navigate({
+              to: '/dashboard/edit/$imageId',
+              params: { imageId: img.id },
+            })
+          }
           className="flex-1 rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
         >
           Edit
@@ -114,6 +126,32 @@ export function ImageCard({
               Restore
             </button>
           )}
+        </div>
+      )}
+      {editChildren && editChildren.length > 0 && (
+        <div className="px-3 pb-3">
+          <p className="text-[10px] text-muted-foreground mb-1.5">Edits</p>
+          <div className="flex flex-wrap gap-1.5">
+            {editChildren.map((child) => (
+              <button
+                key={child.id}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  navigate({
+                    to: '/dashboard/edit/$imageId',
+                    params: { imageId: img.id },
+                  })
+                }}
+                className="w-8 h-8 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+              >
+                <img
+                  src={child.url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </ImageResultCard>

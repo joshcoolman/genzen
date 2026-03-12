@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
+import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
+import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 
 interface EditImageInput {
   accessToken: string
@@ -55,7 +55,7 @@ export const editImage = createServerFn({ method: 'POST' })
       },
     )
 
-    // Fetch source image storage path — enforce ownership
+    // Fetch source image storage path -- enforce ownership
     const { data: sourceImage } = await supabase
       .from('user_images')
       .select('storage_path, created_at, generation_metadata')
@@ -78,23 +78,9 @@ export const editImage = createServerFn({ method: 'POST' })
 
     const imageRes = await fetch(signedUrlData.signedUrl)
     const buffer = await imageRes.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
 
-    // Detect mime type from magic bytes
-    let mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
-      'image/jpeg'
-    if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-      mimeType = 'image/png'
-    } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-      mimeType = 'image/webp'
-    } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-      mimeType = 'image/gif'
-    }
-
-    // Upload to FAL storage
-    const falImageUrl = await fal.storage.upload(
-      new Blob([buffer], { type: mimeType }),
-    )
+    // Upload to FAL storage using shared utility
+    const falImageUrl = await uploadBufferToFal(buffer)
 
     // Fetch and upload reference images in parallel
     const referenceUrls: Array<string> = []
@@ -115,7 +101,7 @@ export const editImage = createServerFn({ method: 'POST' })
             if (!signed?.signedUrl) return null
             const res = await fetch(signed.signedUrl)
             const buf = await res.arrayBuffer()
-            return fal.storage.upload(new Blob([buf]))
+            return uploadBufferToFal(buf)
           }),
         )
         referenceUrls.push(...uploads.filter((u): u is string => u !== null))
@@ -136,35 +122,22 @@ export const editImage = createServerFn({ method: 'POST' })
       input: falInput,
     })
 
-    // Create pending DB record
-    const { data: record, error: insertError } = await supabase
-      .from('user_images')
-      .insert({
-        user_id: user.id,
-        request_id,
-        status: 'pending',
-        source: 'ai_generated',
-        title: 'Editing...',
-        sort_order: Date.now() / 1000,
-        generation_metadata: {
-          prompt: editPrompt.trim(),
-          model: falEditModel.replace(/\/edit$/, ''),
-          fal_model_id: falEditModel,
-          source_image_id: sourceImageId,
-          generation_type: 'edit',
-          submitted_at: new Date().toISOString(),
-          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-          ...(referenceImageIds?.length
-            ? { reference_image_ids: referenceImageIds }
-            : {}),
-        },
-      })
-      .select()
-      .single()
+    const { recordId } = await createPendingGeneration({
+      accessToken: data.accessToken,
+      userId: user.id,
+      requestId: request_id,
+      generationType: 'edit',
+      falModelId: falEditModel,
+      prompt: editPrompt.trim(),
+      aspectRatio,
+      title: 'Editing...',
+      extraMetadata: {
+        source_image_id: sourceImageId,
+        ...(referenceImageIds?.length
+          ? { reference_image_ids: referenceImageIds }
+          : {}),
+      },
+    })
 
-    if (insertError) {
-      throw new Error(`Failed to create image record: ${insertError.message}`)
-    }
-
-    return { recordId: record.id, request_id }
+    return { recordId, request_id }
   })

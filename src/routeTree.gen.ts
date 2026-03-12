@@ -31,10 +31,12 @@ import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
 import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
 import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
+import { Route as DashboardBrainstormRouteImport } from './routes/dashboard/brainstorm'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
+import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -146,6 +148,11 @@ const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
   path: '/characters',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardBrainstormRoute = DashboardBrainstormRouteImport.update({
+  id: '/brainstorm',
+  path: '/brainstorm',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   id: '/ai-images',
   path: '/ai-images',
@@ -167,6 +174,11 @@ const DashboardVideoWorkspaceIdRoute =
     path: '/$workspaceId',
     getParentRoute: () => DashboardVideoRoute,
   } as any)
+const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
+  id: '/edit/$imageId',
+  path: '/edit/$imageId',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -178,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -193,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
@@ -204,6 +218,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -218,6 +233,7 @@ export interface FileRoutesByTo {
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/video': typeof DashboardVideoIndexRoute
 }
@@ -232,6 +248,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/edit-image': typeof DashboardEditImageRoute
@@ -247,6 +264,7 @@ export interface FileRoutesById {
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
@@ -262,6 +280,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/edit-image'
@@ -277,6 +296,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/video/'
   fileRoutesByTo: FileRoutesByTo
@@ -288,6 +308,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/edit-image'
@@ -302,6 +323,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard'
     | '/docs'
+    | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/video'
   id:
@@ -315,6 +337,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/edit-image'
@@ -330,6 +353,7 @@ export interface FileRouteTypes {
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/video/'
   fileRoutesById: FileRoutesById
@@ -500,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCharactersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/brainstorm': {
+      id: '/dashboard/brainstorm'
+      path: '/brainstorm'
+      fullPath: '/dashboard/brainstorm'
+      preLoaderRoute: typeof DashboardBrainstormRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/ai-images': {
       id: '/dashboard/ai-images'
       path: '/ai-images'
@@ -528,6 +559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoWorkspaceIdRouteImport
       parentRoute: typeof DashboardVideoRoute
     }
+    '/dashboard/edit/$imageId': {
+      id: '/dashboard/edit/$imageId'
+      path: '/edit/$imageId'
+      fullPath: '/dashboard/edit/$imageId'
+      preLoaderRoute: typeof DashboardEditImageIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -548,6 +586,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardBrainstormRoute: typeof DashboardBrainstormRoute
   DashboardCharactersRoute: typeof DashboardCharactersRoute
   DashboardCombineRoute: typeof DashboardCombineRoute
   DashboardEditImageRoute: typeof DashboardEditImageRoute
@@ -561,11 +600,13 @@ interface DashboardRouteChildren {
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardEditImageIdRoute: typeof DashboardEditImageIdRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardBrainstormRoute: DashboardBrainstormRoute,
   DashboardCharactersRoute: DashboardCharactersRoute,
   DashboardCombineRoute: DashboardCombineRoute,
   DashboardEditImageRoute: DashboardEditImageRoute,
@@ -579,6 +620,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardEditImageIdRoute: DashboardEditImageIdRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

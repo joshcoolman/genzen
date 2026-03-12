@@ -9,6 +9,7 @@ interface CreatePendingGenerationOptions {
   prompt: string
   aspectRatio?: string
   extraMetadata?: Record<string, unknown>
+  title?: string
 }
 
 export async function createPendingGeneration({
@@ -20,6 +21,7 @@ export async function createPendingGeneration({
   prompt,
   aspectRatio,
   extraMetadata,
+  title = 'Generating...',
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL!,
@@ -40,7 +42,7 @@ export async function createPendingGeneration({
       request_id: requestId,
       status: 'pending',
       source: 'ai_generated',
-      title: 'Generating...',
+      title,
       sort_order: Date.now() / 1000,
       generation_metadata: {
         prompt,

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { combineImages } from '../server/combine-images.server'
+import { enhanceCombinePrompt } from '../server/enhance-combine-prompt.server'
 import type { CollectedImage } from '@/features/user-images/types'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
@@ -126,14 +127,6 @@ export function useCombinePage(): UseCombinePageReturn {
     setIsGenerating(true)
     setError(null)
 
-    const tempId = `temp-combine-${Date.now()}`
-    addPendingResult({
-      id: tempId,
-      status: 'pending',
-      label: getModelName(model),
-      prompt,
-    })
-
     try {
       const sourceUrls = await Promise.all(
         sourceImages.map(async (img) => {
@@ -151,13 +144,45 @@ export function useCombinePage(): UseCombinePageReturn {
         }),
       )
 
+      // Enhance prompt via LLM vision before submission
+      let finalPrompt = prompt
+      let enhancedPrompt: string | undefined
+      try {
+        const enhanced = await enhanceCombinePrompt({
+          data: {
+            accessToken,
+            sourceImageUrls: sourceUrls,
+            prompt,
+          },
+        })
+        finalPrompt = enhanced.enhancedPrompt
+        enhancedPrompt = enhanced.enhancedPrompt
+      } catch {
+        // fall back to original prompt silently
+      }
+
+      const tempId = `temp-combine-${Date.now()}`
+      addPendingResult({
+        id: tempId,
+        status: 'pending',
+        label: getModelName(model),
+        prompt: finalPrompt,
+        ...(enhancedPrompt ? { enhancedPrompt, originalPrompt: prompt } : {}),
+      })
+
       const result = await combineImages({
         data: {
           accessToken,
           sourceImageUrls: sourceUrls,
-          prompt,
+          prompt: finalPrompt,
           aspectRatio,
           model,
+          ...(enhancedPrompt
+            ? {
+                enhancedPrompt,
+                originalPrompt: prompt,
+              }
+            : {}),
         },
       })
 

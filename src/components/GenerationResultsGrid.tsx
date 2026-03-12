@@ -6,12 +6,18 @@ import {
   Info,
   LayoutGrid,
   Plus,
+  RefreshCw,
 } from 'lucide-react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
 import { Lightbox } from '@/components/Lightbox'
 import { ImageResultCard } from '@/components/ImageResultCard'
 import { ImageGrid } from '@/components/ImageGrid'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
 const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
@@ -58,12 +64,64 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+function RegenerateButton({
+  result,
+  models,
+  onRegenerate,
+}: {
+  result: GenerationResult
+  models: Array<{ id: string; name: string }>
+  onRegenerate: (result: GenerationResult, modelId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+          className="absolute bottom-1.5 right-1.5 z-10 rounded-full bg-background/80 backdrop-blur-sm p-1.5 text-muted-foreground hover:text-foreground transition-all"
+          aria-label="Regenerate with different model"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-48 p-1"
+        side="top"
+        align="end"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+          Regenerate with
+        </div>
+        {models.map((m) => (
+          <button
+            key={m.id}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRegenerate(result, m.id)
+              setOpen(false)
+            }}
+            className="w-full text-left text-sm px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            {m.name}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 function GenerationResultCard({
   result,
   selected,
   onOpen,
   onDelete,
   onAdd,
+  onRegenerate,
+  regenerateModels,
   showFooter,
   compact,
 }: {
@@ -72,6 +130,8 @@ function GenerationResultCard({
   onOpen: () => void
   onDelete: () => void
   onAdd?: () => void
+  onRegenerate?: (result: GenerationResult, modelId: string) => void
+  regenerateModels?: Array<{ id: string; name: string }>
   showFooter?: boolean
   compact?: boolean
 }) {
@@ -86,6 +146,19 @@ function GenerationResultCard({
       compact={compact}
       onClick={onOpen}
       onDelete={onDelete}
+      imageOverlay={
+        onRegenerate &&
+        regenerateModels &&
+        result.status === 'complete' &&
+        result.url &&
+        result.prompt ? (
+          <RegenerateButton
+            result={result}
+            models={regenerateModels}
+            onRegenerate={onRegenerate}
+          />
+        ) : undefined
+      }
       overlayActions={
         onAdd && result.status === 'complete' && result.url ? (
           <button
@@ -101,13 +174,27 @@ function GenerationResultCard({
         ) : undefined
       }
       footer={
-        showFooter && result.title ? (
+        showFooter ? (
           <>
-            <div className="flex-1 px-4 pt-3 pb-2">
-              <h3 className="text-xs font-medium text-foreground line-clamp-2">
-                {result.title}
-              </h3>
-            </div>
+            {result.title && (
+              <div className="flex-1 px-4 pt-3 pb-2">
+                <h3 className="text-xs font-medium text-foreground line-clamp-2">
+                  {result.title}
+                </h3>
+              </div>
+            )}
+            {result.enhancedPrompt && (
+              <div className="px-4 pt-2 pb-1">
+                <p className="text-[11px] text-muted-foreground line-clamp-2">
+                  {result.enhancedPrompt}
+                </p>
+                {result.originalPrompt && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 line-clamp-1">
+                    Original: {result.originalPrompt}
+                  </p>
+                )}
+              </div>
+            )}
             {(result.fileSize || result.createdAt) && (
               <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
                 <div className="flex justify-between items-center">
@@ -134,6 +221,8 @@ interface GenerationResultsGridProps {
   onDelete: (id: string) => void
   onSelect?: (id: string) => void
   onAdd?: (result: GenerationResult) => void
+  onRegenerate?: (result: GenerationResult, modelId: string) => void
+  regenerateModels?: Array<{ id: string; name: string }>
   selectedId?: string | null
   title?: string
   prefsKey?: string
@@ -144,6 +233,8 @@ export function GenerationResultsGrid({
   onDelete,
   onSelect,
   onAdd,
+  onRegenerate,
+  regenerateModels,
   selectedId,
   title = 'Results',
   prefsKey,
@@ -276,6 +367,8 @@ export function GenerationResultsGrid({
             onOpen={() => (onSelect ? onSelect(result.id) : handleOpen(result))}
             onDelete={() => onDelete(result.id)}
             onAdd={onAdd ? () => onAdd(result) : undefined}
+            onRegenerate={onRegenerate}
+            regenerateModels={regenerateModels}
           />
         ))}
       </ImageGrid>

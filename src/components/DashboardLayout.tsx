@@ -18,7 +18,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <main
         className={cn(
           'min-w-0 flex-1 p-6 transition-all duration-300',
-          isCollapsed ? 'md:ml-16' : 'md:ml-52'
+          isCollapsed ? 'md:ml-16' : 'md:ml-52',
         )}
       >
         {children}

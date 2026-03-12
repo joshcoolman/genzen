@@ -6,6 +6,7 @@ import {
   Image,
   Layers,
   LayoutGrid,
+  Lightbulb,
   MessageSquare,
   Palette,
   PencilLine,
@@ -37,6 +38,12 @@ export const navItems: Array<NavItem> = [
     label: 'AI Images',
     href: '/dashboard/ai-images',
     icon: Sparkles,
+    activeOnly: true,
+  },
+  {
+    label: 'Brainstorm',
+    href: '/dashboard/brainstorm',
+    icon: Lightbulb,
     activeOnly: true,
   },
   {

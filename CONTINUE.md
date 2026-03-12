@@ -1,57 +1,66 @@
-# Continue: Shots Pipeline Rebuild
+# Continue: Focused Edit Mode + Edit Chaining
 
 ## What was being worked on
 
-Complete rebuild of `src/features/shots/` from a mock 3-step wizard into a real AI pipeline: select image → describe via LLM vision → generate variation prompts → generate images via FAL.
+Branch: `focused-edit-mode` — focused edit workflow at `/dashboard/edit/$imageId`, regenerate with different model, and edit chaining (promote result as new source).
 
 ## Changes made so far
 
-**New server functions (3 files):**
+**Focused Edit Mode (bulk of the diff):**
 
-- `server/describe-shot-image.server.ts` -- wraps `describeImage('reconstruct')` as a TanStack server fn
-- `server/generate-shot-prompts.server.ts` -- Haiku generates asterisk-delimited variation prompts from description + template
-- `server/generate-shot-images.server.ts` -- batch FAL submit via `buildFalInput()` + `createPendingGeneration()`, 1 credit per image
+- New route `src/routes/dashboard/edit.$imageId.tsx` — dedicated edit page per image
+- New component `src/features/ai-images/components/FocusedEditView.tsx` — source image preview, edit prompt textarea (height matches image), aspect ratio + model selectors, Generate Edit button, previous edits grid
+- New hook `src/features/ai-images/hooks/use-focused-edit.ts` — fetches source image from Supabase, detects aspect ratio, manages edit prompt/model state, calls `editImage()` server fn
+- New hook `src/features/ai-images/hooks/use-edit-children.ts` — fetches child edit images for a given source image
+- Deleted `EditImageDialog.tsx` and `use-editor.ts` — replaced by focused edit approach
 
-**Hook rewrite (`hooks/useShotsPage.ts`):**
+**Edit Image Server Changes:**
 
-- Auto-describes image on selection (useEffect with ref tracking)
-- `SHOT_MODELS` array: Kontext Pro (default) + Nano Banana 2
-- `promptCount` state (1-10) with `buildTemplate(count)` helper auto-updating template text
-- Single `generateImages()` action chains: prompt generation → split by `*` → FAL batch submit
-- `canGenerate` / `isGenerating` derived state for button enablement
-- Uses `useGenerationResults({ generationType: 'shot' })` for results + polling
+- `src/features/ai-images/server/edit-image.server.ts` — accepts `sourceImageId`, `editPrompt`, `aspectRatio`, `editModelId`
+- `src/lib/server/fal-image-upload.server.ts` — FAL image upload utility
 
-**Component rewrites:**
+**Regenerate with Different Model:**
 
-- `ShotsPipelineStep.tsx` -- collapsible (chevron toggle, `defaultOpen` prop), no Run button in header
-- `ShotsPageContent.tsx` -- 3-column layout:
-  - Left (w-64): ImageSourceButtons + image preview + Reset
-  - Middle (w-80): 3 collapsible steps + single "Generate Images" button
-    - "Image Description" -- auto-runs, expand to edit
-    - "Prompt Template" -- +/- stepper for count, editable template text
-    - "Prompts" -- slide view (1 of N) with prev/next, each prompt editable, only shows after generation
-  - Right (flex-1): model dropdown (Kontext Pro / Nano Banana 2) + `GenerationResultsGrid` (shared component with Lightbox click-to-view + delete)
+- `GenerationResultsGrid.tsx` — `onRegenerate` + `regenerateModels` props; `RegenerateButton` with `RefreshCw` icon + model popover on complete results with prompts
+- `use-focused-edit.ts` — `handleRegenerate(prompt, modelId)` deducts credits, calls `editImage()`, adds pending result
 
-**Updated:** `index.ts` (added ShotsPipelineStep export), `CLAUDE.md` (full rewrite)
+**Edit Chaining (Promote Result as Source) — latest work:**
+
+- `src/lib/hooks/useGenerationResults.ts` — changed `sourceImageId?: string` to `sourceImageIds?: string[]`; DB load filter and realtime filter now check against array of IDs; channel name uses joined IDs
+- `src/features/ai-images/hooks/use-focused-edit.ts` — added `activeSourceId` (defaults to `imageId`), `sourceChain: string[]` (starts as `[imageId]`), `originalImage` state; `handleSubmit`/`handleRegenerate` use `activeSourceId` instead of `imageId`; new `promoteToSource(result)` fetches metadata from Supabase, swaps source image display, appends to chain, detects aspect ratio; new `resetToOriginal()` restores original source; exports `isChained` boolean
+- `src/features/ai-images/components/FocusedEditView.tsx` — "Reset to Original" button (with `RotateCcw` icon) appears in toolbar when `isChained`; `onAdd` wired to `promoteToSource` on `GenerationResultsGrid`
+- `src/components/GenerationResultsGrid.tsx` — already had `onAdd` prop with Plus button (no changes needed this session)
+
+**Other changes in the diff (from prior work on this branch):**
+
+- `ImageCard.tsx` / `ImageGallery.tsx` — "Edit" action navigates to `/dashboard/edit/$imageId`
+- `use-ai-images-page.ts` — removed old editor hook usage
+- `DashboardLayout.tsx` / `Sidebar.tsx` / `use-sidebar-collapsed.ts` — sidebar refinements
+- `generation-result.ts` — added `prompt` and `title` fields to `GenerationResult` type
+- `combine/` — combine feature server + hook updates
+- `src/lib/prompts/edit-enhancement.ts` + `src/lib/prompts/index.ts` — edit prompt enhancement system prompt
+- `routeTree.gen.ts` — auto-generated, includes new edit route
 
 ## Key decisions
 
-- Reuse `GenerationResultsGrid` from `src/components/` for results display -- gets Lightbox (view + delete + keyboard nav) for free
-- `generationType: 'shot'` in DB metadata to filter results
-- Kontext Pro (`fal-ai/flux-pro/kontext`) default model; Nano Banana 2 (`fal-ai/nano-banana-2/edit`) as alternative
-- Prompts delimited by `*` in raw LLM output, split client-side
-- No separate "Run All" vs "Generate" -- single button chains everything
-- Split Prompts step hidden entirely (internal detail)
+- `sourceImageIds` is an array so chained edits (different `source_image_id` values) all appear in the same grid
+- `sourceChain` only grows — promoting a result appends its ID, never removes previous IDs, so all edits remain visible
+- `resetToOriginal` restores the original image display and resets `activeSourceId` but does NOT shrink `sourceChain` — all chained edits stay visible in the grid
+- Regenerate button uses `imageOverlay` prop (inside image area) rather than `overlayActions` (top-right hover)
+- Promote button uses existing `onAdd` prop / Plus icon on `GenerationResultsGrid`
 
-## Outstanding work
+## Known issues / outstanding work
 
-- **Not yet committed** -- all changes are unstaged on `main` branch
-- Storyboard files also have uncommitted changes from a prior session (StoryInput.tsx, useStoryboardPage.ts, etc.)
-- Could add: image lightbox for the source image preview, more models in dropdown, persist model selection to localStorage
-- The prompt slide view could support adding/removing individual prompts before generating
+- **Not committed** — all changes unstaged on `focused-edit-mode` branch
+- `pnpm build` passes clean
+- Visual verification needed: test the full chain flow (edit -> promote -> edit again -> reset)
+- The Plus "Use as Source" button appears on all results in any grid that passes `onAdd` — may want to restrict to only complete results with URLs (currently handled in `GenerationResultCard`)
+- Consider: visual indicator on the source image showing it's a promoted result (not the original)
+- Consider: showing which model was used on each result card
 
 ## Git state
 
-- Branch: `main`, all changes uncommitted and unstaged
-- Mix of shots pipeline work + prior storyboard changes in the diff
-- `pnpm build` passes clean
+- Branch: `focused-edit-mode`
+- All changes uncommitted/unstaged
+- Last commit: `45ce0c1 Merge branch 'update-shots'`
+- Build passes

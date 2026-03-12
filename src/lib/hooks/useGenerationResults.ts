@@ -11,6 +11,7 @@ interface UseGenerationResultsOptions {
   accessToken: string
   generationType: string
   limit?: number
+  sourceImageIds?: Array<string>
 }
 
 interface DbRow {
@@ -48,6 +49,7 @@ export function useGenerationResults({
   accessToken,
   generationType,
   limit = DEFAULT_LIMIT,
+  sourceImageIds,
 }: UseGenerationResultsOptions) {
   const [results, setResults] = useState<Array<GenerationResult>>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -76,9 +78,15 @@ export function useGenerationResults({
 
       if (queryError ?? !data) return
 
-      const rows = (data as Array<DbRow>).filter((r) =>
-        matchesType(r, generationType),
-      )
+      const rows = (data as Array<DbRow>).filter((r) => {
+        if (!matchesType(r, generationType)) return false
+        if (sourceImageIds && sourceImageIds.length > 0) {
+          const meta = r.generation_metadata
+          const srcId = meta?.source_image_id as string | undefined
+          if (!srcId || !sourceImageIds.includes(srcId)) return false
+        }
+        return true
+      })
       if (rows.length === 0) return
 
       const urlMap: Record<string, string> = {}
@@ -108,6 +116,10 @@ export function useGenerationResults({
           label: getModelName(modelId),
           url: urlMap[r.id],
           prompt: (meta.prompt as string | undefined) ?? undefined,
+          enhancedPrompt:
+            (meta.enhanced_prompt as string | undefined) ?? undefined,
+          originalPrompt:
+            (meta.original_prompt as string | undefined) ?? undefined,
           title: r.title ?? undefined,
           fileSize: r.file_size ?? undefined,
           createdAt: r.created_at ?? undefined,
@@ -118,14 +130,15 @@ export function useGenerationResults({
     }
 
     void load()
-  }, [userId, generationType, limit])
+  }, [userId, generationType, limit, sourceImageIds?.join(',')])
 
   // Realtime subscription
   useEffect(() => {
     if (!userId) return
 
+    const channelKey = sourceImageIds?.length ? sourceImageIds.join('_') : 'all'
     const channel = supabase
-      .channel(`gen_results_${generationType}`)
+      .channel(`gen_results_${generationType}_${channelKey}`)
       .on(
         'postgres_changes',
         {
@@ -138,6 +151,11 @@ export function useGenerationResults({
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as DbRow
             if (!matchesType(updated, generationType)) return
+            if (sourceImageIds && sourceImageIds.length > 0) {
+              const meta = updated.generation_metadata
+              const srcId = meta?.source_image_id as string | undefined
+              if (!srcId || !sourceImageIds.includes(srcId)) return
+            }
 
             if (updated.status === 'completed' && updated.storage_path) {
               supabase.storage
@@ -170,7 +188,7 @@ export function useGenerationResults({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId, generationType])
+  }, [userId, generationType, sourceImageIds?.join(',')])
 
   // Background polling for pending records
   // Directly updates state from poll results instead of relying solely on realtime

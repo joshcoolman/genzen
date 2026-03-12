@@ -1,14 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSettings } from '@/features/ai-images/hooks/use-model-settings'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
-import { useEditor } from '@/features/ai-images/hooks/use-editor'
 import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
 import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
+import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 
@@ -34,18 +34,20 @@ export function useAiImagesPage() {
     setError,
   })
 
-  const editor = useEditor({
-    accessToken,
-    credits,
-    defaultOrientation: generator.orientation,
-    defaultAspectRatio: generator.aspectRatio,
-    imageUrls: gallery.imageUrls,
-    setError,
-  })
-
   const completedImages = gallery.images.filter(
     (img) => img.status === 'completed',
   )
+
+  // Get IDs of completed non-edit images to fetch their edit children
+  const parentIds = useMemo(
+    () =>
+      completedImages
+        .filter((img) => img.generation_metadata?.generation_type !== 'edit')
+        .map((img) => img.id),
+    [completedImages],
+  )
+
+  const editChildrenMap = useEditChildren(parentIds, user?.id)
 
   const lightbox = useLightbox(completedImages, gallery.deleteImage)
 
@@ -87,7 +89,7 @@ export function useAiImagesPage() {
     userImages,
     modelSettings,
     generator,
-    editor,
+    editChildrenMap,
     lightbox,
     variations,
     promptTools,

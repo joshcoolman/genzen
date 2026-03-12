@@ -56,7 +56,7 @@ export function Sidebar({ className }: { className?: string }) {
       )}
     >
       {/* Navigation */}
-      <TooltipProvider delayDuration={200}>
+      <TooltipProvider delayDuration={0}>
         <nav className="flex-1 space-y-1 p-4">
           {/* Toggle button - only visible on md+ screens */}
           <div className="mb-2 hidden md:flex justify-end">
@@ -65,7 +65,9 @@ export function Sidebar({ className }: { className?: string }) {
                 <button
                   onClick={toggleCollapsed}
                   className="rounded-md p-2 text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors"
-                  aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  aria-label={
+                    isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                  }
                 >
                   {isCollapsed ? (
                     <PanelLeft className="h-4 w-4" />
@@ -93,11 +95,14 @@ export function Sidebar({ className }: { className?: string }) {
                       className={cn(
                         'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
                         'gap-3',
-                        isCollapsed ? 'justify-center' : 'justify-center md:justify-start',
+                        isCollapsed
+                          ? 'justify-center'
+                          : 'justify-center md:justify-start',
                         active
                           ? cn(
                               'bg-sidebar-selected text-sidebar-selected-text',
-                              !isCollapsed && 'md:border-l-2 md:border-accent-brand'
+                              !isCollapsed &&
+                                'md:border-l-2 md:border-accent-brand',
                             )
                           : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
                       )}
@@ -128,7 +133,9 @@ export function Sidebar({ className }: { className?: string }) {
                   <button
                     className={cn(
                       'flex w-full items-center rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors gap-3',
-                      isCollapsed ? 'justify-center' : 'justify-center md:justify-start'
+                      isCollapsed
+                        ? 'justify-center'
+                        : 'justify-center md:justify-start',
                     )}
                   >
                     <LogOut className="h-4 w-4 shrink-0" />
