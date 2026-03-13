@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
+import { CHARACTER_REF_MODEL } from '@/features/ai-images/models'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
@@ -37,10 +38,10 @@ export const generateCharacterRef = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    const modelId = 'fal-ai/flux/schnell'
+    const modelId = CHARACTER_REF_MODEL
     const prompt =
       data.promptOverride?.trim() ||
-      `${data.characterDescription}, character reference sheet, full body, profile view, neutral background`
+      `${data.characterDescription}, cinematic portrait, photorealistic, dramatic lighting, shallow depth of field, 35mm film look, movie still`
 
     const falInput = await buildFalInput({
       modelId,

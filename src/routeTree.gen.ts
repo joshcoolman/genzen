@@ -26,6 +26,7 @@ import { Route as DashboardStoryboardRouteImport } from './routes/dashboard/stor
 import { Route as DashboardShotsRouteImport } from './routes/dashboard/shots'
 import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/prompt-studio'
 import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
+import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
@@ -123,6 +124,11 @@ const DashboardOutpaintRoute = DashboardOutpaintRouteImport.update({
   path: '/outpaint',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardNotesRoute = DashboardNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardModelsRoute = DashboardModelsRouteImport.update({
   id: '/models',
   path: '/models',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/shots': typeof DashboardShotsRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
+    | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
     | '/dashboard/shots'
@@ -489,6 +501,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardOutpaintRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/notes': {
+      id: '/dashboard/notes'
+      path: '/notes'
+      fullPath: '/dashboard/notes'
+      preLoaderRoute: typeof DashboardNotesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/models': {
       id: '/dashboard/models'
       path: '/models'
@@ -592,6 +611,7 @@ interface DashboardRouteChildren {
   DashboardEditImageRoute: typeof DashboardEditImageRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
+  DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardOutpaintRoute: typeof DashboardOutpaintRoute
   DashboardPromptStudioRoute: typeof DashboardPromptStudioRoute
   DashboardShotsRoute: typeof DashboardShotsRoute
@@ -612,6 +632,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEditImageRoute: DashboardEditImageRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,
+  DashboardNotesRoute: DashboardNotesRoute,
   DashboardOutpaintRoute: DashboardOutpaintRoute,
   DashboardPromptStudioRoute: DashboardPromptStudioRoute,
   DashboardShotsRoute: DashboardShotsRoute,

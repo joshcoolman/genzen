@@ -9,6 +9,7 @@ import {
   ModelSettingsDialog,
   useAiImagesPage,
 } from '@/features/ai-images'
+import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
@@ -16,6 +17,7 @@ export const Route = createFileRoute('/dashboard/ai-images')({
 
 function AiImagesPage() {
   const page = useAiImagesPage()
+  useAiImagesADContext(page)
   const [generatorOpen, setGeneratorOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('ai-images-generator-open') !== 'false'

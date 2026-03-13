@@ -12,6 +12,7 @@ interface SaveStoryboardInput {
   scenes: Array<Scene>
   characters?: Array<StoryboardCharacter>
   status: StoryboardStatus
+  video_record_id?: string | null
 }
 
 export const saveStoryboard = createServerFn({ method: 'POST' })
@@ -37,6 +38,9 @@ export const saveStoryboard = createServerFn({ method: 'POST' })
       scenes: JSON.stringify(data.scenes),
       characters: JSON.stringify(data.characters ?? []),
       status: data.status,
+      ...(data.video_record_id !== undefined && {
+        video_record_id: data.video_record_id,
+      }),
     }
 
     if (data.id) {

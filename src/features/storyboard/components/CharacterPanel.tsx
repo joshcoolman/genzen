@@ -1,7 +1,25 @@
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Loader2, Sparkles, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ImagePlus,
+  Library,
+  Loader2,
+  Sparkles,
+  Upload,
+  X,
+} from 'lucide-react'
 import type { UseStoryboardReturn } from '../hooks/useStoryboard'
+import type { LightboxImage } from '@/components/Lightbox'
 import { ActionButton } from '@/components/ActionButton'
+import { Lightbox } from '@/components/Lightbox'
+import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
+import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
+import { useClipboardPaste } from '@/features/user-images/hooks/useClipboardPaste'
+import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
+import { useAuth } from '@/lib/auth'
 
 interface CharacterPanelProps {
   sb: UseStoryboardReturn
@@ -9,6 +27,24 @@ interface CharacterPanelProps {
 
 export function CharacterPanel({ sb }: CharacterPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [focusedSlug, setFocusedSlug] = useState<string | null>(null)
+  const { user } = useAuth()
+  const userId = user?.id
+  const existingImages = useExistingImages(userId)
+  const { upload } = useImageUpload(userId)
+
+  useClipboardPaste({
+    enabled: !!focusedSlug,
+    onUpload: async (input) => {
+      const result = await upload(input)
+      if (focusedSlug) {
+        sb.addCharacterRefImage(focusedSlug, {
+          id: result.id,
+          url: result.url,
+        })
+      }
+    },
+  })
 
   if (sb.characters.length === 0) return null
 
@@ -46,6 +82,12 @@ export function CharacterPanel({ sb }: CharacterPanelProps) {
                   ),
                 })
               }
+              onAddRefImage={(image) =>
+                sb.addCharacterRefImage(character.slug, image)
+              }
+              onFocus={() => setFocusedSlug(character.slug)}
+              existingImages={existingImages}
+              userId={userId}
             />
           ))}
         </div>
@@ -60,6 +102,10 @@ interface CharacterCardProps {
   onUpdateDescription: (desc: string) => void
   onGenerateRef: (promptOverride?: string) => void
   onRemoveRefImage: (imageId: string) => void
+  onAddRefImage: (image: { id: string; url: string | null }) => void
+  onFocus: () => void
+  existingImages: ReturnType<typeof useExistingImages>
+  userId: string | undefined
 }
 
 function CharacterCard({
@@ -68,21 +114,56 @@ function CharacterCard({
   onUpdateDescription,
   onGenerateRef,
   onRemoveRefImage,
+  onAddRefImage,
+  onFocus,
+  existingImages,
+  userId,
 }: CharacterCardProps) {
   const [isEditingDesc, setIsEditingDesc] = useState(false)
   const [editDesc, setEditDesc] = useState(character.description)
   const [showPromptInput, setShowPromptInput] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [showLibrary, setShowLibrary] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { upload, isUploading } = useImageUpload(userId)
   const hasRefs = character.reference_images.length > 0
 
+  const lightboxImages: Array<LightboxImage> = character.reference_images
+    .filter((img) => img.url)
+    .map((img) => ({
+      id: img.id,
+      url: img.url!,
+      title: `${character.name} reference`,
+    }))
+
+  const lightboxImageUrls: Record<string, string> = Object.fromEntries(
+    character.reference_images
+      .filter((img) => img.url)
+      .map((img) => [img.id, img.url!]),
+  )
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    await processAndUploadFiles(Array.from(files), async (input) => {
+      const result = await upload(input)
+      onAddRefImage({ id: result.id, url: result.url })
+    })
+  }
+
   return (
-    <div className="rounded-lg border border-border bg-card p-3 space-y-2.5">
+    <div
+      className="rounded-lg border border-border bg-card p-3 space-y-2.5"
+      onPointerDown={onFocus}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div
-            className={`size-2 rounded-full ${hasRefs ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
-          />
+          {hasRefs ? (
+            <Check className="size-4 text-green-500" />
+          ) : (
+            <div className="size-4" />
+          )}
           <h3 className="text-sm font-medium">{character.name}</h3>
         </div>
         <span className="text-xs text-muted-foreground">
@@ -138,10 +219,16 @@ function CharacterCard({
                 <img
                   src={img.url}
                   alt="Character reference"
-                  className="size-14 rounded object-cover"
+                  className="size-20 cursor-pointer rounded object-cover"
+                  onClick={() => {
+                    const lightboxIdx = lightboxImages.findIndex(
+                      (li) => li.id === img.id,
+                    )
+                    if (lightboxIdx >= 0) setLightboxIndex(lightboxIdx)
+                  }}
                 />
               ) : (
-                <div className="flex size-14 items-center justify-center rounded bg-muted">
+                <div className="flex size-20 items-center justify-center rounded bg-muted">
                   <Loader2 className="size-3 animate-spin text-muted-foreground" />
                 </div>
               )}
@@ -156,8 +243,35 @@ function CharacterCard({
         </div>
       )}
 
+      {/* Lightbox */}
+      {lightboxIndex !== null && lightboxImages.length > 0 && (
+        <Lightbox
+          images={lightboxImages}
+          imageUrls={lightboxImageUrls}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i !== null ? Math.min(i + 1, lightboxImages.length - 1) : 0,
+            )
+          }
+          onPrev={() =>
+            setLightboxIndex((i) => (i !== null ? Math.max(i - 1, 0) : 0))
+          }
+          onDelete={() => {
+            const img = lightboxImages[lightboxIndex]
+            onRemoveRefImage(img.id)
+            if (lightboxIndex >= lightboxImages.length - 1) {
+              setLightboxIndex(
+                lightboxImages.length > 1 ? lightboxIndex - 1 : null,
+              )
+            }
+          }}
+        />
+      )}
+
       {/* Actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap">
         {showPromptInput ? (
           <div className="flex flex-1 gap-1.5">
             <input
@@ -207,12 +321,60 @@ function CharacterCard({
             <button
               onClick={() => setShowPromptInput(true)}
               className="h-7 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Custom prompt"
             >
-              Custom Prompt
+              <ImagePlus className="size-3.5" />
             </button>
+            <button
+              onClick={() => setShowLibrary(true)}
+              className="h-7 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Choose from library"
+            >
+              <Library className="size-3.5" />
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="h-7 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Upload image"
+            >
+              {isUploading ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Upload className="size-3.5" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files)}
+            />
           </>
         )}
       </div>
+
+      {/* Library picker dialog */}
+      <ExistingImagePicker
+        open={showLibrary}
+        onOpenChange={setShowLibrary}
+        images={existingImages.images}
+        imageUrls={existingImages.imageUrls}
+        isLoading={existingImages.isLoading}
+        alreadyCollectedIds={
+          new Set(character.reference_images.map((img) => img.id))
+        }
+        max={14 - character.reference_images.length}
+        excludeIds={new Set(character.reference_images.map((img) => img.id))}
+        onConfirm={(selected) => {
+          for (const img of selected) {
+            onAddRefImage({ id: img.id, url: img.url })
+          }
+          setShowLibrary(false)
+        }}
+      />
     </div>
   )
 }

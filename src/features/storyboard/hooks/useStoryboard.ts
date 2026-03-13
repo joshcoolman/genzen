@@ -3,9 +3,11 @@ import { refineStory as refineStoryServer } from '../server/refine-story.server'
 import { generateScenes as generateScenesServer } from '../server/generate-scenes.server'
 import { generateStoryboardFrame as generateFrameServer } from '../server/generate-storyboard-frame.server'
 import { generateCharacterRef as generateCharacterRefServer } from '../server/generate-character-ref.server'
+import { generateStoryboardClip as generateClipServer } from '../server/generate-storyboard-video.server'
 import { saveStoryboard as saveStoryboardServer } from '../server/save-storyboard.server'
 import { loadStoryboard as loadStoryboardServer } from '../server/load-storyboard.server'
 import type { Scene, StoryboardCharacter, StoryboardStatus } from '../types'
+import { checkPendingVideo } from '@/features/ai-video/server/check-pending-video.server'
 import { supabase } from '@/lib/supabase'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { useAuth } from '@/lib/auth'
@@ -20,17 +22,24 @@ export interface UseStoryboardReturn {
   scenes: Array<Scene>
   characters: Array<StoryboardCharacter>
   status: StoryboardStatus
-  frameModelId: string
   // Loading states
   isRefining: boolean
   isGeneratingScenes: boolean
+  isGeneratingVideo: boolean
   isSaving: boolean
   isLoading: boolean
   error: string | null
+  videoError: string | null
   // Derived
   hasScenes: boolean
+  allFramesReady: boolean
   generatingSceneIds: Set<string>
+  generatingSceneCounts: Map<string, number>
   generatingCharacterSlugs: Set<string>
+  // Video
+  videoClipIds: Array<string>
+  videoClipUrls: Array<string>
+  videoUrl: string | null
   // Actions
   setStoryPrompt: (text: string) => void
   refineStory: () => void
@@ -42,9 +51,21 @@ export interface UseStoryboardReturn {
     slug: string,
     image: { id: string; url: string | null },
   ) => void
-  generateFrame: (sceneId: string) => void
-  generateAllFrames: () => void
-  setFrameModelId: (id: string) => void
+  generateFrame: (sceneId: string, count?: number) => void
+  selectFrame: (sceneId: string, frameId: string) => void
+  addFrameFromLibrary: (
+    sceneId: string,
+    image: { id: string; url: string | null },
+  ) => void
+  addSceneRefImage: (
+    sceneId: string,
+    image: { id: string; url: string | null },
+  ) => void
+  removeSceneRefImage: (sceneId: string, imageId: string) => void
+  clips: Array<{ scenes: Array<Scene>; totalDuration: number }>
+  generatingClipIndices: Set<number>
+  generateClip: (clipIndex: number) => void
+  generateAllClips: () => void
   save: () => void
   reset: () => void
 }
@@ -60,18 +81,72 @@ export function useStoryboard(): UseStoryboardReturn {
   const [scenes, setScenes] = useState<Array<Scene>>([])
   const [characters, setCharacters] = useState<Array<StoryboardCharacter>>([])
   const [status, setStatus] = useState<StoryboardStatus>('draft')
-  const [frameModelId, setFrameModelId] = useState('fal-ai/flux/schnell')
   const [isRefining, setIsRefining] = useState(false)
   const [isGeneratingScenes, setIsGeneratingScenes] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [generatingSceneIds, setGeneratingSceneIds] = useState<Set<string>>(
-    new Set(),
-  )
+  const [generatingSceneCounts, setGeneratingSceneCounts] = useState<
+    Map<string, number>
+  >(new Map())
   const [generatingCharacterSlugs, setGeneratingCharacterSlugs] = useState<
     Set<string>
   >(new Set())
+  const [videoClipIds, setVideoClipIds] = useState<Array<string>>([])
+  const [videoClipUrls, setVideoClipUrls] = useState<Map<string, string>>(
+    new Map(),
+  )
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false)
+  const [videoError, setVideoError] = useState<string | null>(null)
+  const [generatingClipIndices, setGeneratingClipIndices] = useState<
+    Set<number>
+  >(new Set())
+
+  // Derived set for backward compat
+  const generatingSceneIds = useMemo(
+    () => new Set(generatingSceneCounts.keys()),
+    [generatingSceneCounts],
+  )
+
+  // Derive ordered video clip URLs array
+  const videoClipUrlsArray = useMemo(
+    () =>
+      videoClipIds
+        .map((id) => videoClipUrls.get(id))
+        .filter((u): u is string => !!u),
+    [videoClipIds, videoClipUrls],
+  )
+
+  // Single videoUrl for backward compat (first clip)
+  const videoUrl = videoClipUrlsArray.length > 0 ? videoClipUrlsArray[0] : null
+
+  // All scenes have a selected frame
+  const allFramesReady = useMemo(
+    () => scenes.length >= 2 && scenes.every((s) => s.image_id !== null),
+    [scenes],
+  )
+
+  // Compute video clips: group consecutive scenes into chunks <= 15s
+  const MAX_CLIP_DURATION = 15
+  const clips = useMemo(() => {
+    const result: Array<{ scenes: Array<Scene>; totalDuration: number }> = []
+    let current: Array<Scene> = []
+    let currentDuration = 0
+    for (const scene of scenes) {
+      const d = scene.duration_seconds
+      if (current.length > 0 && currentDuration + d > MAX_CLIP_DURATION) {
+        result.push({ scenes: current, totalDuration: currentDuration })
+        current = []
+        currentDuration = 0
+      }
+      current.push(scene)
+      currentDuration += d
+    }
+    if (current.length > 0) {
+      result.push({ scenes: current, totalDuration: currentDuration })
+    }
+    return result
+  }, [scenes])
 
   // Track frame generations via existing hook
   const frameGen = useGenerationResults({
@@ -111,16 +186,34 @@ export function useStoryboard(): UseStoryboardReturn {
             const sceneId = meta.scene_id as string | undefined
             if (!sceneId) return
 
+            const newFrame = { id: result.id, url: result.url ?? null }
+
             setScenes((prev) =>
-              prev.map((s) =>
-                s.id === sceneId
-                  ? { ...s, image_id: result.id, image_url: result.url ?? null }
-                  : s,
-              ),
+              prev.map((s) => {
+                if (s.id !== sceneId) return s
+                // Skip if frame already exists (e.g. loaded from saved data)
+                if (s.generated_frames.some((f) => f.id === newFrame.id))
+                  return s
+                const updated = {
+                  ...s,
+                  generated_frames: [...s.generated_frames, newFrame],
+                }
+                // Auto-select first frame if none selected
+                if (!s.image_id) {
+                  updated.image_id = result.id
+                  updated.image_url = result.url ?? null
+                }
+                return updated
+              }),
             )
-            setGeneratingSceneIds((prev) => {
-              const next = new Set(prev)
-              next.delete(sceneId)
+            setGeneratingSceneCounts((prev) => {
+              const next = new Map(prev)
+              const current = next.get(sceneId) ?? 0
+              if (current <= 1) {
+                next.delete(sceneId)
+              } else {
+                next.set(sceneId, current - 1)
+              }
               return next
             })
           })
@@ -151,17 +244,19 @@ export function useStoryboard(): UseStoryboardReturn {
             if (!slug) return
 
             setCharacters((prev) =>
-              prev.map((c) =>
-                c.slug === slug
-                  ? {
-                      ...c,
-                      reference_images: [
-                        ...c.reference_images,
-                        { id: result.id, url: result.url ?? null },
-                      ],
-                    }
-                  : c,
-              ),
+              prev.map((c) => {
+                if (c.slug !== slug) return c
+                // Skip if ref already exists (e.g. loaded from saved data)
+                if (c.reference_images.some((img) => img.id === result.id))
+                  return c
+                return {
+                  ...c,
+                  reference_images: [
+                    ...c.reference_images,
+                    { id: result.id, url: result.url ?? null },
+                  ],
+                }
+              }),
             )
             setGeneratingCharacterSlugs((prev) => {
               const next = new Set(prev)
@@ -184,36 +279,131 @@ export function useStoryboard(): UseStoryboardReturn {
           setStoryboardId(storyboard.id)
           setStoryPrompt(storyboard.story_prompt)
           setRefinedStory(storyboard.refined_story)
-          setScenes(
+          const rawScenes = (
             Array.isArray(storyboard.scenes)
               ? storyboard.scenes
-              : JSON.parse(storyboard.scenes as unknown as string),
+              : JSON.parse(storyboard.scenes as unknown as string)
+          ) as Array<
+            Omit<Scene, 'generated_frames'> & {
+              generated_frames?: Scene['generated_frames']
+            }
+          >
+          // Normalize: backfill generated_frames, deduplicate, strip stale URLs
+          setScenes(
+            rawScenes.map((s) => {
+              const rawFrames =
+                s.generated_frames ??
+                (s.image_id ? [{ id: s.image_id, url: null }] : [])
+              // Deduplicate frames by id
+              const seenIds = new Set<string>()
+              const dedupedFrames = rawFrames.filter((f: any) => {
+                if (seenIds.has(f.id)) return false
+                seenIds.add(f.id)
+                return true
+              })
+              return {
+                ...s,
+                lighting: (s as any).lighting ?? '',
+                lens: (s as any).lens ?? '',
+                angle: (s as any).angle ?? 'eye level',
+                generation_notes: (s as any).generation_notes ?? '',
+                reference_images: ((s as any).reference_images ?? []).map(
+                  (img: any) => ({ id: img.id, url: null }),
+                ),
+                image_url: null,
+                generated_frames: dedupedFrames.map((f: any) => ({
+                  id: f.id,
+                  url: null,
+                })),
+              }
+            }),
           )
           const chars = storyboard.characters
+          const parsedChars = Array.isArray(chars)
+            ? chars
+            : typeof chars === 'string'
+              ? JSON.parse(chars)
+              : []
+          // Deduplicate and strip stale character ref URLs
           setCharacters(
-            Array.isArray(chars)
-              ? chars
-              : typeof chars === 'string'
-                ? JSON.parse(chars)
-                : [],
+            parsedChars.map((c: any) => {
+              const seen = new Set<string>()
+              const deduped = (c.reference_images ?? []).filter((img: any) => {
+                if (seen.has(img.id)) return false
+                seen.add(img.id)
+                return true
+              })
+              return {
+                ...c,
+                reference_images: deduped.map((img: any) => ({
+                  id: img.id,
+                  url: null,
+                })),
+              }
+            }),
           )
           setStatus(storyboard.status)
+          // Restore video clips — find all storyboard_video records for this storyboard
+          if (storyboard.video_record_id) {
+            supabase
+              .from('user_images')
+              .select('id, status, generation_metadata')
+              .eq('source', 'ai_video')
+              .eq('user_id', userId!)
+              .filter(
+                'generation_metadata->>storyboard_id',
+                'eq',
+                storyboard.id,
+              )
+              .filter(
+                'generation_metadata->>generation_type',
+                'eq',
+                'storyboard_video',
+              )
+              .order('created_at', { ascending: true })
+              .then(({ data: clipRecords }) => {
+                if (!clipRecords?.length) return
+                const ids = clipRecords.map((r) => r.id)
+                setVideoClipIds(ids)
+                const urlMap = new Map<string, string>()
+                for (const r of clipRecords) {
+                  if (r.status === 'completed') {
+                    const meta = r.generation_metadata as Record<
+                      string,
+                      unknown
+                    > | null
+                    const falUrl = meta?.fal_url as string | undefined
+                    if (falUrl) urlMap.set(r.id, falUrl)
+                  }
+                }
+                if (urlMap.size > 0) setVideoClipUrls(urlMap)
+              })
+          }
         }
       })
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [accessToken])
 
-  // Resolve image URLs for scenes that have image_ids but no image_urls
+  // Resolve image URLs for scenes — image_id, generated_frames, and reference_images
   useEffect(() => {
-    const needUrls = scenes.filter((s) => s.image_id && !s.image_url)
-    if (needUrls.length === 0) return
+    const idsNeeding: Array<string> = []
+    for (const s of scenes) {
+      if (s.image_id && !s.image_url) idsNeeding.push(s.image_id)
+      for (const f of s.generated_frames) {
+        if (f.id && !f.url && !idsNeeding.includes(f.id)) idsNeeding.push(f.id)
+      }
+      for (const ref of s.reference_images) {
+        if (ref.id && !ref.url && !idsNeeding.includes(ref.id))
+          idsNeeding.push(ref.id)
+      }
+    }
+    if (idsNeeding.length === 0) return
 
-    const ids = needUrls.map((s) => s.image_id!)
     supabase
       .from('user_images')
       .select('id, storage_path')
-      .in('id', ids)
+      .in('id', idsNeeding)
       .eq('status', 'completed')
       .then(async ({ data: rows }) => {
         if (!rows?.length) return
@@ -229,14 +419,30 @@ export function useStoryboard(): UseStoryboardReturn {
             }),
         )
         setScenes((prev) =>
-          prev.map((s) =>
-            s.image_id && urlMap[s.image_id]
-              ? { ...s, image_url: urlMap[s.image_id] }
-              : s,
-          ),
+          prev.map((s) => ({
+            ...s,
+            image_url:
+              s.image_id && urlMap[s.image_id]
+                ? urlMap[s.image_id]
+                : s.image_url,
+            generated_frames: s.generated_frames.map((f) =>
+              f.id && urlMap[f.id] ? { ...f, url: urlMap[f.id] } : f,
+            ),
+            reference_images: s.reference_images.map((ref) =>
+              ref.id && urlMap[ref.id] ? { ...ref, url: urlMap[ref.id] } : ref,
+            ),
+          })),
         )
       })
-  }, [scenes.map((s) => `${s.image_id}:${s.image_url}`).join(',')])
+  }, [
+    scenes
+      .flatMap((s) => [
+        `${s.image_id}:${s.image_url}`,
+        ...s.generated_frames.map((f) => `${f.id}:${f.url}`),
+        ...s.reference_images.map((r) => `${r.id}:${r.url}`),
+      ])
+      .join(','),
+  ])
 
   // Resolve image URLs for character reference images
   useEffect(() => {
@@ -394,11 +600,21 @@ export function useStoryboard(): UseStoryboardReturn {
   )
 
   const generateFrame = useCallback(
-    async (sceneId: string) => {
+    async (sceneId: string, count: number = 1) => {
       const scene = scenes.find((s) => s.id === sceneId)
       if (!scene || !accessToken || !storyboardId) return
 
-      setGeneratingSceneIds((prev) => new Set(prev).add(sceneId))
+      const activeCount = generatingSceneCounts.get(sceneId) ?? 0
+      const available = 9 - scene.generated_frames.length - activeCount
+      const actualCount = Math.min(Math.max(count, 1), 3, available)
+      if (actualCount <= 0) return
+
+      // Increment generating count
+      setGeneratingSceneCounts((prev) => {
+        const next = new Map(prev)
+        next.set(sceneId, (next.get(sceneId) ?? 0) + actualCount)
+        return next
+      })
 
       // Gather character ref image URLs for this scene
       const characterImageUrls: Array<string> = []
@@ -410,44 +626,250 @@ export function useStoryboard(): UseStoryboardReturn {
           }
         }
       }
+      // Merge scene-level reference images
+      for (const ref of scene.reference_images) {
+        if (ref.url && !characterImageUrls.includes(ref.url))
+          characterImageUrls.push(ref.url)
+      }
+
+      // Build prompt: visual description + generation notes
+      let prompt = scene.visual_description
+      if (scene.generation_notes.trim()) {
+        prompt += `\n\n[Generation notes: ${scene.generation_notes.trim()}]`
+      }
+
+      for (let i = 0; i < actualCount; i++) {
+        try {
+          const result = await generateFrameServer({
+            data: {
+              visualDescription: prompt,
+              framing: scene.framing,
+              camera: scene.camera,
+              lighting: scene.lighting,
+              lens: scene.lens,
+              angle: scene.angle,
+              sceneId,
+              storyboardId,
+              accessToken,
+              characterImageUrls:
+                characterImageUrls.length > 0 ? characterImageUrls : undefined,
+            },
+          })
+
+          frameGen.addPendingResult({
+            id: result.recordId,
+            status: 'pending',
+            label: `Scene ${scene.scene_number}`,
+          })
+        } catch (err) {
+          console.error('Frame generation failed:', err)
+          setGeneratingSceneCounts((prev) => {
+            const next = new Map(prev)
+            const current = next.get(sceneId) ?? 0
+            if (current <= 1) {
+              next.delete(sceneId)
+            } else {
+              next.set(sceneId, current - 1)
+            }
+            return next
+          })
+        }
+      }
+    },
+    [
+      scenes,
+      characters,
+      accessToken,
+      storyboardId,
+      generatingSceneCounts,
+      frameGen,
+    ],
+  )
+
+  const addFrameFromLibrary = useCallback(
+    (sceneId: string, image: { id: string; url: string | null }) => {
+      setScenes((prev) =>
+        prev.map((s) => {
+          if (s.id !== sceneId) return s
+          const updated = {
+            ...s,
+            generated_frames: [...s.generated_frames, image].slice(0, 9),
+          }
+          // Auto-select if no frame selected
+          if (!s.image_id) {
+            updated.image_id = image.id
+            updated.image_url = image.url
+          }
+          return updated
+        }),
+      )
+    },
+    [],
+  )
+
+  const addSceneRefImage = useCallback(
+    (sceneId: string, image: { id: string; url: string | null }) => {
+      setScenes((prev) =>
+        prev.map((s) =>
+          s.id === sceneId
+            ? {
+                ...s,
+                reference_images: [...s.reference_images, image].slice(0, 14),
+              }
+            : s,
+        ),
+      )
+    },
+    [],
+  )
+
+  const removeSceneRefImage = useCallback(
+    (sceneId: string, imageId: string) => {
+      setScenes((prev) =>
+        prev.map((s) =>
+          s.id === sceneId
+            ? {
+                ...s,
+                reference_images: s.reference_images.filter(
+                  (img) => img.id !== imageId,
+                ),
+              }
+            : s,
+        ),
+      )
+    },
+    [],
+  )
+
+  const selectFrame = useCallback((sceneId: string, frameId: string) => {
+    setScenes((prev) =>
+      prev.map((s) => {
+        if (s.id !== sceneId) return s
+        const frame = s.generated_frames.find((f) => f.id === frameId)
+        if (!frame) return s
+        return { ...s, image_id: frame.id, image_url: frame.url }
+      }),
+    )
+  }, [])
+
+  // Generate a single video clip
+  const generateClipAction = useCallback(
+    async (clipIndex: number) => {
+      const clip = clips[clipIndex] as (typeof clips)[number] | undefined
+      if (!clip || !accessToken || !storyboardId) return
+      const missingFrame = clip.scenes.some((s) => !s.image_id)
+      if (missingFrame) return
+
+      setGeneratingClipIndices((prev) => new Set(prev).add(clipIndex))
+      setIsGeneratingVideo(true)
+      setVideoError(null)
 
       try {
-        const result = await generateFrameServer({
+        const sceneInputs = clip.scenes.map((s) => ({
+          image_id: s.image_id!,
+          visual_description: s.visual_description,
+          duration_seconds: s.duration_seconds,
+          framing: s.framing,
+          camera: s.camera,
+          lighting: s.lighting,
+          lens: s.lens,
+          angle: s.angle,
+          characters: s.characters,
+        }))
+
+        // Gather character refs: first ref image URL per character (deduped)
+        const characterRefs: Array<{ slug: string; url: string }> = []
+        const seenSlugs = new Set<string>()
+        for (const scene of clip.scenes) {
+          for (const slug of scene.characters) {
+            if (seenSlugs.has(slug)) continue
+            seenSlugs.add(slug)
+            const char = characters.find((c) => c.slug === slug)
+            const firstUrl = char?.reference_images.find((img) => img.url)?.url
+            if (firstUrl) characterRefs.push({ slug, url: firstUrl })
+          }
+        }
+
+        const result = await generateClipServer({
           data: {
-            visualDescription: scene.visual_description,
-            sceneId,
             storyboardId,
             accessToken,
-            modelId: frameModelId,
-            characterImageUrls:
-              characterImageUrls.length > 0 ? characterImageUrls : undefined,
+            scenes: sceneInputs,
+            characterRefs,
+            clipIndex,
+            clipCount: clips.length,
           },
         })
 
-        frameGen.addPendingResult({
-          id: result.recordId,
-          status: 'pending',
-          label: `Scene ${scene.scene_number}`,
+        setVideoClipIds((prev) => {
+          const next = [...prev]
+          // Insert at clip position, replacing if re-generating
+          next[clipIndex] = result.recordId
+          return next
         })
+        setStatus('generating_video')
       } catch (err) {
-        console.error('Frame generation failed:', err)
-        setGeneratingSceneIds((prev) => {
+        const msg =
+          err instanceof Error ? err.message : 'Video generation failed'
+        setVideoError(msg)
+      } finally {
+        setGeneratingClipIndices((prev) => {
           const next = new Set(prev)
-          next.delete(sceneId)
+          next.delete(clipIndex)
+          if (next.size === 0) setIsGeneratingVideo(false)
           return next
         })
       }
     },
-    [scenes, characters, accessToken, storyboardId, frameModelId, frameGen],
+    [clips, characters, accessToken, storyboardId],
   )
 
-  const generateAllFrames = useCallback(async () => {
-    for (const scene of scenes) {
-      if (!scene.image_id) {
-        await generateFrame(scene.id)
-      }
+  // Generate all clips
+  const generateAllClipsAction = useCallback(async () => {
+    for (let i = 0; i < clips.length; i++) {
+      await generateClipAction(i)
     }
-  }, [scenes, generateFrame])
+  }, [clips, generateClipAction])
+
+  // Poll for video clip completion
+  useEffect(() => {
+    if (videoClipIds.length === 0 || !accessToken) return
+    // All clips already resolved
+    if (videoClipUrls.size >= videoClipIds.length) return
+    setIsGeneratingVideo(true)
+
+    const interval = setInterval(async () => {
+      let allDone = true
+      for (const clipId of videoClipIds) {
+        if (videoClipUrls.has(clipId)) continue
+        allDone = false
+        try {
+          const result = await checkPendingVideo({
+            data: { accessToken, recordId: clipId },
+          })
+          if (result.status === 'completed' && result.videoUrl) {
+            setVideoClipUrls((prev) => {
+              const next = new Map(prev)
+              next.set(clipId, result.videoUrl)
+              return next
+            })
+          } else if (result.status === 'error') {
+            setVideoError(result.error)
+            setIsGeneratingVideo(false)
+            return
+          }
+        } catch {
+          // Keep polling on transient errors
+        }
+      }
+      if (allDone) {
+        setIsGeneratingVideo(false)
+        setStatus('complete')
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [videoClipIds, videoClipUrls.size, accessToken])
 
   const save = useCallback(async () => {
     if (!accessToken || !storyPrompt.trim()) return
@@ -506,8 +928,13 @@ export function useStoryboard(): UseStoryboardReturn {
     setScenes([])
     setCharacters([])
     setStatus('draft')
-    setGeneratingSceneIds(new Set())
+    setGeneratingSceneCounts(new Map())
     setGeneratingCharacterSlugs(new Set())
+    setVideoClipIds([])
+    setVideoClipUrls(new Map())
+    setIsGeneratingVideo(false)
+    setVideoError(null)
+    setGeneratingClipIndices(new Set())
     processedIdsRef.current.clear()
     processedCharRefIdsRef.current.clear()
   }, [])
@@ -520,15 +947,21 @@ export function useStoryboard(): UseStoryboardReturn {
       scenes,
       characters,
       status,
-      frameModelId,
       isRefining,
       isGeneratingScenes,
+      isGeneratingVideo,
       isSaving,
       isLoading,
       error,
+      videoError,
       hasScenes: scenes.length > 0,
+      allFramesReady,
       generatingSceneIds,
+      generatingSceneCounts,
       generatingCharacterSlugs,
+      videoClipIds,
+      videoClipUrls: videoClipUrlsArray,
+      videoUrl,
       setStoryPrompt,
       refineStory,
       generateScenes: generateScenesAction,
@@ -537,8 +970,14 @@ export function useStoryboard(): UseStoryboardReturn {
       generateCharacterRef: generateCharacterRefAction,
       addCharacterRefImage,
       generateFrame,
-      generateAllFrames,
-      setFrameModelId,
+      selectFrame,
+      addFrameFromLibrary,
+      addSceneRefImage,
+      removeSceneRefImage,
+      clips,
+      generatingClipIndices,
+      generateClip: generateClipAction,
+      generateAllClips: generateAllClipsAction,
       save,
       reset,
     }),
@@ -549,14 +988,22 @@ export function useStoryboard(): UseStoryboardReturn {
       scenes,
       characters,
       status,
-      frameModelId,
       isRefining,
       isGeneratingScenes,
+      isGeneratingVideo,
       isSaving,
       isLoading,
       error,
+      videoError,
+      allFramesReady,
       generatingSceneIds,
+      generatingSceneCounts,
       generatingCharacterSlugs,
+      videoClipIds,
+      videoClipUrlsArray,
+      videoUrl,
+      clips,
+      generatingClipIndices,
       refineStory,
       generateScenesAction,
       updateScene,
@@ -564,7 +1011,12 @@ export function useStoryboard(): UseStoryboardReturn {
       generateCharacterRefAction,
       addCharacterRefImage,
       generateFrame,
-      generateAllFrames,
+      selectFrame,
+      addFrameFromLibrary,
+      addSceneRefImage,
+      removeSceneRefImage,
+      generateClipAction,
+      generateAllClipsAction,
       save,
       reset,
     ],

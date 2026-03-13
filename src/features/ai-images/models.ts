@@ -161,6 +161,15 @@ export const DEFAULT_VISIBLE_MODELS = [
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
 
+// Feature-specific model defaults — change here, not in server files
+export const STORYBOARD_FRAME_MODEL = ALL_IMAGE_MODELS.find(
+  (m) => m.id === 'fal-ai/nano-banana-2',
+)!.id
+
+export const CHARACTER_REF_MODEL = ALL_IMAGE_MODELS.find(
+  (m) => m.id === 'fal-ai/flux/schnell',
+)!.id
+
 export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
   (m) => m.supportsImageInput,
 )

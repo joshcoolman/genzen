@@ -2,17 +2,26 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
+import {
+  ALL_IMAGE_MODELS,
+  STORYBOARD_FRAME_MODEL,
+} from '@/features/ai-images/models'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { fetchAndUploadToFal } from '@/lib/server/fal-image-upload.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 interface GenerateStoryboardFrameInput {
   visualDescription: string
+  framing?: string
+  camera?: string
+  lighting?: string
+  lens?: string
+  angle?: string
   sceneId: string
   storyboardId: string
   accessToken: string
-  modelId?: string
   characterImageUrls?: Array<string>
 }
 
@@ -37,15 +46,41 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    const modelId = data.modelId || 'fal-ai/flux/schnell'
-    const prompt = data.visualDescription.trim()
+    const baseModelId = STORYBOARD_FRAME_MODEL
+
+    // Build enriched prompt with cinematography metadata
+    const cineParts: Array<string> = []
+    if (data.framing) cineParts.push(`${data.framing} shot`)
+    if (data.angle && data.angle !== 'eye level') cineParts.push(data.angle)
+    if (data.lens) cineParts.push(`shot on ${data.lens}`)
+    if (data.lighting) cineParts.push(data.lighting)
+    const cinePrefix = cineParts.length > 0 ? cineParts.join(', ') + '. ' : ''
+    const prompt = `${cinePrefix}${data.visualDescription.trim()}`
+
+    const hasImages =
+      data.characterImageUrls && data.characterImageUrls.length > 0
+
+    // Use the edit endpoint when reference images are provided
+    const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === baseModelId)
+    const modelId =
+      hasImages && modelDef?.imageInputModelId
+        ? modelDef.imageInputModelId
+        : baseModelId
+
+    // Re-upload images to FAL storage (Supabase signed URLs aren't publicly accessible)
+    let falImageUrls: Array<string> | undefined
+    if (hasImages) {
+      falImageUrls = await Promise.all(
+        data.characterImageUrls!.map(fetchAndUploadToFal),
+      )
+    }
 
     const falInput = await buildFalInput({
       modelId,
       prompt,
       aspectRatio: '16:9',
       safetyLevel: 'permissive',
-      imageUrls: data.characterImageUrls,
+      imageUrls: falImageUrls,
     })
 
     const { request_id } = await (fal.queue.submit as any)(modelId, {
@@ -73,7 +108,7 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
         sort_order: Date.now() / 1000,
         generation_metadata: {
           prompt,
-          model: modelId,
+          model: baseModelId,
           fal_model_id: modelId,
           generation_type: 'storyboard_frame',
           storyboard_id: data.storyboardId,

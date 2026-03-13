@@ -1,3 +1,8 @@
+export interface GeneratedFrame {
+  id: string
+  url: string | null
+}
+
 export interface Scene {
   id: string
   scene_number: number
@@ -7,10 +12,16 @@ export interface Scene {
   emotion: string
   framing: string
   camera: string
+  lighting: string
+  lens: string
+  angle: string
   caption: string
   characters: Array<string>
+  generation_notes: string
+  reference_images: Array<{ id: string; url: string | null }>
   image_id: string | null
   image_url: string | null
+  generated_frames: Array<GeneratedFrame>
 }
 
 export interface StoryboardCharacter {
@@ -31,15 +42,15 @@ export interface Storyboard {
   refined_story: string | null
   scenes: Array<Scene>
   characters: Array<StoryboardCharacter>
-  status: 'draft' | 'scenes_generated' | 'generating_frames' | 'complete'
+  video_record_id: string | null
+  status:
+    | 'draft'
+    | 'scenes_generated'
+    | 'generating_frames'
+    | 'generating_video'
+    | 'complete'
   created_at: string
   updated_at: string
 }
 
 export type StoryboardStatus = Storyboard['status']
-
-export const FRAME_MODELS = [
-  { id: 'fal-ai/nanobanana/v2', name: 'Nanobanana 2' },
-  { id: 'fal-ai/flux/schnell', name: 'FLUX Schnell' },
-  { id: 'fal-ai/flux/dev', name: 'FLUX Dev' },
-] as const

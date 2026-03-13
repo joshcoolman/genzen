@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { StoryPromptSection } from './StoryPromptSection'
 import { CharacterPanel } from './CharacterPanel'
 import { SceneList } from './SceneList'
+import { VideoSection } from './VideoSection'
 import { TimelineStrip } from './TimelineStrip'
 import type { UseStoryboardReturn } from '../hooks/useStoryboard'
 
@@ -34,6 +35,9 @@ export function StoryboardPage({ sb }: StoryboardPageProps) {
 
         {/* Scenes section (appears after generation) */}
         {sb.hasScenes && <SceneList sb={sb} />}
+
+        {/* Video section (appears after scenes) */}
+        {sb.hasScenes && <VideoSection sb={sb} />}
 
         {/* Save indicator */}
         {sb.isSaving && (

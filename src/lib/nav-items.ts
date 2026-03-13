@@ -12,6 +12,7 @@ import {
   PencilLine,
   Sparkles,
   SquarePlay,
+  StickyNote,
   Trash2,
   User,
   Users,
@@ -125,6 +126,13 @@ export const navItems: Array<NavItem> = [
     label: 'Models',
     href: '/dashboard/models',
     icon: Boxes,
+    activeOnly: true,
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    href: '/dashboard/notes',
+    icon: StickyNote,
     activeOnly: true,
   },
   {

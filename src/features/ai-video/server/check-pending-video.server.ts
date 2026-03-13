@@ -71,8 +71,12 @@ export const checkPendingVideo = createServerFn({ method: 'POST' })
           requestId: record.request_id,
         })
       } catch (resultErr) {
+        const errBody =
+          resultErr && typeof resultErr === 'object' && 'body' in resultErr
+            ? JSON.stringify((resultErr as { body: unknown }).body)
+            : undefined
         console.error(
-          `[video-check] result() threw for model=${model} requestId=${record.request_id}: ${resultErr instanceof Error ? resultErr.message : resultErr}`,
+          `[video-check] result() threw for model=${model} requestId=${record.request_id}: ${resultErr instanceof Error ? resultErr.message : resultErr}${errBody ? ` body=${errBody}` : ''} full=${JSON.stringify(resultErr).slice(0, 1000)}`,
         )
         throw resultErr
       }
