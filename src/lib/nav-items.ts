@@ -2,6 +2,7 @@ import {
   Boxes,
   Expand,
   Film,
+  FlaskConical,
   Grid3X3,
   Image,
   Layers,
@@ -126,6 +127,13 @@ export const navItems: Array<NavItem> = [
     label: 'Models',
     href: '/dashboard/models',
     icon: Boxes,
+    activeOnly: true,
+  },
+  {
+    id: 'dev-workspace',
+    label: 'Dev Workspace',
+    href: '/dashboard/dev-workspace',
+    icon: FlaskConical,
     activeOnly: true,
   },
   {
