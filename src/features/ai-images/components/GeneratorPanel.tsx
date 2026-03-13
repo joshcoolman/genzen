@@ -1,4 +1,5 @@
-import { Settings } from 'lucide-react'
+import { useState } from 'react'
+import { Paintbrush, Settings, X } from 'lucide-react'
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { ModelSettingsState } from '@/features/ai-images/hooks/use-model-settings'
 import type { PromptToolsState } from '@/features/ai-images/hooks/use-prompt-tools'
@@ -28,12 +29,20 @@ interface UserImagesData {
   refresh: () => Promise<void>
 }
 
+interface StyleOption {
+  id: string
+  name: string
+  thumbnailUrl: string | null
+  image_count: number
+}
+
 interface GeneratorPanelProps {
   generator: GeneratorState
   modelSettings: ModelSettingsState
   promptTools: PromptToolsState
   credits: CreditsState
   userImages: UserImagesData
+  styles: Array<StyleOption>
   error: string | null
 }
 
@@ -43,8 +52,10 @@ export function GeneratorPanel({
   promptTools,
   credits,
   userImages,
+  styles,
   error,
 }: GeneratorPanelProps) {
+  const selectedStyle = styles.find((s) => s.id === generator.selectedStyleId)
   return (
     <div className="bg-card rounded-lg p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -95,6 +106,13 @@ export function GeneratorPanel({
               }}
               className="contents"
             />
+            {styles.length > 0 && (
+              <StylePicker
+                styles={styles}
+                selectedStyle={selectedStyle ?? null}
+                onSelect={generator.setSelectedStyleId}
+              />
+            )}
             <AspectRatioSelect
               orientation={generator.orientation}
               aspectRatio={generator.aspectRatio}
@@ -159,6 +177,99 @@ export function GeneratorPanel({
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function StylePicker({
+  styles,
+  selectedStyle,
+  onSelect,
+}: {
+  styles: Array<StyleOption>
+  selectedStyle: StyleOption | null
+  onSelect: (id: string | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="relative shrink-0">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setOpen(!open)}
+        title={selectedStyle ? `Style: ${selectedStyle.name}` : 'Select style'}
+        className={selectedStyle ? 'border-accent-brand' : ''}
+      >
+        {selectedStyle ? (
+          selectedStyle.thumbnailUrl ? (
+            <img
+              src={selectedStyle.thumbnailUrl}
+              alt=""
+              className="size-5 rounded object-cover"
+            />
+          ) : (
+            <Paintbrush className="size-4" />
+          )
+        ) : (
+          <Paintbrush className="size-4" />
+        )}
+      </Button>
+
+      {selectedStyle && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect(null)
+          }}
+          className="absolute -top-1 -right-1 size-3.5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+        >
+          <X className="size-2" />
+        </button>
+      )}
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-md p-2 min-w-48 max-h-64 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => {
+              onSelect(null)
+              setOpen(false)
+            }}
+            className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors text-muted-foreground"
+          >
+            No style
+          </button>
+          {styles.map((style) => (
+            <button
+              key={style.id}
+              type="button"
+              onClick={() => {
+                onSelect(style.id)
+                setOpen(false)
+              }}
+              className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted transition-colors flex items-center gap-2 ${
+                selectedStyle?.id === style.id ? 'bg-muted' : ''
+              }`}
+            >
+              {style.thumbnailUrl ? (
+                <img
+                  src={style.thumbnailUrl}
+                  alt=""
+                  className="size-5 rounded object-cover shrink-0"
+                />
+              ) : (
+                <div className="size-5 rounded bg-muted shrink-0" />
+              )}
+              <span className="truncate">{style.name}</span>
+              <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                {style.image_count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

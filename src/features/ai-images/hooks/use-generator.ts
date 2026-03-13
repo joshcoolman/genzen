@@ -31,6 +31,8 @@ export interface GeneratorState {
   activeModels: Array<string>
   canGenerate: boolean
   ratioOptions: Array<string>
+  selectedStyleId: string | null
+  setSelectedStyleId: (id: string | null) => void
   setOrientation: (o: 'landscape' | 'portrait') => void
   handleOrientationToggle: () => void
   handleGenerate: () => Promise<void>
@@ -60,6 +62,7 @@ export function useGenerator({
     [],
   )
   const [describingImage, setDescribingImage] = useState(false)
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
 
   const inputMode = sourceImage ? 'image' : 'text'
   const activeModels =
@@ -112,6 +115,7 @@ export function useGenerator({
               accessToken: accessToken,
               aspectRatio,
               ...(sourceImage ? { sourceImageBase64: sourceImage.base64 } : {}),
+              ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
             },
           }),
         ),
@@ -231,6 +235,8 @@ export function useGenerator({
     activeModels,
     canGenerate,
     ratioOptions,
+    selectedStyleId,
+    setSelectedStyleId,
     handleOrientationToggle,
     handleGenerate,
     setSourceFile,

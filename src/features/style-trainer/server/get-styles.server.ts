@@ -30,7 +30,7 @@ export const getStyles = createServerFn({ method: 'GET' })
 
     // Generate signed URLs for thumbnails
     const stylesWithUrls = await Promise.all(
-      (styles ?? []).map(async (style) => {
+      styles.map(async (style) => {
         let thumbnailUrl: string | null = null
         if (style.thumbnail_path) {
           const { data: urlData } = await supabase.storage
@@ -75,7 +75,7 @@ export const getStyleImages = createServerFn({ method: 'GET' })
 
     // Generate signed URLs for each image
     const imagesWithUrls = await Promise.all(
-      (images ?? []).map(async (img) => {
+      images.map(async (img) => {
         const { data: urlData } = await supabase.storage
           .from('styles')
           .createSignedUrl(img.storage_path, 3600)

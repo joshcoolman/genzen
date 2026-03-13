@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { SelectedImage } from '@/components/LibraryPickerButton'
-import { useAuth } from '@/lib/auth'
-import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { createStyle } from '../server/create-style.server'
-import { getStyles, getStyleImages } from '../server/get-styles.server'
+import { getStyleImages, getStyles } from '../server/get-styles.server'
 import { saveStyleImage } from '../server/save-style-image.server'
 import { deleteStyle } from '../server/delete-style.server'
 import { removeStyleImage } from '../server/remove-style-image.server'
+import type { SelectedImage } from '@/components/LibraryPickerButton'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
+import { useAuth } from '@/lib/auth'
 
 export interface StyleCollection {
   id: string
@@ -44,8 +44,14 @@ export interface UseStyleCollectionsReturn {
   backToLibrary: () => void
   saveNewStyle: () => Promise<void>
   addFileToStyle: (file: File, styleId: string) => Promise<void>
-  addLibraryImageToStyle: (image: SelectedImage, styleId: string) => Promise<void>
-  addLibraryImagesToStyle: (images: Array<SelectedImage>, styleId: string) => Promise<void>
+  addLibraryImageToStyle: (
+    image: SelectedImage,
+    styleId: string,
+  ) => Promise<void>
+  addLibraryImagesToStyle: (
+    images: Array<SelectedImage>,
+    styleId: string,
+  ) => Promise<void>
   removeImage: (styleId: string, imageId: string) => Promise<void>
   deleteCollection: (styleId: string) => Promise<void>
   refreshStyles: () => Promise<void>
@@ -179,12 +185,18 @@ export function useStyleCollections(): UseStyleCollectionsReturn {
   const addLibraryImageToStyle = useCallback(
     async (image: SelectedImage, styleId: string) => {
       if (!accessToken) return
+      // Look up storage_path from existingImages
+      const sourceRow = existingImages.images.find((img) => img.id === image.id)
+      if (!sourceRow?.storage_path) {
+        console.error('No storage_path found for library image:', image.id)
+        return
+      }
       try {
         const result = await saveStyleImage({
           data: {
             accessToken,
             styleId,
-            sourceStoragePath: image.storagePath ?? '',
+            sourceStoragePath: sourceRow.storage_path,
             source: 'library',
           },
         })
@@ -194,7 +206,7 @@ export function useStyleCollections(): UseStyleCollectionsReturn {
         console.error('Failed to add library image:', err)
       }
     },
-    [accessToken, refreshStyles],
+    [accessToken, existingImages.images, refreshStyles],
   )
 
   const addLibraryImagesToStyle = useCallback(

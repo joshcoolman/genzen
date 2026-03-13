@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { resolveStyleRefs } from '@/features/style-trainer/server/resolve-style-refs.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -17,6 +18,7 @@ interface GenerateImageInput {
   sourceImageBase64?: string
   sourceImageUrl?: string
   isRefine?: boolean
+  styleId?: string
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -108,12 +110,28 @@ export const generateImage = createServerFn({ method: 'POST' })
       effectivePrompt = buildRefinePrompt(effectivePrompt)
     }
 
+    // Resolve style reference images if a style is selected
+    let styleRefUrls: Array<string> = []
+    if (data.styleId) {
+      styleRefUrls = await resolveStyleRefs({
+        accessToken: data.accessToken,
+        styleId: data.styleId,
+      })
+      // Style refs require image-input model variant
+      if (styleRefUrls.length > 0 && !imageUrl) {
+        falModelId = modelDef?.imageInputModelId ?? model
+      }
+    }
+
+    // Combine source image + style refs into imageUrls
+    const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...styleRefUrls]
+
     // Build FAL input using schema-driven param resolution
     const falInput = await buildFalInput({
       modelId: falModelId,
       prompt: effectivePrompt,
       aspectRatio,
-      imageUrl: imageUrl ?? undefined,
+      ...(allImageUrls.length > 0 ? { imageUrls: allImageUrls } : {}),
       safetyLevel: 'permissive',
     })
 
@@ -151,6 +169,7 @@ export const generateImage = createServerFn({ method: 'POST' })
           ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
+          ...(data.styleId ? { style_id: data.styleId } : {}),
         },
       })
       .select()

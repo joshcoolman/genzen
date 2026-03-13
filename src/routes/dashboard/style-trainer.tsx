@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import {
   StyleTrainerPageContent,
-  useStyleTrainerPage,
+  useStyleCollections,
 } from '@/features/style-trainer'
 
 export const Route = createFileRoute('/dashboard/style-trainer')({
@@ -9,6 +9,6 @@ export const Route = createFileRoute('/dashboard/style-trainer')({
 })
 
 function StyleTrainerPage() {
-  const page = useStyleTrainerPage()
+  const page = useStyleCollections()
   return <StyleTrainerPageContent page={page} />
 }

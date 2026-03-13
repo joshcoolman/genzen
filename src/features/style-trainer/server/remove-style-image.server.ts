@@ -31,8 +31,7 @@ export const removeStyleImage = createServerFn({ method: 'POST' })
       .eq('style_id', data.styleId)
       .single()
 
-    if (fetchError || !image)
-      throw new Error('Image not found or access denied')
+    if (fetchError) throw new Error('Image not found or access denied')
 
     // Delete from storage
     await supabase.storage.from('styles').remove([image.storage_path])
