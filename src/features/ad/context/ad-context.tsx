@@ -171,16 +171,16 @@ export function useADContext() {
  */
 export function useRegisterADContext(key: string, summary: string) {
   const ctx = useContext(ADContext)
-  const prevSummaryRef = useRef(summary)
+  const registerRef = useRef(ctx?.register)
+  const unregisterRef = useRef(ctx?.unregister)
+  registerRef.current = ctx?.register
+  unregisterRef.current = ctx?.unregister
 
   useEffect(() => {
-    if (!ctx) return
-    ctx.register(key, summary)
-    prevSummaryRef.current = summary
-  }, [ctx, key, summary])
+    registerRef.current?.(key, summary)
+  }, [key, summary])
 
   useEffect(() => {
-    if (!ctx) return
-    return () => ctx.unregister(key)
-  }, [ctx, key])
+    return () => unregisterRef.current?.(key)
+  }, [key])
 }
