@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -6,57 +6,17 @@ import {
   GeneratorPanel,
   ImageGallery,
   ImageLightbox,
-  ModelSettingsDialog,
   useAiImagesPage,
 } from '@/features/ai-images'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
-import { getStyles } from '@/features/style-trainer/server/get-styles.server'
-import { useAuth } from '@/lib/auth'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
 })
 
-interface StyleOption {
-  id: string
-  name: string
-  thumbnailUrl: string | null
-  image_count: number
-}
-
-function useStyleOptions() {
-  const { session } = useAuth()
-  const [styles, setStyles] = useState<Array<StyleOption>>([])
-  const accessToken = session?.access_token
-
-  const load = useCallback(async () => {
-    if (!accessToken) return
-    try {
-      const result = await getStyles({ data: { accessToken } })
-      setStyles(
-        result.styles.map((s) => ({
-          id: s.id as string,
-          name: s.name as string,
-          thumbnailUrl: (s.thumbnailUrl as string | null) || null,
-          image_count: Number(s.image_count) || 0,
-        })),
-      )
-    } catch {
-      // styles are optional -- fail silently
-    }
-  }, [accessToken])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  return styles
-}
-
 function AiImagesPage() {
   const page = useAiImagesPage()
   useAiImagesADContext(page)
-  const styles = useStyleOptions()
   const [generatorOpen, setGeneratorOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('ai-images-generator-open') !== 'false'
@@ -98,11 +58,11 @@ function AiImagesPage() {
       {generatorOpen && (
         <GeneratorPanel
           generator={page.generator}
-          modelSettings={page.modelSettings}
-          promptTools={page.promptTools}
+          modelSelector={page.modelSelector}
+          activeModelIds={page.activeModelIds}
+          toggleActiveModel={page.toggleActiveModel}
           credits={page.credits}
           userImages={page.userImages}
-          styles={styles}
           error={page.error}
         />
       )}
@@ -120,13 +80,6 @@ function AiImagesPage() {
         onMoreLikeThis={page.variations.handleMoreLikeThis}
         onDelete={page.gallery.deleteImage}
         onRestoreRoot={page.gallery.restoreRootImage}
-      />
-
-      <ModelSettingsDialog
-        open={page.modelSettings.settingsOpen}
-        onOpenChange={page.modelSettings.setSettingsOpen}
-        visibleModels={page.modelSettings.visibleModelIds}
-        onSaveVisibleModels={page.modelSettings.setVisibleModelIds}
       />
 
       {page.lightbox.isOpen && (

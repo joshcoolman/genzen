@@ -1,15 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useImages } from '@/features/ai-images/hooks/use-images'
-import { useModelSettings } from '@/features/ai-images/hooks/use-model-settings'
+import { useModelSelector } from '@/components/ModelSelector'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
 import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 
 export function useAiImagesPage() {
@@ -24,12 +23,49 @@ export function useAiImagesPage() {
 
   const userImages = useUserImages(user?.id)
 
-  const modelSettings = useModelSettings()
+  const modelSelector = useModelSelector({
+    capability: 'generate',
+    mode: 'multi',
+  })
+
+  // Active models: a subset of selectedIds that the pills control.
+  // New models added via dropdown default to active.
+  // Models removed from dropdown get cleaned out.
+  const [activeModelIds, setActiveModelIds] = useState<Array<string>>(
+    () => modelSelector.selectedIds,
+  )
+
+  const prevSelectedRef = useRef(modelSelector.selectedIds)
+  useEffect(() => {
+    const prev = prevSelectedRef.current
+    const next = modelSelector.selectedIds
+    prevSelectedRef.current = next
+
+    setActiveModelIds((active) => {
+      // Add any newly selected models as active
+      const added = next.filter((id) => !prev.includes(id))
+      // Remove any that were deselected from the dropdown
+      const kept = active.filter((id) => next.includes(id))
+      return [...kept, ...added]
+    })
+  }, [modelSelector.selectedIds])
+
+  const toggleActiveModel = useCallback((modelId: string) => {
+    setActiveModelIds((prev) => {
+      if (prev.includes(modelId)) {
+        if (prev.length === 1) return prev // keep at least one
+        return prev.filter((id) => id !== modelId)
+      }
+      return [...prev, modelId]
+    })
+  }, [])
+
   const [error, setError] = useState<string | null>(null)
 
   const generator = useGenerator({
     accessToken,
-    selectedModels: modelSettings.selectedModels,
+    selectedModels: activeModelIds,
+    gensPerModel: modelSelector.gensPerModel,
     credits,
     setError,
   })
@@ -74,12 +110,7 @@ export function useAiImagesPage() {
     if (!img.generation_metadata) return
     const { prompt, model: selectedModel } = img.generation_metadata
     generator.setPrompt(prompt)
-    modelSettings.setSelectedModels([selectedModel])
-    if (!modelSettings.visibleModelIds.includes(selectedModel)) {
-      if (ALL_IMAGE_MODELS.some((m) => m.id === selectedModel)) {
-        modelSettings.setVisibleModelIds((prev) => [...prev, selectedModel])
-      }
-    }
+    modelSelector.selectOnly([selectedModel])
   }
 
   return {
@@ -87,7 +118,9 @@ export function useAiImagesPage() {
     credits,
     gallery,
     userImages,
-    modelSettings,
+    modelSelector,
+    activeModelIds,
+    toggleActiveModel,
     generator,
     editChildrenMap,
     lightbox,

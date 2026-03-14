@@ -13,6 +13,7 @@ import {
 interface UseGeneratorOptions {
   accessToken: string | undefined
   selectedModels: Array<string>
+  gensPerModel: number
   credits: CreditsState
   setError: (error: string | null) => void
 }
@@ -29,6 +30,7 @@ export interface GeneratorState {
   describingImage: boolean
   inputMode: 'image' | 'text'
   activeModels: Array<string>
+  totalImages: number
   canGenerate: boolean
   ratioOptions: Array<string>
   selectedStyleId: string | null
@@ -45,6 +47,7 @@ export interface GeneratorState {
 export function useGenerator({
   accessToken,
   selectedModels,
+  gensPerModel,
   credits,
   setError,
 }: UseGeneratorOptions): GeneratorState {
@@ -67,6 +70,10 @@ export function useGenerator({
   const inputMode = sourceImage ? 'image' : 'text'
   const activeModels =
     inputMode === 'image' ? imageSelectedModels : selectedModels
+  const totalImages =
+    inputMode === 'image'
+      ? imageSelectedModels.length
+      : selectedModels.length * gensPerModel
   const canGenerate =
     inputMode === 'image'
       ? imageSelectedModels.length > 0
@@ -91,7 +98,13 @@ export function useGenerator({
   async function handleGenerate() {
     if (loading || !accessToken || !canGenerate) return
 
-    const modelsToUse = activeModels
+    // Expand models by gensPerModel (each model generates N images)
+    const modelsToUse = activeModels.flatMap((modelId) =>
+      Array.from(
+        { length: inputMode === 'image' ? 1 : gensPerModel },
+        () => modelId,
+      ),
+    )
     const reason = sourceImage ? 'variation' : 'image_gen'
     const cost = CREDIT_COSTS[reason] * modelsToUse.length
 
@@ -233,6 +246,7 @@ export function useGenerator({
     describingImage,
     inputMode: inputMode,
     activeModels,
+    totalImages,
     canGenerate,
     ratioOptions,
     selectedStyleId,

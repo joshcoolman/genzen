@@ -1,5 +1,6 @@
 export { ModelSelector } from './ModelSelector'
 export type { DisplayMode } from './ModelSelector'
+export { ModelFilterPills } from './ModelFilterPills'
 export { useModelSelector } from './useModelSelector'
 export type { UnifiedModel, ModelCapability, SelectionMode } from './types'
 export {

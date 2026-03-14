@@ -82,6 +82,14 @@ export function useModelSelector({
     setGensPerModel((prev) => Math.min(Math.max(prev + delta, 1), 5))
   }, [])
 
+  const selectOnly = useCallback(
+    (ids: Array<string>) => {
+      const valid = ids.filter((id) => modelIds.includes(id))
+      if (valid.length > 0) setSelectedIds(valid)
+    },
+    [modelIds],
+  )
+
   // Derived: max ref images across selected edit models
   const maxRefImages = useMemo(() => {
     if (capability !== 'edit') return undefined
@@ -97,5 +105,6 @@ export function useModelSelector({
     maxRefImages,
     toggleSelected,
     adjustGens,
+    selectOnly,
   }
 }
