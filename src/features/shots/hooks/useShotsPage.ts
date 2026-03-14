@@ -10,7 +10,6 @@ import { useAuth } from '@/lib/auth'
 type StepStatus = 'idle' | 'running' | 'complete' | 'error'
 
 export const SHOT_MODELS = [
-  { id: 'fal-ai/flux-pro/kontext', name: 'FLUX Kontext Pro' },
   { id: 'fal-ai/nano-banana-2/edit', name: 'Nano Banana 2' },
 ] as const
 

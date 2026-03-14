@@ -10,7 +10,7 @@ export function DevWorkspacePage() {
   const selector = useModelSelector({ capability, mode })
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="space-y-6 p-6">
       <div>
         <h1 className="text-lg font-semibold">Dev Workspace</h1>
         <p className="text-sm text-muted-foreground">
@@ -43,19 +43,24 @@ export function DevWorkspacePage() {
         </label>
       </div>
 
-      {/* ModelSelector */}
-      <ModelSelector
-        capability={capability}
-        mode={mode}
-        selectedIds={selector.selectedIds}
-        visibleIds={selector.visibleIds}
-        visibleModels={selector.visibleModels}
-        onToggleSelected={selector.toggleSelected}
-        onToggleVisible={selector.toggleVisible}
-        showGensPerModel={showGens}
-        gensPerModel={selector.gensPerModel}
-        onAdjustGens={selector.adjustGens}
-      />
+      {/* ModelSelector -- green border marks the actual component boundary */}
+      <div className="relative rounded-lg border-2 border-dashed border-emerald-500/50 p-4">
+        <span className="absolute -top-2.5 left-3 bg-background px-1.5 text-[10px] font-medium uppercase tracking-wider text-emerald-500">
+          ModelSelector Component
+        </span>
+        <ModelSelector
+          capability={capability}
+          mode={mode}
+          selectedIds={selector.selectedIds}
+          visibleIds={selector.visibleIds}
+          visibleModels={selector.visibleModels}
+          onToggleSelected={selector.toggleSelected}
+          onToggleVisible={selector.toggleVisible}
+          showGensPerModel={showGens}
+          gensPerModel={selector.gensPerModel}
+          onAdjustGens={selector.adjustGens}
+        />
+      </div>
 
       {/* Debug output */}
       <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1">

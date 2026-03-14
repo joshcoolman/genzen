@@ -1,12 +1,4 @@
-import {
-  CheckCircle2,
-  Circle,
-  Eye,
-  EyeOff,
-  Minus,
-  Plus,
-  Settings,
-} from 'lucide-react'
+import { CheckCircle2, Circle, Minus, Plus, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { getModelsByCapability } from './models'
 import type { ModelCapability, SelectionMode, UnifiedModel } from './types'
@@ -103,40 +95,31 @@ export function ModelSelector({
         </div>
       </div>
 
-      {/* Model pills by category */}
-      {grouped.map(({ category, models }) => (
-        <div key={category} className="space-y-1.5">
-          <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-            {category}
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {models.map((model) => {
-              const isSelected = selectedIds.includes(model.id)
-              return (
-                <button
-                  key={model.id}
-                  onClick={() => onToggleSelected(model.id)}
-                  title={model.description}
-                  className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-left transition-colors ${
-                    isSelected
-                      ? 'border-accent-brand bg-accent-brand/10'
-                      : 'border-border bg-card hover:border-accent-brand/50'
-                  }`}
-                >
-                  {mode === 'multi' ? (
-                    isSelected ? (
-                      <CheckCircle2 className="h-3 w-3 shrink-0 text-accent-brand" />
-                    ) : (
-                      <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
-                    )
-                  ) : null}
-                  <span className="text-xs font-medium">{model.name}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+      {/* Model pills */}
+      <div className="flex flex-wrap gap-1">
+        {visibleModels.map((model) => {
+          const isSelected = selectedIds.includes(model.id)
+          return (
+            <button
+              key={model.id}
+              onClick={() => onToggleSelected(model.id)}
+              title={model.description}
+              className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-left transition-colors ${
+                isSelected
+                  ? 'border-accent-brand bg-accent-brand/10'
+                  : 'border-border bg-card hover:border-accent-brand/50'
+              }`}
+            >
+              {isSelected ? (
+                <CheckCircle2 className="h-3 w-3 shrink-0 text-accent-brand" />
+              ) : (
+                <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+              )}
+              <span className="text-xs font-medium">{model.name}</span>
+            </button>
+          )
+        })}
+      </div>
 
       {/* Visibility config panel */}
       {showVisibilityPanel && (
@@ -160,46 +143,35 @@ function VisibilityPanel({
   onToggleVisible: (id: string) => void
 }) {
   const allModels = getModelsByCapability(capability)
-  const grouped = groupByCategory(allModels)
 
   return (
-    <div className="rounded-lg border border-border bg-card/50 p-3 space-y-3">
+    <div className="rounded-lg border border-border bg-card/50 p-3 space-y-2">
       <span className="text-xs font-medium text-muted-foreground">
         Visible Models
       </span>
-      {grouped.map(({ category, models }) => (
-        <div key={category} className="space-y-1">
-          <span className="text-[10px] font-medium text-muted-foreground/50 uppercase tracking-wider">
-            {category}
-          </span>
-          <div className="space-y-0.5">
-            {models.map((model) => {
-              const isVisible = visibleIds.includes(model.id)
-              return (
-                <button
-                  key={model.id}
-                  onClick={() => onToggleVisible(model.id)}
-                  className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-muted/50 transition-colors"
-                >
-                  {isVisible ? (
-                    <Eye className="h-3.5 w-3.5 shrink-0 text-accent-brand" />
-                  ) : (
-                    <EyeOff className="h-3.5 w-3.5 shrink-0 text-muted-foreground/30" />
-                  )}
-                  <span
-                    className={`text-xs ${isVisible ? 'font-medium' : 'text-muted-foreground/50'}`}
-                  >
-                    {model.name}
-                  </span>
-                  <span className="ml-auto text-[10px] text-muted-foreground/40">
-                    {model.description}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+      <div className="space-y-0.5">
+        {allModels.map((model) => {
+          const isVisible = visibleIds.includes(model.id)
+          return (
+            <button
+              key={model.id}
+              onClick={() => onToggleVisible(model.id)}
+              className="flex w-full items-center gap-2 rounded px-2 py-1 text-left hover:bg-muted/50 transition-colors"
+            >
+              {isVisible ? (
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-accent-brand" />
+              ) : (
+                <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/90" />
+              )}
+              <span
+                className={`text-xs ${isVisible ? 'font-medium' : 'text-muted-foreground/90'}`}
+              >
+                {model.name}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

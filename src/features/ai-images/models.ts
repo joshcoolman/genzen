@@ -32,28 +32,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-pro/edit',
   },
-  {
-    id: 'fal-ai/flux-2-flex',
-    name: 'FLUX.2 Flex',
-    description: 'Flexible generation',
-    category: 'FLUX',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/flux-2-flex/edit',
-  },
-  {
-    id: 'fal-ai/flux-pro/kontext',
-    name: 'FLUX Kontext Pro',
-    description: 'Subject-consistent generation',
-    category: 'FLUX',
-    supportsImageInput: true,
-  },
-  {
-    id: 'fal-ai/flux-krea-lora/stream',
-    name: 'FLUX LoRA Stream',
-    description: 'LoRA-enhanced streaming',
-    category: 'FLUX',
-  },
-
   // Kling - verified models
   {
     id: 'fal-ai/kling-image/v3/text-to-image',
@@ -79,22 +57,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   },
   // Specialized - verified models
   {
-    id: 'fal-ai/nano-banana',
-    name: 'Nano Banana',
-    description: 'Google, fast + cheap',
-    category: 'Specialized',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/nano-banana/edit',
-  },
-  {
-    id: 'fal-ai/nano-banana-pro',
-    name: 'Nano Banana Pro',
-    description: 'Google SOTA, realism + typography',
-    category: 'Specialized',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/nano-banana-pro/edit',
-  },
-  {
     id: 'fal-ai/nano-banana-2',
     name: 'Nano Banana 2',
     description: 'Google, reasoning-guided generation',
@@ -114,33 +76,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     description: 'xAI, highly aesthetic',
     category: 'Specialized',
   },
-  {
-    id: 'imagineart/imagineart-1.5-preview/text-to-image',
-    name: 'ImagineArt 1.5',
-    description: 'Professional realism',
-    category: 'Specialized',
-  },
-  {
-    id: 'bria/fibo/generate',
-    name: 'Bria FIBO',
-    description: 'Commercial-safe, licensed data',
-    category: 'Specialized',
-  },
-
-  // Other - verified models
-  {
-    id: 'fal-ai/qwen-image-2/pro/text-to-image',
-    name: 'Qwen Image 2 Pro',
-    description: 'Complex text rendering',
-    category: 'Other',
-  },
-  {
-    id: 'fal-ai/stable-diffusion-v35-large',
-    name: 'SD 3.5 Large',
-    description: 'Stable Diffusion 3.5',
-    category: 'Other',
-    supportsImageInput: true,
-  },
 ]
 
 // Default visible models - curated selection of most useful models
@@ -148,15 +83,10 @@ export const DEFAULT_VISIBLE_MODELS = [
   ALL_IMAGE_MODELS[0], // FLUX Schnell
   ALL_IMAGE_MODELS[1], // FLUX Dev
   ALL_IMAGE_MODELS[2], // FLUX.2 Pro
-  ALL_IMAGE_MODELS[3], // FLUX.2 Flex
-  ALL_IMAGE_MODELS[4], // FLUX Kontext Pro
-  ALL_IMAGE_MODELS[8], // Seedream v4
-  ALL_IMAGE_MODELS[9], // Nano Banana
-  ALL_IMAGE_MODELS[10], // Nano Banana Pro
-  ALL_IMAGE_MODELS[11], // Nano Banana 2
-  ALL_IMAGE_MODELS[12], // Recraft V3
-  ALL_IMAGE_MODELS[13], // Grok Imagine
-  ALL_IMAGE_MODELS[14], // ImagineArt 1.5
+  ALL_IMAGE_MODELS[5], // Seedream v4
+  ALL_IMAGE_MODELS[6], // Nano Banana 2
+  ALL_IMAGE_MODELS[7], // Recraft V3
+  ALL_IMAGE_MODELS[8], // Grok Imagine
 ]
 
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
@@ -208,18 +138,6 @@ export const EDIT_MODELS: Array<EditModel> = [
     maxRefImages: 4,
   },
   {
-    id: 'fal-ai/nano-banana/edit',
-    name: 'Nano Banana',
-    description: 'Fast + cheap edits',
-    maxRefImages: 4,
-  },
-  {
-    id: 'fal-ai/nano-banana-pro/edit',
-    name: 'Nano Banana Pro',
-    description: 'Realism + typography',
-    maxRefImages: 4,
-  },
-  {
     id: 'fal-ai/nano-banana-2/edit',
     name: 'Nano Banana 2',
     description: 'Reasoning-guided edits',
@@ -230,12 +148,6 @@ export const EDIT_MODELS: Array<EditModel> = [
     name: 'FLUX.2 Pro Edit',
     description: 'Best photorealism edits',
     maxRefImages: 8,
-  },
-  {
-    id: 'fal-ai/flux-2-flex/edit',
-    name: 'FLUX.2 Flex Edit',
-    description: 'Flexible multi-image edits',
-    maxRefImages: 4,
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',
