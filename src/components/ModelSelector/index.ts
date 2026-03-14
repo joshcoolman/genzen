@@ -1,4 +1,5 @@
 export { ModelSelector } from './ModelSelector'
+export type { DisplayMode } from './ModelSelector'
 export { useModelSelector } from './useModelSelector'
 export type {
   UnifiedModel,

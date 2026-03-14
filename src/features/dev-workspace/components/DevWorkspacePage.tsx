@@ -1,11 +1,24 @@
 import { useState } from 'react'
-import type { ModelCapability, SelectionMode } from '@/components/ModelSelector'
+import type {
+  DisplayMode,
+  ModelCapability,
+  SelectionMode,
+} from '@/components/ModelSelector'
 import { ModelSelector, useModelSelector } from '@/components/ModelSelector'
+import { ImageSourceButtons } from '@/components/ImageSourceButtons'
+import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 
 export function DevWorkspacePage() {
   const [capability, setCapability] = useState<ModelCapability>('generate')
   const [mode, setMode] = useState<SelectionMode>('multi')
+  const [display, setDisplay] = useState<DisplayMode>('inline')
   const [showGens, setShowGens] = useState(true)
+
+  // Aspect ratio state (no-op, just for composability check)
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
+    'landscape',
+  )
+  const [aspectRatio, setAspectRatio] = useState('16:9')
 
   const selector = useModelSelector({ capability, mode })
 
@@ -32,6 +45,12 @@ export function DevWorkspacePage() {
           value={mode}
           onChange={setMode}
         />
+        <Toggle
+          label="Display"
+          options={['inline', 'dropdown'] as const}
+          value={display}
+          onChange={setDisplay}
+        />
         <label className="flex items-center gap-2 text-xs">
           <input
             type="checkbox"
@@ -43,23 +62,47 @@ export function DevWorkspacePage() {
         </label>
       </div>
 
-      {/* ModelSelector -- green border marks the actual component boundary */}
+      {/* Composability test: shared components in a row */}
       <div className="relative rounded-lg border-2 border-dashed border-emerald-500/50 p-4">
         <span className="absolute -top-2.5 left-3 bg-background px-1.5 text-[10px] font-medium uppercase tracking-wider text-emerald-500">
-          ModelSelector Component
+          Composability Test
         </span>
-        <ModelSelector
-          capability={capability}
-          mode={mode}
-          selectedIds={selector.selectedIds}
-          visibleIds={selector.visibleIds}
-          visibleModels={selector.visibleModels}
-          onToggleSelected={selector.toggleSelected}
-          onToggleVisible={selector.toggleVisible}
-          showGensPerModel={showGens}
-          gensPerModel={selector.gensPerModel}
-          onAdjustGens={selector.adjustGens}
-        />
+        <div className="flex items-start gap-4">
+          {/* Image source buttons */}
+          <ImageSourceButtons
+            onFileSelected={() => {}}
+            library={{
+              images: [],
+              imageUrls: {},
+              isLoading: false,
+              onSelect: () => {},
+            }}
+            className="flex items-center gap-1"
+          />
+
+          {/* Aspect ratio */}
+          <AspectRatioSelect
+            orientation={orientation}
+            aspectRatio={aspectRatio}
+            onOrientationChange={setOrientation}
+            onAspectRatioChange={setAspectRatio}
+          />
+
+          {/* ModelSelector */}
+          <div className="flex-1">
+            <ModelSelector
+              mode={mode}
+              display={display}
+              defaultExpanded
+              selectedIds={selector.selectedIds}
+              visibleModels={selector.visibleModels}
+              onToggleSelected={selector.toggleSelected}
+              showGensPerModel={showGens}
+              gensPerModel={selector.gensPerModel}
+              onAdjustGens={selector.adjustGens}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Debug output */}
@@ -72,6 +115,7 @@ export function DevWorkspacePage() {
               gensPerModel: selector.gensPerModel,
               visibleCount: selector.visibleIds.length,
               maxRefImages: selector.maxRefImages,
+              aspectRatio: `${orientation} ${aspectRatio}`,
             },
             null,
             2,
