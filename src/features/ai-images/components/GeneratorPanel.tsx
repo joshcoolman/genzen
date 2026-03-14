@@ -6,6 +6,7 @@ import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
 import { ModelCheckboxList } from '@/components/ModelCheckboxList'
+import { NumberStepper } from '@/components/NumberStepper'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { IMAGE_INPUT_MODELS, getModelName } from '@/features/ai-images/models'
@@ -29,6 +30,8 @@ interface GeneratorPanelProps {
   slots: ModelSlots
   activeTier: SlotTier
   setActiveTier: (tier: SlotTier) => void
+  gensPerModel: number
+  adjustGens: (delta: number) => void
   credits: CreditsState
   userImages: UserImagesData
   error: string | null
@@ -39,6 +42,8 @@ export function GeneratorPanel({
   slots,
   activeTier,
   setActiveTier,
+  gensPerModel,
+  adjustGens,
   credits,
   userImages,
   error,
@@ -67,32 +72,42 @@ export function GeneratorPanel({
               />
             </div>
           ) : (
-            <TierToggle
-              activeTier={activeTier}
-              onChangeTier={setActiveTier}
-              slots={slots}
-              disabled={generator.loading}
-            />
+            <>
+              <ImageSourceButtons
+                onFileSelected={generator.setSourceFile}
+                library={{
+                  images: userImages.images,
+                  imageUrls: userImages.imageUrls,
+                  isLoading: userImages.isLoading,
+                  onSelect: (image) =>
+                    generator.setSourceFromUrl(image.url, image.title),
+                  onOpen: userImages.refresh,
+                }}
+                className="contents"
+              />
+              <AspectRatioSelect
+                orientation={generator.orientation}
+                aspectRatio={generator.aspectRatio}
+                onOrientationChange={generator.setOrientation}
+                onAspectRatioChange={generator.setAspectRatio}
+                disabled={generator.loading}
+              />
+              <div className="flex-1" />
+              <TierToggle
+                activeTier={activeTier}
+                onChangeTier={setActiveTier}
+                slots={slots}
+                disabled={generator.loading}
+              />
+              <NumberStepper
+                value={gensPerModel}
+                min={1}
+                max={5}
+                onAdjust={adjustGens}
+                disabled={generator.loading}
+              />
+            </>
           )}
-          <ImageSourceButtons
-            onFileSelected={generator.setSourceFile}
-            library={{
-              images: userImages.images,
-              imageUrls: userImages.imageUrls,
-              isLoading: userImages.isLoading,
-              onSelect: (image) =>
-                generator.setSourceFromUrl(image.url, image.title),
-              onOpen: userImages.refresh,
-            }}
-            className="contents"
-          />
-          <AspectRatioSelect
-            orientation={generator.orientation}
-            aspectRatio={generator.aspectRatio}
-            onOrientationChange={generator.setOrientation}
-            onAspectRatioChange={generator.setAspectRatio}
-            disabled={generator.loading}
-          />
         </div>
 
         <Textarea
@@ -113,14 +128,22 @@ export function GeneratorPanel({
         <ActionButton
           onClick={generator.handleGenerate}
           loading={generator.loading}
-          loadingText="Generating..."
+          loadingText={
+            generator.totalImages > 1
+              ? `Generating ${generator.totalImages} images...`
+              : 'Generating...'
+          }
           disabled={
             !generator.canGenerate ||
             (credits.balance ?? 0) < CREDIT_COSTS.image_gen
           }
           className="w-full"
         >
-          {credits.isEmpty ? 'Out of credits' : 'Generate'}
+          {credits.isEmpty
+            ? 'Out of credits'
+            : generator.totalImages > 1
+              ? `Generate ${generator.totalImages} images`
+              : 'Generate'}
         </ActionButton>
 
         {error && <ErrorBanner message={error} />}
@@ -146,7 +169,7 @@ function TierToggle({
   ]
 
   return (
-    <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+    <div className="flex h-9 items-center gap-1 rounded-md border border-input px-1 shadow-xs">
       {tiers.map(({ tier, label }) => (
         <button
           key={tier}

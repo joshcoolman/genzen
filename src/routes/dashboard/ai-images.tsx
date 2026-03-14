@@ -61,6 +61,8 @@ function AiImagesPage() {
           slots={page.slots}
           activeTier={page.activeTier}
           setActiveTier={page.setActiveTier}
+          gensPerModel={page.gensPerModel}
+          adjustGens={page.adjustGens}
           credits={page.credits}
           userImages={page.userImages}
           error={page.error}

@@ -1,4 +1,4 @@
-import { useMemo, useState  } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { SlotTier } from '@/lib/model-slots'
 import { useAuth } from '@/lib/auth'
@@ -11,6 +11,8 @@ import { useVariations } from '@/features/ai-images/hooks/use-variations'
 import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
+
+const GENS_STORAGE_KEY = 'genzen:slot-gens-per-model'
 
 export function useAiImagesPage() {
   const { user, session } = useAuth()
@@ -26,6 +28,23 @@ export function useAiImagesPage() {
 
   const { slots } = useModelSlots()
   const [activeTier, setActiveTier] = useState<SlotTier>('draft')
+  const [gensPerModel, setGensPerModel] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1
+    try {
+      const stored = localStorage.getItem(GENS_STORAGE_KEY)
+      return stored ? Math.max(1, Math.min(5, Number(stored))) : 1
+    } catch {
+      return 1
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem(GENS_STORAGE_KEY, String(gensPerModel))
+  }, [gensPerModel])
+
+  const adjustGens = useCallback((delta: number) => {
+    setGensPerModel((prev) => Math.min(Math.max(prev + delta, 1), 5))
+  }, [])
 
   const activeModelId = slots[activeTier]
 
@@ -34,7 +53,7 @@ export function useAiImagesPage() {
   const generator = useGenerator({
     accessToken,
     selectedModels: [activeModelId],
-    gensPerModel: 1,
+    gensPerModel,
     credits,
     setError,
   })
@@ -89,6 +108,8 @@ export function useAiImagesPage() {
     activeTier,
     setActiveTier,
     activeModelId,
+    gensPerModel,
+    adjustGens,
     generator,
     editChildrenMap,
     lightbox,
