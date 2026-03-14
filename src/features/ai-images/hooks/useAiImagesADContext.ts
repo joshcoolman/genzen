@@ -5,6 +5,7 @@ import { getModelName } from '@/features/ai-images/models'
 
 interface AiImagesADContextInput {
   generator: GeneratorState
+  activeModelId: string
   credits: { balance: number | null }
   completedImages: Array<unknown>
   error: string | null
@@ -23,15 +24,15 @@ export function useAiImagesADContext(page: AiImagesADContextInput) {
       parts.push(`- Current prompt: "${truncated}"`)
     }
 
-    const modelNames = page.generator.activeModels.map(getModelName)
-    if (modelNames.length > 0) {
-      parts.push(`- Selected models: ${modelNames.join(', ')}`)
-    }
+    parts.push(`- Active model: ${getModelName(page.activeModelId)}`)
 
     parts.push(
       `- Aspect ratio: ${page.generator.aspectRatio} (${page.generator.orientation})`,
     )
-    parts.push(`- Input mode: ${page.generator.inputMode}`)
+
+    if (page.generator.sourceImage) {
+      parts.push('- Source image attached')
+    }
 
     if (page.generator.loading) {
       parts.push('- Currently generating images')
@@ -50,10 +51,10 @@ export function useAiImagesADContext(page: AiImagesADContextInput) {
     return parts.join('\n')
   }, [
     page.generator.prompt,
-    page.generator.activeModels,
+    page.activeModelId,
     page.generator.aspectRatio,
     page.generator.orientation,
-    page.generator.inputMode,
+    page.generator.sourceImage,
     page.generator.loading,
     page.credits.balance,
     page.completedImages.length,

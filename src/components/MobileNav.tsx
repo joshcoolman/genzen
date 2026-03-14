@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { NavMore } from '@/components/NavMore'
-import { NavSettings } from '@/components/NavSettings'
 import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { navItems } from '@/lib/nav-items'
@@ -31,8 +30,11 @@ export function MobileNav({ className }: { className?: string }) {
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
+  const settingsItem = navItems.find((item) => item.id === 'settings')!
 
-  const mainItems = navItems.filter((item) => item.id !== 'account')
+  const mainItems = navItems.filter(
+    (item) => item.id !== 'account' && item.id !== 'settings',
+  )
 
   const visibleItems = mainItems.filter(
     (item) =>
@@ -100,19 +102,21 @@ export function MobileNav({ className }: { className?: string }) {
               <NavMore variant="mobile" hiddenItems={hiddenItems} />
             )}
             <div className="my-2 border-t border-border" />
-            <Link
-              to={accountItem.href}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                isActive(accountItem.href)
-                  ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
-                  : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
-              )}
-            >
-              <accountItem.icon className="h-4 w-4" />
-              {accountItem.label}
-            </Link>
-            <NavSettings variant="mobile" />
+            {[settingsItem, accountItem].map((item) => (
+              <Link
+                key={item.id}
+                to={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                  isActive(item.href)
+                    ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
+                    : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">

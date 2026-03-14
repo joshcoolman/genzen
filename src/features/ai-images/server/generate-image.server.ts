@@ -7,6 +7,7 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { resolveStyleRefs } from '@/features/style-trainer/server/resolve-style-refs.server'
+import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -19,6 +20,7 @@ interface GenerateImageInput {
   sourceImageUrl?: string
   isRefine?: boolean
   styleId?: string
+  referenceImageIds?: Array<string>
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -54,6 +56,17 @@ export const generateImage = createServerFn({ method: 'POST' })
     if (!creditResult.allowed) {
       throw new Error('Insufficient credits')
     }
+
+    // Create Supabase client authenticated as the user
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL!,
+      process.env.VITE_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: { Authorization: `Bearer ${data.accessToken}` },
+        },
+      },
+    )
 
     const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
 
@@ -123,8 +136,43 @@ export const generateImage = createServerFn({ method: 'POST' })
       }
     }
 
-    // Combine source image + style refs into imageUrls
-    const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...styleRefUrls]
+    // Fetch and upload reference images in parallel
+    let referenceUrls: Array<string> = []
+    if (data.referenceImageIds?.length) {
+      const refImages = await supabase
+        .from('user_images')
+        .select('id, storage_path')
+        .in('id', data.referenceImageIds)
+        .eq('user_id', user.id)
+
+      if (refImages.data?.length) {
+        const uploads = await Promise.all(
+          refImages.data.map(async (ref) => {
+            if (!ref.storage_path) return null
+            const { data: signed } = await supabase.storage
+              .from('user-images')
+              .createSignedUrl(ref.storage_path, 3600)
+            if (!signed?.signedUrl) return null
+            const res = await fetch(signed.signedUrl)
+            const buf = await res.arrayBuffer()
+            return uploadBufferToFal(buf)
+          }),
+        )
+        referenceUrls = uploads.filter((u): u is string => u !== null)
+      }
+
+      // Reference images require image-input model variant
+      if (referenceUrls.length > 0 && !imageUrl) {
+        falModelId = modelDef?.imageInputModelId ?? model
+      }
+    }
+
+    // Combine source image + ref images + style refs into imageUrls
+    const allImageUrls = [
+      ...(imageUrl ? [imageUrl] : []),
+      ...referenceUrls,
+      ...styleRefUrls,
+    ]
 
     // Build FAL input using schema-driven param resolution
     const falInput = await buildFalInput({
@@ -139,17 +187,6 @@ export const generateImage = createServerFn({ method: 'POST' })
     const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
     })
-
-    // Create Supabase client authenticated as the user
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: { Authorization: `Bearer ${data.accessToken}` },
-        },
-      },
-    )
 
     // Create database record with pending status
     const { data: record, error: insertError } = await supabase
@@ -170,6 +207,9 @@ export const generateImage = createServerFn({ method: 'POST' })
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
           ...(data.styleId ? { style_id: data.styleId } : {}),
+          ...(data.referenceImageIds?.length
+            ? { reference_image_ids: data.referenceImageIds }
+            : {}),
         },
       })
       .select()

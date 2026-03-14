@@ -56,6 +56,7 @@ export function useAiImagesPage() {
     gensPerModel,
     credits,
     setError,
+    activeTier,
   })
 
   const completedImages = gallery.images.filter(

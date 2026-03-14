@@ -1,25 +1,22 @@
+import { useState } from 'react'
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import type { ModelSlots, SlotTier } from '@/lib/model-slots'
+import type { UserImage } from '@/features/user-images/types'
 import { Textarea } from '@/components/ui/textarea'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
-import { ModelCheckboxList } from '@/components/ModelCheckboxList'
 import { NumberStepper } from '@/components/NumberStepper'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
-import { IMAGE_INPUT_MODELS, getModelName } from '@/features/ai-images/models'
+import { RefImageStrip } from '@/components/RefImageStrip'
+import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
+import { getModelName } from '@/features/ai-images/models'
 import { CREDIT_COSTS } from '@/features/credits'
 
 interface UserImagesData {
-  images: Array<{
-    id: string
-    title: string
-    source: string
-    storage_path: string
-    [key: string]: unknown
-  }>
+  images: Array<UserImage>
   imageUrls: Record<string, string>
   isLoading: boolean
   refresh: () => Promise<void>
@@ -48,6 +45,8 @@ export function GeneratorPanel({
   userImages,
   error,
 }: GeneratorPanelProps) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+
   return (
     <div className="bg-card rounded-lg p-6">
       <div className="space-y-3">
@@ -61,53 +60,39 @@ export function GeneratorPanel({
 
         {/* Controls row */}
         <div className="flex gap-2 items-center flex-wrap">
-          {generator.inputMode === 'image' ? (
-            <div className="flex-1 min-w-48">
-              <ModelCheckboxList
-                models={IMAGE_INPUT_MODELS}
-                selected={generator.imageSelectedModels}
-                onToggle={generator.toggleImageModel}
-                disabled={generator.loading}
-                label={`Models -- image input (${generator.imageSelectedModels.length} selected)`}
-              />
-            </div>
-          ) : (
-            <>
-              <ImageSourceButtons
-                onFileSelected={generator.setSourceFile}
-                library={{
-                  images: userImages.images,
-                  imageUrls: userImages.imageUrls,
-                  isLoading: userImages.isLoading,
-                  onSelect: (image) =>
-                    generator.setSourceFromUrl(image.url, image.title),
-                  onOpen: userImages.refresh,
-                }}
-                className="contents"
-              />
-              <AspectRatioSelect
-                orientation={generator.orientation}
-                aspectRatio={generator.aspectRatio}
-                onOrientationChange={generator.setOrientation}
-                onAspectRatioChange={generator.setAspectRatio}
-                disabled={generator.loading}
-              />
-              <div className="flex-1" />
-              <TierToggle
-                activeTier={activeTier}
-                onChangeTier={setActiveTier}
-                slots={slots}
-                disabled={generator.loading}
-              />
-              <NumberStepper
-                value={gensPerModel}
-                min={1}
-                max={5}
-                onAdjust={adjustGens}
-                disabled={generator.loading}
-              />
-            </>
-          )}
+          <ImageSourceButtons
+            onFileSelected={generator.setSourceFile}
+            library={{
+              images: userImages.images,
+              imageUrls: userImages.imageUrls,
+              isLoading: userImages.isLoading,
+              onSelect: (image) =>
+                generator.setSourceFromUrl(image.url, image.title),
+              onOpen: userImages.refresh,
+            }}
+            className="contents"
+          />
+          <AspectRatioSelect
+            orientation={generator.orientation}
+            aspectRatio={generator.aspectRatio}
+            onOrientationChange={generator.setOrientation}
+            onAspectRatioChange={generator.setAspectRatio}
+            disabled={generator.loading}
+          />
+          <div className="flex-1" />
+          <TierToggle
+            activeTier={activeTier}
+            onChangeTier={setActiveTier}
+            slots={slots}
+            disabled={generator.loading}
+          />
+          <NumberStepper
+            value={gensPerModel}
+            min={1}
+            max={5}
+            onAdjust={adjustGens}
+            disabled={generator.loading}
+          />
         </div>
 
         <Textarea
@@ -115,7 +100,7 @@ export function GeneratorPanel({
           placeholder={
             generator.describingImage
               ? 'Describing image...'
-              : generator.inputMode === 'image'
+              : generator.sourceImage
                 ? 'Edit prompt (optional)...'
                 : 'Describe your image...'
           }
@@ -124,6 +109,41 @@ export function GeneratorPanel({
           disabled={generator.loading || generator.describingImage}
           rows={generator.sourceImage ? 6 : 8}
         />
+
+        {activeTier === 'quality' && generator.maxRefImages > 0 && (
+          <>
+            <RefImageStrip
+              images={generator.refImages}
+              max={generator.maxRefImages}
+              onAdd={() => {
+                userImages.refresh()
+                setPickerOpen(true)
+              }}
+              onRemove={generator.removeRefImage}
+              disabled={generator.loading}
+            />
+            <ExistingImagePicker
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
+              images={userImages.images}
+              imageUrls={userImages.imageUrls}
+              isLoading={userImages.isLoading}
+              alreadyCollectedIds={
+                new Set(generator.refImages.map((r) => r.id))
+              }
+              onConfirm={(selected) =>
+                generator.addRefImages(
+                  selected.map((s) => ({
+                    id: s.id,
+                    url: s.url,
+                    title: s.title,
+                  })),
+                )
+              }
+              max={generator.maxRefImages - generator.refImages.length}
+            />
+          </>
+        )}
 
         <ActionButton
           onClick={generator.handleGenerate}

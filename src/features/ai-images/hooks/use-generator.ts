@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -9,6 +9,13 @@ import {
   flipOrientation,
   getRatioOptions,
 } from '@/features/ai-images/constants'
+import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
+
+export interface RefImage {
+  id: string
+  url: string
+  title: string
+}
 
 interface UseGeneratorOptions {
   accessToken: string | undefined
@@ -16,6 +23,7 @@ interface UseGeneratorOptions {
   gensPerModel: number
   credits: CreditsState
   setError: (error: string | null) => void
+  activeTier?: string
 }
 
 export interface GeneratorState {
@@ -26,10 +34,7 @@ export interface GeneratorState {
   setAspectRatio: (ratio: string) => void
   loading: boolean
   sourceImage: { base64: string; name: string } | null
-  imageSelectedModels: Array<string>
   describingImage: boolean
-  inputMode: 'image' | 'text'
-  activeModels: Array<string>
   totalImages: number
   canGenerate: boolean
   ratioOptions: Array<string>
@@ -41,7 +46,10 @@ export interface GeneratorState {
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
   handleClearSourceImage: () => void
-  toggleImageModel: (modelId: string, checked: boolean) => void
+  refImages: Array<RefImage>
+  addRefImages: (images: Array<RefImage>) => void
+  removeRefImage: (id: string) => void
+  maxRefImages: number
 }
 
 export function useGenerator({
@@ -50,6 +58,7 @@ export function useGenerator({
   gensPerModel,
   credits,
   setError,
+  activeTier,
 }: UseGeneratorOptions): GeneratorState {
   const [prompt, setPrompt] = useState('')
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
@@ -61,23 +70,41 @@ export function useGenerator({
     base64: string
     name: string
   } | null>(null)
-  const [imageSelectedModels, setImageSelectedModels] = useState<Array<string>>(
-    [],
-  )
   const [describingImage, setDescribingImage] = useState(false)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
+  const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
-  const inputMode = sourceImage ? 'image' : 'text'
-  const activeModels =
-    inputMode === 'image' ? imageSelectedModels : selectedModels
-  const totalImages =
-    inputMode === 'image'
-      ? imageSelectedModels.length
-      : selectedModels.length * gensPerModel
+  // Compute maxRefImages from the active model's edit endpoint
+  const maxRefImages = useMemo(() => {
+    if (activeTier !== 'quality') return 0
+    const activeModelId = selectedModels[0]
+    if (!activeModelId) return 0
+    const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === activeModelId)
+    if (!modelDef?.supportsImageInput || !modelDef.imageInputModelId) return 0
+    const editModel = EDIT_MODELS.find(
+      (m) => m.id === modelDef.imageInputModelId,
+    )
+    return editModel?.maxRefImages ?? 0
+  }, [activeTier, selectedModels])
+
+  const addRefImages = useCallback(
+    (images: Array<RefImage>) => {
+      setRefImages((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id))
+        const newImages = images.filter((img) => !existingIds.has(img.id))
+        return [...prev, ...newImages].slice(0, maxRefImages)
+      })
+    },
+    [maxRefImages],
+  )
+
+  const removeRefImage = useCallback((id: string) => {
+    setRefImages((prev) => prev.filter((img) => img.id !== id))
+  }, [])
+
+  const totalImages = selectedModels.length * gensPerModel
   const canGenerate =
-    inputMode === 'image'
-      ? imageSelectedModels.length > 0
-      : !!prompt.trim() && selectedModels.length > 0
+    (!!prompt.trim() || !!sourceImage) && selectedModels.length > 0
 
   const ratioOptions = getRatioOptions(orientation)
 
@@ -87,23 +114,11 @@ export function useGenerator({
     setAspectRatio(flipped.aspectRatio)
   }
 
-  function toggleImageModel(modelId: string, checked: boolean) {
-    if (checked) {
-      setImageSelectedModels((prev) => [...prev, modelId])
-    } else {
-      setImageSelectedModels((prev) => prev.filter((id) => id !== modelId))
-    }
-  }
-
   async function handleGenerate() {
     if (loading || !accessToken || !canGenerate) return
 
-    // Expand models by gensPerModel (each model generates N images)
-    const modelsToUse = activeModels.flatMap((modelId) =>
-      Array.from(
-        { length: inputMode === 'image' ? 1 : gensPerModel },
-        () => modelId,
-      ),
+    const modelsToUse = selectedModels.flatMap((modelId) =>
+      Array.from({ length: gensPerModel }, () => modelId),
     )
     const reason = sourceImage ? 'variation' : 'image_gen'
     const cost = CREDIT_COSTS[reason] * modelsToUse.length
@@ -119,6 +134,8 @@ export function useGenerator({
 
     try {
       const finalPrompt = prompt.trim()
+      const referenceImageIds =
+        refImages.length > 0 ? refImages.map((r) => r.id) : undefined
       const results = await Promise.allSettled(
         modelsToUse.map((modelId) =>
           generateImage({
@@ -129,6 +146,7 @@ export function useGenerator({
               aspectRatio,
               ...(sourceImage ? { sourceImageBase64: sourceImage.base64 } : {}),
               ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
+              ...(referenceImageIds ? { referenceImageIds } : {}),
             },
           }),
         ),
@@ -160,7 +178,6 @@ export function useGenerator({
 
   function applySourceBase64(base64: string, name: string) {
     setSourceImage({ base64, name })
-    setImageSelectedModels(['fal-ai/nano-banana-pro'])
     setPrompt('')
 
     const img = new Image()
@@ -229,8 +246,6 @@ export function useGenerator({
 
   function handleClearSourceImage() {
     setSourceImage(null)
-    setImageSelectedModels([])
-    setPrompt('')
   }
 
   return {
@@ -242,10 +257,7 @@ export function useGenerator({
     setAspectRatio,
     loading,
     sourceImage,
-    imageSelectedModels,
     describingImage,
-    inputMode: inputMode,
-    activeModels,
     totalImages,
     canGenerate,
     ratioOptions,
@@ -256,6 +268,9 @@ export function useGenerator({
     setSourceFile,
     setSourceFromUrl,
     handleClearSourceImage,
-    toggleImageModel,
+    refImages,
+    addRefImages,
+    removeRefImage,
+    maxRefImages,
   }
 }
