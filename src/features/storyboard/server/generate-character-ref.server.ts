@@ -15,6 +15,7 @@ interface GenerateCharacterRefInput {
   promptOverride?: string
   storyboardId: string
   accessToken: string
+  modelId?: string
 }
 
 export const generateCharacterRef = createServerFn({ method: 'POST' })
@@ -38,7 +39,7 @@ export const generateCharacterRef = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    const modelId = CHARACTER_REF_MODEL
+    const modelId = data.modelId ?? CHARACTER_REF_MODEL
     const prompt =
       data.promptOverride?.trim() ||
       `${data.characterDescription}, cinematic portrait, photorealistic, dramatic lighting, shallow depth of field, 35mm film look, movie still`

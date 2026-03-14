@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Palette,
   PencilLine,
+  Settings,
   Sparkles,
   SquarePlay,
   StickyNote,
@@ -150,6 +151,13 @@ export const navItems: Array<NavItem> = [
     icon: Trash2,
     activeOnly: true,
     dividerBefore: true,
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    href: '/dashboard/settings',
+    icon: Settings,
+    alwaysVisible: true,
   },
   {
     id: 'account',

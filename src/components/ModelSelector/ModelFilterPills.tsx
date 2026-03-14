@@ -14,7 +14,8 @@ export function ModelFilterPills({
   onToggle,
   onToggleAll,
 }: ModelFilterPillsProps) {
-  const allActive = models.length > 0 && models.every((m) => activeIds.includes(m.id))
+  const allActive =
+    models.length > 0 && models.every((m) => activeIds.includes(m.id))
 
   return (
     <div className="flex flex-wrap gap-1 items-center">

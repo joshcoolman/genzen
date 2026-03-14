@@ -1,15 +1,14 @@
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
-import type { UnifiedModel } from '@/components/ModelSelector'
+import type { ModelSlots, SlotTier } from '@/lib/model-slots'
 import { Textarea } from '@/components/ui/textarea'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
-import { ModelFilterPills, ModelSelector } from '@/components/ModelSelector'
 import { ModelCheckboxList } from '@/components/ModelCheckboxList'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
-import { IMAGE_INPUT_MODELS } from '@/features/ai-images/models'
+import { IMAGE_INPUT_MODELS, getModelName } from '@/features/ai-images/models'
 import { CREDIT_COSTS } from '@/features/credits'
 
 interface UserImagesData {
@@ -25,20 +24,11 @@ interface UserImagesData {
   refresh: () => Promise<void>
 }
 
-interface ModelSelectorData {
-  selectedIds: Array<string>
-  models: Array<UnifiedModel>
-  gensPerModel: number
-  toggleSelected: (id: string) => void
-  adjustGens: (delta: number) => void
-}
-
 interface GeneratorPanelProps {
   generator: GeneratorState
-  modelSelector: ModelSelectorData
-  activeModelIds: Array<string>
-  toggleActiveModel: (id: string) => void
-  toggleAllActiveModels: () => void
+  slots: ModelSlots
+  activeTier: SlotTier
+  setActiveTier: (tier: SlotTier) => void
   credits: CreditsState
   userImages: UserImagesData
   error: string | null
@@ -46,10 +36,9 @@ interface GeneratorPanelProps {
 
 export function GeneratorPanel({
   generator,
-  modelSelector,
-  activeModelIds,
-  toggleActiveModel,
-  toggleAllActiveModels,
+  slots,
+  activeTier,
+  setActiveTier,
   credits,
   userImages,
   error,
@@ -78,15 +67,11 @@ export function GeneratorPanel({
               />
             </div>
           ) : (
-            <ModelSelector
-              mode="multi"
-              display="dropdown"
-              selectedIds={modelSelector.selectedIds}
-              visibleModels={modelSelector.models}
-              onToggleSelected={modelSelector.toggleSelected}
-              showGensPerModel
-              gensPerModel={modelSelector.gensPerModel}
-              onAdjustGens={modelSelector.adjustGens}
+            <TierToggle
+              activeTier={activeTier}
+              onChangeTier={setActiveTier}
+              slots={slots}
+              disabled={generator.loading}
             />
           )}
           <ImageSourceButtons
@@ -110,18 +95,6 @@ export function GeneratorPanel({
           />
         </div>
 
-        {generator.inputMode !== 'image' &&
-          modelSelector.selectedIds.length > 0 && (
-            <ModelFilterPills
-              models={modelSelector.models.filter((m) =>
-                modelSelector.selectedIds.includes(m.id),
-              )}
-              activeIds={activeModelIds}
-              onToggle={toggleActiveModel}
-              onToggleAll={toggleAllActiveModels}
-            />
-          )}
-
         <Textarea
           id="prompt-textarea"
           placeholder={
@@ -140,26 +113,55 @@ export function GeneratorPanel({
         <ActionButton
           onClick={generator.handleGenerate}
           loading={generator.loading}
-          loadingText={
-            generator.totalImages > 1
-              ? `Generating ${generator.totalImages} images...`
-              : 'Generating...'
-          }
+          loadingText="Generating..."
           disabled={
             !generator.canGenerate ||
             (credits.balance ?? 0) < CREDIT_COSTS.image_gen
           }
           className="w-full"
         >
-          {credits.isEmpty
-            ? 'Out of credits'
-            : generator.totalImages > 1
-              ? `Generate ${generator.totalImages} images`
-              : 'Generate'}
+          {credits.isEmpty ? 'Out of credits' : 'Generate'}
         </ActionButton>
 
         {error && <ErrorBanner message={error} />}
       </div>
+    </div>
+  )
+}
+
+function TierToggle({
+  activeTier,
+  onChangeTier,
+  slots,
+  disabled,
+}: {
+  activeTier: SlotTier
+  onChangeTier: (tier: SlotTier) => void
+  slots: ModelSlots
+  disabled: boolean
+}) {
+  const tiers: Array<{ tier: SlotTier; label: string }> = [
+    { tier: 'draft', label: 'Draft' },
+    { tier: 'quality', label: 'Quality' },
+  ]
+
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+      {tiers.map(({ tier, label }) => (
+        <button
+          key={tier}
+          onClick={() => onChangeTier(tier)}
+          disabled={disabled}
+          title={getModelName(slots[tier])}
+          className={`px-3 py-1 text-sm rounded transition-colors ${
+            activeTier === tier
+              ? 'bg-accent-brand/15 text-accent-brand border border-accent-brand/40 font-medium'
+              : 'text-muted-foreground hover:text-foreground'
+          } disabled:opacity-50`}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   )
 }

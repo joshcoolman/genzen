@@ -12,7 +12,6 @@ import {
   Unlock,
   Wand2,
 } from 'lucide-react'
-import type { BrainstormModelKey } from '@/features/ai-images/server/brainstorm-images.server'
 import type { BrainstormImage } from '@/features/ai-images/hooks/use-brainstorm'
 import { ActionButton } from '@/components/ActionButton'
 import {
@@ -29,8 +28,12 @@ import {
 import { useBrainstorm } from '@/features/ai-images/hooks/use-brainstorm'
 import { useBrainstormSettings } from '@/features/ai-images/hooks/use-brainstorm-settings'
 import { useCredits } from '@/features/credits/hooks/use-credits'
+import { useModelSlots } from '@/lib/model-slots'
 import { BRAINSTORM_MAX_ROWS } from '@/features/ai-images/constants'
-import { REFINE_CAPABLE_MODELS } from '@/features/ai-images/models'
+import {
+  REFINE_CAPABLE_MODELS,
+  getModelName,
+} from '@/features/ai-images/models'
 
 interface BrainstormPanelProps {
   accessToken: string | undefined
@@ -41,7 +44,6 @@ export function BrainstormPanel({
   accessToken,
   aspectRatio: refineAspectRatio,
 }: BrainstormPanelProps) {
-  const [model, setModel] = useState<BrainstormModelKey>('schnell')
   const [editInstruction, setEditInstruction] = useState('')
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
   const [pasteText, setPasteText] = useState('')
@@ -49,6 +51,7 @@ export function BrainstormPanel({
 
   const credits = useCredits()
   const settings = useBrainstormSettings()
+  const { slots } = useModelSlots()
 
   const focusSlot = useCallback((index: number) => {
     const el = textareaRefs.current[index]
@@ -61,7 +64,7 @@ export function BrainstormPanel({
   const brainstorm = useBrainstorm({
     accessToken,
     credits,
-    model,
+    model: slots.draft,
     refineModel: settings.refineModel,
     aspectRatio: refineAspectRatio,
     slotCount: settings.rowCount,
@@ -150,14 +153,9 @@ export function BrainstormPanel({
             </Popover>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground">Sketch</span>
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value as BrainstormModelKey)}
-                className="rounded-md border border-border bg-muted/50 px-2 py-1 text-xs text-foreground"
-              >
-                <option value="schnell">Schnell</option>
-                <option value="dev">Dev</option>
-              </select>
+              <span className="text-xs font-medium">
+                {getModelName(slots.draft)}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-foreground">Refine</span>

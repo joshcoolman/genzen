@@ -21,7 +21,7 @@ export interface BrainstormImage {
 interface UseBrainstormOptions {
   accessToken: string | undefined
   credits: CreditsState
-  model?: BrainstormModelKey
+  model?: BrainstormModelKey | string
   refineModel: string
   aspectRatio?: string
   slotCount: number
@@ -71,7 +71,7 @@ export function useBrainstorm({
   const slotPrompts = useRef<Array<string>>(
     Array.from({ length: slotCount }, () => BRAINSTORM_PROMPT),
   )
-  const activeModel = useRef<BrainstormModelKey>('schnell')
+  const activeModel = useRef<BrainstormModelKey | string>('schnell')
 
   // Resize arrays when slotCount or imagesPerPrompt changes
   useEffect(() => {

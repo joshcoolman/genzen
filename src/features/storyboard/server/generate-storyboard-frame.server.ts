@@ -23,6 +23,7 @@ interface GenerateStoryboardFrameInput {
   storyboardId: string
   accessToken: string
   characterImageUrls?: Array<string>
+  modelId?: string
 }
 
 export const generateStoryboardFrame = createServerFn({ method: 'POST' })
@@ -46,7 +47,7 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    const baseModelId = STORYBOARD_FRAME_MODEL
+    const baseModelId = data.modelId ?? STORYBOARD_FRAME_MODEL
 
     // Build enriched prompt with cinematography metadata
     const cineParts: Array<string> = []

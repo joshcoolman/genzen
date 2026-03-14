@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState  } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import type { SlotTier } from '@/lib/model-slots'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useImages } from '@/features/ai-images/hooks/use-images'
-import { useModelSelector } from '@/components/ModelSelector'
+import { useModelSlots } from '@/lib/model-slots'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
@@ -23,62 +24,17 @@ export function useAiImagesPage() {
 
   const userImages = useUserImages(user?.id)
 
-  const modelSelector = useModelSelector({
-    capability: 'generate',
-    mode: 'multi',
-  })
+  const { slots } = useModelSlots()
+  const [activeTier, setActiveTier] = useState<SlotTier>('draft')
 
-  // Active models: a subset of selectedIds that the pills control.
-  // New models added via dropdown default to active.
-  // Models removed from dropdown get cleaned out.
-  const [activeModelIds, setActiveModelIds] = useState<Array<string>>(
-    () => modelSelector.selectedIds,
-  )
-
-  const prevSelectedRef = useRef(modelSelector.selectedIds)
-  useEffect(() => {
-    const prev = prevSelectedRef.current
-    const next = modelSelector.selectedIds
-    prevSelectedRef.current = next
-
-    setActiveModelIds((active) => {
-      // Add any newly selected models as active
-      const added = next.filter((id) => !prev.includes(id))
-      // Remove any that were deselected from the dropdown
-      const kept = active.filter((id) => next.includes(id))
-      return [...kept, ...added]
-    })
-  }, [modelSelector.selectedIds])
-
-  const toggleActiveModel = useCallback((modelId: string) => {
-    setActiveModelIds((prev) => {
-      if (prev.includes(modelId)) {
-        if (prev.length === 1) return prev // keep at least one
-        return prev.filter((id) => id !== modelId)
-      }
-      return [...prev, modelId]
-    })
-  }, [])
-
-  const toggleAllActiveModels = useCallback(() => {
-    const allActive = modelSelector.selectedIds.every((id) =>
-      activeModelIds.includes(id),
-    )
-    if (allActive) {
-      // Deselect all except the first
-      setActiveModelIds([modelSelector.selectedIds[0]])
-    } else {
-      // Select all
-      setActiveModelIds([...modelSelector.selectedIds])
-    }
-  }, [modelSelector.selectedIds, activeModelIds])
+  const activeModelId = slots[activeTier]
 
   const [error, setError] = useState<string | null>(null)
 
   const generator = useGenerator({
     accessToken,
-    selectedModels: activeModelIds,
-    gensPerModel: modelSelector.gensPerModel,
+    selectedModels: [activeModelId],
+    gensPerModel: 1,
     credits,
     setError,
   })
@@ -87,7 +43,6 @@ export function useAiImagesPage() {
     (img) => img.status === 'completed',
   )
 
-  // Get IDs of completed non-edit images to fetch their edit children
   const parentIds = useMemo(
     () =>
       completedImages
@@ -121,9 +76,8 @@ export function useAiImagesPage() {
 
   function handleLoadPromptAndModel(img: SavedAiImage) {
     if (!img.generation_metadata) return
-    const { prompt, model: selectedModel } = img.generation_metadata
+    const { prompt } = img.generation_metadata
     generator.setPrompt(prompt)
-    modelSelector.selectOnly([selectedModel])
   }
 
   return {
@@ -131,10 +85,10 @@ export function useAiImagesPage() {
     credits,
     gallery,
     userImages,
-    modelSelector,
-    activeModelIds,
-    toggleActiveModel,
-    toggleAllActiveModels,
+    slots,
+    activeTier,
+    setActiveTier,
+    activeModelId,
     generator,
     editChildrenMap,
     lightbox,

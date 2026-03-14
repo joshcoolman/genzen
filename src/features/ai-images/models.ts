@@ -78,17 +78,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   },
 ]
 
-// Default visible models - curated selection of most useful models
-export const DEFAULT_VISIBLE_MODELS = [
-  ALL_IMAGE_MODELS[0], // FLUX Schnell
-  ALL_IMAGE_MODELS[1], // FLUX Dev
-  ALL_IMAGE_MODELS[2], // FLUX.2 Pro
-  ALL_IMAGE_MODELS[5], // Seedream v4
-  ALL_IMAGE_MODELS[6], // Nano Banana 2
-  ALL_IMAGE_MODELS[7], // Recraft V3
-  ALL_IMAGE_MODELS[8], // Grok Imagine
-]
-
 export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
 
 // Feature-specific model defaults — change here, not in server files
@@ -107,13 +96,6 @@ export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
 export const REFINE_CAPABLE_MODELS = ALL_IMAGE_MODELS.filter(
   (m) => m.supportsImageInput && m.imageInputModelId,
 )
-
-/**
- * Get visible models by their IDs
- */
-export function getVisibleModels(ids: Array<string>): Array<ImageModel> {
-  return ALL_IMAGE_MODELS.filter((model) => ids.includes(model.id))
-}
 
 export function getModelName(modelId: string): string {
   return (

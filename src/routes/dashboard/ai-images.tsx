@@ -58,10 +58,9 @@ function AiImagesPage() {
       {generatorOpen && (
         <GeneratorPanel
           generator={page.generator}
-          modelSelector={page.modelSelector}
-          activeModelIds={page.activeModelIds}
-          toggleActiveModel={page.toggleActiveModel}
-          toggleAllActiveModels={page.toggleAllActiveModels}
+          slots={page.slots}
+          activeTier={page.activeTier}
+          setActiveTier={page.setActiveTier}
           credits={page.credits}
           userImages={page.userImages}
           error={page.error}

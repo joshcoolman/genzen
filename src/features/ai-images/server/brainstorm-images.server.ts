@@ -19,12 +19,20 @@ export type BrainstormModelKey = keyof typeof BRAINSTORM_MODELS
 
 const DEFAULT_MODEL: BrainstormModelKey = 'schnell'
 
+// Accepts either a BrainstormModelKey or a direct FAL model ID
+function resolveBrainstormModelId(model?: BrainstormModelKey | string): string {
+  if (!model) return BRAINSTORM_MODELS[DEFAULT_MODEL]
+  if (model in BRAINSTORM_MODELS)
+    return BRAINSTORM_MODELS[model as BrainstormModelKey]
+  return model // direct model ID passthrough
+}
+
 const REWRITE_SYSTEM = `Improve this image generation prompt. Return ONLY the improved prompt. No quotes, no explanation.`
 
 interface CheckBrainstormInput {
   accessToken: string
   requestIds: Array<string>
-  model?: BrainstormModelKey
+  model?: BrainstormModelKey | string
 }
 
 interface RewritePromptInput {
@@ -69,7 +77,7 @@ export const editPrompt = createServerFn({ method: 'POST' })
 interface RegenerateBrainstormInput {
   accessToken: string
   prompts: Array<string>
-  model?: BrainstormModelKey
+  model?: BrainstormModelKey | string
 }
 
 export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
@@ -81,18 +89,17 @@ export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
       throw new Error('FAL_KEY environment variable is not set')
     }
 
-    const modelKey = data.model ?? DEFAULT_MODEL
-    const modelId = BRAINSTORM_MODELS[modelKey]
+    const modelId = resolveBrainstormModelId(data.model)
+    const isDev = modelId === BRAINSTORM_MODELS.dev
     const submissions = await Promise.all(
       data.prompts.map(async (prompt) => {
         const falInput = await buildFalInput({
           modelId,
           prompt,
           safetyLevel: 'permissive',
-          extraParams:
-            modelKey === 'dev'
-              ? { num_inference_steps: 28, guidance_scale: 3.5 }
-              : undefined,
+          extraParams: isDev
+            ? { num_inference_steps: 28, guidance_scale: 3.5 }
+            : undefined,
         })
         return (fal.queue.submit as any)(modelId, { input: falInput })
       }),
@@ -112,7 +119,7 @@ export const checkBrainstormImages = createServerFn({ method: 'POST' })
       throw new Error('FAL_KEY environment variable is not set')
     }
 
-    const modelId = BRAINSTORM_MODELS[data.model ?? DEFAULT_MODEL]
+    const modelId = resolveBrainstormModelId(data.model)
     const results = await Promise.all(
       data.requestIds.map(async (requestId) => {
         try {

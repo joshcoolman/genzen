@@ -24,6 +24,7 @@ import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardStyleTrainerRouteImport } from './routes/dashboard/style-trainer'
 import { Route as DashboardStoryboardRouteImport } from './routes/dashboard/storyboard'
 import { Route as DashboardShotsRouteImport } from './routes/dashboard/shots'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/prompt-studio'
 import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
@@ -113,6 +114,11 @@ const DashboardStoryboardRoute = DashboardStoryboardRouteImport.update({
 const DashboardShotsRoute = DashboardShotsRouteImport.update({
   id: '/shots',
   path: '/shots',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardPromptStudioRoute = DashboardPromptStudioRouteImport.update({
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/storyboard': typeof DashboardStoryboardRoute
   '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/storyboard': typeof DashboardStoryboardRoute
   '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
@@ -274,6 +282,7 @@ export interface FileRoutesById {
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
   '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/shots': typeof DashboardShotsRoute
   '/dashboard/storyboard': typeof DashboardStoryboardRoute
   '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
+    | '/dashboard/settings'
     | '/dashboard/shots'
     | '/dashboard/storyboard'
     | '/dashboard/style-trainer'
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
+    | '/dashboard/settings'
     | '/dashboard/shots'
     | '/dashboard/storyboard'
     | '/dashboard/style-trainer'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/dashboard/notes'
     | '/dashboard/outpaint'
     | '/dashboard/prompt-studio'
+    | '/dashboard/settings'
     | '/dashboard/shots'
     | '/dashboard/storyboard'
     | '/dashboard/style-trainer'
@@ -497,6 +509,13 @@ declare module '@tanstack/react-router' {
       path: '/shots'
       fullPath: '/dashboard/shots'
       preLoaderRoute: typeof DashboardShotsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/prompt-studio': {
@@ -634,6 +653,7 @@ interface DashboardRouteChildren {
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardOutpaintRoute: typeof DashboardOutpaintRoute
   DashboardPromptStudioRoute: typeof DashboardPromptStudioRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardShotsRoute: typeof DashboardShotsRoute
   DashboardStoryboardRoute: typeof DashboardStoryboardRoute
   DashboardStyleTrainerRoute: typeof DashboardStyleTrainerRoute
@@ -656,6 +676,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardOutpaintRoute: DashboardOutpaintRoute,
   DashboardPromptStudioRoute: DashboardPromptStudioRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardShotsRoute: DashboardShotsRoute,
   DashboardStoryboardRoute: DashboardStoryboardRoute,
   DashboardStyleTrainerRoute: DashboardStyleTrainerRoute,
