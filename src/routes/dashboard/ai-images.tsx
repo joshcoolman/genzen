@@ -61,6 +61,7 @@ function AiImagesPage() {
           modelSelector={page.modelSelector}
           activeModelIds={page.activeModelIds}
           toggleActiveModel={page.toggleActiveModel}
+          toggleAllActiveModels={page.toggleAllActiveModels}
           credits={page.credits}
           userImages={page.userImages}
           error={page.error}

@@ -38,6 +38,7 @@ interface GeneratorPanelProps {
   modelSelector: ModelSelectorData
   activeModelIds: Array<string>
   toggleActiveModel: (id: string) => void
+  toggleAllActiveModels: () => void
   credits: CreditsState
   userImages: UserImagesData
   error: string | null
@@ -48,6 +49,7 @@ export function GeneratorPanel({
   modelSelector,
   activeModelIds,
   toggleActiveModel,
+  toggleAllActiveModels,
   credits,
   userImages,
   error,
@@ -116,6 +118,7 @@ export function GeneratorPanel({
               )}
               activeIds={activeModelIds}
               onToggle={toggleActiveModel}
+              onToggleAll={toggleAllActiveModels}
             />
           )}
 

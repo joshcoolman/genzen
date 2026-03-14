@@ -60,6 +60,19 @@ export function useAiImagesPage() {
     })
   }, [])
 
+  const toggleAllActiveModels = useCallback(() => {
+    const allActive = modelSelector.selectedIds.every((id) =>
+      activeModelIds.includes(id),
+    )
+    if (allActive) {
+      // Deselect all except the first
+      setActiveModelIds([modelSelector.selectedIds[0]])
+    } else {
+      // Select all
+      setActiveModelIds([...modelSelector.selectedIds])
+    }
+  }, [modelSelector.selectedIds, activeModelIds])
+
   const [error, setError] = useState<string | null>(null)
 
   const generator = useGenerator({
@@ -121,6 +134,7 @@ export function useAiImagesPage() {
     modelSelector,
     activeModelIds,
     toggleActiveModel,
+    toggleAllActiveModels,
     generator,
     editChildrenMap,
     lightbox,
