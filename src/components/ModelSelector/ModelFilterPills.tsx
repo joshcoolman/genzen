@@ -22,8 +22,8 @@ export function ModelFilterPills({
             onClick={() => onToggle(model.id)}
             className={`rounded-full border px-1.5 py-px text-[9px] leading-tight transition-colors ${
               active
-                ? 'border-border bg-muted/50 text-muted-foreground'
-                : 'border-transparent text-muted-foreground/30'
+                ? 'border-accent-brand bg-card text-foreground'
+                : 'border-border bg-muted/50 text-muted-foreground'
             }`}
           >
             {model.name}
