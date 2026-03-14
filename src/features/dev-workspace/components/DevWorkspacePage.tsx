@@ -95,7 +95,7 @@ export function DevWorkspacePage() {
               display={display}
               defaultExpanded
               selectedIds={selector.selectedIds}
-              visibleModels={selector.visibleModels}
+              visibleModels={selector.models}
               onToggleSelected={selector.toggleSelected}
               showGensPerModel={showGens}
               gensPerModel={selector.gensPerModel}
@@ -113,7 +113,7 @@ export function DevWorkspacePage() {
             {
               selectedIds: selector.selectedIds,
               gensPerModel: selector.gensPerModel,
-              visibleCount: selector.visibleIds.length,
+              modelCount: selector.models.length,
               maxRefImages: selector.maxRefImages,
               aspectRatio: `${orientation} ${aspectRatio}`,
             },
