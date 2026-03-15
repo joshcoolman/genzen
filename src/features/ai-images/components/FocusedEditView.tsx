@@ -113,13 +113,6 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           </Button>
         )}
         <div className="flex-1" />
-        <Button
-          variant="outline"
-          onClick={edit.handleDescribeJson}
-          disabled={edit.jsonLoading}
-        >
-          {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
-        </Button>
         <ActionButton
           onClick={edit.handleSubmit}
           disabled={!edit.editPrompt.trim()}
@@ -175,18 +168,6 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
 
       {edit.error && <p className="text-sm text-destructive">{edit.error}</p>}
 
-      {edit.jsonDescription && (
-        <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-muted p-4 text-xs font-mono text-foreground">
-          {(() => {
-            try {
-              return JSON.stringify(JSON.parse(edit.jsonDescription), null, 2)
-            } catch {
-              return edit.jsonDescription
-            }
-          })()}
-        </pre>
-      )}
-
       {/* Previous edits */}
       <GenerationResultsGrid
         results={edit.results.results}
@@ -202,6 +183,49 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         title="Previous Edits"
         prefsKey="focused-edit-results"
       />
+
+      <hr className="border-border" />
+
+      {/* JSON Playground */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-muted-foreground">
+          JSON Playground
+        </h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={edit.jsonPrompt}
+            onChange={(e) => edit.setJsonPrompt(e.target.value)}
+            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+            disabled={edit.jsonLoading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void edit.handleDescribeJson()
+            }}
+          />
+          <Button
+            variant="outline"
+            onClick={edit.handleDescribeJson}
+            disabled={edit.jsonLoading || !edit.jsonPrompt.trim()}
+          >
+            {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
+          </Button>
+        </div>
+        {edit.jsonDescription && (
+          <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-muted p-4 text-xs font-mono text-foreground">
+            {(() => {
+              try {
+                return JSON.stringify(
+                  JSON.parse(edit.jsonDescription),
+                  null,
+                  2,
+                )
+              } catch {
+                return edit.jsonDescription
+              }
+            })()}
+          </pre>
+        )}
+      </div>
     </div>
   )
 }

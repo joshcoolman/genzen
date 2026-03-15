@@ -6,6 +6,7 @@ import { ai } from '@/lib/server/ai.server'
 interface DescribeImageJsonInput {
   accessToken: string
   imageUrl: string
+  prompt: string
 }
 
 export const describeImageJson = createServerFn({ method: 'POST' })
@@ -38,21 +39,8 @@ export const describeImageJson = createServerFn({ method: 'POST' })
     const base64 = Buffer.from(buffer).toString('base64')
 
     const response = await generateText({
-      model: ai.sonnet,
+      model: ai.gemini3Flash,
       maxOutputTokens: 4096,
-      system: `You are an image analysis assistant. Describe the given image as a structured JSON object. Include these fields:
-- subject: what/who is the main subject
-- setting: where the scene takes place
-- lighting: describe the lighting conditions
-- mood: the emotional tone or atmosphere
-- colors: array of dominant colors
-- style: artistic style (photorealistic, illustration, etc.)
-- composition: how the frame is composed (close-up, wide shot, etc.)
-- details: array of notable details or elements
-- action: what is happening in the scene
-- textures: array of notable textures or materials
-
-Return ONLY valid JSON, no markdown fences, no explanation.`,
       messages: [
         {
           role: 'user',
@@ -63,7 +51,7 @@ Return ONLY valid JSON, no markdown fences, no explanation.`,
             },
             {
               type: 'text',
-              text: 'Describe this image as structured JSON.',
+              text: data.prompt,
             },
           ],
         },

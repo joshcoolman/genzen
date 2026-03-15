@@ -40,6 +40,9 @@ export function useFocusedEdit(imageId: string) {
   const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
   const [jsonDescription, setJsonDescription] = useState<string | null>(null)
   const [jsonLoading, setJsonLoading] = useState(false)
+  const [jsonPrompt, setJsonPrompt] = useState(
+    'Analyze this image and output a precise JSON description. Focus on object placement, color hex codes, and lighting. Use a flat structure.',
+  )
 
   // Source chain: tracks all image IDs whose edits should be visible
   const [activeSourceId, setActiveSourceId] = useState(imageId)
@@ -322,7 +325,7 @@ export function useFocusedEdit(imageId: string) {
     setJsonDescription(null)
     try {
       const result = await describeImageJson({
-        data: { accessToken, imageUrl: sourceImage.url },
+        data: { accessToken, imageUrl: sourceImage.url, prompt: jsonPrompt },
       })
       setJsonDescription(result.json)
     } catch (err) {
@@ -336,7 +339,7 @@ export function useFocusedEdit(imageId: string) {
     } finally {
       setJsonLoading(false)
     }
-  }, [accessToken, sourceImage?.url, jsonLoading])
+  }, [accessToken, sourceImage?.url, jsonLoading, jsonPrompt])
 
   const isChained = activeSourceId !== imageId
 
@@ -364,6 +367,8 @@ export function useFocusedEdit(imageId: string) {
     isChained,
     jsonDescription,
     jsonLoading,
+    jsonPrompt,
+    setJsonPrompt,
     handleDescribeJson,
   }
 }
