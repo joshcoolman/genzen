@@ -39,10 +39,6 @@ export function useFocusedEdit(imageId: string) {
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
   const [jsonDescription, setJsonDescription] = useState<string | null>(null)
-  const [jsonLoading, setJsonLoading] = useState(false)
-  const [jsonPrompt, setJsonPrompt] = useState(
-    'Analyze this image and output a precise JSON description. Focus on object placement, color hex codes, and lighting. Use a flat structure.',
-  )
 
   // Source chain: tracks all image IDs whose edits should be visible
   const [activeSourceId, setActiveSourceId] = useState(imageId)
@@ -252,6 +248,32 @@ export function useFocusedEdit(imageId: string) {
     results,
   ])
 
+  const [jsonLoading, setJsonLoading] = useState(false)
+
+  const handleDescribeJson = useCallback(async () => {
+    if (!accessToken || !sourceImage?.url || jsonLoading) return
+    setJsonLoading(true)
+    setError(null)
+    try {
+      const { json } = await describeImageJson({
+        data: {
+          accessToken,
+          imageUrl: sourceImage.url,
+          prompt:
+            'Analyze this image for a reference DNA sheet. Focus on fixed architectural elements and furniture details.',
+        },
+      })
+      setJsonDescription(json)
+      setEditPrompt(json)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to describe image',
+      )
+    } finally {
+      setJsonLoading(false)
+    }
+  }, [accessToken, sourceImage?.url, jsonLoading])
+
   const promoteToSource = useCallback(
     async (result: GenerationResult) => {
       if (!result.url || !user?.id) return
@@ -319,28 +341,6 @@ export function useFocusedEdit(imageId: string) {
     setEditPrompt('')
   }, [originalImage, imageId])
 
-  const handleDescribeJson = useCallback(async () => {
-    if (!accessToken || !sourceImage?.url || jsonLoading) return
-    setJsonLoading(true)
-    setJsonDescription(null)
-    try {
-      const result = await describeImageJson({
-        data: { accessToken, imageUrl: sourceImage.url, prompt: jsonPrompt },
-      })
-      setJsonDescription(result.json)
-    } catch (err) {
-      setJsonDescription(
-        JSON.stringify(
-          { error: err instanceof Error ? err.message : String(err) },
-          null,
-          2,
-        ),
-      )
-    } finally {
-      setJsonLoading(false)
-    }
-  }, [accessToken, sourceImage?.url, jsonLoading, jsonPrompt])
-
   const isChained = activeSourceId !== imageId
 
   return {
@@ -367,8 +367,6 @@ export function useFocusedEdit(imageId: string) {
     isChained,
     jsonDescription,
     jsonLoading,
-    jsonPrompt,
-    setJsonPrompt,
     handleDescribeJson,
   }
 }

@@ -113,6 +113,13 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           </Button>
         )}
         <div className="flex-1" />
+        <Button
+          variant="outline"
+          onClick={edit.handleDescribeJson}
+          disabled={edit.jsonLoading || edit.editLoading}
+        >
+          {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
+        </Button>
         <ActionButton
           onClick={edit.handleSubmit}
           disabled={!edit.editPrompt.trim()}
@@ -184,48 +191,51 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         prefsKey="focused-edit-results"
       />
 
-      <hr className="border-border" />
-
-      {/* JSON Playground */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          JSON Playground
-        </h3>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={edit.jsonPrompt}
-            onChange={(e) => edit.setJsonPrompt(e.target.value)}
-            className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-            disabled={edit.jsonLoading}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void edit.handleDescribeJson()
-            }}
-          />
-          <Button
-            variant="outline"
-            onClick={edit.handleDescribeJson}
-            disabled={edit.jsonLoading || !edit.jsonPrompt.trim()}
-          >
-            {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
-          </Button>
-        </div>
-        {edit.jsonDescription && (
-          <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-muted p-4 text-xs font-mono text-foreground">
-            {(() => {
-              try {
-                return JSON.stringify(
-                  JSON.parse(edit.jsonDescription),
-                  null,
-                  2,
-                )
-              } catch {
-                return edit.jsonDescription
-              }
-            })()}
-          </pre>
-        )}
-      </div>
+      {edit.jsonDescription && (
+        <>
+          <hr className="border-border" />
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Generated JSON
+            </h3>
+            <JsonSyntaxHighlight json={edit.jsonDescription} />
+          </div>
+        </>
+      )}
     </div>
+  )
+}
+
+function JsonSyntaxHighlight({ json }: { json: string }) {
+  let formatted: string
+  try {
+    formatted = JSON.stringify(JSON.parse(json), null, 2)
+  } catch {
+    formatted = json
+  }
+
+  const highlighted = formatted
+    .replace(
+      /("(?:\\.|[^"\\])*")\s*:/g,
+      '<span class="text-sky-400">$1</span>:',
+    )
+    .replace(
+      /:\s*("(?:\\.|[^"\\])*")/g,
+      ': <span class="text-amber-300">$1</span>',
+    )
+    .replace(
+      /:\s*(\d+(?:\.\d+)?)/g,
+      ': <span class="text-purple-400">$1</span>',
+    )
+    .replace(
+      /:\s*(true|false|null)/g,
+      ': <span class="text-rose-400">$1</span>',
+    )
+
+  return (
+    <pre
+      className="whitespace-pre-wrap break-words rounded-lg border border-border bg-zinc-950 p-4 text-xs font-mono text-zinc-300"
+      dangerouslySetInnerHTML={{ __html: highlighted }}
+    />
   )
 }

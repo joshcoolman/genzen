@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { generateText } from 'ai'
+import { generateObject } from 'ai'
+import { z } from 'zod'
 import { requireAuth } from '@/lib/server/auth.server'
 import { ai } from '@/lib/server/ai.server'
 
@@ -8,6 +9,24 @@ interface DescribeImageJsonInput {
   imageUrl: string
   prompt: string
 }
+
+const imageSchema = z.object({
+  environment: z.object({
+    lighting: z
+      .string()
+      .describe('Primary light source and color temperature (e.g., 2700K)'),
+    walls: z.string(),
+    flooring: z.string(),
+  }),
+  objects: z.array(
+    z.object({
+      name: z.string().describe('Common name of the object'),
+      color_hex: z.string().describe('The primary hex code of the object'),
+      material: z.string(),
+      position: z.string().describe('Relative position in the frame'),
+    }),
+  ),
+})
 
 export const describeImageJson = createServerFn({ method: 'POST' })
   .inputValidator((data: DescribeImageJsonInput) => data)
@@ -38,9 +57,12 @@ export const describeImageJson = createServerFn({ method: 'POST' })
 
     const base64 = Buffer.from(buffer).toString('base64')
 
-    const response = await generateText({
+    const { object } = await generateObject({
       model: ai.gemini3Flash,
       maxOutputTokens: 4096,
+      system:
+        'You are a precise visual analysis engine. Output coordinates and attributes for image editing.',
+      schema: imageSchema,
       messages: [
         {
           role: 'user',
@@ -58,5 +80,5 @@ export const describeImageJson = createServerFn({ method: 'POST' })
       ],
     })
 
-    return { json: response.text.trim() }
+    return { json: JSON.stringify(object, null, 2) }
   })
