@@ -113,6 +113,13 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           </Button>
         )}
         <div className="flex-1" />
+        <Button
+          variant="outline"
+          onClick={edit.handleDescribeJson}
+          disabled={edit.jsonLoading}
+        >
+          {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
+        </Button>
         <ActionButton
           onClick={edit.handleSubmit}
           disabled={!edit.editPrompt.trim()}
@@ -167,6 +174,18 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
       </div>
 
       {edit.error && <p className="text-sm text-destructive">{edit.error}</p>}
+
+      {edit.jsonDescription && (
+        <pre className="whitespace-pre-wrap break-words rounded-lg border border-border bg-muted p-4 text-xs font-mono text-foreground">
+          {(() => {
+            try {
+              return JSON.stringify(JSON.parse(edit.jsonDescription), null, 2)
+            } catch {
+              return edit.jsonDescription
+            }
+          })()}
+        </pre>
+      )}
 
       {/* Previous edits */}
       <GenerationResultsGrid

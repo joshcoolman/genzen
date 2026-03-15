@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
+import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   detectAspectRatio,
@@ -37,6 +38,8 @@ export function useFocusedEdit(imageId: string) {
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
+  const [jsonDescription, setJsonDescription] = useState<string | null>(null)
+  const [jsonLoading, setJsonLoading] = useState(false)
 
   // Source chain: tracks all image IDs whose edits should be visible
   const [activeSourceId, setActiveSourceId] = useState(imageId)
@@ -313,6 +316,28 @@ export function useFocusedEdit(imageId: string) {
     setEditPrompt('')
   }, [originalImage, imageId])
 
+  const handleDescribeJson = useCallback(async () => {
+    if (!accessToken || !sourceImage?.url || jsonLoading) return
+    setJsonLoading(true)
+    setJsonDescription(null)
+    try {
+      const result = await describeImageJson({
+        data: { accessToken, imageUrl: sourceImage.url },
+      })
+      setJsonDescription(result.json)
+    } catch (err) {
+      setJsonDescription(
+        JSON.stringify(
+          { error: err instanceof Error ? err.message : String(err) },
+          null,
+          2,
+        ),
+      )
+    } finally {
+      setJsonLoading(false)
+    }
+  }, [accessToken, sourceImage?.url, jsonLoading])
+
   const isChained = activeSourceId !== imageId
 
   return {
@@ -337,5 +362,8 @@ export function useFocusedEdit(imageId: string) {
     promoteToSource,
     resetToOriginal,
     isChained,
+    jsonDescription,
+    jsonLoading,
+    handleDescribeJson,
   }
 }
