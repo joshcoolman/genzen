@@ -58,6 +58,25 @@ function storePrefs(key: string | undefined, update: Partial<GridPrefs>) {
   } catch {}
 }
 
+function ExpandablePrompt({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div
+      className="px-4 pt-2 pb-1 cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation()
+        setExpanded((v) => !v)
+      }}
+    >
+      <p
+        className={`text-[11px] text-muted-foreground ${expanded ? '' : 'line-clamp-3'}`}
+      >
+        {text}
+      </p>
+    </div>
+  )
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -182,6 +201,9 @@ function GenerationResultCard({
                   {result.title}
                 </h3>
               </div>
+            )}
+            {result.prompt && !result.enhancedPrompt && (
+              <ExpandablePrompt text={result.prompt} />
             )}
             {result.enhancedPrompt && (
               <div className="px-4 pt-2 pb-1">

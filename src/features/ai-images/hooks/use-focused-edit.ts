@@ -10,7 +10,8 @@ import {
   detectAspectRatio,
   getRatioOptions,
 } from '@/features/ai-images/constants'
-import { DEFAULT_EDIT_MODEL, EDIT_MODELS } from '@/features/ai-images/models'
+import { EDIT_MODELS } from '@/features/ai-images/models'
+import { useModelSelector } from '@/components/ModelSelector'
 import { supabase } from '@/lib/supabase'
 
 interface SourceImage {
@@ -37,7 +38,7 @@ export function useFocusedEdit(imageId: string) {
     'landscape',
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
-  const [editModelId, setEditModelId] = useState(DEFAULT_EDIT_MODEL)
+  const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
   const [jsonDescription, setJsonDescription] = useState<string | null>(null)
 
   // Source chain: tracks all image IDs whose edits should be visible
@@ -208,29 +209,43 @@ export function useFocusedEdit(imageId: string) {
   )
 
   const handleSubmit = useCallback(async () => {
-    if (!editPrompt.trim() || !accessToken || editLoading) return
+    if (
+      !editPrompt.trim() ||
+      !accessToken ||
+      editLoading ||
+      modelSelector.selectedIds.length === 0
+    )
+      return
     setEditLoading(true)
     setError(null)
+    const prompt = editPrompt.trim()
+    const totalEdits =
+      modelSelector.selectedIds.length * modelSelector.gensPerModel
     try {
-      await credits.deduct(CREDIT_COSTS.edit, 'edit')
-      const { recordId } = await editImage({
-        data: {
-          accessToken,
-          sourceImageId: activeSourceId,
-          editPrompt: editPrompt.trim(),
-          aspectRatio,
-          editModelId,
-        },
-      })
+      await credits.deduct(CREDIT_COSTS.edit * totalEdits, 'edit')
+      for (const editModelId of modelSelector.selectedIds) {
+        for (let g = 0; g < modelSelector.gensPerModel; g++) {
+          const { recordId } = await editImage({
+            data: {
+              accessToken,
+              sourceImageId: activeSourceId,
+              editPrompt: prompt,
+              aspectRatio,
+              editModelId,
+            },
+          })
 
-      results.addPendingResult({
-        id: recordId,
-        status: 'pending',
-        label:
-          EDIT_MODELS.find((m) => m.id === editModelId)?.name ?? editModelId,
-        prompt: editPrompt.trim(),
-      })
-
+          results.addPendingResult({
+            id: recordId,
+            status: 'pending',
+            label:
+              EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
+              modelSelector.models.find((m) => m.id === editModelId)?.name ??
+              editModelId,
+            prompt,
+          })
+        }
+      }
       setEditPrompt('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to edit image')
@@ -243,7 +258,9 @@ export function useFocusedEdit(imageId: string) {
     editLoading,
     activeSourceId,
     aspectRatio,
-    editModelId,
+    modelSelector.selectedIds,
+    modelSelector.gensPerModel,
+    modelSelector.models,
     credits,
     results,
   ])
@@ -266,9 +283,7 @@ export function useFocusedEdit(imageId: string) {
       setJsonDescription(json)
       setEditPrompt(json)
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to describe image',
-      )
+      setError(err instanceof Error ? err.message : 'Failed to describe image')
     } finally {
       setJsonLoading(false)
     }
@@ -355,8 +370,7 @@ export function useFocusedEdit(imageId: string) {
     setOrientation,
     aspectRatio,
     setAspectRatio,
-    editModelId,
-    setEditModelId,
+    modelSelector,
     ratioOptions,
     results,
     credits,

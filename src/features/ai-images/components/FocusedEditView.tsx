@@ -4,17 +4,11 @@ import { Link } from '@tanstack/react-router'
 import type { useFocusedEdit } from '@/features/ai-images/hooks/use-focused-edit'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
+import { ModelSelector } from '@/components/ModelSelector'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 interface FocusedEditViewProps {
   edit: ReturnType<typeof useFocusedEdit>
@@ -85,22 +79,16 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           onAspectRatioChange={edit.setAspectRatio}
           disabled={edit.editLoading}
         />
-        <Select
-          value={edit.editModelId}
-          onValueChange={edit.setEditModelId}
-          disabled={edit.editLoading}
-        >
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {EDIT_MODELS.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ModelSelector
+          mode="multi"
+          display="dropdown"
+          selectedIds={edit.modelSelector.selectedIds}
+          visibleModels={edit.modelSelector.models}
+          onToggleSelected={edit.modelSelector.toggleSelected}
+          showGensPerModel
+          gensPerModel={edit.modelSelector.gensPerModel}
+          onAdjustGens={edit.modelSelector.adjustGens}
+        />
         {edit.isChained && (
           <Button
             variant="ghost"
