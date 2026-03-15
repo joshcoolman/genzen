@@ -14,7 +14,7 @@ export interface ModelSlots {
 }
 
 const SLOT_DEFAULTS: ModelSlots = {
-  draft: 'fal-ai/flux/schnell',
+  draft: 'fal-ai/flux-kontext/dev',
   quality: 'fal-ai/nano-banana-2',
   video: DEFAULT_VIDEO_MODEL,
 }

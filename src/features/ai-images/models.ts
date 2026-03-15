@@ -13,6 +13,13 @@ export interface ImageModel {
 export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   // FLUX Family - verified models only
   {
+    id: 'fal-ai/flux-kontext/dev',
+    name: 'FLUX Kontext Dev',
+    description: 'Fast img2img + text steering',
+    category: 'FLUX',
+    supportsImageInput: true,
+  },
+  {
     id: 'fal-ai/flux/schnell',
     name: 'FLUX Schnell',
     description: 'Fast, reliable default',

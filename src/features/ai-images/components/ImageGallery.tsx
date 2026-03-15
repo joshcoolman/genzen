@@ -21,7 +21,7 @@ interface ImageGalleryProps {
   onOpenLightbox: (img: SavedAiImage) => void
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
-  onMoreLikeThis: (img: SavedAiImage, count: number) => void
+  onPreviewVariations: (img: SavedAiImage, count: number) => void
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
 }
@@ -34,7 +34,7 @@ export function ImageGallery({
   loadingGallery,
   generatingVariationFor,
   onOpenLightbox,
-  onMoreLikeThis,
+  onPreviewVariations,
   onDelete,
   onRestoreRoot,
 }: ImageGalleryProps) {
@@ -154,7 +154,7 @@ export function ImageGallery({
                 editChildren={editChildrenMap[img.id]}
                 onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
                 onOpen={onOpenLightbox}
-                onMoreLikeThis={onMoreLikeThis}
+                onPreviewVariations={onPreviewVariations}
                 onDelete={onDelete}
                 getModelName={getModelName}
               />

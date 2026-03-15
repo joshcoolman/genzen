@@ -8,6 +8,7 @@ import {
   ImageLightbox,
   useAiImagesPage,
 } from '@/features/ai-images'
+import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
@@ -79,9 +80,27 @@ function AiImagesPage() {
         onOpenLightbox={page.lightbox.open}
         onLoadPrompt={page.handleLoadPrompt}
         onLoadPromptAndModel={page.handleLoadPromptAndModel}
-        onMoreLikeThis={page.variations.handleMoreLikeThis}
+        onPreviewVariations={page.variations.handlePreviewVariations}
         onDelete={page.gallery.deleteImage}
         onRestoreRoot={page.gallery.restoreRootImage}
+      />
+
+      <VariationPromptsDialog
+        open={!!page.variations.pendingVariation}
+        onOpenChange={(open) => {
+          if (!open) page.variations.cancelVariationPreview()
+        }}
+        prompts={page.variations.pendingVariation?.prompts ?? []}
+        loading={page.variations.generatingPrompts}
+        submitting={page.variations.submittingVariations}
+        onRun={page.variations.handleRunVariations}
+        sourceImageUrl={
+          page.variations.pendingVariation
+            ? page.gallery.imageUrls[
+                page.variations.pendingVariation.sourceImageId
+              ]
+            : undefined
+        }
       />
 
       {page.lightbox.isOpen && (

@@ -21,7 +21,7 @@ interface ImageCardProps {
   editChildren?: EditChildrenMap[string]
   onRestore?: () => void
   onOpen: (img: SavedAiImage) => void
-  onMoreLikeThis: (img: SavedAiImage, count: number) => void
+  onPreviewVariations: (img: SavedAiImage, count: number) => void
   onDelete: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
@@ -37,7 +37,7 @@ export function ImageCard({
   editChildren,
   onRestore,
   onOpen,
-  onMoreLikeThis,
+  onPreviewVariations,
   onDelete,
   getModelName,
 }: ImageCardProps) {
@@ -65,7 +65,7 @@ export function ImageCard({
       <div className="flex gap-1 p-1.5">
         <MorePopover
           disabled={generatingVariation}
-          onSelect={(count) => onMoreLikeThis(img, count)}
+          onSelect={(count) => onPreviewVariations(img, count)}
         />
         <button
           onClick={() =>
