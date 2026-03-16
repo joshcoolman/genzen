@@ -30,7 +30,6 @@ import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpai
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
-import { Route as DashboardEditImageRouteImport } from './routes/dashboard/edit-image'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
 import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
@@ -146,11 +145,6 @@ const DashboardImagesRoute = DashboardImagesRouteImport.update({
   path: '/images',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardEditImageRoute = DashboardEditImageRouteImport.update({
-  id: '/edit-image',
-  path: '/edit-image',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
@@ -212,7 +206,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
@@ -243,7 +236,6 @@ export interface FileRoutesByTo {
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
@@ -276,7 +268,6 @@ export interface FileRoutesById {
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/edit-image': typeof DashboardEditImageRoute
   '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
@@ -311,7 +302,6 @@ export interface FileRouteTypes {
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
@@ -342,7 +332,6 @@ export interface FileRouteTypes {
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
@@ -374,7 +363,6 @@ export interface FileRouteTypes {
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/edit-image'
     | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
@@ -553,13 +541,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/edit-image': {
-      id: '/dashboard/edit-image'
-      path: '/edit-image'
-      fullPath: '/dashboard/edit-image'
-      preLoaderRoute: typeof DashboardEditImageRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/dev-workspace': {
       id: '/dashboard/dev-workspace'
       path: '/dev-workspace'
@@ -647,7 +628,6 @@ interface DashboardRouteChildren {
   DashboardCharactersRoute: typeof DashboardCharactersRoute
   DashboardCombineRoute: typeof DashboardCombineRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRoute
-  DashboardEditImageRoute: typeof DashboardEditImageRoute
   DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
   DashboardNotesRoute: typeof DashboardNotesRoute
@@ -670,7 +650,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCharactersRoute: DashboardCharactersRoute,
   DashboardCombineRoute: DashboardCombineRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRoute,
-  DashboardEditImageRoute: DashboardEditImageRoute,
   DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,
   DashboardNotesRoute: DashboardNotesRoute,

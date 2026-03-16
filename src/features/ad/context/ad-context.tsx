@@ -46,7 +46,6 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
   '/dashboard/ai-images':
     'The user is on the AI Images page -- multi-model image generation with prompt input, model selection, brainstorm, edit, and variation workflows.',
   '/dashboard/video': 'The user is on the Video page.',
-  '/dashboard/edit-image': 'The user is on the Edit Image page.',
   '/dashboard/outpaint':
     'The user is on the Outpaint page -- extending images beyond their borders.',
   '/dashboard/prompt-studio': 'The user is on the Prompt Studio page.',

@@ -10,7 +10,6 @@ import {
   Lightbulb,
   MessageSquare,
   Palette,
-  PencilLine,
   Settings,
   Sparkles,
   SquarePlay,
@@ -65,13 +64,6 @@ export const navItems: Array<NavItem> = [
     label: 'AI Video',
     href: '/dashboard/video',
     icon: Film,
-    activeOnly: true,
-  },
-  {
-    id: 'edit-image',
-    label: 'Edit Image',
-    href: '/dashboard/edit-image',
-    icon: PencilLine,
     activeOnly: true,
   },
   {
