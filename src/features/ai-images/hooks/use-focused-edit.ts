@@ -5,6 +5,8 @@ import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
+import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
+import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   detectAspectRatio,
@@ -358,6 +360,92 @@ export function useFocusedEdit(imageId: string) {
 
   const isChained = activeSourceId !== imageId
 
+  // Variation generation
+  const [variationPrompts, setVariationPrompts] = useState<Array<string>>([])
+  const [variationPromptsLoading, setVariationPromptsLoading] = useState(false)
+  const [variationSubmitting, setVariationSubmitting] = useState(false)
+  const [variationDialogOpen, setVariationDialogOpen] = useState(false)
+  const [variationMeta, setVariationMeta] = useState<{
+    rootPrompt: string
+    rootImageId: string
+    sourceImageId: string
+    falImageUrl?: string
+  } | null>(null)
+
+  const handleGenerateVariations = useCallback(async () => {
+    if (!accessToken || !sourceImage?.prompt) return
+    setError(null)
+    setVariationDialogOpen(true)
+    setVariationPromptsLoading(true)
+    setVariationPrompts([])
+
+    try {
+      const result = await generateVariationPrompts({
+        data: {
+          accessToken,
+          prompt: sourceImage.prompt,
+          sourceImageId: activeSourceId,
+          count: 4,
+        },
+      })
+      setVariationPrompts(result.prompts)
+      setVariationMeta({
+        rootPrompt: result.rootPrompt,
+        rootImageId: result.rootImageId,
+        sourceImageId: result.sourceImageId,
+        falImageUrl: result.falImageUrl,
+      })
+    } catch (err) {
+      setVariationDialogOpen(false)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate variation prompts',
+      )
+    } finally {
+      setVariationPromptsLoading(false)
+    }
+  }, [accessToken, sourceImage?.prompt, activeSourceId])
+
+  const handleRunVariations = useCallback(
+    async (prompts: Array<string>) => {
+      if (!accessToken || !variationMeta || !sourceImage) return
+      const cost = CREDIT_COSTS.variation * prompts.length
+      if (credits.balance !== null && credits.balance < cost) {
+        credits.showInsufficientCredits(cost)
+        return
+      }
+
+      setVariationSubmitting(true)
+      try {
+        await submitVariations({
+          data: {
+            accessToken,
+            prompts,
+            model: 'fal-ai/flux-pro/kontext',
+            sourceImageId: variationMeta.sourceImageId,
+            rootImageId: variationMeta.rootImageId,
+            rootPrompt: variationMeta.rootPrompt,
+            aspectRatio,
+            falImageUrl: variationMeta.falImageUrl,
+          },
+        })
+        setVariationDialogOpen(false)
+        await credits.refresh()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        if (message.includes('Insufficient credits')) {
+          credits.showInsufficientCredits(cost)
+        } else {
+          setError(message)
+        }
+      } finally {
+        setVariationSubmitting(false)
+      }
+    },
+    [accessToken, variationMeta, aspectRatio, credits],
+  )
+
   return {
     sourceImage,
     loading,
@@ -382,5 +470,12 @@ export function useFocusedEdit(imageId: string) {
     jsonDescription,
     jsonLoading,
     handleDescribeJson,
+    variationDialogOpen,
+    setVariationDialogOpen,
+    variationPrompts,
+    variationPromptsLoading,
+    variationSubmitting,
+    handleGenerateVariations,
+    handleRunVariations,
   }
 }

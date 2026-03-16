@@ -6,6 +6,7 @@ import { EDIT_MODELS } from '@/features/ai-images/models'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { ModelSelector } from '@/components/ModelSelector'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
+import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
@@ -108,6 +109,15 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         >
           {edit.jsonLoading ? 'Describing...' : 'Describe JSON'}
         </Button>
+        <Button
+          variant="outline"
+          onClick={edit.handleGenerateVariations}
+          disabled={edit.variationPromptsLoading || !edit.sourceImage?.prompt}
+        >
+          {edit.variationPromptsLoading
+            ? 'Generating...'
+            : 'Generate Variations'}
+        </Button>
         <ActionButton
           onClick={edit.handleSubmit}
           disabled={!edit.editPrompt.trim()}
@@ -177,6 +187,16 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         }))}
         title="Previous Edits"
         prefsKey="focused-edit-results"
+      />
+
+      <VariationPromptsDialog
+        open={edit.variationDialogOpen}
+        onOpenChange={edit.setVariationDialogOpen}
+        prompts={edit.variationPrompts}
+        loading={edit.variationPromptsLoading}
+        submitting={edit.variationSubmitting}
+        onRun={edit.handleRunVariations}
+        sourceImageUrl={edit.sourceImage?.url}
       />
 
       {edit.jsonDescription && (
