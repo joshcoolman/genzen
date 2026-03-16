@@ -1,5 +1,3 @@
-import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
@@ -8,7 +6,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
+import { CopyButton } from '@/components/CopyButton'
 
 interface ImageCardProps {
   img: SavedAiImage
@@ -44,7 +43,7 @@ export function ImageCard({
   const navigate = useNavigate()
 
   return (
-    <ImageResultCard
+    <Thumbnail
       url={imageUrl}
       alt={img.title}
       status="complete"
@@ -83,13 +82,14 @@ export function ImageCard({
         <div className="px-3 pb-3">
           <div className="relative">
             <div className="absolute top-0 right-0">
-              <CopyPromptButton
+              <CopyButton
                 text={
                   img.generation_metadata?.generation_type === 'variation' &&
                   img.generation_metadata.original_prompt
                     ? `${img.generation_metadata.original_prompt}\n\nVariation: ${img.generation_metadata.prompt}`
                     : (img.generation_metadata?.prompt ?? img.title)
                 }
+                iconSize="h-4 w-4"
               />
             </div>
             {img.generation_metadata?.generation_type === 'variation' &&
@@ -154,29 +154,7 @@ export function ImageCard({
           </div>
         </div>
       )}
-    </ImageResultCard>
-  )
-}
-
-function CopyPromptButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation()
-        navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 1500)
-      }}
-      className="text-muted-foreground/60 hover:text-foreground transition-colors"
-      aria-label="Copy prompt"
-    >
-      {copied ? (
-        <Check className="h-4 w-4 text-green-500" />
-      ) : (
-        <Copy className="h-4 w-4" />
-      )}
-    </button>
+    </Thumbnail>
   )
 }
 

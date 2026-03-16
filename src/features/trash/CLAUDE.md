@@ -18,7 +18,7 @@ Soft-delete recovery for user images. Supports restore, permanent delete, and em
 - `@/lib/supabase` -- Client-side Supabase for queries and storage
 - `@/lib/auth` -- `useAuth()` for current user
 - `@/components/ImageGrid` -- Grid/list layout for images
-- `@/components/ImageCard` -- Individual image card rendering
+- `@/components/Thumbnail` -- Composable thumbnail component
 - `@/components/ui/alert-dialog` -- Confirmation dialogs for destructive actions
 
 ## Quirks / Notes

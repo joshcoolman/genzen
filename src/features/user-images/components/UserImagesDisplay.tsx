@@ -19,7 +19,7 @@ import type { CreateUserImageInput, UserImage } from '../types'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated' | 'ai_video'
@@ -464,7 +464,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
             const compact = thumbSize !== 'lg'
             return (
               <div key={`vid-${asset.id}`}>
-                <ImageResultCard
+                <Thumbnail
                   url={asset.thumbnailUrl}
                   alt={asset.label}
                   onClick={() =>

@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { ActionButton } from '@/components/ActionButton'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 import { ImageGrid } from '@/components/ImageGrid'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
@@ -148,7 +148,7 @@ export function ExistingImagePicker({
                     </p>
                     <ImageGrid size="md">
                       {alreadyCollectedImages.map((image) => (
-                        <ImageResultCard
+                        <Thumbnail
                           key={image.id}
                           url={imageUrls[image.id] ?? null}
                           alt={image.title}
@@ -165,7 +165,7 @@ export function ExistingImagePicker({
                   const isSelected = selectedIds.has(image.id)
 
                   return (
-                    <ImageResultCard
+                    <Thumbnail
                       key={image.id}
                       url={imageUrls[image.id] ?? null}
                       alt={image.title}

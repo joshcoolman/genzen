@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { Check, Copy } from 'lucide-react'
 import type { UserImage } from '../types'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
+import { ExpandableText } from '@/components/ExpandableText'
+import { formatFileSize } from '@/lib/format'
 
 interface ImageCardProps {
   image: UserImage
@@ -14,44 +14,6 @@ interface ImageCardProps {
   compact?: boolean
 }
 
-function DescriptionRow({ description }: { description: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    void navigator.clipboard.writeText(description).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
-  return (
-    <div className="flex items-start gap-1 px-4 pt-1 pb-2">
-      <p
-        onClick={(e) => {
-          e.stopPropagation()
-          setExpanded((v) => !v)
-        }}
-        className={`flex-1 text-[10px] text-muted-foreground cursor-pointer leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}
-      >
-        {description}
-      </p>
-      <button
-        onClick={handleCopy}
-        className="shrink-0 mt-0.5 text-muted-foreground hover:text-foreground transition-colors"
-        aria-label="Copy description"
-      >
-        {copied ? (
-          <Check className="h-3 w-3 text-green-500" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
-      </button>
-    </div>
-  )
-}
-
 export function ImageCard({
   image,
   imageUrl,
@@ -61,7 +23,7 @@ export function ImageCard({
   compact = false,
 }: ImageCardProps) {
   return (
-    <ImageResultCard
+    <Thumbnail
       url={imageUrl || null}
       alt={image.title}
       onClick={onClick}
@@ -78,7 +40,11 @@ export function ImageCard({
               </h3>
             </div>
             {image.description ? (
-              <DescriptionRow description={image.description} />
+              <ExpandableText
+                text={image.description}
+                className="px-4 pt-1 pb-2"
+                textClassName="text-[10px] text-muted-foreground leading-relaxed"
+              />
             ) : (
               <div className="flex items-start gap-1 px-4 pt-1 pb-2">
                 <p className="flex-1 text-[10px] leading-relaxed line-clamp-3">
@@ -101,10 +67,4 @@ export function ImageCard({
       }
     />
   )
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }

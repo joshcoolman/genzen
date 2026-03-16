@@ -1,4 +1,4 @@
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 
 interface PendingImageCardProps {
   prompt: string
@@ -14,7 +14,7 @@ export function PendingImageCard({
   sourceImageUrl,
 }: PendingImageCardProps) {
   return (
-    <ImageResultCard
+    <Thumbnail
       status="pending"
       pendingLabel={model}
       pendingBackgroundUrl={sourceImageUrl}
@@ -27,6 +27,6 @@ export function PendingImageCard({
         <p className="text-xs text-muted-foreground line-clamp-2">{prompt}</p>
         <p className="text-xs text-muted-foreground/60">{model}</p>
       </div>
-    </ImageResultCard>
+    </Thumbnail>
   )
 }

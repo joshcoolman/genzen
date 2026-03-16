@@ -3,7 +3,8 @@ import { RotateCcw, Trash2, X } from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
 import { useAuth } from '@/lib/auth'
 import { ImageGrid } from '@/components/ImageGrid'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
+import { formatFileSize } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -28,12 +29,6 @@ function formatDeletedDate(dateStr: string | null): string {
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
   return date.toLocaleDateString()
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function TrashDisplay() {
@@ -125,7 +120,7 @@ export function TrashDisplay() {
       ) : (
         <ImageGrid layout="list" size="md">
           {images.map((image) => (
-            <ImageResultCard
+            <Thumbnail
               key={image.id}
               url={imageUrls[image.id] ?? null}
               alt={image.title}

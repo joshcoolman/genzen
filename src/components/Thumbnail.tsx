@@ -1,7 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-interface ImageResultCardProps {
+export interface ThumbnailProps {
   url?: string | null
   alt?: string
   status?: 'pending' | 'complete' | 'failed'
@@ -35,7 +35,7 @@ interface ImageResultCardProps {
   children?: ReactNode
 }
 
-export function ImageResultCard({
+export function Thumbnail({
   url,
   alt,
   status = 'complete',
@@ -59,7 +59,7 @@ export function ImageResultCard({
   layout = 'grid',
   className,
   children,
-}: ImageResultCardProps) {
+}: ThumbnailProps) {
   const El = asButton ? 'button' : 'div'
   const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
   const cursorClass = onClick ? 'cursor-pointer' : ''

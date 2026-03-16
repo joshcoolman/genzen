@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 
 interface FailedImageCardProps {
   img: SavedAiImage
@@ -27,7 +27,7 @@ export function FailedImageCard({
   }
 
   return (
-    <ImageResultCard
+    <Thumbnail
       status="failed"
       failedMessage={img.generation_error ?? 'Unknown error'}
       onDelete={() => onDelete(img)}
@@ -55,6 +55,6 @@ export function FailedImageCard({
           {img.generation_metadata?.prompt ?? img.title}
         </p>
       </div>
-    </ImageResultCard>
+    </Thumbnail>
   )
 }

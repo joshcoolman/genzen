@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Check, ImageIcon } from 'lucide-react'
 import type { SelectedImage } from './LibraryPickerButton'
 import { Button } from '@/components/ui/button'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 import { ImageGrid } from '@/components/ImageGrid'
 import {
   Dialog,
@@ -156,7 +156,7 @@ export function LibraryPickerDialog({
               {filteredImages.map((image) => {
                 const isSelected = selectedIds.has(image.id)
                 return (
-                  <ImageResultCard
+                  <Thumbnail
                     key={image.id}
                     url={imageUrls[image.id] ?? null}
                     alt={image.title}

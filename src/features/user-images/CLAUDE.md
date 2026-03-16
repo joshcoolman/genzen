@@ -13,7 +13,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 - `lib/palette-generator.ts` -- Extracts color palettes from images using Canvas + k-means clustering in LAB space
 - `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
 - `components/UserImagesDisplay.tsx` -- Main orchestrator: grid, filters, sort, upload, clipboard paste
-- `components/ImageCard.tsx` -- Thumbnail card wrapping shared ImageCard component
+- `components/ImageCard.tsx` -- Thumbnail card wrapping shared Thumbnail component
 - `components/ImageGrid.tsx` -- Re-exports shared ImageGrid, provides EmptyState
 - `components/ImageUploadButton.tsx` -- File picker button with multi-file support
 - `components/ImageDownloadButton.tsx` -- Dropdown for downloading all/uploads/AI-generated as ZIP
@@ -28,7 +28,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 - `@/lib/supabase` -- Supabase client (direct queries, no server functions)
 - `@/lib/auth` -- useAuth for user context
-- `@/components/ImageCard` -- Shared image card component
+- `@/components/Thumbnail` -- Shared composable thumbnail component
 - `@/components/ImageGrid` -- Shared responsive grid
 - `@/components/ActionButton` -- Shared loading button
 

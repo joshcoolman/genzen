@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  Check,
-  Copy,
   EyeOff,
   Info,
   LayoutGrid,
@@ -13,8 +11,10 @@ import {
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
 import { Lightbox } from '@/components/Lightbox'
-import { ImageResultCard } from '@/components/ImageResultCard'
+import { Thumbnail } from '@/components/Thumbnail'
 import { ImageGrid } from '@/components/ImageGrid'
+import { ExpandableText } from '@/components/ExpandableText'
+import { formatFileSize } from '@/lib/format'
 import {
   Popover,
   PopoverContent,
@@ -58,46 +58,6 @@ function storePrefs(key: string | undefined, update: Partial<GridPrefs>) {
     const current = getStoredPrefs(key)
     localStorage.setItem(key, JSON.stringify({ ...current, ...update }))
   } catch {}
-}
-
-function ExpandablePrompt({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="px-4 pt-2 pb-1 flex gap-1.5">
-      <p
-        className={`flex-1 text-[11px] text-muted-foreground cursor-pointer ${expanded ? '' : 'line-clamp-3'}`}
-        onClick={(e) => {
-          e.stopPropagation()
-          setExpanded((v) => !v)
-        }}
-      >
-        {text}
-      </p>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          navigator.clipboard.writeText(text)
-          setCopied(true)
-          setTimeout(() => setCopied(false), 1500)
-        }}
-        className="shrink-0 self-start text-muted-foreground/60 hover:text-foreground transition-colors"
-        aria-label="Copy prompt"
-      >
-        {copied ? (
-          <Check className="h-3.5 w-3.5 text-green-500" />
-        ) : (
-          <Copy className="h-3.5 w-3.5" />
-        )}
-      </button>
-    </div>
-  )
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function RegenerateButton({
@@ -172,7 +132,7 @@ function GenerationResultCard({
   compact?: boolean
 }) {
   return (
-    <ImageResultCard
+    <Thumbnail
       url={result.url ?? undefined}
       alt={result.title ?? result.label}
       status={result.status}
@@ -220,7 +180,7 @@ function GenerationResultCard({
               </div>
             )}
             {result.prompt && !result.enhancedPrompt && (
-              <ExpandablePrompt text={result.prompt} />
+              <ExpandableText text={result.prompt} />
             )}
             {result.enhancedPrompt && (
               <div className="px-4 pt-2 pb-1">
