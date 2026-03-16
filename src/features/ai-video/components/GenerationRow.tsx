@@ -214,7 +214,10 @@ export function GenerationRow({
             className="w-24 aspect-video rounded object-cover border border-border"
           />
         ) : generation.lastFrame?.status === 'failed' ? (
-          <div className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex items-center justify-center">
+          <div
+            className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex items-center justify-center"
+            title="Last frame generation failed"
+          >
             <p className="text-[10px] text-destructive">Failed</p>
           </div>
         ) : (
@@ -253,8 +256,14 @@ export function GenerationRow({
             </div>
           </button>
         ) : generation.video?.status === 'failed' ? (
-          <div className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex items-center justify-center">
+          <div
+            className="w-24 aspect-video rounded border border-destructive/50 bg-destructive/10 flex flex-col items-center justify-center gap-0.5 cursor-default"
+            title="Video generation failed — delete and regenerate to retry"
+          >
             <p className="text-[10px] text-destructive">Failed</p>
+            <p className="text-[9px] text-destructive/70 text-center px-1">
+              Delete &amp; retry
+            </p>
           </div>
         ) : !generation.video && lastFrameCompleted && onGenerateVideo ? (
           <button

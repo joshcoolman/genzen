@@ -83,6 +83,8 @@ function AiImagesPage() {
         onPreviewVariations={page.variations.handlePreviewVariations}
         onDelete={page.gallery.deleteImage}
         onRestoreRoot={page.gallery.restoreRootImage}
+        onRetry={page.gallery.retryImage}
+        onClearStale={page.gallery.clearStaleImages}
       />
 
       <VariationPromptsDialog

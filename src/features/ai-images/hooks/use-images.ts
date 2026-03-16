@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
 import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
+import { clearStaleGenerations } from '@/features/ai-images/server/clear-stale-generations.server'
+import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 
 interface UseImagesOptions {
@@ -28,6 +30,8 @@ export interface GalleryState {
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
+  clearStaleImages: () => Promise<number>
+  retryImage: (img: SavedAiImage) => Promise<void>
 }
 
 export function useImages({
@@ -375,6 +379,24 @@ export function useImages({
     }
   }
 
+  async function clearStaleImages(): Promise<number> {
+    if (!accessToken) return 0
+    const { cleared } = await clearStaleGenerations({ data: { accessToken } })
+    return cleared
+  }
+
+  async function retryImage(img: SavedAiImage) {
+    if (!accessToken) return
+    // Optimistically remove the failed card — the new pending record will appear via realtime
+    setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
+    try {
+      await retryGeneration({ data: { accessToken, recordId: img.id } })
+    } catch {
+      // If retry fails, restore the failed card
+      setSavedImages((prev) => sortByOrder([...prev, img]))
+    }
+  }
+
   async function reorderImages(draggedId: string, newSortOrder: number) {
     if (!accessToken) return
 
@@ -407,5 +429,7 @@ export function useImages({
     replaceOptimisticCard,
     removeOptimisticCard,
     reorderImages,
+    clearStaleImages,
+    retryImage,
   }
 }

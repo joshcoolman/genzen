@@ -255,6 +255,9 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
 
   const handleUpload = async (input: CreateUserImageInput) => {
     await create(input)
+    if (sourceFilter === 'ai_generated' || sourceFilter === 'ai_video') {
+      handleSourceFilter('all')
+    }
   }
 
   useClipboardPaste({ onUpload: handleUpload, enabled: !isCreating })
@@ -344,6 +347,10 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   // Track image-only index for edit dialog mapping
   let imageIdx = -1
 
+  const hasAiContent =
+    images.some((img) => img.source === 'ai_generated') ||
+    workspaces.some((ws) => ws.generations.length > 0)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -364,20 +371,21 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
       {/* Toolbar */}
       <div className="flex items-center justify-between border-t border-border pt-3">
         <div className="flex flex-wrap gap-2">
-          {SOURCE_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => handleSourceFilter(f.value)}
-              className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
-                sourceFilter === f.value
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'border-border text-muted-foreground hover:border-foreground/40',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+          {hasAiContent &&
+            SOURCE_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => handleSourceFilter(f.value)}
+                className={cn(
+                  'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                  sourceFilter === f.value
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'border-border text-muted-foreground hover:border-foreground/40',
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
         </div>
         <div className="flex items-center gap-1">
           <button

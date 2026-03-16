@@ -24,6 +24,8 @@ interface ImageGalleryProps {
   onPreviewVariations: (img: SavedAiImage, count: number) => void
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
+  onRetry?: (img: SavedAiImage) => void
+  onClearStale?: () => Promise<number>
 }
 
 export function ImageGallery({
@@ -37,7 +39,23 @@ export function ImageGallery({
   onPreviewVariations,
   onDelete,
   onRestoreRoot,
+  onRetry,
+  onClearStale,
 }: ImageGalleryProps) {
+  const [clearingStale, setClearingStale] = useState(false)
+
+  const hasPending = images.some((img) => img.status === 'pending')
+
+  const handleClearStale = async () => {
+    if (!onClearStale || clearingStale) return
+    setClearingStale(true)
+    try {
+      await onClearStale()
+    } finally {
+      setClearingStale(false)
+    }
+  }
+
   const [hidePrompts, setHidePrompts] = useState(() => {
     if (typeof window === 'undefined') return true
     const stored = localStorage.getItem(HIDE_PROMPTS_KEY)
@@ -74,6 +92,15 @@ export function ImageGallery({
         <h2 className="text-lg font-medium">Recent Generations</h2>
         {images.length > 0 && (
           <div className="flex items-center gap-3">
+            {hasPending && onClearStale && (
+              <button
+                onClick={() => void handleClearStale()}
+                disabled={clearingStale}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                {clearingStale ? 'Clearing...' : 'Clear stuck'}
+              </button>
+            )}
             <button
               onClick={toggleDisplayMode}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -137,7 +164,12 @@ export function ImageGallery({
 
             if (img.status === 'failed') {
               return (
-                <FailedImageCard key={img.id} img={img} onDelete={onDelete} />
+                <FailedImageCard
+                  key={img.id}
+                  img={img}
+                  onDelete={onDelete}
+                  onRetry={onRetry}
+                />
               )
             }
 
