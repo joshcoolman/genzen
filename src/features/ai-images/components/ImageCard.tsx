@@ -7,13 +7,12 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Thumbnail } from '@/components/Thumbnail'
-import { CopyButton } from '@/components/CopyButton'
+import { ExpandableText } from '@/components/ExpandableText'
 
 interface ImageCardProps {
   img: SavedAiImage
   imageUrl: string | undefined
   generatingVariation: boolean
-  hidePrompts: boolean
   objectFit?: 'contain' | 'cover'
   rootImageUrl?: string
   rootIsHidden?: boolean
@@ -29,7 +28,6 @@ export function ImageCard({
   img,
   imageUrl,
   generatingVariation,
-  hidePrompts,
   objectFit,
   rootImageUrl,
   rootIsHidden,
@@ -78,38 +76,11 @@ export function ImageCard({
           Edit
         </button>
       </div>
-      {!hidePrompts && (
-        <div className="px-3 pb-3">
-          <div className="relative">
-            <div className="absolute top-0 right-0">
-              <CopyButton
-                text={
-                  img.generation_metadata?.generation_type === 'variation' &&
-                  img.generation_metadata.original_prompt
-                    ? `${img.generation_metadata.original_prompt}\n\nVariation: ${img.generation_metadata.prompt}`
-                    : (img.generation_metadata?.prompt ?? img.title)
-                }
-                iconSize="h-4 w-4"
-              />
-            </div>
-            {img.generation_metadata?.generation_type === 'variation' &&
-            img.generation_metadata.original_prompt ? (
-              <div className="pr-6 space-y-1.5">
-                <p className="text-xs text-muted-foreground">
-                  {img.generation_metadata.original_prompt}
-                </p>
-                <p className="text-xs text-muted-foreground/60 italic">
-                  Variation: {img.generation_metadata.prompt}
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground pr-6">
-                {img.generation_metadata?.prompt ?? img.title}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <ExpandableText
+        text={img.generation_metadata?.prompt ?? img.title}
+        className="px-3 pt-1 pb-3"
+        textClassName="text-xs text-muted-foreground"
+      />
       {rootImageUrl && (
         <div className="px-3 pb-3 flex items-center gap-2">
           <img

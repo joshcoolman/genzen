@@ -6,7 +6,6 @@ import { PendingImageCard } from '@/features/ai-images/components/PendingImageCa
 import { ImageCard } from '@/features/ai-images/components/ImageCard'
 import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
 
-const HIDE_PROMPTS_KEY = 'ai-images-hide-prompts'
 const DISPLAY_MODE_KEY = 'ai-images-display-mode'
 
 type DisplayMode = 'cover' | 'contain'
@@ -56,12 +55,6 @@ export function ImageGallery({
     }
   }
 
-  const [hidePrompts, setHidePrompts] = useState(() => {
-    if (typeof window === 'undefined') return true
-    const stored = localStorage.getItem(HIDE_PROMPTS_KEY)
-    return stored === null ? true : stored === 'true'
-  })
-
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
     if (typeof window === 'undefined') return 'contain'
     return (
@@ -69,14 +62,6 @@ export function ImageGallery({
       'contain'
     )
   })
-
-  const toggleHidePrompts = () => {
-    setHidePrompts((prev) => {
-      const next = !prev
-      localStorage.setItem(HIDE_PROMPTS_KEY, String(next))
-      return next
-    })
-  }
 
   const toggleDisplayMode = () => {
     setDisplayMode((prev) => {
@@ -106,12 +91,6 @@ export function ImageGallery({
               className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               {displayMode === 'cover' ? 'Full image' : 'Fill'}
-            </button>
-            <button
-              onClick={toggleHidePrompts}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              {hidePrompts ? 'Show prompts' : 'Hide prompts'}
             </button>
           </div>
         )}
@@ -179,7 +158,6 @@ export function ImageGallery({
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 generatingVariation={generatingVariationFor === img.id}
-                hidePrompts={hidePrompts}
                 objectFit={displayMode}
                 rootImageUrl={rootId ? imageUrls[rootId] : undefined}
                 rootIsHidden={rootMeta?.hidden}
