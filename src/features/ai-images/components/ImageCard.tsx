@@ -82,9 +82,8 @@ export function ImageCard({
         </div>
       )}
       {editChildren && editChildren.length > 0 && (
-        <div className="px-3 pb-3">
-          <p className="text-[10px] text-muted-foreground mb-1.5">Edits</p>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="px-1.5 pb-1.5">
+          <div className="flex flex-wrap gap-1">
             {editChildren.map((child) => (
               <button
                 key={child.id}
@@ -95,7 +94,7 @@ export function ImageCard({
                     params: { imageId: img.id },
                   })
                 }}
-                className="w-8 h-8 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
+                className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
               >
                 <img
                   src={child.url}
