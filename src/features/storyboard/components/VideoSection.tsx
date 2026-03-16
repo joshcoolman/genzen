@@ -44,9 +44,7 @@ export function VideoSection({ sb }: VideoSectionProps) {
             const isSubmitting = sb.generatingClipIndices.has(clipIdx)
             // Clip has been submitted but video not yet ready
             const isPending =
-              !clipUrl &&
-              !isSubmitting &&
-              sb.videoClipIds[clipIdx] !== undefined
+              !clipUrl && !isSubmitting && clipIdx < sb.videoClipIds.length
             const isBusy = isSubmitting || isPending
 
             return (

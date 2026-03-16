@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
+  Check,
+  Copy,
   EyeOff,
   Info,
   LayoutGrid,
@@ -60,19 +62,34 @@ function storePrefs(key: string | undefined, update: Partial<GridPrefs>) {
 
 function ExpandablePrompt({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false)
+  const [copied, setCopied] = useState(false)
   return (
-    <div
-      className="px-4 pt-2 pb-1 cursor-pointer"
-      onClick={(e) => {
-        e.stopPropagation()
-        setExpanded((v) => !v)
-      }}
-    >
+    <div className="px-4 pt-2 pb-1 flex gap-1.5">
       <p
-        className={`text-[11px] text-muted-foreground ${expanded ? '' : 'line-clamp-3'}`}
+        className={`flex-1 text-[11px] text-muted-foreground cursor-pointer ${expanded ? '' : 'line-clamp-3'}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          setExpanded((v) => !v)
+        }}
       >
         {text}
       </p>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          navigator.clipboard.writeText(text)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }}
+        className="shrink-0 self-start text-muted-foreground/60 hover:text-foreground transition-colors"
+        aria-label="Copy prompt"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-green-500" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
     </div>
   )
 }

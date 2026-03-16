@@ -26,6 +26,7 @@ export function ImageGrid({
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
+        alignItems: 'start',
         gap,
       }}
     >

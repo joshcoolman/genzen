@@ -1,55 +1,56 @@
-# Continue: Style Collections Feature
+# Continue: Plan and Build Eval Workspace (#63)
 
-## Branch: `feature/ad-panel`
+## Branch: `feature/model-slots`
 
-## What was built (all uncommitted)
+## Goal for this session
 
-### Phase 1: Database + Storage
+**Thorough planning session for GitHub issue #63 — Eval Workspace.** Interview style: extract all ideas, edge cases, and requirements before writing any code. Then produce a phased implementation plan to execute via worktree agents.
 
-- `supabase/migrations/20260314000000_style_collections.sql` -- `style_collections` + `style_images` tables with RLS, `styles` storage bucket with user-scoped policies, indexes
-- Server CRUD in `src/features/style-trainer/server/`:
-  - `create-style.server.ts`, `get-styles.server.ts`, `save-style-image.server.ts`, `delete-style.server.ts`, `remove-style-image.server.ts`
-  - Images copied into style-specific storage (not linked to library)
-  - Auto-thumbnail on first image, storage cleanup on delete
+This is the user's first time trying the "plan thoroughly, kick off agents, review" workflow (vs turn-by-turn). The planning phase is where the time goes.
 
-### Phase 2: UI Rework
+## What the Eval Workspace is
 
-- `src/features/style-trainer/hooks/useStyleCollections.ts` -- replaces old 5-step mock wizard with library/create/edit CRUD hook
-- `src/features/style-trainer/components/StyleTrainerPageContent.tsx` -- library grid + create form + edit view with image management
-- Route + barrel exports updated
+A dev-only tool (under `/dev/`) for side-by-side model and prompt strategy comparison. NOT a consumer feature. Follows the same pattern as the existing Dev Workspace (which was used to work out ModelSelector).
 
-### Phase 3: Compositor + Generation Integration
+### Rev1 spec (from conversation)
 
-- `src/features/style-trainer/server/compose-style-sheet.server.ts` -- Sharp-based grid compositor, tiles into contact sheets when >14 images
-- `src/features/style-trainer/server/resolve-style-refs.server.ts` -- fetches style images, composes sheets, uploads to FAL
-- `src/features/ai-images/server/generate-image.server.ts` -- added optional `styleId`, resolves style refs server-side
-- `src/features/ai-images/hooks/use-generator.ts` -- added `selectedStyleId` state
-- `src/features/ai-images/components/GeneratorPanel.tsx` -- added `StylePicker` (paintbrush icon dropdown)
-- `src/routes/dashboard/ai-images.tsx` -- `useStyleOptions` hook fetches styles, passes to GeneratorPanel
+- Select a source image from library
+- Choose aspect ratio
+- Select multiple models (reuse ModelSelector)
+- One column per selected model — results side by side
+- Debug output per column: raw prompt sent, raw API response, interim steps (enhance, JSON describe, rewrite)
+- Completely isolated — generations don't appear in library, history, or anywhere else
+- Hard delete — cleared results are gone forever, no soft delete, no trash
 
-### Phase 4: Polish
+### Key eval scenarios discussed
 
-- Auto-thumbnail, storage cleanup, empty/loading states
-- Production build passes clean
-- Feature CLAUDE.md updated
+- **JSON+delta vs JSON rewrite**: describe image as JSON, then either append natural language edit instructions OR have AI rewrite the JSON to reflect changes, then send to model. Which produces better results?
+- **Prompt visibility**: see exactly what hits the model, not just what the user typed
+- **Interim step transparency**: if there's an enhance or JSON describe step, show before/after
 
-## Key decisions
+### Future vision (not Rev1)
 
-- No ML/training -- styles = curated image collections passed as reference images
-- Self-contained storage -- images copied into styles bucket, not linked to library
-- Contact sheet compositor: <=14 images pass directly, >14 tile into grids of ~12
-- Style picker only shows when styles exist (no empty UI clutter)
+- The dev space grows into a route with sub-routes for different testing tools
+- Speed benchmarks, prompt strategy A/B tests, model quality comparisons
+- Each new eval need becomes a new tool under `/dev/`
+- Annotation/rating system, saved test cases, eval history
 
-## Files modified (existing)
+## Uncommitted changes (from prior session)
 
-- `src/features/ai-images/server/generate-image.server.ts`
-- `src/features/ai-images/hooks/use-generator.ts`
-- `src/features/ai-images/components/GeneratorPanel.tsx`
-- `src/routes/dashboard/ai-images.tsx`
-- `src/routes/dashboard/style-trainer.tsx`
-- `src/features/style-trainer/index.ts`
-- `src/features/style-trainer/CLAUDE.md`
+- `src/components/GenerationResultsGrid.tsx`: `ExpandablePrompt` with copy button
+- `src/components/ImageGrid.tsx`: `alignItems: 'start'` on grid
+- These are minor enhancements, unrelated to #63. Commit or stash before starting.
 
-## Last file edited
+## Architecture context
 
-`src/features/style-trainer/CLAUDE.md`
+- `ai-images` is the gold standard feature structure: `index.ts`, `components/`, `hooks/`, `server/`, `types.ts`
+- Shared components: `ModelSelector`, `ImageGrid`, `ActionButton`, `GenerationResultsGrid`
+- Server code uses `.server.ts` suffix in `src/lib/server/`
+- Dev Workspace already exists at `/dev/` — this is a new route alongside it
+
+## Approach
+
+1. Start with interview-style planning — get all requirements and edge cases out
+2. Write a detailed phased implementation plan
+3. Execute phases via worktree agents
+4. Review each phase's output before proceeding
