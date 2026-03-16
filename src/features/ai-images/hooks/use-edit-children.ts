@@ -76,7 +76,7 @@ export function useEditChildren(
             (a, b) =>
               (recencyIndex.get(a.id) ?? 999) - (recencyIndex.get(b.id) ?? 999),
           )
-          grouped[rootId] = descendants.slice(0, 8)
+          grouped[rootId] = descendants
         }
       }
 
@@ -159,7 +159,7 @@ export function useEditChildren(
                   [rootParent]: [
                     { id: updated.id, url: data.signedUrl },
                     ...existing,
-                  ].slice(0, 8),
+                  ],
                 }
               })
             })

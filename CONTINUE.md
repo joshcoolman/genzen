@@ -1,56 +1,51 @@
-# Continue: Plan and Build Eval Workspace (#63)
+## Thumbnail Unification — Issue #65
 
-## Branch: `feature/model-slots`
+**Branch:** `thumbnail-unification` (6 commits ahead of main, all pushed)
 
-## Goal for this session
+### What was done
 
-**Thorough planning session for GitHub issue #63 — Eval Workspace.** Interview style: extract all ideas, edge cases, and requirements before writing any code. Then produce a phased implementation plan to execute via worktree agents.
+Audited and unified thumbnail/card components across the codebase. Six commits:
 
-This is the user's first time trying the "plan thoroughly, kick off agents, review" workflow (vs turn-by-turn). The planning phase is where the time goes.
+1. **Renamed `ImageResultCard` -> `Thumbnail`** (`src/components/Thumbnail.tsx`) as the composable base. Exported `ThumbnailProps` interface. Updated all 9 consumer files.
 
-## What the Eval Workspace is
+2. **Extracted shared utilities** that were duplicated 3x each:
+   - `CopyButton` (`src/components/CopyButton.tsx`) — copy-to-clipboard with check icon feedback
+   - `ExpandableText` (`src/components/ExpandableText.tsx`) — truncated text with click-to-expand + copy
+   - `formatFileSize` (`src/lib/format.ts`)
 
-A dev-only tool (under `/dev/`) for side-by-side model and prompt strategy comparison. NOT a consumer feature. Follows the same pattern as the existing Dev Workspace (which was used to work out ModelSelector).
+3. **Replaced global "Show/Hide prompts" toggle** in AI Images gallery with per-card `ExpandableText`. Removed `hidePrompts` prop from `ImageCard` and `ImageGallery`. Each card always shows its prompt, truncated by default.
 
-### Rev1 spec (from conversation)
+4. **Collapsed variations into parent card thumbnails.** `use-edit-children` already captured both edits AND variations via `source_image_id`. Added `childIds` set in `ImageGallery` to skip rendering completed images already shown as thumbnails on a parent. Pending/failed cards still render normally.
 
-- Select a source image from library
-- Choose aspect ratio
-- Select multiple models (reuse ModelSelector)
-- One column per selected model — results side by side
-- Debug output per column: raw prompt sent, raw API response, interim steps (enhance, JSON describe, rewrite)
-- Completely isolated — generations don't appear in library, history, or anywhere else
-- Hard delete — cleared results are gone forever, no soft delete, no trash
+5. **Removed "More" button from gallery cards.** Variation generation is now exclusively in the edit view. Gallery card has only "Edit" button (full-width). Removed `MorePopover`, `generatingVariation`, `onPreviewVariations` props from `ImageCard`/`ImageGallery`. Variation hooks (`use-variations.ts`) untouched — still used by `ai-images.tsx` for the `VariationPromptsDialog`.
 
-### Key eval scenarios discussed
+6. **Added "Generate Variations" button to focused edit view** (`FocusedEditView.tsx`). Between "Describe JSON" and "Generate Edit" in toolbar. Calls `generateVariationPrompts` (count=4), opens `VariationPromptsDialog`, then `submitVariations` with UI-selected aspect ratio and fixed `flux-pro/kontext` model. Adds pending results to the edit view's `GenerationResultsGrid` for optimistic feedback. Wired in `use-focused-edit.ts`.
 
-- **JSON+delta vs JSON rewrite**: describe image as JSON, then either append natural language edit instructions OR have AI rewrite the JSON to reflect changes, then send to model. Which produces better results?
-- **Prompt visibility**: see exactly what hits the model, not just what the user typed
-- **Interim step transparency**: if there's an enhance or JSON describe step, show before/after
+### Key decisions
 
-### Future vision (not Rev1)
+- **Variations are edits** — no separate treatment in gallery. Both fold into parent thumbnails.
+- **Per-card prompt UX** > global toggle. ExpandableText is the standard pattern everywhere.
+- **Edit view is the focused workspace** for all derivative operations (edits + variations).
+- **Gallery card is simplified** — just image, model badge, Edit button, prompt, and child thumbnails.
+- **`use-edit-children` already had the right data** — filters by `source_image_id` which both edits and variations set. No hook changes needed for collapsing.
+- **Promote-to-source flow** in edit view automatically makes "Generate Variations" reference the promoted image (uses `activeSourceId` + `sourceImage.prompt`).
 
-- The dev space grows into a route with sub-routes for different testing tools
-- Speed benchmarks, prompt strategy A/B tests, model quality comparisons
-- Each new eval need becomes a new tool under `/dev/`
-- Annotation/rating system, saved test cases, eval history
+### Outstanding / next steps
 
-## Uncommitted changes (from prior session)
+- **`use-variations.ts` + `VariationPromptsDialog` in `ai-images.tsx`** — still wired up on the AI Images page but the gallery no longer triggers it. Could clean up the dead code path if the dialog is never opened from that page anymore. Check if brainstorm or any other flow uses it.
+- **`onLoadPrompt` / `onLoadPromptAndModel`** — declared on `ImageGalleryProps` but never used in the function body. Could be cleaned up.
+- **"Edits" label** on parent card thumbnails — now includes variations too. Could rename to something more neutral or keep as-is.
+- **Assets view** — intentionally left unchanged (flat chronological, no grouping).
+- Pre-existing lint errors in `src/features/credits/handle-credit-error.ts` (2 `@typescript-eslint/no-unnecessary-condition` errors) — not from this work.
 
-- `src/components/GenerationResultsGrid.tsx`: `ExpandablePrompt` with copy button
-- `src/components/ImageGrid.tsx`: `alignItems: 'start'` on grid
-- These are minor enhancements, unrelated to #63. Commit or stash before starting.
+### Key files touched
 
-## Architecture context
-
-- `ai-images` is the gold standard feature structure: `index.ts`, `components/`, `hooks/`, `server/`, `types.ts`
-- Shared components: `ModelSelector`, `ImageGrid`, `ActionButton`, `GenerationResultsGrid`
-- Server code uses `.server.ts` suffix in `src/lib/server/`
-- Dev Workspace already exists at `/dev/` — this is a new route alongside it
-
-## Approach
-
-1. Start with interview-style planning — get all requirements and edge cases out
-2. Write a detailed phased implementation plan
-3. Execute phases via worktree agents
-4. Review each phase's output before proceeding
+- `src/components/Thumbnail.tsx` (was ImageResultCard)
+- `src/components/CopyButton.tsx` (new)
+- `src/components/ExpandableText.tsx` (new)
+- `src/lib/format.ts` (new)
+- `src/features/ai-images/components/ImageCard.tsx`
+- `src/features/ai-images/components/ImageGallery.tsx`
+- `src/features/ai-images/components/FocusedEditView.tsx`
+- `src/features/ai-images/hooks/use-focused-edit.ts`
+- `src/routes/dashboard/ai-images.tsx`
