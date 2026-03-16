@@ -76,11 +76,9 @@ function AiImagesPage() {
         rootImageMeta={page.gallery.rootImageMeta}
         editChildrenMap={page.editChildrenMap}
         loadingGallery={page.gallery.loadingGallery}
-        generatingVariationFor={page.variations.generatingVariationFor}
         onOpenLightbox={page.lightbox.open}
         onLoadPrompt={page.handleLoadPrompt}
         onLoadPromptAndModel={page.handleLoadPromptAndModel}
-        onPreviewVariations={page.variations.handlePreviewVariations}
         onDelete={page.gallery.deleteImage}
         onRestoreRoot={page.gallery.restoreRootImage}
         onRetry={page.gallery.retryImage}

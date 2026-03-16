@@ -1,25 +1,18 @@
 import { useNavigate } from '@tanstack/react-router'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 import { Thumbnail } from '@/components/Thumbnail'
 import { ExpandableText } from '@/components/ExpandableText'
 
 interface ImageCardProps {
   img: SavedAiImage
   imageUrl: string | undefined
-  generatingVariation: boolean
   objectFit?: 'contain' | 'cover'
   rootImageUrl?: string
   rootIsHidden?: boolean
   editChildren?: EditChildrenMap[string]
   onRestore?: () => void
   onOpen: (img: SavedAiImage) => void
-  onPreviewVariations: (img: SavedAiImage, count: number) => void
   onDelete: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
@@ -27,14 +20,12 @@ interface ImageCardProps {
 export function ImageCard({
   img,
   imageUrl,
-  generatingVariation,
   objectFit,
   rootImageUrl,
   rootIsHidden,
   editChildren,
   onRestore,
   onOpen,
-  onPreviewVariations,
   onDelete,
   getModelName,
 }: ImageCardProps) {
@@ -51,19 +42,10 @@ export function ImageCard({
           ? getModelName(img.generation_metadata.model)
           : undefined
       }
-      topLeftBadge={
-        img.generation_metadata?.generation_type === 'variation'
-          ? 'Variation'
-          : undefined
-      }
       onDelete={() => onDelete(img)}
       onClick={() => imageUrl && onOpen(img)}
     >
-      <div className="flex gap-1 p-1.5">
-        <MorePopover
-          disabled={generatingVariation}
-          onSelect={(count) => onPreviewVariations(img, count)}
-        />
+      <div className="p-1.5">
         <button
           onClick={() =>
             navigate({
@@ -71,7 +53,7 @@ export function ImageCard({
               params: { imageId: img.id },
             })
           }
-          className="flex-1 rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+          className="w-full rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
         >
           Edit
         </button>
@@ -126,41 +108,5 @@ export function ImageCard({
         </div>
       )}
     </Thumbnail>
-  )
-}
-
-function MorePopover({
-  disabled,
-  onSelect,
-}: {
-  disabled: boolean
-  onSelect: (count: number) => void
-}) {
-  const btnClass =
-    'w-full text-left px-3 py-1.5 text-xs hover:bg-accent rounded transition-colors'
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          disabled={disabled}
-          className="flex-1 rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {disabled ? '...' : 'More'}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        side="top"
-        align="center"
-        className="w-24 p-1"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <button className={btnClass} onClick={() => onSelect(2)}>
-          +2
-        </button>
-        <button className={btnClass} onClick={() => onSelect(4)}>
-          +4
-        </button>
-      </PopoverContent>
-    </Popover>
   )
 }

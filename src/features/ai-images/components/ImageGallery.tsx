@@ -16,11 +16,9 @@ interface ImageGalleryProps {
   rootImageMeta: Record<string, { hidden: boolean }>
   editChildrenMap: EditChildrenMap
   loadingGallery: boolean
-  generatingVariationFor: string | null
   onOpenLightbox: (img: SavedAiImage) => void
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
-  onPreviewVariations: (img: SavedAiImage, count: number) => void
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
   onRetry?: (img: SavedAiImage) => void
@@ -33,9 +31,7 @@ export function ImageGallery({
   rootImageMeta,
   editChildrenMap,
   loadingGallery,
-  generatingVariationFor,
   onOpenLightbox,
-  onPreviewVariations,
   onDelete,
   onRestoreRoot,
   onRetry,
@@ -171,14 +167,12 @@ export function ImageGallery({
                 key={img.id}
                 img={img}
                 imageUrl={imageUrls[img.id]}
-                generatingVariation={generatingVariationFor === img.id}
                 objectFit={displayMode}
                 rootImageUrl={rootId ? imageUrls[rootId] : undefined}
                 rootIsHidden={rootMeta?.hidden}
                 editChildren={editChildrenMap[img.id]}
                 onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
                 onOpen={onOpenLightbox}
-                onPreviewVariations={onPreviewVariations}
                 onDelete={onDelete}
                 getModelName={getModelName}
               />
