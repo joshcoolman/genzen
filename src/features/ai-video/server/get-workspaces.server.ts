@@ -102,7 +102,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
           .slice(1, 5)
           .filter((url): url is string => url !== null)
 
-        // Per-generation entries for the Everything feed
+        // Per-generation entries for the Assets feed
         const generations = sorted.map((gen, i) => ({
           id: gen.id,
           createdAt: gen.created_at,

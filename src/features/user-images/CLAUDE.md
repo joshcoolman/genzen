@@ -22,7 +22,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 ## Route
 
-`src/routes/dashboard/images.tsx` -- supports `?imageId=` deep link to open lightbox
+`src/routes/dashboard/assets.tsx` -- supports `?imageId=` deep link to open lightbox
 
 ## Shared Dependencies
 
