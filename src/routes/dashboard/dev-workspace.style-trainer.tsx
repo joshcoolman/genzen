@@ -4,7 +4,7 @@ import {
   useStyleCollections,
 } from '@/features/style-trainer'
 
-export const Route = createFileRoute('/dashboard/style-trainer')({
+export const Route = createFileRoute('/dashboard/dev-workspace/style-trainer')({
   component: StyleTrainerPage,
 })
 

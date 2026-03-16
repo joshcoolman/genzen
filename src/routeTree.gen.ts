@@ -21,24 +21,26 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
-import { Route as DashboardStyleTrainerRouteImport } from './routes/dashboard/style-trainer'
-import { Route as DashboardStoryboardRouteImport } from './routes/dashboard/storyboard'
-import { Route as DashboardShotsRouteImport } from './routes/dashboard/shots'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
-import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/prompt-studio'
-import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
-import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
-import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
-import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
-import { Route as DashboardBrainstormRouteImport } from './routes/dashboard/brainstorm'
 import { Route as DashboardAssetsRouteImport } from './routes/dashboard/assets'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
+import { Route as DashboardDevWorkspaceIndexRouteImport } from './routes/dashboard/dev-workspace.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
 import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
+import { Route as DashboardDevWorkspaceStyleTrainerRouteImport } from './routes/dashboard/dev-workspace.style-trainer'
+import { Route as DashboardDevWorkspaceStoryboardRouteImport } from './routes/dashboard/dev-workspace.storyboard'
+import { Route as DashboardDevWorkspaceShotsRouteImport } from './routes/dashboard/dev-workspace.shots'
+import { Route as DashboardDevWorkspacePromptStudioRouteImport } from './routes/dashboard/dev-workspace.prompt-studio'
+import { Route as DashboardDevWorkspaceOutpaintRouteImport } from './routes/dashboard/dev-workspace.outpaint'
+import { Route as DashboardDevWorkspaceModelsRouteImport } from './routes/dashboard/dev-workspace.models'
+import { Route as DashboardDevWorkspaceModelSelectorRouteImport } from './routes/dashboard/dev-workspace.model-selector'
+import { Route as DashboardDevWorkspaceCombineRouteImport } from './routes/dashboard/dev-workspace.combine'
+import { Route as DashboardDevWorkspaceCharactersRouteImport } from './routes/dashboard/dev-workspace.characters'
+import { Route as DashboardDevWorkspaceBrainstormRouteImport } from './routes/dashboard/dev-workspace.brainstorm'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -100,34 +102,9 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   path: '/trash',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardStyleTrainerRoute = DashboardStyleTrainerRouteImport.update({
-  id: '/style-trainer',
-  path: '/style-trainer',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardStoryboardRoute = DashboardStoryboardRouteImport.update({
-  id: '/storyboard',
-  path: '/storyboard',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardShotsRoute = DashboardShotsRouteImport.update({
-  id: '/shots',
-  path: '/shots',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardPromptStudioRoute = DashboardPromptStudioRouteImport.update({
-  id: '/prompt-studio',
-  path: '/prompt-studio',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardOutpaintRoute = DashboardOutpaintRouteImport.update({
-  id: '/outpaint',
-  path: '/outpaint',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardNotesRoute = DashboardNotesRouteImport.update({
@@ -135,29 +112,9 @@ const DashboardNotesRoute = DashboardNotesRouteImport.update({
   path: '/notes',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardModelsRoute = DashboardModelsRouteImport.update({
-  id: '/models',
-  path: '/models',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardCombineRoute = DashboardCombineRouteImport.update({
-  id: '/combine',
-  path: '/combine',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
-  id: '/characters',
-  path: '/characters',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardBrainstormRoute = DashboardBrainstormRouteImport.update({
-  id: '/brainstorm',
-  path: '/brainstorm',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAssetsRoute = DashboardAssetsRouteImport.update({
@@ -180,6 +137,12 @@ const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardVideoRoute,
 } as any)
+const DashboardDevWorkspaceIndexRoute =
+  DashboardDevWorkspaceIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
 const DashboardVideoWorkspaceIdRoute =
   DashboardVideoWorkspaceIdRouteImport.update({
     id: '/$workspaceId',
@@ -191,6 +154,66 @@ const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
   path: '/edit/$imageId',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardDevWorkspaceStyleTrainerRoute =
+  DashboardDevWorkspaceStyleTrainerRouteImport.update({
+    id: '/style-trainer',
+    path: '/style-trainer',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceStoryboardRoute =
+  DashboardDevWorkspaceStoryboardRouteImport.update({
+    id: '/storyboard',
+    path: '/storyboard',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceShotsRoute =
+  DashboardDevWorkspaceShotsRouteImport.update({
+    id: '/shots',
+    path: '/shots',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspacePromptStudioRoute =
+  DashboardDevWorkspacePromptStudioRouteImport.update({
+    id: '/prompt-studio',
+    path: '/prompt-studio',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceOutpaintRoute =
+  DashboardDevWorkspaceOutpaintRouteImport.update({
+    id: '/outpaint',
+    path: '/outpaint',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceModelsRoute =
+  DashboardDevWorkspaceModelsRouteImport.update({
+    id: '/models',
+    path: '/models',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceModelSelectorRoute =
+  DashboardDevWorkspaceModelSelectorRouteImport.update({
+    id: '/model-selector',
+    path: '/model-selector',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceCombineRoute =
+  DashboardDevWorkspaceCombineRouteImport.update({
+    id: '/combine',
+    path: '/combine',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceCharactersRoute =
+  DashboardDevWorkspaceCharactersRouteImport.update({
+    id: '/characters',
+    path: '/characters',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
+const DashboardDevWorkspaceBrainstormRoute =
+  DashboardDevWorkspaceBrainstormRouteImport.update({
+    id: '/brainstorm',
+    path: '/brainstorm',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -203,25 +226,27 @@ export interface FileRoutesByFullPath {
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/assets': typeof DashboardAssetsRoute
-  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
-  '/dashboard/characters': typeof DashboardCharactersRoute
-  '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
-  '/dashboard/outpaint': typeof DashboardOutpaintRoute
-  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/shots': typeof DashboardShotsRoute
-  '/dashboard/storyboard': typeof DashboardStoryboardRoute
-  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/dev-workspace/brainstorm': typeof DashboardDevWorkspaceBrainstormRoute
+  '/dashboard/dev-workspace/characters': typeof DashboardDevWorkspaceCharactersRoute
+  '/dashboard/dev-workspace/combine': typeof DashboardDevWorkspaceCombineRoute
+  '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
+  '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
+  '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
+  '/dashboard/dev-workspace/shots': typeof DashboardDevWorkspaceShotsRoute
+  '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
+  '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesByTo {
@@ -233,24 +258,25 @@ export interface FileRoutesByTo {
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/assets': typeof DashboardAssetsRoute
-  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
-  '/dashboard/characters': typeof DashboardCharactersRoute
-  '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
-  '/dashboard/outpaint': typeof DashboardOutpaintRoute
-  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/shots': typeof DashboardShotsRoute
-  '/dashboard/storyboard': typeof DashboardStoryboardRoute
-  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/dashboard/dev-workspace/brainstorm': typeof DashboardDevWorkspaceBrainstormRoute
+  '/dashboard/dev-workspace/characters': typeof DashboardDevWorkspaceCharactersRoute
+  '/dashboard/dev-workspace/combine': typeof DashboardDevWorkspaceCombineRoute
+  '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
+  '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
+  '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
+  '/dashboard/dev-workspace/shots': typeof DashboardDevWorkspaceShotsRoute
+  '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
+  '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceIndexRoute
   '/dashboard/video': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesById {
@@ -265,25 +291,27 @@ export interface FileRoutesById {
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/assets': typeof DashboardAssetsRoute
-  '/dashboard/brainstorm': typeof DashboardBrainstormRoute
-  '/dashboard/characters': typeof DashboardCharactersRoute
-  '/dashboard/combine': typeof DashboardCombineRoute
-  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/models': typeof DashboardModelsRoute
+  '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
-  '/dashboard/outpaint': typeof DashboardOutpaintRoute
-  '/dashboard/prompt-studio': typeof DashboardPromptStudioRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/shots': typeof DashboardShotsRoute
-  '/dashboard/storyboard': typeof DashboardStoryboardRoute
-  '/dashboard/style-trainer': typeof DashboardStyleTrainerRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/dashboard/dev-workspace/brainstorm': typeof DashboardDevWorkspaceBrainstormRoute
+  '/dashboard/dev-workspace/characters': typeof DashboardDevWorkspaceCharactersRoute
+  '/dashboard/dev-workspace/combine': typeof DashboardDevWorkspaceCombineRoute
+  '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
+  '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
+  '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
+  '/dashboard/dev-workspace/shots': typeof DashboardDevWorkspaceShotsRoute
+  '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
+  '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
+  '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRouteTypes {
@@ -299,25 +327,27 @@ export interface FileRouteTypes {
     | '/dashboard/account'
     | '/dashboard/ai-images'
     | '/dashboard/assets'
-    | '/dashboard/brainstorm'
-    | '/dashboard/characters'
-    | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/models'
     | '/dashboard/notes'
-    | '/dashboard/outpaint'
-    | '/dashboard/prompt-studio'
     | '/dashboard/settings'
-    | '/dashboard/shots'
-    | '/dashboard/storyboard'
-    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/dev-workspace/brainstorm'
+    | '/dashboard/dev-workspace/characters'
+    | '/dashboard/dev-workspace/combine'
+    | '/dashboard/dev-workspace/model-selector'
+    | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/outpaint'
+    | '/dashboard/dev-workspace/prompt-studio'
+    | '/dashboard/dev-workspace/shots'
+    | '/dashboard/dev-workspace/storyboard'
+    | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/dev-workspace/'
     | '/dashboard/video/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -329,24 +359,25 @@ export interface FileRouteTypes {
     | '/dashboard/account'
     | '/dashboard/ai-images'
     | '/dashboard/assets'
-    | '/dashboard/brainstorm'
-    | '/dashboard/characters'
-    | '/dashboard/combine'
-    | '/dashboard/dev-workspace'
-    | '/dashboard/models'
     | '/dashboard/notes'
-    | '/dashboard/outpaint'
-    | '/dashboard/prompt-studio'
     | '/dashboard/settings'
-    | '/dashboard/shots'
-    | '/dashboard/storyboard'
-    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/docs/$'
     | '/dashboard'
     | '/docs'
+    | '/dashboard/dev-workspace/brainstorm'
+    | '/dashboard/dev-workspace/characters'
+    | '/dashboard/dev-workspace/combine'
+    | '/dashboard/dev-workspace/model-selector'
+    | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/outpaint'
+    | '/dashboard/dev-workspace/prompt-studio'
+    | '/dashboard/dev-workspace/shots'
+    | '/dashboard/dev-workspace/storyboard'
+    | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/dev-workspace'
     | '/dashboard/video'
   id:
     | '__root__'
@@ -360,25 +391,27 @@ export interface FileRouteTypes {
     | '/dashboard/account'
     | '/dashboard/ai-images'
     | '/dashboard/assets'
-    | '/dashboard/brainstorm'
-    | '/dashboard/characters'
-    | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/models'
     | '/dashboard/notes'
-    | '/dashboard/outpaint'
-    | '/dashboard/prompt-studio'
     | '/dashboard/settings'
-    | '/dashboard/shots'
-    | '/dashboard/storyboard'
-    | '/dashboard/style-trainer'
     | '/dashboard/trash'
     | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
+    | '/dashboard/dev-workspace/brainstorm'
+    | '/dashboard/dev-workspace/characters'
+    | '/dashboard/dev-workspace/combine'
+    | '/dashboard/dev-workspace/model-selector'
+    | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/outpaint'
+    | '/dashboard/dev-workspace/prompt-studio'
+    | '/dashboard/dev-workspace/shots'
+    | '/dashboard/dev-workspace/storyboard'
+    | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
     | '/dashboard/video/$workspaceId'
+    | '/dashboard/dev-workspace/'
     | '/dashboard/video/'
   fileRoutesById: FileRoutesById
 }
@@ -478,46 +511,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTrashRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/style-trainer': {
-      id: '/dashboard/style-trainer'
-      path: '/style-trainer'
-      fullPath: '/dashboard/style-trainer'
-      preLoaderRoute: typeof DashboardStyleTrainerRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/storyboard': {
-      id: '/dashboard/storyboard'
-      path: '/storyboard'
-      fullPath: '/dashboard/storyboard'
-      preLoaderRoute: typeof DashboardStoryboardRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/shots': {
-      id: '/dashboard/shots'
-      path: '/shots'
-      fullPath: '/dashboard/shots'
-      preLoaderRoute: typeof DashboardShotsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/settings': {
       id: '/dashboard/settings'
       path: '/settings'
       fullPath: '/dashboard/settings'
       preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/prompt-studio': {
-      id: '/dashboard/prompt-studio'
-      path: '/prompt-studio'
-      fullPath: '/dashboard/prompt-studio'
-      preLoaderRoute: typeof DashboardPromptStudioRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/outpaint': {
-      id: '/dashboard/outpaint'
-      path: '/outpaint'
-      fullPath: '/dashboard/outpaint'
-      preLoaderRoute: typeof DashboardOutpaintRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/notes': {
@@ -527,39 +525,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNotesRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/models': {
-      id: '/dashboard/models'
-      path: '/models'
-      fullPath: '/dashboard/models'
-      preLoaderRoute: typeof DashboardModelsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/dev-workspace': {
       id: '/dashboard/dev-workspace'
       path: '/dev-workspace'
       fullPath: '/dashboard/dev-workspace'
       preLoaderRoute: typeof DashboardDevWorkspaceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/combine': {
-      id: '/dashboard/combine'
-      path: '/combine'
-      fullPath: '/dashboard/combine'
-      preLoaderRoute: typeof DashboardCombineRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/characters': {
-      id: '/dashboard/characters'
-      path: '/characters'
-      fullPath: '/dashboard/characters'
-      preLoaderRoute: typeof DashboardCharactersRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/brainstorm': {
-      id: '/dashboard/brainstorm'
-      path: '/brainstorm'
-      fullPath: '/dashboard/brainstorm'
-      preLoaderRoute: typeof DashboardBrainstormRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/assets': {
@@ -590,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoIndexRouteImport
       parentRoute: typeof DashboardVideoRoute
     }
+    '/dashboard/dev-workspace/': {
+      id: '/dashboard/dev-workspace/'
+      path: '/'
+      fullPath: '/dashboard/dev-workspace/'
+      preLoaderRoute: typeof DashboardDevWorkspaceIndexRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
     '/dashboard/video/$workspaceId': {
       id: '/dashboard/video/$workspaceId'
       path: '/$workspaceId'
@@ -604,8 +581,114 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEditImageIdRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/dev-workspace/style-trainer': {
+      id: '/dashboard/dev-workspace/style-trainer'
+      path: '/style-trainer'
+      fullPath: '/dashboard/dev-workspace/style-trainer'
+      preLoaderRoute: typeof DashboardDevWorkspaceStyleTrainerRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/storyboard': {
+      id: '/dashboard/dev-workspace/storyboard'
+      path: '/storyboard'
+      fullPath: '/dashboard/dev-workspace/storyboard'
+      preLoaderRoute: typeof DashboardDevWorkspaceStoryboardRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/shots': {
+      id: '/dashboard/dev-workspace/shots'
+      path: '/shots'
+      fullPath: '/dashboard/dev-workspace/shots'
+      preLoaderRoute: typeof DashboardDevWorkspaceShotsRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/prompt-studio': {
+      id: '/dashboard/dev-workspace/prompt-studio'
+      path: '/prompt-studio'
+      fullPath: '/dashboard/dev-workspace/prompt-studio'
+      preLoaderRoute: typeof DashboardDevWorkspacePromptStudioRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/outpaint': {
+      id: '/dashboard/dev-workspace/outpaint'
+      path: '/outpaint'
+      fullPath: '/dashboard/dev-workspace/outpaint'
+      preLoaderRoute: typeof DashboardDevWorkspaceOutpaintRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/models': {
+      id: '/dashboard/dev-workspace/models'
+      path: '/models'
+      fullPath: '/dashboard/dev-workspace/models'
+      preLoaderRoute: typeof DashboardDevWorkspaceModelsRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/model-selector': {
+      id: '/dashboard/dev-workspace/model-selector'
+      path: '/model-selector'
+      fullPath: '/dashboard/dev-workspace/model-selector'
+      preLoaderRoute: typeof DashboardDevWorkspaceModelSelectorRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/combine': {
+      id: '/dashboard/dev-workspace/combine'
+      path: '/combine'
+      fullPath: '/dashboard/dev-workspace/combine'
+      preLoaderRoute: typeof DashboardDevWorkspaceCombineRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/characters': {
+      id: '/dashboard/dev-workspace/characters'
+      path: '/characters'
+      fullPath: '/dashboard/dev-workspace/characters'
+      preLoaderRoute: typeof DashboardDevWorkspaceCharactersRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
+    '/dashboard/dev-workspace/brainstorm': {
+      id: '/dashboard/dev-workspace/brainstorm'
+      path: '/brainstorm'
+      fullPath: '/dashboard/dev-workspace/brainstorm'
+      preLoaderRoute: typeof DashboardDevWorkspaceBrainstormRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
   }
 }
+
+interface DashboardDevWorkspaceRouteChildren {
+  DashboardDevWorkspaceBrainstormRoute: typeof DashboardDevWorkspaceBrainstormRoute
+  DashboardDevWorkspaceCharactersRoute: typeof DashboardDevWorkspaceCharactersRoute
+  DashboardDevWorkspaceCombineRoute: typeof DashboardDevWorkspaceCombineRoute
+  DashboardDevWorkspaceModelSelectorRoute: typeof DashboardDevWorkspaceModelSelectorRoute
+  DashboardDevWorkspaceModelsRoute: typeof DashboardDevWorkspaceModelsRoute
+  DashboardDevWorkspaceOutpaintRoute: typeof DashboardDevWorkspaceOutpaintRoute
+  DashboardDevWorkspacePromptStudioRoute: typeof DashboardDevWorkspacePromptStudioRoute
+  DashboardDevWorkspaceShotsRoute: typeof DashboardDevWorkspaceShotsRoute
+  DashboardDevWorkspaceStoryboardRoute: typeof DashboardDevWorkspaceStoryboardRoute
+  DashboardDevWorkspaceStyleTrainerRoute: typeof DashboardDevWorkspaceStyleTrainerRoute
+  DashboardDevWorkspaceIndexRoute: typeof DashboardDevWorkspaceIndexRoute
+}
+
+const DashboardDevWorkspaceRouteChildren: DashboardDevWorkspaceRouteChildren = {
+  DashboardDevWorkspaceBrainstormRoute: DashboardDevWorkspaceBrainstormRoute,
+  DashboardDevWorkspaceCharactersRoute: DashboardDevWorkspaceCharactersRoute,
+  DashboardDevWorkspaceCombineRoute: DashboardDevWorkspaceCombineRoute,
+  DashboardDevWorkspaceModelSelectorRoute:
+    DashboardDevWorkspaceModelSelectorRoute,
+  DashboardDevWorkspaceModelsRoute: DashboardDevWorkspaceModelsRoute,
+  DashboardDevWorkspaceOutpaintRoute: DashboardDevWorkspaceOutpaintRoute,
+  DashboardDevWorkspacePromptStudioRoute:
+    DashboardDevWorkspacePromptStudioRoute,
+  DashboardDevWorkspaceShotsRoute: DashboardDevWorkspaceShotsRoute,
+  DashboardDevWorkspaceStoryboardRoute: DashboardDevWorkspaceStoryboardRoute,
+  DashboardDevWorkspaceStyleTrainerRoute:
+    DashboardDevWorkspaceStyleTrainerRoute,
+  DashboardDevWorkspaceIndexRoute: DashboardDevWorkspaceIndexRoute,
+}
+
+const DashboardDevWorkspaceRouteWithChildren =
+  DashboardDevWorkspaceRoute._addFileChildren(
+    DashboardDevWorkspaceRouteChildren,
+  )
 
 interface DashboardVideoRouteChildren {
   DashboardVideoWorkspaceIdRoute: typeof DashboardVideoWorkspaceIdRoute
@@ -625,18 +708,9 @@ interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardAssetsRoute: typeof DashboardAssetsRoute
-  DashboardBrainstormRoute: typeof DashboardBrainstormRoute
-  DashboardCharactersRoute: typeof DashboardCharactersRoute
-  DashboardCombineRoute: typeof DashboardCombineRoute
-  DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRoute
-  DashboardModelsRoute: typeof DashboardModelsRoute
+  DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
-  DashboardOutpaintRoute: typeof DashboardOutpaintRoute
-  DashboardPromptStudioRoute: typeof DashboardPromptStudioRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardShotsRoute: typeof DashboardShotsRoute
-  DashboardStoryboardRoute: typeof DashboardStoryboardRoute
-  DashboardStyleTrainerRoute: typeof DashboardStyleTrainerRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -647,18 +721,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardAssetsRoute: DashboardAssetsRoute,
-  DashboardBrainstormRoute: DashboardBrainstormRoute,
-  DashboardCharactersRoute: DashboardCharactersRoute,
-  DashboardCombineRoute: DashboardCombineRoute,
-  DashboardDevWorkspaceRoute: DashboardDevWorkspaceRoute,
-  DashboardModelsRoute: DashboardModelsRoute,
+  DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
-  DashboardOutpaintRoute: DashboardOutpaintRoute,
-  DashboardPromptStudioRoute: DashboardPromptStudioRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardShotsRoute: DashboardShotsRoute,
-  DashboardStoryboardRoute: DashboardStoryboardRoute,
-  DashboardStyleTrainerRoute: DashboardStyleTrainerRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,

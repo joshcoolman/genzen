@@ -34,6 +34,9 @@ export function Sidebar({ className }: { className?: string }) {
   const { isCollapsed, toggleCollapsed } = useSidebarCollapsed()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
+  const isDevWorkspace = location.pathname.startsWith(
+    '/dashboard/dev-workspace',
+  )
   const accountItem = navItems.find((item) => item.id === 'account')!
   const settingsItem = navItems.find((item) => item.id === 'settings')!
 
@@ -75,8 +78,13 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <TooltipProvider delayDuration={0}>
         <nav className="flex-1 space-y-1 p-4">
-          {/* Toggle button - only visible on md+ screens */}
-          <div className="mb-2 hidden md:flex justify-end">
+          {/* Toggle button - only visible on md+ screens, hidden in dev-workspace */}
+          <div
+            className={cn(
+              'mb-2 hidden justify-end',
+              !isDevWorkspace && 'md:flex',
+            )}
+          >
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

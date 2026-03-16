@@ -5,7 +5,7 @@ import { useCredits } from '@/features/credits/hooks/use-credits'
 import { BrainstormPanel } from '@/features/ai-images'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 
-export const Route = createFileRoute('/dashboard/brainstorm')({
+export const Route = createFileRoute('/dashboard/dev-workspace/brainstorm')({
   component: BrainstormPage,
 })
 

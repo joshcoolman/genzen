@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { CharactersPageContent, useCharactersPage } from '@/features/characters'
 
-export const Route = createFileRoute('/dashboard/characters')({
+export const Route = createFileRoute('/dashboard/dev-workspace/characters')({
   component: CharactersPage,
 })
 
