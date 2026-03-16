@@ -418,7 +418,7 @@ export function useFocusedEdit(imageId: string) {
 
       setVariationSubmitting(true)
       try {
-        await submitVariations({
+        const variationResults = await submitVariations({
           data: {
             accessToken,
             prompts,
@@ -431,6 +431,16 @@ export function useFocusedEdit(imageId: string) {
           },
         })
         setVariationDialogOpen(false)
+
+        for (let i = 0; i < variationResults.length; i++) {
+          results.addPendingResult({
+            id: variationResults[i].recordId,
+            status: 'pending',
+            label: 'Kontext Pro',
+            prompt: prompts[i],
+          })
+        }
+
         await credits.refresh()
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
@@ -443,7 +453,7 @@ export function useFocusedEdit(imageId: string) {
         setVariationSubmitting(false)
       }
     },
-    [accessToken, variationMeta, aspectRatio, credits],
+    [accessToken, variationMeta, aspectRatio, credits, results],
   )
 
   return {
