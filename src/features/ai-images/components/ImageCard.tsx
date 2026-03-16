@@ -83,11 +83,9 @@ export function ImageCard({
       )}
       {editChildren && editChildren.length > 0 && (
         <div className="px-3 pb-3">
-          <p className="text-[10px] text-muted-foreground mb-1.5">
-            Edits{editChildren.length > 8 ? ` (${editChildren.length})` : ''}
-          </p>
+          <p className="text-[10px] text-muted-foreground mb-1.5">Edits</p>
           <div className="flex flex-wrap gap-1.5">
-            {editChildren.slice(0, 8).map((child) => (
+            {editChildren.map((child) => (
               <button
                 key={child.id}
                 onClick={(e) => {
