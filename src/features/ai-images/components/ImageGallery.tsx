@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import { getModelName } from '@/features/ai-images/models'
@@ -44,6 +44,17 @@ export function ImageGallery({
   const [clearingStale, setClearingStale] = useState(false)
 
   const hasPending = images.some((img) => img.status === 'pending')
+
+  // Collect IDs of images already shown as thumbnails on a parent card
+  const childIds = useMemo(
+    () =>
+      new Set(
+        Object.values(editChildrenMap).flatMap((children) =>
+          children.map((c) => c.id),
+        ),
+      ),
+    [editChildrenMap],
+  )
 
   const handleClearStale = async () => {
     if (!onClearStale || clearingStale) return
@@ -115,6 +126,9 @@ export function ImageGallery({
           }}
         >
           {images.map((img) => {
+            // Skip images already shown as thumbnails on a parent card
+            if (childIds.has(img.id)) return null
+
             const rootId =
               img.generation_metadata?.generation_type === 'variation'
                 ? (img.generation_metadata.root_image_id ??
