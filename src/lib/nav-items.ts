@@ -3,10 +3,9 @@ import {
   Expand,
   Film,
   FlaskConical,
+  FolderOpen,
   Grid3X3,
-  Image,
   Layers,
-  LayoutGrid,
   Lightbulb,
   MessageSquare,
   Palette,
@@ -32,18 +31,11 @@ export interface NavItem {
 
 export const navItems: Array<NavItem> = [
   {
-    id: 'everything',
-    label: 'Everything',
-    href: '/dashboard',
-    icon: LayoutGrid,
+    id: 'assets',
+    label: 'Assets',
+    href: '/dashboard/assets',
+    icon: FolderOpen,
     alwaysVisible: true,
-  },
-  {
-    id: 'uploads',
-    label: 'Uploads',
-    href: '/dashboard/images',
-    icon: Image,
-    activeOnly: true,
   },
   {
     id: 'ai-images',

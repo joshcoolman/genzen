@@ -54,7 +54,7 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
   '/dashboard/shots': 'The user is on the Shots page.',
   '/dashboard/style-trainer': 'The user is on the Style Trainer page.',
   '/dashboard/models': 'The user is on the Models page.',
-  '/dashboard/images': 'The user is on their image library.',
+  '/dashboard/assets': 'The user is on their assets library.',
   '/dashboard/combine': 'The user is on the Combine page.',
   '/dashboard/notes':
     'The user is on the Notes page -- browsing saved AD conversation snapshots.',

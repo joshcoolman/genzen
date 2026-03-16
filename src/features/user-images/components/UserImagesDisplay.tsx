@@ -1,7 +1,8 @@
 /**
  * User Images Display Component
  *
- * Main container component that orchestrates the entire user images feature.
+ * Main container component that orchestrates the entire user images/assets feature.
+ * Shows uploaded images, AI-generated images, and AI videos.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -14,19 +15,23 @@ import { ImageDownloadButton } from './ImageDownloadButton'
 import { EmptyState, ImageGrid } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
-import type { CreateUserImageInput } from '../types'
+import type { CreateUserImageInput, UserImage } from '../types'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
+import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
+import { ImageResultCard } from '@/components/ImageResultCard'
+import { VideoPlayerDialog } from '@/components/video-player-dialog'
 
-type SourceFilter = 'all' | 'upload' | 'ai_generated'
+type SourceFilter = 'all' | 'upload' | 'ai_generated' | 'ai_video'
 
 const SOURCE_FILTERS: Array<{ value: SourceFilter; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'upload', label: 'Uploads' },
   { value: 'ai_generated', label: 'AI Images' },
+  { value: 'ai_video', label: 'Videos' },
 ]
 
-const PREFS_KEY = 'uploads-view-prefs'
+const PREFS_KEY = 'assets-view-prefs'
 
 interface ViewPrefs {
   filter: SourceFilter
@@ -36,7 +41,7 @@ interface ViewPrefs {
 }
 
 const DEFAULT_PREFS: ViewPrefs = {
-  filter: 'upload',
+  filter: 'all',
   sortAsc: false,
   showInfo: true,
   thumbSize: 'lg',
@@ -67,6 +72,20 @@ function storePrefs(update: Partial<ViewPrefs>) {
   } catch {}
 }
 
+/** A unified item that can be an image or a video */
+type AssetItem =
+  | { kind: 'image'; image: UserImage; imageUrl: string }
+  | {
+      kind: 'video'
+      id: string
+      label: string
+      thumbnailUrl: string | null
+      createdAt: string
+      workspaceId: string
+      generationId: string
+      videoReady: boolean
+    }
+
 /**
  * User images display component
  */
@@ -75,7 +94,7 @@ interface UserImagesDisplayProps {
 }
 
 export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const navigate = useNavigate()
   const {
     images,
@@ -107,6 +126,31 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     storedPrefs.filter,
   )
 
+  // Video state
+  type Workspace = {
+    id: string
+    name: string
+    createdAt: string
+    generations: Array<{
+      id: string
+      createdAt: string
+      firstFrameUrl: string | null
+      videoReady: boolean
+    }>
+  }
+  const [workspaces, setWorkspaces] = useState<Array<Workspace>>([])
+  const [workspacesLoading, setWorkspacesLoading] = useState(true)
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false)
+
+  useEffect(() => {
+    if (!session?.access_token) return
+    getWorkspaces({ data: { accessToken: session.access_token } })
+      .then(setWorkspaces)
+      .catch(() => {})
+      .finally(() => setWorkspacesLoading(false))
+  }, [session?.access_token])
+
   const handleSourceFilter = (filter: SourceFilter) => {
     setSourceFilter(filter)
     storePrefs({ filter })
@@ -135,38 +179,79 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     })
   }
 
-  const sortedImages = useMemo(() => {
-    let result =
-      sourceFilter === 'all'
-        ? images
-        : images.filter((img) => img.source === sourceFilter)
-    if (sortAsc) result = [...result].reverse()
-    return result
-  }, [images, sortAsc, sourceFilter])
+  // Build unified asset list
+  const assets = useMemo(() => {
+    // Image assets
+    const imageAssets: Array<AssetItem> = images
+      .filter((img) => {
+        if (sourceFilter === 'all') return true
+        if (sourceFilter === 'ai_video') return false
+        return img.source === sourceFilter
+      })
+      .map((img) => ({
+        kind: 'image' as const,
+        image: img,
+        imageUrl: imageUrls[img.id] || '',
+      }))
 
-  // Deep link: open lightbox for a specific image when navigating from Everything
+    // Video assets
+    const videoAssets: Array<AssetItem> =
+      sourceFilter === 'upload' || sourceFilter === 'ai_generated'
+        ? []
+        : workspaces.flatMap((ws) =>
+            ws.generations.map((gen) => ({
+              kind: 'video' as const,
+              id: gen.id,
+              label: ws.name,
+              thumbnailUrl: gen.firstFrameUrl,
+              createdAt: gen.createdAt,
+              workspaceId: ws.id,
+              generationId: gen.id,
+              videoReady: gen.videoReady,
+            })),
+          )
+
+    const combined = [...imageAssets, ...videoAssets]
+
+    // Sort by date
+    combined.sort((a, b) => {
+      const dateA = a.kind === 'image' ? a.image.created_at : a.createdAt
+      const dateB = b.kind === 'image' ? b.image.created_at : b.createdAt
+      const diff = new Date(dateB).getTime() - new Date(dateA).getTime()
+      return sortAsc ? -diff : diff
+    })
+
+    return combined
+  }, [images, imageUrls, workspaces, sourceFilter, sortAsc])
+
+  // For image-only operations (edit dialog), get filtered image list
+  const imageOnlyAssets = useMemo(
+    () =>
+      assets.filter(
+        (a): a is AssetItem & { kind: 'image' } => a.kind === 'image',
+      ),
+    [assets],
+  )
+
+  // Deep link: open lightbox for a specific image
   useEffect(() => {
     if (!deepLinkImageId || isLoading || deepLinkConsumed.current) return
     deepLinkConsumed.current = true
 
-    // Switch to 'all' filter (state only, don't persist to localStorage)
     setSourceFilter('all')
 
-    // Find the image in the full (unsorted) images list with 'all' filter
-    const allImages = sortAsc ? [...images].reverse() : images
-    const idx = allImages.findIndex((img) => img.id === deepLinkImageId)
+    const idx = imageOnlyAssets.findIndex((a) => a.image.id === deepLinkImageId)
     if (idx !== -1) {
       setEditingIndex(idx)
       setHighlightedImageId(deepLinkImageId)
     }
 
-    // Clear the URL param so refresh doesn't re-trigger
     void navigate({
-      to: '/dashboard/images',
+      to: '/dashboard/assets',
       search: { imageId: undefined },
       replace: true,
     })
-  }, [deepLinkImageId, isLoading, images, sortAsc, navigate])
+  }, [deepLinkImageId, isLoading, imageOnlyAssets, navigate])
 
   const handleUpload = async (input: CreateUserImageInput) => {
     await create(input)
@@ -186,8 +271,8 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     deleteImage(id)
   }
 
-  const handleOpenEdit = (index: number) => {
-    setEditingIndex(index)
+  const handleOpenImageEdit = (imageAssetIndex: number) => {
+    setEditingIndex(imageAssetIndex)
   }
 
   const handleCloseEdit = () => {
@@ -212,33 +297,59 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   const handleNextImage = () => {
     if (editingIndex === null) return
     const nextIndex = editingIndex + 1
-    if (nextIndex < sortedImages.length) {
+    if (nextIndex < imageOnlyAssets.length) {
       setEditingIndex(nextIndex)
     } else {
       setEditingIndex(0)
     }
   }
 
-  const editingImage =
-    editingIndex !== null ? (sortedImages[editingIndex] ?? null) : null
+  const handlePlayVideo = async (generationId: string) => {
+    if (!session?.access_token) return
+    const result = await getVideoUrl({
+      data: { generationId, accessToken: session.access_token },
+    })
+    if (result.videoUrl) {
+      setActiveVideoUrl(result.videoUrl)
+      setVideoDialogOpen(true)
+    }
+  }
 
-  if (isLoading) {
+  const handleVideoClick = (workspaceId: string, generationId: string) => {
+    void navigate({
+      to: '/dashboard/video/$workspaceId',
+      params: { workspaceId },
+      search: { generationId },
+    })
+  }
+
+  const editingImage =
+    editingIndex !== null
+      ? (imageOnlyAssets[editingIndex]?.image ?? null)
+      : null
+
+  const loading = isLoading || workspacesLoading
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
           <div className="mb-4 text-2xl text-muted-foreground">Loading...</div>
-          <p className="text-muted-foreground">Loading images...</p>
+          <p className="text-muted-foreground">Loading assets...</p>
         </div>
       </div>
     )
   }
+
+  // Track image-only index for edit dialog mapping
+  let imageIdx = -1
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Uploads</h2>
+          <h2 className="text-2xl font-bold text-foreground">Assets</h2>
           <p className="text-xs text-muted-foreground mt-1">
             Cmd+V to paste from clipboard
           </p>
@@ -319,29 +430,98 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
         </div>
       )}
 
-      {/* Image Grid or Empty State */}
-      {sortedImages.length > 0 ? (
+      {/* Asset Grid or Empty State */}
+      {assets.length > 0 ? (
         <ImageGrid size={thumbSize}>
-          {sortedImages.map((image, index) => (
-            <div key={image.id} data-image-id={image.id}>
-              <ImageCard
-                image={image}
-                imageUrl={imageUrls[image.id] || ''}
-                onClick={() => handleOpenEdit(index)}
-                onDelete={handleDelete}
-                isDeleting={isDeleting === image.id}
-                isUpdating={isUpdating === image.id}
-                showInfo={showInfo}
-                compact={thumbSize !== 'lg'}
-              />
-            </div>
-          ))}
+          {assets.map((asset) => {
+            if (asset.kind === 'image') {
+              imageIdx++
+              const currentImageIdx = imageIdx
+              return (
+                <div key={asset.image.id} data-image-id={asset.image.id}>
+                  <ImageCard
+                    image={asset.image}
+                    imageUrl={asset.imageUrl}
+                    onClick={() => handleOpenImageEdit(currentImageIdx)}
+                    onDelete={handleDelete}
+                    isDeleting={isDeleting === asset.image.id}
+                    isUpdating={isUpdating === asset.image.id}
+                    showInfo={showInfo}
+                    compact={thumbSize !== 'lg'}
+                  />
+                </div>
+              )
+            }
+            // Video asset
+            const compact = thumbSize !== 'lg'
+            return (
+              <div key={`vid-${asset.id}`}>
+                <ImageResultCard
+                  url={asset.thumbnailUrl}
+                  alt={asset.label}
+                  onClick={() =>
+                    handleVideoClick(asset.workspaceId, asset.generationId)
+                  }
+                  objectFit={compact ? 'cover' : 'contain'}
+                  compact={compact}
+                  asButton
+                  imageOverlay={
+                    <>
+                      <div className="absolute bottom-1.5 left-1.5 bg-blue-600/80 backdrop-blur-sm text-white text-[10px] px-1.5 py-0.5 rounded">
+                        Video
+                      </div>
+                      {asset.videoReady && (
+                        <div
+                          role="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void handlePlayVideo(asset.generationId)
+                          }}
+                          className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
+                        >
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 14 14"
+                            fill="none"
+                            className="ml-0.5 text-white"
+                          >
+                            <path
+                              d="M3.5 2.5L11.5 7L3.5 11.5V2.5Z"
+                              fill="currentColor"
+                              stroke="currentColor"
+                              strokeWidth="1"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      {!asset.videoReady && (
+                        <div className="absolute bottom-1.5 right-1.5 text-yellow-400 text-[10px] px-1.5 py-0.5 rounded bg-black/60 backdrop-blur-sm">
+                          Processing...
+                        </div>
+                      )}
+                    </>
+                  }
+                  footer={
+                    !compact ? (
+                      <div className="flex-1 px-4 pt-3 pb-2">
+                        <h3 className="text-xs font-medium text-foreground line-clamp-2">
+                          {asset.label}
+                        </h3>
+                      </div>
+                    ) : undefined
+                  }
+                />
+              </div>
+            )
+          })}
         </ImageGrid>
       ) : (
         <EmptyState />
       )}
 
-      {/* Edit Dialog */}
+      {/* Edit Dialog (images only) */}
       <ImageEditDialog
         image={editingImage}
         imageUrl={editingImage ? imageUrls[editingImage.id] || '' : ''}
@@ -349,6 +529,13 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
         onClose={handleCloseEdit}
         onSave={handleUpdate}
         onNext={handleNextImage}
+      />
+
+      {/* Video Player Dialog */}
+      <VideoPlayerDialog
+        videoUrl={activeVideoUrl}
+        open={videoDialogOpen}
+        onOpenChange={setVideoDialogOpen}
       />
     </div>
   )

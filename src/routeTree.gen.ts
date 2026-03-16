@@ -29,11 +29,11 @@ import { Route as DashboardPromptStudioRouteImport } from './routes/dashboard/pr
 import { Route as DashboardOutpaintRouteImport } from './routes/dashboard/outpaint'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardModelsRouteImport } from './routes/dashboard/models'
-import { Route as DashboardImagesRouteImport } from './routes/dashboard/images'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardCombineRouteImport } from './routes/dashboard/combine'
 import { Route as DashboardCharactersRouteImport } from './routes/dashboard/characters'
 import { Route as DashboardBrainstormRouteImport } from './routes/dashboard/brainstorm'
+import { Route as DashboardAssetsRouteImport } from './routes/dashboard/assets'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -140,11 +140,6 @@ const DashboardModelsRoute = DashboardModelsRouteImport.update({
   path: '/models',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardImagesRoute = DashboardImagesRouteImport.update({
-  id: '/images',
-  path: '/images',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
@@ -163,6 +158,11 @@ const DashboardCharactersRoute = DashboardCharactersRouteImport.update({
 const DashboardBrainstormRoute = DashboardBrainstormRouteImport.update({
   id: '/brainstorm',
   path: '/brainstorm',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAssetsRoute = DashboardAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
@@ -202,11 +202,11 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
@@ -232,11 +232,11 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
@@ -264,11 +264,11 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
+  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/brainstorm': typeof DashboardBrainstormRoute
   '/dashboard/characters': typeof DashboardCharactersRoute
   '/dashboard/combine': typeof DashboardCombineRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRoute
-  '/dashboard/images': typeof DashboardImagesRoute
   '/dashboard/models': typeof DashboardModelsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/outpaint': typeof DashboardOutpaintRoute
@@ -298,11 +298,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/assets'
     | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
     | '/dashboard/outpaint'
@@ -328,11 +328,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/assets'
     | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
     | '/dashboard/outpaint'
@@ -359,11 +359,11 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
+    | '/dashboard/assets'
     | '/dashboard/brainstorm'
     | '/dashboard/characters'
     | '/dashboard/combine'
     | '/dashboard/dev-workspace'
-    | '/dashboard/images'
     | '/dashboard/models'
     | '/dashboard/notes'
     | '/dashboard/outpaint'
@@ -534,13 +534,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardModelsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/images': {
-      id: '/dashboard/images'
-      path: '/images'
-      fullPath: '/dashboard/images'
-      preLoaderRoute: typeof DashboardImagesRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/dev-workspace': {
       id: '/dashboard/dev-workspace'
       path: '/dev-workspace'
@@ -567,6 +560,13 @@ declare module '@tanstack/react-router' {
       path: '/brainstorm'
       fullPath: '/dashboard/brainstorm'
       preLoaderRoute: typeof DashboardBrainstormRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/assets': {
+      id: '/dashboard/assets'
+      path: '/assets'
+      fullPath: '/dashboard/assets'
+      preLoaderRoute: typeof DashboardAssetsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/ai-images': {
@@ -624,11 +624,11 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
+  DashboardAssetsRoute: typeof DashboardAssetsRoute
   DashboardBrainstormRoute: typeof DashboardBrainstormRoute
   DashboardCharactersRoute: typeof DashboardCharactersRoute
   DashboardCombineRoute: typeof DashboardCombineRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRoute
-  DashboardImagesRoute: typeof DashboardImagesRoute
   DashboardModelsRoute: typeof DashboardModelsRoute
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardOutpaintRoute: typeof DashboardOutpaintRoute
@@ -646,11 +646,11 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
+  DashboardAssetsRoute: DashboardAssetsRoute,
   DashboardBrainstormRoute: DashboardBrainstormRoute,
   DashboardCharactersRoute: DashboardCharactersRoute,
   DashboardCombineRoute: DashboardCombineRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRoute,
-  DashboardImagesRoute: DashboardImagesRoute,
   DashboardModelsRoute: DashboardModelsRoute,
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardOutpaintRoute: DashboardOutpaintRoute,
