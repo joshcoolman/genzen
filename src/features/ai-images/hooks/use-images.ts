@@ -135,13 +135,8 @@ export function useImages({
   }, [userId])
 
   useEffect(() => {
-    loadSavedImages().then(() => {
-      // Auto-clear stale pending/processing images on page load
-      if (accessToken) {
-        clearStaleGenerations({ data: { accessToken } }).catch(() => {})
-      }
-    })
-  }, [loadSavedImages, accessToken])
+    loadSavedImages()
+  }, [loadSavedImages])
 
   // Realtime subscription for user_images table
   useEffect(() => {
