@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import { supabase } from '@/lib/supabase'
-import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
 import { getModelName } from '@/features/ai-images/models'
 
 const DEFAULT_LIMIT = 50
@@ -59,11 +58,6 @@ export function useGenerationResults({
   const [results, setResults] = useState<Array<GenerationResult>>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const resultsRef = useRef(results)
-  useEffect(() => {
-    resultsRef.current = results
-  }, [results])
 
   // Load recent results from DB on mount
   useEffect(() => {
@@ -197,79 +191,6 @@ export function useGenerationResults({
       supabase.removeChannel(channel)
     }
   }, [userId, JSON.stringify(generationType), sourceImageIds?.join(',')])
-
-  // Background polling for pending records
-  // Directly updates state from poll results instead of relying solely on realtime
-  useEffect(() => {
-    if (!accessToken) return
-
-    const interval = setInterval(async () => {
-      const pendingIds = resultsRef.current
-        .filter((r) => r.status === 'pending')
-        .map((r) => r.id)
-
-      if (pendingIds.length === 0) return
-
-      try {
-        const pollResults = await checkPendingImages({
-          data: { accessToken, recordIds: pendingIds },
-        })
-
-        if (pollResults.length === 0) return
-
-        const completedIds = pollResults
-          .filter((r) => r.status === 'completed')
-          .map((r) => r.recordId)
-        const failedIds = pollResults
-          .filter((r) => r.status === 'failed' || r.status === 'error')
-          .map((r) => r.recordId)
-
-        // Mark failed results immediately
-        if (failedIds.length > 0) {
-          setResults((prev) =>
-            prev.map((r) =>
-              failedIds.includes(r.id) ? { ...r, status: 'failed' } : r,
-            ),
-          )
-        }
-
-        // Fetch signed URLs for completed results and update state
-        if (completedIds.length > 0) {
-          const { data: completedRows } = await supabase
-            .from('user_images')
-            .select('id, storage_path')
-            .in('id', completedIds)
-            .eq('status', 'completed')
-
-          if (completedRows) {
-            const urlMap: Record<string, string> = {}
-            await Promise.all(
-              completedRows
-                .filter((r) => r.storage_path)
-                .map(async (r) => {
-                  const { data: signed } = await supabase.storage
-                    .from('user-images')
-                    .createSignedUrl(r.storage_path, 3600)
-                  if (signed) urlMap[r.id] = signed.signedUrl
-                }),
-            )
-
-            setResults((prev) =>
-              prev.map((r) =>
-                completedIds.includes(r.id) && urlMap[r.id]
-                  ? { ...r, status: 'complete', url: urlMap[r.id] }
-                  : r,
-              ),
-            )
-          }
-        }
-      } catch (err) {
-        console.error(`${generationType} poll error:`, err)
-      }
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [accessToken, generationType])
 
   const addPendingResult = useCallback((result: GenerationResult) => {
     setResults((prev) => [result, ...prev])

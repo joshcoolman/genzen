@@ -22,7 +22,6 @@ interface ImageGalleryProps {
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
   onRetry?: (img: SavedAiImage) => void
-  onClearStale?: () => Promise<number>
   onStartAdopt?: (img: SavedAiImage) => void
   onDetach?: (img: SavedAiImage) => void
 }
@@ -37,14 +36,9 @@ export function ImageGallery({
   onDelete,
   onRestoreRoot,
   onRetry,
-  onClearStale,
   onStartAdopt,
   onDetach,
 }: ImageGalleryProps) {
-  const [clearingStale, setClearingStale] = useState(false)
-
-  const hasPending = images.some((img) => img.status === 'pending')
-
   // Collect IDs of images already shown as thumbnails on a parent card
   const childIds = useMemo(
     () =>
@@ -55,16 +49,6 @@ export function ImageGallery({
       ),
     [editChildrenMap],
   )
-
-  const handleClearStale = async () => {
-    if (!onClearStale || clearingStale) return
-    setClearingStale(true)
-    try {
-      await onClearStale()
-    } finally {
-      setClearingStale(false)
-    }
-  }
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
     if (typeof window === 'undefined') return 'contain'
@@ -88,15 +72,6 @@ export function ImageGallery({
         <h2 className="text-lg font-medium">Recent Generations</h2>
         {images.length > 0 && (
           <div className="flex items-center gap-3">
-            {hasPending && onClearStale && (
-              <button
-                onClick={() => void handleClearStale()}
-                disabled={clearingStale}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                {clearingStale ? 'Clearing...' : 'Clear stuck'}
-              </button>
-            )}
             <button
               onClick={toggleDisplayMode}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -151,6 +126,7 @@ export function ImageGallery({
                       ? imageUrls[img.generation_metadata.source_image_id]
                       : undefined
                   }
+                  createdAt={img.created_at}
                 />
               )
             }

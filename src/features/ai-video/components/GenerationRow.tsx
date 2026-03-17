@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Generation } from '../types'
 import { Button } from '@/components/ui/button'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
-import { checkPendingVideo } from '@/features/ai-video/server/check-pending-video.server'
-import { checkPendingImages } from '@/features/ai-images'
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -36,124 +34,121 @@ export function GenerationRow({
   const [deleting, setDeleting] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [generatingVideo, setGeneratingVideo] = useState(false)
-  const videoPollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastFramePollingRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  )
   const isVideoPending = generation.video?.status === 'pending'
   const isLastFramePending = generation.lastFrame?.status === 'pending'
   const lastFrameCompleted =
     generation.lastFrame?.status === 'completed' ||
     (generation.lastFrame?.url && generation.lastFrame.status !== 'pending')
 
-  // Video polling
+  // Video realtime subscription
   useEffect(() => {
-    if (!isVideoPending || !accessToken || !generation.video) return
+    if (!isVideoPending || !generation.video) return
 
     const videoRecordId = generation.video.id
+    const channel = supabase
+      .channel(`video_${videoRecordId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_images',
+          filter: `id=eq.${videoRecordId}`,
+        },
+        (payload) => {
+          const updated = payload.new as {
+            status: string
+            generation_metadata: Record<string, unknown> | null
+          }
+          if (updated.status === 'completed') {
+            const falUrl = updated.generation_metadata?.fal_url as
+              | string
+              | undefined
+            if (falUrl) {
+              onUpdate(generation.id, {
+                video: {
+                  id: videoRecordId,
+                  url: falUrl,
+                  status: 'completed',
+                },
+              })
+            }
+          } else if (updated.status === 'failed') {
+            onUpdate(generation.id, {
+              video: { id: videoRecordId, url: null, status: 'failed' },
+            })
+          }
+        },
+      )
+      .subscribe()
 
-    const poll = async () => {
-      try {
-        const result = await checkPendingVideo({
-          data: { accessToken, recordId: videoRecordId },
-        })
-        if (result.status === 'completed' && result.videoUrl) {
-          onUpdate(generation.id, {
-            video: {
-              id: videoRecordId,
-              url: result.videoUrl,
-              status: 'completed',
-            },
-          })
-        } else if (result.status === 'error') {
-          onUpdate(generation.id, {
-            video: { id: videoRecordId, url: null, status: 'failed' },
-          })
-        }
-      } catch {
-        // keep polling
-      }
-    }
-
-    poll()
-    videoPollingRef.current = setInterval(poll, 5000)
     return () => {
-      if (videoPollingRef.current) clearInterval(videoPollingRef.current)
+      supabase.removeChannel(channel)
     }
-  }, [
-    isVideoPending,
-    accessToken,
-    generation.video?.id,
-    generation.id,
-    onUpdate,
-  ])
+  }, [isVideoPending, generation.video?.id, generation.id, onUpdate])
 
-  // Last frame polling
+  // Last frame realtime subscription
   useEffect(() => {
-    if (!isLastFramePending || !accessToken || !generation.lastFrame) return
+    if (!isLastFramePending || !generation.lastFrame) return
 
     const lastFrameRecordId = generation.lastFrame.id
-
-    const poll = async () => {
-      try {
-        await checkPendingImages({
-          data: { accessToken, recordIds: [lastFrameRecordId] },
-        })
-        const { data: recordData } = await supabase
-          .from('user_images')
-          .select('status, storage_path')
-          .eq('id', lastFrameRecordId)
-          .single()
-        const record = recordData as {
-          status: string
-          storage_path: string | null
-        } | null
-        if (record?.status === 'completed' && record.storage_path) {
-          const { data: urlData } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(record.storage_path, 3600)
-          if (urlData) {
-            const completedLastFrame = {
-              id: lastFrameRecordId,
-              url: urlData.signedUrl,
-              status: 'completed' as const,
-            }
-            onUpdate(generation.id, { lastFrame: completedLastFrame })
-
-            const updatedGen: Generation = {
-              ...generation,
-              lastFrame: completedLastFrame,
-            }
-            onLastFrameCompleted?.(updatedGen)
+    const channel = supabase
+      .channel(`last_frame_${lastFrameRecordId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_images',
+          filter: `id=eq.${lastFrameRecordId}`,
+        },
+        (payload) => {
+          const updated = payload.new as {
+            status: string
+            storage_path: string | null
           }
-        } else if (record?.status === 'failed') {
-          onUpdate(generation.id, {
-            lastFrame: {
-              id: lastFrameRecordId,
-              url: null,
-              status: 'failed',
-            },
-          })
-        }
-      } catch {
-        // keep polling
-      }
-    }
+          if (updated.status === 'completed' && updated.storage_path) {
+            supabase.storage
+              .from('user-images')
+              .createSignedUrl(updated.storage_path, 3600)
+              .then(({ data: urlData }) => {
+                if (urlData) {
+                  const completedLastFrame = {
+                    id: lastFrameRecordId,
+                    url: urlData.signedUrl,
+                    status: 'completed' as const,
+                  }
+                  onUpdate(generation.id, { lastFrame: completedLastFrame })
 
-    poll()
-    lastFramePollingRef.current = setInterval(poll, 3000)
+                  const updatedGen: Generation = {
+                    ...generation,
+                    lastFrame: completedLastFrame,
+                  }
+                  onLastFrameCompleted?.(updatedGen)
+                }
+              })
+              .catch(() => {})
+          } else if (updated.status === 'failed') {
+            onUpdate(generation.id, {
+              lastFrame: {
+                id: lastFrameRecordId,
+                url: null,
+                status: 'failed',
+              },
+            })
+          }
+        },
+      )
+      .subscribe()
+
     return () => {
-      if (lastFramePollingRef.current)
-        clearInterval(lastFramePollingRef.current)
+      supabase.removeChannel(channel)
     }
   }, [
     isLastFramePending,
-    accessToken,
     generation.lastFrame?.id,
     generation.id,
-    generation.video,
     onUpdate,
-    onGenerateVideo,
     onLastFrameCompleted,
   ])
 

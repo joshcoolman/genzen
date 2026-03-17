@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
-import { checkPendingImages } from '@/features/ai-images/server/check-pending-images.server'
-import { clearStaleGenerations } from '@/features/ai-images/server/clear-stale-generations.server'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 
@@ -30,7 +28,6 @@ export interface GalleryState {
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
-  clearStaleImages: () => Promise<number>
   retryImage: (img: SavedAiImage) => Promise<void>
   refresh: () => Promise<void>
 }
@@ -45,12 +42,6 @@ export function useImages({
     Record<string, { hidden: boolean }>
   >({})
   const [loadingGallery, setLoadingGallery] = useState(true)
-
-  // Ref so the polling interval can read current images without being a dep
-  const savedImagesRef = useRef(savedImages)
-  useEffect(() => {
-    savedImagesRef.current = savedImages
-  }, [savedImages])
 
   const loadSavedImages = useCallback(async () => {
     if (!userId) return
@@ -251,30 +242,6 @@ export function useImages({
     }
   }, [userId])
 
-  // Background polling for pending images — uses a ref so the interval doesn't
-  // reset every time savedImages changes (which would delay the first poll)
-  useEffect(() => {
-    if (!accessToken) return
-
-    const pollInterval = setInterval(async () => {
-      const pendingIds = savedImagesRef.current
-        .filter((img) => img.status === 'pending')
-        .map((img) => img.id)
-
-      if (pendingIds.length === 0) return
-
-      try {
-        await checkPendingImages({
-          data: { accessToken, recordIds: pendingIds },
-        })
-      } catch (err) {
-        console.error('Error polling pending images:', err)
-      }
-    }, 3000)
-
-    return () => clearInterval(pollInterval)
-  }, [accessToken])
-
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => sortByOrder([...prev, card]))
   }
@@ -380,12 +347,6 @@ export function useImages({
     }
   }
 
-  async function clearStaleImages(): Promise<number> {
-    if (!accessToken) return 0
-    const { cleared } = await clearStaleGenerations({ data: { accessToken } })
-    return cleared
-  }
-
   async function retryImage(img: SavedAiImage) {
     if (!accessToken) return
     // Optimistically remove the failed card — the new pending record will appear via realtime
@@ -430,7 +391,6 @@ export function useImages({
     replaceOptimisticCard,
     removeOptimisticCard,
     reorderImages,
-    clearStaleImages,
     retryImage,
     refresh: loadSavedImages,
   }

@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
+import { tasks } from '@trigger.dev/sdk/v3'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import {
   ALL_IMAGE_MODELS,
@@ -124,6 +125,18 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
     if (insertError) {
       throw new Error(`Failed to create image record: ${insertError.message}`)
     }
+
+    // Fire Trigger.dev task to poll FAL and process result
+    const handle = await tasks.trigger('process-fal-image', {
+      recordId: record.id,
+      userId: user.id,
+      falModelId: modelId,
+      requestId: request_id,
+    })
+    await supabase
+      .from('user_images')
+      .update({ task_id: handle.id })
+      .eq('id', record.id)
 
     return { recordId: record.id, request_id, sceneId: data.sceneId }
   })

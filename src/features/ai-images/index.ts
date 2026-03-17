@@ -7,9 +7,6 @@ export { getModelName } from './models'
 // Hooks
 export { useAiImagesPage } from './hooks/use-ai-images-page'
 
-// Server
-export { checkPendingImages } from './server/check-pending-images.server'
-
 // Components
 export { GeneratorPanel } from './components/GeneratorPanel'
 export { BrainstormPanel } from './components/BrainstormPanel'

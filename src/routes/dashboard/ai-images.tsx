@@ -83,7 +83,6 @@ function AiImagesPage() {
         onDelete={page.gallery.deleteImage}
         onRestoreRoot={page.gallery.restoreRootImage}
         onRetry={page.gallery.retryImage}
-        onClearStale={page.gallery.clearStaleImages}
         onStartAdopt={page.reparent.startAdopt}
         onDetach={(img) => void page.reparent.detach(img.id)}
       />

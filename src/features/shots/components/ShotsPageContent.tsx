@@ -12,6 +12,9 @@ import { ShotsPipelineStep } from './ShotsPipelineStep'
 import type { UseShotsPageReturn } from '../hooks/useShotsPage'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
+import { FileUploadButton } from '@/components/FileUploadButton'
+import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
+import { LibraryPickerButton } from '@/components/LibraryPickerButton'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 
 interface ShotsPageContentProps {
@@ -82,15 +85,35 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
           {page.step1.error && (
             <p className="mt-1 text-xs text-destructive">{page.step1.error}</p>
           )}
-          <button
-            type="button"
-            disabled={!hasImage || page.step1.status === 'running'}
-            onClick={page.describeImage}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="size-3" />
-            Re-describe
-          </button>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={!hasImage || page.step1.status === 'running'}
+              onClick={page.describeImage}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="size-3" />
+              Re-describe
+            </button>
+            <LibraryPickerButton
+              images={page.existingImages.images}
+              imageUrls={page.existingImages.imageUrls}
+              isLoading={page.existingImages.isLoading}
+              onSelect={page.describeFromLibrary}
+              onOpen={page.existingImages.refresh}
+              className="shrink-0"
+            />
+            <FileUploadButton
+              onFilesSelected={(files) => {
+                if (files[0]) page.describeFromFile(files[0])
+              }}
+              className="shrink-0"
+            />
+            <ClipboardPasteButton
+              onImagePasted={page.describeFromFile}
+              className="shrink-0"
+            />
+          </div>
         </ShotsPipelineStep>
 
         {/* Prompt Template - with count stepper in header */}

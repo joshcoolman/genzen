@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
+import { tasks } from '@trigger.dev/sdk/v3'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
@@ -252,6 +253,18 @@ export const generateVariation = createServerFn({ method: 'POST' })
       if (insertError) {
         throw new Error(`Failed to create image record: ${insertError.message}`)
       }
+
+      // Fire Trigger.dev task to poll FAL and process result
+      const handle = await tasks.trigger('process-fal-image', {
+        recordId: record.id,
+        userId: user.id,
+        falModelId: 'fal-ai/nano-banana-2/edit',
+        requestId: request_id,
+      })
+      await supabase
+        .from('user_images')
+        .update({ task_id: handle.id })
+        .eq('id', record.id)
 
       results.push({ recordId: record.id, request_id })
     }

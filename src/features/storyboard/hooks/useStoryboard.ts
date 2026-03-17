@@ -7,7 +7,6 @@ import { generateStoryboardClip as generateClipServer } from '../server/generate
 import { saveStoryboard as saveStoryboardServer } from '../server/save-storyboard.server'
 import { loadStoryboard as loadStoryboardServer } from '../server/load-storyboard.server'
 import type { Scene, StoryboardCharacter, StoryboardStatus } from '../types'
-import { checkPendingVideo } from '@/features/ai-video/server/check-pending-video.server'
 import { supabase } from '@/lib/supabase'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { useAuth } from '@/lib/auth'
@@ -831,45 +830,67 @@ export function useStoryboard(): UseStoryboardReturn {
     }
   }, [clips, generateClipAction])
 
-  // Poll for video clip completion
+  // Realtime subscription for video clip completion
   useEffect(() => {
-    if (videoClipIds.length === 0 || !accessToken) return
+    if (videoClipIds.length === 0) return
     // All clips already resolved
     if (videoClipUrls.size >= videoClipIds.length) return
     setIsGeneratingVideo(true)
 
-    const interval = setInterval(async () => {
-      let allDone = true
-      for (const clipId of videoClipIds) {
-        if (videoClipUrls.has(clipId)) continue
-        allDone = false
-        try {
-          const result = await checkPendingVideo({
-            data: { accessToken, recordId: clipId },
-          })
-          if (result.status === 'completed' && result.videoUrl) {
-            setVideoClipUrls((prev) => {
-              const next = new Map(prev)
-              next.set(clipId, result.videoUrl)
-              return next
-            })
-          } else if (result.status === 'error') {
-            setVideoError(result.error)
-            setIsGeneratingVideo(false)
-            return
-          }
-        } catch {
-          // Keep polling on transient errors
-        }
-      }
-      if (allDone) {
-        setIsGeneratingVideo(false)
-        setStatus('complete')
-      }
-    }, 5000)
+    const channels = videoClipIds
+      .filter((id) => !videoClipUrls.has(id))
+      .map((clipId) =>
+        supabase
+          .channel(`storyboard_clip_${clipId}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'user_images',
+              filter: `id=eq.${clipId}`,
+            },
+            (payload) => {
+              const updated = payload.new as {
+                status: string
+                generation_metadata: Record<string, unknown> | null
+              }
+              if (updated.status === 'completed') {
+                const falUrl = updated.generation_metadata?.fal_url as
+                  | string
+                  | undefined
+                if (falUrl) {
+                  setVideoClipUrls((prev) => {
+                    const next = new Map(prev)
+                    next.set(clipId, falUrl)
+                    // Check if all clips are done
+                    if (next.size >= videoClipIds.length) {
+                      setIsGeneratingVideo(false)
+                      setStatus('complete')
+                    }
+                    return next
+                  })
+                }
+              } else if (updated.status === 'failed') {
+                const rawError = updated.generation_metadata?.generation_error
+                const errorMsg =
+                  typeof rawError === 'string'
+                    ? rawError
+                    : 'Video clip generation failed'
+                setVideoError(errorMsg)
+                setIsGeneratingVideo(false)
+              }
+            },
+          )
+          .subscribe(),
+      )
 
-    return () => clearInterval(interval)
-  }, [videoClipIds, videoClipUrls.size, accessToken])
+    return () => {
+      for (const ch of channels) {
+        supabase.removeChannel(ch)
+      }
+    }
+  }, [videoClipIds, videoClipUrls.size])
 
   const save = useCallback(async () => {
     if (!accessToken || !storyPrompt.trim()) return

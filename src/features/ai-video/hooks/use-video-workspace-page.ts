@@ -44,12 +44,10 @@ export function useVideoWorkspacePage({
   // Frame hooks first (no dependency on generators)
   const firstFrame = useFrame({
     accessToken,
-    shouldPoll: false,
   })
 
   const lastFrame = useFrame({
     accessToken,
-    shouldPoll: true,
   })
 
   const gens = useGenerations(workspaceId, accessToken)

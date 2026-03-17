@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
+import { tasks } from '@trigger.dev/sdk/v3'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 
@@ -142,6 +143,18 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
     if (insertError) {
       throw new Error(`Failed to create frame record: ${insertError.message}`)
     }
+
+    // Fire Trigger.dev task to poll FAL and process result
+    const handle = await tasks.trigger('process-fal-image', {
+      recordId: record.id,
+      userId: user.id,
+      falModelId: modelId,
+      requestId: request_id,
+    })
+    await supabase
+      .from('user_images')
+      .update({ task_id: handle.id })
+      .eq('id', record.id)
 
     return { recordId: record.id, request_id }
   })

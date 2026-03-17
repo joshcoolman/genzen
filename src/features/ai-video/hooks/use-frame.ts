@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FrameState, FrameStatus } from '../types'
-import { checkPendingImages } from '@/features/ai-images'
 import { supabase } from '@/lib/supabase'
 
 interface UseFrameOptions {
   accessToken: string | undefined
-  pollInterval?: number
-  shouldPoll?: boolean
 }
 
-export function useFrame({
-  accessToken,
-  pollInterval = 3000,
-  shouldPoll = true,
-}: UseFrameOptions) {
+export function useFrame({ accessToken }: UseFrameOptions) {
   const [status, setStatus] = useState<FrameStatus>('idle')
   const [url, setUrl] = useState<string | null>(null)
   const [recordId, setRecordId] = useState<string | null>(null)
@@ -52,43 +45,48 @@ export function useFrame({
     setRecordId(id)
   }, [])
 
-  const checkFrame = useCallback(async () => {
-    if (!accessToken || !recordId) return
-    try {
-      await checkPendingImages({
-        data: { accessToken, recordIds: [recordId] },
-      })
-      const { data: recordData } = await supabase
-        .from('user_images')
-        .select('status, storage_path')
-        .eq('id', recordId)
-        .single()
-      const record = recordData as {
-        status: string
-        storage_path: string | null
-      } | null
-      if (record?.status === 'completed' && record.storage_path) {
-        const { data: urlData } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(record.storage_path, 3600)
-        if (urlData) {
-          setUrl(urlData.signedUrl)
-          setStatus('completed')
-        }
-      } else if (record?.status === 'failed') {
-        setStatus('error')
-        setError('Frame generation failed')
-      }
-    } catch {
-      // keep polling
-    }
-  }, [accessToken, recordId])
-
+  // Realtime subscription for frame record updates
   useEffect(() => {
-    if (status !== 'generating' || !recordId || !shouldPoll) return
-    const interval = setInterval(checkFrame, pollInterval)
-    return () => clearInterval(interval)
-  }, [status, recordId, checkFrame, shouldPoll, pollInterval])
+    if (status !== 'generating' || !recordId || !accessToken) return
+
+    const channel = supabase
+      .channel(`frame_${recordId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_images',
+          filter: `id=eq.${recordId}`,
+        },
+        (payload) => {
+          const updated = payload.new as {
+            status: string
+            storage_path: string | null
+          }
+          if (updated.status === 'completed' && updated.storage_path) {
+            supabase.storage
+              .from('user-images')
+              .createSignedUrl(updated.storage_path, 3600)
+              .then(({ data }) => {
+                if (data) {
+                  setUrl(data.signedUrl)
+                  setStatus('completed')
+                }
+              })
+              .catch(() => {})
+          } else if (updated.status === 'failed') {
+            setStatus('error')
+            setError('Frame generation failed')
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [status, recordId, accessToken])
 
   const state: FrameState = { status, url, recordId, error }
 
