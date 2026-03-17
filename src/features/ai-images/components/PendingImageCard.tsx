@@ -9,6 +9,7 @@ interface PendingImageCardProps {
   isVariation?: boolean
   sourceImageUrl?: string
   createdAt?: string
+  onClearStale?: () => void
 }
 
 export function PendingImageCard({
@@ -17,6 +18,7 @@ export function PendingImageCard({
   isVariation,
   sourceImageUrl,
   createdAt,
+  onClearStale,
 }: PendingImageCardProps) {
   const [isStale, setIsStale] = useState(() => {
     if (!createdAt) return false
@@ -44,7 +46,20 @@ export function PendingImageCard({
     >
       <div className="p-3 space-y-1">
         {isStale ? (
-          <p className="text-xs text-amber-500 font-medium">Possibly stuck</p>
+          <>
+            <p className="text-xs text-amber-500 font-medium">Possibly stuck</p>
+            {onClearStale && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onClearStale()
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer underline"
+              >
+                Clear
+              </button>
+            )}
+          </>
         ) : (
           <p className="text-xs text-muted-foreground/60 font-medium">
             Generating...

@@ -127,6 +127,9 @@ export function ImageGallery({
                       : undefined
                   }
                   createdAt={img.created_at}
+                  onClearStale={
+                    onClearStale ? () => void handleClearStale() : undefined
+                  }
                 />
               )
             }
