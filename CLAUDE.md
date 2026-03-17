@@ -8,12 +8,11 @@ Backlog and task tracking live in GitHub Issues + Project board (`gh issue list`
 
 ## Stack
 
-TanStack Start (React 19 + Vite + Nitro SSR), Supabase (auth/postgres/realtime), Trigger.dev v3, FAL AI (image gen), Tailwind v4, shadcn/ui (new-york style), Fly.io deploy
+TanStack Start (React 19 + Vite + Nitro SSR), Supabase (auth/postgres/realtime), FAL AI (image gen), Tailwind v4, shadcn/ui (new-york style), Fly.io deploy
 
 ## Commands
 
 - `pnpm dev` -- dev server on port 3000
-- `pnpm dev:trigger` -- trigger.dev dev worker
 - `pnpm build` -- production build
 - `pnpm test` -- vitest run
 - `pnpm check` -- prettier + eslint fix
@@ -31,7 +30,6 @@ src/
     auth.ts        # Auth helpers
     types/         # Shared types
     animations/    # Animation utilities
-  trigger/         # Trigger.dev background tasks
 supabase/
   migrations/      # Postgres migrations
   functions/       # Edge functions
@@ -68,7 +66,7 @@ Examples:
 - Path aliases: `@/components`, `@/lib`, `@/features` (via tsconfig paths)
 - Server code uses `.server.ts` suffix and lives in `src/lib/server/`
 - Route tree is auto-generated (`routeTree.gen.ts`) -- do not edit manually
-- Trigger.dev tasks go in `src/trigger/`, project ref: `proj_fyvnpdixhsiwmjlbvoow`
+- FAL generation completion: on-demand polling via `src/lib/server/check-pending-generations.server.ts`
 - Supabase migrations in `supabase/migrations/` with timestamp prefix
 - UI components via shadcn CLI: `npx shadcn@latest add <component>`
 - Tailwind v4 -- uses CSS-based config in `src/styles.css`, no tailwind.config file

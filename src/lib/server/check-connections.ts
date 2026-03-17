@@ -13,10 +13,8 @@ export const checkConnections = createServerFn({ method: 'POST' })
 
     const results: {
       fal: { status: 'connected' | 'error'; error?: string }
-      trigger: { status: 'connected' | 'error'; error?: string }
     } = {
       fal: { status: 'error', error: 'Not checked' },
-      trigger: { status: 'error', error: 'Not checked' },
     }
 
     // Check FAL connection
@@ -49,30 +47,6 @@ export const checkConnections = createServerFn({ method: 'POST' })
       } else {
         results.fal = { status: 'error', error: message }
       }
-    }
-
-    // Check Trigger.dev connection
-    try {
-      const triggerKey = process.env.TRIGGER_SECRET_KEY
-      if (!triggerKey) {
-        results.trigger = {
-          status: 'error',
-          error: 'TRIGGER_SECRET_KEY not configured',
-        }
-      } else {
-        // Check if the key format is valid (starts with tr_dev_ or tr_prod_)
-        if (
-          triggerKey.startsWith('tr_dev_') ||
-          triggerKey.startsWith('tr_prod_')
-        ) {
-          results.trigger = { status: 'connected' }
-        } else {
-          results.trigger = { status: 'error', error: 'Invalid key format' }
-        }
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      results.trigger = { status: 'error', error: message }
     }
 
     return results

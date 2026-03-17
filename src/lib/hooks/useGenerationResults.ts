@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import { supabase } from '@/lib/supabase'
 import { getModelName } from '@/features/ai-images/models'
+import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 const DEFAULT_LIMIT = 50
 
@@ -191,6 +192,29 @@ export function useGenerationResults({
       supabase.removeChannel(channel)
     }
   }, [userId, JSON.stringify(generationType), sourceImageIds?.join(',')])
+
+  // Poll FAL for pending generations
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    const hasPending = results.some((r) => r.status === 'pending')
+
+    if (hasPending && accessToken && !pollingRef.current) {
+      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      pollingRef.current = setInterval(() => {
+        checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      }, 5000)
+    } else if (!hasPending && pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [accessToken, results.some((r) => r.status === 'pending')])
 
   const addPendingResult = useCallback((result: GenerationResult) => {
     setResults((prev) => [result, ...prev])

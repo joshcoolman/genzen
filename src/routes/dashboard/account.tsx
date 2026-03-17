@@ -77,8 +77,6 @@ interface ConnectionStatus {
   supabaseError?: string
   fal: 'checking' | 'connected' | 'error'
   falError?: string
-  trigger: 'checking' | 'connected' | 'error'
-  triggerError?: string
 }
 
 function StatusRow({
@@ -171,7 +169,6 @@ function AccountPage() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     supabase: 'checking',
     fal: 'checking',
-    trigger: 'checking',
   })
 
   useEffect(() => {
@@ -200,8 +197,6 @@ function AccountPage() {
           ...s,
           fal: 'error',
           falError: 'Missing session token',
-          trigger: 'error',
-          triggerError: 'Missing session token',
         }))
         return
       }
@@ -213,8 +208,6 @@ function AccountPage() {
           ...s,
           fal: serverStatus.fal.status,
           falError: serverStatus.fal.error,
-          trigger: serverStatus.trigger.status,
-          triggerError: serverStatus.trigger.error,
         }))
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : 'Server error'
@@ -222,8 +215,6 @@ function AccountPage() {
           ...s,
           fal: 'error',
           falError: errorMsg,
-          trigger: 'error',
-          triggerError: errorMsg,
         }))
       }
     }
@@ -399,11 +390,6 @@ function AccountPage() {
               label="FAL"
               status={connectionStatus.fal}
               error={connectionStatus.falError}
-            />
-            <StatusRow
-              label="Trigger.dev"
-              status={connectionStatus.trigger}
-              error={connectionStatus.triggerError}
             />
           </div>
         </div>

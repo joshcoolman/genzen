@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FrameState, FrameStatus } from '../types'
 import { supabase } from '@/lib/supabase'
+import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 interface UseFrameOptions {
   accessToken: string | undefined
@@ -85,6 +86,30 @@ export function useFrame({ accessToken }: UseFrameOptions) {
 
     return () => {
       supabase.removeChannel(channel)
+    }
+  }, [status, recordId, accessToken])
+
+  // Poll FAL for pending frame generation
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if (status !== 'generating' || !recordId || !accessToken) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      return
+    }
+
+    checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    pollingRef.current = setInterval(() => {
+      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    }, 5000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
     }
   }, [status, recordId, accessToken])
 

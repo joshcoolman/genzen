@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
+import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 interface UseImagesOptions {
   userId: string | undefined
@@ -241,6 +242,32 @@ export function useImages({
       supabase.removeChannel(channel)
     }
   }, [userId])
+
+  // Poll FAL for pending generations
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    if (!accessToken) return
+
+    const hasPending = savedImages.some((img) => img.status === 'pending')
+
+    if (hasPending && !pollingRef.current) {
+      // Initial check immediately
+      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      pollingRef.current = setInterval(() => {
+        checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      }, 5000)
+    } else if (!hasPending && pollingRef.current) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [accessToken, savedImages.some((img) => img.status === 'pending')])
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => sortByOrder([...prev, card]))
