@@ -32,6 +32,7 @@ export interface GalleryState {
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
   clearStaleImages: () => Promise<number>
   retryImage: (img: SavedAiImage) => Promise<void>
+  refresh: () => Promise<void>
 }
 
 export function useImages({
@@ -431,5 +432,6 @@ export function useImages({
     reorderImages,
     clearStaleImages,
     retryImage,
+    refresh: loadSavedImages,
   }
 }

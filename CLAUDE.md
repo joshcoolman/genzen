@@ -42,6 +42,27 @@ supabase/
 
 Before staging and committing, always run `pnpm check` (prettier + eslint fix). Fix any errors before proceeding. Sequence: `pnpm check` -> `pnpm build` -> stage -> commit -> push.
 
+## Commit Messages
+
+Format: `area: subject line` (under 70 chars)
+
+Area prefixes (match feature dirs): `ai-images`, `assets`, `video`, `storyboard`, `nav`, `auth`, `docs`, `notes`, `shared` (cross-cutting components/lib), `infra` (build/deploy/migrations), `dx` (dev workspace/tooling). Use `fix(area):` for bug fixes.
+
+Body (for non-trivial changes):
+
+- Line 1: WHY -- the motivation or problem (not derivable from the diff)
+- Then: key files added/removed, behavioral changes, or migration notes
+- End with `Closes #XX` if resolving a GitHub issue
+
+Keep it to 1 logical change per commit. If bullet list covers 3+ unrelated things, split into separate commits.
+
+Examples:
+
+- `ai-images(edit): add optimistic pending cards for variations`
+- `shared: extract CopyButton and ExpandableText from feature modules`
+- `fix(nav): sidebar not restoring width after dev workspace exit`
+- `infra: add gemini3Flash to ai.server.ts model registry`
+
 ## Key Conventions
 
 - Path aliases: `@/components`, `@/lib`, `@/features` (via tsconfig paths)

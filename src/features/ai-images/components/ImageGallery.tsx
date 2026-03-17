@@ -23,6 +23,8 @@ interface ImageGalleryProps {
   onRestoreRoot: (rootId: string) => void
   onRetry?: (img: SavedAiImage) => void
   onClearStale?: () => Promise<number>
+  onStartAdopt?: (img: SavedAiImage) => void
+  onDetach?: (img: SavedAiImage) => void
 }
 
 export function ImageGallery({
@@ -36,6 +38,8 @@ export function ImageGallery({
   onRestoreRoot,
   onRetry,
   onClearStale,
+  onStartAdopt,
+  onDetach,
 }: ImageGalleryProps) {
   const [clearingStale, setClearingStale] = useState(false)
 
@@ -174,6 +178,8 @@ export function ImageGallery({
                 onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
                 onOpen={onOpenLightbox}
                 onDelete={onDelete}
+                onStartAdopt={onStartAdopt}
+                onDetach={onDetach}
                 getModelName={getModelName}
               />
             )

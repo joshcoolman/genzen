@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Plus,
   RefreshCw,
+  Unlink,
 } from 'lucide-react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
@@ -116,6 +117,7 @@ function GenerationResultCard({
   onOpen,
   onDelete,
   onAdd,
+  onDetach,
   onRegenerate,
   regenerateModels,
   showFooter,
@@ -126,6 +128,7 @@ function GenerationResultCard({
   onOpen: () => void
   onDelete: () => void
   onAdd?: () => void
+  onDetach?: () => void
   onRegenerate?: (result: GenerationResult, modelId: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
   showFooter?: boolean
@@ -156,17 +159,33 @@ function GenerationResultCard({
         ) : undefined
       }
       overlayActions={
-        onAdd && result.status === 'complete' && result.url ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onAdd()
-            }}
-            className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all"
-            aria-label="Use as source"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+        result.status === 'complete' && result.url ? (
+          <>
+            {onDetach && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDetach()
+                }}
+                className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all"
+                aria-label="Detach"
+              >
+                <Unlink className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onAdd && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAdd()
+                }}
+                className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all"
+                aria-label="Use as source"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </>
         ) : undefined
       }
       footer={
@@ -220,6 +239,7 @@ interface GenerationResultsGridProps {
   onDelete: (id: string) => void
   onSelect?: (id: string) => void
   onAdd?: (result: GenerationResult) => void
+  onDetach?: (id: string) => void
   onRegenerate?: (result: GenerationResult, modelId: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
   selectedId?: string | null
@@ -232,6 +252,7 @@ export function GenerationResultsGrid({
   onDelete,
   onSelect,
   onAdd,
+  onDetach,
   onRegenerate,
   regenerateModels,
   selectedId,
@@ -366,6 +387,7 @@ export function GenerationResultsGrid({
             onOpen={() => (onSelect ? onSelect(result.id) : handleOpen(result))}
             onDelete={() => onDelete(result.id)}
             onAdd={onAdd ? () => onAdd(result) : undefined}
+            onDetach={onDetach ? () => onDetach(result.id) : undefined}
             onRegenerate={onRegenerate}
             regenerateModels={regenerateModels}
           />

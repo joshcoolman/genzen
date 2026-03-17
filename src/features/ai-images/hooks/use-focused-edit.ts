@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
+import type { CollectedImage } from '@/features/user-images/types'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
+import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
@@ -15,6 +17,7 @@ import {
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { useModelSelector } from '@/components/ModelSelector'
 import { supabase } from '@/lib/supabase'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 
 interface SourceImage {
   id: string
@@ -33,6 +36,7 @@ export function useFocusedEdit(imageId: string) {
   const [sourceImage, setSourceImage] = useState<SourceImage | null>(null)
   const [originalImage, setOriginalImage] = useState<SourceImage | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasParent, setHasParent] = useState(false)
   const [editPrompt, setEditPrompt] = useState('')
   const [editLoading, setEditLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -149,6 +153,7 @@ export function useFocusedEdit(imageId: string) {
 
       setSourceImage(src)
       setOriginalImage(src)
+      setHasParent(typeof meta?.source_image_id === 'string')
 
       // Set aspect ratio from source image
       if (srcRatio) {
@@ -372,6 +377,27 @@ export function useFocusedEdit(imageId: string) {
     falImageUrl?: string
   } | null>(null)
 
+  // Reference images for variations
+  const existingImages = useExistingImages(user?.id)
+  const [variationRefImages, setVariationRefImages] = useState<
+    Array<{ id: string; url: string; title: string }>
+  >([])
+  const [refPickerOpen, setRefPickerOpen] = useState(false)
+
+  const handleAddRefImages = useCallback((selected: Array<CollectedImage>) => {
+    setVariationRefImages((prev) => {
+      const existingIds = new Set(prev.map((r) => r.id))
+      const newImages = selected
+        .filter((img) => !existingIds.has(img.id))
+        .map((img) => ({ id: img.id, url: img.url, title: img.title }))
+      return [...prev, ...newImages]
+    })
+  }, [])
+
+  const handleRemoveRefImage = useCallback((id: string) => {
+    setVariationRefImages((prev) => prev.filter((img) => img.id !== id))
+  }, [])
+
   const handleGenerateVariations = useCallback(async () => {
     if (!accessToken || !sourceImage?.prompt) return
     setError(null)
@@ -418,6 +444,7 @@ export function useFocusedEdit(imageId: string) {
 
       setVariationSubmitting(true)
       try {
+        const refIds = variationRefImages.map((r) => r.id)
         const variationResults = await submitVariations({
           data: {
             accessToken,
@@ -428,6 +455,7 @@ export function useFocusedEdit(imageId: string) {
             rootPrompt: variationMeta.rootPrompt,
             aspectRatio,
             falImageUrl: variationMeta.falImageUrl,
+            ...(refIds.length > 0 ? { referenceImageIds: refIds } : {}),
           },
         })
         setVariationDialogOpen(false)
@@ -453,7 +481,14 @@ export function useFocusedEdit(imageId: string) {
         setVariationSubmitting(false)
       }
     },
-    [accessToken, variationMeta, aspectRatio, credits, results],
+    [
+      accessToken,
+      variationMeta,
+      aspectRatio,
+      credits,
+      results,
+      variationRefImages,
+    ],
   )
 
   return {
@@ -487,5 +522,26 @@ export function useFocusedEdit(imageId: string) {
     variationSubmitting,
     handleGenerateVariations,
     handleRunVariations,
+    hasParent,
+    detachFromParent: async () => {
+      if (!accessToken) return
+      await reparentImage({
+        data: { accessToken, imageId, action: 'detach' },
+      })
+      setHasParent(false)
+    },
+    detachResult: async (resultId: string) => {
+      if (!accessToken) return
+      await reparentImage({
+        data: { accessToken, imageId: resultId, action: 'detach' },
+      })
+      results.dismissResult(resultId)
+    },
+    variationRefImages,
+    handleAddRefImages,
+    handleRemoveRefImage,
+    refPickerOpen,
+    setRefPickerOpen,
+    existingImages,
   }
 }

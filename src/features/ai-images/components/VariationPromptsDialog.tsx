@@ -11,6 +11,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
 import { Skeleton } from '@/components/ui/skeleton'
+import { RefImageStrip } from '@/components/RefImageStrip'
+
+interface ReferenceImage {
+  id: string
+  url: string
+  title: string
+}
 
 interface VariationPromptsDialogProps {
   open: boolean
@@ -20,6 +27,10 @@ interface VariationPromptsDialogProps {
   submitting: boolean
   onRun: (prompts: Array<string>) => void
   sourceImageUrl?: string
+  referenceImages: Array<ReferenceImage>
+  onAddReference: () => void
+  onRemoveReference: (id: string) => void
+  maxReferences?: number
 }
 
 export function VariationPromptsDialog({
@@ -30,6 +41,10 @@ export function VariationPromptsDialog({
   submitting,
   onRun,
   sourceImageUrl,
+  referenceImages,
+  onAddReference,
+  onRemoveReference,
+  maxReferences = 5,
 }: VariationPromptsDialogProps) {
   const [prompts, setPrompts] = useState<Array<string>>([])
 
@@ -80,6 +95,19 @@ export function VariationPromptsDialog({
               </span>
             </div>
           )}
+
+          <div className="space-y-1">
+            <span className="text-xs text-muted-foreground">
+              Reference images
+            </span>
+            <RefImageStrip
+              images={referenceImages}
+              max={maxReferences}
+              onAdd={onAddReference}
+              onRemove={onRemoveReference}
+              disabled={submitting}
+            />
+          </div>
 
           {loading ? (
             <div className="space-y-3">

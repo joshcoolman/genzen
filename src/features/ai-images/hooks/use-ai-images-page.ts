@@ -10,6 +10,7 @@ import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
 import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
+import { useReparent } from '@/features/ai-images/hooks/use-reparent'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 
 const GENS_STORAGE_KEY = 'genzen:slot-gens-per-model'
@@ -71,7 +72,16 @@ export function useAiImagesPage() {
     [completedImages],
   )
 
-  const editChildrenMap = useEditChildren(parentIds, user?.id)
+  const editChildren = useEditChildren(parentIds, user?.id)
+  const editChildrenMap = editChildren.map
+
+  const reparent = useReparent({
+    accessToken,
+    onComplete: async () => {
+      await gallery.refresh()
+      editChildren.refresh()
+    },
+  })
 
   const lightbox = useLightbox(completedImages, gallery.deleteImage)
 
@@ -113,6 +123,7 @@ export function useAiImagesPage() {
     adjustGens,
     generator,
     editChildrenMap,
+    reparent,
     lightbox,
     variations,
     promptTools,

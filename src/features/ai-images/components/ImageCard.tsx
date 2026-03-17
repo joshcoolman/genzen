@@ -1,8 +1,16 @@
 import { useNavigate } from '@tanstack/react-router'
+import { ArrowUpRight, MoreHorizontal, Trash2, Unlink } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import { Thumbnail } from '@/components/Thumbnail'
 import { ExpandableText } from '@/components/ExpandableText'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface ImageCardProps {
   img: SavedAiImage
@@ -14,6 +22,8 @@ interface ImageCardProps {
   onRestore?: () => void
   onOpen: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
+  onStartAdopt?: (img: SavedAiImage) => void
+  onDetach?: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
 
@@ -27,9 +37,49 @@ export function ImageCard({
   onRestore,
   onOpen,
   onDelete,
+  onStartAdopt,
+  onDetach,
   getModelName,
 }: ImageCardProps) {
   const navigate = useNavigate()
+
+  const hasParent = !!img.generation_metadata?.source_image_id
+
+  const dropdownTrigger = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+          aria-label="Image actions"
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        {onStartAdopt && (
+          <DropdownMenuItem onClick={() => onStartAdopt(img)}>
+            <ArrowUpRight className="h-4 w-4 mr-2" />
+            Move under...
+          </DropdownMenuItem>
+        )}
+        {hasParent && onDetach && (
+          <DropdownMenuItem onClick={() => onDetach(img)}>
+            <Unlink className="h-4 w-4 mr-2" />
+            Detach
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onClick={() => onDelete(img)}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 
   return (
     <Thumbnail
@@ -42,7 +92,7 @@ export function ImageCard({
           ? getModelName(img.generation_metadata.model)
           : undefined
       }
-      onDelete={() => onDelete(img)}
+      overlayActions={dropdownTrigger}
       onClick={() => imageUrl && onOpen(img)}
     >
       <div className="p-1.5">

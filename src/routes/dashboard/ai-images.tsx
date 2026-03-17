@@ -9,6 +9,7 @@ import {
   useAiImagesPage,
 } from '@/features/ai-images'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
+import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
@@ -83,6 +84,8 @@ function AiImagesPage() {
         onRestoreRoot={page.gallery.restoreRootImage}
         onRetry={page.gallery.retryImage}
         onClearStale={page.gallery.clearStaleImages}
+        onStartAdopt={page.reparent.startAdopt}
+        onDetach={(img) => void page.reparent.detach(img.id)}
       />
 
       <VariationPromptsDialog
@@ -101,7 +104,28 @@ function AiImagesPage() {
               ]
             : undefined
         }
+        referenceImages={[]}
+        onAddReference={() => {}}
+        onRemoveReference={() => {}}
       />
+
+      {page.reparent.adoptTarget && (
+        <ParentPickerDialog
+          open={!!page.reparent.adoptTarget}
+          onOpenChange={(open) => {
+            if (!open) page.reparent.cancelAdopt()
+          }}
+          movingImage={page.reparent.adoptTarget}
+          movingImageUrl={page.gallery.imageUrls[page.reparent.adoptTarget.id]}
+          images={page.gallery.images}
+          imageUrls={page.gallery.imageUrls}
+          editChildrenMap={page.editChildrenMap}
+          loading={page.reparent.isReparenting}
+          onConfirm={(newParentId) =>
+            void page.reparent.confirmAdopt(newParentId)
+          }
+        />
+      )}
 
       {page.lightbox.isOpen && (
         <ImageLightbox

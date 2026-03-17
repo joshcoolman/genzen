@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Unlink } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import type { useFocusedEdit } from '@/features/ai-images/hooks/use-focused-edit'
 import { EDIT_MODELS } from '@/features/ai-images/models'
@@ -7,6 +7,7 @@ import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { ModelSelector } from '@/components/ModelSelector'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
+import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
@@ -64,11 +65,22 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           <ArrowLeft className="h-4 w-4" />
           Back to AI Images
         </Link>
-        {edit.credits.balance !== null && (
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {edit.credits.balance} credits
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {edit.hasParent && (
+            <button
+              onClick={() => void edit.detachFromParent()}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <Unlink className="h-3.5 w-3.5" />
+              Detach
+            </button>
+          )}
+          {edit.credits.balance !== null && (
+            <span className="text-sm text-muted-foreground tabular-nums">
+              {edit.credits.balance} credits
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Toolbar: selectors left, generate button right */}
@@ -177,6 +189,7 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
       <GenerationResultsGrid
         results={edit.results.results}
         onDelete={edit.results.deleteResult}
+        onDetach={(id) => void edit.detachResult(id)}
         onAdd={(result) => edit.promoteToSource(result)}
         onRegenerate={(result, modelId) =>
           result.prompt && edit.handleRegenerate(result.prompt, modelId)
@@ -197,6 +210,20 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         submitting={edit.variationSubmitting}
         onRun={edit.handleRunVariations}
         sourceImageUrl={edit.sourceImage?.url}
+        referenceImages={edit.variationRefImages}
+        onAddReference={() => edit.setRefPickerOpen(true)}
+        onRemoveReference={edit.handleRemoveRefImage}
+      />
+
+      <ExistingImagePicker
+        open={edit.refPickerOpen}
+        onOpenChange={edit.setRefPickerOpen}
+        images={edit.existingImages.images}
+        imageUrls={edit.existingImages.imageUrls}
+        isLoading={edit.existingImages.isLoading}
+        alreadyCollectedIds={new Set(edit.variationRefImages.map((r) => r.id))}
+        onConfirm={edit.handleAddRefImages}
+        max={5}
       />
 
       {edit.jsonDescription && (

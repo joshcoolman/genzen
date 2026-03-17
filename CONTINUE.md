@@ -1,10 +1,10 @@
 ## Thumbnail Unification — Issue #65
 
-**Branch:** `thumbnail-unification` (6 commits ahead of main, all pushed)
+**Branch:** `thumbnail-unification` (10 commits ahead of main, all pushed)
 
 ### What was done
 
-Audited and unified thumbnail/card components across the codebase. Six commits:
+Audited and unified thumbnail/card components across the codebase. Ten commits:
 
 1. **Renamed `ImageResultCard` -> `Thumbnail`** (`src/components/Thumbnail.tsx`) as the composable base. Exported `ThumbnailProps` interface. Updated all 9 consumer files.
 
@@ -20,6 +20,12 @@ Audited and unified thumbnail/card components across the codebase. Six commits:
 5. **Removed "More" button from gallery cards.** Variation generation is now exclusively in the edit view. Gallery card has only "Edit" button (full-width). Removed `MorePopover`, `generatingVariation`, `onPreviewVariations` props from `ImageCard`/`ImageGallery`. Variation hooks (`use-variations.ts`) untouched — still used by `ai-images.tsx` for the `VariationPromptsDialog`.
 
 6. **Added "Generate Variations" button to focused edit view** (`FocusedEditView.tsx`). Between "Describe JSON" and "Generate Edit" in toolbar. Calls `generateVariationPrompts` (count=4), opens `VariationPromptsDialog`, then `submitVariations` with UI-selected aspect ratio and fixed `flux-pro/kontext` model. Adds pending results to the edit view's `GenerationResultsGrid` for optimistic feedback. Wired in `use-focused-edit.ts`.
+
+7. **Optimistic pending cards for variations in edit view.** After `submitVariations` returns record IDs, pending results are added to the edit view's `GenerationResultsGrid` with spinners. Polling/realtime replaces them with completed images.
+
+8. **Removed 8-item cap from `editChildrenMap`.** The cap was causing variations beyond the 8th to show as standalone gallery cards. All descendants now tracked in the map (for gallery filtering). Visual display in `ImageCard` shows all thumbnails — no cap for now.
+
+9. **Enlarged edit thumbnails and tightened spacing.** Thumbs: `w-8 h-8` -> `w-10 h-10` (40px). Gap: `gap-1.5` -> `gap-1`. Padding: `px-3 pb-3` -> `px-1.5 pb-1.5`. Dropped "Edits" label. Fills card width better.
 
 ### Key decisions
 
@@ -48,4 +54,5 @@ Audited and unified thumbnail/card components across the codebase. Six commits:
 - `src/features/ai-images/components/ImageGallery.tsx`
 - `src/features/ai-images/components/FocusedEditView.tsx`
 - `src/features/ai-images/hooks/use-focused-edit.ts`
+- `src/features/ai-images/hooks/use-edit-children.ts`
 - `src/routes/dashboard/ai-images.tsx`

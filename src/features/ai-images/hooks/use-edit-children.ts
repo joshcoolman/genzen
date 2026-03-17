@@ -11,8 +11,11 @@ export type EditChildrenMap = Record<string, Array<EditChild>>
 export function useEditChildren(
   parentIds: Array<string>,
   userId: string | undefined,
-): EditChildrenMap {
+): { map: EditChildrenMap; refresh: () => void } {
   const [childrenMap, setChildrenMap] = useState<EditChildrenMap>({})
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const refresh = () => setRefreshKey((k) => k + 1)
 
   useEffect(() => {
     if (!userId || parentIds.length === 0) return
@@ -101,7 +104,7 @@ export function useEditChildren(
     }
 
     void fetchChildren()
-  }, [userId, parentIds.join(',')])
+  }, [userId, parentIds.join(','), refreshKey])
 
   // Realtime updates for new edit children
   useEffect(() => {
@@ -173,5 +176,5 @@ export function useEditChildren(
     }
   }, [userId, parentIds.join(',')])
 
-  return childrenMap
+  return { map: childrenMap, refresh }
 }

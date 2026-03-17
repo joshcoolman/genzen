@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -16,6 +17,7 @@ interface SubmitVariationsInput {
   rootPrompt: string
   aspectRatio?: string
   falImageUrl?: string
+  referenceImageIds?: Array<string>
 }
 
 export const submitVariations = createServerFn({ method: 'POST' })
@@ -30,6 +32,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
       rootPrompt,
       aspectRatio,
       falImageUrl,
+      referenceImageIds,
     } = data
 
     if (prompts.length === 0) throw new Error('No prompts provided')
@@ -96,6 +99,32 @@ export const submitVariations = createServerFn({ method: 'POST' })
       }
     }
 
+    // Fetch and upload reference images in parallel
+    const referenceUrls: Array<string> = []
+    if (referenceImageIds?.length) {
+      const refImages = await supabase
+        .from('user_images')
+        .select('id, storage_path')
+        .in('id', referenceImageIds)
+        .eq('user_id', user.id)
+
+      if (refImages.data?.length) {
+        const uploads = await Promise.all(
+          refImages.data.map(async (ref) => {
+            if (!ref.storage_path) return null
+            const { data: signed } = await supabase.storage
+              .from('user-images')
+              .createSignedUrl(ref.storage_path, 3600)
+            if (!signed?.signedUrl) return null
+            const res = await fetch(signed.signedUrl)
+            const buf = await res.arrayBuffer()
+            return uploadBufferToFal(buf)
+          }),
+        )
+        referenceUrls.push(...uploads.filter((u): u is string => u !== null))
+      }
+    }
+
     const results: Array<{ recordId: string; request_id: string }> = []
 
     for (let i = 0; i < prompts.length; i++) {
@@ -103,7 +132,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
         modelId: 'fal-ai/nano-banana-2/edit',
         prompt: prompts[i],
         aspectRatio,
-        imageUrls: [imageUrl ?? ''],
+        imageUrls: [imageUrl ?? '', ...referenceUrls],
         safetyLevel: 'permissive',
       })
       const { request_id } = await (fal.queue.submit as any)(
@@ -132,6 +161,9 @@ export const submitVariations = createServerFn({ method: 'POST' })
             root_image_id: rootImageId,
             submitted_at: new Date().toISOString(),
             ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+            ...(referenceImageIds?.length
+              ? { reference_image_ids: referenceImageIds }
+              : {}),
           },
         })
         .select()
