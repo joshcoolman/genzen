@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 
-const STALE_THRESHOLD_MINUTES = 10
+const STALE_THRESHOLD_MINUTES = 3
 
 interface ClearStaleInput {
   accessToken: string
