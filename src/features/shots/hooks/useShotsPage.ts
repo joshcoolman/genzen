@@ -225,6 +225,53 @@ export function useShotsPage() {
     }
   }, [imageUrl, accessToken])
 
+  // Describe from a directly-provided file (paste/upload to describer)
+  const describeFromFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        setStep1Status('running')
+        setStep1Error(null)
+        try {
+          const result = await describeShotImage({
+            data: { imageUrl: dataUrl, accessToken },
+          })
+          setStep1OutputRaw(result.description)
+          lsSet('shots-description', result.description)
+          setStep1Status('complete')
+        } catch (err) {
+          setStep1Error(
+            err instanceof Error ? err.message : 'Failed to describe',
+          )
+          setStep1Status('error')
+        }
+      }
+      reader.readAsDataURL(file)
+    },
+    [accessToken],
+  )
+
+  // Describe from a library image URL
+  const describeFromLibrary = useCallback(
+    async (image: SelectedImage) => {
+      setStep1Status('running')
+      setStep1Error(null)
+      try {
+        const result = await describeShotImage({
+          data: { imageUrl: image.url, accessToken },
+        })
+        setStep1OutputRaw(result.description)
+        lsSet('shots-description', result.description)
+        setStep1Status('complete')
+      } catch (err) {
+        setStep1Error(err instanceof Error ? err.message : 'Failed to describe')
+        setStep1Status('error')
+      }
+    },
+    [accessToken],
+  )
+
   // Standalone: generate prompts (run step 3 only)
   const generatePrompts = useCallback(async () => {
     if (!step1Output) return
@@ -385,6 +432,8 @@ export function useShotsPage() {
     isGenerating,
     generateImages,
     describeImage,
+    describeFromFile,
+    describeFromLibrary,
     generatePrompts,
     reset,
   }
