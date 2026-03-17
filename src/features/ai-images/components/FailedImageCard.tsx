@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import { classifyError } from '@/features/ai-images/error-classification'
 import { Thumbnail } from '@/components/Thumbnail'
 
 interface FailedImageCardProps {
@@ -15,6 +16,8 @@ export function FailedImageCard({
   onRetry,
 }: FailedImageCardProps) {
   const [retrying, setRetrying] = useState(false)
+  const { category, userMessage } = classifyError(img.generation_error)
+  const isRetryable = category === 'retryable'
 
   const handleRetry = async () => {
     if (!onRetry || retrying) return
@@ -29,10 +32,10 @@ export function FailedImageCard({
   return (
     <Thumbnail
       status="failed"
-      failedMessage={img.generation_error ?? 'Unknown error'}
+      failedMessage={userMessage}
       onDelete={() => onDelete(img)}
       overlayActions={
-        onRetry ? (
+        isRetryable && onRetry ? (
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -51,6 +54,9 @@ export function FailedImageCard({
       }
     >
       <div className="p-3 space-y-1">
+        {!isRetryable && (
+          <p className="text-xs text-amber-500 font-medium">Cannot retry</p>
+        )}
         <p className="text-xs text-muted-foreground line-clamp-2">
           {img.generation_metadata?.prompt ?? img.title}
         </p>

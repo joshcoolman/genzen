@@ -168,20 +168,36 @@ export const checkPendingImages = createServerFn({ method: 'POST' })
       } catch (error) {
         console.error(`Error checking request ${request_id}:`, error)
 
+        // Extract richer error details from FAL errors
+        let errorMessage = 'Unknown error'
+        if (error instanceof Error) {
+          errorMessage = error.message
+          // FAL errors may have additional detail in body/detail fields
+          const falError = error as Error & {
+            body?: { detail?: string }
+            status?: number
+          }
+          if (falError.body?.detail) {
+            errorMessage = `${errorMessage}: ${falError.body.detail}`
+          }
+          if (falError.status) {
+            errorMessage = `[${falError.status}] ${errorMessage}`
+          }
+        }
+
         // Mark as failed in database
         await supabase
           .from('user_images')
           .update({
             status: 'failed',
-            generation_error:
-              error instanceof Error ? error.message : 'Unknown error',
+            generation_error: errorMessage,
           })
           .eq('id', record.id)
 
         results.push({
           recordId: record.id,
           status: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errorMessage,
         })
       }
     }
