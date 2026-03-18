@@ -21,6 +21,7 @@ export interface ThumbnailProps {
 
   selected?: boolean
 
+  alwaysShowOverlay?: boolean
   compact?: boolean
   dimmed?: boolean
   hoverBorder?: string
@@ -48,6 +49,7 @@ export function Thumbnail({
   overlayActions,
   onClick,
   selected,
+  alwaysShowOverlay = false,
   compact = false,
   dimmed = false,
   hoverBorder,
@@ -170,7 +172,7 @@ export function Thumbnail({
         {(onDelete || overlayActions) && (
           <div
             className={`absolute top-1.5 right-1.5 flex items-center gap-1 transition-all ${
-              status === 'failed'
+              status === 'failed' || alwaysShowOverlay
                 ? 'opacity-100'
                 : 'opacity-0 group-hover:opacity-100'
             }`}

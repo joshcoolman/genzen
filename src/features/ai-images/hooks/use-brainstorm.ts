@@ -26,6 +26,7 @@ interface UseBrainstormOptions {
   aspectRatio?: string
   slotCount: number
   imagesPerPrompt: number
+  sourceImageUrl?: string
 }
 
 function makeEmptySlotImages(count: number): Array<BrainstormImage> {
@@ -40,6 +41,7 @@ export function useBrainstorm({
   aspectRatio,
   slotCount,
   imagesPerPrompt,
+  sourceImageUrl,
 }: UseBrainstormOptions) {
   // Each slot has an array of images (length = imagesPerPrompt)
   const [images, setImages] = useState<Array<Array<BrainstormImage>>>(() =>
@@ -71,7 +73,7 @@ export function useBrainstorm({
   const slotPrompts = useRef<Array<string>>(
     Array.from({ length: slotCount }, () => BRAINSTORM_PROMPT),
   )
-  const activeModel = useRef<BrainstormModelKey | string>('schnell')
+  const activeModel = useRef<BrainstormModelKey | string>('kontextDev')
 
   // Resize arrays when slotCount or imagesPerPrompt changes
   useEffect(() => {
@@ -248,7 +250,7 @@ export function useBrainstorm({
     })
 
     try {
-      activeModel.current = model ?? 'schnell'
+      activeModel.current = model ?? 'kontextDev'
       // Build prompts array: each unlocked prompt repeated imagesPerPrompt times
       const expandedPrompts: Array<string> = []
       const expandedMapping: Array<{ slot: number; imageIndex: number }> = []
@@ -263,7 +265,8 @@ export function useBrainstorm({
         data: {
           accessToken,
           prompts: expandedPrompts,
-          model: model ?? 'schnell',
+          model: model ?? 'kontextDev',
+          ...(sourceImageUrl ? { sourceImageUrl } : {}),
         },
       })
 
@@ -338,7 +341,7 @@ export function useBrainstorm({
     })
 
     try {
-      activeModel.current = model ?? 'schnell'
+      activeModel.current = model ?? 'kontextDev'
       const slotPromptList = targetImageIndices.map(
         () => slotPrompts.current[index],
       )
@@ -346,7 +349,8 @@ export function useBrainstorm({
         data: {
           accessToken,
           prompts: slotPromptList,
-          model: model ?? 'schnell',
+          model: model ?? 'kontextDev',
+          ...(sourceImageUrl ? { sourceImageUrl } : {}),
         },
       })
 

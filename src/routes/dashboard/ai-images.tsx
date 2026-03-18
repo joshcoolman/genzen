@@ -10,6 +10,7 @@ import {
 } from '@/features/ai-images'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
+import { DescribeJsonPanel } from '@/features/ai-images/components/DescribeJsonPanel'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
@@ -135,6 +136,19 @@ function AiImagesPage() {
           onNext={page.lightbox.next}
           onPrev={page.lightbox.prev}
           onDelete={page.lightbox.deleteAndAdvance}
+        />
+      )}
+
+      {(page.describe.jsonDescription || page.lightbox.isOpen) && (
+        <DescribeJsonPanel
+          describe={page.describe}
+          imageUrl={
+            page.lightbox.index !== null
+              ? page.gallery.imageUrls[
+                  page.completedImages[page.lightbox.index]?.id
+                ]
+              : undefined
+          }
         />
       )}
     </div>

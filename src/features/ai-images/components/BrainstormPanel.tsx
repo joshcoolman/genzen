@@ -11,6 +11,7 @@ import {
   Sparkles,
   Unlock,
   Wand2,
+  X,
 } from 'lucide-react'
 import type { BrainstormImage } from '@/features/ai-images/hooks/use-brainstorm'
 import { ActionButton } from '@/components/ActionButton'
@@ -38,11 +39,15 @@ import {
 interface BrainstormPanelProps {
   accessToken: string | undefined
   aspectRatio?: string
+  sourceImageUrl?: string
+  onClearSourceImage?: () => void
 }
 
 export function BrainstormPanel({
   accessToken,
   aspectRatio: refineAspectRatio,
+  sourceImageUrl,
+  onClearSourceImage,
 }: BrainstormPanelProps) {
   const [editInstruction, setEditInstruction] = useState('')
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
@@ -69,6 +74,7 @@ export function BrainstormPanel({
     aspectRatio: refineAspectRatio,
     slotCount: settings.rowCount,
     imagesPerPrompt: settings.imagesPerPrompt,
+    sourceImageUrl,
   })
 
   const totalImages = settings.rowCount * settings.imagesPerPrompt
@@ -173,6 +179,27 @@ export function BrainstormPanel({
             </div>
           </div>
         </div>
+        {sourceImageUrl && (
+          <div className="flex items-center gap-2">
+            <img
+              src={sourceImageUrl}
+              alt="Reference"
+              className="h-8 w-8 rounded object-cover"
+            />
+            <span className="text-xs text-muted-foreground">
+              Reference image active
+            </span>
+            {onClearSourceImage && (
+              <button
+                onClick={onClearSourceImage}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Clear reference image"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button

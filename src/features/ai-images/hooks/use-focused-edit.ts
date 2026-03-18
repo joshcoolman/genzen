@@ -6,7 +6,7 @@ import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
-import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
+import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -45,7 +45,6 @@ export function useFocusedEdit(imageId: string) {
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
-  const [jsonDescription, setJsonDescription] = useState<string | null>(null)
 
   // Source chain: tracks all image IDs whose edits should be visible
   const [activeSourceId, setActiveSourceId] = useState(imageId)
@@ -272,29 +271,17 @@ export function useFocusedEdit(imageId: string) {
     results,
   ])
 
-  const [jsonLoading, setJsonLoading] = useState(false)
+  const describe = useDescribeJson({
+    accessToken,
+    imageUrl: sourceImage?.url,
+  })
 
   const handleDescribeJson = useCallback(async () => {
-    if (!accessToken || !sourceImage?.url || jsonLoading) return
-    setJsonLoading(true)
-    setError(null)
-    try {
-      const { json } = await describeImageJson({
-        data: {
-          accessToken,
-          imageUrl: sourceImage.url,
-          prompt:
-            'Analyze this image for a reference DNA sheet. Focus on fixed architectural elements and furniture details.',
-        },
-      })
-      setJsonDescription(json)
-      setEditPrompt(json)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to describe image')
-    } finally {
-      setJsonLoading(false)
+    await describe.handleDescribe()
+    if (describe.jsonDescription) {
+      setEditPrompt(describe.jsonDescription)
     }
-  }, [accessToken, sourceImage?.url, jsonLoading])
+  }, [describe, setEditPrompt])
 
   const promoteToSource = useCallback(
     async (result: GenerationResult) => {
@@ -512,8 +499,8 @@ export function useFocusedEdit(imageId: string) {
     promoteToSource,
     resetToOriginal,
     isChained,
-    jsonDescription,
-    jsonLoading,
+    jsonDescription: describe.jsonDescription,
+    jsonLoading: describe.jsonLoading,
     handleDescribeJson,
     variationDialogOpen,
     setVariationDialogOpen,

@@ -11,13 +11,13 @@ export const BRAINSTORM_PROMPT =
   'A dynamic full body shot of an unusual hero in an interesting setting, establishing shot, suitable for the first frame of a photorealistic video sequence'
 
 export const BRAINSTORM_MODELS = {
+  kontextDev: 'fal-ai/flux-kontext/dev',
   schnell: 'fal-ai/flux/schnell',
-  dev: 'fal-ai/flux/dev',
 } as const
 
 export type BrainstormModelKey = keyof typeof BRAINSTORM_MODELS
 
-const DEFAULT_MODEL: BrainstormModelKey = 'schnell'
+const DEFAULT_MODEL: BrainstormModelKey = 'kontextDev'
 
 // Accepts either a BrainstormModelKey or a direct FAL model ID
 function resolveBrainstormModelId(model?: BrainstormModelKey | string): string {
@@ -78,6 +78,7 @@ interface RegenerateBrainstormInput {
   accessToken: string
   prompts: Array<string>
   model?: BrainstormModelKey | string
+  sourceImageUrl?: string
 }
 
 export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
@@ -90,14 +91,17 @@ export const regenerateBrainstormImages = createServerFn({ method: 'POST' })
     }
 
     const modelId = resolveBrainstormModelId(data.model)
-    const isDev = modelId === BRAINSTORM_MODELS.dev
+    const isKontextDev = modelId === BRAINSTORM_MODELS.kontextDev
     const submissions = await Promise.all(
       data.prompts.map(async (prompt) => {
         const falInput = await buildFalInput({
           modelId,
           prompt,
           safetyLevel: 'permissive',
-          extraParams: isDev
+          ...(data.sourceImageUrl && isKontextDev
+            ? { imageUrls: [data.sourceImageUrl] }
+            : {}),
+          extraParams: isKontextDev
             ? { num_inference_steps: 28, guidance_scale: 3.5 }
             : undefined,
         })

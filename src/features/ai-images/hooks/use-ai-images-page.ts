@@ -12,6 +12,7 @@ import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { useReparent } from '@/features/ai-images/hooks/use-reparent'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
+import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 
 const GENS_STORAGE_KEY = 'genzen:slot-gens-per-model'
 
@@ -92,6 +93,17 @@ export function useAiImagesPage() {
     setError,
   })
 
+  // Describe JSON for the currently selected lightbox image
+  const lightboxImage =
+    lightbox.index !== null ? completedImages[lightbox.index] : null
+  const lightboxImageUrl = lightboxImage
+    ? gallery.imageUrls[lightboxImage.id]
+    : undefined
+  const describe = useDescribeJson({
+    accessToken,
+    imageUrl: lightboxImageUrl,
+  })
+
   const promptTools = usePromptTools({
     accessToken,
     setPrompt: generator.setPrompt,
@@ -130,6 +142,7 @@ export function useAiImagesPage() {
     completedImages,
     error,
     setError,
+    describe,
     handleLoadPrompt,
     handleLoadPromptAndModel,
   }
