@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { SlotTier } from '@/lib/model-slots'
 import { useAuth } from '@/lib/auth'
@@ -93,15 +94,19 @@ export function useAiImagesPage() {
     setError,
   })
 
-  // Describe JSON for the currently selected lightbox image
-  const lightboxImage =
-    lightbox.index !== null ? completedImages[lightbox.index] : null
-  const lightboxImageUrl = lightboxImage
-    ? gallery.imageUrls[lightboxImage.id]
-    : undefined
+  // Describe JSON for the generator's source image -- appends to prompt
+  const sourceImageUrl = generator.sourceImage?.base64
   const describe = useDescribeJson({
     accessToken,
-    imageUrl: lightboxImageUrl,
+    imageUrl: sourceImageUrl,
+    onResult: useCallback(
+      (json: string) => {
+        generator.setPrompt((prev: string) =>
+          prev ? `${prev}\n\n${json}` : json,
+        )
+      },
+      [generator],
+    ),
   })
 
   const promptTools = usePromptTools({

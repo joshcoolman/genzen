@@ -16,6 +16,7 @@ export interface ThumbnailProps {
 
   onDelete?: () => void
   overlayActions?: ReactNode
+  overlayActionsLeft?: ReactNode
 
   onClick?: () => void
 
@@ -47,6 +48,7 @@ export function Thumbnail({
   topLeftBadge,
   onDelete,
   overlayActions,
+  overlayActionsLeft,
   onClick,
   selected,
   alwaysShowOverlay = false,
@@ -167,6 +169,18 @@ export function Thumbnail({
           <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
             {label}
           </span>
+        )}
+
+        {overlayActionsLeft && (
+          <div
+            className={`absolute top-1.5 left-1.5 flex items-center gap-1 transition-all ${
+              status === 'failed' || alwaysShowOverlay
+                ? 'opacity-100'
+                : 'opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {overlayActionsLeft}
+          </div>
         )}
 
         {(onDelete || overlayActions) && (

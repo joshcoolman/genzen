@@ -38,20 +38,21 @@ export function ImageCard({
 
   const hasParent = !!img.generation_metadata?.source_image_id
 
-  const overlayButtons = (
+  const moveButton = onStartAdopt ? (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onStartAdopt(img)
+      }}
+      className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+      aria-label="Move"
+    >
+      <ArrowUpRight className="h-3.5 w-3.5" />
+    </button>
+  ) : undefined
+
+  const rightButtons = (
     <>
-      {onStartAdopt && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onStartAdopt(img)
-          }}
-          className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
-          aria-label="Move"
-        >
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </button>
-      )}
       {hasParent && onDetach && (
         <button
           onClick={(e) => {
@@ -89,7 +90,8 @@ export function ImageCard({
           : undefined
       }
       alwaysShowOverlay
-      overlayActions={overlayButtons}
+      overlayActionsLeft={moveButton}
+      overlayActions={rightButtons}
       onClick={() => imageUrl && onOpen(img)}
     >
       <div className="p-1.5">

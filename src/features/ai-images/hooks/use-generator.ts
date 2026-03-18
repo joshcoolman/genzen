@@ -28,7 +28,7 @@ interface UseGeneratorOptions {
 
 export interface GeneratorState {
   prompt: string
-  setPrompt: (prompt: string) => void
+  setPrompt: (prompt: string | ((prev: string) => string)) => void
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   setAspectRatio: (ratio: string) => void
@@ -207,7 +207,9 @@ export function useGenerator({
       captionImage({
         data: { imageBase64: base64, accessToken },
       })
-        .then(({ caption }) => setPrompt(caption))
+        .then(({ caption }) =>
+          setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption)),
+        )
         .catch(() => {})
         .finally(() => setDescribingImage(false))
     }

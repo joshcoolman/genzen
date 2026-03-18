@@ -3,6 +3,7 @@ import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import type { ModelSlots, SlotTier } from '@/lib/model-slots'
 import type { UserImage } from '@/features/user-images/types'
+import type { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import { Textarea } from '@/components/ui/textarea'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
@@ -32,6 +33,7 @@ interface GeneratorPanelProps {
   credits: CreditsState
   userImages: UserImagesData
   error: string | null
+  describe?: ReturnType<typeof useDescribeJson>
 }
 
 export function GeneratorPanel({
@@ -44,6 +46,7 @@ export function GeneratorPanel({
   credits,
   userImages,
   error,
+  describe,
 }: GeneratorPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -86,6 +89,15 @@ export function GeneratorPanel({
             slots={slots}
             disabled={generator.loading}
           />
+          {describe && generator.sourceImage && (
+            <button
+              onClick={describe.handleDescribe}
+              disabled={describe.jsonLoading || generator.loading}
+              className="h-9 px-3 text-sm rounded-md border border-input text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+            >
+              {describe.jsonLoading ? 'Describing...' : 'Describe JSON'}
+            </button>
+          )}
           <NumberStepper
             value={gensPerModel}
             min={1}

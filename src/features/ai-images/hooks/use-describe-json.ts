@@ -4,11 +4,13 @@ import { describeImageJson } from '@/features/ai-images/server/describe-image-js
 interface UseDescribeJsonOptions {
   accessToken: string | undefined
   imageUrl: string | undefined
+  onResult?: (json: string) => void
 }
 
 export function useDescribeJson({
   accessToken,
   imageUrl,
+  onResult,
 }: UseDescribeJsonOptions) {
   const [jsonDescription, setJsonDescription] = useState<string | null>(null)
   const [jsonLoading, setJsonLoading] = useState(false)
@@ -28,12 +30,13 @@ export function useDescribeJson({
         },
       })
       setJsonDescription(json)
+      onResult?.(json)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to describe image')
     } finally {
       setJsonLoading(false)
     }
-  }, [accessToken, imageUrl, jsonLoading])
+  }, [accessToken, imageUrl, jsonLoading, onResult])
 
   const clearDescription = useCallback(() => {
     setJsonDescription(null)
