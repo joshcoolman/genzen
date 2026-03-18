@@ -11,6 +11,10 @@ import {
 } from '@/features/ai-images/constants'
 import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
 
+// Kontext Dev is image-input only -- fall back to FLUX Dev for text-only draft
+const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
+const DRAFT_TEXT_ONLY_FALLBACK = 'fal-ai/flux/dev'
+
 export interface RefImage {
   id: string
   url: string
@@ -117,9 +121,14 @@ export function useGenerator({
   async function handleGenerate() {
     if (loading || !accessToken || !canGenerate) return
 
-    const modelsToUse = selectedModels.flatMap((modelId) =>
-      Array.from({ length: gensPerModel }, () => modelId),
-    )
+    const modelsToUse = selectedModels.flatMap((modelId) => {
+      // Kontext Dev needs a source image -- fall back to FLUX Dev for text-only
+      const resolved =
+        modelId === KONTEXT_DEV && !sourceImage
+          ? DRAFT_TEXT_ONLY_FALLBACK
+          : modelId
+      return Array.from({ length: gensPerModel }, () => resolved)
+    })
     const reason = sourceImage ? 'variation' : 'image_gen'
     const cost = CREDIT_COSTS[reason] * modelsToUse.length
 
