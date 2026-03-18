@@ -70,6 +70,7 @@ export function ShotCard({
         onChange={(e) => onUpdate(shot.id, { prompt: e.target.value })}
         rows={2}
         className="resize-none text-sm"
+        style={{ fieldSizing: 'content' } as React.CSSProperties}
       />
     </div>
   )

@@ -112,6 +112,20 @@ export function useMultishotEditor({
     [elementsLocked],
   )
 
+  const replaceElements = useCallback(
+    (urls: Array<string>) => {
+      if (elementsLocked) return
+      setElements(
+        urls.map((url, i) => ({
+          id: crypto.randomUUID(),
+          frontalImageUrl: url,
+          label: `@Element${i + 1}`,
+        })),
+      )
+    },
+    [elementsLocked],
+  )
+
   const loadSequence = useCallback(
     (seq: {
       id: string
@@ -224,6 +238,7 @@ export function useMultishotEditor({
     updateShot,
     addElement,
     removeElement,
+    replaceElements,
     loadSequence,
     resetEditor,
     handleGenerate,

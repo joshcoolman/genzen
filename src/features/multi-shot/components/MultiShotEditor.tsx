@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { ImageIcon, Plus, Sparkles, X } from 'lucide-react'
-import { MAX_TOTAL_DURATION } from '../types'
+import { Plus, Sparkles } from 'lucide-react'
 import { ShotCard } from './ShotCard'
-import { ElementCard } from './ElementCard'
-import { TimeBudgetBar } from './TimeBudgetBar'
-import type { UserImage } from '@/features/user-images/types'
+import type {
+  CreateUserImageInput,
+  UserImage,
+} from '@/features/user-images/types'
 import type { useMultishotEditor } from '../hooks/use-multishot-editor'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RefImageStrip } from '@/components/RefImageStrip'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -19,6 +18,9 @@ import {
 } from '@/components/ui/select'
 import { ActionButton } from '@/components/ActionButton'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
+import { TwoColumnLayout } from '@/components/TwoColumnLayout'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { SourceImagePanel } from '@/components/SourceImagePanel'
 
 interface MultiShotEditorProps {
   editor: ReturnType<typeof useMultishotEditor>
@@ -26,6 +28,9 @@ interface MultiShotEditorProps {
   imageUrls: Record<string, string>
   imagesLoading: boolean
   elementsLocked?: boolean
+  children?: React.ReactNode
+  onUpload?: (input: CreateUserImageInput) => Promise<void>
+  isUploading?: boolean
 }
 
 export function MultiShotEditor({
@@ -34,6 +39,9 @@ export function MultiShotEditor({
   imageUrls,
   imagesLoading,
   elementsLocked = false,
+  children,
+  onUpload,
+  isUploading,
 }: MultiShotEditorProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerMode, setPickerMode] = useState<'element' | 'startImage'>(
@@ -51,231 +59,196 @@ export function MultiShotEditor({
       .filter((id): id is string => !!id),
   )
 
-  return (
-    <div className="space-y-6">
-      {/* Name */}
-      <Input
-        value={editor.name}
-        onChange={(e) => editor.setName(e.target.value)}
-        className="text-lg font-medium border-none px-0 focus-visible:ring-0"
-        placeholder="Sequence name..."
-      />
-
+  const left = (
+    <>
       {/* Start Image */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Start Image</h3>
-          {!editor.settings.startImageUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                setPickerMode('startImage')
-                setPickerOpen(true)
-              }}
-            >
-              <ImageIcon className="h-3 w-3 mr-1" />
-              Choose Image
-            </Button>
-          )}
-        </div>
-        {editor.settings.startImageUrl ? (
-          <div className="relative inline-block">
-            <img
-              src={editor.settings.startImageUrl}
-              alt="Start frame"
-              className="h-24 w-auto rounded-md border border-border object-cover"
-            />
-            <button
-              type="button"
-              className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground hover:bg-destructive/80"
-              onClick={() =>
-                editor.setSettings({
-                  ...editor.settings,
-                  startImageUrl: undefined,
-                })
-              }
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Required. The first frame of the generated video.
-          </p>
-        )}
+        <h3 className="text-sm font-medium">Start Image</h3>
+        <SourceImagePanel
+          imageUrl={editor.settings.startImageUrl}
+          emptyText="Choose Image"
+          aspectRatio="video"
+          onClick={() => {
+            setPickerMode('startImage')
+            setPickerOpen(true)
+          }}
+          onRemove={
+            editor.settings.startImageUrl
+              ? () =>
+                  editor.setSettings({
+                    ...editor.settings,
+                    startImageUrl: undefined,
+                  })
+              : undefined
+          }
+        />
       </div>
 
       {/* Elements */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Elements</h3>
-          {!elementsLocked && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                setPickerMode('element')
-                setPickerOpen(true)
-              }}
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Element
-            </Button>
-          )}
-        </div>
+      <CollapsibleSection
+        title="Elements"
+        storageKey="multishot-elements"
+        defaultOpen
+      >
         {elementsLocked && editor.elements.length > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-2">
             Elements are locked after generation. Duplicate this sequence to
             modify elements.
           </p>
         )}
-        {editor.elements.length > 0 ? (
-          <div className="flex gap-3 flex-wrap">
-            {editor.elements.map((el) => (
-              <ElementCard
-                key={el.id}
-                element={el}
-                onRemove={editor.removeElement}
-                locked={elementsLocked}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Add character/object images to reference as @Element1, @Element2 in
-            shot prompts.
-          </p>
-        )}
-      </div>
-
-      {/* Shots */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">Shots</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            disabled={!editor.canAddShot}
-            onClick={editor.addShot}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Add Shot
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          {editor.shots.map((shot, i) => (
-            <ShotCard
-              key={shot.id}
-              shot={shot}
-              index={i}
-              maxDuration={shot.duration + editor.remainingBudget}
-              canDelete={editor.shots.length > 1}
-              onUpdate={editor.updateShot}
-              onRemove={editor.removeShot}
-            />
-          ))}
-        </div>
-
-        <TimeBudgetBar
-          shots={editor.shots}
-          totalDuration={editor.totalDuration}
+        <RefImageStrip
+          images={editor.elements.map((el) => ({
+            id: el.id,
+            url: el.frontalImageUrl,
+            title: el.label,
+          }))}
+          max={6}
+          onAdd={() => {
+            setPickerMode('element')
+            setPickerOpen(true)
+          }}
+          onRemove={editor.removeElement}
+          onImageClick={() => {
+            setPickerMode('element')
+            setPickerOpen(true)
+          }}
+          disabled={elementsLocked}
+          showLabels
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Settings */}
-      <div className="space-y-4 rounded-lg border border-border p-4">
-        <h3 className="text-sm font-medium">Settings</h3>
+      <CollapsibleSection title="Settings" storageKey="multishot-settings">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Aspect Ratio</Label>
+              <Select
+                value={editor.settings.aspectRatio}
+                onValueChange={(v) =>
+                  editor.setSettings({
+                    ...editor.settings,
+                    aspectRatio: v as '16:9' | '9:16' | '1:1',
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="16:9">16:9</SelectItem>
+                  <SelectItem value="9:16">9:16</SelectItem>
+                  <SelectItem value="1:1">1:1</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Aspect Ratio</Label>
-            <Select
-              value={editor.settings.aspectRatio}
-              onValueChange={(v) =>
-                editor.setSettings({
-                  ...editor.settings,
-                  aspectRatio: v as '16:9' | '9:16' | '1:1',
-                })
-              }
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="16:9">16:9</SelectItem>
-                <SelectItem value="9:16">9:16</SelectItem>
-                <SelectItem value="1:1">1:1</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Shot Type</Label>
+              <Select
+                value={editor.settings.shotType}
+                onValueChange={(v) =>
+                  editor.setSettings({
+                    ...editor.settings,
+                    shotType: v as 'customize' | 'intelligent',
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="customize">Customize</SelectItem>
+                  <SelectItem value="intelligent">Intelligent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs">Shot Type</Label>
-            <Select
-              value={editor.settings.shotType}
-              onValueChange={(v) =>
+          <div className="flex items-center justify-between">
+            <Label className="text-xs">Generate Audio</Label>
+            <Switch
+              checked={editor.settings.generateAudio}
+              onCheckedChange={(checked: boolean) =>
                 editor.setSettings({
                   ...editor.settings,
-                  shotType: v as 'customize' | 'intelligent',
+                  generateAudio: checked,
                 })
               }
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="customize">Customize</SelectItem>
-                <SelectItem value="intelligent">Intelligent</SelectItem>
-              </SelectContent>
-            </Select>
+            />
           </div>
         </div>
-
-        <div className="flex items-center justify-between">
-          <Label className="text-xs">Generate Audio</Label>
-          <Switch
-            checked={editor.settings.generateAudio}
-            onCheckedChange={(checked: boolean) =>
-              editor.setSettings({
-                ...editor.settings,
-                generateAudio: checked,
-              })
-            }
-          />
-        </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Error */}
       {editor.error && (
         <p className="text-sm text-destructive">{editor.error}</p>
       )}
 
-      {/* Generate */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          Est. ${editor.estimatedCost} ({editor.totalDuration}/
-          {MAX_TOTAL_DURATION}s)
-        </span>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={editor.handleSave}>
-            Save Draft
-          </Button>
-          <ActionButton
-            onClick={editor.handleGenerate}
-            loading={editor.generating}
-            loadingText="Generating..."
-            icon={<Sparkles className="h-4 w-4" />}
-            disabled={editor.shots.length === 0}
-          >
-            Generate Video
-          </ActionButton>
-        </div>
+      {/* Action footer */}
+      <div className="flex gap-2">
+        <ActionButton
+          variant="outline"
+          onClick={editor.handleSave}
+          className="flex-1"
+        >
+          Save Draft
+        </ActionButton>
+        <ActionButton
+          onClick={editor.handleGenerate}
+          loading={editor.generating}
+          loadingText="Generating..."
+          icon={<Sparkles className="h-4 w-4" />}
+          className="flex-1"
+          disabled={!editor.settings.startImageUrl}
+        >
+          Generate Video
+        </ActionButton>
       </div>
+    </>
+  )
+
+  const right = (
+    <>
+      <input
+        value={editor.name}
+        onChange={(e) => editor.setName(e.target.value)}
+        className="w-full text-sm font-medium border-none bg-transparent px-0 focus:outline-none"
+        placeholder="Sequence name..."
+      />
+
+      <div className="space-y-2">
+        {editor.shots.map((shot, i) => (
+          <ShotCard
+            key={shot.id}
+            shot={shot}
+            index={i}
+            maxDuration={shot.duration + editor.remainingBudget}
+            canDelete={editor.shots.length > 1}
+            onUpdate={editor.updateShot}
+            onRemove={editor.removeShot}
+          />
+        ))}
+      </div>
+
+      {editor.canAddShot && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={editor.addShot}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      <TwoColumnLayout left={left} right={right} fixedHeight={false} />
+      {children}
 
       {/* Image Picker Dialog */}
       <ExistingImagePicker
@@ -285,9 +258,13 @@ export function MultiShotEditor({
         imageUrls={imageUrls}
         isLoading={imagesLoading}
         alreadyCollectedIds={alreadyCollectedIds}
+        initialSelectedIds={
+          pickerMode === 'element' ? alreadyCollectedIds : undefined
+        }
+        autoConfirm={pickerMode === 'startImage'}
         onConfirm={(selected) => {
           if (pickerMode === 'startImage') {
-            const img = selected[0]
+            const img = selected[0] as (typeof selected)[number] | undefined
             if (img) {
               const url = imageUrls[img.id] ?? img.url
               if (url) {
@@ -298,15 +275,17 @@ export function MultiShotEditor({
               }
             }
           } else {
-            selected.forEach((img) => {
-              const url = imageUrls[img.id] ?? img.url
-              if (url) editor.addElement(url)
-            })
+            const urls = selected
+              .map((img) => imageUrls[img.id] ?? img.url)
+              .filter(Boolean)
+            editor.replaceElements(urls)
           }
           setPickerOpen(false)
         }}
         max={pickerMode === 'startImage' ? 1 : 6}
+        onUpload={onUpload}
+        isUploading={isUploading}
       />
-    </div>
+    </>
   )
 }

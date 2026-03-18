@@ -6,6 +6,7 @@ interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement
   loading?: boolean
   loadingText?: string
   icon?: React.ReactNode
+  variant?: 'default' | 'outline'
 }
 
 export function ActionButton({
@@ -13,6 +14,7 @@ export function ActionButton({
   loading = false,
   loadingText,
   icon,
+  variant = 'default',
   disabled,
   className,
   ...props
@@ -26,7 +28,9 @@ export function ActionButton({
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer',
         isDisabled
           ? 'bg-muted text-muted-foreground pointer-events-none'
-          : 'bg-accent-brand text-black hover:bg-accent-brand-hover',
+          : variant === 'outline'
+            ? 'border border-border text-foreground hover:bg-muted'
+            : 'bg-accent-brand text-black hover:bg-accent-brand-hover',
         "shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         'outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
         className,

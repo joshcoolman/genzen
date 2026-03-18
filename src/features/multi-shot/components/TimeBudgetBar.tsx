@@ -4,6 +4,7 @@ import type { Shot } from '../types'
 interface TimeBudgetBarProps {
   shots: Array<Shot>
   totalDuration: number
+  estimatedCost?: string | number
 }
 
 const SHOT_COLORS = [
@@ -15,7 +16,11 @@ const SHOT_COLORS = [
   'bg-cyan-500',
 ]
 
-export function TimeBudgetBar({ shots, totalDuration }: TimeBudgetBarProps) {
+export function TimeBudgetBar({
+  shots,
+  totalDuration,
+  estimatedCost,
+}: TimeBudgetBarProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -35,17 +40,24 @@ export function TimeBudgetBar({ shots, totalDuration }: TimeBudgetBarProps) {
           />
         ))}
       </div>
-      <div className="flex gap-2 text-[10px] text-muted-foreground">
-        {shots.map((shot, i) => (
-          <div key={shot.id} className="flex items-center gap-1">
-            <div
-              className={`w-2 h-2 rounded-full ${SHOT_COLORS[i % SHOT_COLORS.length]}`}
-            />
-            <span>
-              Shot {i + 1}: {shot.duration}s
-            </span>
-          </div>
-        ))}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="flex flex-1 gap-2">
+          {shots.map((shot, i) => (
+            <div key={shot.id} className="flex items-center gap-1">
+              <div
+                className={`w-2 h-2 rounded-full ${SHOT_COLORS[i % SHOT_COLORS.length]}`}
+              />
+              <span>
+                Shot {i + 1}: {shot.duration}s
+              </span>
+            </div>
+          ))}
+        </div>
+        {estimatedCost && (
+          <span className="shrink-0 text-[color:var(--accent-brand)]">
+            Est. ${estimatedCost}
+          </span>
+        )}
       </div>
     </div>
   )

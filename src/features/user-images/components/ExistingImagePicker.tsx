@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
-import { Check } from 'lucide-react'
-import type { CollectedImage, UserImage } from '../types'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Upload } from 'lucide-react'
+import { useClipboardPaste } from '../hooks/useClipboardPaste'
+import { processAndUploadFiles } from '../lib/process-files'
+import type { CollectedImage, CreateUserImageInput, UserImage } from '../types'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,14 @@ interface ExistingImagePickerProps {
   onConfirm: (images: Array<CollectedImage>) => void
   max?: number
   excludeIds?: Set<string>
+  /** Pre-select these IDs when the picker opens. They appear as toggleable in the main grid (not in "already collected"). */
+  initialSelectedIds?: Set<string>
+  /** When true, immediately confirm after the first selection (useful for single-select pickers). */
+  autoConfirm?: boolean
+  /** When provided, shows upload button and enables clipboard paste. */
+  onUpload?: (input: CreateUserImageInput) => Promise<void>
+  /** Loading state for upload. */
+  isUploading?: boolean
 }
 
 export function ExistingImagePicker({
@@ -36,9 +46,42 @@ export function ExistingImagePicker({
   onConfirm,
   max,
   excludeIds,
+  initialSelectedIds,
+  autoConfirm,
+  onUpload,
+  isUploading,
 }: ExistingImagePickerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!onUpload || !e.target.files?.length) return
+      await processAndUploadFiles(Array.from(e.target.files), onUpload)
+      e.target.value = ''
+    },
+    [onUpload],
+  )
+
+  useClipboardPaste({
+    onUpload: onUpload ?? (async () => {}),
+    enabled: open && !!onUpload,
+  })
+
+  // When picker opens with initialSelectedIds, pre-check them
+  useEffect(() => {
+    if (open && initialSelectedIds?.size) {
+      setSelectedIds(new Set(initialSelectedIds))
+    } else if (!open) {
+      setSelectedIds(new Set())
+    }
+  }, [open, initialSelectedIds])
+
+  // When using initialSelectedIds, don't split into "already collected" section
+  const effectiveCollectedIds = initialSelectedIds?.size
+    ? new Set<string>()
+    : alreadyCollectedIds
 
   const filteredImages = useMemo(() => {
     let result =
@@ -51,16 +94,33 @@ export function ExistingImagePicker({
   }, [images, sourceFilter, excludeIds])
 
   const alreadyCollectedImages = useMemo(
-    () => filteredImages.filter((img) => alreadyCollectedIds.has(img.id)),
-    [filteredImages, alreadyCollectedIds],
+    () => filteredImages.filter((img) => effectiveCollectedIds.has(img.id)),
+    [filteredImages, effectiveCollectedIds],
   )
 
   const availableImages = useMemo(
-    () => filteredImages.filter((img) => !alreadyCollectedIds.has(img.id)),
-    [filteredImages, alreadyCollectedIds],
+    () => filteredImages.filter((img) => !effectiveCollectedIds.has(img.id)),
+    [filteredImages, effectiveCollectedIds],
   )
 
   const toggleSelect = (id: string) => {
+    if (autoConfirm) {
+      const img = images.find((i) => i.id === id)
+      if (img) {
+        onConfirm([
+          {
+            id: img.id,
+            title: img.title,
+            url: imageUrls[img.id] ?? '',
+            source: img.source,
+            addedInSession: false,
+          },
+        ])
+        setSelectedIds(new Set())
+        onOpenChange(false)
+      }
+      return
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -113,7 +173,7 @@ export function ExistingImagePicker({
           <DialogTitle>Select from Library</DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {filterButtons.map((btn) => (
             <button
               key={btn.value}
@@ -127,6 +187,27 @@ export function ExistingImagePicker({
               {btn.label}
             </button>
           ))}
+          {onUpload && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="ml-auto flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                title="Upload image"
+              >
+                <Upload className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 pr-1">

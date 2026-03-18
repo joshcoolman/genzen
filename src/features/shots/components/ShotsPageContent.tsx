@@ -8,14 +8,15 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { SHOT_MODELS } from '../hooks/useShotsPage'
-import { ShotsPipelineStep } from './ShotsPipelineStep'
 import type { UseShotsPageReturn } from '../hooks/useShotsPage'
+import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { FileUploadButton } from '@/components/FileUploadButton'
 import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
 import { LibraryPickerButton } from '@/components/LibraryPickerButton'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
+import { SourceImagePanel } from '@/components/SourceImagePanel'
 
 interface ShotsPageContentProps {
   page: UseShotsPageReturn
@@ -39,19 +40,7 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
           }}
           className="flex flex-wrap items-center gap-2"
         />
-        <div className="aspect-square w-full rounded-lg border border-border bg-card overflow-hidden flex items-center justify-center">
-          {page.sourceImageUrl ? (
-            <img
-              src={page.sourceImageUrl}
-              alt="Source"
-              className="size-full object-contain bg-black"
-            />
-          ) : (
-            <span className="text-sm text-muted-foreground">
-              Select an image
-            </span>
-          )}
-        </div>
+        <SourceImagePanel imageUrl={page.sourceImageUrl ?? undefined} />
         {hasImage && (
           <button
             type="button"
@@ -63,7 +52,7 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
           </button>
         )}
         {/* Image Description - auto-runs, collapsible to edit */}
-        <ShotsPipelineStep
+        <CollapsibleSection
           title="Image Description"
           status={page.step1.status}
           storageKey="shots-step-description"
@@ -114,10 +103,10 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
               className="shrink-0"
             />
           </div>
-        </ShotsPipelineStep>
+        </CollapsibleSection>
 
         {/* Prompt Template - with count stepper in header */}
-        <ShotsPipelineStep
+        <CollapsibleSection
           title="Prompt Template"
           status="idle"
           storageKey="shots-step-template"
@@ -156,11 +145,11 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
             value={page.step2.template}
             onChange={(e) => page.step2.setTemplate(e.target.value)}
           />
-        </ShotsPipelineStep>
+        </CollapsibleSection>
 
         {/* Prompts - slide view of generated prompts */}
         {page.splitPrompts.length > 0 && (
-          <ShotsPipelineStep
+          <CollapsibleSection
             title="Prompts"
             status={page.step3.status}
             storageKey="shots-step-prompts"
@@ -190,7 +179,7 @@ export function ShotsPageContent({ page }: ShotsPageContentProps) {
               <RefreshCw className="size-3" />
               Regenerate Prompts
             </button>
-          </ShotsPipelineStep>
+          </CollapsibleSection>
         )}
 
         {/* Single Generate button */}

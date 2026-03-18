@@ -94,11 +94,7 @@ export function GenerationHistory({
   }
 
   if (generations.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed border-border p-6 text-center">
-        <p className="text-xs text-muted-foreground">No generations yet</p>
-      </div>
-    )
+    return null
   }
 
   const compact = thumbSize !== 'lg'
