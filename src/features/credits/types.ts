@@ -5,6 +5,7 @@ export type CreditReason =
   | 'first_frame'
   | 'last_frame'
   | 'video_gen'
+  | 'multishot_gen'
   | 'pack_purchase'
   | 'initial_grant'
 
@@ -48,6 +49,7 @@ export const CREDIT_COSTS: Record<string, number> = {
   first_frame: 1,
   last_frame: 1,
   video_gen: 5,
+  multishot_gen: 5,
 }
 
 export const DOLLARS_PER_CREDIT = 0.1

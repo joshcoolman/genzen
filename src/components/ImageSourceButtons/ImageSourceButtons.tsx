@@ -22,6 +22,7 @@ interface ImageSourceButtonsProps {
     onOpen?: () => void
   }
   multiple?: boolean
+  showPaste?: boolean
   className?: string
 }
 
@@ -29,6 +30,7 @@ export function ImageSourceButtons({
   onFileSelected,
   library,
   multiple,
+  showPaste = true,
   className,
 }: ImageSourceButtonsProps) {
   return (
@@ -56,10 +58,12 @@ export function ImageSourceButtons({
         multiple={multiple}
         className="shrink-0"
       />
-      <ClipboardPasteButton
-        onImagePasted={onFileSelected}
-        className="shrink-0"
-      />
+      {showPaste && (
+        <ClipboardPasteButton
+          onImagePasted={onFileSelected}
+          className="shrink-0"
+        />
+      )}
     </div>
   )
 }

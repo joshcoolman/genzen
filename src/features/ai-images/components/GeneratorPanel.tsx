@@ -65,6 +65,7 @@ export function GeneratorPanel({
         <div className="flex gap-2 items-center flex-wrap">
           <ImageSourceButtons
             onFileSelected={generator.setSourceFile}
+            showPaste={false}
             library={{
               images: userImages.images,
               imageUrls: userImages.imageUrls,

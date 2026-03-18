@@ -23,13 +23,16 @@ import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
+import { Route as DashboardMultiShotRouteImport } from './routes/dashboard/multi-shot'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardAssetsRouteImport } from './routes/dashboard/assets'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
+import { Route as DashboardMultiShotIndexRouteImport } from './routes/dashboard/multi-shot.index'
 import { Route as DashboardDevWorkspaceIndexRouteImport } from './routes/dashboard/dev-workspace.index'
 import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
+import { Route as DashboardMultiShotSequenceIdRouteImport } from './routes/dashboard/multi-shot.$sequenceId'
 import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
 import { Route as DashboardDevWorkspaceStyleTrainerRouteImport } from './routes/dashboard/dev-workspace.style-trainer'
 import { Route as DashboardDevWorkspaceStoryboardRouteImport } from './routes/dashboard/dev-workspace.storyboard'
@@ -112,6 +115,11 @@ const DashboardNotesRoute = DashboardNotesRouteImport.update({
   path: '/notes',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMultiShotRoute = DashboardMultiShotRouteImport.update({
+  id: '/multi-shot',
+  path: '/multi-shot',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
@@ -137,6 +145,11 @@ const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardVideoRoute,
 } as any)
+const DashboardMultiShotIndexRoute = DashboardMultiShotIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardMultiShotRoute,
+} as any)
 const DashboardDevWorkspaceIndexRoute =
   DashboardDevWorkspaceIndexRouteImport.update({
     id: '/',
@@ -148,6 +161,12 @@ const DashboardVideoWorkspaceIdRoute =
     id: '/$workspaceId',
     path: '/$workspaceId',
     getParentRoute: () => DashboardVideoRoute,
+  } as any)
+const DashboardMultiShotSequenceIdRoute =
+  DashboardMultiShotSequenceIdRouteImport.update({
+    id: '/$sequenceId',
+    path: '/$sequenceId',
+    getParentRoute: () => DashboardMultiShotRoute,
   } as any)
 const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
   id: '/edit/$imageId',
@@ -227,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
+  '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -245,8 +265,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
   '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
+  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
+  '/dashboard/multi-shot/': typeof DashboardMultiShotIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesByTo {
@@ -275,8 +297,10 @@ export interface FileRoutesByTo {
   '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
   '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
+  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceIndexRoute
+  '/dashboard/multi-shot': typeof DashboardMultiShotIndexRoute
   '/dashboard/video': typeof DashboardVideoIndexRoute
 }
 export interface FileRoutesById {
@@ -292,6 +316,7 @@ export interface FileRoutesById {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
+  '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -310,8 +335,10 @@ export interface FileRoutesById {
   '/dashboard/dev-workspace/storyboard': typeof DashboardDevWorkspaceStoryboardRoute
   '/dashboard/dev-workspace/style-trainer': typeof DashboardDevWorkspaceStyleTrainerRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
+  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
   '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
+  '/dashboard/multi-shot/': typeof DashboardMultiShotIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
 }
 export interface FileRouteTypes {
@@ -328,6 +355,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/assets'
     | '/dashboard/dev-workspace'
+    | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -346,8 +374,10 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/storyboard'
     | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
+    | '/dashboard/multi-shot/$sequenceId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace/'
+    | '/dashboard/multi-shot/'
     | '/dashboard/video/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -376,8 +406,10 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/storyboard'
     | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
+    | '/dashboard/multi-shot/$sequenceId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace'
+    | '/dashboard/multi-shot'
     | '/dashboard/video'
   id:
     | '__root__'
@@ -392,6 +424,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/assets'
     | '/dashboard/dev-workspace'
+    | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -410,8 +443,10 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/storyboard'
     | '/dashboard/dev-workspace/style-trainer'
     | '/dashboard/edit/$imageId'
+    | '/dashboard/multi-shot/$sequenceId'
     | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace/'
+    | '/dashboard/multi-shot/'
     | '/dashboard/video/'
   fileRoutesById: FileRoutesById
 }
@@ -525,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNotesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/multi-shot': {
+      id: '/dashboard/multi-shot'
+      path: '/multi-shot'
+      fullPath: '/dashboard/multi-shot'
+      preLoaderRoute: typeof DashboardMultiShotRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/dev-workspace': {
       id: '/dashboard/dev-workspace'
       path: '/dev-workspace'
@@ -560,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoIndexRouteImport
       parentRoute: typeof DashboardVideoRoute
     }
+    '/dashboard/multi-shot/': {
+      id: '/dashboard/multi-shot/'
+      path: '/'
+      fullPath: '/dashboard/multi-shot/'
+      preLoaderRoute: typeof DashboardMultiShotIndexRouteImport
+      parentRoute: typeof DashboardMultiShotRoute
+    }
     '/dashboard/dev-workspace/': {
       id: '/dashboard/dev-workspace/'
       path: '/'
@@ -573,6 +622,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/video/$workspaceId'
       preLoaderRoute: typeof DashboardVideoWorkspaceIdRouteImport
       parentRoute: typeof DashboardVideoRoute
+    }
+    '/dashboard/multi-shot/$sequenceId': {
+      id: '/dashboard/multi-shot/$sequenceId'
+      path: '/$sequenceId'
+      fullPath: '/dashboard/multi-shot/$sequenceId'
+      preLoaderRoute: typeof DashboardMultiShotSequenceIdRouteImport
+      parentRoute: typeof DashboardMultiShotRoute
     }
     '/dashboard/edit/$imageId': {
       id: '/dashboard/edit/$imageId'
@@ -690,6 +746,19 @@ const DashboardDevWorkspaceRouteWithChildren =
     DashboardDevWorkspaceRouteChildren,
   )
 
+interface DashboardMultiShotRouteChildren {
+  DashboardMultiShotSequenceIdRoute: typeof DashboardMultiShotSequenceIdRoute
+  DashboardMultiShotIndexRoute: typeof DashboardMultiShotIndexRoute
+}
+
+const DashboardMultiShotRouteChildren: DashboardMultiShotRouteChildren = {
+  DashboardMultiShotSequenceIdRoute: DashboardMultiShotSequenceIdRoute,
+  DashboardMultiShotIndexRoute: DashboardMultiShotIndexRoute,
+}
+
+const DashboardMultiShotRouteWithChildren =
+  DashboardMultiShotRoute._addFileChildren(DashboardMultiShotRouteChildren)
+
 interface DashboardVideoRouteChildren {
   DashboardVideoWorkspaceIdRoute: typeof DashboardVideoWorkspaceIdRoute
   DashboardVideoIndexRoute: typeof DashboardVideoIndexRoute
@@ -709,6 +778,7 @@ interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardAssetsRoute: typeof DashboardAssetsRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
+  DashboardMultiShotRoute: typeof DashboardMultiShotRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
@@ -722,6 +792,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardAssetsRoute: DashboardAssetsRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
+  DashboardMultiShotRoute: DashboardMultiShotRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTrashRoute: DashboardTrashRoute,

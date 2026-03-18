@@ -1,4 +1,5 @@
 import {
+  Clapperboard,
   Film,
   FlaskConical,
   FolderOpen,
@@ -40,6 +41,13 @@ export const navItems: Array<NavItem> = [
     label: 'AI Video',
     href: '/dashboard/video',
     icon: Film,
+    activeOnly: true,
+  },
+  {
+    id: 'multi-shot',
+    label: 'Multi-Shot',
+    href: '/dashboard/multi-shot',
+    icon: Clapperboard,
     activeOnly: true,
   },
   {

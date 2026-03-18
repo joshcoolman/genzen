@@ -1,58 +1,54 @@
-## Thumbnail Unification — Issue #65
+# Continue: Multi-Shot Video Generation (Issue #72)
 
-**Branch:** `thumbnail-unification` (10 commits ahead of main, all pushed)
+## What was being worked on
 
-### What was done
+Full implementation of multi-shot video generation feature under `src/features/multi-shot/`. Uses Kling V3 Pro via FAL (`fal-ai/kling-video/v3/pro/image-to-video`) with `multi_prompt` API for multi-shot sequences.
 
-Audited and unified thumbnail/card components across the codebase. Ten commits:
+## Changes made so far (ALL UNCOMMITTED on branch `multi-shot`)
 
-1. **Renamed `ImageResultCard` -> `Thumbnail`** (`src/components/Thumbnail.tsx`) as the composable base. Exported `ThumbnailProps` interface. Updated all 9 consumer files.
+- **Migration**: `supabase/migrations/20260317000000_multishot_sequences.sql` -- `multishot_sequences` table with JSONB columns for shots/elements/settings, RLS policy
+- **Types**: `src/features/multi-shot/types.ts` -- Shot, MultiShotElement, MultiShotSettings, MultiShotSequence, constants (MAX_SHOTS=6, MAX_TOTAL_DURATION=15, MIN_SHOT_DURATION=3), FAL model ID
+- **Credits**: Added `multishot_gen` to CreditReason union + `multishot_gen: 5` to CREDIT_COSTS in `src/features/credits/types.ts`
+- **Server functions** (5 files in `src/features/multi-shot/server/`):
+  - `generate-multishot.server.ts` -- loads sequence, uploads element images to FAL, submits via `multi_prompt`, creates `user_images` record with `source: 'ai_video'` for polling
+  - `save-sequence.server.ts` -- upsert to `multishot_sequences` (fixed: passes raw objects to Supabase, NOT JSON.stringify)
+  - `get-sequences.server.ts` -- list with `parseJsonb()` helper for defensive JSONB deserialization
+  - `delete-sequence.server.ts`, `duplicate-sequence.server.ts`
+- **Hooks** (2 files in `src/features/multi-shot/hooks/`):
+  - `use-multishot-editor.ts` -- shots CRUD, elements CRUD (fixed: `prev.length + 1` inside updater for correct labels), settings, budget calc, generate/save
+  - `use-multishot-sequences.ts` -- fetch list, poll every 5s when pending, delete/duplicate
+- **Components** (6 files in `src/features/multi-shot/components/`):
+  - `MultiShotEditor.tsx` -- main editor with elements section (uses ExistingImagePicker from user-images), shot cards, settings (aspect ratio, shot type, audio toggle), generate button
+  - `ShotCard.tsx` -- prompt textarea + duration stepper (min 3s, capped by remaining budget)
+  - `ElementCard.tsx` -- 16x16 thumbnail with @ElementN label, delete button
+  - `TimeBudgetBar.tsx` -- segmented color-coded progress bar showing 15s budget
+  - `SequenceGrid.tsx` / `SequenceCard.tsx` -- past sequences grid with status badges, duplicate/delete
+- **Routes**: `src/routes/dashboard/multi-shot.tsx` (layout) + `multi-shot.index.tsx` (main page)
+- **Nav**: Added `Clapperboard` icon Multi-Shot item after AI Video in `src/lib/nav-items.ts`
+- **shadcn**: Added `src/components/ui/label.tsx` and `src/components/ui/switch.tsx`
+- **Feature docs**: `src/features/multi-shot/CLAUDE.md`
+- **Barrel**: `src/features/multi-shot/index.ts`
 
-2. **Extracted shared utilities** that were duplicated 3x each:
-   - `CopyButton` (`src/components/CopyButton.tsx`) — copy-to-clipboard with check icon feedback
-   - `ExpandableText` (`src/components/ExpandableText.tsx`) — truncated text with click-to-expand + copy
-   - `formatFileSize` (`src/lib/format.ts`)
+## Key decisions
 
-3. **Replaced global "Show/Hide prompts" toggle** in AI Images gallery with per-card `ExpandableText`. Removed `hidePrompts` prop from `ImageCard` and `ImageGallery`. Each card always shows its prompt, truncated by default.
+- FAL model: `fal-ai/kling-video/v3/pro/image-to-video` -- same endpoint for single and multi-shot, uses `multi_prompt` param
+- JSONB columns for shots/elements/settings -- avoids migration churn during V1 experimentation
+- Element images uploaded to FAL on generate (not on add) -- simpler UX
+- Stored as `user_images` with `source: 'ai_video'` so existing polling in `check-pending-generations.server.ts` picks up completion automatically
+- Supabase JSONB: do NOT `JSON.stringify()` before insert -- Supabase client handles serialization
 
-4. **Collapsed variations into parent card thumbnails.** `use-edit-children` already captured both edits AND variations via `source_image_id`. Added `childIds` set in `ImageGallery` to skip rendering completed images already shown as thumbnails on a parent. Pending/failed cards still render normally.
+## Outstanding work
 
-5. **Removed "More" button from gallery cards.** Variation generation is now exclusively in the edit view. Gallery card has only "Edit" button (full-width). Removed `MorePopover`, `generatingVariation`, `onPreviewVariations` props from `ImageCard`/`ImageGallery`. Variation hooks (`use-variations.ts`) untouched — still used by `ai-images.tsx` for the `VariationPromptsDialog`.
+- **Not yet tested end-to-end**: save + generate flow needs real testing with FAL (was debugging DB issues)
+- **Sequence status updates**: when polling detects completion, need to update `multishot_sequences.status` to 'completed' -- currently only `user_images` gets updated by existing polling. May need to extend `check-pending-generations.server.ts` or add a separate mechanism
+- **Video playback**: completed sequences don't show the video yet -- need to resolve video URL from the `video_record_id` and display it
+- **Start image**: settings support `startImageUrl` but there's no UI to set it yet
+- **UI polish**: the editor is functional but basic -- no drag-to-reorder shots, no inline video preview
+- **Commit**: nothing is committed yet -- all changes are uncommitted on branch `multi-shot`
 
-6. **Added "Generate Variations" button to focused edit view** (`FocusedEditView.tsx`). Between "Describe JSON" and "Generate Edit" in toolbar. Calls `generateVariationPrompts` (count=4), opens `VariationPromptsDialog`, then `submitVariations` with UI-selected aspect ratio and fixed `flux-pro/kontext` model. Adds pending results to the edit view's `GenerationResultsGrid` for optimistic feedback. Wired in `use-focused-edit.ts`.
+## Git state
 
-7. **Optimistic pending cards for variations in edit view.** After `submitVariations` returns record IDs, pending results are added to the edit view's `GenerationResultsGrid` with spinners. Polling/realtime replaces them with completed images.
-
-8. **Removed 8-item cap from `editChildrenMap`.** The cap was causing variations beyond the 8th to show as standalone gallery cards. All descendants now tracked in the map (for gallery filtering). Visual display in `ImageCard` shows all thumbnails — no cap for now.
-
-9. **Enlarged edit thumbnails and tightened spacing.** Thumbs: `w-8 h-8` -> `w-10 h-10` (40px). Gap: `gap-1.5` -> `gap-1`. Padding: `px-3 pb-3` -> `px-1.5 pb-1.5`. Dropped "Edits" label. Fills card width better.
-
-### Key decisions
-
-- **Variations are edits** — no separate treatment in gallery. Both fold into parent thumbnails.
-- **Per-card prompt UX** > global toggle. ExpandableText is the standard pattern everywhere.
-- **Edit view is the focused workspace** for all derivative operations (edits + variations).
-- **Gallery card is simplified** — just image, model badge, Edit button, prompt, and child thumbnails.
-- **`use-edit-children` already had the right data** — filters by `source_image_id` which both edits and variations set. No hook changes needed for collapsing.
-- **Promote-to-source flow** in edit view automatically makes "Generate Variations" reference the promoted image (uses `activeSourceId` + `sourceImage.prompt`).
-
-### Outstanding / next steps
-
-- **`use-variations.ts` + `VariationPromptsDialog` in `ai-images.tsx`** — still wired up on the AI Images page but the gallery no longer triggers it. Could clean up the dead code path if the dialog is never opened from that page anymore. Check if brainstorm or any other flow uses it.
-- **`onLoadPrompt` / `onLoadPromptAndModel`** — declared on `ImageGalleryProps` but never used in the function body. Could be cleaned up.
-- **"Edits" label** on parent card thumbnails — now includes variations too. Could rename to something more neutral or keep as-is.
-- **Assets view** — intentionally left unchanged (flat chronological, no grouping).
-- Pre-existing lint errors in `src/features/credits/handle-credit-error.ts` (2 `@typescript-eslint/no-unnecessary-condition` errors) — not from this work.
-
-### Key files touched
-
-- `src/components/Thumbnail.tsx` (was ImageResultCard)
-- `src/components/CopyButton.tsx` (new)
-- `src/components/ExpandableText.tsx` (new)
-- `src/lib/format.ts` (new)
-- `src/features/ai-images/components/ImageCard.tsx`
-- `src/features/ai-images/components/ImageGallery.tsx`
-- `src/features/ai-images/components/FocusedEditView.tsx`
-- `src/features/ai-images/hooks/use-focused-edit.ts`
-- `src/features/ai-images/hooks/use-edit-children.ts`
-- `src/routes/dashboard/ai-images.tsx`
+- Branch: `multi-shot`
+- All changes uncommitted (3 modified + 20 untracked files)
+- `pnpm build` passes, `pnpm check` passes (no new lint errors in multi-shot files)
+- DB migration applied locally via `npx supabase migration up`
