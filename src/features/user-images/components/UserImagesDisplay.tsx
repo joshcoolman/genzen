@@ -333,16 +333,13 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
 
   const loading = isLoading || workspacesLoading
 
-  if (loading) {
-    return <ImageGridSkeleton />
-  }
-
   // Track image-only index for edit dialog mapping
   let imageIdx = -1
 
   const hasAiContent =
-    images.some((img) => img.source === 'ai_generated') ||
-    workspaces.some((ws) => ws.generations.length > 0)
+    !loading &&
+    (images.some((img) => img.source === 'ai_generated') ||
+      workspaces.some((ws) => ws.generations.length > 0))
 
   return (
     <div className="space-y-6">
@@ -432,7 +429,9 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
       )}
 
       {/* Asset Grid or Empty State */}
-      {assets.length > 0 ? (
+      {loading ? (
+        <ImageGridSkeleton size={thumbSize} />
+      ) : assets.length > 0 ? (
         <ImageGrid size={thumbSize}>
           {assets.map((asset) => {
             if (asset.kind === 'image') {
