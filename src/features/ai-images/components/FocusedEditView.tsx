@@ -21,7 +21,7 @@ interface FocusedEditViewProps {
 export function FocusedEditView({ edit }: FocusedEditViewProps) {
   const [imgHeight, setImgHeight] = useState<number>(0)
   const [showPrompt, setShowPrompt] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const imgRef = useCallback((el: HTMLImageElement | null) => {
     if (!el) return
@@ -151,7 +151,7 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
             src={edit.sourceImage.url}
             alt={edit.sourceImage.title ?? 'Source image'}
             className="w-full rounded-lg object-contain bg-black cursor-pointer"
-            onClick={() => setLightboxOpen(true)}
+            onClick={() => setLightboxIndex(0)}
           />
           {edit.sourceImage.prompt && (
             <div className="mt-1.5">
@@ -244,22 +244,40 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         </>
       )}
 
-      {lightboxOpen && (
-        <Lightbox
-          images={[
-            {
-              id: edit.sourceImage.id,
-              url: edit.sourceImage.url,
-              title: edit.sourceImage.title ?? 'Source image',
-            },
-          ]}
-          imageUrls={{ [edit.sourceImage.id]: edit.sourceImage.url }}
-          currentIndex={0}
-          onClose={() => setLightboxOpen(false)}
-          onNext={() => {}}
-          onPrev={() => {}}
-        />
-      )}
+      {lightboxIndex !== null && (() => {
+        const completedResults = edit.results.results.filter(
+          (r) => r.status === 'complete' && r.url,
+        )
+        const allImages = [
+          {
+            id: edit.sourceImage.id,
+            url: edit.sourceImage.url,
+            title: edit.sourceImage.title ?? 'Source image',
+          },
+          ...completedResults.map((r) => ({
+            id: r.id,
+            url: r.url!,
+            title: r.label,
+          })),
+        ]
+        const urls = Object.fromEntries(allImages.map((img) => [img.id, img.url]))
+        return (
+          <Lightbox
+            images={allImages}
+            imageUrls={urls}
+            currentIndex={lightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+            onNext={() =>
+              setLightboxIndex((i) =>
+                i !== null && i < allImages.length - 1 ? i + 1 : i,
+              )
+            }
+            onPrev={() =>
+              setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i))
+            }
+          />
+        )
+      })()}
     </div>
   )
 }
