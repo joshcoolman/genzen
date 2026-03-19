@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { ArrowLeft, RotateCcw, Unlink } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Unlink, X } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import type { useFocusedEdit } from '@/features/ai-images/hooks/use-focused-edit'
 import { EDIT_MODELS } from '@/features/ai-images/models'
@@ -146,13 +146,24 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
       {/* Source image + prompt textarea — textarea matches image height */}
       <div className="flex gap-4 items-start">
         <div className="shrink-0 w-[200px]">
-          <img
-            ref={imgRef}
-            src={edit.sourceImage.url}
-            alt={edit.sourceImage.title ?? 'Source image'}
-            className="w-full rounded-lg object-contain bg-black cursor-pointer"
-            onClick={() => setLightboxIndex(0)}
-          />
+          <div className="relative">
+            <img
+              ref={imgRef}
+              src={edit.sourceImage.url}
+              alt={edit.sourceImage.title ?? 'Source image'}
+              className="w-full rounded-lg object-contain bg-black cursor-pointer"
+              onClick={() => setLightboxIndex(0)}
+            />
+            {edit.isChained && (
+              <button
+                onClick={edit.resetToOriginal}
+                className="absolute top-1.5 right-1.5 rounded-full bg-black/70 p-0.5 text-white hover:bg-black transition-colors cursor-pointer"
+                aria-label="Reset to original"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
           {edit.sourceImage.prompt && (
             <div className="mt-1.5">
               <button
