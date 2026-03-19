@@ -269,11 +269,13 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
             onClose={() => setLightboxIndex(null)}
             onNext={() =>
               setLightboxIndex((i) =>
-                i !== null && i < allImages.length - 1 ? i + 1 : i,
+                i !== null ? (i + 1) % allImages.length : i,
               )
             }
             onPrev={() =>
-              setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i))
+              setLightboxIndex((i) =>
+                i !== null ? (i - 1 + allImages.length) % allImages.length : i,
+              )
             }
           />
         )
