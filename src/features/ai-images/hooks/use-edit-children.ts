@@ -91,9 +91,7 @@ export function useEditChildren(
             children.map(async (child) => {
               const { data: signed } = await supabase.storage
                 .from('user-images')
-                .createSignedUrl(child.path, 86400, {
-                  transform: { width: 400, resize: 'contain', quality: 80 },
-                })
+                .createSignedUrl(child.path, 86400)
               if (!signed?.signedUrl) return null
               return { id: child.id, url: signed.signedUrl }
             }),
@@ -153,9 +151,7 @@ export function useEditChildren(
 
           supabase.storage
             .from('user-images')
-            .createSignedUrl(updated.storage_path, 86400, {
-              transform: { width: 400, resize: 'contain', quality: 80 },
-            })
+            .createSignedUrl(updated.storage_path, 86400)
             .then(({ data }) => {
               if (!data?.signedUrl) return
               setChildrenMap((prev) => {
