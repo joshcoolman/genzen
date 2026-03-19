@@ -76,6 +76,7 @@ export function QuickOutpaintDialog({
           aspectRatio: targetAspectRatio,
           model: OUTPAINT_MODELS[0].id,
           prompt: prompt.trim() || undefined,
+          offset: { x: 0.5, y: 0.5 },
         },
       })
 
