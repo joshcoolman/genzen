@@ -33,6 +33,7 @@ interface OutpaintImageInput {
   aspectRatio: string
   model: string
   offset?: { x: number; y: number }
+  prompt?: string
 }
 
 /**
@@ -192,14 +193,15 @@ export const outpaintImage = createServerFn({ method: 'POST' })
     )
 
     const isNanoBanana = data.model.includes('nano-banana')
+    const effectivePrompt = data.prompt || OUTPAINT_PROMPT
 
     let falInput: Record<string, unknown>
 
     if (isNanoBanana) {
       const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
       const prompt = supported
-        ? OUTPAINT_PROMPT
-        : `Seamlessly extend this image to fill a ${data.aspectRatio} frame, continuing the existing scene, lighting, and style naturally into the expanded area.`
+        ? effectivePrompt
+        : `Seamlessly extend this image to fill a ${data.aspectRatio} frame. ${effectivePrompt}`
 
       falInput = {
         prompt,
@@ -210,7 +212,7 @@ export const outpaintImage = createServerFn({ method: 'POST' })
     } else {
       falInput = await buildFalInput({
         modelId: data.model,
-        prompt: OUTPAINT_PROMPT,
+        prompt: effectivePrompt,
         aspectRatio: data.aspectRatio,
         imageUrls: [falImageUrl],
         safetyLevel: 'default',
@@ -227,7 +229,7 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       requestId: request_id,
       generationType: 'outpaint',
       falModelId: data.model,
-      prompt: OUTPAINT_PROMPT,
+      prompt: effectivePrompt,
       aspectRatio: data.aspectRatio,
     })
 

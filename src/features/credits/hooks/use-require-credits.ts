@@ -13,7 +13,7 @@ export function useRequireCredits(cost: number) {
     if (credits.isEmpty) {
       credits.showInsufficientCredits(cost)
     }
-  }, [credits.isEmpty])  
+  }, [credits.isEmpty])
 
   return credits
 }

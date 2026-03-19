@@ -1,2 +1,5 @@
 export { OutpaintPageContent } from './components/OutpaintPageContent'
 export { useOutpaintPage } from './hooks/useOutpaintPage'
+export { useQuickOutpaint } from './hooks/useQuickOutpaint'
+export type { QuickOutpaintDialogProps } from './hooks/useQuickOutpaint'
+export { QuickOutpaintDialog } from './components/QuickOutpaintDialog'
