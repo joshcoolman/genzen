@@ -199,9 +199,14 @@ export const outpaintImage = createServerFn({ method: 'POST' })
 
     if (isNanoBanana) {
       const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
-      const prompt = supported
-        ? effectivePrompt
-        : `Seamlessly extend this image to fill a ${data.aspectRatio} frame. ${effectivePrompt}`
+      // For nano-banana with a supported ratio and no custom prompt,
+      // a minimal prompt lets the model infer extension direction from
+      // the source dimensions vs target aspect ratio.
+      const prompt = data.prompt
+        ? data.prompt
+        : supported
+          ? 'Extend image'
+          : `Extend this image to fill a ${data.aspectRatio} frame`
 
       falInput = {
         prompt,
