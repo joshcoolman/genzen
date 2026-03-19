@@ -16,7 +16,6 @@ interface ImageGalleryProps {
   rootImageMeta: Record<string, { hidden: boolean }>
   editChildrenMap: EditChildrenMap
   loadingGallery: boolean
-  onOpenLightbox: (img: SavedAiImage) => void
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
@@ -32,7 +31,6 @@ export function ImageGallery({
   rootImageMeta,
   editChildrenMap,
   loadingGallery,
-  onOpenLightbox,
   onDelete,
   onRestoreRoot,
   onRetry,
@@ -151,7 +149,6 @@ export function ImageGallery({
                 rootIsHidden={rootMeta?.hidden}
                 editChildren={editChildrenMap[img.id]}
                 onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
-                onOpen={onOpenLightbox}
                 onDelete={onDelete}
                 onStartAdopt={onStartAdopt}
                 onDetach={onDetach}

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
 import { JsonSyntaxHighlight } from '@/components/JsonSyntaxHighlight'
+import { Lightbox } from '@/components/Lightbox'
 
 interface FocusedEditViewProps {
   edit: ReturnType<typeof useFocusedEdit>
@@ -20,6 +21,7 @@ interface FocusedEditViewProps {
 export function FocusedEditView({ edit }: FocusedEditViewProps) {
   const [imgHeight, setImgHeight] = useState<number>(0)
   const [showPrompt, setShowPrompt] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   const imgRef = useCallback((el: HTMLImageElement | null) => {
     if (!el) return
@@ -148,7 +150,8 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
             ref={imgRef}
             src={edit.sourceImage.url}
             alt={edit.sourceImage.title ?? 'Source image'}
-            className="w-full rounded-lg object-contain bg-black"
+            className="w-full rounded-lg object-contain bg-black cursor-pointer"
+            onClick={() => setLightboxOpen(true)}
           />
           {edit.sourceImage.prompt && (
             <div className="mt-1.5">
@@ -239,6 +242,23 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
             <JsonSyntaxHighlight json={edit.jsonDescription} />
           </div>
         </>
+      )}
+
+      {lightboxOpen && (
+        <Lightbox
+          images={[
+            {
+              id: edit.sourceImage.id,
+              url: edit.sourceImage.url,
+              title: edit.sourceImage.title ?? 'Source image',
+            },
+          ]}
+          imageUrls={{ [edit.sourceImage.id]: edit.sourceImage.url }}
+          currentIndex={0}
+          onClose={() => setLightboxOpen(false)}
+          onNext={() => {}}
+          onPrev={() => {}}
+        />
       )}
     </div>
   )

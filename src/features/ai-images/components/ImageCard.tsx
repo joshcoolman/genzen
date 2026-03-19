@@ -13,7 +13,6 @@ interface ImageCardProps {
   rootIsHidden?: boolean
   editChildren?: EditChildrenMap[string]
   onRestore?: () => void
-  onOpen: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   onStartAdopt?: (img: SavedAiImage) => void
   onDetach?: (img: SavedAiImage) => void
@@ -28,7 +27,6 @@ export function ImageCard({
   rootIsHidden,
   editChildren,
   onRestore,
-  onOpen,
   onDelete,
   onStartAdopt,
   onDetach,
@@ -92,7 +90,12 @@ export function ImageCard({
       alwaysShowOverlay
       overlayActionsLeft={moveButton}
       overlayActions={rightButtons}
-      onClick={() => imageUrl && onOpen(img)}
+      onClick={() =>
+        navigate({
+          to: '/dashboard/edit/$imageId',
+          params: { imageId: img.id },
+        })
+      }
     >
       <div className="p-1.5">
         <button

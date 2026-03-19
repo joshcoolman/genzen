@@ -97,7 +97,6 @@ function AiImagesPage() {
         rootImageMeta={page.gallery.rootImageMeta}
         editChildrenMap={page.editChildrenMap}
         loadingGallery={page.gallery.loadingGallery}
-        onOpenLightbox={page.lightbox.open}
         onLoadPrompt={page.handleLoadPrompt}
         onLoadPromptAndModel={page.handleLoadPromptAndModel}
         onDelete={page.gallery.deleteImage}
