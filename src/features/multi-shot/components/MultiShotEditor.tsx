@@ -21,6 +21,9 @@ import { ExistingImagePicker } from '@/features/user-images/components/ExistingI
 import { TwoColumnLayout } from '@/components/TwoColumnLayout'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import { SourceImagePanel } from '@/components/SourceImagePanel'
+import { Button } from '@/components/ui/button'
+import { useQuickOutpaint } from '@/features/outpaint/hooks/useQuickOutpaint'
+import { QuickOutpaintDialog } from '@/features/outpaint/components/QuickOutpaintDialog'
 
 interface MultiShotEditorProps {
   editor: ReturnType<typeof useMultishotEditor>
@@ -47,6 +50,11 @@ export function MultiShotEditor({
   const [pickerMode, setPickerMode] = useState<'element' | 'startImage'>(
     'element',
   )
+
+  const outpaint = useQuickOutpaint({
+    sourceImageUrl: editor.settings.startImageUrl,
+    expectedAspectRatio: editor.settings.aspectRatio,
+  })
 
   const alreadyCollectedIds = new Set(
     editor.elements
@@ -82,6 +90,12 @@ export function MultiShotEditor({
               : undefined
           }
         />
+        {outpaint.needsOutpaint && (
+          <Button size="sm" variant="outline" onClick={outpaint.openDialog}>
+            Outpaint to {editor.settings.aspectRatio}
+          </Button>
+        )}
+        <QuickOutpaintDialog {...outpaint.dialogProps} />
       </div>
 
       {/* Elements */}

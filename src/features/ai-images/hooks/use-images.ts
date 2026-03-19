@@ -157,11 +157,7 @@ export function useImages({
           if (payload.eventType === 'INSERT') {
             const newImage = payload.new as SavedAiImage
             // Skip images that belong to feature-specific galleries
-            const FEATURE_TYPES = new Set([
-              'edit',
-              'combine',
-              'describe',
-            ])
+            const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
             const insertGenType = newImage.generation_metadata?.generation_type
             if (insertGenType && FEATURE_TYPES.has(insertGenType)) return
 
