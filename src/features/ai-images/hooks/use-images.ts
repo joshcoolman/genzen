@@ -81,7 +81,7 @@ export function useImages({
           const { data: urlData } = await supabase.storage
             .from('user-images')
             .createSignedUrl(img.storage_path!, 86400, {
-              transform: { width: 400, quality: 80 },
+              transform: { width: 400, resize: 'contain', quality: 80 },
             })
           return urlData ? ([img.id, urlData.signedUrl] as const) : null
         }),
@@ -116,7 +116,7 @@ export function useImages({
                 const { data: urlData } = await supabase.storage
                   .from('user-images')
                   .createSignedUrl(r.storage_path, 86400, {
-                    transform: { width: 400, quality: 80 },
+                    transform: { width: 400, resize: 'contain', quality: 80 },
                   })
                 return urlData ? ([r.id, urlData.signedUrl] as const) : null
               }),
@@ -211,7 +211,7 @@ export function useImages({
               supabase.storage
                 .from('user-images')
                 .createSignedUrl(updatedImage.storage_path, 86400, {
-                  transform: { width: 400, quality: 80 },
+                  transform: { width: 400, resize: 'contain', quality: 80 },
                 })
                 .then(({ data }) => {
                   if (data) {

@@ -65,7 +65,7 @@ export function useUserImages(
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
           .createSignedUrl(image.storage_path, 86400, {
-            transform: { width: 400, quality: 80 },
+            transform: { width: 400, resize: 'contain', quality: 80 },
           })
 
         if (!error) {
@@ -201,7 +201,7 @@ export function useUserImages(
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
           .createSignedUrl(newImage.storage_path, 86400, {
-            transform: { width: 400, quality: 80 },
+            transform: { width: 400, resize: 'contain', quality: 80 },
           })
 
         // Update state

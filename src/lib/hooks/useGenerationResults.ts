@@ -101,7 +101,7 @@ export function useGenerationResults({
             const { data: signed } = await supabase.storage
               .from('user-images')
               .createSignedUrl(r.storage_path!, 86400, {
-                transform: { width: 400, quality: 80 },
+                transform: { width: 400, resize: 'contain', quality: 80 },
               })
             if (signed) urlMap[r.id] = signed.signedUrl
           }),
@@ -171,7 +171,7 @@ export function useGenerationResults({
               supabase.storage
                 .from('user-images')
                 .createSignedUrl(updated.storage_path, 86400, {
-                  transform: { width: 400, quality: 80 },
+                  transform: { width: 400, resize: 'contain', quality: 80 },
                 })
                 .then(({ data }) => {
                   if (data) {
