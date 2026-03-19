@@ -331,7 +331,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
       ? (imageOnlyAssets[editingIndex]?.image ?? null)
       : null
 
-  const loading = isLoading || workspacesLoading
+  const loading = isLoading
 
   // Track image-only index for edit dialog mapping
   let imageIdx = -1

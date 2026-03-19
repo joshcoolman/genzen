@@ -71,6 +71,7 @@ export function useImages({
         return !genType || !FEATURE_TYPES.has(genType)
       })
       setSavedImages(images)
+      setLoadingGallery(false)
 
       // Batch signed URL generation
       const completedWithPath = images.filter(
