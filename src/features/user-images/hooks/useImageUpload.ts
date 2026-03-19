@@ -67,7 +67,7 @@ export function useImageUpload(
 
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 86400)
+          .createSignedUrl(newImage.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
 
         return {
           id: newImage.id,
