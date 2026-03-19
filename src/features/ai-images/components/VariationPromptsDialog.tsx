@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Loader2, Plus, Sparkles, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,8 @@ interface VariationPromptsDialogProps {
   loading: boolean
   submitting: boolean
   onRun: (prompts: Array<string>) => void
+  onGenerateMore: () => void
+  generatingMore: boolean
   sourceImageUrl?: string
   referenceImages: Array<ReferenceImage>
   onAddReference: () => void
@@ -40,6 +42,8 @@ export function VariationPromptsDialog({
   loading,
   submitting,
   onRun,
+  onGenerateMore,
+  generatingMore,
   sourceImageUrl,
   referenceImages,
   onAddReference,
@@ -138,15 +142,31 @@ export function VariationPromptsDialog({
                   </button>
                 </div>
               ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={addPrompt}
-                className="w-full"
-              >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                Add prompt
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addPrompt}
+                  className="flex-1"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Add prompt
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onGenerateMore}
+                  disabled={generatingMore || submitting}
+                  className="flex-1"
+                >
+                  {generatingMore ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  {generatingMore ? 'Generating...' : 'Generate more'}
+                </Button>
+              </div>
             </>
           )}
         </div>

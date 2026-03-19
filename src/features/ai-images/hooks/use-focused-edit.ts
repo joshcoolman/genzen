@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { CollectedImage } from '@/features/user-images/types'
 import { useAuth } from '@/lib/auth'
-import { useCredits } from '@/features/credits/hooks/use-credits'
+import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
@@ -31,7 +31,7 @@ interface SourceImage {
 export function useFocusedEdit(imageId: string) {
   const { user, session } = useAuth()
   const accessToken = session?.access_token
-  const credits = useCredits()
+  const credits = useRequireCredits(CREDIT_COSTS.edit)
 
   const [sourceImage, setSourceImage] = useState<SourceImage | null>(null)
   const [originalImage, setOriginalImage] = useState<SourceImage | null>(null)
@@ -420,6 +420,29 @@ export function useFocusedEdit(imageId: string) {
     }
   }, [accessToken, sourceImage?.prompt, activeSourceId])
 
+  const [generatingMore, setGeneratingMore] = useState(false)
+
+  const handleGenerateMoreVariations = useCallback(async () => {
+    if (!accessToken || !sourceImage?.prompt) return
+    setGeneratingMore(true)
+    try {
+      const result = await generateVariationPrompts({
+        data: {
+          accessToken,
+          prompt: sourceImage.prompt,
+          sourceImageId: activeSourceId,
+          count: 1,
+          existingPrompts: variationPrompts,
+        },
+      })
+      setVariationPrompts((prev) => [...prev, ...result.prompts])
+    } catch {
+      // silently fail -- user can retry
+    } finally {
+      setGeneratingMore(false)
+    }
+  }, [accessToken, sourceImage?.prompt, activeSourceId, variationPrompts])
+
   const handleRunVariations = useCallback(
     async (prompts: Array<string>) => {
       if (!accessToken || !variationMeta || !sourceImage) return
@@ -509,6 +532,8 @@ export function useFocusedEdit(imageId: string) {
     variationSubmitting,
     handleGenerateVariations,
     handleRunVariations,
+    handleGenerateMoreVariations,
+    generatingMore,
     hasParent,
     detachFromParent: async () => {
       if (!accessToken) return

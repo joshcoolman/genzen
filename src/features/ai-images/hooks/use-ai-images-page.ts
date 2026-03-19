@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { SlotTier } from '@/lib/model-slots'
+import { CREDIT_COSTS } from '@/features/credits'
 import { useAuth } from '@/lib/auth'
-import { useCredits } from '@/features/credits/hooks/use-credits'
+import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSlots } from '@/lib/model-slots'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
@@ -19,7 +20,7 @@ const GENS_STORAGE_KEY = 'genzen:slot-gens-per-model'
 
 export function useAiImagesPage() {
   const { user, session } = useAuth()
-  const credits = useCredits()
+  const credits = useRequireCredits(CREDIT_COSTS.image_gen)
   const accessToken = session?.access_token
 
   const gallery = useImages({

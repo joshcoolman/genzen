@@ -159,17 +159,21 @@ export function GeneratorPanel({
         )}
 
         <ActionButton
-          onClick={generator.handleGenerate}
+          onClick={() => {
+            const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
+            if ((credits.balance ?? 0) < cost) {
+              credits.showInsufficientCredits(cost)
+              return
+            }
+            generator.handleGenerate()
+          }}
           loading={generator.loading}
           loadingText={
             generator.totalImages > 1
               ? `Generating ${generator.totalImages} images...`
               : 'Generating...'
           }
-          disabled={
-            !generator.canGenerate ||
-            (credits.balance ?? 0) < CREDIT_COSTS.image_gen
-          }
+          disabled={!generator.canGenerate && !credits.isEmpty}
           className="w-full"
         >
           {credits.isEmpty

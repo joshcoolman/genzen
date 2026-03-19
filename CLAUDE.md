@@ -61,6 +61,10 @@ Examples:
 - `fix(nav): sidebar not restoring width after dev workspace exit`
 - `infra: add gemini3Flash to ai.server.ts model registry`
 
+## Shared Terms
+
+See `shared-terms.md` for domain vocabulary (focused edit view, variations, brainstorm, etc.)
+
 ## Key Conventions
 
 - Path aliases: `@/components`, `@/lib`, `@/features` (via tsconfig paths)

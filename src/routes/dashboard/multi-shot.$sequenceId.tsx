@@ -2,6 +2,8 @@ import { useCallback } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import type { CreateUserImageInput } from '@/features/user-images/types'
+import { CREDIT_COSTS } from '@/features/credits'
+import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useAuth } from '@/lib/auth'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { MultiShotEditor } from '@/features/multi-shot'
@@ -17,6 +19,7 @@ function SequenceDetailPage() {
   const { sequenceId } = Route.useParams()
   const { session, user } = useAuth()
   const accessToken = session?.access_token
+  useRequireCredits(CREDIT_COSTS.multishot_gen)
   const userImagesHook = useUserImages(user?.id)
 
   const handleUpload = useCallback(

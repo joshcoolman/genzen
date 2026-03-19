@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react'
 import type { Generation } from '@/features/ai-video/types'
 
 import { useAuth } from '@/lib/auth'
-import { useCredits } from '@/features/credits/hooks/use-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useFrame } from '@/features/ai-video/hooks/use-frame'
 import { useWorkspaceName } from '@/features/ai-video/hooks/use-workspace-name'
 import { useGenerations } from '@/features/ai-video/hooks/use-generations'
@@ -29,7 +30,7 @@ export function useVideoWorkspacePage({
   const { session } = useAuth()
   const accessToken = session?.access_token
   const userId = session?.user.id
-  const credits = useCredits()
+  const credits = useRequireCredits(CREDIT_COSTS.video_gen)
   const userImages = useUserImages(userId)
 
   const wsName = useWorkspaceName(workspaceId, accessToken)

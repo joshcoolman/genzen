@@ -210,6 +210,8 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         loading={edit.variationPromptsLoading}
         submitting={edit.variationSubmitting}
         onRun={edit.handleRunVariations}
+        onGenerateMore={edit.handleGenerateMoreVariations}
+        generatingMore={edit.generatingMore}
         sourceImageUrl={edit.sourceImage?.url}
         referenceImages={edit.variationRefImages}
         onAddReference={() => edit.setRefPickerOpen(true)}

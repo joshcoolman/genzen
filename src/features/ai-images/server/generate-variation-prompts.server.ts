@@ -16,6 +16,7 @@ interface GenerateVariationPromptsInput {
   prompt: string
   sourceImageId: string
   count: number
+  existingPrompts?: Array<string>
 }
 
 export const generateVariationPrompts = createServerFn({ method: 'POST' })
@@ -149,6 +150,14 @@ export const generateVariationPrompts = createServerFn({ method: 'POST' })
         : prompt
     if (!usedPrompts.includes(sourcePrompt)) {
       usedPrompts.unshift(sourcePrompt)
+    }
+    // Merge in any prompts the caller already has (e.g. from "generate more")
+    if (data.existingPrompts) {
+      for (const ep of data.existingPrompts) {
+        if (!usedPrompts.includes(ep)) {
+          usedPrompts.push(ep)
+        }
+      }
     }
 
     // Generate N prompts via Claude Sonnet
