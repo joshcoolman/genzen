@@ -5,6 +5,7 @@ import { getModelName } from '@/features/ai-images/models'
 import { PendingImageCard } from '@/features/ai-images/components/PendingImageCard'
 import { ImageCard } from '@/features/ai-images/components/ImageCard'
 import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
+import { ImageGridSkeleton } from '@/components/ImageGrid'
 
 const DISPLAY_MODE_KEY = 'ai-images-display-mode'
 
@@ -81,7 +82,7 @@ export function ImageGallery({
       </div>
 
       {loadingGallery ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <ImageGridSkeleton />
       ) : images.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
           <h3 className="mb-2 text-lg font-semibold text-foreground">

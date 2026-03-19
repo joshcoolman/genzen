@@ -12,7 +12,7 @@ import { useUserImages } from '../hooks/useUserImages'
 import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { ImageUploadButton } from './ImageUploadButton'
 import { ImageDownloadButton } from './ImageDownloadButton'
-import { EmptyState, ImageGrid } from './ImageGrid'
+import { EmptyState, ImageGrid, ImageGridSkeleton } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
 import type { CreateUserImageInput, UserImage } from '../types'
@@ -334,14 +334,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   const loading = isLoading || workspacesLoading
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <div className="text-center">
-          <div className="mb-4 text-2xl text-muted-foreground">Loading...</div>
-          <p className="text-muted-foreground">Loading assets...</p>
-        </div>
-      </div>
-    )
+    return <ImageGridSkeleton />
   }
 
   // Track image-only index for edit dialog mapping

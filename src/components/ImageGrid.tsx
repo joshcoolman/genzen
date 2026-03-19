@@ -7,6 +7,29 @@ interface ImageGridProps {
   layout?: 'grid' | 'list'
 }
 
+export function ImageGridSkeleton({
+  count = 12,
+  size = 'lg',
+  className = '',
+}: {
+  count?: number
+  size?: 'lg' | 'md' | 'sm'
+  className?: string
+}) {
+  return (
+    <ImageGrid size={size} className={className}>
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-lg border border-border bg-card"
+        >
+          <div className="aspect-square animate-pulse bg-muted/50" />
+        </div>
+      ))}
+    </ImageGrid>
+  )
+}
+
 export function ImageGrid({
   children,
   className = '',
