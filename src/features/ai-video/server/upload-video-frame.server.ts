@@ -120,10 +120,11 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       throw new Error(`Failed to create frame record: ${insertError.message}`)
     }
 
-    // Return signed URL for the cropped version (used as frame)
+    // Return signed URL for the original version (display uses object-contain)
+    const displayPath = originalBase64 ? recordStoragePath : croppedStoragePath
     const { data: urlData } = await supabase.storage
       .from('user-images')
-      .createSignedUrl(croppedStoragePath, 3600)
+      .createSignedUrl(displayPath, 3600)
 
     if (!urlData) {
       throw new Error('Failed to create signed URL')

@@ -38,7 +38,7 @@ export function useFirstFrameGenerator({
       return
     }
 
-    firstFrame.setGenerating(croppedDataUrl)
+    firstFrame.setGenerating(originalDataUrl)
     onResetDownstream()
 
     try {

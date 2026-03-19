@@ -56,11 +56,11 @@ export function useLastFrameGenerator({
     }
 
     // Show preview immediately then upload
-    lastFrame.setGenerating(croppedDataUrl)
+    lastFrame.setGenerating(originalDataUrl)
 
     if (firstFrame.status !== 'completed' || !firstFrame.recordId) {
       // No first frame yet — just show preview
-      lastFrame.setUrl(croppedDataUrl)
+      lastFrame.setUrl(originalDataUrl)
       lastFrame.setStatus('idle')
       return
     }

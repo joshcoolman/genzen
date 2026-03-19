@@ -20,7 +20,7 @@ export function FrameImageArea({
         <img
           src={imageUrl}
           alt="Frame"
-          className="aspect-video w-full rounded-md object-cover border border-border"
+          className="aspect-video w-full rounded-md object-contain border border-border bg-black"
         />
         {onChooseImage && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-md">
