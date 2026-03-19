@@ -10,7 +10,7 @@ import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 const OUTPAINT_PROMPT =
-  'Seamlessly extend this image, continuing the existing scene, lighting, and style naturally into the expanded area.'
+  'Seamlessly extend this image to fill the specified aspect ratio, do not be creative unless specicfic instructions are given.'
 
 /** Aspect ratios the nano-banana edit models accept natively */
 const NANO_BANANA_RATIOS = new Set([
@@ -193,20 +193,17 @@ export const outpaintImage = createServerFn({ method: 'POST' })
     )
 
     const isNanoBanana = data.model.includes('nano-banana')
-    const effectivePrompt = data.prompt || OUTPAINT_PROMPT
+    const effectivePrompt = data.prompt
+      ? `${OUTPAINT_PROMPT} ${data.prompt}`
+      : OUTPAINT_PROMPT
 
     let falInput: Record<string, unknown>
 
     if (isNanoBanana) {
       const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
-      // For nano-banana with a supported ratio and no custom prompt,
-      // a minimal prompt lets the model infer extension direction from
-      // the source dimensions vs target aspect ratio.
-      const prompt = data.prompt
-        ? data.prompt
-        : supported
-          ? 'Extend image'
-          : `Extend this image to fill a ${data.aspectRatio} frame`
+      const prompt = supported
+        ? effectivePrompt
+        : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
 
       falInput = {
         prompt,
