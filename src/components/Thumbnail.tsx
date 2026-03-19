@@ -1,5 +1,14 @@
 import { Trash2 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
+
+function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`animate-pulse bg-muted/50 ${className}`}
+      aria-hidden="true"
+    />
+  )
+}
 
 export interface ThumbnailProps {
   url?: string | null
@@ -64,6 +73,7 @@ export function Thumbnail({
   className,
   children,
 }: ThumbnailProps) {
+  const [loaded, setLoaded] = useState(false)
   const El = asButton ? 'button' : 'div'
   const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
   const cursorClass = onClick ? 'cursor-pointer' : ''
@@ -79,19 +89,19 @@ export function Thumbnail({
           className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md ${bgClass}`}
         >
           {url ? (
-            <img
-              src={url}
-              alt={alt}
-              loading="lazy"
-              decoding="async"
-              className={`h-full w-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
-            />
+            <>
+              {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+              <img
+                src={url}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                onLoad={() => setLoaded(true)}
+                className={`h-full w-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
+              />
+            </>
           ) : (
-            (fallback ?? (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground text-xs">
-                ...
-              </div>
-            ))
+            (fallback ?? <Skeleton className="h-full w-full" />)
           )}
         </div>
         <div className="flex min-w-0 flex-1 items-center gap-2">{footer}</div>
@@ -118,19 +128,19 @@ export function Thumbnail({
           onClick={!asButton ? onClick : undefined}
         >
           {status === 'complete' && url ? (
-            <img
-              src={url}
-              alt={alt}
-              loading="lazy"
-              decoding="async"
-              className={`w-full h-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
-            />
+            <>
+              {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+              <img
+                src={url}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                onLoad={() => setLoaded(true)}
+                className={`w-full h-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
+              />
+            </>
           ) : status === 'complete' && !url ? (
-            (fallback ?? (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground">
-                Loading...
-              </div>
-            ))
+            (fallback ?? <Skeleton className="h-full w-full" />)
           ) : status === 'pending' ? (
             <div className="relative flex h-full w-full items-center justify-center bg-card">
               {pendingBackgroundUrl ? (
