@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { ActionButton } from '@/components/ActionButton'
 import { JsonSyntaxHighlight } from '@/components/JsonSyntaxHighlight'
 import { Lightbox } from '@/components/Lightbox'
+import { RefImageStrip } from '@/components/RefImageStrip'
 
 interface FocusedEditViewProps {
   edit: ReturnType<typeof useFocusedEdit>
@@ -194,6 +195,13 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
                 void edit.handleSubmit()
               }
             }}
+          />
+          <RefImageStrip
+            images={edit.variationRefImages}
+            max={Math.min(...EDIT_MODELS.map((m) => m.maxRefImages))}
+            onAdd={() => edit.setRefPickerOpen(true)}
+            onRemove={(id) => edit.handleRemoveRefImage(id)}
+            disabled={edit.editLoading}
           />
         </div>
       </div>
