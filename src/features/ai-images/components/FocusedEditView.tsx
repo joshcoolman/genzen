@@ -263,42 +263,47 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         </>
       )}
 
-      {lightboxIndex !== null && (() => {
-        const completedResults = edit.results.results.filter(
-          (r) => r.status === 'complete' && r.url,
-        )
-        const allImages = [
-          {
-            id: edit.sourceImage.id,
-            url: edit.sourceImage.url,
-            title: edit.sourceImage.title ?? 'Source image',
-          },
-          ...completedResults.map((r) => ({
-            id: r.id,
-            url: r.url!,
-            title: r.label,
-          })),
-        ]
-        const urls = Object.fromEntries(allImages.map((img) => [img.id, img.url]))
-        return (
-          <Lightbox
-            images={allImages}
-            imageUrls={urls}
-            currentIndex={lightboxIndex}
-            onClose={() => setLightboxIndex(null)}
-            onNext={() =>
-              setLightboxIndex((i) =>
-                i !== null ? (i + 1) % allImages.length : i,
-              )
-            }
-            onPrev={() =>
-              setLightboxIndex((i) =>
-                i !== null ? (i - 1 + allImages.length) % allImages.length : i,
-              )
-            }
-          />
-        )
-      })()}
+      {lightboxIndex !== null &&
+        (() => {
+          const completedResults = edit.results.results.filter(
+            (r) => r.status === 'complete' && r.url,
+          )
+          const allImages = [
+            {
+              id: edit.sourceImage.id,
+              url: edit.sourceImage.url,
+              title: edit.sourceImage.title ?? 'Source image',
+            },
+            ...completedResults.map((r) => ({
+              id: r.id,
+              url: r.url!,
+              title: r.label,
+            })),
+          ]
+          const urls = Object.fromEntries(
+            allImages.map((img) => [img.id, img.url]),
+          )
+          return (
+            <Lightbox
+              images={allImages}
+              imageUrls={urls}
+              currentIndex={lightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+              onNext={() =>
+                setLightboxIndex((i) =>
+                  i !== null ? (i + 1) % allImages.length : i,
+                )
+              }
+              onPrev={() =>
+                setLightboxIndex((i) =>
+                  i !== null
+                    ? (i - 1 + allImages.length) % allImages.length
+                    : i,
+                )
+              }
+            />
+          )
+        })()}
     </div>
   )
 }

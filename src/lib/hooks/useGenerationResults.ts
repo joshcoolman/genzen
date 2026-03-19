@@ -79,11 +79,15 @@ export function useGenerationResults({
       if (queryError ?? !data) return
 
       const rows = (data as Array<DbRow>).filter((r) => {
-        if (!matchesType(r, generationType)) return false
         if (sourceImageIds && sourceImageIds.length > 0) {
+          // When filtering by source chain, include any image whose
+          // source_image_id is in the chain (regardless of generation_type).
+          // This ensures re-parented images appear even without edit/variation type.
           const meta = r.generation_metadata
           const srcId = meta?.source_image_id as string | undefined
           if (!srcId || !sourceImageIds.includes(srcId)) return false
+        } else {
+          if (!matchesType(r, generationType)) return false
         }
         return true
       })
@@ -153,11 +157,12 @@ export function useGenerationResults({
         (payload) => {
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as DbRow
-            if (!matchesType(updated, generationType)) return
             if (sourceImageIds && sourceImageIds.length > 0) {
               const meta = updated.generation_metadata
               const srcId = meta?.source_image_id as string | undefined
               if (!srcId || !sourceImageIds.includes(srcId)) return
+            } else {
+              if (!matchesType(updated, generationType)) return
             }
 
             if (updated.status === 'completed' && updated.storage_path) {

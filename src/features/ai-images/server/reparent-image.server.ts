@@ -100,9 +100,15 @@ export const reparentImage = createServerFn({ method: 'POST' })
       }
 
       // Update imageId: set source_image_id to newParentId
+      // Ensure generation_type is 'edit' or 'variation' so it appears in edit view
+      const existingType = targetRow.generation_metadata?.generation_type as
+        | string
+        | undefined
+      const needsType = existingType !== 'edit' && existingType !== 'variation'
       const targetMeta = {
         ...(targetRow.generation_metadata ?? {}),
         source_image_id: data.newParentId,
+        ...(needsType ? { generation_type: 'variation' } : {}),
       }
       const { error: updateError } = await supabase
         .from('user_images')
