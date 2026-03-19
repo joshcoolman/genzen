@@ -65,7 +65,7 @@ export function useImages({
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const allImages = (data ?? []) as Array<SavedAiImage>
       // Exclude images that belong to feature-specific galleries
-      const FEATURE_TYPES = new Set(['edit', 'outpaint', 'combine', 'describe'])
+      const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
       const images = allImages.filter((img) => {
         const genType = img.generation_metadata?.generation_type
         return !genType || !FEATURE_TYPES.has(genType)
@@ -159,7 +159,6 @@ export function useImages({
             // Skip images that belong to feature-specific galleries
             const FEATURE_TYPES = new Set([
               'edit',
-              'outpaint',
               'combine',
               'describe',
             ])
