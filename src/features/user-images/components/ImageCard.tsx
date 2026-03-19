@@ -39,23 +39,14 @@ export function ImageCard({
                 {image.title}
               </h3>
             </div>
-            {image.description ? (
-              <ExpandableText
-                text={image.description}
-                className="px-4 pt-1 pb-2"
-                textClassName="text-[10px] text-muted-foreground leading-relaxed"
-              />
-            ) : (
-              <div className="flex items-start gap-1 px-4 pt-1 pb-2">
-                <p className="flex-1 text-[10px] leading-relaxed line-clamp-3">
-                  &nbsp;
-                  <br />
-                  &nbsp;
-                  <br />
-                  &nbsp;
-                </p>
-              </div>
-            )}
+            <div className="px-4 pt-1 pb-2" style={{ minHeight: '3.875rem' }}>
+              {image.description ? (
+                <ExpandableText
+                  text={image.description}
+                  textClassName="text-[10px] text-muted-foreground leading-relaxed"
+                />
+              ) : null}
+            </div>
             <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
               <div className="flex justify-between items-center">
                 <span>{formatFileSize(image.file_size)}</span>
