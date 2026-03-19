@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useCallback, useState } from 'react'
 
 function Skeleton({ className = '' }: { className?: string }) {
   return (
@@ -74,6 +74,12 @@ export function Thumbnail({
   children,
 }: ThumbnailProps) {
   const [loaded, setLoaded] = useState(false)
+  const imgRef = useCallback(
+    (el: HTMLImageElement | null) => {
+      if (el?.complete && el.naturalWidth > 0) setLoaded(true)
+    },
+    [url],
+  )
   const El = asButton ? 'button' : 'div'
   const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
   const cursorClass = onClick ? 'cursor-pointer' : ''
@@ -92,6 +98,7 @@ export function Thumbnail({
             <>
               {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
               <img
+                ref={imgRef}
                 src={url}
                 alt={alt}
                 loading="lazy"
@@ -131,6 +138,7 @@ export function Thumbnail({
             <>
               {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
               <img
+                ref={imgRef}
                 src={url}
                 alt={alt}
                 loading="lazy"
