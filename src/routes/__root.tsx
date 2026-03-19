@@ -1,5 +1,6 @@
 import {
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   createRootRoute,
@@ -43,6 +44,7 @@ export const Route = createRootRoute({
 
   component: RootComponent,
   shellComponent: RootDocument,
+  notFoundComponent: NotFoundComponent,
 })
 
 function RootComponent() {
@@ -52,6 +54,20 @@ function RootComponent() {
       <StatusBar />
       <Outlet />
     </AuthProvider>
+  )
+}
+
+function NotFoundComponent() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-black">
+      <Link to="/">
+        <img
+          src="/404.png"
+          alt="404 Not Found"
+          className="max-h-[50vh] max-w-[50vw] cursor-pointer object-contain"
+        />
+      </Link>
+    </div>
   )
 }
 
