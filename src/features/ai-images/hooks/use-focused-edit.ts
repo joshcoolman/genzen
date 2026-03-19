@@ -130,7 +130,7 @@ export function useFocusedEdit(imageId: string) {
 
       const { data: signed } = await supabase.storage
         .from('user-images')
-        .createSignedUrl(data.storage_path, 3600)
+        .createSignedUrl(data.storage_path, 86400)
 
       if (!signed?.signedUrl) {
         setError('Failed to load image')
@@ -299,7 +299,7 @@ export function useFocusedEdit(imageId: string) {
 
       const { data: signed } = await supabase.storage
         .from('user-images')
-        .createSignedUrl(data.storage_path, 3600)
+        .createSignedUrl(data.storage_path, 86400)
 
       const meta = data.generation_metadata as Record<string, unknown> | null
       const srcRatio = meta?.aspect_ratio as string | undefined

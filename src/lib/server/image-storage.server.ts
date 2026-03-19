@@ -30,7 +30,7 @@ export async function downloadAndStoreImage(
     .from('user-images')
     .upload(storagePath, imageBytes, {
       contentType: 'image/png',
-      cacheControl: '3600',
+      cacheControl: '31536000',
       upsert: false,
     })
 

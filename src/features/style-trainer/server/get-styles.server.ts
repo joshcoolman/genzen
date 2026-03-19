@@ -35,7 +35,9 @@ export const getStyles = createServerFn({ method: 'GET' })
         if (style.thumbnail_path) {
           const { data: urlData } = await supabase.storage
             .from('styles')
-            .createSignedUrl(style.thumbnail_path, 3600)
+            .createSignedUrl(style.thumbnail_path, 86400, {
+              transform: { width: 300, quality: 80 },
+            })
           thumbnailUrl = urlData?.signedUrl ?? null
         }
         return { ...style, thumbnailUrl }
@@ -78,7 +80,9 @@ export const getStyleImages = createServerFn({ method: 'GET' })
       images.map(async (img) => {
         const { data: urlData } = await supabase.storage
           .from('styles')
-          .createSignedUrl(img.storage_path, 3600)
+          .createSignedUrl(img.storage_path, 86400, {
+            transform: { width: 300, quality: 80 },
+          })
         return { ...img, url: urlData?.signedUrl ?? null }
       }),
     )

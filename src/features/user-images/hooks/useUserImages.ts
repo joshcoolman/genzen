@@ -64,7 +64,9 @@ export function useUserImages(
       try {
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 3600)
+          .createSignedUrl(image.storage_path, 86400, {
+            transform: { width: 400, quality: 80 },
+          })
 
         if (!error) {
           setState((prev) => ({
@@ -163,7 +165,7 @@ export function useUserImages(
         const { error: uploadError } = await supabase.storage
           .from(BUCKET_NAME)
           .upload(storagePath, input.file, {
-            cacheControl: '3600',
+            cacheControl: '31536000',
             upsert: false,
           })
 
@@ -198,7 +200,9 @@ export function useUserImages(
         // Get signed URL for new image
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 3600)
+          .createSignedUrl(newImage.storage_path, 86400, {
+            transform: { width: 400, quality: 80 },
+          })
 
         // Update state
         setState((prev) => ({

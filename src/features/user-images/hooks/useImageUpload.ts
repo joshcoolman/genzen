@@ -35,7 +35,7 @@ export function useImageUpload(
         const { error: uploadError } = await supabase.storage
           .from(BUCKET_NAME)
           .upload(storagePath, input.file, {
-            cacheControl: '3600',
+            cacheControl: '31536000',
             upsert: false,
           })
 
@@ -67,7 +67,9 @@ export function useImageUpload(
 
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 3600)
+          .createSignedUrl(newImage.storage_path, 86400, {
+            transform: { width: 400, quality: 80 },
+          })
 
         return {
           id: newImage.id,

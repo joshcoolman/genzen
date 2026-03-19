@@ -82,6 +82,8 @@ export function Thumbnail({
             <img
               src={url}
               alt={alt}
+              loading="lazy"
+              decoding="async"
               className={`h-full w-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
             />
           ) : (
@@ -119,6 +121,8 @@ export function Thumbnail({
             <img
               src={url}
               alt={alt}
+              loading="lazy"
+              decoding="async"
               className={`w-full h-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
             />
           ) : status === 'complete' && !url ? (

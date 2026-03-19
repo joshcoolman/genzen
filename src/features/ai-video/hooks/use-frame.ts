@@ -68,7 +68,7 @@ export function useFrame({ accessToken }: UseFrameOptions) {
           if (updated.status === 'completed' && updated.storage_path) {
             supabase.storage
               .from('user-images')
-              .createSignedUrl(updated.storage_path, 3600)
+              .createSignedUrl(updated.storage_path, 86400)
               .then(({ data }) => {
                 if (data) {
                   setUrl(data.signedUrl)

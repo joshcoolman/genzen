@@ -126,7 +126,9 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
       for (const image of imgs) {
         const { data } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 3600)
+          .createSignedUrl(image.storage_path, 86400, {
+            transform: { width: 400, quality: 80 },
+          })
         if (data) {
           setImageUrls((prev) => ({ ...prev, [image.id]: data.signedUrl }))
         }
