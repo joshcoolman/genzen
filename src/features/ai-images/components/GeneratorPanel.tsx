@@ -61,26 +61,7 @@ export function GeneratorPanel({
         />
       )}
 
-      {/* Row 2: Draft/Quality + JSON */}
-      <div className="flex gap-2 items-center">
-        <TierToggle
-          activeTier={activeTier}
-          onChangeTier={setActiveTier}
-          slots={slots}
-          disabled={generator.loading}
-        />
-        {describe && generator.sourceImage && (
-          <button
-            onClick={describe.handleDescribe}
-            disabled={describe.jsonLoading || generator.loading}
-            className="h-9 px-3 text-sm rounded-md border border-input text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-          >
-            {describe.jsonLoading ? '...' : 'JSON'}
-          </button>
-        )}
-      </div>
-
-      {/* Row 3: Image source buttons + aspect ratio */}
+      {/* Image source buttons + aspect ratio */}
       <div className="flex gap-2 items-center">
         <ImageSourceButtons
           onFileSelected={generator.setSourceFile}
@@ -100,17 +81,6 @@ export function GeneratorPanel({
           aspectRatio={generator.aspectRatio}
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
-          disabled={generator.loading}
-        />
-      </div>
-
-      {/* Row 4: Generation count */}
-      <div className="flex items-center">
-        <NumberStepper
-          value={gensPerModel}
-          min={1}
-          max={5}
-          onAdjust={adjustGens}
           disabled={generator.loading}
         />
       </div>
@@ -191,6 +161,53 @@ export function GeneratorPanel({
             ? `Generate ${generator.totalImages} images`
             : 'Generate'}
       </ActionButton>
+
+      {/* Draft/Quality + count */}
+      <div className="flex items-center justify-between">
+        <TierToggle
+          activeTier={activeTier}
+          onChangeTier={setActiveTier}
+          slots={slots}
+          disabled={generator.loading}
+        />
+        <div className="flex items-center gap-2">
+          <NumberStepper
+            value={gensPerModel}
+            min={1}
+            max={5}
+            onAdjust={adjustGens}
+            disabled={generator.loading}
+          />
+        </div>
+      </div>
+
+      {/* Describe / JSON buttons — only when source image present */}
+      {generator.sourceImage && (
+        <div className="flex items-center gap-2">
+          <ActionButton
+            variant="outline"
+            onClick={() => void generator.handleCaption()}
+            loading={generator.describingImage}
+            loadingText="..."
+            disabled={generator.loading}
+            className="h-7 px-2 text-xs"
+          >
+            Describe
+          </ActionButton>
+          {describe && (
+            <ActionButton
+              variant="outline"
+              onClick={describe.handleDescribe}
+              loading={describe.jsonLoading}
+              loadingText="..."
+              disabled={generator.loading}
+              className="h-7 px-2 text-xs"
+            >
+              JSON
+            </ActionButton>
+          )}
+        </div>
+      )}
 
       {error && <ErrorBanner message={error} />}
     </div>

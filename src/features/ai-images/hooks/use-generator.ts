@@ -50,6 +50,7 @@ export interface GeneratorState {
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
   handleClearSourceImage: () => void
+  handleCaption: () => Promise<void>
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
@@ -210,18 +211,6 @@ export function useGenerator({
       setAspectRatio(closest)
     }
     img.src = base64
-
-    if (accessToken) {
-      setDescribingImage(true)
-      captionImage({
-        data: { imageBase64: base64, accessToken },
-      })
-        .then(({ caption }) =>
-          setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption)),
-        )
-        .catch(() => {})
-        .finally(() => setDescribingImage(false))
-    }
   }
 
   const setSourceFile = useCallback(
@@ -259,6 +248,21 @@ export function useGenerator({
     setSourceImage(null)
   }
 
+  const handleCaption = useCallback(async () => {
+    if (!accessToken || !sourceImage || describingImage) return
+    setDescribingImage(true)
+    try {
+      const { caption } = await captionImage({
+        data: { imageBase64: sourceImage.base64, accessToken },
+      })
+      setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption))
+    } catch {
+      // caption failed silently
+    } finally {
+      setDescribingImage(false)
+    }
+  }, [accessToken, sourceImage, describingImage])
+
   return {
     prompt,
     setPrompt,
@@ -279,6 +283,7 @@ export function useGenerator({
     setSourceFile,
     setSourceFromUrl,
     handleClearSourceImage,
+    handleCaption,
     refImages,
     addRefImages,
     removeRefImage,

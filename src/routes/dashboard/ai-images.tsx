@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Plus, Upload, X } from 'lucide-react'
+import { Pin, PinOff, Plus, Upload, X } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import {
   GeneratorPanel,
@@ -92,12 +92,21 @@ function AiImagesPage() {
     return localStorage.getItem('genzen:generator-panel-open') !== 'false'
   })
 
+  const [panelPinned, setPanelPinned] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:generator-panel-pinned') !== 'false'
+  })
+
   useEffect(() => {
     localStorage.setItem('genzen:generator-panel-open', String(generatorOpen))
   }, [generatorOpen])
 
+  useEffect(() => {
+    localStorage.setItem('genzen:generator-panel-pinned', String(panelPinned))
+  }, [panelPinned])
+
   return (
-    <div className={generatorOpen ? 'mr-80' : ''}>
+    <div className={generatorOpen && panelPinned ? 'mr-80' : ''}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground tabular-nums">
@@ -157,17 +166,44 @@ function AiImagesPage() {
         />
       </div>
 
-      {/* Fixed right sidebar generator panel */}
+      {/* Dismiss overlay when unpinned */}
+      {generatorOpen && !panelPinned && (
+        <div
+          className="fixed inset-0 z-20"
+          onClick={() => setGeneratorOpen(false)}
+        />
+      )}
+
+      {/* Right sidebar generator panel */}
       {generatorOpen && (
-        <div className="fixed top-0 right-0 h-screen w-80 border-l border-border bg-card overflow-y-auto z-30">
+        <div
+          className={
+            panelPinned
+              ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
+              : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
+          }
+        >
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <span className="text-xs text-muted-foreground">Generate</span>
-            <button
-              onClick={() => setGeneratorOpen(false)}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPanelPinned((p) => !p)}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+              >
+                {panelPinned ? (
+                  <Pin className="h-3.5 w-3.5" />
+                ) : (
+                  <PinOff className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                onClick={() => setGeneratorOpen(false)}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
           <div className="px-4 pb-4">
             <GeneratorPanel
