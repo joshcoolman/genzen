@@ -66,13 +66,18 @@ function AiImagesPage() {
 
   // Delete confirmation for images with children
   const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
-  const childCount = deleteTarget
-    ? page.editChildrenMap[deleteTarget.id].length
-    : 0
+
+  const deleteTargetChildren = deleteTarget
+    ? (page.editChildrenMap[deleteTarget.id] as Array<unknown> | undefined)
+    : undefined
+  const childCount = deleteTargetChildren?.length ?? 0
 
   const handleDelete = useCallback(
     (img: SavedAiImage) => {
-      const hasChildren = page.editChildrenMap[img.id].length > 0
+      const children = page.editChildrenMap[img.id] as
+        | Array<unknown>
+        | undefined
+      const hasChildren = (children?.length ?? 0) > 0
       if (hasChildren) {
         setDeleteTarget(img)
       } else {
