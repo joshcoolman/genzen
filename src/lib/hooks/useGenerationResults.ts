@@ -71,7 +71,7 @@ export function useGenerationResults({
           'id, storage_path, status, generation_metadata, title, file_size, created_at',
         )
         .eq('user_id', userId!)
-        .eq('source', 'ai_generated')
+        .in('source', ['upload', 'ai_generated'])
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(limit)
@@ -100,7 +100,9 @@ export function useGenerationResults({
           .map(async (r) => {
             const { data: signed } = await supabase.storage
               .from('user-images')
-              .createSignedUrl(r.storage_path!, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+              .createSignedUrl(r.storage_path!, 86400, {
+                transform: { width: 400, resize: 'contain', quality: 80 },
+              })
             if (signed) urlMap[r.id] = signed.signedUrl
           }),
       )
@@ -168,7 +170,9 @@ export function useGenerationResults({
             if (updated.status === 'completed' && updated.storage_path) {
               supabase.storage
                 .from('user-images')
-                .createSignedUrl(updated.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+                .createSignedUrl(updated.storage_path, 86400, {
+                  transform: { width: 400, resize: 'contain', quality: 80 },
+                })
                 .then(({ data }) => {
                   if (data) {
                     setResults((prev) =>

@@ -85,7 +85,7 @@ export const getSequence = createServerFn({ method: 'POST' })
         if (record.status === 'completed') {
           status = 'completed'
           const meta = record.generation_metadata as Record<string, unknown>
-          videoUrl = (meta?.fal_url as string) || null
+          videoUrl = (meta.fal_url as string) || null
         } else if (record.status === 'failed') {
           status = 'failed'
         }

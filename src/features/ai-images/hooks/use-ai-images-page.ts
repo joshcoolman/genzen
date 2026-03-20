@@ -129,6 +129,7 @@ export function useAiImagesPage() {
   }
 
   return {
+    userId: user?.id,
     accessToken,
     credits,
     gallery,

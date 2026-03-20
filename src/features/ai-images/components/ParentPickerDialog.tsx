@@ -4,11 +4,9 @@ import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-childr
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ActionButton } from '@/components/ActionButton'
 import { ImageGrid } from '@/components/ImageGrid'
 import { Thumbnail } from '@/components/Thumbnail'
 
@@ -124,22 +122,13 @@ export function ParentPickerDialog({
                 status="complete"
                 compact
                 selected={selectedId === img.id}
-                onClick={() => setSelectedId(img.id)}
+                onClick={() => {
+                  if (!loading) onConfirm(img.id)
+                }}
               />
             ))}
           </ImageGrid>
         )}
-
-        <DialogFooter>
-          <ActionButton
-            onClick={() => selectedId && onConfirm(selectedId)}
-            disabled={!selectedId}
-            loading={loading}
-            loadingText="Moving..."
-          >
-            Move here
-          </ActionButton>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -55,7 +55,7 @@ export function useImages({
           'id, title, storage_path, created_at, sort_order, status, generation_error, generation_metadata',
         )
         .eq('user_id', userId)
-        .eq('source', 'ai_generated')
+        .in('source', ['upload', 'ai_generated'])
         .is('deleted_at', null)
         .eq('hidden', false)
         .order('sort_order', { ascending: false, nullsFirst: false })
@@ -81,7 +81,9 @@ export function useImages({
         completedWithPath.map(async (img) => {
           const { data: urlData } = await supabase.storage
             .from('user-images')
-            .createSignedUrl(img.storage_path!, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+            .createSignedUrl(img.storage_path!, 86400, {
+              transform: { width: 400, resize: 'contain', quality: 80 },
+            })
           return urlData ? ([img.id, urlData.signedUrl] as const) : null
         }),
       )
@@ -114,7 +116,9 @@ export function useImages({
               .map(async (r) => {
                 const { data: urlData } = await supabase.storage
                   .from('user-images')
-                  .createSignedUrl(r.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+                  .createSignedUrl(r.storage_path, 86400, {
+                    transform: { width: 400, resize: 'contain', quality: 80 },
+                  })
                 return urlData ? ([r.id, urlData.signedUrl] as const) : null
               }),
           )
@@ -157,6 +161,13 @@ export function useImages({
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newImage = payload.new as SavedAiImage
+            // Only include uploads and ai_generated sources
+            const rawInsert = payload.new as Record<string, unknown>
+            if (
+              rawInsert.source !== 'upload' &&
+              rawInsert.source !== 'ai_generated'
+            )
+              return
             // Skip images that belong to feature-specific galleries
             const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
             const insertGenType = newImage.generation_metadata?.generation_type
@@ -207,7 +218,9 @@ export function useImages({
             ) {
               supabase.storage
                 .from('user-images')
-                .createSignedUrl(updatedImage.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+                .createSignedUrl(updatedImage.storage_path, 86400, {
+                  transform: { width: 400, resize: 'contain', quality: 80 },
+                })
                 .then(({ data }) => {
                   if (data) {
                     setImageUrls((prev) => ({

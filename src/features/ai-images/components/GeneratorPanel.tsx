@@ -51,140 +51,148 @@ export function GeneratorPanel({
   const [pickerOpen, setPickerOpen] = useState(false)
 
   return (
-    <div className="bg-card rounded-lg p-6">
-      <div className="space-y-3">
-        {generator.sourceImage && (
-          <SourceImagePreview
-            src={generator.sourceImage.base64}
-            name={generator.sourceImage.name}
-            onRemove={generator.handleClearSourceImage}
-          />
-        )}
-
-        {/* Controls row */}
-        <div className="flex gap-2 items-center flex-wrap">
-          <ImageSourceButtons
-            onFileSelected={generator.setSourceFile}
-            showPaste={false}
-            library={{
-              images: userImages.images,
-              imageUrls: userImages.imageUrls,
-              isLoading: userImages.isLoading,
-              onSelect: (image) =>
-                generator.setSourceFromUrl(image.url, image.title),
-              onOpen: userImages.refresh,
-            }}
-            className="contents"
-          />
-          <AspectRatioSelect
-            orientation={generator.orientation}
-            aspectRatio={generator.aspectRatio}
-            onOrientationChange={generator.setOrientation}
-            onAspectRatioChange={generator.setAspectRatio}
-            disabled={generator.loading}
-          />
-          <div className="flex-1" />
-          <TierToggle
-            activeTier={activeTier}
-            onChangeTier={setActiveTier}
-            slots={slots}
-            disabled={generator.loading}
-          />
-          {describe && generator.sourceImage && (
-            <button
-              onClick={describe.handleDescribe}
-              disabled={describe.jsonLoading || generator.loading}
-              className="h-9 px-3 text-sm rounded-md border border-input text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-            >
-              {describe.jsonLoading ? 'Describing...' : 'Describe JSON'}
-            </button>
-          )}
-          <NumberStepper
-            value={gensPerModel}
-            min={1}
-            max={5}
-            onAdjust={adjustGens}
-            disabled={generator.loading}
-          />
-        </div>
-
-        <Textarea
-          id="prompt-textarea"
-          placeholder={
-            generator.describingImage
-              ? 'Describing image...'
-              : generator.sourceImage
-                ? 'Edit prompt (optional)...'
-                : 'Describe your image...'
-          }
-          value={generator.prompt}
-          onChange={(e) => generator.setPrompt(e.target.value)}
-          disabled={generator.loading || generator.describingImage}
-          rows={generator.sourceImage ? 6 : 8}
+    <div className="space-y-3">
+      {/* Row 1: Source image */}
+      {generator.sourceImage && (
+        <SourceImagePreview
+          src={generator.sourceImage.base64}
+          name={generator.sourceImage.name}
+          onRemove={generator.handleClearSourceImage}
         />
+      )}
 
-        {activeTier === 'quality' && generator.maxRefImages > 0 && (
-          <>
-            <RefImageStrip
-              images={generator.refImages}
-              max={generator.maxRefImages}
-              onAdd={() => {
-                userImages.refresh()
-                setPickerOpen(true)
-              }}
-              onRemove={generator.removeRefImage}
-              disabled={generator.loading}
-            />
-            <ExistingImagePicker
-              open={pickerOpen}
-              onOpenChange={setPickerOpen}
-              images={userImages.images}
-              imageUrls={userImages.imageUrls}
-              isLoading={userImages.isLoading}
-              alreadyCollectedIds={
-                new Set(generator.refImages.map((r) => r.id))
-              }
-              onConfirm={(selected) =>
-                generator.addRefImages(
-                  selected.map((s) => ({
-                    id: s.id,
-                    url: s.url,
-                    title: s.title,
-                  })),
-                )
-              }
-              max={generator.maxRefImages - generator.refImages.length}
-            />
-          </>
+      {/* Row 2: Draft/Quality + JSON */}
+      <div className="flex gap-2 items-center">
+        <TierToggle
+          activeTier={activeTier}
+          onChangeTier={setActiveTier}
+          slots={slots}
+          disabled={generator.loading}
+        />
+        {describe && generator.sourceImage && (
+          <button
+            onClick={describe.handleDescribe}
+            disabled={describe.jsonLoading || generator.loading}
+            className="h-9 px-3 text-sm rounded-md border border-input text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+          >
+            {describe.jsonLoading ? '...' : 'JSON'}
+          </button>
         )}
-
-        <ActionButton
-          onClick={() => {
-            const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
-            if ((credits.balance ?? 0) < cost) {
-              credits.showInsufficientCredits(cost)
-              return
-            }
-            generator.handleGenerate()
-          }}
-          loading={generator.loading}
-          loadingText={
-            generator.totalImages > 1
-              ? `Generating ${generator.totalImages} images...`
-              : 'Generating...'
-          }
-          disabled={!generator.canGenerate && !credits.isEmpty}
-          className="w-full"
-        >
-          {credits.isEmpty
-            ? 'Out of credits'
-            : generator.totalImages > 1
-              ? `Generate ${generator.totalImages} images`
-              : 'Generate'}
-        </ActionButton>
-
-        {error && <ErrorBanner message={error} />}
       </div>
+
+      {/* Row 3: Image source buttons + aspect ratio */}
+      <div className="flex gap-2 items-center">
+        <ImageSourceButtons
+          onFileSelected={generator.setSourceFile}
+          showPaste={false}
+          library={{
+            images: userImages.images,
+            imageUrls: userImages.imageUrls,
+            isLoading: userImages.isLoading,
+            onSelect: (image) =>
+              generator.setSourceFromUrl(image.url, image.title),
+            onOpen: userImages.refresh,
+          }}
+          className="contents"
+        />
+        <AspectRatioSelect
+          orientation={generator.orientation}
+          aspectRatio={generator.aspectRatio}
+          onOrientationChange={generator.setOrientation}
+          onAspectRatioChange={generator.setAspectRatio}
+          disabled={generator.loading}
+        />
+      </div>
+
+      {/* Row 4: Generation count */}
+      <div className="flex items-center">
+        <NumberStepper
+          value={gensPerModel}
+          min={1}
+          max={5}
+          onAdjust={adjustGens}
+          disabled={generator.loading}
+        />
+      </div>
+
+      {/* Textarea */}
+      <Textarea
+        id="prompt-textarea"
+        placeholder={
+          generator.describingImage
+            ? 'Describing image...'
+            : generator.sourceImage
+              ? 'Edit prompt (optional)...'
+              : 'Describe your image...'
+        }
+        value={generator.prompt}
+        onChange={(e) => generator.setPrompt(e.target.value)}
+        disabled={generator.loading || generator.describingImage}
+        rows={4}
+        className="text-xs"
+      />
+
+      {/* Ref images */}
+      {activeTier === 'quality' && generator.maxRefImages > 0 && (
+        <>
+          <RefImageStrip
+            images={generator.refImages}
+            max={generator.maxRefImages}
+            onAdd={() => {
+              userImages.refresh()
+              setPickerOpen(true)
+            }}
+            onRemove={generator.removeRefImage}
+            disabled={generator.loading}
+          />
+          <ExistingImagePicker
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            images={userImages.images}
+            imageUrls={userImages.imageUrls}
+            isLoading={userImages.isLoading}
+            alreadyCollectedIds={new Set(generator.refImages.map((r) => r.id))}
+            onConfirm={(selected) =>
+              generator.addRefImages(
+                selected.map((s) => ({
+                  id: s.id,
+                  url: s.url,
+                  title: s.title,
+                })),
+              )
+            }
+            max={generator.maxRefImages - generator.refImages.length}
+          />
+        </>
+      )}
+
+      {/* Generate button */}
+      <ActionButton
+        onClick={() => {
+          const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
+          if ((credits.balance ?? 0) < cost) {
+            credits.showInsufficientCredits(cost)
+            return
+          }
+          generator.handleGenerate()
+        }}
+        loading={generator.loading}
+        loadingText={
+          generator.totalImages > 1
+            ? `Generating ${generator.totalImages} images...`
+            : 'Generating...'
+        }
+        disabled={!generator.canGenerate && !credits.isEmpty}
+        className="w-full"
+      >
+        {credits.isEmpty
+          ? 'Out of credits'
+          : generator.totalImages > 1
+            ? `Generate ${generator.totalImages} images`
+            : 'Generate'}
+      </ActionButton>
+
+      {error && <ErrorBanner message={error} />}
     </div>
   )
 }

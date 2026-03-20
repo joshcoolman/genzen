@@ -43,7 +43,9 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       for (const image of data) {
         supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+          .createSignedUrl(image.storage_path, 86400, {
+            transform: { width: 400, resize: 'contain', quality: 80 },
+          })
           .then(({ data: urlData }) => {
             if (urlData) {
               setImageUrls((prev) => ({
@@ -101,7 +103,9 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
               // Sign URL
               supabase.storage
                 .from(BUCKET_NAME)
-                .createSignedUrl(updated.storage_path, 86400, { transform: { width: 400, resize: 'contain', quality: 80 } })
+                .createSignedUrl(updated.storage_path, 86400, {
+                  transform: { width: 400, resize: 'contain', quality: 80 },
+                })
                 .then(({ data }) => {
                   if (data) {
                     setImageUrls((prev) => ({

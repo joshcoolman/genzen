@@ -27,7 +27,6 @@ export const navItems: Array<NavItem> = [
     label: 'Assets',
     href: '/dashboard/assets',
     icon: FolderOpen,
-    alwaysVisible: true,
   },
   {
     id: 'ai-images',

@@ -61,7 +61,7 @@ export function useFocusedEdit(imageId: string) {
         .from('user_images')
         .select('id, generation_metadata')
         .eq('user_id', user!.id)
-        .eq('source', 'ai_generated')
+        .in('source', ['upload', 'ai_generated'])
         .is('deleted_at', null)
 
       if (!data) return

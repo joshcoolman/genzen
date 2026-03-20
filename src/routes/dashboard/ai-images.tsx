@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Plus, Upload, X } from 'lucide-react'
 import {
   GeneratorPanel,
   ImageGallery,
@@ -11,6 +10,8 @@ import {
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
+import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
+import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
@@ -19,6 +20,20 @@ export const Route = createFileRoute('/dashboard/ai-images')({
 function AiImagesPage() {
   const page = useAiImagesPage()
   useAiImagesADContext(page)
+  const { upload } = useImageUpload(page.userId)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleUploadFiles = useCallback(
+    async (files: Array<File>) => {
+      await processAndUploadFiles(files, async (input) => {
+        await upload(input)
+      })
+      await page.gallery.refresh()
+    },
+    [upload, page.gallery],
+  )
+
+  // Paste handler — upload directly to library
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
@@ -28,7 +43,7 @@ function AiImagesPage() {
           const file = item.getAsFile()
           if (file) {
             e.preventDefault()
-            page.generator.setSourceFile(file)
+            void handleUploadFiles([file])
             return
           }
         }
@@ -36,75 +51,106 @@ function AiImagesPage() {
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [page.generator])
+  }, [handleUploadFiles])
 
   const [generatorOpen, setGeneratorOpen] = useState(() => {
     if (typeof window === 'undefined') return true
-    return localStorage.getItem('ai-images-generator-open') !== 'false'
+    return localStorage.getItem('genzen:generator-panel-open') !== 'false'
   })
 
-  function toggleGenerator() {
-    setGeneratorOpen((prev) => {
-      const next = !prev
-      localStorage.setItem('ai-images-generator-open', String(next))
-      return next
-    })
-  }
+  useEffect(() => {
+    localStorage.setItem('genzen:generator-panel-open', String(generatorOpen))
+  }, [generatorOpen])
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold">AI Images</h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleGenerator}
-            title={generatorOpen ? 'Hide generator' : 'Show generator'}
-          >
-            {generatorOpen ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-        {page.credits.balance !== null && (
+    <div className={generatorOpen ? 'mr-80' : ''}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground tabular-nums">
-            {page.credits.balance} credits
+            AI Images
+            {page.credits.balance !== null && (
+              <>
+                <span className="mx-2 opacity-40">|</span>
+                {page.credits.balance} credits
+              </>
+            )}
           </span>
-        )}
+          <div className="flex items-center gap-1.5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? [])
+                if (files.length > 0) void handleUploadFiles(files)
+                e.target.value = ''
+              }}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Upload image"
+            >
+              <Upload className="h-4 w-4" />
+            </button>
+            {!generatorOpen && (
+              <button
+                onClick={() => setGeneratorOpen(true)}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                title="New generation"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <ImageGallery
+          images={page.gallery.images}
+          imageUrls={page.gallery.imageUrls}
+          rootImageMeta={page.gallery.rootImageMeta}
+          editChildrenMap={page.editChildrenMap}
+          loadingGallery={page.gallery.loadingGallery}
+          onLoadPrompt={page.handleLoadPrompt}
+          onLoadPromptAndModel={page.handleLoadPromptAndModel}
+          onDelete={page.gallery.deleteImage}
+          onRestoreRoot={page.gallery.restoreRootImage}
+          onRetry={page.gallery.retryImage}
+          onStartAdopt={page.reparent.startAdopt}
+          onDetach={(img) => void page.reparent.detach(img.id)}
+        />
       </div>
 
+      {/* Fixed right sidebar generator panel */}
       {generatorOpen && (
-        <GeneratorPanel
-          generator={page.generator}
-          slots={page.slots}
-          activeTier={page.activeTier}
-          setActiveTier={page.setActiveTier}
-          gensPerModel={page.gensPerModel}
-          adjustGens={page.adjustGens}
-          credits={page.credits}
-          userImages={page.userImages}
-          error={page.error}
-          describe={page.describe}
-        />
+        <div className="fixed top-0 right-0 h-screen w-80 border-l border-border bg-card overflow-y-auto z-30">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <span className="text-xs text-muted-foreground">Generate</span>
+            <button
+              onClick={() => setGeneratorOpen(false)}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="px-4 pb-4">
+            <GeneratorPanel
+              generator={page.generator}
+              slots={page.slots}
+              activeTier={page.activeTier}
+              setActiveTier={page.setActiveTier}
+              gensPerModel={page.gensPerModel}
+              adjustGens={page.adjustGens}
+              credits={page.credits}
+              userImages={page.userImages}
+              error={page.error}
+              describe={page.describe}
+            />
+          </div>
+        </div>
       )}
-
-      <ImageGallery
-        images={page.gallery.images}
-        imageUrls={page.gallery.imageUrls}
-        rootImageMeta={page.gallery.rootImageMeta}
-        editChildrenMap={page.editChildrenMap}
-        loadingGallery={page.gallery.loadingGallery}
-        onLoadPrompt={page.handleLoadPrompt}
-        onLoadPromptAndModel={page.handleLoadPromptAndModel}
-        onDelete={page.gallery.deleteImage}
-        onRestoreRoot={page.gallery.restoreRootImage}
-        onRetry={page.gallery.retryImage}
-        onStartAdopt={page.reparent.startAdopt}
-        onDetach={(img) => void page.reparent.detach(img.id)}
-      />
 
       <VariationPromptsDialog
         open={!!page.variations.pendingVariation}
@@ -125,6 +171,8 @@ function AiImagesPage() {
         referenceImages={[]}
         onAddReference={() => {}}
         onRemoveReference={() => {}}
+        onGenerateMore={() => {}}
+        generatingMore={false}
       />
 
       {page.reparent.adoptTarget && (

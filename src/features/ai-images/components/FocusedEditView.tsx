@@ -128,7 +128,7 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         <Button
           variant="outline"
           onClick={edit.handleGenerateVariations}
-          disabled={edit.variationPromptsLoading || !edit.sourceImage?.prompt}
+          disabled={edit.variationPromptsLoading || !edit.sourceImage.prompt}
         >
           {edit.variationPromptsLoading
             ? 'Generating...'
@@ -234,7 +234,7 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         onRun={edit.handleRunVariations}
         onGenerateMore={edit.handleGenerateMoreVariations}
         generatingMore={edit.generatingMore}
-        sourceImageUrl={edit.sourceImage?.url}
+        sourceImageUrl={edit.sourceImage.url}
         referenceImages={edit.variationRefImages}
         onAddReference={() => edit.setRefPickerOpen(true)}
         onRemoveReference={edit.handleRemoveRefImage}

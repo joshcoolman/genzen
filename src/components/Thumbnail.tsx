@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react'
-import { type ReactNode, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
+import type { ReactNode } from 'react'
 
 function Skeleton({ className = '' }: { className?: string }) {
   return (
@@ -96,7 +97,9 @@ export function Thumbnail({
         >
           {url ? (
             <>
-              {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+              {!loaded && (
+                <Skeleton className="absolute inset-0 h-full w-full" />
+              )}
               <img
                 ref={imgRef}
                 src={url}
@@ -136,7 +139,9 @@ export function Thumbnail({
         >
           {status === 'complete' && url ? (
             <>
-              {!loaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+              {!loaded && (
+                <Skeleton className="absolute inset-0 h-full w-full" />
+              )}
               <img
                 ref={imgRef}
                 src={url}

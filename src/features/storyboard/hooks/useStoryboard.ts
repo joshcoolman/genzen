@@ -413,7 +413,9 @@ export function useStoryboard(): UseStoryboardReturn {
             .map(async (r) => {
               const { data: signed } = await supabase.storage
                 .from('user-images')
-                .createSignedUrl(r.storage_path, 86400, { transform: { width: 300, resize: 'contain', quality: 80 } })
+                .createSignedUrl(r.storage_path, 86400, {
+                  transform: { width: 300, resize: 'contain', quality: 80 },
+                })
               if (signed) urlMap[r.id] = signed.signedUrl
             }),
         )
@@ -467,7 +469,9 @@ export function useStoryboard(): UseStoryboardReturn {
             .map(async (r) => {
               const { data: signed } = await supabase.storage
                 .from('user-images')
-                .createSignedUrl(r.storage_path, 86400, { transform: { width: 300, resize: 'contain', quality: 80 } })
+                .createSignedUrl(r.storage_path, 86400, {
+                  transform: { width: 300, resize: 'contain', quality: 80 },
+                })
               if (signed) urlMap[r.id] = signed.signedUrl
             }),
         )
