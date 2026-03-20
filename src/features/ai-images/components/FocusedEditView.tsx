@@ -107,11 +107,6 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           gensPerModel={edit.modelSelector.gensPerModel}
           onAdjustGens={edit.modelSelector.adjustGens}
         />
-        <ModelFilterPills
-          models={edit.modelSelector.models}
-          activeIds={edit.modelSelector.selectedIds}
-          onToggle={edit.modelSelector.toggleSelected}
-        />
         {edit.isChained && (
           <Button
             variant="ghost"
@@ -149,6 +144,12 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           Generate Edit
         </ActionButton>
       </div>
+
+      <ModelFilterPills
+        models={edit.modelSelector.models}
+        activeIds={edit.modelSelector.selectedIds}
+        onToggle={edit.modelSelector.toggleSelected}
+      />
 
       {/* Source image + prompt textarea — textarea matches image height */}
       <div className="flex gap-4 items-start">
