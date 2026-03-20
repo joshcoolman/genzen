@@ -80,9 +80,11 @@ export function useImages({
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const allImages = (data ?? []) as Array<SavedAiImage>
-      // Exclude images that belong to feature-specific galleries
+      // Sort with ALL images so descendant timestamps are visible,
+      // then filter out feature-specific types for display
+      const sorted = sortByOrder(allImages)
       const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
-      const images = allImages.filter((img) => {
+      const images = sorted.filter((img) => {
         const genType = img.generation_metadata?.generation_type
         return !genType || !FEATURE_TYPES.has(genType)
       })
