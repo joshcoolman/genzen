@@ -1,54 +1,53 @@
-# Continue: Multi-Shot Video Generation (Issue #72)
+# Continue: Unified Image Grid on `unified-thumbs`
 
-## What was being worked on
+## Branch: `unified-thumbs` -- all committed, pushed to origin (12 commits)
 
-Full implementation of multi-shot video generation feature under `src/features/multi-shot/`. Uses Kling V3 Pro via FAL (`fal-ai/kling-video/v3/pro/image-to-video`) with `multi_prompt` API for multi-shot sequences.
+## What was worked on
 
-## Changes made so far (ALL UNCOMMITTED on branch `multi-shot`)
+Merged uploads into the AI Images grid, rebuilt generator sidebar, added parent/child management, descendant-aware sorting, and variation support for uploads.
 
-- **Migration**: `supabase/migrations/20260317000000_multishot_sequences.sql` -- `multishot_sequences` table with JSONB columns for shots/elements/settings, RLS policy
-- **Types**: `src/features/multi-shot/types.ts` -- Shot, MultiShotElement, MultiShotSettings, MultiShotSequence, constants (MAX_SHOTS=6, MAX_TOTAL_DURATION=15, MIN_SHOT_DURATION=3), FAL model ID
-- **Credits**: Added `multishot_gen` to CreditReason union + `multishot_gen: 5` to CREDIT_COSTS in `src/features/credits/types.ts`
-- **Server functions** (5 files in `src/features/multi-shot/server/`):
-  - `generate-multishot.server.ts` -- loads sequence, uploads element images to FAL, submits via `multi_prompt`, creates `user_images` record with `source: 'ai_video'` for polling
-  - `save-sequence.server.ts` -- upsert to `multishot_sequences` (fixed: passes raw objects to Supabase, NOT JSON.stringify)
-  - `get-sequences.server.ts` -- list with `parseJsonb()` helper for defensive JSONB deserialization
-  - `delete-sequence.server.ts`, `duplicate-sequence.server.ts`
-- **Hooks** (2 files in `src/features/multi-shot/hooks/`):
-  - `use-multishot-editor.ts` -- shots CRUD, elements CRUD (fixed: `prev.length + 1` inside updater for correct labels), settings, budget calc, generate/save
-  - `use-multishot-sequences.ts` -- fetch list, poll every 5s when pending, delete/duplicate
-- **Components** (6 files in `src/features/multi-shot/components/`):
-  - `MultiShotEditor.tsx` -- main editor with elements section (uses ExistingImagePicker from user-images), shot cards, settings (aspect ratio, shot type, audio toggle), generate button
-  - `ShotCard.tsx` -- prompt textarea + duration stepper (min 3s, capped by remaining budget)
-  - `ElementCard.tsx` -- 16x16 thumbnail with @ElementN label, delete button
-  - `TimeBudgetBar.tsx` -- segmented color-coded progress bar showing 15s budget
-  - `SequenceGrid.tsx` / `SequenceCard.tsx` -- past sequences grid with status badges, duplicate/delete
-- **Routes**: `src/routes/dashboard/multi-shot.tsx` (layout) + `multi-shot.index.tsx` (main page)
-- **Nav**: Added `Clapperboard` icon Multi-Shot item after AI Video in `src/lib/nav-items.ts`
-- **shadcn**: Added `src/components/ui/label.tsx` and `src/components/ui/switch.tsx`
-- **Feature docs**: `src/features/multi-shot/CLAUDE.md`
-- **Barrel**: `src/features/multi-shot/index.ts`
+## Key files changed
 
-## Key decisions
+- `src/features/ai-images/hooks/use-images.ts` -- gallery queries, sort, delete variants, realtime
+- `src/features/ai-images/hooks/use-focused-edit.ts` -- variation auto-describe for uploads
+- `src/features/ai-images/hooks/use-ai-images-page.ts` -- exposed userId
+- `src/features/ai-images/hooks/use-generator.ts` -- removed auto-caption, added manual handleCaption
+- `src/features/ai-images/components/GeneratorPanel.tsx` -- sidebar layout, Describe/JSON buttons
+- `src/features/ai-images/components/FocusedEditView.tsx` -- ModelFilterPills, variation button fix
+- `src/features/ai-images/components/ImageGallery.tsx` -- removed display mode toggle
+- `src/features/ai-images/server/reparent-image.server.ts` -- parent sort_order bump
+- `src/routes/dashboard/ai-images.tsx` -- sidebar shell, upload/paste, delete dialog, overlay
+- `src/components/ActionButton.tsx` -- outline variant polish
+- `src/lib/hooks/useGenerationResults.ts` -- widened source filter
 
-- FAL model: `fal-ai/kling-video/v3/pro/image-to-video` -- same endpoint for single and multi-shot, uses `multi_prompt` param
-- JSONB columns for shots/elements/settings -- avoids migration churn during V1 experimentation
-- Element images uploaded to FAL on generate (not on add) -- simpler UX
-- Stored as `user_images` with `source: 'ai_video'` so existing polling in `check-pending-generations.server.ts` picks up completion automatically
-- Supabase JSONB: do NOT `JSON.stringify()` before insert -- Supabase client handles serialization
+## Changes summary
+
+- DB queries widened to `.in('source', ['upload', 'ai_generated'])` across gallery, edit BFS, generation results
+- `sortByOrder` uses `max(own sort_order, newest descendant created_at)` -- runs on full set before filtering feature types
+- Parent sort_order bumped on reparent (server) and realtime child INSERT (client + DB persist)
+- Delete dialog: Keep all (detach children) / Keep children / Delete all -- with `deleteImageWithDescendants` and `deleteAndDetachChildren`
+- Generator sidebar: pin/unpin, bg-black/90 backdrop-blur-2xl, invisible z-20 overlay for click-outside
+- Manual Describe (prepends prompt) + JSON (appends) ActionButtons, no auto-caption
+- Draft/Quality + count under Generate button, all controls h-9/36px composable baseline
+- Uploads can Generate Variations via auto-describe (`captionImage`) when no prompt exists
+- `ModelFilterPills` added below toolbar in focused edit view
 
 ## Outstanding work
 
-- **Not yet tested end-to-end**: save + generate flow needs real testing with FAL (was debugging DB issues)
-- **Sequence status updates**: when polling detects completion, need to update `multishot_sequences.status` to 'completed' -- currently only `user_images` gets updated by existing polling. May need to extend `check-pending-generations.server.ts` or add a separate mechanism
-- **Video playback**: completed sequences don't show the video yet -- need to resolve video URL from the `video_record_id` and display it
-- **Start image**: settings support `startImageUrl` but there's no UI to set it yet
-- **UI polish**: the editor is functional but basic -- no drag-to-reorder shots, no inline video preview
-- **Commit**: nothing is committed yet -- all changes are uncommitted on branch `multi-shot`
+### Variation children as mini-thumbs (next task)
 
-## Git state
+Variations from edit view show as full-size "Generating..." cards in the main grid. Should appear as small loading thumbnails under the parent card instead. Requires:
 
-- Branch: `multi-shot`
-- All changes uncommitted (3 modified + 20 untracked files)
-- `pnpm build` passes, `pnpm check` passes (no new lint errors in multi-shot files)
-- DB migration applied locally via `npx supabase migration up`
+1. `use-edit-children.ts` to include pending/variation children (currently only completed edits)
+2. `ImageCard` to render pending mini-thumbs (pulsing skeleton) alongside completed ones
+3. Add `'variation'` to the `FEATURE_TYPES` filter so variations are hidden as standalone grid cards
+4. Consider renaming `editChildrenMap` to `childrenMap`
+
+### Remove Assets page (agreed, not yet done)
+
+Uploads now live in AI Images grid, making the Assets page redundant. Delete `src/routes/dashboard/assets.tsx` and its nav entry. Keep `src/features/user-images/` module -- its hooks are used by AI Images for upload/paste. Videos will get their own category later.
+
+### Other potential follow-ups
+
+- `editChildrenMap` typed as `Record<string, Array>` but undefined at runtime for missing keys -- needs proper null safety pattern
+- Sidebar controls (TierToggle, NumberStepper) share h-9 baseline but could use ActionButton outline for even more consistency

@@ -164,15 +164,15 @@ function DropdownModels({
   const label =
     selectedCount === 0
       ? 'Select...'
-      : mode === 'single'
+      : selectedCount === 1
         ? (selectedModel?.name ?? 'Select...')
-        : `${selectedCount} model${selectedCount !== 1 ? 's' : ''} selected`
+        : `Multiple (${selectedCount} models)`
 
   return (
     <div ref={ref} className="relative flex-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-left text-sm shadow-xs transition-colors dark:bg-input/30 dark:hover:bg-input/50"
+        className="flex h-9 w-full min-w-[11rem] items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-left text-sm shadow-xs transition-colors dark:bg-input/30 dark:hover:bg-input/50"
       >
         <span className="text-sm truncate">{label}</span>
         <ChevronDown
