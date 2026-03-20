@@ -118,6 +118,14 @@ export const reparentImage = createServerFn({ method: 'POST' })
 
       if (updateError) throw new Error(updateError.message)
 
+      // Bump the new parent's sort_order so it floats to top of grid
+      const newSortOrder = Date.now() / 1000
+      await supabase
+        .from('user_images')
+        .update({ sort_order: newSortOrder })
+        .eq('id', data.newParentId)
+        .eq('user_id', user.id)
+
       // Update root_image_id for imageId + all descendants
       // For the target image, use targetMeta (which already has source_image_id)
       const idsToUpdate = [data.imageId, ...descendants]

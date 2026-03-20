@@ -173,6 +173,10 @@ export function useImages({
             const insertGenType = newImage.generation_metadata?.generation_type
             if (insertGenType && FEATURE_TYPES.has(insertGenType)) return
 
+            // Bump parent's sort_order when a child is added
+            const parentId = newImage.generation_metadata?.source_image_id
+            const bumpedSort = Date.now() / 1000
+
             setSavedImages((prev) => {
               if (prev.some((img) => img.id === newImage.id)) return prev
               const metadata = newImage.generation_metadata
@@ -187,11 +191,35 @@ export function useImages({
                 if (optimisticIdx !== -1) {
                   const updated = [...prev]
                   updated[optimisticIdx] = newImage
+                  // Also bump parent
+                  if (parentId) {
+                    const pi = updated.findIndex((i) => i.id === parentId)
+                    if (pi !== -1)
+                      updated[pi] = {
+                        ...updated[pi],
+                        sort_order: bumpedSort,
+                      }
+                  }
                   return sortByOrder(updated)
                 }
               }
-              return sortByOrder([...prev, newImage])
+              // Bump parent in the list
+              let next = [...prev, newImage]
+              if (parentId) {
+                next = next.map((i) =>
+                  i.id === parentId ? { ...i, sort_order: bumpedSort } : i,
+                )
+              }
+              return sortByOrder(next)
             })
+
+            // Persist parent bump to DB
+            if (parentId) {
+              void supabase
+                .from('user_images')
+                .update({ sort_order: bumpedSort })
+                .eq('id', parentId)
+            }
           } else if (payload.eventType === 'UPDATE') {
             const updatedImage = payload.new as SavedAiImage
             const rawUpdate = payload.new as Record<string, unknown>
