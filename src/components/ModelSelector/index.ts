@@ -6,6 +6,7 @@ export type { UnifiedModel, ModelCapability, SelectionMode } from './types'
 export {
   UNIFIED_GENERATE_MODELS,
   UNIFIED_EDIT_MODELS,
+  UNIFIED_SIDEBAR_MODELS,
   getModelsByCapability,
   getDefaultSelectedId,
 } from './models'

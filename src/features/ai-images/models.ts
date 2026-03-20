@@ -62,6 +62,23 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/bytedance/seedream/v4/edit',
   },
+  {
+    id: 'fal-ai/gpt-image-1.5',
+    name: 'GPT Image 1.5',
+    description: 'OpenAI, high-quality generation',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/gpt-image-1.5/edit',
+  },
+  // ByteDance Seedream v4.5
+  {
+    id: 'fal-ai/bytedance/seedream/v4.5/text-to-image',
+    name: 'Seedream v4.5',
+    description: 'ByteDance, multi-image reference',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/bytedance/seedream/v4.5/edit',
+  },
   // Specialized - verified models
   {
     id: 'fal-ai/nano-banana-2',
@@ -136,19 +153,19 @@ export const EDIT_MODELS: Array<EditModel> = [
     id: 'fal-ai/flux-2-pro/edit',
     name: 'FLUX.2 Pro Edit',
     description: 'Best photorealism edits',
-    maxRefImages: 8,
+    maxRefImages: 9,
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',
     name: 'Seedream v4',
     description: 'ByteDance, high-quality edits',
-    maxRefImages: 4,
+    maxRefImages: 10,
   },
   {
     id: 'fal-ai/bytedance/seedream/v4.5/edit',
     name: 'Seedream v4.5',
     description: 'Multi-image reference editing',
-    maxRefImages: 9,
+    maxRefImages: 10,
   },
 ]
 

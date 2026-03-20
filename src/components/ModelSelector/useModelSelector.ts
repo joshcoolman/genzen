@@ -90,9 +90,9 @@ export function useModelSelector({
     [modelIds],
   )
 
-  // Derived: max ref images across selected edit models
+  // Derived: max ref images across selected models (edit + sidebar)
   const maxRefImages = useMemo(() => {
-    if (capability !== 'edit') return undefined
+    if (capability !== 'edit' && capability !== 'sidebar') return undefined
     const selected = models.filter((m) => selectedIds.includes(m.id))
     if (selected.length === 0) return 0
     return Math.min(...selected.map((m) => m.maxRefImages ?? 0))

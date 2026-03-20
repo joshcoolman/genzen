@@ -168,6 +168,8 @@ export function useGenerationResults({
             }
 
             if (updated.status === 'completed' && updated.storage_path) {
+              const meta = updated.generation_metadata ?? {}
+              const modelId = inferModelId(meta)
               supabase.storage
                 .from('user-images')
                 .createSignedUrl(updated.storage_path, 86400, {
@@ -178,7 +180,23 @@ export function useGenerationResults({
                     setResults((prev) =>
                       prev.map((r) =>
                         r.id === updated.id
-                          ? { ...r, status: 'complete', url: data.signedUrl }
+                          ? {
+                              ...r,
+                              status: 'complete' as const,
+                              url: data.signedUrl,
+                              title: updated.title ?? r.title,
+                              label: getModelName(modelId),
+                              fileSize: updated.file_size ?? r.fileSize,
+                              createdAt: updated.created_at ?? r.createdAt,
+                              prompt:
+                                (meta.prompt as string | undefined) ?? r.prompt,
+                              enhancedPrompt:
+                                (meta.enhanced_prompt as string | undefined) ??
+                                r.enhancedPrompt,
+                              originalPrompt:
+                                (meta.original_prompt as string | undefined) ??
+                                r.originalPrompt,
+                            }
                           : r,
                       ),
                     )

@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
-import type { ModelSlots, SlotTier } from '@/lib/model-slots'
 import type { UserImage } from '@/features/user-images/types'
 import type { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
+import type { useModelSelector } from '@/components/ModelSelector'
 import { Textarea } from '@/components/ui/textarea'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
-import { NumberStepper } from '@/components/NumberStepper'
 import { ErrorBanner } from '@/components/ErrorBanner'
+import { NumberStepper } from '@/components/NumberStepper'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { RefImageStrip } from '@/components/RefImageStrip'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
-import { getModelName } from '@/features/ai-images/models'
+import { ModelSelector } from '@/components/ModelSelector'
 import { CREDIT_COSTS } from '@/features/credits'
 
 interface UserImagesData {
@@ -25,29 +25,24 @@ interface UserImagesData {
 
 interface GeneratorPanelProps {
   generator: GeneratorState
-  slots: ModelSlots
-  activeTier: SlotTier
-  setActiveTier: (tier: SlotTier) => void
-  gensPerModel: number
-  adjustGens: (delta: number) => void
+  modelSelector: ReturnType<typeof useModelSelector>
   credits: CreditsState
   userImages: UserImagesData
   error: string | null
   describe?: ReturnType<typeof useDescribeJson>
+  mode?: 'generate' | 'edit'
 }
 
 export function GeneratorPanel({
   generator,
-  slots,
-  activeTier,
-  setActiveTier,
-  gensPerModel,
-  adjustGens,
+  modelSelector,
   credits,
   userImages,
   error,
   describe,
+  mode = 'generate',
 }: GeneratorPanelProps) {
+  const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
 
   return (
@@ -91,9 +86,11 @@ export function GeneratorPanel({
         placeholder={
           generator.describingImage
             ? 'Describing image...'
-            : generator.sourceImage
-              ? 'Edit prompt (optional)...'
-              : 'Describe your image...'
+            : isEdit
+              ? 'Describe the edit...'
+              : generator.sourceImage
+                ? 'Edit prompt (optional)...'
+                : 'Describe your image...'
         }
         value={generator.prompt}
         onChange={(e) => generator.setPrompt(e.target.value)}
@@ -102,8 +99,8 @@ export function GeneratorPanel({
         className="text-xs"
       />
 
-      {/* Ref images */}
-      {activeTier === 'quality' && generator.maxRefImages > 0 && (
+      {/* Ref images -- show when model supports refs */}
+      {generator.maxRefImages > 0 && (
         <>
           <RefImageStrip
             images={generator.refImages}
@@ -136,52 +133,57 @@ export function GeneratorPanel({
         </>
       )}
 
-      {/* Generate button */}
-      <ActionButton
-        onClick={() => {
-          const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
-          if ((credits.balance ?? 0) < cost) {
-            credits.showInsufficientCredits(cost)
-            return
+      {/* Generate button + gens stepper */}
+      <div className="flex gap-2 items-center">
+        <ActionButton
+          onClick={() => {
+            const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
+            if ((credits.balance ?? 0) < cost) {
+              credits.showInsufficientCredits(cost)
+              return
+            }
+            generator.handleGenerate()
+          }}
+          loading={generator.loading}
+          loadingText={
+            generator.totalImages > 1
+              ? `Generating ${generator.totalImages} images...`
+              : isEdit
+                ? 'Generating edit...'
+                : 'Generating...'
           }
-          generator.handleGenerate()
-        }}
-        loading={generator.loading}
-        loadingText={
-          generator.totalImages > 1
-            ? `Generating ${generator.totalImages} images...`
-            : 'Generating...'
-        }
-        disabled={!generator.canGenerate && !credits.isEmpty}
-        className="w-full"
-      >
-        {credits.isEmpty
-          ? 'Out of credits'
-          : generator.totalImages > 1
-            ? `Generate ${generator.totalImages} images`
-            : 'Generate'}
-      </ActionButton>
-
-      {/* Draft/Quality + count */}
-      <div className="flex items-center justify-between">
-        <TierToggle
-          activeTier={activeTier}
-          onChangeTier={setActiveTier}
-          slots={slots}
+          disabled={!generator.canGenerate && !credits.isEmpty}
+          className="flex-1"
+        >
+          {credits.isEmpty
+            ? 'Out of credits'
+            : isEdit
+              ? generator.totalImages > 1
+                ? `Generate ${generator.totalImages} edits`
+                : 'Generate Edit'
+              : generator.totalImages > 1
+                ? `Generate ${generator.totalImages} images`
+                : 'Generate'}
+        </ActionButton>
+        <NumberStepper
+          value={modelSelector.gensPerModel}
+          min={1}
+          max={5}
+          onAdjust={modelSelector.adjustGens}
           disabled={generator.loading}
         />
-        <div className="flex items-center gap-2">
-          <NumberStepper
-            value={gensPerModel}
-            min={1}
-            max={5}
-            onAdjust={adjustGens}
-            disabled={generator.loading}
-          />
-        </div>
       </div>
 
-      {/* Describe / JSON — only when source image present */}
+      {/* Model selector */}
+      <ModelSelector
+        display="dropdown"
+        mode="multi"
+        selectedIds={modelSelector.selectedIds}
+        visibleModels={modelSelector.models}
+        onToggleSelected={modelSelector.toggleSelected}
+      />
+
+      {/* Describe / JSON -- only when source image present */}
       {generator.sourceImage && (
         <div className="flex items-center gap-2">
           <ActionButton
@@ -210,43 +212,6 @@ export function GeneratorPanel({
       )}
 
       {error && <ErrorBanner message={error} />}
-    </div>
-  )
-}
-
-function TierToggle({
-  activeTier,
-  onChangeTier,
-  slots,
-  disabled,
-}: {
-  activeTier: SlotTier
-  onChangeTier: (tier: SlotTier) => void
-  slots: ModelSlots
-  disabled: boolean
-}) {
-  const tiers: Array<{ tier: SlotTier; label: string }> = [
-    { tier: 'draft', label: 'Draft' },
-    { tier: 'quality', label: 'Quality' },
-  ]
-
-  return (
-    <div className="flex h-9 items-center gap-1 rounded-md border border-input px-1 shadow-xs">
-      {tiers.map(({ tier, label }) => (
-        <button
-          key={tier}
-          onClick={() => onChangeTier(tier)}
-          disabled={disabled}
-          title={getModelName(slots[tier])}
-          className={`px-3 py-1 text-sm rounded transition-colors ${
-            activeTier === tier
-              ? 'bg-accent-brand/15 text-accent-brand border border-accent-brand/40 font-medium'
-              : 'text-muted-foreground hover:text-foreground'
-          } disabled:opacity-50`}
-        >
-          {label}
-        </button>
-      ))}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-export type ModelCapability = 'generate' | 'edit'
+export type ModelCapability = 'generate' | 'edit' | 'sidebar'
 export type SelectionMode = 'single' | 'multi'
 
 export interface UnifiedModel {
@@ -6,5 +6,6 @@ export interface UnifiedModel {
   name: string
   description: string
   capability: ModelCapability
+  editId?: string
   maxRefImages?: number
 }

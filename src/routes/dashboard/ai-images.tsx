@@ -208,11 +208,7 @@ function AiImagesPage() {
           <div className="px-4 pb-4">
             <GeneratorPanel
               generator={page.generator}
-              slots={page.slots}
-              activeTier={page.activeTier}
-              setActiveTier={page.setActiveTier}
-              gensPerModel={page.gensPerModel}
-              adjustGens={page.adjustGens}
+              modelSelector={page.modelSelector}
               credits={page.credits}
               userImages={page.userImages}
               error={page.error}

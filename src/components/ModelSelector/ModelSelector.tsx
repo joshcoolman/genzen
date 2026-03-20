@@ -40,7 +40,6 @@ export function ModelSelector({
     gensPerModel !== undefined &&
     onAdjustGens && (
       <div className="flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 shadow-xs dark:bg-input/30">
-        <span className="text-sm text-muted-foreground">Gens</span>
         <button
           onClick={() => onAdjustGens(-1)}
           disabled={gensPerModel <= 1}

@@ -11,7 +11,7 @@ import {
 } from '@/features/ai-images/constants'
 import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
 
-// Kontext Dev is image-input only -- fall back to FLUX Dev for text-only draft
+// Kontext Dev is image-input only -- fall back to FLUX Dev for text-only
 const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
 const DRAFT_TEXT_ONLY_FALLBACK = 'fal-ai/flux/dev'
 
@@ -27,7 +27,6 @@ interface UseGeneratorOptions {
   gensPerModel: number
   credits: CreditsState
   setError: (error: string | null) => void
-  activeTier?: string
 }
 
 export interface GeneratorState {
@@ -63,7 +62,6 @@ export function useGenerator({
   gensPerModel,
   credits,
   setError,
-  activeTier,
 }: UseGeneratorOptions): GeneratorState {
   const [prompt, setPrompt] = useState('')
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
@@ -79,18 +77,19 @@ export function useGenerator({
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
-  // Compute maxRefImages from the active model's edit endpoint
+  // Compute maxRefImages from selected models' edit endpoints
   const maxRefImages = useMemo(() => {
-    if (activeTier !== 'quality') return 0
     const activeModelId = selectedModels[0]
     if (!activeModelId) return 0
+    // Kontext Dev does img2img directly, no ref images
+    if (activeModelId === KONTEXT_DEV) return 0
     const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === activeModelId)
     if (!modelDef?.supportsImageInput || !modelDef.imageInputModelId) return 0
     const editModel = EDIT_MODELS.find(
       (m) => m.id === modelDef.imageInputModelId,
     )
     return editModel?.maxRefImages ?? 0
-  }, [activeTier, selectedModels])
+  }, [selectedModels])
 
   const addRefImages = useCallback(
     (images: Array<RefImage>) => {
@@ -124,18 +123,30 @@ export function useGenerator({
 
     const modelsToUse = selectedModels.flatMap((modelId) => {
       // Kontext Dev needs a source image -- fall back to FLUX Dev for text-only
-      const resolved =
-        modelId === KONTEXT_DEV && !sourceImage
-          ? DRAFT_TEXT_ONLY_FALLBACK
-          : modelId
-      return Array.from({ length: gensPerModel }, () => resolved)
+      if (modelId === KONTEXT_DEV && !sourceImage) {
+        return Array.from(
+          { length: gensPerModel },
+          () => DRAFT_TEXT_ONLY_FALLBACK,
+        )
+      }
+      // If source image is present and model has an edit endpoint, use it
+      if (sourceImage) {
+        const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === modelId)
+        if (modelDef?.imageInputModelId && modelId !== KONTEXT_DEV) {
+          return Array.from(
+            { length: gensPerModel },
+            () => modelDef.imageInputModelId!,
+          )
+        }
+      }
+      return Array.from({ length: gensPerModel }, () => modelId)
     })
     const reason = sourceImage ? 'variation' : 'image_gen'
     const cost = CREDIT_COSTS[reason] * modelsToUse.length
 
     // Pre-flight credit check
     if (credits.balance !== null && credits.balance < cost) {
-      credits.showInsufficientCredits(cost, () => void handleGenerate())
+      credits.showInsufficientCredits(cost)
       return
     }
 
@@ -177,7 +188,7 @@ export function useGenerator({
             ? err
             : String(err)
       if (message.includes('Insufficient credits')) {
-        credits.showInsufficientCredits(cost, () => void handleGenerate())
+        credits.showInsufficientCredits(cost)
       } else {
         setError(message)
       }

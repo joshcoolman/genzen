@@ -5,6 +5,7 @@ import {
   EyeOff,
   Info,
   LayoutGrid,
+  Pencil,
   Plus,
   RefreshCw,
   Unlink,
@@ -122,6 +123,7 @@ function GenerationResultCard({
   regenerateModels,
   showFooter,
   compact,
+  editMode,
 }: {
   result: GenerationResult
   selected?: boolean
@@ -133,6 +135,7 @@ function GenerationResultCard({
   regenerateModels?: Array<{ id: string; name: string }>
   showFooter?: boolean
   compact?: boolean
+  editMode?: boolean
 }) {
   return (
     <Thumbnail
@@ -146,17 +149,34 @@ function GenerationResultCard({
       onClick={onOpen}
       onDelete={onDelete}
       imageOverlay={
-        onRegenerate &&
-        regenerateModels &&
-        result.status === 'complete' &&
-        result.url &&
-        result.prompt ? (
-          <RegenerateButton
-            result={result}
-            models={regenerateModels}
-            onRegenerate={onRegenerate}
-          />
-        ) : undefined
+        <>
+          {/* Regenerate button — hidden in edit mode */}
+          {!editMode &&
+          onRegenerate &&
+          regenerateModels &&
+          result.status === 'complete' &&
+          result.url &&
+          result.prompt ? (
+            <RegenerateButton
+              result={result}
+              models={regenerateModels}
+              onRegenerate={onRegenerate}
+            />
+          ) : undefined}
+          {/* Edit mode: always-visible pencil icon to promote to source */}
+          {editMode && onAdd && result.status === 'complete' && result.url && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onAdd()
+              }}
+              className="absolute bottom-1.5 left-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-all"
+              aria-label="Edit this image"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </>
       }
       overlayActions={
         result.status === 'complete' && result.url ? (
@@ -173,7 +193,7 @@ function GenerationResultCard({
                 <Unlink className="h-3.5 w-3.5" />
               </button>
             )}
-            {onAdd && (
+            {!editMode && onAdd && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -245,6 +265,7 @@ interface GenerationResultsGridProps {
   selectedId?: string | null
   title?: string
   prefsKey?: string
+  editMode?: boolean
 }
 
 export function GenerationResultsGrid({
@@ -258,6 +279,7 @@ export function GenerationResultsGrid({
   selectedId,
   title = 'Results',
   prefsKey,
+  editMode,
 }: GenerationResultsGridProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -384,6 +406,7 @@ export function GenerationResultsGrid({
             selected={selectedId === result.id}
             showFooter={showFooter}
             compact={compact}
+            editMode={editMode}
             onOpen={() => (onSelect ? onSelect(result.id) : handleOpen(result))}
             onDelete={() => onDelete(result.id)}
             onAdd={onAdd ? () => onAdd(result) : undefined}

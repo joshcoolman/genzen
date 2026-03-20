@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { GeneratorState, RefImage } from './use-generator'
 import type { GenerationResult } from '@/lib/types/generation-result'
-import type { CollectedImage } from '@/features/user-images/types'
 import { useAuth } from '@/lib/auth'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
+import { useModelSelector } from '@/components/ModelSelector'
+import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
+import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
-import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
+import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -14,46 +17,52 @@ import {
   detectAspectRatio,
   getRatioOptions,
 } from '@/features/ai-images/constants'
+import { flipOrientation } from '@/components/AspectRatioSelect'
 import { EDIT_MODELS } from '@/features/ai-images/models'
-import { useModelSelector } from '@/components/ModelSelector'
-import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { supabase } from '@/lib/supabase'
-import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 
-interface SourceImage {
-  id: string
-  title: string | null
-  storagePath: string
-  prompt: string | null
-  aspectRatio: string | null
-  url: string
-}
-
-export function useFocusedEdit(imageId: string) {
+export function useEditPage(imageId: string) {
   const { user, session } = useAuth()
   const accessToken = session?.access_token
   const credits = useRequireCredits(CREDIT_COSTS.edit)
 
-  const [sourceImage, setSourceImage] = useState<SourceImage | null>(null)
-  const [originalImage, setOriginalImage] = useState<SourceImage | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [hasParent, setHasParent] = useState(false)
-  const [editPrompt, setEditPrompt] = useState('')
-  const [editLoading, setEditLoading] = useState(false)
+  const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
+
   const [error, setError] = useState<string | null>(null)
+
+  // Source image state (DB metadata + signed URL)
+  const [sourceImageMeta, setSourceImageMeta] = useState<{
+    id: string
+    title: string | null
+    storagePath: string
+    prompt: string | null
+    aspectRatio: string | null
+    url: string
+  } | null>(null)
+  const [originalImageMeta, setOriginalImageMeta] =
+    useState<typeof sourceImageMeta>(null)
+  const [sourceBase64, setSourceBase64] = useState<string | null>(null)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [hasParent, setHasParent] = useState(false)
+
+  // Generator adapter state
+  const [prompt, setPrompt] = useState('')
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     'landscape',
   )
   const [aspectRatio, setAspectRatio] = useState('16:9')
-  const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
+  const [editLoading, setEditLoading] = useState(false)
+  const [describingImage, setDescribingImage] = useState(false)
+  const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
+  const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
-  // Source chain: tracks all image IDs whose edits should be visible
+  // Source chain tracking
   const [activeSourceId, setActiveSourceId] = useState(imageId)
   const [sourceChain, setSourceChain] = useState<Array<string>>([imageId])
 
-  const ratioOptions = getRatioOptions(orientation)
+  const existingImages = useExistingImages(user?.id)
 
-  // Discover all descendant edit IDs on mount so chained edits appear
+  // BFS descendant discovery
   useEffect(() => {
     if (!user?.id) return
 
@@ -67,7 +76,6 @@ export function useFocusedEdit(imageId: string) {
 
       if (!data) return
 
-      // Build parent -> children map from all images with a source_image_id
       const childrenOf = new Map<string, Array<string>>()
       for (const row of data) {
         const meta = row.generation_metadata as Record<string, unknown> | null
@@ -79,7 +87,6 @@ export function useFocusedEdit(imageId: string) {
         }
       }
 
-      // BFS from root imageId to find all descendants
       const chain = [imageId]
       const visited = new Set([imageId])
       const queue = [imageId]
@@ -110,12 +117,12 @@ export function useFocusedEdit(imageId: string) {
     limit: 50,
   })
 
-  // Fetch source image
+  // Fetch source image + convert to base64
   useEffect(() => {
     if (!user?.id || !imageId) return
 
     async function fetchSource() {
-      setLoading(true)
+      setPageLoading(true)
       const { data } = await supabase
         .from('user_images')
         .select('id, title, storage_path, generation_metadata')
@@ -125,7 +132,7 @@ export function useFocusedEdit(imageId: string) {
 
       if (!data?.storage_path) {
         setError('Image not found')
-        setLoading(false)
+        setPageLoading(false)
         return
       }
 
@@ -135,14 +142,14 @@ export function useFocusedEdit(imageId: string) {
 
       if (!signed?.signedUrl) {
         setError('Failed to load image')
-        setLoading(false)
+        setPageLoading(false)
         return
       }
 
       const meta = data.generation_metadata as Record<string, unknown> | null
       const srcRatio = meta?.aspect_ratio as string | undefined
 
-      const src: SourceImage = {
+      const imgMeta = {
         id: data.id,
         title: data.title,
         storagePath: data.storage_path,
@@ -151,73 +158,73 @@ export function useFocusedEdit(imageId: string) {
         url: signed.signedUrl,
       }
 
-      setSourceImage(src)
-      setOriginalImage(src)
+      setSourceImageMeta(imgMeta)
+      setOriginalImageMeta(imgMeta)
       setHasParent(typeof meta?.source_image_id === 'string')
 
-      // Set aspect ratio from source image
-      if (srcRatio) {
-        const [a, b] = srcRatio.split(':').map(Number)
-        setOrientation(a >= b ? 'landscape' : 'portrait')
-        setAspectRatio(srcRatio)
-      } else {
-        // Detect from image dimensions
-        const probe = new Image()
-        probe.onload = () => {
+      // Convert signed URL to base64 via canvas
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0)
+          setSourceBase64(canvas.toDataURL('image/png'))
+        }
+
+        // Set aspect ratio
+        if (srcRatio) {
+          const [a, b] = srcRatio.split(':').map(Number)
+          setOrientation(a >= b ? 'landscape' : 'portrait')
+          setAspectRatio(srcRatio)
+        } else {
           const detected = detectAspectRatio(
-            probe.naturalWidth,
-            probe.naturalHeight,
+            img.naturalWidth,
+            img.naturalHeight,
           )
           const [a, b] = detected.split(':').map(Number)
           setOrientation(a >= b ? 'landscape' : 'portrait')
           setAspectRatio(detected)
         }
-        probe.src = signed.signedUrl
       }
+      img.src = signed.signedUrl
 
-      setLoading(false)
+      setPageLoading(false)
     }
 
     void fetchSource()
   }, [user?.id, imageId])
 
-  const handleRegenerate = useCallback(
-    async (prompt: string, modelId: string) => {
-      if (!prompt.trim() || !accessToken || editLoading) return
-      setEditLoading(true)
-      setError(null)
-      try {
-        await credits.deduct(CREDIT_COSTS.edit, 'edit')
-        const { recordId } = await editImage({
-          data: {
-            accessToken,
-            sourceImageId: activeSourceId,
-            editPrompt: prompt.trim(),
-            aspectRatio,
-            editModelId: modelId,
-          },
-        })
+  // maxRefImages from selected models
+  const maxRefImages = useMemo(() => {
+    const modelId = modelSelector.selectedIds[0]
+    if (!modelId) return 0
+    const editModel = EDIT_MODELS.find((m) => m.id === modelId)
+    return editModel?.maxRefImages ?? 0
+  }, [modelSelector.selectedIds])
 
-        results.addPendingResult({
-          id: recordId,
-          status: 'pending',
-          label: EDIT_MODELS.find((m) => m.id === modelId)?.name ?? modelId,
-          prompt: prompt.trim(),
-        })
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to regenerate edit',
-        )
-      } finally {
-        setEditLoading(false)
-      }
+  const addRefImages = useCallback(
+    (images: Array<RefImage>) => {
+      setRefImages((prev) => {
+        const existingIds = new Set(prev.map((r) => r.id))
+        const newImages = images.filter((img) => !existingIds.has(img.id))
+        return [...prev, ...newImages].slice(0, maxRefImages)
+      })
     },
-    [accessToken, editLoading, activeSourceId, aspectRatio, credits, results],
+    [maxRefImages],
   )
 
-  const handleSubmit = useCallback(async () => {
+  const removeRefImage = useCallback((id: string) => {
+    setRefImages((prev) => prev.filter((img) => img.id !== id))
+  }, [])
+
+  // Generate edit handler
+  const handleGenerate = useCallback(async () => {
     if (
-      !editPrompt.trim() ||
+      !prompt.trim() ||
       !accessToken ||
       editLoading ||
       modelSelector.selectedIds.length === 0
@@ -225,20 +232,31 @@ export function useFocusedEdit(imageId: string) {
       return
     setEditLoading(true)
     setError(null)
-    const prompt = editPrompt.trim()
+
     const totalEdits =
       modelSelector.selectedIds.length * modelSelector.gensPerModel
+    const cost = CREDIT_COSTS.edit * totalEdits
+
+    if (credits.balance !== null && credits.balance < cost) {
+      credits.showInsufficientCredits(cost)
+      setEditLoading(false)
+      return
+    }
+
     try {
-      await credits.deduct(CREDIT_COSTS.edit * totalEdits, 'edit')
+      const referenceImageIds =
+        refImages.length > 0 ? refImages.map((r) => r.id) : undefined
+
       for (const editModelId of modelSelector.selectedIds) {
         for (let g = 0; g < modelSelector.gensPerModel; g++) {
           const { recordId } = await editImage({
             data: {
               accessToken,
               sourceImageId: activeSourceId,
-              editPrompt: prompt,
+              editPrompt: prompt.trim(),
               aspectRatio,
               editModelId,
+              ...(referenceImageIds ? { referenceImageIds } : {}),
             },
           })
 
@@ -249,18 +267,19 @@ export function useFocusedEdit(imageId: string) {
               EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
               modelSelector.models.find((m) => m.id === editModelId)?.name ??
               editModelId,
-            prompt,
+            prompt: prompt.trim(),
           })
         }
       }
-      setEditPrompt('')
+      setPrompt('')
+      await credits.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to edit image')
     } finally {
       setEditLoading(false)
     }
   }, [
-    editPrompt,
+    prompt,
     accessToken,
     editLoading,
     activeSourceId,
@@ -270,25 +289,51 @@ export function useFocusedEdit(imageId: string) {
     modelSelector.models,
     credits,
     results,
+    refImages,
   ])
 
+  // Caption handler
+  const handleCaption = useCallback(async () => {
+    if (!accessToken || !sourceBase64 || describingImage) return
+    setDescribingImage(true)
+    try {
+      const { caption } = await captionImage({
+        data: { imageBase64: sourceBase64, accessToken },
+      })
+      setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption))
+    } catch {
+      // caption failed silently
+    } finally {
+      setDescribingImage(false)
+    }
+  }, [accessToken, sourceBase64, describingImage])
+
+  // Describe JSON
   const describe = useDescribeJson({
     accessToken,
-    imageUrl: sourceImage?.url,
+    imageUrl: sourceImageMeta?.url,
+    onResult: useCallback((json: string) => {
+      setPrompt((prev) => (prev ? `${prev}\n\n${json}` : json))
+    }, []),
   })
 
-  const handleDescribeJson = useCallback(async () => {
-    await describe.handleDescribe()
-    if (describe.jsonDescription) {
-      setEditPrompt(describe.jsonDescription)
-    }
-  }, [describe, setEditPrompt])
+  const totalImages =
+    modelSelector.selectedIds.length * modelSelector.gensPerModel
+  const canGenerate = !!prompt.trim() && modelSelector.selectedIds.length > 0
 
+  const ratioOptions = getRatioOptions(orientation)
+
+  function handleOrientationToggle() {
+    const flipped = flipOrientation(orientation, aspectRatio)
+    setOrientation(flipped.orientation)
+    setAspectRatio(flipped.aspectRatio)
+  }
+
+  // Promote result to source
   const promoteToSource = useCallback(
     async (result: GenerationResult) => {
       if (!result.url || !user?.id) return
 
-      // Fetch metadata for the promoted image
       const { data } = await supabase
         .from('user_images')
         .select('id, title, storage_path, generation_metadata')
@@ -304,10 +349,9 @@ export function useFocusedEdit(imageId: string) {
 
       const meta = data.generation_metadata as Record<string, unknown> | null
       const srcRatio = meta?.aspect_ratio as string | undefined
-
       const url = signed?.signedUrl ?? result.url
 
-      setSourceImage({
+      setSourceImageMeta({
         id: data.id,
         title: data.title,
         storagePath: data.storage_path,
@@ -316,48 +360,74 @@ export function useFocusedEdit(imageId: string) {
         url,
       })
 
-      setActiveSourceId(result.id)
-      setSourceChain((prev) =>
-        prev.includes(result.id) ? prev : [...prev, result.id],
-      )
-      setEditPrompt('')
+      // Convert to base64
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0)
+          setSourceBase64(canvas.toDataURL('image/png'))
+        }
 
-      // Update aspect ratio from promoted image
-      if (srcRatio) {
-        const [a, b] = srcRatio.split(':').map(Number)
-        setOrientation(a >= b ? 'landscape' : 'portrait')
-        setAspectRatio(srcRatio)
-      } else {
-        const probe = new Image()
-        probe.onload = () => {
+        if (srcRatio) {
+          const [a, b] = srcRatio.split(':').map(Number)
+          setOrientation(a >= b ? 'landscape' : 'portrait')
+          setAspectRatio(srcRatio)
+        } else {
           const detected = detectAspectRatio(
-            probe.naturalWidth,
-            probe.naturalHeight,
+            img.naturalWidth,
+            img.naturalHeight,
           )
           const [a, b] = detected.split(':').map(Number)
           setOrientation(a >= b ? 'landscape' : 'portrait')
           setAspectRatio(detected)
         }
-        probe.src = url
       }
+      img.src = url
+
+      setActiveSourceId(result.id)
+      setSourceChain((prev) =>
+        prev.includes(result.id) ? prev : [...prev, result.id],
+      )
+      setPrompt('')
     },
     [user?.id],
   )
 
   const resetToOriginal = useCallback(() => {
-    if (!originalImage) return
-    setSourceImage(originalImage)
+    if (!originalImageMeta) return
+    setSourceImageMeta(originalImageMeta)
     setActiveSourceId(imageId)
-    setEditPrompt('')
-  }, [originalImage, imageId])
+    setPrompt('')
+
+    // Re-convert original to base64
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.drawImage(img, 0, 0)
+        setSourceBase64(canvas.toDataURL('image/png'))
+      }
+    }
+    img.src = originalImageMeta.url
+  }, [originalImageMeta, imageId])
 
   const isChained = activeSourceId !== imageId
 
   // Variation generation
+  const [variationDialogOpen, setVariationDialogOpen] = useState(false)
   const [variationPrompts, setVariationPrompts] = useState<Array<string>>([])
   const [variationPromptsLoading, setVariationPromptsLoading] = useState(false)
   const [variationSubmitting, setVariationSubmitting] = useState(false)
-  const [variationDialogOpen, setVariationDialogOpen] = useState(false)
+  const [generatingMore, setGeneratingMore] = useState(false)
   const [variationMeta, setVariationMeta] = useState<{
     rootPrompt: string
     rootImageId: string
@@ -365,49 +435,29 @@ export function useFocusedEdit(imageId: string) {
     falImageUrl?: string
   } | null>(null)
 
-  // Reference images for variations
-  const existingImages = useExistingImages(user?.id)
-  const [variationRefImages, setVariationRefImages] = useState<
-    Array<{ id: string; url: string; title: string }>
-  >([])
-  const [refPickerOpen, setRefPickerOpen] = useState(false)
-
-  const handleAddRefImages = useCallback((selected: Array<CollectedImage>) => {
-    setVariationRefImages((prev) => {
-      const existingIds = new Set(prev.map((r) => r.id))
-      const newImages = selected
-        .filter((img) => !existingIds.has(img.id))
-        .map((img) => ({ id: img.id, url: img.url, title: img.title }))
-      return [...prev, ...newImages]
-    })
-  }, [])
-
-  const handleRemoveRefImage = useCallback((id: string) => {
-    setVariationRefImages((prev) => prev.filter((img) => img.id !== id))
-  }, [])
-
   const handleGenerateVariations = useCallback(async () => {
-    if (!accessToken || !sourceImage) return
+    if (!accessToken || !sourceImageMeta) return
     setError(null)
     setVariationDialogOpen(true)
     setVariationPromptsLoading(true)
     setVariationPrompts([])
 
     try {
-      // If no prompt (uploaded image), auto-describe first
-      let prompt = sourceImage.prompt
-      if (!prompt) {
+      let sourcePrompt = sourceImageMeta.prompt
+      if (!sourcePrompt) {
         const { caption } = await captionImage({
-          data: { imageBase64: sourceImage.url, accessToken },
+          data: { imageBase64: sourceImageMeta.url, accessToken },
         })
-        prompt = caption
-        setSourceImage((prev) => (prev ? { ...prev, prompt: caption } : prev))
+        sourcePrompt = caption
+        setSourceImageMeta((prev) =>
+          prev ? { ...prev, prompt: caption } : prev,
+        )
       }
 
       const result = await generateVariationPrompts({
         data: {
           accessToken,
-          prompt,
+          prompt: sourcePrompt,
           sourceImageId: activeSourceId,
           count: 4,
         },
@@ -429,20 +479,16 @@ export function useFocusedEdit(imageId: string) {
     } finally {
       setVariationPromptsLoading(false)
     }
-  }, [accessToken, sourceImage?.prompt, activeSourceId])
-
-  const [generatingMore, setGeneratingMore] = useState(false)
+  }, [accessToken, sourceImageMeta?.prompt, activeSourceId])
 
   const handleGenerateMoreVariations = useCallback(async () => {
-    if (!accessToken || !sourceImage) return
-    const prompt = sourceImage.prompt
-    if (!prompt) return
+    if (!accessToken || !sourceImageMeta?.prompt) return
     setGeneratingMore(true)
     try {
       const result = await generateVariationPrompts({
         data: {
           accessToken,
-          prompt,
+          prompt: sourceImageMeta.prompt,
           sourceImageId: activeSourceId,
           count: 1,
           existingPrompts: variationPrompts,
@@ -450,15 +496,15 @@ export function useFocusedEdit(imageId: string) {
       })
       setVariationPrompts((prev) => [...prev, ...result.prompts])
     } catch {
-      // silently fail -- user can retry
+      // silently fail
     } finally {
       setGeneratingMore(false)
     }
-  }, [accessToken, sourceImage?.prompt, activeSourceId, variationPrompts])
+  }, [accessToken, sourceImageMeta?.prompt, activeSourceId, variationPrompts])
 
   const handleRunVariations = useCallback(
     async (prompts: Array<string>) => {
-      if (!accessToken || !variationMeta || !sourceImage) return
+      if (!accessToken || !variationMeta || !sourceImageMeta) return
       const cost = CREDIT_COSTS.variation * prompts.length
       if (credits.balance !== null && credits.balance < cost) {
         credits.showInsufficientCredits(cost)
@@ -467,7 +513,7 @@ export function useFocusedEdit(imageId: string) {
 
       setVariationSubmitting(true)
       try {
-        const refIds = variationRefImages.map((r) => r.id)
+        const refIds = refImages.map((r) => r.id)
         const variationResults = await submitVariations({
           data: {
             accessToken,
@@ -504,50 +550,58 @@ export function useFocusedEdit(imageId: string) {
         setVariationSubmitting(false)
       }
     },
-    [
-      accessToken,
-      variationMeta,
-      aspectRatio,
-      credits,
-      results,
-      variationRefImages,
-    ],
+    [accessToken, variationMeta, aspectRatio, credits, results, refImages],
   )
 
-  return {
-    sourceImage,
-    loading,
-    editPrompt,
-    setEditPrompt,
-    editLoading,
-    error,
-    setError,
+  // GeneratorState adapter — makes this hook's state compatible with GeneratorPanel
+  const generator: GeneratorState = {
+    prompt,
+    setPrompt,
     orientation,
     setOrientation,
     aspectRatio,
     setAspectRatio,
-    modelSelector,
+    loading: editLoading,
+    sourceImage:
+      sourceBase64 && sourceImageMeta
+        ? {
+            base64: sourceBase64,
+            name: sourceImageMeta.title ?? 'Source image',
+          }
+        : null,
+    describingImage,
+    totalImages,
+    canGenerate,
     ratioOptions,
-    results,
+    selectedStyleId,
+    setSelectedStyleId,
+    handleOrientationToggle,
+    handleGenerate,
+    setSourceFile: () => {}, // No file upload in edit mode — source comes from route
+    setSourceFromUrl: () => {}, // No URL source in edit mode
+    handleClearSourceImage: () => {}, // Can't clear in edit mode
+    handleCaption,
+    refImages,
+    addRefImages,
+    removeRefImage,
+    maxRefImages,
+  }
+
+  return {
+    generator,
+    modelSelector,
     credits,
-    handleSubmit,
-    handleRegenerate,
+    error,
+    setError,
+    describe,
+    results,
+    sourceImageMeta,
+    pageLoading,
+    hasParent,
+    isChained,
     promoteToSource,
     resetToOriginal,
-    isChained,
-    jsonDescription: describe.jsonDescription,
-    jsonLoading: describe.jsonLoading,
-    handleDescribeJson,
-    variationDialogOpen,
-    setVariationDialogOpen,
-    variationPrompts,
-    variationPromptsLoading,
-    variationSubmitting,
-    handleGenerateVariations,
-    handleRunVariations,
-    handleGenerateMoreVariations,
-    generatingMore,
-    hasParent,
+    existingImages,
     detachFromParent: async () => {
       if (!accessToken) return
       await reparentImage({
@@ -562,11 +616,15 @@ export function useFocusedEdit(imageId: string) {
       })
       results.dismissResult(resultId)
     },
-    variationRefImages,
-    handleAddRefImages,
-    handleRemoveRefImage,
-    refPickerOpen,
-    setRefPickerOpen,
-    existingImages,
+    // Variations
+    variationDialogOpen,
+    setVariationDialogOpen,
+    variationPrompts,
+    variationPromptsLoading,
+    variationSubmitting,
+    handleGenerateVariations,
+    handleRunVariations,
+    handleGenerateMoreVariations,
+    generatingMore,
   }
 }

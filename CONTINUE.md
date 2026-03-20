@@ -1,53 +1,54 @@
-# Continue: Unified Image Grid on `unified-thumbs`
+# Continue: Unified Sidebar Model Selector
 
-## Branch: `unified-thumbs` -- all committed, pushed to origin (12 commits)
+## Branch: `main` -- NOT committed, 13 files changed
 
-## What was worked on
+## What was done
 
-Merged uploads into the AI Images grid, rebuilt generator sidebar, added parent/child management, descendant-aware sorting, and variation support for uploads.
+Replaced the Draft/Quality `TierToggle` in the sidebar `GeneratorPanel` with a unified multi-select `ModelSelector` dropdown showing all 6 image-capable models. This is the sidebar-only pass; the focused edit view was intentionally left unchanged.
 
-## Key files changed
+## Changes made
 
-- `src/features/ai-images/hooks/use-images.ts` -- gallery queries, sort, delete variants, realtime
-- `src/features/ai-images/hooks/use-focused-edit.ts` -- variation auto-describe for uploads
-- `src/features/ai-images/hooks/use-ai-images-page.ts` -- exposed userId
-- `src/features/ai-images/hooks/use-generator.ts` -- removed auto-caption, added manual handleCaption
-- `src/features/ai-images/components/GeneratorPanel.tsx` -- sidebar layout, Describe/JSON buttons
-- `src/features/ai-images/components/FocusedEditView.tsx` -- ModelFilterPills, variation button fix
-- `src/features/ai-images/components/ImageGallery.tsx` -- removed display mode toggle
-- `src/features/ai-images/server/reparent-image.server.ts` -- parent sort_order bump
-- `src/routes/dashboard/ai-images.tsx` -- sidebar shell, upload/paste, delete dialog, overlay
-- `src/components/ActionButton.tsx` -- outline variant polish
-- `src/lib/hooks/useGenerationResults.ts` -- widened source filter
+### Model registry (`src/features/ai-images/models.ts`)
 
-## Changes summary
+- Added `GPT Image 1.5` (`fal-ai/gpt-image-1.5`, edit: `fal-ai/gpt-image-1.5/edit`) to `ALL_IMAGE_MODELS`
+- Added `Seedream v4.5` (`fal-ai/bytedance/seedream/v4.5/text-to-image`, edit: `.../v4.5/edit`) to `ALL_IMAGE_MODELS`
+- Updated `maxRefImages`: FLUX.2 Pro Edit 8->9, Seedream v4 4->10, Seedream v4.5 9->10
 
-- DB queries widened to `.in('source', ['upload', 'ai_generated'])` across gallery, edit BFS, generation results
-- `sortByOrder` uses `max(own sort_order, newest descendant created_at)` -- runs on full set before filtering feature types
-- Parent sort_order bumped on reparent (server) and realtime child INSERT (client + DB persist)
-- Delete dialog: Keep all (detach children) / Keep children / Delete all -- with `deleteImageWithDescendants` and `deleteAndDetachChildren`
-- Generator sidebar: pin/unpin, bg-black/90 backdrop-blur-2xl, invisible z-20 overlay for click-outside
-- Manual Describe (prepends prompt) + JSON (appends) ActionButtons, no auto-caption
-- Draft/Quality + count under Generate button, all controls h-9/36px composable baseline
-- Uploads can Generate Variations via auto-describe (`captionImage`) when no prompt exists
-- `ModelFilterPills` added below toolbar in focused edit view
+### ModelSelector abstraction (`src/components/ModelSelector/`)
 
-## Outstanding work
+- Added `'sidebar'` to `ModelCapability` type union
+- Added `editId?: string` to `UnifiedModel` interface
+- Created `UNIFIED_SIDEBAR_MODELS` list -- maps `IMAGE_INPUT_MODELS` to UnifiedModel with editId + maxRefImages from EDIT_MODELS
+- Updated `getModelsByCapability()` and `getDefaultSelectedId()` for `'sidebar'`
+- `useModelSelector` now computes `maxRefImages` for `'sidebar'` capability too
+- Removed "Gens" label text from the gens stepper control in `ModelSelector.tsx`
 
-### Variation children as mini-thumbs (next task)
+### Sidebar wiring
 
-Variations from edit view show as full-size "Generating..." cards in the main grid. Should appear as small loading thumbnails under the parent card instead. Requires:
+- `use-ai-images-page.ts` -- replaced `useModelSlots()` + `activeTier` state with `useModelSelector({ capability: 'sidebar', mode: 'multi' })`. Returns `modelSelector` instead of `slots`/`activeTier`/`setActiveTier`/`activeModelId`/`gensPerModel`/`adjustGens`
+- `use-generator.ts` -- removed `activeTier` from options. `maxRefImages` now computed from `sourceImage` presence + selected model's edit endpoint (not tier). `handleGenerate` routes to edit endpoint when source image present and model has `imageInputModelId`
+- `GeneratorPanel.tsx` -- removed `TierToggle` entirely. Added `<ModelSelector display="dropdown">` below generate button. Added `<NumberStepper>` next to generate button (no label). Ref image strip condition: `sourceImage && maxRefImages > 0` (was `activeTier === 'quality'`)
+- `ai-images.tsx` route -- passes `modelSelector` prop instead of old tier/slot props
+- `useAiImagesADContext.ts` -- uses `modelSelector.selectedIds` instead of `activeModelId`
 
-1. `use-edit-children.ts` to include pending/variation children (currently only completed edits)
-2. `ImageCard` to render pending mini-thumbs (pulsing skeleton) alongside completed ones
-3. Add `'variation'` to the `FEATURE_TYPES` filter so variations are hidden as standalone grid cards
-4. Consider renaming `editChildrenMap` to `childrenMap`
+## Key decisions
 
-### Remove Assets page (agreed, not yet done)
+- `'sidebar'` capability is separate from `'generate'` -- sidebar only shows image-input-capable models (6), generate shows all models (10+)
+- Kontext Dev: no ref images (maxRefImages=0), uses img2img directly. Falls back to FLUX Dev for text-only
+- Edit endpoint routing happens in `handleGenerate` -- if sourceImage present and model has `imageInputModelId`, uses edit endpoint instead of text-to-image
+- `model-slots.ts` left intact (still used by video features)
+- NumberStepper moved next to Generate button, no "Gens" label
 
-Uploads now live in AI Images grid, making the Assets page redundant. Delete `src/routes/dashboard/assets.tsx` and its nav entry. Keep `src/features/user-images/` module -- its hooks are used by AI Images for upload/paste. Videos will get their own category later.
+## Outstanding work / next steps
 
-### Other potential follow-ups
+### Focused edit view -- same pattern (deferred)
 
-- `editChildrenMap` typed as `Record<string, Array>` but undefined at runtime for missing keys -- needs proper null safety pattern
-- Sidebar controls (TierToggle, NumberStepper) share h-9 baseline but could use ActionButton outline for even more consistency
+The focused edit view still uses its own model selector pattern. Apply the same unified approach there in a follow-up pass.
+
+### Verify FAL model IDs
+
+The two new model IDs (`fal-ai/gpt-image-1.5`, `fal-ai/bytedance/seedream/v4.5/text-to-image`) were added per the plan but should be verified against FAL's API to confirm they're correct endpoint IDs. Use the `fal-models` skill.
+
+## Git state
+
+All changes are uncommitted and unstaged on `main`. Build passes (`pnpm build` succeeds). Run `pnpm check` before committing.
