@@ -129,7 +129,7 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
         <Button
           variant="outline"
           onClick={edit.handleGenerateVariations}
-          disabled={edit.variationPromptsLoading || !edit.sourceImage.prompt}
+          disabled={edit.variationPromptsLoading}
         >
           {edit.variationPromptsLoading
             ? 'Generating...'

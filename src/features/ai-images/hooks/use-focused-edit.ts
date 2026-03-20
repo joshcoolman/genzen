@@ -16,6 +16,7 @@ import {
 } from '@/features/ai-images/constants'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { useModelSelector } from '@/components/ModelSelector'
+import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { supabase } from '@/lib/supabase'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 
@@ -386,17 +387,27 @@ export function useFocusedEdit(imageId: string) {
   }, [])
 
   const handleGenerateVariations = useCallback(async () => {
-    if (!accessToken || !sourceImage?.prompt) return
+    if (!accessToken || !sourceImage) return
     setError(null)
     setVariationDialogOpen(true)
     setVariationPromptsLoading(true)
     setVariationPrompts([])
 
     try {
+      // If no prompt (uploaded image), auto-describe first
+      let prompt = sourceImage.prompt
+      if (!prompt) {
+        const { caption } = await captionImage({
+          data: { imageBase64: sourceImage.url, accessToken },
+        })
+        prompt = caption
+        setSourceImage((prev) => (prev ? { ...prev, prompt: caption } : prev))
+      }
+
       const result = await generateVariationPrompts({
         data: {
           accessToken,
-          prompt: sourceImage.prompt,
+          prompt,
           sourceImageId: activeSourceId,
           count: 4,
         },
@@ -423,13 +434,15 @@ export function useFocusedEdit(imageId: string) {
   const [generatingMore, setGeneratingMore] = useState(false)
 
   const handleGenerateMoreVariations = useCallback(async () => {
-    if (!accessToken || !sourceImage?.prompt) return
+    if (!accessToken || !sourceImage) return
+    const prompt = sourceImage.prompt
+    if (!prompt) return
     setGeneratingMore(true)
     try {
       const result = await generateVariationPrompts({
         data: {
           accessToken,
-          prompt: sourceImage.prompt,
+          prompt,
           sourceImageId: activeSourceId,
           count: 1,
           existingPrompts: variationPrompts,
