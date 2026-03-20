@@ -181,7 +181,7 @@ export function GeneratorPanel({
         </div>
       </div>
 
-      {/* Describe / JSON buttons — only when source image present */}
+      {/* Describe / JSON — only when source image present */}
       {generator.sourceImage && (
         <div className="flex items-center gap-2">
           <ActionButton
@@ -190,7 +190,7 @@ export function GeneratorPanel({
             loading={generator.describingImage}
             loadingText="..."
             disabled={generator.loading}
-            className="h-7 px-2 text-xs"
+            className="flex-1"
           >
             Describe
           </ActionButton>
@@ -201,7 +201,7 @@ export function GeneratorPanel({
               loading={describe.jsonLoading}
               loadingText="..."
               disabled={generator.loading}
-              className="h-7 px-2 text-xs"
+              className="flex-1"
             >
               JSON
             </ActionButton>

@@ -29,7 +29,7 @@ export function ActionButton({
         isDisabled
           ? 'bg-muted text-muted-foreground pointer-events-none'
           : variant === 'outline'
-            ? 'border border-border text-foreground hover:bg-muted'
+            ? 'border border-input bg-background text-muted-foreground shadow-xs hover:bg-accent hover:text-foreground'
             : 'bg-accent-brand text-black hover:bg-accent-brand-hover',
         "shrink-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         'outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',
