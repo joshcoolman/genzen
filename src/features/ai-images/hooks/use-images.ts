@@ -11,10 +11,24 @@ interface UseImagesOptions {
 }
 
 function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
+  // Map each root/parent to its newest descendant's created_at
+  const newestDescendant = new Map<string, number>()
+  for (const img of images) {
+    const meta = img.generation_metadata
+    const rootId = meta?.root_image_id ?? meta?.source_image_id
+    if (rootId) {
+      const t = new Date(img.created_at).getTime() / 1000
+      const current = newestDescendant.get(rootId) ?? 0
+      if (t > current) newestDescendant.set(rootId, t)
+    }
+  }
+
   return [...images].sort((a, b) => {
-    const aOrder = a.sort_order ?? new Date(a.created_at).getTime() / 1000
-    const bOrder = b.sort_order ?? new Date(b.created_at).getTime() / 1000
-    return bOrder - aOrder
+    const aOwn = a.sort_order ?? new Date(a.created_at).getTime() / 1000
+    const bOwn = b.sort_order ?? new Date(b.created_at).getTime() / 1000
+    const aEffective = Math.max(aOwn, newestDescendant.get(a.id) ?? 0)
+    const bEffective = Math.max(bOwn, newestDescendant.get(b.id) ?? 0)
+    return bEffective - aEffective
   })
 }
 
