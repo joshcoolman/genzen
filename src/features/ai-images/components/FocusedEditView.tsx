@@ -5,6 +5,7 @@ import type { useFocusedEdit } from '@/features/ai-images/hooks/use-focused-edit
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { ModelSelector } from '@/components/ModelSelector'
+import { ModelFilterPills } from '@/components/ModelSelector/ModelFilterPills'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
@@ -105,6 +106,11 @@ export function FocusedEditView({ edit }: FocusedEditViewProps) {
           showGensPerModel
           gensPerModel={edit.modelSelector.gensPerModel}
           onAdjustGens={edit.modelSelector.adjustGens}
+        />
+        <ModelFilterPills
+          models={edit.modelSelector.models}
+          activeIds={edit.modelSelector.selectedIds}
+          onToggle={edit.modelSelector.toggleSelected}
         />
         {edit.isChained && (
           <Button
