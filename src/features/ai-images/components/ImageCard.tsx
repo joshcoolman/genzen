@@ -129,6 +129,7 @@ export function ImageCard({
         navigate({
           to: '/dashboard/edit/$imageId',
           params: { imageId: img.id },
+          search: { sourceId: undefined },
         })
       }
     >
@@ -140,6 +141,7 @@ export function ImageCard({
                 navigate({
                   to: '/dashboard/edit/$imageId',
                   params: { imageId: img.id },
+                  search: { sourceId: undefined },
                 })
               }
               className="w-full rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
@@ -186,7 +188,8 @@ export function ImageCard({
                       e.stopPropagation()
                       navigate({
                         to: '/dashboard/edit/$imageId',
-                        params: { imageId: child.id },
+                        params: { imageId: img.id },
+                        search: { sourceId: child.id },
                       })
                     }}
                     className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"

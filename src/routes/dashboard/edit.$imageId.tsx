@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft, Pin, PinOff, RotateCcw, Unlink } from 'lucide-react'
 import type { GenerationResult } from '@/lib/types/generation-result'
@@ -11,10 +11,14 @@ import { ActionButton } from '@/components/ActionButton'
 
 export const Route = createFileRoute('/dashboard/edit/$imageId')({
   component: EditPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    sourceId: (search.sourceId as string) || undefined,
+  }),
 })
 
 function EditPage() {
   const { imageId } = Route.useParams()
+  const { sourceId: initialSourceId } = Route.useSearch()
   const page = useEditPage(imageId)
 
   const [panelPinned, setPanelPinned] = useState(() => {
@@ -29,22 +33,48 @@ function EditPage() {
   // Ref image picker state
   const [refPickerOpen, setRefPickerOpen] = useState(false)
 
-  // Include the source image as a result so the grid is never empty
+  // Pin the original parent image at position 0 so the grid never shifts.
+  // sourceImageMeta is the selection cursor (changes on click);
+  // originalImageMeta is the group identity (set once on load, never changes).
   const sourceId = page.sourceImageMeta?.id
   const allResults = useMemo(() => {
-    if (!page.sourceImageMeta) return page.results.results
-    // Don't duplicate if the source already appears in results
-    if (page.results.results.some((r) => r.id === page.sourceImageMeta!.id))
+    if (!page.originalImageMeta) return page.results.results
+    if (page.results.results.some((r) => r.id === page.originalImageMeta!.id))
       return page.results.results
-    const sourceResult: GenerationResult = {
-      id: page.sourceImageMeta.id,
+    const parentResult: GenerationResult = {
+      id: page.originalImageMeta.id,
       status: 'complete',
-      url: page.sourceImageMeta.url,
-      label: page.sourceImageMeta.title ?? 'Source',
-      title: page.sourceImageMeta.title ?? undefined,
+      url: page.originalImageMeta.url,
+      label: page.originalImageMeta.title ?? 'Source',
+      title: page.originalImageMeta.title ?? undefined,
     }
-    return [...page.results.results, sourceResult]
-  }, [page.results.results, page.sourceImageMeta])
+    return [parentResult, ...page.results.results]
+  }, [page.results.results, page.originalImageMeta])
+
+  // Click card = promote to source (no lightbox)
+  const handleSelectCard = useCallback(
+    (id: string) => {
+      if (id === sourceId) return
+      const result = allResults.find((r) => r.id === id)
+      if (result) page.promoteToSource(result)
+    },
+    [allResults, sourceId, page.promoteToSource],
+  )
+
+  // Pre-select child when navigating from main page thumb click
+  const didApplyInitialSource = useRef(false)
+  useEffect(() => {
+    if (
+      !initialSourceId ||
+      didApplyInitialSource.current ||
+      page.pageLoading ||
+      page.results.results.length === 0
+    )
+      return
+    didApplyInitialSource.current = true
+    const result = page.results.results.find((r) => r.id === initialSourceId)
+    if (result) page.promoteToSource(result)
+  }, [initialSourceId, page.pageLoading, page.results.results])
 
   if (page.pageLoading) {
     return (
@@ -118,6 +148,7 @@ function EditPage() {
           results={allResults}
           selectedId={sourceId}
           selectedClassName="border-emerald-500 ring-1 ring-emerald-500"
+          onSelect={handleSelectCard}
           onDelete={(id) => {
             if (id === sourceId) return
             void page.results.deleteResult(id)

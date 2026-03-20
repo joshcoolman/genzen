@@ -319,8 +319,8 @@ export function GenerationResultsGrid({
   }
 
   const displayResults = useMemo(
-    () => (sortAsc ? [...results].reverse() : results),
-    [results, sortAsc],
+    () => (editMode ? results : sortAsc ? [...results].reverse() : results),
+    [results, sortAsc, editMode],
   )
 
   const compact = thumbSize !== 'lg'
@@ -378,17 +378,19 @@ export function GenerationResultsGrid({
               {THUMB_LABELS[thumbSize]}
             </span>
           </button>
-          <button
-            onClick={handleToggleSort}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            aria-label={sortAsc ? 'Sort newest first' : 'Sort oldest first'}
-          >
-            {sortAsc ? (
-              <ArrowUp className="h-4 w-4" />
-            ) : (
-              <ArrowDown className="h-4 w-4" />
-            )}
-          </button>
+          {!editMode && (
+            <button
+              onClick={handleToggleSort}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label={sortAsc ? 'Sort newest first' : 'Sort oldest first'}
+            >
+              {sortAsc ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
+            </button>
+          )}
           <button
             onClick={handleToggleInfo}
             className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"

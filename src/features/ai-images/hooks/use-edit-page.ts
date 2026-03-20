@@ -596,6 +596,7 @@ export function useEditPage(imageId: string) {
     describe,
     results,
     sourceImageMeta,
+    originalImageMeta,
     pageLoading,
     hasParent,
     isChained,
