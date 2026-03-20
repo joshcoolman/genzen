@@ -1,0 +1,157 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { supabase } from '@/lib/supabase'
+import { captionImage } from '@/features/ai-images/server/caption-image.server'
+
+interface DescribeDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  imageUrl: string | undefined
+  imageId: string
+  currentDescription?: string | null
+  accessToken: string | undefined
+  onSave?: (imageId: string, description: string) => void
+}
+
+export function DescribeDialog({
+  open,
+  onOpenChange,
+  imageUrl,
+  imageId,
+  currentDescription,
+  accessToken,
+  onSave,
+}: DescribeDialogProps) {
+  const [description, setDescription] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchDescription = useCallback(async () => {
+    if (!accessToken) return
+    if (!imageUrl) {
+      setError('No image URL available')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch(imageUrl)
+      if (!response.ok) {
+        setError(`Failed to fetch image (${response.status})`)
+        return
+      }
+      const blob = await response.blob()
+
+      // Resize to fit within 5MB / 1024px for the vision API
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          const MAX = 1024
+          let { width, height } = img
+          if (width > MAX || height > MAX) {
+            const scale = MAX / Math.max(width, height)
+            width = Math.round(width * scale)
+            height = Math.round(height * scale)
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')!
+          ctx.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', 0.85))
+        }
+        img.onerror = () => reject(new Error('Failed to load image'))
+        img.src = URL.createObjectURL(blob)
+      })
+
+      const result = await captionImage({
+        data: { imageBase64: base64, accessToken, mode: 'reconstruct' },
+      })
+      setDescription(result.caption)
+    } catch (err) {
+      console.error('Describe failed:', err)
+      setError('Failed to describe image')
+    } finally {
+      setLoading(false)
+    }
+  }, [imageUrl, accessToken])
+
+  // Always describe fresh when dialog opens
+  useEffect(() => {
+    if (open) {
+      setDescription('')
+      setError(null)
+      void fetchDescription()
+    }
+  }, [open, fetchDescription])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await supabase
+        .from('user_images')
+        .update({ description })
+        .eq('id', imageId)
+      onSave?.(imageId, description)
+      onOpenChange(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Describe Image</DialogTitle>
+        </DialogHeader>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">
+              Describing...
+            </span>
+          </div>
+        ) : error ? (
+          <div className="space-y-3">
+            <p className="text-sm text-destructive">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchDescription}>
+              Retry
+            </Button>
+          </div>
+        ) : (
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={6}
+            className="resize-none"
+            placeholder="Image description..."
+          />
+        )}
+        {currentDescription && (
+          <p className="text-xs text-muted-foreground">
+            Current: {currentDescription}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={loading || saving || !!error}>
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

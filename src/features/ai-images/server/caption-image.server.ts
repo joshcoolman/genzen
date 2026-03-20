@@ -5,6 +5,7 @@ import { describeImage } from '@/lib/server/describe-image.server'
 interface CaptionImageInput {
   imageBase64: string
   accessToken: string
+  mode?: 'anchor' | 'reconstruct'
 }
 
 export const captionImage = createServerFn({ method: 'POST' })
@@ -12,7 +13,7 @@ export const captionImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireAuth(data.accessToken)
 
-    const result = await describeImage(data.imageBase64, 'anchor')
+    const result = await describeImage(data.imageBase64, data.mode ?? 'anchor')
 
     return { caption: result }
   })

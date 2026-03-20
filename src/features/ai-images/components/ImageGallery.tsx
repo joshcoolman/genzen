@@ -7,19 +7,29 @@ import { ImageCard } from '@/features/ai-images/components/ImageCard'
 import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
 import { ImageGridSkeleton } from '@/components/ImageGrid'
 
+const GRID_MIN_WIDTH: Record<string, string> = {
+  lg: '200px',
+  md: '120px',
+  sm: '80px',
+}
+
 interface ImageGalleryProps {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
   rootImageMeta: Record<string, { hidden: boolean }>
   editChildrenMap: EditChildrenMap
   loadingGallery: boolean
+  thumbSize?: 'lg' | 'md' | 'sm'
+  showInfo?: boolean
   onLoadPrompt: (img: SavedAiImage) => void
   onLoadPromptAndModel: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
   onRetry?: (img: SavedAiImage) => void
   onStartAdopt?: (img: SavedAiImage) => void
-  onDetach?: (img: SavedAiImage) => void
+  onDownload?: (img: SavedAiImage) => void
+  onUngroup?: (img: SavedAiImage) => void
+  onDescribe?: (img: SavedAiImage) => void
 }
 
 export function ImageGallery({
@@ -28,12 +38,18 @@ export function ImageGallery({
   rootImageMeta,
   editChildrenMap,
   loadingGallery,
+  thumbSize = 'lg',
+  showInfo = true,
   onDelete,
   onRestoreRoot,
   onRetry,
   onStartAdopt,
-  onDetach,
+  onDownload,
+  onUngroup,
+  onDescribe,
 }: ImageGalleryProps) {
+  const compact = thumbSize !== 'lg'
+
   // Collect IDs of images already shown as thumbnails on a parent card
   const childIds = useMemo(
     () =>
@@ -62,7 +78,7 @@ export function ImageGallery({
         <div
           className="grid gap-4"
           style={{
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH[thumbSize]}, 1fr))`,
           }}
         >
           {images.map((img) => {
@@ -112,13 +128,17 @@ export function ImageGallery({
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 objectFit="contain"
+                compact={compact}
+                showInfo={showInfo}
                 rootImageUrl={rootId ? imageUrls[rootId] : undefined}
                 rootIsHidden={rootMeta?.hidden}
                 editChildren={editChildrenMap[img.id]}
                 onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
                 onDelete={onDelete}
                 onStartAdopt={onStartAdopt}
-                onDetach={onDetach}
+                onDownload={onDownload}
+                onUngroup={onUngroup}
+                onDescribe={onDescribe}
                 getModelName={getModelName}
               />
             )

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft, Pin, PinOff, RotateCcw, Unlink } from 'lucide-react'
+import type { GenerationResult } from '@/lib/types/generation-result'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
 import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
 import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ActionButton } from '@/components/ActionButton'
-import type { GenerationResult } from '@/lib/types/generation-result'
 
 export const Route = createFileRoute('/dashboard/edit/$imageId')({
   component: EditPage,

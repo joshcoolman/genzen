@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Pin, PinOff, Plus, Upload, X } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Info,
+  LayoutGrid,
+  Pin,
+  PinOff,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react'
+import { saveAs } from 'file-saver'
+import JSZip from 'jszip'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import {
   GeneratorPanel,
@@ -10,9 +22,11 @@ import {
 } from '@/features/ai-images'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
+import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
+import { supabase } from '@/lib/supabase'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,16 +37,101 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
 })
+
+const THUMB_SIZES = ['lg', 'md', 'sm'] as const
+const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
+  lg: 'LG',
+  md: 'MD',
+  sm: 'SM',
+}
+
+interface AiImagesPrefs {
+  thumbSize: 'lg' | 'md' | 'sm'
+  sortAsc: boolean
+  showInfo: boolean
+}
+
+const PREFS_KEY = 'genzen:ai-images-prefs'
+
+function getStoredPrefs(): AiImagesPrefs {
+  if (typeof window === 'undefined')
+    return { thumbSize: 'lg', sortAsc: false, showInfo: true }
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (raw)
+      return {
+        ...{ thumbSize: 'lg', sortAsc: false, showInfo: true },
+        ...JSON.parse(raw),
+      }
+  } catch {
+    // ignore
+  }
+  return { thumbSize: 'lg', sortAsc: false, showInfo: true }
+}
+
+function storePrefs(partial: Partial<AiImagesPrefs>) {
+  try {
+    const current = getStoredPrefs()
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...partial }))
+  } catch {
+    // ignore
+  }
+}
 
 function AiImagesPage() {
   const page = useAiImagesPage()
   useAiImagesADContext(page)
   const { upload } = useImageUpload(page.userId)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // View prefs
+  const [storedPrefs] = useState(getStoredPrefs)
+  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
+    storedPrefs.thumbSize,
+  )
+  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+
+  const handleToggleThumbSize = () => {
+    setThumbSize((v) => {
+      const idx = THUMB_SIZES.indexOf(v)
+      const next = THUMB_SIZES[(idx + 1) % THUMB_SIZES.length]
+      storePrefs({ thumbSize: next })
+      return next
+    })
+  }
+
+  const handleToggleSort = () => {
+    setSortAsc((v) => {
+      storePrefs({ sortAsc: !v })
+      return !v
+    })
+  }
+
+  const handleToggleInfo = () => {
+    setShowInfo((v) => {
+      storePrefs({ showInfo: !v })
+      return !v
+    })
+  }
+
+  // Sort images based on sortAsc preference
+  const sortedImages = sortAsc
+    ? [...page.gallery.images].reverse()
+    : page.gallery.images
 
   const handleUploadFiles = useCallback(
     async (files: Array<File>) => {
@@ -87,6 +186,129 @@ function AiImagesPage() {
     [page.editChildrenMap, page.gallery],
   )
 
+  // Download: two-step flow — dialog for name, then build + save
+  const [downloadTarget, setDownloadTarget] = useState<SavedAiImage | null>(
+    null,
+  )
+  const [downloadName, setDownloadName] = useState('')
+  const [downloading, setDownloading] = useState(false)
+
+  const handleDownload = useCallback((img: SavedAiImage) => {
+    setDownloadTarget(img)
+    setDownloadName(img.title || '')
+  }, [])
+
+  const extOf = (path: string) => {
+    const base = path.split('/').pop() ?? path
+    const dot = base.lastIndexOf('.')
+    return dot > 0 ? base.slice(dot) : '.png'
+  }
+
+  const executeDownload = useCallback(async () => {
+    if (!downloadTarget?.storage_path) return
+    const img = downloadTarget
+    const storagePath = img.storage_path!
+    const baseName = (downloadName || img.id).replace(/[/\\:*?"<>|]/g, '-')
+
+    setDownloading(true)
+    try {
+      const children = page.editChildrenMap[img.id] as
+        | Array<{ id: string; url: string }>
+        | undefined
+      const hasChildren = (children?.length ?? 0) > 0
+
+      if (!hasChildren) {
+        const { data } = await supabase.storage
+          .from('user-images')
+          .createSignedUrl(storagePath, 3600)
+        if (!data?.signedUrl) return
+        const response = await fetch(data.signedUrl)
+        const blob = await response.blob()
+        saveAs(blob, `${baseName}${extOf(storagePath)}`)
+      } else {
+        // Fetch ALL descendants via BFS
+        const { data: allRows } = await supabase
+          .from('user_images')
+          .select('id, storage_path, generation_metadata')
+          .eq('user_id', page.userId!)
+          .is('deleted_at', null)
+
+        const childrenOf = new Map<
+          string,
+          Array<{ id: string; storage_path: string | null }>
+        >()
+        for (const row of allRows ?? []) {
+          const meta = row.generation_metadata as Record<string, unknown> | null
+          const srcId = meta?.source_image_id as string | undefined
+          if (srcId) {
+            const siblings = childrenOf.get(srcId) ?? []
+            siblings.push(row)
+            childrenOf.set(srcId, siblings)
+          }
+        }
+        const descendants: Array<{ path: string }> = []
+        const queue = [img.id]
+        const visited = new Set<string>()
+        while (queue.length > 0) {
+          const current = queue.shift()!
+          for (const row of childrenOf.get(current) ?? []) {
+            if (visited.has(row.id)) continue
+            visited.add(row.id)
+            if (row.storage_path) {
+              descendants.push({ path: row.storage_path })
+            }
+            queue.push(row.id)
+          }
+        }
+
+        const items: Array<{ path: string; name: string }> = [
+          { path: storagePath, name: `${baseName}-1${extOf(storagePath)}` },
+        ]
+        descendants.forEach((d, i) => {
+          items.push({
+            path: d.path,
+            name: `${baseName}-${i + 2}${extOf(d.path)}`,
+          })
+        })
+
+        const zip = new JSZip()
+        for (const item of items) {
+          const { data } = await supabase.storage
+            .from('user-images')
+            .createSignedUrl(item.path, 3600)
+          if (!data?.signedUrl) continue
+          const response = await fetch(data.signedUrl)
+          const blob = await response.blob()
+          zip.file(item.name, blob)
+        }
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' })
+        saveAs(zipBlob, `${baseName}.zip`)
+      }
+    } finally {
+      setDownloading(false)
+      setDownloadTarget(null)
+    }
+  }, [downloadTarget, downloadName, page.editChildrenMap, page.userId])
+
+  // Ungroup handler
+  const handleUngroup = useCallback(
+    async (img: SavedAiImage) => {
+      await page.gallery.ungroupChildren(img)
+      await page.gallery.refresh()
+    },
+    [page.gallery],
+  )
+
+  // Describe dialog state
+  const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
+    null,
+  )
+
+  const handleDescribe = useCallback((img: SavedAiImage) => {
+    setDescribeTarget(img)
+  }, [])
+
   const [generatorOpen, setGeneratorOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('genzen:generator-panel-open') !== 'false'
@@ -119,6 +341,44 @@ function AiImagesPage() {
             )}
           </span>
           <div className="flex items-center gap-1.5">
+            {/* Thumb size toggle */}
+            <button
+              onClick={handleToggleThumbSize}
+              className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-medium">
+                {THUMB_LABELS[thumbSize]}
+              </span>
+            </button>
+
+            {/* Sort toggle */}
+            <button
+              onClick={handleToggleSort}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label={sortAsc ? 'Sort oldest first' : 'Sort newest first'}
+            >
+              {sortAsc ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Info toggle */}
+            <button
+              onClick={handleToggleInfo}
+              className={`rounded-md p-1.5 transition-colors ${
+                showInfo
+                  ? 'text-foreground bg-muted'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+              aria-label={showInfo ? 'Hide info' : 'Show info'}
+            >
+              <Info className="h-4 w-4" />
+            </button>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -151,18 +411,22 @@ function AiImagesPage() {
         </div>
 
         <ImageGallery
-          images={page.gallery.images}
+          images={sortedImages}
           imageUrls={page.gallery.imageUrls}
           rootImageMeta={page.gallery.rootImageMeta}
           editChildrenMap={page.editChildrenMap}
           loadingGallery={page.gallery.loadingGallery}
+          thumbSize={thumbSize}
+          showInfo={showInfo}
           onLoadPrompt={page.handleLoadPrompt}
           onLoadPromptAndModel={page.handleLoadPromptAndModel}
           onDelete={handleDelete}
           onRestoreRoot={page.gallery.restoreRootImage}
           onRetry={page.gallery.retryImage}
           onStartAdopt={page.reparent.startAdopt}
-          onDetach={(img) => void page.reparent.detach(img.id)}
+          onDownload={handleDownload}
+          onUngroup={handleUngroup}
+          onDescribe={handleDescribe}
         />
       </div>
 
@@ -268,6 +532,61 @@ function AiImagesPage() {
           onNext={page.lightbox.next}
           onPrev={page.lightbox.prev}
           onDelete={page.lightbox.deleteAndAdvance}
+        />
+      )}
+
+      {/* Download name dialog */}
+      <Dialog
+        open={!!downloadTarget}
+        onOpenChange={(open) => {
+          if (!open) setDownloadTarget(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Download</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={downloadName}
+            onChange={(e) => setDownloadName(e.target.value)}
+            placeholder="Name..."
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && downloadName.trim()) {
+                void executeDownload()
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDownloadTarget(null)}
+              disabled={downloading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void executeDownload()}
+              disabled={!downloadName.trim() || downloading}
+            >
+              {downloading ? 'Downloading...' : 'Download'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Describe dialog */}
+      {describeTarget && (
+        <DescribeDialog
+          open={!!describeTarget}
+          onOpenChange={(open) => {
+            if (!open) setDescribeTarget(null)
+          }}
+          imageUrl={page.gallery.imageUrls[describeTarget.id]}
+          imageId={describeTarget.id}
+          currentDescription={describeTarget.description}
+          accessToken={page.accessToken}
+          onSave={() => void page.gallery.refresh()}
         />
       )}
 

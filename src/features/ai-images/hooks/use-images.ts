@@ -45,6 +45,7 @@ export interface GalleryState {
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
+  ungroupChildren: (img: SavedAiImage) => Promise<void>
   retryImage: (img: SavedAiImage) => Promise<void>
   refresh: () => Promise<void>
 }
@@ -68,7 +69,7 @@ export function useImages({
       const { data, error: queryError } = await supabase
         .from('user_images')
         .select(
-          'id, title, storage_path, created_at, sort_order, status, generation_error, generation_metadata',
+          'id, title, description, storage_path, created_at, sort_order, status, generation_error, generation_metadata',
         )
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
@@ -550,6 +551,54 @@ export function useImages({
     }
   }
 
+  async function ungroupChildren(img: SavedAiImage) {
+    // Detach all direct children to top-level without deleting the parent
+    const { data: allRows } = await supabase
+      .from('user_images')
+      .select('id, generation_metadata')
+      .eq('user_id', userId!)
+      .is('deleted_at', null)
+
+    const directChildren = (allRows ?? []).filter((row) => {
+      const meta = row.generation_metadata as Record<string, unknown> | null
+      return meta?.source_image_id === img.id
+    })
+
+    if (directChildren.length === 0) return
+
+    // Detach each direct child
+    await Promise.all(
+      directChildren.map(async (child) => {
+        const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
+        const meta = { ...raw }
+        delete meta.source_image_id
+        delete meta.generation_type
+        delete meta.root_image_id
+        await supabase
+          .from('user_images')
+          .update({
+            generation_metadata: meta as unknown as Record<string, never>,
+          })
+          .eq('id', child.id)
+      }),
+    )
+
+    // Update local state: detach children, keep parent
+    const detachedIds = new Set(directChildren.map((c) => c.id))
+    setSavedImages((prev) =>
+      prev.map((i) => {
+        if (!detachedIds.has(i.id)) return i
+        const meta = i.generation_metadata ? { ...i.generation_metadata } : null
+        if (meta) {
+          delete (meta as Record<string, unknown>).source_image_id
+          delete (meta as Record<string, unknown>).generation_type
+          delete (meta as Record<string, unknown>).root_image_id
+        }
+        return { ...i, generation_metadata: meta }
+      }),
+    )
+  }
+
   async function reorderImages(draggedId: string, newSortOrder: number) {
     if (!accessToken) return
 
@@ -579,6 +628,7 @@ export function useImages({
     deleteImage,
     deleteImageWithDescendants,
     deleteAndDetachChildren,
+    ungroupChildren,
     restoreRootImage,
     addOptimisticCard,
     replaceOptimisticCard,
