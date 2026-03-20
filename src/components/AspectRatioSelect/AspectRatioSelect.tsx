@@ -146,7 +146,7 @@ export function AspectRatioSelect({
       <button
         type="button"
         className={cn(
-          'flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm',
+          'flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30',
           'hover:bg-accent hover:text-accent-foreground transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           disabled && 'pointer-events-none opacity-50',
