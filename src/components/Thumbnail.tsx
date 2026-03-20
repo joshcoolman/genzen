@@ -31,6 +31,7 @@ export interface ThumbnailProps {
   onClick?: () => void
 
   selected?: boolean
+  selectedClassName?: string
 
   alwaysShowOverlay?: boolean
   compact?: boolean
@@ -61,6 +62,7 @@ export function Thumbnail({
   overlayActionsLeft,
   onClick,
   selected,
+  selectedClassName,
   alwaysShowOverlay = false,
   compact = false,
   dimmed = false,
@@ -127,7 +129,7 @@ export function Thumbnail({
     <El
       className={`group relative overflow-hidden ${rounding} border bg-card flex flex-col ${
         selected
-          ? 'border-primary ring-1 ring-primary'
+          ? (selectedClassName ?? 'border-primary ring-1 ring-primary')
           : `border-border ${hoverBorder ?? ''}`
       } ${dimmed ? 'opacity-50' : ''} ${cursorClass} ${className ?? ''}`}
       onClick={asButton ? onClick : undefined}

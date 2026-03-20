@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft, Pin, PinOff, RotateCcw, Unlink } from 'lucide-react'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
@@ -7,6 +7,7 @@ import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ActionButton } from '@/components/ActionButton'
+import type { GenerationResult } from '@/lib/types/generation-result'
 
 export const Route = createFileRoute('/dashboard/edit/$imageId')({
   component: EditPage,
@@ -27,6 +28,23 @@ function EditPage() {
 
   // Ref image picker state
   const [refPickerOpen, setRefPickerOpen] = useState(false)
+
+  // Include the source image as a result so the grid is never empty
+  const sourceId = page.sourceImageMeta?.id
+  const allResults = useMemo(() => {
+    if (!page.sourceImageMeta) return page.results.results
+    // Don't duplicate if the source already appears in results
+    if (page.results.results.some((r) => r.id === page.sourceImageMeta!.id))
+      return page.results.results
+    const sourceResult: GenerationResult = {
+      id: page.sourceImageMeta.id,
+      status: 'complete',
+      url: page.sourceImageMeta.url,
+      label: page.sourceImageMeta.title ?? 'Source',
+      title: page.sourceImageMeta.title ?? undefined,
+    }
+    return [...page.results.results, sourceResult]
+  }, [page.results.results, page.sourceImageMeta])
 
   if (page.pageLoading) {
     return (
@@ -97,10 +115,18 @@ function EditPage() {
 
         {/* Results grid */}
         <GenerationResultsGrid
-          results={page.results.results}
-          onDelete={page.results.deleteResult}
+          results={allResults}
+          selectedId={sourceId}
+          selectedClassName="border-emerald-500 ring-1 ring-emerald-500"
+          onDelete={(id) => {
+            if (id === sourceId) return
+            void page.results.deleteResult(id)
+          }}
           onDetach={(id) => void page.detachResult(id)}
-          onAdd={(result) => page.promoteToSource(result)}
+          onAdd={(result) => {
+            if (result.id === sourceId) return
+            page.promoteToSource(result)
+          }}
           editMode
           title="Edits"
           prefsKey="edit-page-results"

@@ -115,6 +115,7 @@ function RegenerateButton({
 function GenerationResultCard({
   result,
   selected,
+  selectedClassName,
   onOpen,
   onDelete,
   onAdd,
@@ -127,6 +128,7 @@ function GenerationResultCard({
 }: {
   result: GenerationResult
   selected?: boolean
+  selectedClassName?: string
   onOpen: () => void
   onDelete: () => void
   onAdd?: () => void
@@ -145,6 +147,7 @@ function GenerationResultCard({
       pendingLabel={result.label}
       failedMessage={result.label}
       selected={selected}
+      selectedClassName={selectedClassName}
       compact={compact}
       onClick={onOpen}
       onDelete={onDelete}
@@ -263,6 +266,7 @@ interface GenerationResultsGridProps {
   onRegenerate?: (result: GenerationResult, modelId: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
   selectedId?: string | null
+  selectedClassName?: string
   title?: string
   prefsKey?: string
   editMode?: boolean
@@ -277,6 +281,7 @@ export function GenerationResultsGrid({
   onRegenerate,
   regenerateModels,
   selectedId,
+  selectedClassName,
   title = 'Results',
   prefsKey,
   editMode,
@@ -404,6 +409,7 @@ export function GenerationResultsGrid({
             key={result.id}
             result={result}
             selected={selectedId === result.id}
+            selectedClassName={selectedClassName}
             showFooter={showFooter}
             compact={compact}
             editMode={editMode}
