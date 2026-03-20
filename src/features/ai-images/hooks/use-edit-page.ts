@@ -329,15 +329,16 @@ export function useEditPage(imageId: string) {
     setAspectRatio(flipped.aspectRatio)
   }
 
-  // Promote result to source
-  const promoteToSource = useCallback(
-    async (result: GenerationResult) => {
-      if (!result.url || !user?.id) return
+  // Select image for editing
+  // Select which image to edit — works with just an ID (fetches from DB)
+  const selectImageById = useCallback(
+    async (targetId: string) => {
+      if (!user?.id) return
 
       const { data } = await supabase
         .from('user_images')
         .select('id, title, storage_path, generation_metadata')
-        .eq('id', result.id)
+        .eq('id', targetId)
         .eq('user_id', user.id)
         .single()
 
@@ -347,15 +348,17 @@ export function useEditPage(imageId: string) {
         .from('user-images')
         .createSignedUrl(data.storage_path, 86400)
 
+      if (!signed?.signedUrl) return
+
       const meta = data.generation_metadata as Record<string, unknown> | null
       const srcRatio = meta?.aspect_ratio as string | undefined
-      const url = signed?.signedUrl ?? result.url
+      const url = signed.signedUrl
 
       setSourceImageMeta({
         id: data.id,
         title: data.title,
         storagePath: data.storage_path,
-        prompt: (meta?.prompt as string | undefined) ?? result.prompt ?? null,
+        prompt: (meta?.prompt as string | undefined) ?? null,
         aspectRatio: srcRatio ?? null,
         url,
       })
@@ -389,13 +392,21 @@ export function useEditPage(imageId: string) {
       }
       img.src = url
 
-      setActiveSourceId(result.id)
+      setActiveSourceId(targetId)
       setSourceChain((prev) =>
-        prev.includes(result.id) ? prev : [...prev, result.id],
+        prev.includes(targetId) ? prev : [...prev, targetId],
       )
       setPrompt('')
     },
     [user?.id],
+  )
+
+  // Select which image to edit from a GenerationResult
+  const selectImage = useCallback(
+    async (result: GenerationResult) => {
+      await selectImageById(result.id)
+    },
+    [selectImageById],
   )
 
   const resetToOriginal = useCallback(() => {
@@ -600,7 +611,8 @@ export function useEditPage(imageId: string) {
     pageLoading,
     hasParent,
     isChained,
-    promoteToSource,
+    selectImage,
+    selectImageById,
     resetToOriginal,
     existingImages,
     detachFromParent: async () => {

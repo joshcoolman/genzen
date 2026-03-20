@@ -56,25 +56,19 @@ function EditPage() {
     (id: string) => {
       if (id === sourceId) return
       const result = allResults.find((r) => r.id === id)
-      if (result) page.promoteToSource(result)
+      if (result) page.selectImage(result)
     },
-    [allResults, sourceId, page.promoteToSource],
+    [allResults, sourceId, page.selectImage],
   )
 
   // Pre-select child when navigating from main page thumb click
   const didApplyInitialSource = useRef(false)
   useEffect(() => {
-    if (
-      !initialSourceId ||
-      didApplyInitialSource.current ||
-      page.pageLoading ||
-      page.results.results.length === 0
-    )
+    if (!initialSourceId || didApplyInitialSource.current || page.pageLoading)
       return
     didApplyInitialSource.current = true
-    const result = page.results.results.find((r) => r.id === initialSourceId)
-    if (result) page.promoteToSource(result)
-  }, [initialSourceId, page.pageLoading, page.results.results])
+    void page.selectImageById(initialSourceId)
+  }, [initialSourceId, page.pageLoading, page.selectImageById])
 
   if (page.pageLoading) {
     return (
@@ -156,7 +150,7 @@ function EditPage() {
           onDetach={(id) => void page.detachResult(id)}
           onAdd={(result) => {
             if (result.id === sourceId) return
-            page.promoteToSource(result)
+            page.selectImage(result)
           }}
           editMode
           title="Edits"
