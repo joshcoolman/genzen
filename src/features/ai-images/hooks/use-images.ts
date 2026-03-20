@@ -479,8 +479,24 @@ export function useImages({
       }),
     )
 
-    // Now delete the parent (normal delete, no children left)
-    setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
+    // Update local state: detach children + remove parent
+    const detachedIds = new Set(directChildren.map((c) => c.id))
+    setSavedImages((prev) =>
+      prev
+        .filter((i) => i.id !== img.id)
+        .map((i) => {
+          if (!detachedIds.has(i.id)) return i
+          const meta = i.generation_metadata
+            ? { ...i.generation_metadata }
+            : null
+          if (meta) {
+            delete (meta as Record<string, unknown>).source_image_id
+            delete (meta as Record<string, unknown>).generation_type
+            delete (meta as Record<string, unknown>).root_image_id
+          }
+          return { ...i, generation_metadata: meta }
+        }),
+    )
     try {
       const { error: deleteError } = await supabase
         .from('user_images')
