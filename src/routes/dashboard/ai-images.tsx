@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Plus, Upload, X } from 'lucide-react'
+import type { SavedAiImage } from '@/features/ai-images/types'
 import {
   GeneratorPanel,
   ImageGallery,
@@ -12,6 +13,16 @@ import { ParentPickerDialog } from '@/features/ai-images/components/ParentPicker
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
@@ -52,6 +63,24 @@ function AiImagesPage() {
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
   }, [handleUploadFiles])
+
+  // Delete confirmation for images with children
+  const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
+  const childCount = deleteTarget
+    ? page.editChildrenMap[deleteTarget.id].length
+    : 0
+
+  const handleDelete = useCallback(
+    (img: SavedAiImage) => {
+      const hasChildren = page.editChildrenMap[img.id].length > 0
+      if (hasChildren) {
+        setDeleteTarget(img)
+      } else {
+        void page.gallery.deleteImage(img)
+      }
+    },
+    [page.editChildrenMap, page.gallery],
+  )
 
   const [generatorOpen, setGeneratorOpen] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -115,7 +144,7 @@ function AiImagesPage() {
           loadingGallery={page.gallery.loadingGallery}
           onLoadPrompt={page.handleLoadPrompt}
           onLoadPromptAndModel={page.handleLoadPromptAndModel}
-          onDelete={page.gallery.deleteImage}
+          onDelete={handleDelete}
           onRestoreRoot={page.gallery.restoreRootImage}
           onRetry={page.gallery.retryImage}
           onStartAdopt={page.reparent.startAdopt}
@@ -204,6 +233,60 @@ function AiImagesPage() {
           onDelete={page.lightbox.deleteAndAdvance}
         />
       )}
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              This image has {childCount}{' '}
+              {childCount === 1 ? 'child' : 'children'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete just this image, or delete it along with all related
+              images?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) {
+                  void page.gallery.deleteAndDetachChildren(deleteTarget)
+                  setDeleteTarget(null)
+                }
+              }}
+            >
+              Keep all
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) {
+                  void page.gallery.deleteImage(deleteTarget)
+                  setDeleteTarget(null)
+                }
+              }}
+            >
+              Keep children
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) {
+                  void page.gallery.deleteImageWithDescendants(deleteTarget)
+                  setDeleteTarget(null)
+                }
+              }}
+            >
+              Delete all
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

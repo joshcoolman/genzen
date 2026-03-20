@@ -24,6 +24,8 @@ export interface GalleryState {
   rootImageMeta: Record<string, { hidden: boolean }>
   loadingGallery: boolean
   deleteImage: (img: SavedAiImage) => Promise<void>
+  deleteImageWithDescendants: (img: SavedAiImage) => Promise<void>
+  deleteAndDetachChildren: (img: SavedAiImage) => Promise<void>
   restoreRootImage: (rootId: string) => Promise<void>
   addOptimisticCard: (card: SavedAiImage) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
@@ -397,6 +399,99 @@ export function useImages({
     }
   }
 
+  async function deleteImageWithDescendants(img: SavedAiImage) {
+    // Collect all descendant IDs via BFS
+    const { data: allRows } = await supabase
+      .from('user_images')
+      .select('id, generation_metadata')
+      .eq('user_id', userId!)
+      .is('deleted_at', null)
+
+    const childrenOf = new Map<string, Array<string>>()
+    for (const row of allRows ?? []) {
+      const meta = row.generation_metadata as Record<string, unknown> | null
+      const srcId = meta?.source_image_id as string | undefined
+      if (srcId) {
+        const siblings = childrenOf.get(srcId) ?? []
+        siblings.push(row.id)
+        childrenOf.set(srcId, siblings)
+      }
+    }
+
+    const idsToDelete = new Set<string>([img.id])
+    const queue = [img.id]
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      for (const childId of childrenOf.get(current) ?? []) {
+        if (!idsToDelete.has(childId)) {
+          idsToDelete.add(childId)
+          queue.push(childId)
+        }
+      }
+    }
+
+    // Optimistic removal
+    setSavedImages((prev) => prev.filter((i) => !idsToDelete.has(i.id)))
+    setImageUrls((prev) => {
+      const next = { ...prev }
+      for (const id of idsToDelete) delete next[id]
+      return next
+    })
+
+    try {
+      const now = new Date().toISOString()
+      await supabase
+        .from('user_images')
+        .update({ deleted_at: now })
+        .in('id', Array.from(idsToDelete))
+    } catch {
+      loadSavedImages()
+    }
+  }
+
+  async function deleteAndDetachChildren(img: SavedAiImage) {
+    // Find direct children and remove their source_image_id, then delete parent
+    const { data: allRows } = await supabase
+      .from('user_images')
+      .select('id, generation_metadata')
+      .eq('user_id', userId!)
+      .is('deleted_at', null)
+
+    const directChildren = (allRows ?? []).filter((row) => {
+      const meta = row.generation_metadata as Record<string, unknown> | null
+      return meta?.source_image_id === img.id
+    })
+
+    // Detach each direct child
+    await Promise.all(
+      directChildren.map(async (child) => {
+        const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
+        const meta = { ...raw }
+        delete meta.source_image_id
+        delete meta.generation_type
+        delete meta.root_image_id
+        await supabase
+          .from('user_images')
+          .update({
+            generation_metadata: meta as unknown as Record<string, never>,
+          })
+          .eq('id', child.id)
+      }),
+    )
+
+    // Now delete the parent (normal delete, no children left)
+    setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
+    try {
+      const { error: deleteError } = await supabase
+        .from('user_images')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', img.id)
+      if (deleteError) throw deleteError
+    } catch {
+      loadSavedImages()
+    }
+  }
+
   async function restoreRootImage(rootId: string) {
     const { error } = await supabase
       .from('user_images')
@@ -450,6 +545,8 @@ export function useImages({
     rootImageMeta,
     loadingGallery,
     deleteImage,
+    deleteImageWithDescendants,
+    deleteAndDetachChildren,
     restoreRootImage,
     addOptimisticCard,
     replaceOptimisticCard,
