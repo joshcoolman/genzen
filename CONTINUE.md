@@ -24,7 +24,7 @@ Full multi-select system with batch actions for AI Images, plus shared primitive
 
 ---
 
-# Blocked: Google Direct Provider for Nano Banana 2
+# Google Direct Provider for Nano Banana 2
 
 ## Branch: `model-abstraction` (all committed, clean, nano-banana-2 currently on FAL)
 
