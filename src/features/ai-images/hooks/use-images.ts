@@ -81,14 +81,7 @@ export function useImages({
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const allImages = (data ?? []) as Array<SavedAiImage>
-      // Sort with ALL images so descendant timestamps are visible,
-      // then filter out feature-specific types for display
-      const sorted = sortByOrder(allImages)
-      const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
-      const images = sorted.filter((img) => {
-        const genType = img.generation_metadata?.generation_type
-        return !genType || !FEATURE_TYPES.has(genType)
-      })
+      const images = sortByOrder(allImages)
       setSavedImages(images)
       setLoadingGallery(false)
 
@@ -187,11 +180,6 @@ export function useImages({
               rawInsert.source !== 'ai_generated'
             )
               return
-            // Skip images that belong to feature-specific galleries
-            const FEATURE_TYPES = new Set(['edit', 'combine', 'describe'])
-            const insertGenType = newImage.generation_metadata?.generation_type
-            if (insertGenType && FEATURE_TYPES.has(insertGenType)) return
-
             // Bump parent's sort_order when a child is added
             const parentId = newImage.generation_metadata?.source_image_id
             const bumpedSort = Date.now() / 1000
