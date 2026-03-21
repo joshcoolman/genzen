@@ -56,6 +56,8 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
   '/dashboard/models': 'The user is on the Models page.',
   '/dashboard/assets': 'The user is on their assets library.',
   '/dashboard/combine': 'The user is on the Combine page.',
+  '/dashboard/multi-shot':
+    'The user is on the Multi-Shot page -- multi-shot video generation using Kling 3.0.',
   '/dashboard/notes':
     'The user is on the Notes page -- browsing saved AD conversation snapshots.',
 }

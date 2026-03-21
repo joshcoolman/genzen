@@ -2,10 +2,43 @@ import { useCallback, useRef, useState } from 'react'
 import { useADContext } from '../context/ad-context'
 import { useClaudeClient } from './useClaudeClient'
 import { useChatHistory } from './useChatHistory'
+import type Anthropic from '@anthropic-ai/sdk'
+
+export interface ADImage {
+  /** Raw base64 data (no data: prefix) */
+  base64: string
+  /** MIME type e.g. image/png, image/jpeg */
+  mediaType: string
+}
 
 export interface ADMessage {
   role: 'user' | 'assistant'
   content: string
+  images?: Array<ADImage>
+}
+
+function buildMessageContent(
+  text: string,
+  images?: Array<ADImage>,
+): string | Array<Anthropic.ImageBlockParam | Anthropic.TextBlockParam> {
+  if (!images || images.length === 0) return text
+  return [
+    ...images.map(
+      (img): Anthropic.ImageBlockParam => ({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: img.mediaType as
+            | 'image/jpeg'
+            | 'image/png'
+            | 'image/gif'
+            | 'image/webp',
+          data: img.base64,
+        },
+      }),
+    ),
+    { type: 'text' as const, text },
+  ]
 }
 
 export function useADChat() {
@@ -17,10 +50,14 @@ export function useADChat() {
   const rafRef = useRef<number | null>(null)
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, images?: Array<ADImage>) => {
       if (!client || !text.trim() || isStreaming) return
 
-      const userMsg: ADMessage = { role: 'user', content: text.trim() }
+      const userMsg: ADMessage = {
+        role: 'user',
+        content: text.trim(),
+        images: images && images.length > 0 ? images : undefined,
+      }
       const next = [...messages, userMsg]
       setMessages(next)
 
@@ -40,7 +77,10 @@ export function useADChat() {
             model: 'claude-sonnet-4-6',
             max_tokens: 4096,
             system: systemPrompt,
-            messages: next.map((m) => ({ role: m.role, content: m.content })),
+            messages: next.map((m) => ({
+              role: m.role,
+              content: buildMessageContent(m.content, m.images),
+            })),
           },
           { signal: controller.signal },
         )

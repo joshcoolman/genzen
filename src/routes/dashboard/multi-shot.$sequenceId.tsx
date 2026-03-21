@@ -10,6 +10,8 @@ import { MultiShotEditor } from '@/features/multi-shot'
 import { useSequenceDetail } from '@/features/multi-shot/hooks/use-sequence-detail'
 import { GenerationHistory } from '@/features/multi-shot/components/GenerationHistory'
 import { TimeBudgetBar } from '@/features/multi-shot/components/TimeBudgetBar'
+import { useRegisterADContext } from '@/features/ad/context/ad-context'
+import multishotPersona from '@/features/multi-shot/persona.md?raw'
 
 export const Route = createFileRoute('/dashboard/multi-shot/$sequenceId')({
   component: SequenceDetailPage,
@@ -20,6 +22,7 @@ function SequenceDetailPage() {
   const { session, user } = useAuth()
   const accessToken = session?.access_token
   useRequireCredits(CREDIT_COSTS.multishot_gen)
+  useRegisterADContext('multi-shot', multishotPersona)
   const userImagesHook = useUserImages(user?.id)
 
   const handleUpload = useCallback(
