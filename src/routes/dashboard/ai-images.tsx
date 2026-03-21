@@ -8,6 +8,7 @@ import {
   Pin,
   PinOff,
   Plus,
+  Trash2,
   Upload,
   X,
 } from 'lucide-react'
@@ -192,6 +193,66 @@ function AiImagesPage() {
     },
     [page.editChildrenMap, page.gallery],
   )
+
+  // Batch delete
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false)
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false)
+
+  const batchSelectedImages = useCallback(() => {
+    return sortedImages.filter((img) => selection.selectedIds.has(img.id))
+  }, [sortedImages, selection.selectedIds])
+
+  const batchChildCount = useCallback(() => {
+    let count = 0
+    for (const id of selection.selectedIds) {
+      const children = page.editChildrenMap[id] as Array<unknown> | undefined
+      if (children?.length) count += children.length
+    }
+    return count
+  }, [selection.selectedIds, page.editChildrenMap])
+
+  const batchHasChildren = useCallback(() => {
+    for (const id of selection.selectedIds) {
+      const children = page.editChildrenMap[id] as Array<unknown> | undefined
+      if (children?.length) return true
+    }
+    return false
+  }, [selection.selectedIds, page.editChildrenMap])
+
+  const executeBatchDelete = useCallback(
+    async (strategy: 'smart' | 'cascade' | 'detach') => {
+      const images = batchSelectedImages()
+      setIsBatchDeleting(true)
+      try {
+        for (const img of images) {
+          switch (strategy) {
+            case 'smart':
+              await page.gallery.deleteImage(img)
+              break
+            case 'cascade':
+              await page.gallery.deleteImageWithDescendants(img)
+              break
+            case 'detach':
+              await page.gallery.deleteAndDetachChildren(img)
+              break
+          }
+        }
+        selection.clearSelection()
+      } finally {
+        setIsBatchDeleting(false)
+        setBatchDeleteOpen(false)
+      }
+    },
+    [batchSelectedImages, page.gallery, selection],
+  )
+
+  const handleBatchDelete = useCallback(() => {
+    if (batchHasChildren()) {
+      setBatchDeleteOpen(true)
+    } else {
+      void executeBatchDelete('smart')
+    }
+  }, [batchHasChildren, executeBatchDelete])
 
   // Download: two-step flow — dialog for name, then build + save
   const [downloadTarget, setDownloadTarget] = useState<SavedAiImage | null>(
@@ -444,9 +505,15 @@ function AiImagesPage() {
           count={selection.count}
           onClear={selection.clearSelection}
         >
-          <span className="text-sm text-muted-foreground">
-            Actions coming soon
-          </span>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={isBatchDeleting}
+            onClick={handleBatchDelete}
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            {isBatchDeleting ? 'Deleting...' : `Delete (${selection.count})`}
+          </Button>
         </SelectionDrawer>
       </div>
 
@@ -668,6 +735,50 @@ function AiImagesPage() {
                   setDeleteTarget(null)
                 }
               }}
+            >
+              Delete all
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Batch delete confirmation for images with children */}
+      <AlertDialog
+        open={batchDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) setBatchDeleteOpen(false)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {selection.count} images? ({batchChildCount()} children
+              affected)
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Some selected images have children. Choose how to handle them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBatchDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isBatchDeleting}
+              onClick={() => void executeBatchDelete('detach')}
+            >
+              Keep all
+            </AlertDialogAction>
+            <AlertDialogAction
+              disabled={isBatchDeleting}
+              onClick={() => void executeBatchDelete('smart')}
+            >
+              Keep children
+            </AlertDialogAction>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isBatchDeleting}
+              onClick={() => void executeBatchDelete('cascade')}
             >
               Delete all
             </AlertDialogAction>
