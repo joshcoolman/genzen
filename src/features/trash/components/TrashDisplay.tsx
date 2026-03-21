@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, Circle, RotateCcw, Trash2, X } from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
+import { TrashDownloadButton } from './TrashDownloadButton'
 import { useAuth } from '@/lib/auth'
 import { useSelection } from '@/lib/use-selection'
 import { ImageGrid } from '@/components/ImageGrid'
@@ -44,6 +45,7 @@ export function TrashDisplay() {
     permanentDeleteMany,
     restoreMany,
     emptyTrash,
+    signFullResUrls,
   } = useTrash(user?.id)
   const [actionId, setActionId] = useState<string | null>(null)
   const [isEmptying, setIsEmptying] = useState(false)
@@ -124,30 +126,36 @@ export function TrashDisplay() {
           )}
         </div>
         {images.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={isEmptying}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Empty Trash
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete {images.length}{' '}
-                  {images.length === 1 ? 'item' : 'items'} and their files. This
-                  action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEmptyTrash}>
-                  Delete All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex gap-2">
+            <TrashDownloadButton
+              images={images}
+              signFullResUrls={signFullResUrls}
+            />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={isEmptying}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Empty Trash
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {images.length}{' '}
+                    {images.length === 1 ? 'item' : 'items'} and their files.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleEmptyTrash}>
+                    Delete All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         )}
       </div>
 

@@ -13,6 +13,7 @@ interface UseTrashReturn {
   permanentDeleteMany: (ids: Array<string>) => Promise<void>
   restoreMany: (ids: Array<string>) => Promise<void>
   emptyTrash: () => Promise<void>
+  signFullResUrls: (imgs: Array<UserImage>) => Promise<Record<string, string>>
 }
 
 export function useTrash(userId: string | undefined): UseTrashReturn {
@@ -331,6 +332,33 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     }
   }, [images, fetchTrashed])
 
+  const signFullResUrls = useCallback(
+    async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
+      const urls: Record<string, string> = {}
+      const BATCH = 10
+      for (let i = 0; i < imgs.length; i += BATCH) {
+        const batch = imgs.slice(i, i + BATCH)
+        const results = await Promise.all(
+          batch.map((img) =>
+            supabase.storage
+              .from(BUCKET_NAME)
+              .createSignedUrl(img.storage_path, 3600)
+              .then(({ data }) => ({
+                id: img.id,
+                url: data?.signedUrl ?? null,
+              }))
+              .catch(() => ({ id: img.id, url: null })),
+          ),
+        )
+        for (const { id, url } of results) {
+          if (url) urls[id] = url
+        }
+      }
+      return urls
+    },
+    [],
+  )
+
   return {
     images,
     imageUrls,
@@ -340,5 +368,6 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     permanentDeleteMany,
     restoreMany,
     emptyTrash,
+    signFullResUrls,
   }
 }
