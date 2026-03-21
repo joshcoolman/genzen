@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  autoUpdate,
+  flip,
+  offset,
+  shift,
+  useFloating,
+} from '@floating-ui/react-dom'
 import { cn } from '@/lib/utils'
 
 interface AspectRatioSelectProps {
@@ -98,7 +105,13 @@ export function AspectRatioSelect({
   className,
 }: AspectRatioSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const popoverRef = useRef<HTMLDivElement>(null)
+
+  const { refs, floatingStyles } = useFloating({
+    open: isOpen,
+    placement: 'bottom-start',
+    middleware: [offset(4), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+  })
 
   const options = buildRatioList(ratios)
   const selected = options.find((o) => o.label === aspectRatio) ?? options[0]
@@ -106,10 +119,8 @@ export function AspectRatioSelect({
   useEffect(() => {
     if (!isOpen) return
     const handleClick = (e: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
+      const floating = refs.floating.current
+      if (floating && !floating.contains(e.target as Node)) {
         setIsOpen(false)
       }
     }
@@ -121,7 +132,7 @@ export function AspectRatioSelect({
       clearTimeout(id)
       document.removeEventListener('click', handleClick)
     }
-  }, [isOpen])
+  }, [isOpen, refs.floating])
 
   function handleSelect(label: string) {
     const nextOrientation = orientationFromRatio(label)
@@ -145,8 +156,9 @@ export function AspectRatioSelect({
     <div className={cn('relative', className)}>
       <button
         type="button"
+        ref={refs.setReference}
         className={cn(
-          'flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30',
+          'flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30',
           'hover:bg-accent hover:text-accent-foreground transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           disabled && 'pointer-events-none opacity-50',
@@ -161,9 +173,10 @@ export function AspectRatioSelect({
 
       {isOpen && (
         <div
-          ref={popoverRef}
+          ref={refs.setFloating}
+          style={floatingStyles}
           className={cn(
-            'absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-md border border-border bg-popover p-1 shadow-md',
+            'z-50 min-w-[160px] rounded-md border border-border bg-popover p-1 shadow-md',
             'animate-in fade-in-0 zoom-in-95',
           )}
         >

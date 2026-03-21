@@ -30,6 +30,7 @@ interface ImageGalleryProps {
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
+  onGallery?: (img: SavedAiImage) => void
 }
 
 export function ImageGallery({
@@ -47,6 +48,7 @@ export function ImageGallery({
   onDownload,
   onUngroup,
   onDescribe,
+  onGallery,
 }: ImageGalleryProps) {
   const compact = thumbSize !== 'lg'
 
@@ -139,6 +141,7 @@ export function ImageGallery({
                 onDownload={onDownload}
                 onUngroup={onUngroup}
                 onDescribe={onDescribe}
+                onGallery={onGallery}
                 getModelName={getModelName}
               />
             )

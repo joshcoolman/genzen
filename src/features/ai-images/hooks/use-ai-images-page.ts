@@ -65,7 +65,12 @@ export function useAiImagesPage() {
     },
   })
 
-  const lightbox = useLightbox(completedImages, gallery.deleteImage)
+  const lightbox = useLightbox(
+    completedImages,
+    gallery.deleteImage,
+    editChildrenMap,
+    gallery.imageUrls,
+  )
 
   const variations = useVariations({
     accessToken,

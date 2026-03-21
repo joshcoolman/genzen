@@ -1,5 +1,5 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
 
 export interface LightboxImage {
   id: string
@@ -15,6 +15,7 @@ interface LightboxProps {
   onNext: () => void
   onPrev: () => void
   onDelete?: () => void
+  onEdit?: () => void
 }
 
 export function Lightbox({
@@ -25,6 +26,7 @@ export function Lightbox({
   onNext,
   onPrev,
   onDelete,
+  onEdit,
 }: LightboxProps) {
   const img = images[currentIndex]
   const imageUrl = imageUrls[img.id]
@@ -76,6 +78,15 @@ export function Lightbox({
           />
         ) : (
           <div className="w-64 h-64 bg-muted animate-pulse rounded" />
+        )}
+        {onEdit && (
+          <button
+            className="absolute bottom-3 left-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-white hover:bg-black/70 transition-colors"
+            onClick={onEdit}
+            aria-label="Edit"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
         )}
         {onDelete && (
           <button

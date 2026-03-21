@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowUpRight,
   Download,
+  Expand,
   MessageSquare,
   MoreHorizontal,
   Trash2,
@@ -33,6 +34,7 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
+  onGallery?: (img: SavedAiImage) => void
   getModelName: (id: string) => string
 }
 
@@ -51,6 +53,7 @@ export function ImageCard({
   onDownload,
   onUngroup,
   onDescribe,
+  onGallery,
   getModelName,
 }: ImageCardProps) {
   const navigate = useNavigate()
@@ -125,6 +128,20 @@ export function ImageCard({
       alwaysShowOverlay
       overlayActionsLeft={moreButton}
       overlayActions={rightButtons}
+      overlayActionsBottomRight={
+        onGallery ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onGallery(img)
+            }}
+            className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            aria-label="View in lightbox"
+          >
+            <Expand className="h-3.5 w-3.5" />
+          </button>
+        ) : undefined
+      }
       onClick={() =>
         navigate({
           to: '/dashboard/edit/$imageId',
@@ -135,20 +152,6 @@ export function ImageCard({
     >
       {!compact && (
         <>
-          <div className="p-1.5">
-            <button
-              onClick={() =>
-                navigate({
-                  to: '/dashboard/edit/$imageId',
-                  params: { imageId: img.id },
-                  search: { sourceId: undefined },
-                })
-              }
-              className="w-full rounded bg-muted px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
-            >
-              Edit
-            </button>
-          </div>
           {showInfo && (
             <ExpandableText
               text={

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ArrowDown,
   ArrowUp,
@@ -93,6 +93,7 @@ function storePrefs(partial: Partial<AiImagesPrefs>) {
 
 function AiImagesPage() {
   const page = useAiImagesPage()
+  const navigate = useNavigate()
   useAiImagesADContext(page)
   const { upload } = useImageUpload(page.userId)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -427,6 +428,7 @@ function AiImagesPage() {
           onDownload={handleDownload}
           onUngroup={handleUngroup}
           onDescribe={handleDescribe}
+          onGallery={page.lightbox.open}
         />
       </div>
 
@@ -525,13 +527,24 @@ function AiImagesPage() {
 
       {page.lightbox.isOpen && (
         <ImageLightbox
-          images={page.completedImages}
-          imageUrls={page.gallery.imageUrls}
+          items={page.lightbox.items}
+          imageUrls={page.lightbox.mergedUrls}
           currentIndex={page.lightbox.index!}
           onClose={page.lightbox.close}
           onNext={page.lightbox.next}
           onPrev={page.lightbox.prev}
           onDelete={page.lightbox.deleteAndAdvance}
+          onEdit={() => {
+            const item = page.lightbox.items[page.lightbox.index!]
+            const imageId = item.parentId ?? item.id
+            const sourceId = item.isChild ? item.id : undefined
+            page.lightbox.close()
+            navigate({
+              to: '/dashboard/edit/$imageId',
+              params: { imageId },
+              search: { sourceId },
+            })
+          }}
         />
       )}
 

@@ -59,25 +59,28 @@ export function GeneratorPanel({
 
       {/* Image source buttons + aspect ratio */}
       <div className="flex gap-2 items-center">
-        <ImageSourceButtons
-          onFileSelected={generator.setSourceFile}
-          showPaste={false}
-          library={{
-            images: userImages.images,
-            imageUrls: userImages.imageUrls,
-            isLoading: userImages.isLoading,
-            onSelect: (image) =>
-              generator.setSourceFromUrl(image.url, image.title),
-            onOpen: userImages.refresh,
-          }}
-          className="contents"
-        />
+        {!isEdit && (
+          <ImageSourceButtons
+            onFileSelected={generator.setSourceFile}
+            showPaste={false}
+            library={{
+              images: userImages.images,
+              imageUrls: userImages.imageUrls,
+              isLoading: userImages.isLoading,
+              onSelect: (image) =>
+                generator.setSourceFromUrl(image.url, image.title),
+              onOpen: userImages.refresh,
+            }}
+            className="contents"
+          />
+        )}
         <AspectRatioSelect
           orientation={generator.orientation}
           aspectRatio={generator.aspectRatio}
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
           disabled={generator.loading}
+          className={isEdit ? 'flex-1' : undefined}
         />
       </div>
 

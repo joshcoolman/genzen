@@ -1,30 +1,32 @@
 import type { LightboxImage } from '@/components/Lightbox'
-import type { SavedAiImage } from '@/features/ai-images/types'
+import type { LightboxItem } from '@/features/ai-images/hooks/use-lightbox'
 import { Lightbox } from '@/components/Lightbox'
 
 interface ImageLightboxProps {
-  images: Array<SavedAiImage>
+  items: Array<LightboxItem>
   imageUrls: Record<string, string>
   currentIndex: number
   onClose: () => void
   onNext: () => void
   onPrev: () => void
   onDelete?: () => void
+  onEdit?: () => void
 }
 
 export function ImageLightbox({
-  images,
+  items,
   imageUrls,
   currentIndex,
   onClose,
   onNext,
   onPrev,
   onDelete,
+  onEdit,
 }: ImageLightboxProps) {
-  const lightboxImages: Array<LightboxImage> = images.map((img) => ({
-    id: img.id,
-    url: imageUrls[img.id] ?? '',
-    title: img.title,
+  const lightboxImages: Array<LightboxImage> = items.map((item) => ({
+    id: item.id,
+    url: imageUrls[item.id] ?? '',
+    title: item.title,
   }))
 
   return (
@@ -36,6 +38,7 @@ export function ImageLightbox({
       onNext={onNext}
       onPrev={onPrev}
       onDelete={onDelete}
+      onEdit={onEdit}
     />
   )
 }
