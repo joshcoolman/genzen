@@ -1,7 +1,9 @@
 /**
  * Google image generation via Gemini API's generateContent with IMAGE modality.
- * Uses gemini-2.0-flash-preview-image-generation for text-to-image and image editing.
+ * Uses gemini-2.5-flash-image for text-to-image and image editing.
  * This is the AI Studio / Gemini API path (not Vertex AI).
+ * Note: aspect ratio control via prompt works for text-to-image but is
+ * unreliable when reference images are provided (model tends to match input dimensions).
  */
 import { GoogleGenAI } from '@google/genai'
 
@@ -124,12 +126,20 @@ export async function editWithGoogle(
     }
   }
 
+  const ratio = resolveAspectRatio(options.aspectRatio)
+  const ratioInstruction = ratio
+    ? ` Generate the output image in ${ratio} aspect ratio. The first image is a dimension reference for the output size.`
+    : ''
+
   const response = await ai.models.generateContent({
     model: GEMINI_IMAGE_MODEL,
     contents: [
       {
         role: 'user',
-        parts: [...imageParts, { text: options.prompt }],
+        parts: [
+          ...imageParts,
+          { text: `${options.prompt}${ratioInstruction}` },
+        ],
       },
     ],
     config: {
