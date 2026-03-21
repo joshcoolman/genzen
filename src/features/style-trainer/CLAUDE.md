@@ -15,7 +15,7 @@ Style collections: curated image sets used as reference images during generation
 
 ## Route
 
-`src/routes/dashboard/style-trainer.tsx`
+`src/routes/dashboard/dev-workspace.style-trainer.tsx`
 
 ## Database
 

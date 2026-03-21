@@ -6,14 +6,16 @@ Extends images to new aspect ratios using FAL AI edit models.
 
 - `server/outpaint-image.server.ts` -- server fn, FAL API call, aspect ratio handling
 - `hooks/useOutpaintPage.ts` -- page state, model selection, polling
+- `hooks/useQuickOutpaint.ts` -- lightweight outpaint hook for use outside the dedicated page
 - `components/OutpaintPageContent.tsx` -- main page layout
 - `components/OutpaintPreview.tsx` -- source image + target ratio preview
 - `components/OutpaintCard.tsx` -- individual result card
-- `index.ts` -- barrel export
+- `components/QuickOutpaintDialog.tsx` -- dialog for quick outpaint from other features
+- `index.ts` -- barrel export (OutpaintPageContent, useOutpaintPage, useQuickOutpaint, QuickOutpaintDialog)
 
 ## Route
 
-`src/routes/dashboard/outpaint.tsx`
+`src/routes/dashboard/dev-workspace.outpaint.tsx`
 
 ## Shared Dependencies
 

@@ -11,7 +11,7 @@ Run a text prompt against multiple LLMs in parallel and compare results side-by-
 
 ## Route
 
-`src/routes/dashboard/prompt-studio.tsx`
+`src/routes/dashboard/dev-workspace.prompt-studio.tsx`
 
 ## Shared Dependencies
 

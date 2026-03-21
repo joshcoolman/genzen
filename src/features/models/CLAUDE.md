@@ -14,7 +14,7 @@ Browsable catalog of FAL AI models with category filtering, search, pagination, 
 
 ## Route
 
-`src/routes/dashboard/models.tsx`
+`src/routes/dashboard/dev-workspace.models.tsx`
 
 ## Shared Dependencies
 

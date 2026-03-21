@@ -20,6 +20,7 @@ Multi-shot video generation using Kling V3 Pro via FAL. Users define elements (c
 - `server/get-sequence-generations.server.ts` -- Query generation history for a sequence
 - `server/delete-sequence.server.ts` -- Delete sequence
 - `server/duplicate-sequence.server.ts` -- Copy sequence for iteration
+- `server/delete-generation.server.ts` -- Soft-delete individual generation records
 - `hooks/use-multishot-editor.ts` -- Main editor state: shots CRUD, elements, settings, budget calc, generate/save. Supports `elementsLocked` option.
 - `hooks/use-multishot-sequences.ts` -- Sequence list with polling for pending status
 - `hooks/use-sequence-detail.ts` -- Detail page hook: loads sequence, manages generation history, polls pending, computes element lock state

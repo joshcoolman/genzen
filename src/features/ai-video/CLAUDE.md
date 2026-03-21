@@ -24,7 +24,6 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 - `server/move-generations.server.ts` -- move generations between workspaces
 - `server/update-generation.server.ts` -- update generation record
 - `server/upload-video-frame.server.ts` -- upload user image as frame
-- `server/check-pending-video.server.ts` -- poll FAL queue for video results
 - `server/fal-video-schema.server.ts` -- fetches + caches FAL video model schemas
 - `hooks/use-video-workspace-page.ts` -- master orchestrator composing all sub-hooks
 - `hooks/use-first-frame-generator.ts` -- first frame generation + mode switching
@@ -49,13 +48,14 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 
 ## Route
 
-`src/routes/dashboard/video.tsx` (layout), `video.index.tsx` (workspace list), `video.$workspaceId.tsx` (workspace detail)
+`src/routes/dashboard/video.tsx` (layout), `video.index.tsx` (workspace list + detail via query params), `video.$workspaceId.tsx` (redirect-only, forwards to `video.index.tsx?workspaceId=X`)
 
 ## Shared Dependencies
 
 - `src/lib/server/auth.server.ts` -- `requireAuth()`
 - `src/features/credits/` -- credit checking and deduction
 - `src/features/user-images/` -- `useUserImages` for image picker in frame upload
+- `src/lib/server/check-pending-generations.server.ts` -- shared polling utility for FAL queue results
 
 ## Quirks / Notes
 
