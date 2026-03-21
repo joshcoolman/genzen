@@ -44,7 +44,7 @@ Before staging and committing, always run `pnpm check` (prettier + eslint fix). 
 
 Format: `area: subject line` (under 70 chars)
 
-Area prefixes (match feature dirs): `ai-images`, `assets`, `video`, `storyboard`, `nav`, `auth`, `docs`, `notes`, `shared` (cross-cutting components/lib), `infra` (build/deploy/migrations), `dx` (dev workspace/tooling). Use `fix(area):` for bug fixes.
+Area prefixes (match feature dirs): `ai-images`, `video`, `storyboard`, `nav`, `auth`, `docs`, `notes`, `shared` (cross-cutting components/lib), `infra` (build/deploy/migrations), `dx` (dev workspace/tooling). Use `fix(area):` for bug fixes.
 
 Body (for non-trivial changes):
 
@@ -86,7 +86,7 @@ Each feature has its own `CLAUDE.md` with architecture details. Read the relevan
 | **storyboard**    | `src/features/storyboard/`    | Story prompt -> scene breakdown -> frame generation -> video clips                          |
 | **style-trainer** | `src/features/style-trainer/` | Curated image collections used as style references during generation                        |
 | **trash**         | `src/features/trash/`         | Soft-delete recovery for user images                                                        |
-| **user-images**   | `src/features/user-images/`   | Asset library: upload, manage, download user + AI-generated images                          |
+| **user-images**   | `src/features/user-images/`   | Shared image library: hooks, pickers, upload/download used by AI Images, Combine, etc.      |
 
 ## Shared Terms
 

@@ -2,7 +2,6 @@ import {
   Clapperboard,
   Film,
   FlaskConical,
-  FolderOpen,
   Settings,
   Sparkles,
   StickyNote,
@@ -23,17 +22,10 @@ export interface NavItem {
 
 export const navItems: Array<NavItem> = [
   {
-    id: 'assets',
-    label: 'Assets',
-    href: '/dashboard/assets',
-    icon: FolderOpen,
-  },
-  {
     id: 'ai-images',
     label: 'AI Images',
     href: '/dashboard/ai-images',
     icon: Sparkles,
-    activeOnly: true,
   },
   {
     id: 'ai-video',

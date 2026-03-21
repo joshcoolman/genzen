@@ -25,7 +25,6 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settin
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardMultiShotRouteImport } from './routes/dashboard/multi-shot'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
-import { Route as DashboardAssetsRouteImport } from './routes/dashboard/assets'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
@@ -123,11 +122,6 @@ const DashboardMultiShotRoute = DashboardMultiShotRouteImport.update({
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardAssetsRoute = DashboardAssetsRouteImport.update({
-  id: '/assets',
-  path: '/assets',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
@@ -244,7 +238,6 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
@@ -279,7 +272,6 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -314,7 +306,6 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
-  '/dashboard/assets': typeof DashboardAssetsRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
@@ -353,7 +344,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/assets'
     | '/dashboard/dev-workspace'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
@@ -388,7 +378,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/assets'
     | '/dashboard/notes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -422,7 +411,6 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/account'
     | '/dashboard/ai-images'
-    | '/dashboard/assets'
     | '/dashboard/dev-workspace'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
@@ -572,13 +560,6 @@ declare module '@tanstack/react-router' {
       path: '/dev-workspace'
       fullPath: '/dashboard/dev-workspace'
       preLoaderRoute: typeof DashboardDevWorkspaceRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/assets': {
-      id: '/dashboard/assets'
-      path: '/assets'
-      fullPath: '/dashboard/assets'
-      preLoaderRoute: typeof DashboardAssetsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/ai-images': {
@@ -776,7 +757,6 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
-  DashboardAssetsRoute: typeof DashboardAssetsRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
   DashboardMultiShotRoute: typeof DashboardMultiShotRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
@@ -790,7 +770,6 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
-  DashboardAssetsRoute: DashboardAssetsRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
   DashboardMultiShotRoute: DashboardMultiShotRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
