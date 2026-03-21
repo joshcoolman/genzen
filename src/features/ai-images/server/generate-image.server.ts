@@ -22,6 +22,7 @@ interface GenerateImageInput {
   isRefine?: boolean
   styleId?: string
   referenceImageIds?: Array<string>
+  providerOverride?: 'fal' | 'google'
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -40,13 +41,19 @@ export const generateImage = createServerFn({ method: 'POST' })
       sourceImageBase64,
       sourceImageUrl,
       isRefine,
+      providerOverride,
     } = data
+
+    // Resolve provider: override wins, else check model registry
+    const useGoogle = providerOverride
+      ? providerOverride === 'google'
+      : isGoogleProvider(model)
 
     if (!sourceImageBase64 && !sourceImageUrl && !prompt.trim()) {
       throw new Error('Prompt is required')
     }
 
-    if (!isGoogleProvider(model) && !process.env.FAL_KEY) {
+    if (!useGoogle && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -112,7 +119,7 @@ export const generateImage = createServerFn({ method: 'POST' })
       sourceBase64Data = base64Data
 
       // Upload to FAL storage (only needed for FAL path)
-      if (!isGoogleProvider(model)) {
+      if (!useGoogle) {
         imageUrl = await fal.storage.upload(
           new Blob([buffer], { type: mimeType }),
         )
@@ -154,7 +161,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
 
       if (refImages.data?.length) {
-        if (isGoogleProvider(model)) {
+        if (useGoogle) {
           // Google path: fetch as base64
           const base64Results = await Promise.all(
             refImages.data.map(async (ref) => {
@@ -199,7 +206,7 @@ export const generateImage = createServerFn({ method: 'POST' })
     }
 
     // --- Google provider: route through submitGeneration ---
-    if (isGoogleProvider(model)) {
+    if (useGoogle) {
       const result = await submitGeneration({
         accessToken: data.accessToken,
         userId: user.id,
@@ -209,6 +216,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         imageBase64: sourceBase64Data ?? undefined,
         referenceImagesBase64:
           referenceImagesBase64.length > 0 ? referenceImagesBase64 : undefined,
+        providerOverride,
         metadata: {
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),

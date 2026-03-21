@@ -87,6 +87,7 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'Nano Banana 2',
     description: 'Google, reasoning-guided generation',
     category: 'Specialized',
+    provider: 'google',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
   },
@@ -149,7 +150,7 @@ export const EDIT_MODELS: Array<EditModel> = [
     id: 'fal-ai/nano-banana-2/edit',
     name: 'Nano Banana 2',
     description: 'Reasoning-guided edits',
-    maxRefImages: 14,
+    maxRefImages: 3,
   },
   {
     id: 'fal-ai/flux-2-pro/edit',

@@ -31,6 +31,8 @@ interface GeneratorPanelProps {
   error: string | null
   describe?: ReturnType<typeof useDescribeJson>
   mode?: 'generate' | 'edit'
+  providerOverride?: 'fal' | 'google'
+  onProviderOverrideChange?: (value: 'fal' | 'google' | undefined) => void
 }
 
 export function GeneratorPanel({
@@ -41,6 +43,8 @@ export function GeneratorPanel({
   error,
   describe,
   mode = 'generate',
+  providerOverride,
+  onProviderOverrideChange,
 }: GeneratorPanelProps) {
   const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -85,23 +89,49 @@ export function GeneratorPanel({
       </div>
 
       {/* Textarea */}
-      <Textarea
-        id="prompt-textarea"
-        placeholder={
-          generator.describingImage
-            ? 'Describing image...'
-            : isEdit
-              ? 'Describe the edit...'
-              : generator.sourceImage
-                ? 'Edit prompt (optional)...'
-                : 'Describe your image...'
-        }
-        value={generator.prompt}
-        onChange={(e) => generator.setPrompt(e.target.value)}
-        disabled={generator.loading || generator.describingImage}
-        rows={4}
-        className="text-xs"
-      />
+      <div className="relative">
+        <Textarea
+          id="prompt-textarea"
+          placeholder={
+            generator.describingImage
+              ? 'Describing image...'
+              : isEdit
+                ? 'Describe the edit...'
+                : generator.sourceImage
+                  ? 'Edit prompt (optional)...'
+                  : 'Describe your image...'
+          }
+          value={generator.prompt}
+          onChange={(e) => generator.setPrompt(e.target.value)}
+          disabled={generator.loading || generator.describingImage}
+          rows={4}
+          className="text-xs pr-7"
+        />
+        {(generator.prompt ||
+          generator.sourceImage ||
+          generator.refImages.length > 0) && (
+          <button
+            type="button"
+            onClick={generator.handleClear}
+            className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Clear prompt, source image, and references"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* Ref images -- show when model supports refs */}
       {generator.maxRefImages > 0 && (
@@ -186,6 +216,38 @@ export function GeneratorPanel({
         visibleModels={modelSelector.models}
         onToggleSelected={modelSelector.toggleSelected}
       />
+
+      {/* Provider toggle (dev) */}
+      {onProviderOverrideChange && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            Provider
+          </span>
+          <div className="flex rounded-md border border-border text-[10px]">
+            {(['fal', 'google'] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() =>
+                  onProviderOverrideChange(
+                    providerOverride === p ? undefined : p,
+                  )
+                }
+                className={`px-2 py-0.5 transition-colors ${
+                  providerOverride === p
+                    ? 'bg-foreground text-background'
+                    : 'text-muted-foreground hover:text-foreground'
+                } ${p === 'fal' ? 'rounded-l-[5px] border-r border-border' : 'rounded-r-[5px]'}`}
+              >
+                {p === 'fal' ? 'FAL' : 'Google'}
+              </button>
+            ))}
+          </div>
+          {providerOverride === undefined && (
+            <span className="text-[10px] text-muted-foreground">(auto)</span>
+          )}
+        </div>
+      )}
 
       {/* Describe / JSON -- only when source image present */}
       {generator.sourceImage && (

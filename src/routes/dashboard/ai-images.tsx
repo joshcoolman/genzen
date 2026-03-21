@@ -608,6 +608,8 @@ function AiImagesPage() {
               userImages={page.userImages}
               error={page.error}
               describe={page.describe}
+              providerOverride={page.providerOverride}
+              onProviderOverrideChange={page.setProviderOverride}
             />
           </div>
         </div>

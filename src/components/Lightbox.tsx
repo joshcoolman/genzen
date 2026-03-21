@@ -65,37 +65,42 @@ export function Lightbox({
         </button>
       )}
 
-      {/* Image with delete overlay */}
+      {/* Image with title + action overlays */}
       <div
-        className="relative flex items-center justify-center max-h-[85vh] max-w-[85vw]"
+        className="relative flex flex-col items-center max-h-[90vh] max-w-[85vw]"
         onClick={(e) => e.stopPropagation()}
       >
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={img.title}
-            className="max-h-[85vh] max-w-[85vw] object-contain"
-          />
-        ) : (
-          <div className="w-64 h-64 bg-muted animate-pulse rounded" />
-        )}
-        {onEdit && (
-          <button
-            className="absolute bottom-3 left-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-white hover:bg-black/70 transition-colors"
-            onClick={onEdit}
-            aria-label="Edit"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-        )}
-        {onDelete && (
-          <button
-            className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-red-400 hover:bg-black/70 transition-colors"
-            onClick={onDelete}
-            aria-label="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+        <div className="relative flex items-center justify-center">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={img.title}
+              className="max-h-[82vh] max-w-[85vw] object-contain"
+            />
+          ) : (
+            <div className="w-64 h-64 bg-muted animate-pulse rounded" />
+          )}
+          {onEdit && (
+            <button
+              className="absolute bottom-3 left-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-white hover:bg-black/70 transition-colors"
+              onClick={onEdit}
+              aria-label="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-red-400 hover:bg-black/70 transition-colors"
+              onClick={onDelete}
+              aria-label="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {img.title && (
+          <p className="mt-2 text-xs text-white/50 text-center">{img.title}</p>
         )}
       </div>
 

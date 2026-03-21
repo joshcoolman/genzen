@@ -1,39 +1,53 @@
 /**
- * Google Imagen via Vertex AI (native generateImages/editImage with aspectRatio).
- * Uses @google/genai SDK in Vertex AI mode with service account auth.
- * Requires GOOGLE_APPLICATION_CREDENTIALS env var pointing to service account JSON key.
- *
- * Multi-image support: when multiple reference images are provided, they're
- * composited into a single image (Vertex AI editImage only accepts one).
- * The prompt is augmented to describe the composite layout.
+ * Google image generation via Gemini generateContent with imageConfig.
+ * Uses @google/genai SDK. Prefers Gemini API key, falls back to Vertex AI.
+ * Supports native aspect ratio control and multiple inline image parts.
  */
-import sharp from 'sharp'
-import { GoogleGenAI, RawReferenceImage } from '@google/genai'
+import { GoogleGenAI } from '@google/genai'
 
 const GOOGLE_PROJECT = 'gen-lang-client-0015600225'
 const GOOGLE_LOCATION = 'us-central1'
 
-/** Aspect ratios Imagen supports natively */
-const IMAGEN_SUPPORTED_RATIOS = new Set(['1:1', '3:4', '4:3', '9:16', '16:9'])
+/** Map app model IDs to Gemini model names */
+const GEMINI_MODEL_MAP: Record<string, string> = {
+  'fal-ai/nano-banana-2': 'gemini-2.5-flash-image',
+}
 
-/** Map app ratios to nearest Imagen-supported ratio */
+/** Aspect ratios generateContent supports natively via imageConfig */
+const GEMINI_SUPPORTED_RATIOS = new Set([
+  '1:1',
+  '2:3',
+  '3:2',
+  '3:4',
+  '4:3',
+  '9:16',
+  '16:9',
+  '21:9',
+])
+
 const RATIO_FALLBACK: Record<string, string> = {
-  '3:2': '4:3',
-  '2:3': '3:4',
   '5:4': '4:3',
   '4:5': '3:4',
-  '21:9': '16:9',
   '2:1': '16:9',
   '1:2': '9:16',
 }
 
 function resolveAspectRatio(ratio?: string): string | undefined {
   if (!ratio) return undefined
-  if (IMAGEN_SUPPORTED_RATIOS.has(ratio)) return ratio
+  if (GEMINI_SUPPORTED_RATIOS.has(ratio)) return ratio
   return RATIO_FALLBACK[ratio] ?? '1:1'
 }
 
+function resolveGeminiModel(appModelId: string): string {
+  const base = appModelId.replace(/\/edit$/, '')
+  return GEMINI_MODEL_MAP[base] ?? 'gemini-2.5-flash-image'
+}
+
 function getClient(): GoogleGenAI {
+  if (process.env.GOOGLE_AI_API_KEY) {
+    return new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
+  }
+
   const opts: Record<string, unknown> = {
     vertexai: true,
     project: GOOGLE_PROJECT,
@@ -66,168 +80,90 @@ export interface GoogleImageResult {
   mimeType: string
 }
 
-/**
- * Composite multiple base64 images into a single image.
- * Layout is adaptive: horizontal for landscape/square, vertical for portrait.
- */
-async function compositeImages(
-  primaryBase64: string,
-  additionalBase64: Array<string>,
-  aspectRatio?: string,
-): Promise<string> {
-  const allBuffers = [
-    Buffer.from(primaryBase64, 'base64'),
-    ...additionalBase64.map((b) => Buffer.from(b, 'base64')),
-  ]
+type ContentPart =
+  | { inlineData: { data: string; mimeType: string } }
+  | { text: string }
 
-  // Determine layout direction from target aspect ratio
-  const vertical =
-    aspectRatio === '9:16' ||
-    aspectRatio === '3:4' ||
-    aspectRatio === '4:5' ||
-    aspectRatio === '2:3' ||
-    aspectRatio === '1:2'
+async function callGemini(options: {
+  modelId?: string
+  prompt: string
+  imagesBase64?: Array<string>
+  aspectRatio?: string
+}): Promise<GoogleImageResult> {
+  const ai = getClient()
 
-  const metas = await Promise.all(
-    allBuffers.map((buf) => sharp(buf).metadata()),
-  )
+  const parts: Array<ContentPart> = []
 
-  if (vertical) {
-    // Stack vertically: uniform width
-    const targetWidth = Math.min(1024, ...metas.map((m) => m.width || 512))
-    const resized = await Promise.all(
-      allBuffers.map((buf) =>
-        sharp(buf).resize({ width: targetWidth }).png().toBuffer(),
-      ),
-    )
-    const resizedMetas = await Promise.all(
-      resized.map((buf) => sharp(buf).metadata()),
-    )
-    const heights = resizedMetas.map((m) => m.height || 512)
-    const totalHeight = heights.reduce((a, b) => a + b, 0)
-
-    let top = 0
-    const compositeInputs = resized.map((buf, i) => {
-      const input = { input: buf, left: 0, top }
-      top += heights[i]
-      return input
-    })
-
-    const result = await sharp({
-      create: {
-        width: targetWidth,
-        height: totalHeight,
-        channels: 3 as const,
-        background: { r: 255, g: 255, b: 255 },
-      },
-    })
-      .composite(compositeInputs)
-      .png()
-      .toBuffer()
-
-    return result.toString('base64')
+  if (options.imagesBase64?.length) {
+    for (const imgB64 of options.imagesBase64) {
+      parts.push({
+        inlineData: { data: imgB64, mimeType: 'image/png' },
+      })
+    }
   }
 
-  // Horizontal: side by side, uniform height
-  const targetHeight = Math.min(1024, ...metas.map((m) => m.height || 512))
-  const resized = await Promise.all(
-    allBuffers.map((buf) =>
-      sharp(buf).resize({ height: targetHeight }).png().toBuffer(),
-    ),
-  )
-  const resizedMetas = await Promise.all(
-    resized.map((buf) => sharp(buf).metadata()),
-  )
-  const widths = resizedMetas.map((m) => m.width || 512)
-  const totalWidth = widths.reduce((a, b) => a + b, 0)
+  parts.push({ text: options.prompt })
 
-  let left = 0
-  const compositeInputs = resized.map((buf, i) => {
-    const input = { input: buf, left, top: 0 }
-    left += widths[i]
-    return input
-  })
-
-  const result = await sharp({
-    create: {
-      width: totalWidth,
-      height: targetHeight,
-      channels: 3 as const,
-      background: { r: 255, g: 255, b: 255 },
+  const response = await ai.models.generateContent({
+    model: resolveGeminiModel(options.modelId ?? 'fal-ai/nano-banana-2'),
+    contents: [{ role: 'user', parts }],
+    config: {
+      responseModalities: ['image', 'text'],
+      imageConfig: {
+        aspectRatio: resolveAspectRatio(options.aspectRatio),
+      },
     },
   })
-    .composite(compositeInputs)
-    .png()
-    .toBuffer()
 
-  return result.toString('base64')
+  // Check for content safety blocks
+  if (response.promptFeedback?.blockReason) {
+    throw new Error(
+      `Gemini blocked the request: ${response.promptFeedback.blockReasonMessage || response.promptFeedback.blockReason}`,
+    )
+  }
+
+  const candidate = response.candidates?.[0]
+  if (!candidate?.content?.parts) {
+    throw new Error('Gemini generateContent returned no parts')
+  }
+
+  for (const part of candidate.content.parts) {
+    if (
+      part.inlineData?.data &&
+      part.inlineData.mimeType?.startsWith('image/')
+    ) {
+      return {
+        imageBase64: part.inlineData.data,
+        mimeType: 'image/png',
+      }
+    }
+  }
+
+  throw new Error('Gemini generateContent returned no image data')
 }
 
-/** Generate a new image via Vertex AI Imagen */
+/** Generate a new image via Gemini generateContent */
 export async function generateWithGoogle(
   options: GoogleGenerateOptions,
 ): Promise<GoogleImageResult> {
-  const ai = getClient()
-
-  const response = await ai.models.generateImages({
-    model: 'imagen-4.0-generate-001',
+  return callGemini({
     prompt: options.prompt,
-    config: {
-      numberOfImages: 1,
-      aspectRatio: resolveAspectRatio(options.aspectRatio),
-    },
+    aspectRatio: options.aspectRatio,
   })
-
-  const image = response.generatedImages?.[0]?.image
-  if (!image?.imageBytes) {
-    throw new Error('Vertex AI Imagen returned no image data')
-  }
-
-  return {
-    imageBase64: image.imageBytes,
-    mimeType: 'image/png',
-  }
 }
 
-/** Edit an existing image via Vertex AI Imagen */
+/** Edit/combine images via Gemini generateContent with inline image parts */
 export async function editWithGoogle(
   options: GoogleEditOptions,
 ): Promise<GoogleImageResult> {
-  const ai = getClient()
+  const images: Array<string> = []
+  if (options.imageBase64) images.push(options.imageBase64)
+  if (options.additionalImagesBase64)
+    images.push(...options.additionalImagesBase64)
 
-  let referenceBase64 = options.imageBase64
-  const prompt = options.prompt
-
-  // When multiple images are provided, composite them into one
-  if (options.additionalImagesBase64?.length) {
-    referenceBase64 = await compositeImages(
-      options.imageBase64,
-      options.additionalImagesBase64,
-      options.aspectRatio,
-    )
-  }
-
-  const ref = new RawReferenceImage()
-  ref.referenceImage = { imageBytes: referenceBase64 }
-  ref.referenceId = 1
-
-  const response = await ai.models.editImage({
-    model: 'imagen-3.0-capability-001',
-    prompt,
-    referenceImages: [ref],
-    config: {
-      numberOfImages: 1,
-      aspectRatio: resolveAspectRatio(options.aspectRatio),
-    },
+  return callGemini({
+    prompt: options.prompt,
+    imagesBase64: images,
+    aspectRatio: options.aspectRatio,
   })
-
-  const image = response.generatedImages?.[0]?.image
-  if (!image?.imageBytes) {
-    throw new Error('Vertex AI Imagen edit returned no image data')
-  }
-
-  return {
-    imageBase64: image.imageBytes,
-    mimeType: 'image/png',
-  }
 }

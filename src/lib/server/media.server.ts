@@ -34,6 +34,7 @@ interface SubmitGenerationOptions {
   referenceImagesBase64?: Array<string>
   metadata?: Record<string, unknown>
   title?: string
+  providerOverride?: 'fal' | 'google'
 }
 
 export interface SubmitGenerationResult {
@@ -60,7 +61,11 @@ export async function submitGeneration(
 ): Promise<SubmitGenerationResult> {
   const supabase = createUserSupabase(options.accessToken)
 
-  if (isGoogleProvider(options.modelId)) {
+  const useGoogle = options.providerOverride
+    ? options.providerOverride === 'google'
+    : isGoogleProvider(options.modelId)
+
+  if (useGoogle) {
     return submitGoogleGeneration(supabase, options)
   }
   return submitFalGeneration(supabase, options)

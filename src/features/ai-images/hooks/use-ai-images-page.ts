@@ -34,12 +34,33 @@ export function useAiImagesPage() {
 
   const [error, setError] = useState<string | null>(null)
 
+  const [providerOverride, setProviderOverride] = useState<
+    'fal' | 'google' | undefined
+  >(() => {
+    if (typeof window === 'undefined') return undefined
+    const stored = localStorage.getItem('genzen:provider-override')
+    return stored === 'fal' || stored === 'google' ? stored : undefined
+  })
+
+  const handleSetProviderOverride = useCallback(
+    (value: 'fal' | 'google' | undefined) => {
+      setProviderOverride(value)
+      if (value) {
+        localStorage.setItem('genzen:provider-override', value)
+      } else {
+        localStorage.removeItem('genzen:provider-override')
+      }
+    },
+    [],
+  )
+
   const generator = useGenerator({
     accessToken,
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     credits,
     setError,
+    providerOverride,
   })
 
   const completedImages = gallery.images.filter(
@@ -132,5 +153,7 @@ export function useAiImagesPage() {
     describe,
     handleLoadPrompt,
     handleLoadPromptAndModel,
+    providerOverride,
+    setProviderOverride: handleSetProviderOverride,
   }
 }

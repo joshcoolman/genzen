@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -27,6 +27,7 @@ interface UseGeneratorOptions {
   gensPerModel: number
   credits: CreditsState
   setError: (error: string | null) => void
+  providerOverride?: 'fal' | 'google'
 }
 
 export interface GeneratorState {
@@ -49,6 +50,7 @@ export interface GeneratorState {
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
   handleClearSourceImage: () => void
+  handleClear: () => void
   handleCaption: () => Promise<void>
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
@@ -62,12 +64,23 @@ export function useGenerator({
   gensPerModel,
   credits,
   setError,
+  providerOverride,
 }: UseGeneratorOptions): GeneratorState {
-  const [prompt, setPrompt] = useState('')
+  const [prompt, setPromptRaw] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return localStorage.getItem('genzen:prompt') ?? ''
+  })
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
-    'landscape',
+    () => {
+      if (typeof window === 'undefined') return 'landscape'
+      const stored = localStorage.getItem('genzen:orientation')
+      return stored === 'portrait' ? 'portrait' : 'landscape'
+    },
   )
-  const [aspectRatio, setAspectRatio] = useState('16:9')
+  const [aspectRatio, setAspectRatio] = useState(() => {
+    if (typeof window === 'undefined') return '16:9'
+    return localStorage.getItem('genzen:aspect-ratio') ?? '16:9'
+  })
   const [loading, setLoading] = useState(false)
   const [sourceImage, setSourceImage] = useState<{
     base64: string
@@ -76,6 +89,27 @@ export function useGenerator({
   const [describingImage, setDescribingImage] = useState(false)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
+
+  // Wrap setPrompt to persist
+  const setPrompt = useCallback(
+    (value: string | ((prev: string) => string)) => {
+      setPromptRaw((prev) => {
+        const next = typeof value === 'function' ? value(prev) : value
+        localStorage.setItem('genzen:prompt', next)
+        return next
+      })
+    },
+    [],
+  )
+
+  // Persist orientation + aspect ratio on change
+  useEffect(() => {
+    localStorage.setItem('genzen:orientation', orientation)
+  }, [orientation])
+
+  useEffect(() => {
+    localStorage.setItem('genzen:aspect-ratio', aspectRatio)
+  }, [aspectRatio])
 
   // Compute maxRefImages from selected models' edit endpoints
   const maxRefImages = useMemo(() => {
@@ -168,6 +202,7 @@ export function useGenerator({
               ...(sourceImage ? { sourceImageBase64: sourceImage.base64 } : {}),
               ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
               ...(referenceImageIds ? { referenceImageIds } : {}),
+              ...(providerOverride ? { providerOverride } : {}),
             },
           }),
         ),
@@ -259,6 +294,12 @@ export function useGenerator({
     setSourceImage(null)
   }
 
+  function handleClear() {
+    setPrompt('')
+    setSourceImage(null)
+    setRefImages([])
+  }
+
   const handleCaption = useCallback(async () => {
     if (!accessToken || !sourceImage || describingImage) return
     setDescribingImage(true)
@@ -294,6 +335,7 @@ export function useGenerator({
     setSourceFile,
     setSourceFromUrl,
     handleClearSourceImage,
+    handleClear,
     handleCaption,
     refImages,
     addRefImages,
