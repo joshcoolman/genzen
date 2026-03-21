@@ -27,9 +27,10 @@ export interface ThumbnailProps {
   onDelete?: () => void
   overlayActions?: ReactNode
   overlayActionsLeft?: ReactNode
+  overlayActionsBottomLeft?: ReactNode
   overlayActionsBottomRight?: ReactNode
 
-  onClick?: () => void
+  onClick?: (e?: React.MouseEvent) => void
 
   selected?: boolean
   selectedClassName?: string
@@ -62,6 +63,7 @@ export function Thumbnail({
   onDelete,
   overlayActions,
   overlayActionsLeft,
+  overlayActionsBottomLeft,
   overlayActionsBottomRight,
   onClick,
   selected,
@@ -237,6 +239,12 @@ export function Thumbnail({
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
+          </div>
+        )}
+
+        {overlayActionsBottomLeft && (
+          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+            {overlayActionsBottomLeft}
           </div>
         )}
 

@@ -1,6 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowUpRight,
+  CheckCircle2,
+  Circle,
   Download,
   Maximize2,
   MessageSquare,
@@ -36,6 +38,9 @@ interface ImageCardProps {
   onDescribe?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
   getModelName: (id: string) => string
+  selected?: boolean
+  selectionActive?: boolean
+  onSelect?: (id: string, shiftKey: boolean) => void
 }
 
 export function ImageCard({
@@ -55,6 +60,9 @@ export function ImageCard({
   onDescribe,
   onGallery,
   getModelName,
+  selected,
+  selectionActive,
+  onSelect,
 }: ImageCardProps) {
   const navigate = useNavigate()
 
@@ -126,8 +134,28 @@ export function ImageCard({
           : undefined
       }
       alwaysShowOverlay
-      overlayActionsLeft={moreButton}
-      overlayActions={rightButtons}
+      selected={selected}
+      selectedClassName="border-accent-brand ring-1 ring-accent-brand"
+      overlayActionsLeft={selectionActive ? undefined : moreButton}
+      overlayActions={selectionActive ? undefined : rightButtons}
+      overlayActionsBottomLeft={
+        onSelect ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect(img.id, e.shiftKey)
+            }}
+            className="cursor-pointer"
+            aria-label={selected ? 'Deselect' : 'Select'}
+          >
+            {selected ? (
+              <CheckCircle2 className="h-5 w-5 text-accent-brand" />
+            ) : (
+              <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground" />
+            )}
+          </button>
+        ) : undefined
+      }
       overlayActionsBottomRight={
         onGallery ? (
           <button
@@ -142,13 +170,17 @@ export function ImageCard({
           </button>
         ) : undefined
       }
-      onClick={() =>
-        navigate({
-          to: '/dashboard/edit/$imageId',
-          params: { imageId: img.id },
-          search: { sourceId: undefined },
-        })
-      }
+      onClick={(e: React.MouseEvent) => {
+        if (selectionActive && onSelect) {
+          onSelect(img.id, e.shiftKey)
+        } else {
+          navigate({
+            to: '/dashboard/edit/$imageId',
+            params: { imageId: img.id },
+            search: { sourceId: undefined },
+          })
+        }
+      }}
     >
       {!compact && (
         <>

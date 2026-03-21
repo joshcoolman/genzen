@@ -46,6 +46,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useSelection } from '@/lib/use-selection'
+import { SelectionDrawer } from '@/components/SelectionDrawer'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   component: AiImagesPage,
@@ -133,6 +135,10 @@ function AiImagesPage() {
   const sortedImages = sortAsc
     ? [...page.gallery.images].reverse()
     : page.gallery.images
+
+  const selection = useSelection({
+    items: sortedImages.map((img) => img.id),
+  })
 
   const handleUploadFiles = useCallback(
     async (files: Array<File>) => {
@@ -429,7 +435,19 @@ function AiImagesPage() {
           onUngroup={handleUngroup}
           onDescribe={handleDescribe}
           onGallery={page.lightbox.open}
+          selectionActive={selection.count > 0}
+          isSelected={selection.isSelected}
+          onSelect={selection.toggle}
         />
+
+        <SelectionDrawer
+          count={selection.count}
+          onClear={selection.clearSelection}
+        >
+          <span className="text-sm text-muted-foreground">
+            Actions coming soon
+          </span>
+        </SelectionDrawer>
       </div>
 
       {/* Dismiss overlay when unpinned */}

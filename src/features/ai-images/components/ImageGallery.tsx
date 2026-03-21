@@ -31,6 +31,9 @@ interface ImageGalleryProps {
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
+  selectionActive?: boolean
+  isSelected?: (id: string) => boolean
+  onSelect?: (id: string, shiftKey: boolean) => void
 }
 
 export function ImageGallery({
@@ -49,6 +52,9 @@ export function ImageGallery({
   onUngroup,
   onDescribe,
   onGallery,
+  selectionActive,
+  isSelected,
+  onSelect,
 }: ImageGalleryProps) {
   const compact = thumbSize !== 'lg'
 
@@ -143,6 +149,9 @@ export function ImageGallery({
                 onDescribe={onDescribe}
                 onGallery={onGallery}
                 getModelName={getModelName}
+                selected={isSelected?.(img.id)}
+                selectionActive={selectionActive}
+                onSelect={onSelect}
               />
             )
           })}
