@@ -71,10 +71,12 @@ export function ImageCard({
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+          className="group/btn flex items-center justify-center p-2.5 -m-1 cursor-pointer"
           aria-label="More actions"
         >
-          <MoreHorizontal className="h-3.5 w-3.5" />
+          <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/btn:bg-sidebar-selected group-hover/btn:text-sidebar-selected-text group-hover/btn:scale-[1.75] group-hover/btn:shadow-sm transition-all duration-150">
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
@@ -112,10 +114,12 @@ export function ImageCard({
         e.stopPropagation()
         onDelete(img)
       }}
-      className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+      className="group/del flex items-center justify-center p-2.5 -m-1 cursor-pointer"
       aria-label="Delete"
     >
-      <Trash2 className="h-3.5 w-3.5" />
+      <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/del:bg-sidebar-selected group-hover/del:text-destructive group-hover/del:scale-[1.75] group-hover/del:shadow-sm transition-all duration-150">
+        <Trash2 className="h-3.5 w-3.5" />
+      </span>
     </button>
   )
 
@@ -138,14 +142,16 @@ export function ImageCard({
               e.stopPropagation()
               onSelect(img.id, e.shiftKey)
             }}
-            className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            className="group/sel flex items-center justify-center p-2.5 -m-1 cursor-pointer"
             aria-label={selected ? 'Deselect' : 'Select'}
           >
-            {selected ? (
-              <CheckCircle2 className="h-4 w-4 text-accent-brand" />
-            ) : (
-              <Circle className="h-4 w-4" />
-            )}
+            <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/sel:bg-sidebar-selected group-hover/sel:text-sidebar-selected-text group-hover/sel:scale-[1.75] group-hover/sel:shadow-sm transition-all duration-150">
+              {selected ? (
+                <CheckCircle2 className="h-4 w-4 text-accent-brand" />
+              ) : (
+                <Circle className="h-4 w-4" />
+              )}
+            </span>
           </button>
         ) : undefined
       }
@@ -156,10 +162,12 @@ export function ImageCard({
               e.stopPropagation()
               onGallery(img)
             }}
-            className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+            className="group/lb flex items-center justify-center p-2.5 -m-1 cursor-pointer"
             aria-label="View in lightbox"
           >
-            <Maximize2 className="h-3.5 w-3.5" />
+            <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/lb:bg-sidebar-selected group-hover/lb:text-sidebar-selected-text group-hover/lb:scale-[1.75] group-hover/lb:shadow-sm transition-all duration-150">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </span>
           </button>
         ) : undefined
       }
