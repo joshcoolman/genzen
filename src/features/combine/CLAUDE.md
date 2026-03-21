@@ -6,18 +6,19 @@ Combine multiple images into one using FAL AI image generation.
 - `server/combine-images.server.ts` -- Server function: uploads images to FAL storage, queues generation, creates pending record
 - `components/CombinePageContent.tsx` -- Layout: CombineCard + GenerationResultsGrid
 - `components/CombineCard.tsx` -- Controls: image sources, prompt textarea, aspect ratio, model select, generate button
+- `server/enhance-combine-prompt.server.ts` -- AI prompt enhancement for combine operations
 
 ## Route
 
-`src/routes/dashboard/combine.tsx`
+`src/routes/dashboard/dev-workspace.combine.tsx`
 
 ## Shared Dependencies
 
 - `@/features/ai-images/models` -- EDIT_MODELS list and getModelName
 - `@/features/ai-images/constants` -- RATIO_TO_SIZE mapping
-- `@/features/describe/types` -- CollectedImage type
-- `@/features/describe/hooks/useExistingImages` -- Fetches user's image library for picker
-- `@/features/describe/components/ExistingImagePicker` -- Library image selection dialog
+- `@/features/user-images/types` -- CollectedImage type
+- `@/features/user-images/hooks/useExistingImages` -- Fetches user's image library for picker
+- `@/features/user-images/components/ExistingImagePicker` -- Library image selection dialog
 - `@/features/credits` -- CREDIT_COSTS, isCreditError
 - `@/features/credits/hooks/use-credits` -- Balance check and insufficient credits dialog
 - `@/features/credits/server/check-credits.server` -- Server-side credit deduction

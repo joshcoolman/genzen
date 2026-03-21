@@ -8,7 +8,7 @@ Character generation wizard -- describe a character, generate face variations, v
 
 ## Route
 
-`src/routes/dashboard/characters.tsx`
+`src/routes/dashboard/dev-workspace.characters.tsx`
 
 ## Shared Dependencies
 

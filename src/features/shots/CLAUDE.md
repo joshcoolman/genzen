@@ -12,7 +12,7 @@ Linear pipeline for generating image variations: select source image -> describe
 
 ## Route
 
-`src/routes/dashboard/shots.tsx`
+`src/routes/dashboard/dev-workspace.shots.tsx`
 
 ## Shared Dependencies
 
@@ -22,7 +22,7 @@ Linear pipeline for generating image variations: select source image -> describe
 - `src/lib/server/create-pending-generation.server.ts` -- DB record creation
 - `src/lib/hooks/useGenerationResults.ts` -- results polling + realtime with `generationType: 'shot'`
 - `src/components/ImageSourceButtons/` -- upload, library picker, clipboard paste
-- `src/features/describe/hooks/useExistingImages.ts` -- user's image library
+- `src/features/user-images/hooks/useExistingImages.ts` -- user's image library
 - `src/features/credits/server/check-credits.server.ts` -- credit deduction per image
 
 ## Quirks / Notes

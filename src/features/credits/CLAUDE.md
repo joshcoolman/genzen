@@ -16,6 +16,7 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 - `server/get-transactions.server.ts` -- TanStack server fn for transaction history
 - `hooks/use-credits.ts` -- React context provider hook + `useCredits()` consumer hook
 - `hooks/use-insufficient-credits-dialog.ts` -- Dialog state management for low-balance prompt
+- `hooks/use-require-credits.ts` -- Pre-action credit check hook used by ai-images, ai-video, multi-shot
 - `components/CreditsProvider.tsx` -- Context provider wrapping `useCreditsProvider` + insufficient credits dialog
 - `components/CreditPackSelector.tsx` -- Radio group UI for buying credit packs
 - `components/InsufficientCreditsDialog.tsx` -- Modal shown when user can't afford an action
@@ -32,6 +33,6 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 
 - Deduction uses Supabase RPCs (`deduct_credits`, `add_credits`) not direct table writes -- atomicity is DB-side
 - `checkAndDeductCredits` is the main entry point other features call to gate AI operations
-- Video generation costs 5 credits; all other operations cost 1
+- Video generation and multi-shot generation cost 5 credits; all other operations cost 1
 - `isLow` threshold is < 10 credits
 - Balance reads from `user_profiles.credit_balance`, transactions from `credit_transactions` table
