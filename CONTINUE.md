@@ -7,16 +7,19 @@
 Full multi-select system with batch actions for AI Images, plus shared primitives reused by Trash.
 
 ### Shared primitives
+
 - `src/lib/use-selection.ts` -- headless selection hook with shift-range, auto-prune
 - `src/components/SelectionDrawer.tsx` -- fixed bottom bar, consumer passes action buttons as children
 
 ### AI Images multi-select (complete)
+
 - Circle/check icon entry, transparent overlay for reliable click targets in select mode
 - **Batch Delete**: smart children detection -- skips dialog if no children, 3-option dialog (Keep all / Keep children / Delete all) when children exist
 - **Batch Move**: opens ParentPickerDialog in batch mode, excludes all selected + descendants, adopts all under chosen parent
 - SelectionDrawer with Move (N) + Delete (N) buttons, loading states, auto-clear on completion
 
 ### Key decisions
+
 - Vaul/shadcn Drawer doesn't work for non-modal overlays -- used plain fixed div
 - Selection entry requires clicking circle icon specifically (intentional)
 - `ParentPickerDialog` extended with optional `movingImages` prop for batch mode

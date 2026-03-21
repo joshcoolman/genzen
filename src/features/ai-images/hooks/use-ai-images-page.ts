@@ -121,6 +121,7 @@ export function useAiImagesPage() {
     modelSelector,
     generator,
     editChildrenMap,
+    refreshEditChildren: editChildren.refresh,
     reparent,
     lightbox,
     variations,

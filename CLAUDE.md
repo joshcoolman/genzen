@@ -65,28 +65,28 @@ Examples:
 
 Each feature has its own `CLAUDE.md` with architecture details. Read the relevant one before working on a feature.
 
-| Feature | Path | Summary |
-|---------|------|---------|
-| **ai-images** | `src/features/ai-images/` | Multi-model image generation, brainstorm, edit, variation, reparenting workflows via FAL AI |
-| **ai-video** | `src/features/ai-video/` | Workspace-based video generation using first-frame/last-frame (FLF) workflow |
-| **ad** | `src/features/ad/` | Embedded AI chat assistant (right sidebar) with route-aware context |
-| **characters** | `src/features/characters/` | Character generation wizard (mock/UI-only) |
-| **combine** | `src/features/combine/` | Combine multiple images into one via FAL edit models |
-| **credits** | `src/features/credits/` | Credit balance system for metering AI generation usage |
-| **dev-workspace** | `src/features/dev-workspace/` | Sandbox hub hosting experimental feature pages |
-| **docs** | `src/features/docs/` | Documentation viewer with sidebar nav and ToC |
-| **models** | `src/features/models/` | Browsable FAL AI model catalog with search and filtering |
-| **multi-shot** | `src/features/multi-shot/` | Multi-shot video generation (elements + shots + duration budget) |
-| **notes** | `src/features/notes/` | AD conversation snapshots -- save, review, reload into context |
-| **outpaint** | `src/features/outpaint/` | Extend images to new aspect ratios via FAL edit models |
-| **prompt-studio** | `src/features/prompt-studio/` | Run prompts against multiple LLMs and compare side-by-side |
-| **shots** | `src/features/shots/` | Linear pipeline: source image -> describe -> prompts -> generate variations |
-| **spotlight** | `src/features/spotlight/` | Cmd+K navigation dialog |
-| **status-bar** | `src/features/status-bar/` | Fixed bottom-right floating bar with contextual hints |
-| **storyboard** | `src/features/storyboard/` | Story prompt -> scene breakdown -> frame generation -> video clips |
-| **style-trainer** | `src/features/style-trainer/` | Curated image collections used as style references during generation |
-| **trash** | `src/features/trash/` | Soft-delete recovery for user images |
-| **user-images** | `src/features/user-images/` | Asset library: upload, manage, download user + AI-generated images |
+| Feature           | Path                          | Summary                                                                                     |
+| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
+| **ai-images**     | `src/features/ai-images/`     | Multi-model image generation, brainstorm, edit, variation, reparenting workflows via FAL AI |
+| **ai-video**      | `src/features/ai-video/`      | Workspace-based video generation using first-frame/last-frame (FLF) workflow                |
+| **ad**            | `src/features/ad/`            | Embedded AI chat assistant (right sidebar) with route-aware context                         |
+| **characters**    | `src/features/characters/`    | Character generation wizard (mock/UI-only)                                                  |
+| **combine**       | `src/features/combine/`       | Combine multiple images into one via FAL edit models                                        |
+| **credits**       | `src/features/credits/`       | Credit balance system for metering AI generation usage                                      |
+| **dev-workspace** | `src/features/dev-workspace/` | Sandbox hub hosting experimental feature pages                                              |
+| **docs**          | `src/features/docs/`          | Documentation viewer with sidebar nav and ToC                                               |
+| **models**        | `src/features/models/`        | Browsable FAL AI model catalog with search and filtering                                    |
+| **multi-shot**    | `src/features/multi-shot/`    | Multi-shot video generation (elements + shots + duration budget)                            |
+| **notes**         | `src/features/notes/`         | AD conversation snapshots -- save, review, reload into context                              |
+| **outpaint**      | `src/features/outpaint/`      | Extend images to new aspect ratios via FAL edit models                                      |
+| **prompt-studio** | `src/features/prompt-studio/` | Run prompts against multiple LLMs and compare side-by-side                                  |
+| **shots**         | `src/features/shots/`         | Linear pipeline: source image -> describe -> prompts -> generate variations                 |
+| **spotlight**     | `src/features/spotlight/`     | Cmd+K navigation dialog                                                                     |
+| **status-bar**    | `src/features/status-bar/`    | Fixed bottom-right floating bar with contextual hints                                       |
+| **storyboard**    | `src/features/storyboard/`    | Story prompt -> scene breakdown -> frame generation -> video clips                          |
+| **style-trainer** | `src/features/style-trainer/` | Curated image collections used as style references during generation                        |
+| **trash**         | `src/features/trash/`         | Soft-delete recovery for user images                                                        |
+| **user-images**   | `src/features/user-images/`   | Asset library: upload, manage, download user + AI-generated images                          |
 
 ## Shared Terms
 

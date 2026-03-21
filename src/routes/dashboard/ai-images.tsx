@@ -398,8 +398,9 @@ function AiImagesPage() {
     async (img: SavedAiImage) => {
       await page.gallery.ungroupChildren(img)
       await page.gallery.refresh()
+      page.refreshEditChildren()
     },
-    [page.gallery],
+    [page.gallery, page.refreshEditChildren],
   )
 
   // Describe dialog state
