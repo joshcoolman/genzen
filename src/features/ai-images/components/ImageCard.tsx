@@ -157,7 +157,7 @@ export function ImageCard({
         ) : undefined
       }
       overlayActionsBottomRight={
-        onGallery ? (
+        onGallery && !selectionActive ? (
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -170,10 +170,19 @@ export function ImageCard({
           </button>
         ) : undefined
       }
-      onClick={(e: React.MouseEvent) => {
-        if (selectionActive && onSelect) {
-          onSelect(img.id, e.shiftKey)
-        } else {
+      imageOverlay={
+        selectionActive && onSelect ? (
+          <div
+            className="absolute inset-0 z-10 cursor-pointer select-none"
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect(img.id, e.shiftKey)
+            }}
+          />
+        ) : undefined
+      }
+      onClick={() => {
+        if (!selectionActive) {
           navigate({
             to: '/dashboard/edit/$imageId',
             params: { imageId: img.id },
