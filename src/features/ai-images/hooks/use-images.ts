@@ -253,11 +253,16 @@ export function useImages({
               })
               return
             }
-            setSavedImages((prev) =>
-              prev.map((img) =>
-                img.id === updatedImage.id ? updatedImage : img,
-              ),
-            )
+            setSavedImages((prev) => {
+              const exists = prev.some((img) => img.id === updatedImage.id)
+              if (exists) {
+                return prev.map((img) =>
+                  img.id === updatedImage.id ? updatedImage : img,
+                )
+              }
+              // Image was restored from trash -- re-add to gallery
+              return sortByOrder([...prev, updatedImage])
+            })
 
             if (
               updatedImage.status === 'completed' &&
