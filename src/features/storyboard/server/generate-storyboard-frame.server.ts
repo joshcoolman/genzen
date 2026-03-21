@@ -9,6 +9,7 @@ import {
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { fetchAndUploadToFal } from '@/lib/server/fal-image-upload.server'
+import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -35,7 +36,10 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
       throw new Error('Visual description is required')
     }
 
-    if (!process.env.FAL_KEY) {
+    const baseModelId = data.modelId ?? STORYBOARD_FRAME_MODEL
+    const useGoogle = isGoogleProvider(baseModelId)
+
+    if (!useGoogle && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -46,8 +50,6 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
     if (!creditResult.allowed) {
       throw new Error('Insufficient credits')
     }
-
-    const baseModelId = data.modelId ?? STORYBOARD_FRAME_MODEL
 
     // Build enriched prompt with cinematography metadata
     const cineParts: Array<string> = []
@@ -68,6 +70,43 @@ export const generateStoryboardFrame = createServerFn({ method: 'POST' })
         ? modelDef.imageInputModelId
         : baseModelId
 
+    // --- Google provider path ---
+    if (useGoogle) {
+      // For Google edit with character images, fetch first image as base64
+      let imageBase64: string | undefined
+      if (hasImages) {
+        try {
+          const imageRes = await fetch(data.characterImageUrls![0])
+          const buffer = await imageRes.arrayBuffer()
+          imageBase64 = Buffer.from(buffer).toString('base64')
+        } catch {
+          // proceed without character reference
+        }
+      }
+
+      const result = await submitGeneration({
+        accessToken: data.accessToken,
+        userId: user.id,
+        prompt,
+        modelId,
+        aspectRatio: '16:9',
+        imageBase64,
+        metadata: {
+          generation_type: 'storyboard_frame',
+          storyboard_id: data.storyboardId,
+          scene_id: data.sceneId,
+        },
+        title: 'Storyboard Frame',
+      })
+
+      return {
+        recordId: result.recordId,
+        request_id: result.request_id,
+        sceneId: data.sceneId,
+      }
+    }
+
+    // --- FAL provider path ---
     // Re-upload images to FAL storage (Supabase signed URLs aren't publicly accessible)
     let falImageUrls: Array<string> | undefined
     if (hasImages) {

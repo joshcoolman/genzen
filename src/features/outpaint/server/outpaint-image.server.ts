@@ -6,6 +6,7 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
+import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -147,7 +148,9 @@ export const outpaintImage = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    if (!process.env.FAL_KEY) {
+    const useGoogle = isGoogleProvider(data.model)
+
+    if (!useGoogle && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -188,14 +191,39 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       }
     }
 
-    const falImageUrl = await fal.storage.upload(
-      new Blob([uploadBuffer], { type: mimeType }),
-    )
-
     const isNanoBanana = data.model.includes('nano-banana')
     const effectivePrompt = data.prompt
       ? `${OUTPAINT_PROMPT} ${data.prompt}`
       : OUTPAINT_PROMPT
+
+    // --- Google provider path ---
+    if (useGoogle && isNanoBanana) {
+      const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
+      const prompt = supported
+        ? effectivePrompt
+        : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
+
+      const imageBase64 = uploadBuffer.toString('base64')
+
+      const result = await submitGeneration({
+        accessToken: data.accessToken,
+        userId: user.id,
+        prompt,
+        modelId: data.model,
+        aspectRatio: data.aspectRatio,
+        imageBase64,
+        metadata: {
+          generation_type: 'outpaint',
+        },
+      })
+
+      return { recordId: result.recordId }
+    }
+
+    // --- FAL provider path ---
+    const falImageUrl = await fal.storage.upload(
+      new Blob([uploadBuffer], { type: mimeType }),
+    )
 
     let falInput: Record<string, unknown>
 

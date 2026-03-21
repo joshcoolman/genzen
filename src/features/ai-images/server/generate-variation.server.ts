@@ -10,6 +10,7 @@ import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
 } from '@/lib/prompts/image-variation'
+import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -34,7 +35,9 @@ export const generateVariation = createServerFn({ method: 'POST' })
       throw new Error('Prompt is required')
     }
 
-    if (!process.env.FAL_KEY) {
+    const useGoogle = isGoogleProvider('fal-ai/nano-banana-2/edit')
+
+    if (!useGoogle && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -151,10 +154,12 @@ export const generateVariation = createServerFn({ method: 'POST' })
           data: Buffer.from(buffer).toString('base64'),
           mediaType,
         }
-        // Upload to FAL storage to get a public HTTPS URL usable by Kontext (works in dev + prod)
-        falImageUrl = await fal.storage.upload(
-          new Blob([buffer], { type: mediaType }),
-        )
+        // Upload to FAL storage only if not using Google
+        if (!useGoogle) {
+          falImageUrl = await fal.storage.upload(
+            new Blob([buffer], { type: mediaType }),
+          )
+        }
       } catch {
         // proceed without vision grounding if fetch or upload fails
       }
@@ -185,7 +190,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
     }
 
     const count = Math.min(data.count ?? 1, 4)
-    const results: Array<{ recordId: string; request_id: string }> = []
+    const results: Array<{ recordId: string; request_id?: string }> = []
 
     for (let i = 0; i < count; i++) {
       // usedPrompts grows each iteration — each new prompt is appended after generation
@@ -211,49 +216,75 @@ export const generateVariation = createServerFn({ method: 'POST' })
       const variedPrompt = response.text.trim()
       usedPrompts.push(variedPrompt)
 
-      const editInput = await buildFalInput({
-        modelId: 'fal-ai/nano-banana-2/edit',
-        prompt: variedPrompt,
-        aspectRatio,
-        imageUrls: [falImageUrl ?? ''],
-        safetyLevel: 'permissive',
-      })
-      const { request_id } = await (fal.queue.submit as any)(
-        'fal-ai/nano-banana-2/edit',
-        { input: editInput },
-      )
-
       const variationSortOrder = Date.now() / 1000 - 0.001 * (i + 1)
 
-      const { data: record, error: insertError } = await supabase
-        .from('user_images')
-        .insert({
-          user_id: user.id,
-          request_id,
-          status: 'pending',
-          source: 'ai_generated',
-          title: 'Generating variation...',
-          sort_order: variationSortOrder,
-          generation_metadata: {
-            prompt: variedPrompt,
+      if (useGoogle) {
+        // Google path: synchronous generation via submitGeneration
+        const result = await submitGeneration({
+          accessToken: data.accessToken,
+          userId: user.id,
+          prompt: variedPrompt,
+          modelId: 'fal-ai/nano-banana-2/edit',
+          aspectRatio,
+          imageBase64: imageBase64?.data,
+          metadata: {
             original_prompt: rootPrompt,
-            model,
-            fal_model_id: 'fal-ai/nano-banana-2/edit',
             generation_type: 'variation',
             source_image_id: sourceImageId,
             root_image_id: rootImageId,
-            submitted_at: new Date().toISOString(),
-            ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           },
         })
-        .select()
-        .single()
 
-      if (insertError) {
-        throw new Error(`Failed to create image record: ${insertError.message}`)
+        results.push({
+          recordId: result.recordId,
+          request_id: result.request_id,
+        })
+      } else {
+        // FAL path: async queue submission
+        const editInput = await buildFalInput({
+          modelId: 'fal-ai/nano-banana-2/edit',
+          prompt: variedPrompt,
+          aspectRatio,
+          imageUrls: [falImageUrl ?? ''],
+          safetyLevel: 'permissive',
+        })
+        const { request_id } = await (fal.queue.submit as any)(
+          'fal-ai/nano-banana-2/edit',
+          { input: editInput },
+        )
+
+        const { data: record, error: insertError } = await supabase
+          .from('user_images')
+          .insert({
+            user_id: user.id,
+            request_id,
+            status: 'pending',
+            source: 'ai_generated',
+            title: 'Generating variation...',
+            sort_order: variationSortOrder,
+            generation_metadata: {
+              prompt: variedPrompt,
+              original_prompt: rootPrompt,
+              model,
+              fal_model_id: 'fal-ai/nano-banana-2/edit',
+              generation_type: 'variation',
+              source_image_id: sourceImageId,
+              root_image_id: rootImageId,
+              submitted_at: new Date().toISOString(),
+              ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+            },
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          throw new Error(
+            `Failed to create image record: ${insertError.message}`,
+          )
+        }
+
+        results.push({ recordId: record.id, request_id })
       }
-
-      results.push({ recordId: record.id, request_id })
     }
 
     return results

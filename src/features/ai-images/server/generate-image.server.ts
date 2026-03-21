@@ -8,6 +8,7 @@ import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { resolveStyleRefs } from '@/features/style-trainer/server/resolve-style-refs.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
+import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -45,7 +46,7 @@ export const generateImage = createServerFn({ method: 'POST' })
       throw new Error('Prompt is required')
     }
 
-    if (!process.env.FAL_KEY) {
+    if (!isGoogleProvider(model) && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -73,6 +74,7 @@ export const generateImage = createServerFn({ method: 'POST' })
     let falModelId = model
     let effectivePrompt = prompt.trim()
     let imageUrl: string | null = null
+    let sourceBase64Data: string | null = null
 
     if (sourceImageUrl) {
       imageUrl = sourceImageUrl
@@ -106,10 +108,15 @@ export const generateImage = createServerFn({ method: 'POST' })
         }
       }
 
-      // Upload to FAL storage
-      imageUrl = await fal.storage.upload(
-        new Blob([buffer], { type: mimeType }),
-      )
+      // Store raw base64 for Google path
+      sourceBase64Data = base64Data
+
+      // Upload to FAL storage (only needed for FAL path)
+      if (!isGoogleProvider(model)) {
+        imageUrl = await fal.storage.upload(
+          new Blob([buffer], { type: mimeType }),
+        )
+      }
 
       // Use image-mode endpoint if specified
       falModelId = modelDef?.imageInputModelId ?? model
@@ -136,8 +143,9 @@ export const generateImage = createServerFn({ method: 'POST' })
       }
     }
 
-    // Fetch and upload reference images in parallel
+    // Fetch reference images -- as base64 for Google, as FAL URLs for FAL
     let referenceUrls: Array<string> = []
+    let referenceImagesBase64: Array<string> = []
     if (data.referenceImageIds?.length) {
       const refImages = await supabase
         .from('user_images')
@@ -146,27 +154,80 @@ export const generateImage = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
 
       if (refImages.data?.length) {
-        const uploads = await Promise.all(
-          refImages.data.map(async (ref) => {
-            if (!ref.storage_path) return null
-            const { data: signed } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(ref.storage_path, 3600)
-            if (!signed?.signedUrl) return null
-            const res = await fetch(signed.signedUrl)
-            const buf = await res.arrayBuffer()
-            return uploadBufferToFal(buf)
-          }),
-        )
-        referenceUrls = uploads.filter((u): u is string => u !== null)
+        if (isGoogleProvider(model)) {
+          // Google path: fetch as base64
+          const base64Results = await Promise.all(
+            refImages.data.map(async (ref) => {
+              if (!ref.storage_path) return null
+              const { data: signed } = await supabase.storage
+                .from('user-images')
+                .createSignedUrl(ref.storage_path, 3600)
+              if (!signed?.signedUrl) return null
+              const res = await fetch(signed.signedUrl)
+              const buf = await res.arrayBuffer()
+              return Buffer.from(buf).toString('base64')
+            }),
+          )
+          referenceImagesBase64 = base64Results.filter(
+            (b): b is string => b !== null,
+          )
+        } else {
+          // FAL path: upload to FAL storage
+          const uploads = await Promise.all(
+            refImages.data.map(async (ref) => {
+              if (!ref.storage_path) return null
+              const { data: signed } = await supabase.storage
+                .from('user-images')
+                .createSignedUrl(ref.storage_path, 3600)
+              if (!signed?.signedUrl) return null
+              const res = await fetch(signed.signedUrl)
+              const buf = await res.arrayBuffer()
+              return uploadBufferToFal(buf)
+            }),
+          )
+          referenceUrls = uploads.filter((u): u is string => u !== null)
+        }
       }
 
       // Reference images require image-input model variant
-      if (referenceUrls.length > 0 && !imageUrl) {
+      if (
+        (referenceUrls.length > 0 || referenceImagesBase64.length > 0) &&
+        !imageUrl
+      ) {
         falModelId = modelDef?.imageInputModelId ?? model
       }
     }
 
+    // --- Google provider: route through submitGeneration ---
+    if (isGoogleProvider(model)) {
+      const result = await submitGeneration({
+        accessToken: data.accessToken,
+        userId: user.id,
+        prompt: effectivePrompt,
+        modelId: falModelId,
+        aspectRatio,
+        imageBase64: sourceBase64Data ?? undefined,
+        referenceImagesBase64:
+          referenceImagesBase64.length > 0 ? referenceImagesBase64 : undefined,
+        metadata: {
+          ...(sourceImageBase64 ? { has_source_image: true } : {}),
+          ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
+          ...(data.styleId ? { style_id: data.styleId } : {}),
+          ...(data.referenceImageIds?.length
+            ? { reference_image_ids: data.referenceImageIds }
+            : {}),
+        },
+      })
+
+      return {
+        recordId: result.recordId,
+        request_id: result.request_id,
+        prompt,
+        model,
+      }
+    }
+
+    // --- FAL provider: existing queue-based path ---
     // Combine source image + ref images + style refs into imageUrls
     const allImageUrls = [
       ...(imageUrl ? [imageUrl] : []),

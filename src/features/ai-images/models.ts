@@ -1,10 +1,12 @@
 export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
+export type ModelProvider = 'fal' | 'google'
 
 export interface ImageModel {
   id: string
   name: string
   description: string
   category: ModelCategory
+  provider?: ModelProvider
   supportsImageInput?: boolean
   imageInputModelId?: string
 }
@@ -85,6 +87,7 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'Nano Banana 2',
     description: 'Google, reasoning-guided generation',
     category: 'Specialized',
+    provider: 'google',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
   },
