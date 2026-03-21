@@ -2,7 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowUpRight,
   Download,
-  Expand,
+  Maximize2,
   MessageSquare,
   MoreHorizontal,
   Trash2,
@@ -138,7 +138,7 @@ export function ImageCard({
             className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             aria-label="View in lightbox"
           >
-            <Expand className="h-3.5 w-3.5" />
+            <Maximize2 className="h-3.5 w-3.5" />
           </button>
         ) : undefined
       }

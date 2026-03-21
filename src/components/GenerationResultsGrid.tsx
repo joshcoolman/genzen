@@ -5,7 +5,7 @@ import {
   EyeOff,
   Info,
   LayoutGrid,
-  Pencil,
+  Maximize2,
   Plus,
   RefreshCw,
   Unlink,
@@ -119,6 +119,7 @@ function GenerationResultCard({
   onOpen,
   onDelete,
   onAdd,
+  onExpand,
   onDetach,
   onRegenerate,
   regenerateModels,
@@ -132,6 +133,7 @@ function GenerationResultCard({
   onOpen: () => void
   onDelete: () => void
   onAdd?: () => void
+  onExpand?: () => void
   onDetach?: () => void
   onRegenerate?: (result: GenerationResult, modelId: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
@@ -166,17 +168,17 @@ function GenerationResultCard({
               onRegenerate={onRegenerate}
             />
           ) : undefined}
-          {/* Edit mode: always-visible pencil icon to promote to source */}
-          {editMode && onAdd && result.status === 'complete' && result.url && (
+          {/* Expand icon to open lightbox when card click is hijacked by onSelect */}
+          {onExpand && result.status === 'complete' && result.url && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                onAdd()
+                onExpand()
               }}
-              className="absolute bottom-1.5 left-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-all"
-              aria-label="Edit this image"
+              className="absolute bottom-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-all"
+              aria-label="View full size"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Maximize2 className="h-3.5 w-3.5" />
             </button>
           )}
         </>
@@ -418,6 +420,7 @@ export function GenerationResultsGrid({
             onOpen={() => (onSelect ? onSelect(result.id) : handleOpen(result))}
             onDelete={() => onDelete(result.id)}
             onAdd={onAdd ? () => onAdd(result) : undefined}
+            onExpand={onSelect ? () => handleOpen(result) : undefined}
             onDetach={onDetach ? () => onDetach(result.id) : undefined}
             onRegenerate={onRegenerate}
             regenerateModels={regenerateModels}

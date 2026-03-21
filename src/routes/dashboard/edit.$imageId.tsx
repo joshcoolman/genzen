@@ -51,7 +51,7 @@ function EditPage() {
     return [parentResult, ...page.results.results]
   }, [page.results.results, page.originalImageMeta])
 
-  // Click card = promote to source (no lightbox)
+  // Click card = promote to source
   const handleSelectCard = useCallback(
     (id: string) => {
       if (id === sourceId) return
@@ -148,10 +148,6 @@ function EditPage() {
             void page.results.deleteResult(id)
           }}
           onDetach={(id) => void page.detachResult(id)}
-          onAdd={(result) => {
-            if (result.id === sourceId) return
-            page.selectImage(result)
-          }}
           editMode
           title="Edits"
           prefsKey="edit-page-results"

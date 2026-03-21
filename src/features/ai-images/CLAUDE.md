@@ -1,47 +1,67 @@
 # AI Images
 
-Multi-model image generation with brainstorm, edit, and variation workflows via FAL AI.
+Multi-model image generation with brainstorm, edit, variation, and reparenting workflows via FAL AI.
 
 ## Key Files
 
-- `models.ts` -- all image model + edit model definitions, `getModelName()`, `EDIT_MODELS`
-- `types.ts` -- `SavedAiImage` interface (status, generation_metadata)
-- `constants.ts` -- aspect ratio utilities, `RATIO_TO_SIZE`, brainstorm settings
-- `server/generate-image.server.ts` -- text-to-image and image-to-image generation via FAL queue
-- `server/edit-image.server.ts` -- edit existing image with prompt + optional reference images
-- `server/generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via nano-banana-2/edit
-- `server/brainstorm-images.server.ts` -- batch prompt generation + rewriting via Haiku
-- `server/fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
-- `server/fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
-- `server/generate-prompt.server.ts` -- AI prompt generation
-- `server/generate-prompt-enhanced.server.ts` -- enhanced prompt generation
-- `server/caption-image.server.ts` -- image captioning
-- `server/check-pending-images.server.ts` -- polls FAL queue for pending image results
-- `server/update-image-order.server.ts` -- reorder images in gallery
-- `hooks/use-ai-images-page.ts` -- master hook composing all sub-hooks
-- `hooks/use-generator.ts` -- prompt state, model selection, generation submission
-- `hooks/use-editor.ts` -- edit dialog state and submission
-- `hooks/use-brainstorm.ts` -- brainstorm panel state and polling
-- `hooks/use-variations.ts` -- variation generation from existing images
-- `hooks/use-images.ts` -- gallery fetch, polling, deletion
-- `hooks/use-lightbox.ts` -- fullscreen image viewer state
-- `hooks/use-model-settings.ts` -- visible/selected model management
-- `hooks/use-prompt-tools.ts` -- prompt rewrite/edit tools
-- `hooks/use-brainstorm-settings.ts` -- brainstorm config (row count, images per prompt)
-- `components/GeneratorPanel.tsx` -- main prompt input and generation controls
-- `components/BrainstormPanel.tsx` -- batch brainstorm grid UI
-- `components/ImageGallery.tsx` -- image grid with drag reorder
-- `components/EditImageDialog.tsx` -- dialog for editing existing images
-- `components/ModelSettingsDialog.tsx` -- model visibility/selection config
-- `components/ImageLightbox.tsx` -- fullscreen image viewer
-- `components/ImageCard.tsx` -- single image card with actions
-- `components/PendingImageCard.tsx` -- loading placeholder during generation
-- `components/FailedImageCard.tsx` -- error state card
-- `index.ts` -- barrel export
+- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`
+- `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
+- `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`), brainstorm settings
+- `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
+- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `useAiImagesPage`, `GeneratorPanel`, `BrainstormPanel`, `ImageGallery`, `ImageLightbox`
 
-## Route
+## Server
 
-`src/routes/dashboard/ai-images.tsx`
+- `generate-image.server.ts` -- text-to-image and image-to-image via FAL queue
+- `edit-image.server.ts` -- edit existing image with prompt + optional reference images
+- `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
+- `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
+- `submit-variations.server.ts` -- batch submit variation prompts for generation
+- `brainstorm-images.server.ts` -- batch prompt generation + rewriting via Haiku
+- `reparent-image.server.ts` -- move image under new parent or detach from parent
+- `retry-generation.server.ts` -- resubmit failed image generation to FAL
+- `caption-image.server.ts` -- vision API image captioning
+- `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
+- `generate-prompt.server.ts` -- random prompt generation via Haiku
+- `generate-prompt-enhanced.server.ts` -- enhance existing prompt via Haiku
+- `fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
+- `fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
+- `update-image-order.server.ts` -- reorder images via sort_order
+
+## Hooks
+
+- `use-ai-images-page.ts` -- master hook composing all sub-hooks for the main page
+- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission
+- `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards
+- `use-brainstorm.ts` -- brainstorm panel state: per-slot prompts, locking, refinement, polling
+- `use-variations.ts` -- variation prompt generation and submission with ref image support
+- `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
+- `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, signed URLs)
+- `use-reparent.ts` -- adopt/detach images between parents
+- `use-prompt-tools.ts` -- random prompt generation and prompt enhancement
+- `use-brainstorm-settings.ts` -- brainstorm config with localStorage persistence
+- `use-describe-json.ts` -- JSON structural description for reference DNA sheets
+- `use-edit-page.ts` -- dedicated edit page state (source loading, aspect ratio, variants, parent picker)
+- `useAiImagesADContext.ts` -- registers AI Images context with AD system
+
+## Components
+
+- `GeneratorPanel.tsx` -- main prompt input, aspect ratio, model selector, ref images, generation controls
+- `BrainstormPanel.tsx` -- multi-slot brainstorm grid with prompt editing, locking, refining
+- `ImageGallery.tsx` -- image grid with nested edit children thumbnails under parent cards
+- `ImageLightbox.tsx` -- fullscreen lightbox viewer
+- `ImageCard.tsx` -- single image card with model label, root preview, edit children grid, actions menu
+- `PendingImageCard.tsx` -- skeleton card during generation
+- `FailedImageCard.tsx` -- error card with retry (if retryable)
+- `DescribeDialog.tsx` -- auto-generate or edit image captions via vision API
+- `VariationPromptsDialog.tsx` -- manage variation prompts with ref image picker
+- `ParentPickerDialog.tsx` -- select new parent when adopting/moving an image
+- `DescribeJsonPanel.tsx` -- JSON description output with syntax highlighting
+
+## Routes
+
+- `src/routes/dashboard/ai-images.tsx` -- main gallery + generation page
+- `src/routes/dashboard/edit.$imageId.tsx` -- dedicated edit page for a single image
 
 ## Shared Dependencies
 
@@ -59,5 +79,7 @@ Multi-model image generation with brainstorm, edit, and variation workflows via 
 - Brainstorm uses FLUX Schnell/Dev only (not the full model list) for fast iteration
 - `fal-params.server.ts` is the central param resolver used by many features (outpaint, describe, edit-image)
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
-- FAL submissions use async queue (`fal.queue.submit`) -- results polled via `check-pending-images`
+- FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
 - Some models (GPT Image 1.5) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
+- Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
+- Reparenting allows moving images between parent groups or detaching from a parent entirely
