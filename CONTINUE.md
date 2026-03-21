@@ -25,24 +25,27 @@ const response = await ai.models.generateContent({
   config: {
     responseModalities: ['image', 'text'],
     imageConfig: {
-      aspectRatio: '16:9',  // NATIVE PARAM -- not prompt-based!
+      aspectRatio: '16:9', // NATIVE PARAM -- not prompt-based!
     },
   },
 })
 ```
 
 This was confirmed by Gemini's own docs. `ImageConfig` supports:
+
 - `aspectRatio`: '1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'
 - `imageSize`: '1K', '2K', '4K'
 - `personGeneration`: 'ALLOW_ALL', 'ALLOW_ADULT', 'ALLOW_NONE'
 
 Multi-image limits:
+
 - `gemini-2.5-flash-image`: up to 3 input images
 - `gemini-3-pro-image` (Nano Banana Pro): up to 14 reference images
 
 ## Next step
 
 Rewrite `google-imagen.server.ts` to use `generateContent` (not Vertex AI `editImage`) with:
+
 1. Multiple inline image parts (base64)
 2. `imageConfig: { aspectRatio }` for native aspect ratio control
 3. Can use either Gemini API key or Vertex AI auth

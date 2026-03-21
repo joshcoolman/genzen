@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { RotateCcw, Trash2, X } from 'lucide-react'
+import { CheckCircle2, Circle, RotateCcw, Trash2, X } from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
 import { useAuth } from '@/lib/auth'
+import { useSelection } from '@/lib/use-selection'
 import { ImageGrid } from '@/components/ImageGrid'
 import { Thumbnail } from '@/components/Thumbnail'
+import { SelectionDrawer } from '@/components/SelectionDrawer'
 import { formatFileSize } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,10 +35,23 @@ function formatDeletedDate(dateStr: string | null): string {
 
 export function TrashDisplay() {
   const { user } = useAuth()
-  const { images, imageUrls, isLoading, restore, permanentDelete, emptyTrash } =
-    useTrash(user?.id)
+  const {
+    images,
+    imageUrls,
+    isLoading,
+    restore,
+    permanentDelete,
+    permanentDeleteMany,
+    restoreMany,
+    emptyTrash,
+  } = useTrash(user?.id)
   const [actionId, setActionId] = useState<string | null>(null)
   const [isEmptying, setIsEmptying] = useState(false)
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false)
+
+  const selection = useSelection({
+    items: images.map((img) => img.id),
+  })
 
   async function handleRestore(id: string) {
     setActionId(id)
@@ -65,6 +80,28 @@ export function TrashDisplay() {
     }
   }
 
+  async function handleBatchDelete() {
+    const ids = Array.from(selection.selectedIds)
+    setIsBatchDeleting(true)
+    try {
+      await permanentDeleteMany(ids)
+      selection.clearSelection()
+    } finally {
+      setIsBatchDeleting(false)
+    }
+  }
+
+  async function handleBatchRestore() {
+    const ids = Array.from(selection.selectedIds)
+    setIsBatchDeleting(true)
+    try {
+      await restoreMany(ids)
+      selection.clearSelection()
+    } finally {
+      setIsBatchDeleting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-48 items-center justify-center text-muted-foreground">
@@ -72,6 +109,8 @@ export function TrashDisplay() {
       </div>
     )
   }
+
+  const hasSelection = selection.count > 0
 
   return (
     <div className="space-y-6">
@@ -119,78 +158,149 @@ export function TrashDisplay() {
         </div>
       ) : (
         <ImageGrid layout="list" size="md">
-          {images.map((image) => (
-            <Thumbnail
-              key={image.id}
-              url={imageUrls[image.id] ?? null}
-              alt={image.title}
-              onClick={() => {}}
-              layout="list"
-              footer={
-                <div className="flex min-w-0 flex-1 items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {image.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {image.source === 'ai_generated' ? 'AI' : 'Upload'}
-                      {' -- '}
-                      {formatFileSize(image.file_size)}
-                      {' -- '}
-                      Deleted {formatDeletedDate(image.deleted_at)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={actionId === image.id}
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation()
-                        handleRestore(image.id)
-                      }}
-                    >
-                      <RotateCcw className="mr-1 h-3 w-3" />
-                      Restore
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          disabled={actionId === image.id}
-                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        >
-                          <X className="mr-1 h-3 w-3" />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete forever?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            &ldquo;{image.title}&rdquo; will be permanently
-                            deleted. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handlePermanentDelete(image.id)}
-                          >
-                            Delete Forever
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+          {images.map((image) => {
+            const selected = selection.isSelected(image.id)
+            return (
+              <div
+                key={image.id}
+                className={`flex cursor-pointer select-none items-center gap-3 rounded-lg transition-colors ${
+                  selected ? 'bg-accent/50' : 'hover:bg-accent/20'
+                }`}
+                onClick={(e) => selection.toggle(image.id, e.shiftKey)}
+              >
+                <div className="shrink-0 pl-3">
+                  {selected ? (
+                    <CheckCircle2 className="h-5 w-5 text-accent-brand" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-muted-foreground/50" />
+                  )}
                 </div>
-              }
-            />
-          ))}
+                <div className="min-w-0 flex-1">
+                  <Thumbnail
+                    url={imageUrls[image.id] ?? null}
+                    alt={image.title}
+                    layout="list"
+                    listImageClassName="h-24 w-24"
+                    selected={selected}
+                    selectedClassName="border-accent-brand ring-1 ring-accent-brand"
+                    footer={
+                      <div className="flex min-w-0 flex-1 items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {image.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {image.source === 'ai_generated' ? 'AI' : 'Upload'}
+                            {' -- '}
+                            {formatFileSize(image.file_size)}
+                            {' -- '}
+                            Deleted {formatDeletedDate(image.deleted_at)}
+                          </p>
+                        </div>
+                        {!hasSelection && (
+                          <div className="flex shrink-0 gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={actionId === image.id}
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation()
+                                handleRestore(image.id)
+                              }}
+                            >
+                              <RotateCcw className="mr-1 h-3 w-3" />
+                              Restore
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive"
+                                  disabled={actionId === image.id}
+                                  onClick={(e: React.MouseEvent) =>
+                                    e.stopPropagation()
+                                  }
+                                >
+                                  <X className="mr-1 h-3 w-3" />
+                                  Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete forever?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    &ldquo;{image.title}&rdquo; will be
+                                    permanently deleted. This action cannot be
+                                    undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handlePermanentDelete(image.id)
+                                    }
+                                  >
+                                    Delete Forever
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                </div>
+              </div>
+            )
+          })}
         </ImageGrid>
       )}
+
+      <SelectionDrawer
+        count={selection.count}
+        onClear={selection.clearSelection}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={handleBatchRestore}
+        >
+          <RotateCcw className="mr-1 h-3 w-3" />
+          Restore ({selection.count})
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" disabled={isBatchDeleting}>
+              <Trash2 className="mr-1 h-3 w-3" />
+              Delete ({selection.count})
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {selection.count} items?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {selection.count}{' '}
+                {selection.count === 1 ? 'item' : 'items'} and their files. This
+                action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleBatchDelete}>
+                Delete Forever
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </SelectionDrawer>
     </div>
   )
 }

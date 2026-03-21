@@ -10,6 +10,8 @@ interface UseTrashReturn {
   isLoading: boolean
   restore: (id: string) => Promise<void>
   permanentDelete: (id: string) => Promise<void>
+  permanentDeleteMany: (ids: Array<string>) => Promise<void>
+  restoreMany: (ids: Array<string>) => Promise<void>
   emptyTrash: () => Promise<void>
 }
 
@@ -218,6 +220,97 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     [images, fetchTrashed],
   )
 
+  const permanentDeleteMany = useCallback(
+    async (ids: Array<string>) => {
+      const targetImages = images.filter((img) => ids.includes(img.id))
+      if (targetImages.length === 0) return
+
+      const idSet = new Set(ids)
+      const storagePaths = targetImages.map((img) => img.storage_path)
+
+      // Optimistic update
+      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
+
+      const { error } = await supabase
+        .from('user_images')
+        .delete()
+        .in('id', ids)
+
+      if (error) {
+        fetchTrashed()
+        throw error
+      }
+
+      if (storagePaths.length > 0) {
+        await supabase.storage.from(BUCKET_NAME).remove(storagePaths)
+      }
+
+      // Cascade cleanup for variations
+      for (const image of targetImages) {
+        const metadata = image.generation_metadata as Record<
+          string,
+          unknown
+        > | null
+        if (metadata?.generation_type === 'variation') {
+          const rootId =
+            (typeof metadata.root_image_id === 'string'
+              ? metadata.root_image_id
+              : null) ??
+            (typeof metadata.source_image_id === 'string'
+              ? metadata.source_image_id
+              : null)
+          if (rootId) {
+            const { data: rootImage } = await supabase
+              .from('user_images')
+              .select('id, storage_path, hidden')
+              .eq('id', rootId)
+              .single()
+
+            if (rootImage?.hidden) {
+              const { count } = await supabase
+                .from('user_images')
+                .select('id', { count: 'exact', head: true })
+                .or(
+                  `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
+                )
+                .is('deleted_at', null)
+
+              if (count === 0) {
+                await supabase.from('user_images').delete().eq('id', rootId)
+                if (rootImage.storage_path) {
+                  await supabase.storage
+                    .from(BUCKET_NAME)
+                    .remove([rootImage.storage_path])
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    [images, fetchTrashed],
+  )
+
+  const restoreMany = useCallback(
+    async (ids: Array<string>) => {
+      const idSet = new Set(ids)
+
+      // Optimistic update
+      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
+
+      const { error } = await supabase
+        .from('user_images')
+        .update({ deleted_at: null })
+        .in('id', ids)
+
+      if (error) {
+        fetchTrashed()
+        throw error
+      }
+    },
+    [fetchTrashed],
+  )
+
   const emptyTrash = useCallback(async () => {
     const storagePaths = images.map((img) => img.storage_path)
     const ids = images.map((img) => img.id)
@@ -244,6 +337,8 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     isLoading,
     restore,
     permanentDelete,
+    permanentDeleteMany,
+    restoreMany,
     emptyTrash,
   }
 }

@@ -44,6 +44,7 @@ export interface ThumbnailProps {
   footer?: ReactNode
   imageOverlay?: ReactNode
   layout?: 'grid' | 'list'
+  listImageClassName?: string
   className?: string
 
   children?: ReactNode
@@ -75,6 +76,7 @@ export function Thumbnail({
   footer,
   imageOverlay,
   layout = 'grid',
+  listImageClassName,
   className,
   children,
 }: ThumbnailProps) {
@@ -97,7 +99,7 @@ export function Thumbnail({
         onClick={onClick}
       >
         <div
-          className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md ${bgClass}`}
+          className={`relative ${listImageClassName ?? 'h-16 w-16'} shrink-0 overflow-hidden rounded-md ${bgClass}`}
         >
           {url ? (
             <>
