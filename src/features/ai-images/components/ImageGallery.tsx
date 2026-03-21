@@ -148,7 +148,6 @@ export function ImageGallery({
                 onUngroup={onUngroup}
                 onDescribe={onDescribe}
                 onGallery={onGallery}
-                getModelName={getModelName}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}

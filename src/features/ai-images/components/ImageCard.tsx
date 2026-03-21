@@ -37,7 +37,6 @@ interface ImageCardProps {
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
-  getModelName: (id: string) => string
   selected?: boolean
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
@@ -59,7 +58,6 @@ export function ImageCard({
   onUngroup,
   onDescribe,
   onGallery,
-  getModelName,
   selected,
   selectionActive,
   onSelect,
@@ -128,11 +126,6 @@ export function ImageCard({
       status="complete"
       objectFit={objectFit}
       compact={compact}
-      label={
-        img.generation_metadata
-          ? getModelName(img.generation_metadata.model)
-          : undefined
-      }
       alwaysShowOverlay
       selected={selected}
       selectedClassName="border-accent-brand ring-1 ring-accent-brand"
@@ -145,13 +138,13 @@ export function ImageCard({
               e.stopPropagation()
               onSelect(img.id, e.shiftKey)
             }}
-            className="cursor-pointer"
+            className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer"
             aria-label={selected ? 'Deselect' : 'Select'}
           >
             {selected ? (
-              <CheckCircle2 className="h-5 w-5 text-accent-brand" />
+              <CheckCircle2 className="h-4 w-4 text-accent-brand" />
             ) : (
-              <Circle className="h-5 w-5 text-muted-foreground/50 hover:text-muted-foreground" />
+              <Circle className="h-4 w-4" />
             )}
           </button>
         ) : undefined
@@ -194,13 +187,20 @@ export function ImageCard({
       {!compact && (
         <>
           {showInfo && (
-            <ExpandableText
-              text={
-                img.description ?? img.generation_metadata?.prompt ?? img.title
-              }
-              className="px-3 pt-1 pb-3"
-              textClassName="text-xs text-muted-foreground"
-            />
+            <>
+              <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
+                {img.title}
+              </p>
+              <ExpandableText
+                text={
+                  img.description ??
+                  img.generation_metadata?.prompt ??
+                  img.title
+                }
+                className="px-3 pt-0.5 pb-3"
+                textClassName="text-xs text-muted-foreground"
+              />
+            </>
           )}
           {rootImageUrl && (
             <div className="px-3 pb-3 flex items-center gap-2">
