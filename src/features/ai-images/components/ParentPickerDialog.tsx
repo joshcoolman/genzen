@@ -15,6 +15,8 @@ interface ParentPickerDialogProps {
   onOpenChange: (open: boolean) => void
   movingImage: SavedAiImage
   movingImageUrl: string | undefined
+  /** When set, overrides single-image mode for batch move */
+  movingImages?: Array<SavedAiImage>
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
   editChildrenMap: EditChildrenMap
@@ -27,6 +29,7 @@ export function ParentPickerDialog({
   onOpenChange,
   movingImage,
   movingImageUrl,
+  movingImages,
   images,
   imageUrls,
   editChildrenMap,
@@ -34,6 +37,8 @@ export function ParentPickerDialog({
   onConfirm,
 }: ParentPickerDialogProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const isBatch = movingImages && movingImages.length > 1
 
   // Collect all child IDs from the editChildrenMap (images nested under parents)
   const allChildIds = useMemo(
@@ -46,12 +51,15 @@ export function ParentPickerDialog({
     [editChildrenMap],
   )
 
-  // Compute excluded IDs: the moving image + all its descendants
+  // Compute excluded IDs: moving image(s) + all their descendants
   const excludedIds = useMemo(() => {
-    const excluded = new Set<string>([movingImage.id])
+    const sourceIds = movingImages
+      ? movingImages.map((img) => img.id)
+      : [movingImage.id]
+    const excluded = new Set<string>(sourceIds)
 
-    // BFS through editChildrenMap to find all descendants of the moving image
-    const queue = [movingImage.id]
+    // BFS through editChildrenMap to find all descendants
+    const queue = [...sourceIds]
     while (queue.length > 0) {
       const current = queue.shift()!
       const children = editChildrenMap[current] as
@@ -68,7 +76,7 @@ export function ParentPickerDialog({
     }
 
     return excluded
-  }, [movingImage.id, editChildrenMap])
+  }, [movingImage.id, movingImages, editChildrenMap])
 
   // Only show top-level images (not already children) and exclude self + descendants
   const availableImages = useMemo(
@@ -96,16 +104,24 @@ export function ParentPickerDialog({
         </DialogHeader>
 
         <div className="flex items-center gap-3 rounded-md border border-border bg-muted/50 p-3">
-          {movingImageUrl && (
-            <img
-              src={movingImageUrl}
-              alt=""
-              className="w-12 h-12 rounded object-cover"
-            />
+          {isBatch ? (
+            <span className="text-sm text-muted-foreground">
+              Select a new parent for {movingImages.length} images
+            </span>
+          ) : (
+            <>
+              {movingImageUrl && (
+                <img
+                  src={movingImageUrl}
+                  alt=""
+                  className="w-12 h-12 rounded object-cover"
+                />
+              )}
+              <span className="text-sm text-muted-foreground">
+                Select a new parent for this image
+              </span>
+            </>
           )}
-          <span className="text-sm text-muted-foreground">
-            Select a new parent for this image
-          </span>
         </div>
 
         {availableImages.length === 0 ? (

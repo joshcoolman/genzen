@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ArrowDown,
   ArrowUp,
+  FolderInput,
   Info,
   LayoutGrid,
   Pin,
@@ -23,6 +24,7 @@ import {
 } from '@/features/ai-images'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
+import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
@@ -253,6 +255,38 @@ function AiImagesPage() {
       void executeBatchDelete('smart')
     }
   }, [batchHasChildren, executeBatchDelete])
+
+  // Batch move
+  const [batchMoveOpen, setBatchMoveOpen] = useState(false)
+  const [isBatchMoving, setIsBatchMoving] = useState(false)
+
+  const handleBatchMoveConfirm = useCallback(
+    async (newParentId: string) => {
+      if (!page.accessToken) return
+      const images = batchSelectedImages()
+      setIsBatchMoving(true)
+      try {
+        for (const img of images) {
+          await reparentImage({
+            data: {
+              accessToken: page.accessToken,
+              imageId: img.id,
+              action: 'adopt',
+              newParentId,
+            },
+          })
+        }
+        selection.clearSelection()
+        setBatchMoveOpen(false)
+        await page.gallery.refresh()
+      } catch (err) {
+        console.error('Batch move failed:', err)
+      } finally {
+        setIsBatchMoving(false)
+      }
+    },
+    [page.accessToken, batchSelectedImages, selection, page.gallery],
+  )
 
   // Download: two-step flow — dialog for name, then build + save
   const [downloadTarget, setDownloadTarget] = useState<SavedAiImage | null>(
@@ -506,6 +540,15 @@ function AiImagesPage() {
           onClear={selection.clearSelection}
         >
           <Button
+            variant="ghost"
+            size="sm"
+            disabled={isBatchMoving}
+            onClick={() => setBatchMoveOpen(true)}
+          >
+            <FolderInput className="mr-1 h-3 w-3" />
+            {isBatchMoving ? 'Moving...' : `Move (${selection.count})`}
+          </Button>
+          <Button
             variant="destructive"
             size="sm"
             disabled={isBatchDeleting}
@@ -607,6 +650,23 @@ function AiImagesPage() {
           onConfirm={(newParentId) =>
             void page.reparent.confirmAdopt(newParentId)
           }
+        />
+      )}
+
+      {batchMoveOpen && batchSelectedImages().length > 0 && (
+        <ParentPickerDialog
+          open={batchMoveOpen}
+          onOpenChange={(open) => {
+            if (!open) setBatchMoveOpen(false)
+          }}
+          movingImage={batchSelectedImages()[0]}
+          movingImageUrl={undefined}
+          movingImages={batchSelectedImages()}
+          images={page.gallery.images}
+          imageUrls={page.gallery.imageUrls}
+          editChildrenMap={page.editChildrenMap}
+          loading={isBatchMoving}
+          onConfirm={(newParentId) => void handleBatchMoveConfirm(newParentId)}
         />
       )}
 
