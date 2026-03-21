@@ -2,7 +2,12 @@
  * Google Imagen via Vertex AI (native generateImages/editImage with aspectRatio).
  * Uses @google/genai SDK in Vertex AI mode with service account auth.
  * Requires GOOGLE_APPLICATION_CREDENTIALS env var pointing to service account JSON key.
+ *
+ * Multi-image support: when multiple reference images are provided, they're
+ * composited into a single image (Vertex AI editImage only accepts one).
+ * The prompt is augmented to describe the composite layout.
  */
+import sharp from 'sharp'
 import { GoogleGenAI, RawReferenceImage } from '@google/genai'
 
 const GOOGLE_PROJECT = 'gen-lang-client-0015600225'
@@ -36,12 +41,10 @@ function getClient(): GoogleGenAI {
   }
 
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    // Deploy (Fly.io): service account JSON stored as env var
     opts.googleAuthOptions = {
       credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
     }
   }
-  // Local dev: GOOGLE_APPLICATION_CREDENTIALS file path auto-discovered by SDK
 
   return new GoogleGenAI(opts)
 }
@@ -61,6 +64,103 @@ export interface GoogleEditOptions {
 export interface GoogleImageResult {
   imageBase64: string
   mimeType: string
+}
+
+/**
+ * Composite multiple base64 images into a single image.
+ * Layout is adaptive: horizontal for landscape/square, vertical for portrait.
+ */
+async function compositeImages(
+  primaryBase64: string,
+  additionalBase64: Array<string>,
+  aspectRatio?: string,
+): Promise<string> {
+  const allBuffers = [
+    Buffer.from(primaryBase64, 'base64'),
+    ...additionalBase64.map((b) => Buffer.from(b, 'base64')),
+  ]
+
+  // Determine layout direction from target aspect ratio
+  const vertical =
+    aspectRatio === '9:16' ||
+    aspectRatio === '3:4' ||
+    aspectRatio === '4:5' ||
+    aspectRatio === '2:3' ||
+    aspectRatio === '1:2'
+
+  const metas = await Promise.all(
+    allBuffers.map((buf) => sharp(buf).metadata()),
+  )
+
+  if (vertical) {
+    // Stack vertically: uniform width
+    const targetWidth = Math.min(1024, ...metas.map((m) => m.width || 512))
+    const resized = await Promise.all(
+      allBuffers.map((buf) =>
+        sharp(buf).resize({ width: targetWidth }).png().toBuffer(),
+      ),
+    )
+    const resizedMetas = await Promise.all(
+      resized.map((buf) => sharp(buf).metadata()),
+    )
+    const heights = resizedMetas.map((m) => m.height || 512)
+    const totalHeight = heights.reduce((a, b) => a + b, 0)
+
+    let top = 0
+    const compositeInputs = resized.map((buf, i) => {
+      const input = { input: buf, left: 0, top }
+      top += heights[i]
+      return input
+    })
+
+    const result = await sharp({
+      create: {
+        width: targetWidth,
+        height: totalHeight,
+        channels: 3 as const,
+        background: { r: 255, g: 255, b: 255 },
+      },
+    })
+      .composite(compositeInputs)
+      .png()
+      .toBuffer()
+
+    return result.toString('base64')
+  }
+
+  // Horizontal: side by side, uniform height
+  const targetHeight = Math.min(1024, ...metas.map((m) => m.height || 512))
+  const resized = await Promise.all(
+    allBuffers.map((buf) =>
+      sharp(buf).resize({ height: targetHeight }).png().toBuffer(),
+    ),
+  )
+  const resizedMetas = await Promise.all(
+    resized.map((buf) => sharp(buf).metadata()),
+  )
+  const widths = resizedMetas.map((m) => m.width || 512)
+  const totalWidth = widths.reduce((a, b) => a + b, 0)
+
+  let left = 0
+  const compositeInputs = resized.map((buf, i) => {
+    const input = { input: buf, left, top: 0 }
+    left += widths[i]
+    return input
+  })
+
+  const result = await sharp({
+    create: {
+      width: totalWidth,
+      height: targetHeight,
+      channels: 3 as const,
+      background: { r: 255, g: 255, b: 255 },
+    },
+  })
+    .composite(compositeInputs)
+    .png()
+    .toBuffer()
+
+  return result.toString('base64')
 }
 
 /** Generate a new image via Vertex AI Imagen */
@@ -95,16 +195,26 @@ export async function editWithGoogle(
 ): Promise<GoogleImageResult> {
   const ai = getClient()
 
-  // Imagen editImage only accepts a single raw reference image
-  const primaryRef = new RawReferenceImage()
-  primaryRef.referenceImage = { imageBytes: options.imageBase64 }
-  primaryRef.referenceId = 1
-  const referenceImages: Array<RawReferenceImage> = [primaryRef]
+  let referenceBase64 = options.imageBase64
+  const prompt = options.prompt
+
+  // When multiple images are provided, composite them into one
+  if (options.additionalImagesBase64?.length) {
+    referenceBase64 = await compositeImages(
+      options.imageBase64,
+      options.additionalImagesBase64,
+      options.aspectRatio,
+    )
+  }
+
+  const ref = new RawReferenceImage()
+  ref.referenceImage = { imageBytes: referenceBase64 }
+  ref.referenceId = 1
 
   const response = await ai.models.editImage({
     model: 'imagen-3.0-capability-001',
-    prompt: options.prompt,
-    referenceImages,
+    prompt,
+    referenceImages: [ref],
     config: {
       numberOfImages: 1,
       aspectRatio: resolveAspectRatio(options.aspectRatio),

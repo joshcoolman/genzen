@@ -1,54 +1,52 @@
-# Continue: Unified Sidebar Model Selector
+# Continue: Google Direct Provider for Nano Banana 2
 
-## Branch: `main` -- NOT committed, 13 files changed
+## Branch: `model-abstraction` (all committed, clean)
 
-## What was done
+## What was built
 
-Replaced the Draft/Quality `TierToggle` in the sidebar `GeneratorPanel` with a unified multi-select `ModelSelector` dropdown showing all 6 image-capable models. This is the sidebar-only pass; the focused edit view was intentionally left unchanged.
+Provider-aware media generation layer (Epic #81 starter). Nano-banana-2 routes through Google instead of FAL proxy for cost savings (~2-4x).
 
-## Changes made
+## Key files
 
-### Model registry (`src/features/ai-images/models.ts`)
+- `src/lib/server/google-imagen.server.ts` -- Google adapter (currently Vertex AI mode with `generateImages`/`editImage`)
+- `src/lib/server/media.server.ts` -- Provider router: `submitGeneration()` + `isGoogleProvider()`
+- `src/features/ai-images/models.ts` -- Added `provider?: 'fal' | 'google'` to `ImageModel`, set on nano-banana-2
+- Modified server files to route through `submitGeneration()`: `generate-image.server.ts`, `generate-variation.server.ts`, `submit-variations.server.ts`, `outpaint-image.server.ts`, `generate-storyboard-frame.server.ts`
+- `src/features/ai-images/hooks/use-images.ts` -- Fixed trash restore (restored images now re-appear in gallery via realtime)
 
-- Added `GPT Image 1.5` (`fal-ai/gpt-image-1.5`, edit: `fal-ai/gpt-image-1.5/edit`) to `ALL_IMAGE_MODELS`
-- Added `Seedream v4.5` (`fal-ai/bytedance/seedream/v4.5/text-to-image`, edit: `.../v4.5/edit`) to `ALL_IMAGE_MODELS`
-- Updated `maxRefImages`: FLUX.2 Pro Edit 8->9, Seedream v4 4->10, Seedream v4.5 9->10
+## Architecture
 
-### ModelSelector abstraction (`src/components/ModelSelector/`)
+- Two-phase pending record: create `status: 'pending'` immediately, call Google, update to `completed`. Safe for page navigation.
+- Google records have no `request_id`, poller skips them (`.not('request_id', 'is', null)`)
+- On failure, record marked `status: 'failed'` with error in metadata
+- Reference images fetched as base64 for Google path (not FAL URLs)
+- `edit-image.server.ts` (edit page) NOT modified -- still goes through FAL
 
-- Added `'sidebar'` to `ModelCapability` type union
-- Added `editId?: string` to `UnifiedModel` interface
-- Created `UNIFIED_SIDEBAR_MODELS` list -- maps `IMAGE_INPUT_MODELS` to UnifiedModel with editId + maxRefImages from EDIT_MODELS
-- Updated `getModelsByCapability()` and `getDefaultSelectedId()` for `'sidebar'`
-- `useModelSelector` now computes `maxRefImages` for `'sidebar'` capability too
-- Removed "Gens" label text from the gens stepper control in `ModelSelector.tsx`
+## Current state: Vertex AI path works but has a blocker
 
-### Sidebar wiring
+**Text-to-image**: Works great. `generateImages` with `imagen-4.0-generate-001`, native `aspectRatio` param, fast.
 
-- `use-ai-images-page.ts` -- replaced `useModelSlots()` + `activeTier` state with `useModelSelector({ capability: 'sidebar', mode: 'multi' })`. Returns `modelSelector` instead of `slots`/`activeTier`/`setActiveTier`/`activeModelId`/`gensPerModel`/`adjustGens`
-- `use-generator.ts` -- removed `activeTier` from options. `maxRefImages` now computed from `sourceImage` presence + selected model's edit endpoint (not tier). `handleGenerate` routes to edit endpoint when source image present and model has `imageInputModelId`
-- `GeneratorPanel.tsx` -- removed `TierToggle` entirely. Added `<ModelSelector display="dropdown">` below generate button. Added `<NumberStepper>` next to generate button (no label). Ref image strip condition: `sourceImage && maxRefImages > 0` (was `activeTier === 'quality'`)
-- `ai-images.tsx` route -- passes `modelSelector` prop instead of old tier/slot props
-- `useAiImagesADContext.ts` -- uses `modelSelector.selectedIds` instead of `activeModelId`
+**Single-image edit**: Works. `editImage` with `imagen-3.0-capability-001`, native `aspectRatio`.
 
-## Key decisions
+**Multi-image (source + reference images from library)**: BROKEN. Vertex AI `editImage` only accepts 1 `RawReferenceImage`. FAL nano-banana accepts multiple `image_urls` -- this is how image combining works. The user's core workflow involves selecting 2+ images and combining them with a prompt.
 
-- `'sidebar'` capability is separate from `'generate'` -- sidebar only shows image-input-capable models (6), generate shows all models (10+)
-- Kontext Dev: no ref images (maxRefImages=0), uses img2img directly. Falls back to FLUX Dev for text-only
-- Edit endpoint routing happens in `handleGenerate` -- if sourceImage present and model has `imageInputModelId`, uses edit endpoint instead of text-to-image
-- `model-slots.ts` left intact (still used by video features)
-- NumberStepper moved next to Generate button, no "Gens" label
+## The decision point
 
-## Outstanding work / next steps
+The user is experimenting with something before deciding. Options discussed:
 
-### Focused edit view -- same pattern (deferred)
+1. **Fall back to FAL** -- one-line change: remove `provider: 'google'` from models.ts. All infrastructure stays for future use.
+2. **Hybrid approach** -- Vertex AI for text-to-image + single-image edit (aspect ratio works), Gemini `generateContent` for multi-image (no aspect ratio control but multi-image works). Would need both auth paths active.
+3. **Stay on Vertex AI** -- accept single-image limitation, user adjusts workflow.
 
-The focused edit view still uses its own model selector pattern. Apply the same unified approach there in a follow-up pass.
+## Auth setup (already done)
 
-### Verify FAL model IDs
+- GCP project: `gen-lang-client-0015600225` (aisdk)
+- Service account: `genzen@gen-lang-client-0015600225.iam.gserviceaccount.com`
+- Key file: `~/.keys-genzen/gen-lang-client-0015600225-00a87d4d2b71.json`
+- Env var: `GOOGLE_APPLICATION_CREDENTIALS` (local), `GOOGLE_SERVICE_ACCOUNT_JSON` (deploy via Vercel)
+- Vertex AI API: enabled
+- Also has Gemini API key: `GOOGLE_AI_API_KEY` (for potential hybrid approach)
 
-The two new model IDs (`fal-ai/gpt-image-1.5`, `fal-ai/bytedance/seedream/v4.5/text-to-image`) were added per the plan but should be verified against FAL's API to confirm they're correct endpoint IDs. Use the `fal-models` skill.
+## To fall back to FAL immediately
 
-## Git state
-
-All changes are uncommitted and unstaged on `main`. Build passes (`pnpm build` succeeds). Run `pnpm check` before committing.
+In `src/features/ai-images/models.ts`, remove `provider: 'google'` from nano-banana-2 entry. Everything routes back through FAL. No other changes needed.
