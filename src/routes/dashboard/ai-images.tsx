@@ -677,6 +677,7 @@ function AiImagesPage() {
         <ImageLightbox
           items={page.lightbox.items}
           imageUrls={page.lightbox.mergedUrls}
+          fullResUrls={page.lightbox.fullResUrls}
           currentIndex={page.lightbox.index!}
           onClose={page.lightbox.close}
           onNext={page.lightbox.next}

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { UserImage } from '../types'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { supabase } from '@/lib/supabase'
 
 interface ImageEditDialogProps {
   image: UserImage | null
@@ -36,6 +37,7 @@ export function ImageEditDialog({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [fullResUrl, setFullResUrl] = useState<string | null>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
 
@@ -45,6 +47,25 @@ export function ImageEditDialog({
       setDescription(image.description ?? '')
     }
   }, [image?.id])
+
+  // Fetch full-res signed URL when dialog opens
+  useEffect(() => {
+    if (!open || !image?.storage_path) {
+      setFullResUrl(null)
+      return
+    }
+    let cancelled = false
+    supabase.storage
+      .from('user-images')
+      .createSignedUrl(image.storage_path, 86400)
+      .then(({ data }) => {
+        if (!cancelled && data?.signedUrl) setFullResUrl(data.signedUrl)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open, image?.id, image?.storage_path])
 
   useEffect(() => {
     if (open && titleInputRef.current) {
@@ -141,7 +162,7 @@ export function ImageEditDialog({
           {/* Image */}
           <div className="flex-1 min-h-0 flex items-center justify-center mb-6">
             <img
-              src={imageUrl}
+              src={fullResUrl ?? imageUrl}
               alt={title}
               className="max-h-full max-w-full object-contain rounded-lg"
             />

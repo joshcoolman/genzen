@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
@@ -13,6 +13,7 @@ import {
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
 import { Lightbox } from '@/components/Lightbox'
+import { supabase } from '@/lib/supabase'
 import { Thumbnail } from '@/components/Thumbnail'
 import { ImageGrid } from '@/components/ImageGrid'
 import { ExpandableText } from '@/components/ExpandableText'
@@ -289,6 +290,8 @@ export function GenerationResultsGrid({
   editMode,
 }: GenerationResultsGridProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [fullResUrls, setFullResUrls] = useState<Record<string, string>>({})
+  const fetchingRef = useRef<Set<string>>(new Set())
 
   const [storedPrefs] = useState(() => getStoredPrefs(prefsKey))
   const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
@@ -333,6 +336,32 @@ export function GenerationResultsGrid({
   const completeResults = displayResults.filter(
     (r) => r.status === 'complete' && r.url,
   )
+
+  // Fetch full-res URLs on demand when lightbox opens/navigates
+  useEffect(() => {
+    if (lightboxIndex === null) return
+    const indices = [
+      lightboxIndex,
+      lightboxIndex - 1,
+      lightboxIndex + 1,
+    ].filter((i) => i >= 0 && i < completeResults.length)
+    for (const i of indices) {
+      const r = completeResults[i]
+      if (!r.storagePath || fullResUrls[r.id] || fetchingRef.current.has(r.id))
+        continue
+      fetchingRef.current.add(r.id)
+      supabase.storage
+        .from('user-images')
+        .createSignedUrl(r.storagePath, 86400)
+        .then(({ data }) => {
+          if (data?.signedUrl) {
+            setFullResUrls((prev) => ({ ...prev, [r.id]: data.signedUrl }))
+          }
+        })
+        .catch(() => {})
+        .finally(() => fetchingRef.current.delete(r.id))
+    }
+  }, [lightboxIndex, completeResults, fullResUrls])
 
   const lightboxImages: Array<LightboxImage> = completeResults.map((r) => ({
     id: r.id,
@@ -432,6 +461,7 @@ export function GenerationResultsGrid({
         <Lightbox
           images={lightboxImages}
           imageUrls={imageUrls}
+          fullResUrls={fullResUrls}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNext={() =>

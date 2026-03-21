@@ -10,6 +10,7 @@ export interface LightboxImage {
 interface LightboxProps {
   images: Array<LightboxImage>
   imageUrls: Record<string, string>
+  fullResUrls?: Record<string, string>
   currentIndex: number
   onClose: () => void
   onNext: () => void
@@ -21,6 +22,7 @@ interface LightboxProps {
 export function Lightbox({
   images,
   imageUrls,
+  fullResUrls,
   currentIndex,
   onClose,
   onNext,
@@ -29,7 +31,7 @@ export function Lightbox({
   onEdit,
 }: LightboxProps) {
   const img = images[currentIndex]
-  const imageUrl = imageUrls[img.id]
+  const imageUrl = fullResUrls?.[img.id] ?? imageUrls[img.id]
 
   useHotkey('Escape', onClose)
   useHotkey('ArrowRight', onNext)

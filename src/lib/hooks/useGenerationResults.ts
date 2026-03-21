@@ -121,6 +121,7 @@ export function useGenerationResults({
           status,
           label: getModelName(modelId),
           url: urlMap[r.id],
+          storagePath: r.storage_path ?? undefined,
           prompt: (meta.prompt as string | undefined) ?? undefined,
           enhancedPrompt:
             (meta.enhanced_prompt as string | undefined) ?? undefined,
@@ -184,6 +185,8 @@ export function useGenerationResults({
                               ...r,
                               status: 'complete' as const,
                               url: data.signedUrl,
+                              storagePath:
+                                updated.storage_path ?? r.storagePath,
                               title: updated.title ?? r.title,
                               label: getModelName(modelId),
                               fileSize: updated.file_size ?? r.fileSize,

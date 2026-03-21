@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 interface EditChild {
   id: string
   url: string
+  storagePath: string
 }
 
 export type EditChildrenMap = Record<string, Array<EditChild>>
@@ -95,7 +96,11 @@ export function useEditChildren(
                   transform: { width: 400, resize: 'contain', quality: 80 },
                 })
               if (!signed?.signedUrl) return null
-              return { id: child.id, url: signed.signedUrl }
+              return {
+                id: child.id,
+                url: signed.signedUrl,
+                storagePath: child.path,
+              }
             }),
           )
           result[parentId] = urls.filter((u): u is EditChild => u !== null)
@@ -164,7 +169,11 @@ export function useEditChildren(
                 return {
                   ...prev,
                   [rootParent]: [
-                    { id: updated.id, url: data.signedUrl },
+                    {
+                      id: updated.id,
+                      url: data.signedUrl,
+                      storagePath: updated.storage_path!,
+                    },
                     ...existing,
                   ],
                 }
