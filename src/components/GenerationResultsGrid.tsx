@@ -217,14 +217,14 @@ function GenerationResultCard({
       footer={
         showFooter ? (
           <>
-            {result.title && (
+            {(result.title ?? result.prompt) && (
               <div className="flex-1 px-4 pt-3 pb-2">
                 <h3 className="text-xs font-medium text-foreground line-clamp-2">
-                  {result.title}
+                  {result.title ?? result.prompt}
                 </h3>
               </div>
             )}
-            {result.prompt && !result.enhancedPrompt && (
+            {result.status !== 'pending' && result.prompt && !result.enhancedPrompt && (
               <ExpandableText text={result.prompt} />
             )}
             {result.enhancedPrompt && (
@@ -239,11 +239,11 @@ function GenerationResultCard({
                 )}
               </div>
             )}
-            {(result.fileSize || result.createdAt) && (
+            {(result.fileSize || result.createdAt || result.status === 'pending') && (
               <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
                 <div className="flex justify-between items-center">
                   <span>
-                    {result.fileSize ? formatFileSize(result.fileSize) : ''}
+                    {result.fileSize ? formatFileSize(result.fileSize) : result.status === 'pending' ? '-' : ''}
                   </span>
                   <span>
                     {result.createdAt

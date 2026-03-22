@@ -5,6 +5,7 @@ interface PendingImageCardProps {
   model: string
   isVariation?: boolean
   sourceImageUrl?: string
+  createdAt?: string
 }
 
 export function PendingImageCard({
@@ -12,6 +13,7 @@ export function PendingImageCard({
   model,
   isVariation,
   sourceImageUrl,
+  createdAt,
 }: PendingImageCardProps) {
   return (
     <Thumbnail
@@ -20,12 +22,18 @@ export function PendingImageCard({
       pendingBackgroundUrl={sourceImageUrl}
       topLeftBadge={isVariation ? 'Variation' : undefined}
     >
-      <div className="p-3 space-y-1">
-        <p className="text-xs text-muted-foreground/60 font-medium">
-          Generating...
-        </p>
-        <p className="text-xs text-muted-foreground line-clamp-2">{prompt}</p>
-        <p className="text-xs text-muted-foreground/60">{model}</p>
+      <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
+        {prompt}
+      </p>
+      <div className="border-t border-border px-3 py-2 mt-2 text-xs text-muted-foreground">
+        <div className="flex justify-between items-center">
+          <span>-</span>
+          <span>
+            {createdAt
+              ? new Date(createdAt).toLocaleDateString()
+              : new Date().toLocaleDateString()}
+          </span>
+        </div>
       </div>
     </Thumbnail>
   )

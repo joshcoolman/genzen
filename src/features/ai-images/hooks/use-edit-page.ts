@@ -268,6 +268,8 @@ export function useEditPage(imageId: string) {
               modelSelector.models.find((m) => m.id === editModelId)?.name ??
               editModelId,
             prompt: prompt.trim(),
+            title: prompt.trim(),
+            createdAt: new Date().toISOString(),
           })
         }
       }
@@ -437,7 +439,7 @@ export function useEditPage(imageId: string) {
   const [variationDialogOpen, setVariationDialogOpen] = useState(false)
   const [variationPrompts, setVariationPrompts] = useState<Array<string>>([])
   const [variationPromptsLoading, setVariationPromptsLoading] = useState(false)
-  const [variationSubmitting, setVariationSubmitting] = useState(false)
+  const [variationSubmitting] = useState(false)
   const [generatingMore, setGeneratingMore] = useState(false)
   const [variationMeta, setVariationMeta] = useState<{
     rootPrompt: string
@@ -522,7 +524,22 @@ export function useEditPage(imageId: string) {
         return
       }
 
-      setVariationSubmitting(true)
+      // Close dialog and add optimistic pending results immediately
+      setVariationDialogOpen(false)
+
+      const now = new Date().toISOString()
+      const optimisticIds = prompts.map((_, i) => `optimistic-var-${Date.now()}-${i}`)
+      for (let i = 0; i < prompts.length; i++) {
+        results.addPendingResult({
+          id: optimisticIds[i],
+          status: 'pending',
+          label: 'Kontext Pro',
+          prompt: prompts[i],
+          title: prompts[i],
+          createdAt: now,
+        })
+      }
+
       try {
         const refIds = refImages.map((r) => r.id)
         const variationResults = await submitVariations({
@@ -538,27 +555,30 @@ export function useEditPage(imageId: string) {
             ...(refIds.length > 0 ? { referenceImageIds: refIds } : {}),
           },
         })
-        setVariationDialogOpen(false)
 
+        // Replace optimistic IDs with real DB IDs
         for (let i = 0; i < variationResults.length; i++) {
-          results.addPendingResult({
-            id: variationResults[i].recordId,
-            status: 'pending',
-            label: 'Kontext Pro',
-            prompt: prompts[i],
-          })
+          if (i < optimisticIds.length) {
+            results.replaceTempId(optimisticIds[i], variationResults[i].recordId)
+          }
+        }
+        // Remove any extra optimistic cards that didn't get a real result
+        for (let i = variationResults.length; i < optimisticIds.length; i++) {
+          results.dismissResult(optimisticIds[i])
         }
 
         await credits.refresh()
       } catch (err) {
+        // Remove all optimistic cards on error
+        for (const id of optimisticIds) {
+          results.dismissResult(id)
+        }
         const message = err instanceof Error ? err.message : String(err)
         if (message.includes('Insufficient credits')) {
           credits.showInsufficientCredits(cost)
         } else {
           setError(message)
         }
-      } finally {
-        setVariationSubmitting(false)
       }
     },
     [accessToken, variationMeta, aspectRatio, credits, results, refImages],
@@ -590,6 +610,7 @@ export function useEditPage(imageId: string) {
     handleGenerate,
     setSourceFile: () => {}, // No file upload in edit mode — source comes from route
     setSourceFromUrl: () => {}, // No URL source in edit mode
+    handleClear: () => {}, // No-op in edit mode
     handleClearSourceImage: () => {}, // Can't clear in edit mode
     handleCaption,
     refImages,
