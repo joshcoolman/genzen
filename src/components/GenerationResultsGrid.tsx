@@ -224,9 +224,9 @@ function GenerationResultCard({
                 </h3>
               </div>
             )}
-            {result.status !== 'pending' && result.prompt && !result.enhancedPrompt && (
-              <ExpandableText text={result.prompt} />
-            )}
+            {result.status !== 'pending' &&
+              result.prompt &&
+              !result.enhancedPrompt && <ExpandableText text={result.prompt} />}
             {result.enhancedPrompt && (
               <div className="px-4 pt-2 pb-1">
                 <p className="text-[11px] text-muted-foreground line-clamp-2">
@@ -239,11 +239,17 @@ function GenerationResultCard({
                 )}
               </div>
             )}
-            {(result.fileSize || result.createdAt || result.status === 'pending') && (
+            {(result.fileSize ||
+              result.createdAt ||
+              result.status === 'pending') && (
               <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
                 <div className="flex justify-between items-center">
                   <span>
-                    {result.fileSize ? formatFileSize(result.fileSize) : result.status === 'pending' ? '-' : ''}
+                    {result.fileSize
+                      ? formatFileSize(result.fileSize)
+                      : result.status === 'pending'
+                        ? '-'
+                        : ''}
                   </span>
                   <span>
                     {result.createdAt

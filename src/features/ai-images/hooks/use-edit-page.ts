@@ -528,7 +528,9 @@ export function useEditPage(imageId: string) {
       setVariationDialogOpen(false)
 
       const now = new Date().toISOString()
-      const optimisticIds = prompts.map((_, i) => `optimistic-var-${Date.now()}-${i}`)
+      const optimisticIds = prompts.map(
+        (_, i) => `optimistic-var-${Date.now()}-${i}`,
+      )
       for (let i = 0; i < prompts.length; i++) {
         results.addPendingResult({
           id: optimisticIds[i],
@@ -559,7 +561,10 @@ export function useEditPage(imageId: string) {
         // Replace optimistic IDs with real DB IDs
         for (let i = 0; i < variationResults.length; i++) {
           if (i < optimisticIds.length) {
-            results.replaceTempId(optimisticIds[i], variationResults[i].recordId)
+            results.replaceTempId(
+              optimisticIds[i],
+              variationResults[i].recordId,
+            )
           }
         }
         // Remove any extra optimistic cards that didn't get a real result

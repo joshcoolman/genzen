@@ -1,0 +1,110 @@
+.canvas {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #0a0a0a;
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .canvas {
+    left: 4rem;
+  }
+}
+
+.panMode {
+  cursor: grab;
+}
+
+.panMode:active {
+  cursor: grabbing;
+}
+
+.inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.image {
+  position: absolute;
+  cursor: move;
+  transition: opacity 0.15s;
+}
+
+.dimmed {
+  opacity: 0.4;
+}
+
+.dimmed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(180, 50, 50, 0.7);
+  pointer-events: none;
+}
+
+.image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.groupBounds {
+  position: absolute;
+  border: 2px solid #5cb3ff;
+  pointer-events: none;
+  border-radius: 3px;
+  z-index: 5;
+}
+
+.marquee {
+  position: absolute;
+  border: 1px solid rgba(74, 158, 255, 0.6);
+  background: rgba(74, 158, 255, 0.08);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #444;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.emptyHint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #2a2a2a;
+}
+
+.groupBackground {
+  position: absolute;
+  background: #1a1a1a;
+  border-radius: 4px;
+}

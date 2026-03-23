@@ -77,6 +77,9 @@ importers:
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      hotkeys-js:
+        specifier: ^4.0.2
+        version: 4.0.2
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -3115,6 +3118,9 @@ packages:
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
+
+  hotkeys-js@4.0.2:
+    resolution: {integrity: sha512-fJNEO88zWwoXEGJuvjSbunKSexaT1VbC1S9wIzMA2BfOZ5KPiQj2wTqxDeXd110/4akiAuQIsE3TSbNvGgCyQg==}
 
   html-encoding-sniffer@6.0.0:
     resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
@@ -7097,6 +7103,8 @@ snapshots:
       crossws: 0.4.4(srvx@0.10.1)
 
   has-flag@4.0.0: {}
+
+  hotkeys-js@4.0.2: {}
 
   html-encoding-sniffer@6.0.0:
     dependencies:

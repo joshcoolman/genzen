@@ -2,6 +2,7 @@ import {
   Clapperboard,
   Film,
   FlaskConical,
+  Frame,
   Settings,
   Sparkles,
   StickyNote,
@@ -46,6 +47,13 @@ export const navItems: Array<NavItem> = [
     label: 'Notes',
     href: '/dashboard/notes',
     icon: StickyNote,
+    activeOnly: true,
+  },
+  {
+    id: 'canvas',
+    label: 'Canvas',
+    href: '/dashboard/canvas',
+    icon: Frame,
     activeOnly: true,
   },
   {
