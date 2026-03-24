@@ -73,7 +73,7 @@ export const enhanceCombinePrompt = createServerFn({ method: 'POST' })
     }
 
     const response = await generateText({
-      model: ai.sonnet,
+      model: ai.reasoning,
       maxOutputTokens: 400,
       system: EDIT_ENHANCEMENT_SYSTEM,
       messages: [

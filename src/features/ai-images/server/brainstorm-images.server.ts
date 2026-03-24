@@ -46,7 +46,7 @@ export const rewritePrompt = createServerFn({ method: 'POST' })
     await requireAuth(data.accessToken)
 
     const { text } = await generateText({
-      model: ai.haiku,
+      model: ai.fast,
       system: REWRITE_SYSTEM,
       prompt: data.prompt,
     })
@@ -66,7 +66,7 @@ export const editPrompt = createServerFn({ method: 'POST' })
     await requireAuth(data.accessToken)
 
     const { text } = await generateText({
-      model: ai.haiku,
+      model: ai.fast,
       system: `You are editing an image generation prompt. The user wants this change: ${data.editInstruction}. Revise the prompt to incorporate the edit. Return ONLY the revised prompt, no quotes or explanation.`,
       prompt: data.prompt,
     })

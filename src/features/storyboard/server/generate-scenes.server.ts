@@ -61,7 +61,7 @@ export const generateScenes = createServerFn({ method: 'POST' })
     }
 
     const { text } = await generateText({
-      model: ai.haiku,
+      model: ai.fast,
       system: SYSTEM_PROMPT,
       prompt: data.story.trim().slice(0, 5000),
     })

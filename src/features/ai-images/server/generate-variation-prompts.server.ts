@@ -176,7 +176,7 @@ export const generateVariationPrompts = createServerFn({ method: 'POST' })
       })
 
       const response = await generateText({
-        model: ai.sonnet,
+        model: ai.reasoning,
         maxOutputTokens: 300,
         system: IMAGE_VARIATION_SYSTEM,
         messages: [{ role: 'user', content: userContent }],

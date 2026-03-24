@@ -69,7 +69,7 @@ export async function describeImage(
   }
 
   const { text } = await generateText({
-    model: ai.haiku,
+    model: ai.fast,
     system: mode === 'anchor' ? ANCHOR_PROMPT : RECONSTRUCT_PROMPT,
     messages: [
       {

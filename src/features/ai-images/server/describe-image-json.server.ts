@@ -58,7 +58,7 @@ export const describeImageJson = createServerFn({ method: 'POST' })
     const base64 = Buffer.from(buffer).toString('base64')
 
     const { object } = await generateObject({
-      model: ai.gemini3Flash,
+      model: ai.vision,
       maxOutputTokens: 4096,
       system:
         'You are a precise visual analysis engine. Output coordinates and attributes for image editing.',

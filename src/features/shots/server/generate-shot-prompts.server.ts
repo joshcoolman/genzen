@@ -15,7 +15,7 @@ export const generateShotPrompts = createServerFn({ method: 'POST' })
     await requireAuth(data.accessToken)
 
     const { text } = await generateText({
-      model: ai.haiku,
+      model: ai.fast,
       system: `You are a prompt engineer for image generation. You will be given an image description and a template instruction. Follow the template instruction to produce multiple image generation prompts. Separate each prompt with a single asterisk (*) on its own. Output ONLY the prompts separated by asterisks -- no headers, numbering, labels, or commentary.`,
       messages: [
         {

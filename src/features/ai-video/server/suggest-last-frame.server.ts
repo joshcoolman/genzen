@@ -93,7 +93,7 @@ export const suggestLastFrame = createServerFn({ method: 'POST' })
       : `First frame prompt: "${firstFramePrompt}"\n\nWrite a last frame description.`
 
     const response = await generateText({
-      model: ai.sonnet,
+      model: ai.reasoning,
       maxOutputTokens: 300,
       temperature: 1.0,
       system: SUGGEST_LAST_FRAME_SYSTEM,

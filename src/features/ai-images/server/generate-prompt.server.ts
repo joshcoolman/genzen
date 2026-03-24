@@ -68,7 +68,7 @@ export const generatePromptServer = createServerFn({ method: 'POST' })
           : ''
 
       const response = await generateText({
-        model: ai.haiku,
+        model: ai.fast,
         maxOutputTokens: 200,
         system: fantasyPrefix + ASSEMBLE_PROMPT_SYSTEM,
         messages: [{ role: 'user', content: componentString }],

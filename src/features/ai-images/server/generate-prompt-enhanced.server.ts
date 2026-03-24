@@ -24,7 +24,7 @@ export const generatePromptEnhanced = createServerFn({ method: 'POST' })
 
     try {
       const response = await generateText({
-        model: ai.haiku,
+        model: ai.fast,
         maxOutputTokens: 300,
         system: ENHANCE_PROMPT_SYSTEM,
         messages: [

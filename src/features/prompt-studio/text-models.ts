@@ -1,5 +1,5 @@
 import type { LanguageModel } from 'ai'
-import { ai } from '@/lib/server/ai.server'
+import { models } from '@/lib/server/ai.server'
 
 export interface TextModel {
   id: string
@@ -33,11 +33,18 @@ export const TEXT_MODELS: Array<TextModel> = [
     provider: 'xAI',
     description: 'Creative and unfiltered',
   },
+  {
+    id: 'nemotron',
+    name: 'Nemotron Super',
+    provider: 'NVIDIA (OpenRouter)',
+    description: 'Fast reasoning, 120B MoE (12B active)',
+  },
 ]
 
 export const TEXT_MODEL_MAP: Record<string, LanguageModel> = {
-  'claude-sonnet': ai.sonnet,
-  'claude-haiku': ai.haiku,
-  'gemini-flash': ai.geminiFlash,
-  grok: ai.grok,
+  'claude-sonnet': models.sonnet,
+  'claude-haiku': models.haiku,
+  'gemini-flash': models.geminiFlash,
+  grok: models.grok,
+  nemotron: models.nemotron,
 }
