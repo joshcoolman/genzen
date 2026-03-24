@@ -4,12 +4,14 @@ import {
   ArrowDown,
   ArrowUp,
   FolderInput,
+  Group,
   Info,
   LayoutGrid,
   Pin,
   PinOff,
   Plus,
   Trash2,
+  Ungroup,
   Upload,
   X,
 } from 'lucide-react'
@@ -26,6 +28,7 @@ import { VariationPromptsDialog } from '@/features/ai-images/components/Variatio
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
+import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
@@ -288,6 +291,94 @@ function AiImagesPage() {
     [page.accessToken, batchSelectedImages, selection, page.gallery],
   )
 
+  // Group
+  const [groupOpen, setGroupOpen] = useState(false)
+  const [isGrouping, setIsGrouping] = useState(false)
+
+  const handleGroupConfirm = useCallback(
+    async (primaryId: string) => {
+      if (!page.accessToken) return
+      const selected = batchSelectedImages()
+      setIsGrouping(true)
+      try {
+        // Collect all image IDs involved: selected images + their children
+        const allIds = new Set<string>()
+        for (const img of selected) {
+          allIds.add(img.id)
+          const children = page.editChildrenMap[img.id] as
+            | Array<unknown>
+            | undefined
+          if (children) {
+            for (const child of children as Array<{ id: string }>) {
+              allIds.add(child.id)
+            }
+          }
+        }
+        // Remove the primary — it stays as root
+        allIds.delete(primaryId)
+
+        // Adopt all others under primaryId
+        for (const id of allIds) {
+          await reparentImage({
+            data: {
+              accessToken: page.accessToken,
+              imageId: id,
+              action: 'adopt',
+              newParentId: primaryId,
+            },
+          })
+        }
+        selection.clearSelection()
+        setGroupOpen(false)
+        await page.gallery.refresh()
+        page.refreshEditChildren()
+      } catch (err) {
+        console.error('Group failed:', err)
+      } finally {
+        setIsGrouping(false)
+      }
+    },
+    [
+      page.accessToken,
+      batchSelectedImages,
+      page.editChildrenMap,
+      selection,
+      page.gallery,
+      page.refreshEditChildren,
+    ],
+  )
+
+  // Batch ungroup
+  const [isBatchUngrouping, setIsBatchUngrouping] = useState(false)
+
+  const handleBatchUngroup = useCallback(async () => {
+    const selected = batchSelectedImages()
+    setIsBatchUngrouping(true)
+    try {
+      for (const img of selected) {
+        const children = page.editChildrenMap[img.id] as
+          | Array<unknown>
+          | undefined
+        if (children && children.length > 0) {
+          await page.gallery.ungroupChildren(img)
+        }
+      }
+      selection.clearSelection()
+      await page.gallery.refresh()
+      page.refreshEditChildren()
+    } catch (err) {
+      console.error('Batch ungroup failed:', err)
+    } finally {
+      setIsBatchUngrouping(false)
+    }
+  }, [
+    batchSelectedImages,
+    page.editChildrenMap,
+    page.gallery,
+    page.refreshEditChildren,
+    selection,
+  ])
+
   // Download: two-step flow — dialog for name, then build + save
   const [downloadTarget, setDownloadTarget] = useState<SavedAiImage | null>(
     null,
@@ -540,6 +631,28 @@ function AiImagesPage() {
           count={selection.count}
           onClear={selection.clearSelection}
         >
+          {selection.count >= 2 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isGrouping}
+              onClick={() => setGroupOpen(true)}
+            >
+              <Group className="mr-1 h-3 w-3" />
+              {isGrouping ? 'Grouping...' : 'Group'}
+            </Button>
+          )}
+          {batchHasChildren() && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isBatchUngrouping}
+              onClick={() => void handleBatchUngroup()}
+            >
+              <Ungroup className="mr-1 h-3 w-3" />
+              {isBatchUngrouping ? 'Ungrouping...' : 'Ungroup'}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -653,6 +766,20 @@ function AiImagesPage() {
           onConfirm={(newParentId) =>
             void page.reparent.confirmAdopt(newParentId)
           }
+        />
+      )}
+
+      {groupOpen && batchSelectedImages().length >= 2 && (
+        <GroupPickerDialog
+          open={groupOpen}
+          onOpenChange={(open) => {
+            if (!open) setGroupOpen(false)
+          }}
+          selectedImages={batchSelectedImages()}
+          imageUrls={page.gallery.imageUrls}
+          editChildrenMap={page.editChildrenMap}
+          loading={isGrouping}
+          onConfirm={(primaryId) => void handleGroupConfirm(primaryId)}
         />
       )}
 
