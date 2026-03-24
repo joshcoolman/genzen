@@ -98,7 +98,6 @@ export function useUserImages(
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
         .is('deleted_at', null)
-        .eq('hidden', false)
         .order('created_at', { ascending: false })
 
       if (filters?.search_term) {

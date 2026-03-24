@@ -51,6 +51,7 @@ export function useExistingImages(
         .select('*')
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw new Error(fetchError.message)
