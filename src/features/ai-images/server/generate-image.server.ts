@@ -6,7 +6,6 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { resolveStyleRefs } from '@/features/style-trainer/server/resolve-style-refs.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
@@ -20,7 +19,6 @@ interface GenerateImageInput {
   sourceImageBase64?: string
   sourceImageUrl?: string
   isRefine?: boolean
-  styleId?: string
   referenceImageIds?: Array<string>
   providerOverride?: 'fal' | 'google'
 }
@@ -137,19 +135,6 @@ export const generateImage = createServerFn({ method: 'POST' })
       effectivePrompt = buildRefinePrompt(effectivePrompt)
     }
 
-    // Resolve style reference images if a style is selected
-    let styleRefUrls: Array<string> = []
-    if (data.styleId) {
-      styleRefUrls = await resolveStyleRefs({
-        accessToken: data.accessToken,
-        styleId: data.styleId,
-      })
-      // Style refs require image-input model variant
-      if (styleRefUrls.length > 0 && !imageUrl) {
-        falModelId = modelDef?.imageInputModelId ?? model
-      }
-    }
-
     // Fetch reference images -- as base64 for Google, as FAL URLs for FAL
     let referenceUrls: Array<string> = []
     let referenceImagesBase64: Array<string> = []
@@ -220,7 +205,6 @@ export const generateImage = createServerFn({ method: 'POST' })
         metadata: {
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
-          ...(data.styleId ? { style_id: data.styleId } : {}),
           ...(data.referenceImageIds?.length
             ? { reference_image_ids: data.referenceImageIds }
             : {}),
@@ -237,11 +221,7 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     // --- FAL provider: existing queue-based path ---
     // Combine source image + ref images + style refs into imageUrls
-    const allImageUrls = [
-      ...(imageUrl ? [imageUrl] : []),
-      ...referenceUrls,
-      ...styleRefUrls,
-    ]
+    const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...referenceUrls]
 
     // Build FAL input using schema-driven param resolution
     const falInput = await buildFalInput({
@@ -275,7 +255,6 @@ export const generateImage = createServerFn({ method: 'POST' })
           ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
           ...(sourceImageBase64 ? { has_source_image: true } : {}),
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
-          ...(data.styleId ? { style_id: data.styleId } : {}),
           ...(data.referenceImageIds?.length
             ? { reference_image_ids: data.referenceImageIds }
             : {}),

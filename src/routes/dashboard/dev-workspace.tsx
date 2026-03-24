@@ -5,18 +5,7 @@ import {
   createFileRoute,
   useLocation,
 } from '@tanstack/react-router'
-import {
-  Boxes,
-  Expand,
-  FlaskConical,
-  Grid3X3,
-  Layers,
-  Lightbulb,
-  MessageSquare,
-  Palette,
-  SquarePlay,
-  Users,
-} from 'lucide-react'
+import { Boxes, Expand, FlaskConical, MessageSquare } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 import { cn } from '@/lib/utils'
@@ -30,52 +19,16 @@ interface DevNavItem {
 
 const DEV_NAV_ITEMS: Array<DevNavItem> = [
   {
-    id: 'brainstorm',
-    label: 'Brainstorm',
-    href: '/dashboard/dev-workspace/brainstorm',
-    icon: Lightbulb,
-  },
-  {
     id: 'outpaint',
     label: 'Outpaint',
     href: '/dashboard/dev-workspace/outpaint',
     icon: Expand,
   },
   {
-    id: 'shots',
-    label: 'Shots',
-    href: '/dashboard/dev-workspace/shots',
-    icon: Grid3X3,
-  },
-  {
-    id: 'characters',
-    label: 'Characters',
-    href: '/dashboard/dev-workspace/characters',
-    icon: Users,
-  },
-  {
-    id: 'storyboard',
-    label: 'Storyboard',
-    href: '/dashboard/dev-workspace/storyboard',
-    icon: SquarePlay,
-  },
-  {
-    id: 'style-trainer',
-    label: 'Style Trainer',
-    href: '/dashboard/dev-workspace/style-trainer',
-    icon: Palette,
-  },
-  {
     id: 'prompt-studio',
     label: 'Prompt Studio',
     href: '/dashboard/dev-workspace/prompt-studio',
     icon: MessageSquare,
-  },
-  {
-    id: 'combine',
-    label: 'Combine',
-    href: '/dashboard/dev-workspace/combine',
-    icon: Layers,
   },
   {
     id: 'models',

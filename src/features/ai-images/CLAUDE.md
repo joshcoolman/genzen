@@ -1,14 +1,14 @@
 # AI Images
 
-Multi-model image generation with brainstorm, edit, variation, and reparenting workflows via FAL AI.
+Multi-model image generation with edit, variation, and reparenting workflows via FAL AI.
 
 ## Key Files
 
 - `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
-- `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`), brainstorm settings
+- `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
-- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `useAiImagesPage`, `GeneratorPanel`, `BrainstormPanel`, `ImageGallery`, `ImageLightbox`
+- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `useAiImagesPage`, `GeneratorPanel`, `ImageGallery`, `ImageLightbox`
 
 ## Server
 
@@ -17,7 +17,6 @@ Multi-model image generation with brainstorm, edit, variation, and reparenting w
 - `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
-- `brainstorm-images.server.ts` -- batch prompt generation + rewriting via Haiku
 - `reparent-image.server.ts` -- move image under new parent or detach from parent
 - `retry-generation.server.ts` -- resubmit failed image generation to FAL
 - `caption-image.server.ts` -- vision API image captioning
@@ -33,13 +32,11 @@ Multi-model image generation with brainstorm, edit, variation, and reparenting w
 - `use-ai-images-page.ts` -- master hook composing all sub-hooks for the main page
 - `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards
-- `use-brainstorm.ts` -- brainstorm panel state: per-slot prompts, locking, refinement, polling
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
 - `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, signed URLs)
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-prompt-tools.ts` -- random prompt generation and prompt enhancement
-- `use-brainstorm-settings.ts` -- brainstorm config with localStorage persistence
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 - `use-edit-page.ts` -- dedicated edit page state (source loading, aspect ratio, variants, parent picker)
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
@@ -47,7 +44,6 @@ Multi-model image generation with brainstorm, edit, variation, and reparenting w
 ## Components
 
 - `GeneratorPanel.tsx` -- main prompt input, aspect ratio, model selector, ref images, generation controls
-- `BrainstormPanel.tsx` -- multi-slot brainstorm grid with prompt editing, locking, refining
 - `ImageGallery.tsx` -- image grid with nested edit children thumbnails under parent cards
 - `ImageLightbox.tsx` -- fullscreen lightbox viewer
 - `ImageCard.tsx` -- single image card with model label, root preview, edit children grid, actions menu
@@ -76,7 +72,7 @@ Multi-model image generation with brainstorm, edit, variation, and reparenting w
 ## Quirks / Notes
 
 - Variations use Claude Sonnet to rewrite prompts with "creative tension" -- always references the root image, not the immediate parent, to prevent quality drift
-- Brainstorm uses FLUX Schnell/Dev only (not the full model list) for fast iteration
+- Brainstorm has been extracted to its own feature module at `src/features/brainstorm/`
 - `fal-params.server.ts` is the central param resolver used by many features (outpaint, describe, edit-image)
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
