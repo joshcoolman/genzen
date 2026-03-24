@@ -6,9 +6,9 @@ import {
   savePersistedState,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
-import { useCanvasVariations } from '../hooks/use-canvas-variations'
+import { useCanvasGenerate } from '../hooks/use-canvas-generate'
 import { SelectionActions } from './SelectionActions'
-import { CanvasVariationsDialog } from './CanvasVariationsDialog'
+import { CanvasGenerateDialog } from './CanvasGenerateDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
@@ -89,10 +89,6 @@ export function InfiniteCanvas({
     y: number
     imageId: string
   } | null>(null)
-  const [variationsOpen, setVariationsOpen] = useState(false)
-  const [variationSourceId, setVariationSourceId] = useState<string | null>(
-    null,
-  )
   const dialogOpenRef = useRef(false)
 
   const { user } = useAuth()
@@ -139,10 +135,7 @@ export function InfiniteCanvas({
     redoStack.current = []
   }, [])
 
-  const { generateVariations, isGenerating } = useCanvasVariations(
-    setImages,
-    pushUndo,
-  )
+  const canvasGen = useCanvasGenerate(setImages, pushUndo)
 
   const undo = useCallback(() => {
     const entry = undoStack.current.pop()
@@ -177,8 +170,8 @@ export function InfiniteCanvas({
     gRef.current = groups
   }, [groups])
   useEffect(() => {
-    dialogOpenRef.current = variationsOpen || libraryOpen
-  }, [variationsOpen, libraryOpen])
+    dialogOpenRef.current = canvasGen.isOpen || libraryOpen
+  }, [canvasGen.isOpen, libraryOpen])
 
   /* -- Load persisted state -- */
 
@@ -1133,6 +1126,15 @@ export function InfiniteCanvas({
           zoomPct={zoomPct}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
+          onGenerate={
+            selected.size === 1
+              ? () => {
+                  const id = [...selected][0]
+                  const sourceImage = images.find((img) => img.id === id)
+                  if (sourceImage) canvasGen.open(sourceImage)
+                }
+              : undefined
+          }
         />
 
         <input
@@ -1155,47 +1157,19 @@ export function InfiniteCanvas({
           <button
             className={styles.contextMenuItem}
             onClick={() => {
-              setVariationSourceId(contextMenu.imageId)
-              setVariationsOpen(true)
+              const sourceImage = images.find(
+                (img) => img.id === contextMenu.imageId,
+              )
+              if (sourceImage) canvasGen.open(sourceImage)
               setContextMenu(null)
             }}
           >
-            Variations
+            Generate
           </button>
         </div>
       )}
 
-      <CanvasVariationsDialog
-        open={variationsOpen}
-        onClose={() => {
-          setVariationsOpen(false)
-          setVariationSourceId(null)
-        }}
-        onGenerate={(opts) => {
-          const sourceImage = images.find((img) => img.id === variationSourceId)
-          if (!sourceImage) return
-          setVariationsOpen(false)
-          setVariationSourceId(null)
-          generateVariations({
-            sourceImage,
-            model: opts.model,
-            aspectRatio: opts.aspectRatio,
-            count: opts.count,
-            prompt: opts.prompt,
-          })
-        }}
-        isGenerating={isGenerating}
-        sourceWidth={
-          variationSourceId
-            ? images.find((img) => img.id === variationSourceId)?.width
-            : undefined
-        }
-        sourceHeight={
-          variationSourceId
-            ? images.find((img) => img.id === variationSourceId)?.height
-            : undefined
-        }
-      />
+      <CanvasGenerateDialog canvasGen={canvasGen} />
 
       <ExistingImagePicker
         open={libraryOpen}

@@ -28,6 +28,8 @@ interface UseGeneratorOptions {
   credits: CreditsState
   setError: (error: string | null) => void
   providerOverride?: 'fal' | 'google'
+  storagePrefix?: string
+  onAfterSubmit?: (results: Array<{ recordId: string }>) => void
 }
 
 export interface GeneratorState {
@@ -49,6 +51,7 @@ export interface GeneratorState {
   handleGenerate: () => Promise<void>
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
+  setSourceFromBase64: (base64: string, name: string) => void
   handleClearSourceImage: () => void
   handleClear: () => void
   handleCaption: () => Promise<void>
@@ -65,21 +68,27 @@ export function useGenerator({
   credits,
   setError,
   providerOverride,
+  storagePrefix = 'genzen',
+  onAfterSubmit,
 }: UseGeneratorOptions): GeneratorState {
+  const promptKey = `${storagePrefix}:prompt`
+  const orientationKey = `${storagePrefix}:orientation`
+  const aspectRatioKey = `${storagePrefix}:aspect-ratio`
+
   const [prompt, setPromptRaw] = useState(() => {
     if (typeof window === 'undefined') return ''
-    return localStorage.getItem('genzen:prompt') ?? ''
+    return localStorage.getItem(promptKey) ?? ''
   })
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     () => {
       if (typeof window === 'undefined') return 'landscape'
-      const stored = localStorage.getItem('genzen:orientation')
+      const stored = localStorage.getItem(orientationKey)
       return stored === 'portrait' ? 'portrait' : 'landscape'
     },
   )
   const [aspectRatio, setAspectRatio] = useState(() => {
     if (typeof window === 'undefined') return '16:9'
-    return localStorage.getItem('genzen:aspect-ratio') ?? '16:9'
+    return localStorage.getItem(aspectRatioKey) ?? '16:9'
   })
   const [loading, setLoading] = useState(false)
   const [sourceImage, setSourceImage] = useState<{
@@ -95,7 +104,7 @@ export function useGenerator({
     (value: string | ((prev: string) => string)) => {
       setPromptRaw((prev) => {
         const next = typeof value === 'function' ? value(prev) : value
-        localStorage.setItem('genzen:prompt', next)
+        localStorage.setItem(promptKey, next)
         return next
       })
     },
@@ -104,11 +113,11 @@ export function useGenerator({
 
   // Persist orientation + aspect ratio on change
   useEffect(() => {
-    localStorage.setItem('genzen:orientation', orientation)
+    localStorage.setItem(orientationKey, orientation)
   }, [orientation])
 
   useEffect(() => {
-    localStorage.setItem('genzen:aspect-ratio', aspectRatio)
+    localStorage.setItem(aspectRatioKey, aspectRatio)
   }, [aspectRatio])
 
   // Compute maxRefImages from selected models' edit endpoints
@@ -199,7 +208,11 @@ export function useGenerator({
               model: modelId,
               accessToken: accessToken,
               aspectRatio,
-              ...(sourceImage ? { sourceImageBase64: sourceImage.base64 } : {}),
+              ...(sourceImage
+                ? sourceImage.base64.startsWith('data:')
+                  ? { sourceImageBase64: sourceImage.base64 }
+                  : { sourceImageUrl: sourceImage.base64 }
+                : {}),
               ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
               ...(referenceImageIds ? { referenceImageIds } : {}),
               ...(providerOverride ? { providerOverride } : {}),
@@ -207,11 +220,20 @@ export function useGenerator({
           }),
         ),
       )
+      const fulfilled = results
+        .filter((r) => r.status === 'fulfilled')
+        .map((r) => ({
+          recordId: (r as PromiseFulfilledResult<{ recordId: string }>).value
+            .recordId,
+        }))
       const firstError = results.find(
         (r): r is PromiseRejectedResult => r.status === 'rejected',
       )
       if (firstError) {
         throw firstError.reason
+      }
+      if (onAfterSubmit && fulfilled.length > 0) {
+        onAfterSubmit(fulfilled)
       }
       // Refresh balance after server-side deduction
       await credits.refresh()
@@ -334,6 +356,7 @@ export function useGenerator({
     handleGenerate,
     setSourceFile,
     setSourceFromUrl,
+    setSourceFromBase64: applySourceBase64,
     handleClearSourceImage,
     handleClear,
     handleCaption,
