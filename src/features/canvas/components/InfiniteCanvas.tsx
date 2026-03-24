@@ -6,6 +6,7 @@ import {
   loadPersistedState,
   resolveSignedUrls,
   savePersistedState,
+  syncCanvasFlags,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
 import { useCanvasGenerate } from '../hooks/use-canvas-generate'
@@ -207,6 +208,7 @@ export function InfiniteCanvas({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       savePersistedState({ images, transform, groups }, storageKey)
+      syncCanvasFlags(images)
     }, 500)
   }, [images, transform, groups, loaded, storageKey])
 
@@ -374,7 +376,13 @@ export function InfiniteCanvas({
         width: dims.w,
         height: dims.h,
       }))
-      const layoutResults = layoutMasonry(items, 6, cx, cy, 300)
+      const layoutResults = layoutMasonry(
+        items,
+        6,
+        cx,
+        cy,
+        items.length === 1 ? undefined : 300,
+      )
       const pendingImages: Array<CanvasImage> = layoutResults.map((r) => ({
         ...r,
         recordId: '',
@@ -477,7 +485,13 @@ export function InfiniteCanvas({
         width: w,
         height: h,
       }))
-      const results = layoutMasonry(items, 6, c.x, c.y, 300)
+      const results = layoutMasonry(
+        items,
+        6,
+        c.x,
+        c.y,
+        items.length === 1 ? undefined : 300,
+      )
 
       const newImages: Array<CanvasImage> = results.map((r, i) => ({
         ...r,

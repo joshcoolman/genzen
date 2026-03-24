@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { CheckCircle2, Circle, Link2, RotateCcw, Trash2, X } from 'lucide-react'
+import {
+  CheckCircle2,
+  Circle,
+  LayoutDashboard,
+  Link2,
+  RotateCcw,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
 import { TrashDownloadButton } from './TrashDownloadButton'
 import { useAuth } from '@/lib/auth'
@@ -49,6 +57,7 @@ export function TrashDisplay() {
     isLoading,
     linkedImageIds,
     linkedCounts,
+    canvasLinkedIds,
     restore,
     permanentDelete,
     permanentDeleteMany,
@@ -203,6 +212,7 @@ export function TrashDisplay() {
             {images.map((image) => {
               const selected = selection.isSelected(image.id)
               const isLinked = linkedImageIds.has(image.id)
+              const isOnCanvas = canvasLinkedIds.has(image.id)
               const depCount = linkedCounts[image.id] || 0
               return (
                 <div
@@ -234,7 +244,23 @@ export function TrashDisplay() {
                               <p className="truncate text-sm font-medium">
                                 {image.title}
                               </p>
-                              {isLinked && (
+                              {isOnCanvas && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge
+                                      variant="outline"
+                                      className="shrink-0 gap-1 border-blue-500/50 text-blue-500"
+                                    >
+                                      <LayoutDashboard className="h-3 w-3" />
+                                      Canvas
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    Used on Canvas -- remove from canvas first
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {isLinked && !isOnCanvas && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Badge

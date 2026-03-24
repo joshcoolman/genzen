@@ -90,6 +90,50 @@ export async function resolveSignedUrls(
   )
 }
 
+/**
+ * Sync on_canvas flags to Supabase.
+ * Compares the current canvas recordIds against what Supabase thinks is on canvas,
+ * then flips only the changed rows. Runs in the background alongside IndexedDB saves.
+ */
+let lastSyncedIds: Set<string> = new Set()
+
+export async function syncCanvasFlags(canvasImages: Array<CanvasImage>) {
+  const currentIds = new Set(
+    canvasImages
+      .filter((img) => img.recordId && !img.pending)
+      .map((img) => img.recordId),
+  )
+
+  // Diff against last synced state to avoid redundant writes
+  const toAdd = [...currentIds].filter((id) => !lastSyncedIds.has(id))
+  const toRemove = [...lastSyncedIds].filter((id) => !currentIds.has(id))
+
+  if (toAdd.length === 0 && toRemove.length === 0) return
+
+  const promises: Array<Promise<unknown>> = []
+
+  if (toAdd.length > 0) {
+    promises.push(
+      supabase
+        .from('user_images')
+        .update({ on_canvas: true })
+        .in('id', toAdd) as unknown as Promise<unknown>,
+    )
+  }
+
+  if (toRemove.length > 0) {
+    promises.push(
+      supabase
+        .from('user_images')
+        .update({ on_canvas: false })
+        .in('id', toRemove) as unknown as Promise<unknown>,
+    )
+  }
+
+  await Promise.allSettled(promises)
+  lastSyncedIds = currentIds
+}
+
 /** Get image dimensions from a File using an object URL (fast, no base64) */
 export function getImageDimensions(
   file: File,

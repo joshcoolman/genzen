@@ -10,6 +10,7 @@ interface UseTrashReturn {
   isLoading: boolean
   linkedImageIds: Set<string>
   linkedCounts: Record<string, number>
+  canvasLinkedIds: Set<string>
   restore: (id: string) => Promise<void>
   permanentDelete: (id: string) => Promise<void>
   permanentDeleteMany: (ids: Array<string>) => Promise<void>
@@ -20,15 +21,19 @@ interface UseTrashReturn {
 
 /**
  * Checks which trashed image IDs are referenced by living (non-deleted, non-hidden)
- * images via source_image_id or root_image_id in generation_metadata.
+ * images via source_image_id or root_image_id in generation_metadata,
+ * or are currently placed on the canvas (on_canvas = true).
  */
-async function fetchLinkedIds(
-  trashedIds: Array<string>,
-): Promise<{ ids: Set<string>; counts: Record<string, number> }> {
+async function fetchLinkedIds(trashedIds: Array<string>): Promise<{
+  ids: Set<string>
+  counts: Record<string, number>
+  canvasIds: Set<string>
+}> {
   const ids = new Set<string>()
   const counts: Record<string, number> = {}
+  const canvasIds = new Set<string>()
 
-  if (trashedIds.length === 0) return { ids, counts }
+  if (trashedIds.length === 0) return { ids, counts, canvasIds }
 
   const trashedSet = new Set(trashedIds)
 
@@ -40,28 +45,38 @@ async function fetchLinkedIds(
     .eq('hidden', false)
     .not('generation_metadata', 'is', null)
 
-  if (!livingImages) return { ids, counts }
+  if (livingImages) {
+    for (const row of livingImages) {
+      const meta = row.generation_metadata as Record<string, unknown> | null
+      if (!meta) continue
 
-  for (const row of livingImages) {
-    const meta = row.generation_metadata as Record<string, unknown> | null
-    if (!meta) continue
+      const refs = [
+        typeof meta.source_image_id === 'string' ? meta.source_image_id : null,
+        typeof meta.root_image_id === 'string' ? meta.root_image_id : null,
+      ].filter((id): id is string => id !== null && trashedSet.has(id))
 
-    const refs = [
-      typeof meta.source_image_id === 'string' ? meta.source_image_id : null,
-      typeof meta.root_image_id === 'string' ? meta.root_image_id : null,
-    ].filter((id): id is string => id !== null && trashedSet.has(id))
-
-    for (const refId of refs) {
-      ids.add(refId)
-      counts[refId] = (counts[refId] || 0) + 1
+      for (const refId of refs) {
+        ids.add(refId)
+        counts[refId] = (counts[refId] || 0) + 1
+      }
     }
   }
 
-  // Dedupe counts — a single living image referencing both source and root
-  // of the same trashed image should only count once per trashed image.
-  // The current approach may double-count, but that's acceptable for a tooltip.
+  // Check which trashed images are still on the canvas
+  const { data: onCanvasRows } = await supabase
+    .from('user_images')
+    .select('id')
+    .in('id', trashedIds)
+    .eq('on_canvas', true)
 
-  return { ids, counts }
+  if (onCanvasRows) {
+    for (const row of onCanvasRows) {
+      canvasIds.add(row.id)
+      ids.add(row.id)
+    }
+  }
+
+  return { ids, counts, canvasIds }
 }
 
 export function useTrash(userId: string | undefined): UseTrashReturn {
@@ -70,13 +85,15 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
   const [isLoading, setIsLoading] = useState(true)
   const [linkedImageIds, setLinkedImageIds] = useState<Set<string>>(new Set())
   const [linkedCounts, setLinkedCounts] = useState<Record<string, number>>({})
+  const [canvasLinkedIds, setCanvasLinkedIds] = useState<Set<string>>(new Set())
 
   const refreshLinked = useCallback(async (trashedImages: Array<UserImage>) => {
-    const { ids, counts } = await fetchLinkedIds(
+    const { ids, counts, canvasIds } = await fetchLinkedIds(
       trashedImages.map((img) => img.id),
     )
     setLinkedImageIds(ids)
     setLinkedCounts(counts)
+    setCanvasLinkedIds(canvasIds)
   }, [])
 
   const fetchTrashed = useCallback(async () => {
@@ -433,6 +450,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     isLoading,
     linkedImageIds,
     linkedCounts,
+    canvasLinkedIds,
     restore,
     permanentDelete,
     permanentDeleteMany,

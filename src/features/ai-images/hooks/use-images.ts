@@ -478,13 +478,11 @@ export function useImages({
               delete meta.source_image_id
               delete meta.root_image_id
               meta.generation_type = 'generate'
-              return (
-                supabase
-                  .from('user_images')
-                   
-                  .update({ generation_metadata: meta as any })
-                  .eq('id', child.id)
-              )
+              return supabase
+                .from('user_images')
+
+                .update({ generation_metadata: meta as any })
+                .eq('id', child.id)
             }),
           )
         }
