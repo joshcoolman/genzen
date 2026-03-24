@@ -74,7 +74,6 @@ export function useImages({
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
         .is('deleted_at', null)
-        .eq('hidden', false)
         .order('sort_order', { ascending: false, nullsFirst: false })
 
       if (queryError) throw queryError
