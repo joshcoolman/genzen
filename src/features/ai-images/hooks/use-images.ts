@@ -449,10 +449,46 @@ export function useImages({
 
     try {
       const now = new Date().toISOString()
+      const allIds = Array.from(idsToDelete)
+
+      // Soft-delete all
       await supabase
         .from('user_images')
         .update({ deleted_at: now })
-        .in('id', Array.from(idsToDelete))
+        .in('id', allIds)
+
+      // Flatten: strip parent/root references so they're independent in trash
+      // and restore as individual images (not grouped)
+      const childIds = allIds.filter((id) => id !== img.id)
+      if (childIds.length > 0) {
+        // Fetch current metadata for children, remove parent pointers
+        const { data: children } = await supabase
+          .from('user_images')
+          .select('id, generation_metadata')
+          .in('id', childIds)
+
+        if (children) {
+          await Promise.all(
+            children.map((child) => {
+              const raw = child.generation_metadata as Record<
+                string,
+                unknown
+              > | null
+              const meta = { ...(raw ?? {}) }
+              delete meta.source_image_id
+              delete meta.root_image_id
+              meta.generation_type = 'generate'
+              return (
+                supabase
+                  .from('user_images')
+                   
+                  .update({ generation_metadata: meta as any })
+                  .eq('id', child.id)
+              )
+            }),
+          )
+        }
+      }
     } catch {
       loadSavedImages()
     }
