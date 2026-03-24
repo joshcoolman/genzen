@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { fileToDataUrl } from '../lib/persistence'
+import { getSignedUrl } from '../lib/persistence'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
@@ -8,6 +8,7 @@ import { useUserImages } from '@/features/user-images'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
+import { detectAspectRatio } from '@/features/ai-images/constants'
 
 /** Parse "w:h" string into numeric ratio */
 function parseRatio(r: string): number {
@@ -37,7 +38,7 @@ export function useCanvasGenerate(
     mode: 'multi',
   })
 
-  // When server returns record IDs, map them to already-created placeholders and start polling
+  // When server returns record IDs, map them to placeholders and poll for completion
   const handleAfterSubmit = useCallback(
     (results: Array<{ recordId: string }>) => {
       const placeholderIds = pendingPlaceholdersRef.current
@@ -83,28 +84,24 @@ export function useCanvasGenerate(
             const placeholderId = recordToPlaceholder.get(recordId)
             if (!placeholderId) continue
 
-            const { data: signedData } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(record.storage_path, 3600)
+            const signedUrl = await getSignedUrl(record.storage_path)
 
-            if (signedData?.signedUrl) {
-              try {
-                const resp = await fetch(signedData.signedUrl)
-                const blob = await resp.blob()
-                const dataUrl = await fileToDataUrl(blob)
-
-                setImages((prev) =>
-                  prev.map((ci) =>
-                    ci.id === placeholderId
-                      ? { ...ci, src: dataUrl, pending: false }
-                      : ci,
-                  ),
-                )
-              } catch {
-                setImages((prev) =>
-                  prev.filter((ci) => ci.id !== placeholderId),
-                )
-              }
+            if (signedUrl) {
+              setImages((prev) =>
+                prev.map((ci) =>
+                  ci.id === placeholderId
+                    ? {
+                        ...ci,
+                        recordId,
+                        storagePath: record.storage_path,
+                        signedUrl,
+                        pending: false,
+                      }
+                    : ci,
+                ),
+              )
+            } else {
+              setImages((prev) => prev.filter((ci) => ci.id !== placeholderId))
             }
           } else if (record.status === 'failed') {
             pendingRecordIds.delete(recordId)
@@ -137,12 +134,11 @@ export function useCanvasGenerate(
     onAfterSubmit: handleAfterSubmit,
   })
 
-  // Wrap handleGenerate to create placeholders optimistically before the server call
+  // Optimistic generation: create placeholders, then fire server call
   const handleGenerateOptimistic = useCallback(() => {
     const source = sourceRef.current
     if (!source || !generator.canGenerate) return
 
-    // Compute placeholder dimensions from aspect ratio
     const ratio = parseRatio(generator.aspectRatio)
     const placeholderH = source.height
     const placeholderW = Math.round(placeholderH * ratio)
@@ -161,7 +157,8 @@ export function useCanvasGenerate(
       placeholderIds.push(id)
       placeholders.push({
         id,
-        src: '',
+        recordId: '',
+        storagePath: '',
         x: startX + i * (placeholderW + gap),
         y: source.y,
         width: placeholderW,
@@ -175,24 +172,48 @@ export function useCanvasGenerate(
     setIsGenerating(true)
     setIsOpen(false)
 
-    // Fire the actual generation (async, non-blocking)
     generator.handleGenerate().catch(() => {
-      // On total failure, remove all placeholders
       setImages((prev) => prev.filter((ci) => !placeholderIds.includes(ci.id)))
       setIsGenerating(false)
     })
   }, [generator, modelSelector, setImages, pushUndo])
 
   const open = useCallback(
-    (sourceImage: CanvasImage) => {
+    async (sourceImage: CanvasImage) => {
       sourceRef.current = sourceImage
       setError(null)
-      // Canvas images can be data URLs or remote URLs (e.g. pasted from web)
-      if (sourceImage.src.startsWith('data:')) {
-        generator.setSourceFromBase64(sourceImage.src, 'canvas-image')
-      } else {
-        generator.setSourceFromUrl(sourceImage.src, 'canvas-image')
+
+      // Source image has a Supabase record -- use its signed URL (CORS-safe)
+      const url =
+        sourceImage.signedUrl ?? (await getSignedUrl(sourceImage.storagePath))
+      if (url) {
+        generator.setSourceFromUrl(url, 'canvas-image')
       }
+
+      // Set orientation + aspect ratio from canvas image dimensions
+      const detected = detectAspectRatio(sourceImage.width, sourceImage.height)
+      const isLandscape = sourceImage.width >= sourceImage.height
+      generator.setOrientation(isLandscape ? 'landscape' : 'portrait')
+      generator.setAspectRatio(detected)
+
+      // Pre-fill prompt from generation_metadata
+      if (sourceImage.recordId) {
+        const { data: record } = await supabase
+          .from('user_images')
+          .select('generation_metadata')
+          .eq('id', sourceImage.recordId)
+          .single()
+
+        const metadata = record?.generation_metadata as Record<
+          string,
+          unknown
+        > | null
+        const prompt = metadata?.prompt as string | undefined
+        if (prompt) {
+          generator.setPrompt(prompt)
+        }
+      }
+
       setIsOpen(true)
     },
     [generator],

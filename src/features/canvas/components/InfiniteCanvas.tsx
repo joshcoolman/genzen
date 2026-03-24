@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
 import {
-  fileToDataUrl,
+  getImageDimensions,
+  getSignedUrl,
   loadPersistedState,
+  resolveSignedUrls,
   savePersistedState,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
@@ -14,6 +16,7 @@ import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
 import { useAuth } from '@/lib/auth'
 import { ExistingImagePicker, useExistingImages } from '@/features/user-images'
+import { computeFileHash } from '@/features/user-images/lib/file-hash'
 
 interface InfiniteCanvasProps {
   storageKey?: string
@@ -176,7 +179,7 @@ export function InfiniteCanvas({
   /* -- Load persisted state -- */
 
   useEffect(() => {
-    loadPersistedState(storageKey).then((state) => {
+    loadPersistedState(storageKey).then(async (state) => {
       if (state) {
         setImages(state.images)
         setTransform(state.transform)
@@ -184,6 +187,13 @@ export function InfiniteCanvas({
         tRef.current = state.transform
         iRef.current = state.images
         gRef.current = state.groups ?? []
+
+        // Resolve signed URLs for persisted images (they expire and aren't stored)
+        if (state.images.length > 0) {
+          const resolved = await resolveSignedUrls(state.images)
+          setImages(resolved)
+          iRef.current = resolved
+        }
       }
       setLoaded(true)
     })
@@ -349,66 +359,69 @@ export function InfiniteCanvas({
       )
       if (imageFiles.length === 0) return
 
-      const loaded = await Promise.all(
-        imageFiles.map(async (file) => {
-          const dataUrl = await fileToDataUrl(file)
-          return new Promise<{ dataUrl: string; w: number; h: number }>(
-            (resolve) => {
-              const img = new Image()
-              img.onload = () =>
-                resolve({ dataUrl, w: img.naturalWidth, h: img.naturalHeight })
-              img.onerror = () => resolve({ dataUrl, w: 300, h: 300 })
-              img.src = dataUrl
-            },
-          )
-        }),
+      // Get dimensions from object URLs (instant, no upload needed)
+      const withDims = await Promise.all(
+        imageFiles.map(async (file) => ({
+          file,
+          dims: await getImageDimensions(file),
+        })),
       )
 
-      const items = loaded.map(({ w, h }) => ({
+      // Create pending placeholders with proper masonry layout
+      const items = withDims.map(({ dims }) => ({
         id: crypto.randomUUID(),
-        width: w,
-        height: h,
+        width: dims.w,
+        height: dims.h,
       }))
-      const results = layoutMasonry(items, 6, cx, cy, 300)
-
-      const newImages: Array<CanvasImage> = results.map((r, i) => ({
+      const layoutResults = layoutMasonry(items, 6, cx, cy, 300)
+      const pendingImages: Array<CanvasImage> = layoutResults.map((r) => ({
         ...r,
-        src: loaded[i].dataUrl,
+        recordId: '',
+        storagePath: '',
+        pending: true,
       }))
 
-      const newIds = new Set(newImages.map((img) => img.id))
       pushUndo()
-      setImages((prev) => [...prev, ...newImages])
+      setImages((prev) => [...prev, ...pendingImages])
+      const newIds = new Set(pendingImages.map((img) => img.id))
       setSelected(newIds)
       sRef.current = newIds
-    },
-    [pushUndo],
-  )
 
-  const addImageFromDataUrl = useCallback(
-    (dataUrl: string, cx: number, cy: number) => {
-      const img = new Image()
-      img.onload = () => {
-        pushUndo()
-        const id = crypto.randomUUID()
-        setImages((prev) => [
-          ...prev,
-          {
-            id,
-            src: dataUrl,
-            x: cx - img.naturalWidth / 2,
-            y: cy - img.naturalHeight / 2,
-            width: img.naturalWidth,
-            height: img.naturalHeight,
-          },
-        ])
-        const sel = new Set([id])
-        setSelected(sel)
-        sRef.current = sel
-      }
-      img.src = dataUrl
+      // Upload all files in parallel, replacing placeholders as they complete
+      await Promise.all(
+        withDims.map(async ({ file }, i) => {
+          const placeholder = pendingImages[i]
+          try {
+            const fileHash = await computeFileHash(file)
+            const record = await canvasGen.userImages.create({
+              title: file.name || 'Canvas Image',
+              file,
+              file_hash: fileHash,
+            })
+
+            const signedUrl = await getSignedUrl(record.storage_path)
+            if (!signedUrl) throw new Error('Failed to get signed URL')
+
+            setImages((prev) =>
+              prev.map((ci) =>
+                ci.id === placeholder.id
+                  ? {
+                      ...ci,
+                      recordId: record.id,
+                      storagePath: record.storage_path,
+                      signedUrl,
+                      pending: false,
+                    }
+                  : ci,
+              ),
+            )
+          } catch {
+            setImages((prev) => prev.filter((ci) => ci.id !== placeholder.id))
+          }
+        }),
+      )
     },
-    [pushUndo],
+    [pushUndo, canvasGen.userImages],
   )
 
   /* -- Library picker confirm -- */
@@ -418,35 +431,43 @@ export function InfiniteCanvas({
       if (selected.length === 0) return
       const c = getPasteTarget()
 
-      const loaded = await Promise.all(
+      // Look up storage_path from libraryImages and get full-res signed URLs
+      const resolved = await Promise.all(
         selected.map(async (item) => {
-          try {
-            const resp = await fetch(item.url)
-            const blob = await resp.blob()
-            const dataUrl = await fileToDataUrl(blob)
-            return new Promise<{
-              dataUrl: string
-              w: number
-              h: number
-            } | null>((resolve) => {
+          const record = libraryImages.find((img) => img.id === item.id)
+          if (!record?.storage_path) return null
+          const signedUrl = await getSignedUrl(record.storage_path)
+          if (!signedUrl) return null
+
+          // Get dimensions from the full-res URL
+          const dims = await new Promise<{ w: number; h: number }>(
+            (resolve) => {
               const img = new Image()
               img.onload = () =>
-                resolve({
-                  dataUrl,
-                  w: img.naturalWidth,
-                  h: img.naturalHeight,
-                })
-              img.onerror = () => resolve(null)
-              img.src = dataUrl
-            })
-          } catch {
-            return null
+                resolve({ w: img.naturalWidth, h: img.naturalHeight })
+              img.onerror = () => resolve({ w: 300, h: 300 })
+              img.src = signedUrl
+            },
+          )
+          return {
+            recordId: record.id,
+            storagePath: record.storage_path,
+            signedUrl,
+            ...dims,
           }
         }),
       )
 
-      const valid = loaded.filter(
-        (r): r is { dataUrl: string; w: number; h: number } => r !== null,
+      const valid = resolved.filter(
+        (
+          r,
+        ): r is {
+          recordId: string
+          storagePath: string
+          signedUrl: string
+          w: number
+          h: number
+        } => r !== null,
       )
       if (valid.length === 0) return
 
@@ -459,7 +480,9 @@ export function InfiniteCanvas({
 
       const newImages: Array<CanvasImage> = results.map((r, i) => ({
         ...r,
-        src: valid[i].dataUrl,
+        recordId: valid[i].recordId,
+        storagePath: valid[i].storagePath,
+        signedUrl: valid[i].signedUrl,
       }))
 
       const newIds = new Set(newImages.map((img) => img.id))
@@ -468,7 +491,7 @@ export function InfiniteCanvas({
       setSelected(newIds)
       sRef.current = newIds
     },
-    [pushUndo, getPasteTarget],
+    [pushUndo, getPasteTarget, libraryImages],
   )
 
   /* -- Zoom -- */
@@ -576,37 +599,40 @@ export function InfiniteCanvas({
     const onPaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
-      let handled = false
+
+      // Extract clipboard image file (works for screenshots, copies, HTML img pastes)
       for (const item of items) {
         if (item.type.startsWith('image/')) {
-          e.preventDefault()
           const file = item.getAsFile()
           if (!file) continue
-          const c = getPasteTarget()
-          addImagesFromFiles([file], c.x, c.y)
-          handled = true
-        }
-      }
-      if (!handled) {
-        const text = e.clipboardData.getData('text/plain')
-        if (text.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)(\?.*)?$/i)) {
           e.preventDefault()
           const c = getPasteTarget()
-          fetch(text)
-            .then((r) => r.blob())
-            .then((blob) => fileToDataUrl(blob))
-            .then((dataUrl) => {
-              addImageFromDataUrl(dataUrl, c.x, c.y)
-            })
-            .catch(() => {
-              addImageFromDataUrl(text, c.x, c.y)
-            })
+          addImagesFromFiles([file], c.x, c.y)
+          return
         }
+      }
+
+      // Fall back to pasted URL text -- fetch and upload as file
+      const text = e.clipboardData.getData('text/plain')
+      if (text.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)(\?.*)?$/i)) {
+        e.preventDefault()
+        const c = getPasteTarget()
+        fetch(text)
+          .then((r) => r.blob())
+          .then((blob) => {
+            const file = new File([blob], 'pasted-image.png', {
+              type: blob.type || 'image/png',
+            })
+            addImagesFromFiles([file], c.x, c.y)
+          })
+          .catch(() => {
+            /* URL not fetchable -- skip */
+          })
       }
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
-  }, [addImagesFromFiles, addImageFromDataUrl, getPasteTarget])
+  }, [addImagesFromFiles, getPasteTarget])
 
   /* -- Drop -- */
 
@@ -625,33 +651,26 @@ export function InfiniteCanvas({
         return
       }
 
+      // Try to fetch dropped URL as a file and upload
       const html = e.dataTransfer.getData('text/html')
-      if (html) {
-        const match = html.match(/<img[^>]+src="([^"]+)"/)
-        if (match?.[1]) {
-          fetch(match[1])
-            .then((r) => r.blob())
-            .then((blob) => fileToDataUrl(blob))
-            .then((dataUrl) => {
-              addImageFromDataUrl(dataUrl, pos.x, pos.y)
-            })
-            .catch(() => addImageFromDataUrl(match[1], pos.x, pos.y))
-          return
-        }
-      }
+      const urlMatch = html.match(/<img[^>]+src="([^"]+)"/)
+      const url = urlMatch?.[1] || e.dataTransfer.getData('text/plain') || ''
 
-      const text = e.dataTransfer.getData('text/plain')
-      if (text.startsWith('http')) {
-        fetch(text)
+      if (url.startsWith('http')) {
+        fetch(url)
           .then((r) => r.blob())
-          .then((blob) => fileToDataUrl(blob))
-          .then((dataUrl) => {
-            addImageFromDataUrl(dataUrl, pos.x, pos.y)
+          .then((blob) => {
+            const file = new File([blob], 'dropped-image.png', {
+              type: blob.type || 'image/png',
+            })
+            addImagesFromFiles([file], pos.x, pos.y)
           })
-          .catch(() => addImageFromDataUrl(text, pos.x, pos.y))
+          .catch(() => {
+            /* URL not fetchable -- skip */
+          })
       }
     },
-    [screenToCanvas, addImagesFromFiles, addImageFromDataUrl],
+    [screenToCanvas, addImagesFromFiles],
   )
 
   /* -- Pointer events -- */
@@ -1071,7 +1090,7 @@ export function InfiniteCanvas({
               {img.pending ? (
                 <div className={styles.pendingInner} />
               ) : (
-                <img src={img.src} alt="" draggable={false} />
+                <img src={img.signedUrl} alt="" draggable={false} />
               )}
             </div>
           ))}

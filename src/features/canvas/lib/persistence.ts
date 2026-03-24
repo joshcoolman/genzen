@@ -1,8 +1,10 @@
-import type { PersistedState } from '../types'
+import type { CanvasImage, PersistedState } from '../types'
+import { supabase } from '@/lib/supabase'
 
 const DEFAULT_DB = 'moodboard'
 const STORE_NAME = 'state'
 const DEFAULT_KEY = 'canvas'
+const BUCKET_NAME = 'user-images'
 
 function openDB(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -19,12 +21,23 @@ export async function loadPersistedState(
 ): Promise<PersistedState | null> {
   try {
     const db = await openDB(dbName)
-    return new Promise((resolve) => {
+    const raw = await new Promise<PersistedState | null>((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readonly')
       const req = tx.objectStore(STORE_NAME).get(storageKey)
       req.onsuccess = () => resolve(req.result ?? null)
       req.onerror = () => resolve(null)
     })
+    if (!raw) return null
+
+    // Migration: filter out old-format images (have src but no recordId/storagePath)
+    const validImages = raw.images.filter(
+      (img) => img.recordId && img.storagePath && !img.pending,
+    )
+
+    return {
+      ...raw,
+      images: validImages,
+    }
   } catch {
     return null
   }
@@ -38,17 +51,60 @@ export async function savePersistedState(
   try {
     const db = await openDB(dbName)
     const tx = db.transaction(STORE_NAME, 'readwrite')
-    tx.objectStore(STORE_NAME).put(state, storageKey)
+
+    // Strip runtime-only fields and pending images before persisting
+    const cleanImages = state.images
+      .filter((img) => img.recordId && img.storagePath && !img.pending)
+      .map(({ signedUrl: _, pending: __, ...rest }) => rest)
+
+    tx.objectStore(STORE_NAME).put(
+      { ...state, images: cleanImages },
+      storageKey,
+    )
   } catch {
     /* silent fail */
   }
 }
 
-export function fileToDataUrl(file: File | Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
+/** Fetch a full-res signed URL for a Supabase storage path (24h TTL) */
+export async function getSignedUrl(
+  storagePath: string,
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .createSignedUrl(storagePath, 86400)
+  if (error || !data.signedUrl) return null
+  return data.signedUrl
+}
+
+/** Batch-fetch signed URLs for canvas images that need them */
+export async function resolveSignedUrls(
+  images: Array<CanvasImage>,
+): Promise<Array<CanvasImage>> {
+  return Promise.all(
+    images.map(async (img) => {
+      if (img.signedUrl || !img.storagePath) return img
+      const signedUrl = await getSignedUrl(img.storagePath)
+      return signedUrl ? { ...img, signedUrl } : img
+    }),
+  )
+}
+
+/** Get image dimensions from a File using an object URL (fast, no base64) */
+export function getImageDimensions(
+  file: File,
+): Promise<{ w: number; h: number }> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve({ w: img.naturalWidth, h: img.naturalHeight })
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve({ w: 300, h: 300 })
+    }
+    img.src = url
   })
 }

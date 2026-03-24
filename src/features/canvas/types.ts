@@ -1,11 +1,16 @@
 export interface CanvasImage {
   id: string
-  src: string
+  /** Required link to user_images record */
+  recordId: string
+  /** Supabase storage path (persisted for signed URL generation) */
+  storagePath: string
   x: number
   y: number
   width: number
   height: number
   pending?: boolean
+  /** Runtime only -- not persisted. Cached signed URL for display. */
+  signedUrl?: string
 }
 
 export interface Transform {
