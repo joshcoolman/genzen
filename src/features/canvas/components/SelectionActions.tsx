@@ -8,6 +8,7 @@ interface SelectionActionsProps {
   onUngroup: () => void
   zoomPct: number
   onUpload: () => void
+  onLibrary: () => void
 }
 
 const DEFAULT_COLUMNS = 4
@@ -20,6 +21,7 @@ export function SelectionActions({
   onUngroup,
   zoomPct,
   onUpload,
+  onLibrary,
 }: SelectionActionsProps) {
   const hasSelection = count >= 2
 
@@ -44,6 +46,29 @@ export function SelectionActions({
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <polyline points="17 8 12 3 7 8" />
           <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+      </button>
+
+      {/* Library button */}
+      <button
+        className={styles.iconBtn}
+        onClick={onLibrary}
+        title="Add from library"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
         </svg>
       </button>
 

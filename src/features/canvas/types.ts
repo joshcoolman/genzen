@@ -5,6 +5,7 @@ export interface CanvasImage {
   y: number
   width: number
   height: number
+  pending?: boolean
 }
 
 export interface Transform {

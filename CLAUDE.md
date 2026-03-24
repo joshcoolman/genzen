@@ -1,21 +1,6 @@
-## Session Memory
-
-At the start of every session, read `memory/progress.md` for architecture reference, key decisions, and how features work.
-Only update `memory/progress.md` when architecture changes (new features, key files, or decisions) — not for routine commits.
-Backlog and task tracking live in GitHub Issues + Project board (`gh issue list`, `gh project`).
-
----
-
 ## Stack
 
-TanStack Start (React 19 + Vite + Nitro SSR), Supabase (auth/postgres/realtime), FAL AI (image gen), Tailwind v4, shadcn/ui (new-york style), Fly.io deploy
-
-## Commands
-
-- `pnpm dev` -- dev server on port 3000
-- `pnpm build` -- production build
-- `pnpm test` -- vitest run
-- `pnpm check` -- prettier + eslint fix
+TanStack Start (React 19 + Vite + Nitro SSR), Supabase, FAL AI (image gen), Tailwind v4, shadcn/ui
 
 ## Directory Structure
 
@@ -40,57 +25,9 @@ supabase/
 
 Before staging and committing, always run `pnpm check` (prettier + eslint fix). Fix any errors before proceeding. Sequence: `pnpm check` -> `pnpm build` -> stage -> commit -> push.
 
-## Commit Messages
+## Feature Modules (src/features/)
 
-Format: `area: subject line` (under 70 chars)
-
-Area prefixes (match feature dirs): `ai-images`, `video`, `storyboard`, `nav`, `auth`, `docs`, `notes`, `shared` (cross-cutting components/lib), `infra` (build/deploy/migrations), `dx` (dev workspace/tooling). Use `fix(area):` for bug fixes.
-
-Body (for non-trivial changes):
-
-- Line 1: WHY -- the motivation or problem (not derivable from the diff)
-- Then: key files added/removed, behavioral changes, or migration notes
-- End with `Closes #XX` if resolving a GitHub issue
-
-Keep it to 1 logical change per commit. If bullet list covers 3+ unrelated things, split into separate commits.
-
-Examples:
-
-- `ai-images(edit): add optimistic pending cards for variations`
-- `shared: extract CopyButton and ExpandableText from feature modules`
-- `fix(nav): sidebar not restoring width after dev workspace exit`
-- `infra: add gemini3Flash to ai.server.ts model registry`
-
-## Feature Modules
-
-Each feature has its own `CLAUDE.md` with architecture details. Read the relevant one before working on a feature.
-
-| Feature           | Path                          | Summary                                                                                     |
-| ----------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
-| **ai-images**     | `src/features/ai-images/`     | Multi-model image generation, brainstorm, edit, variation, reparenting workflows via FAL AI |
-| **ai-video**      | `src/features/ai-video/`      | Workspace-based video generation using first-frame/last-frame (FLF) workflow                |
-| **ad**            | `src/features/ad/`            | Embedded AI chat assistant (right sidebar) with route-aware context                         |
-| **characters**    | `src/features/characters/`    | Character generation wizard (mock/UI-only)                                                  |
-| **combine**       | `src/features/combine/`       | Combine multiple images into one via FAL edit models                                        |
-| **credits**       | `src/features/credits/`       | Credit balance system for metering AI generation usage                                      |
-| **dev-workspace** | `src/features/dev-workspace/` | Sandbox hub hosting experimental feature pages                                              |
-| **docs**          | `src/features/docs/`          | Documentation viewer with sidebar nav and ToC                                               |
-| **models**        | `src/features/models/`        | Browsable FAL AI model catalog with search and filtering                                    |
-| **multi-shot**    | `src/features/multi-shot/`    | Multi-shot video generation (elements + shots + duration budget)                            |
-| **notes**         | `src/features/notes/`         | AD conversation snapshots -- save, review, reload into context                              |
-| **outpaint**      | `src/features/outpaint/`      | Extend images to new aspect ratios via FAL edit models                                      |
-| **prompt-studio** | `src/features/prompt-studio/` | Run prompts against multiple LLMs and compare side-by-side                                  |
-| **shots**         | `src/features/shots/`         | Linear pipeline: source image -> describe -> prompts -> generate variations                 |
-| **spotlight**     | `src/features/spotlight/`     | Cmd+K navigation dialog                                                                     |
-| **status-bar**    | `src/features/status-bar/`    | Fixed bottom-right floating bar with contextual hints                                       |
-| **storyboard**    | `src/features/storyboard/`    | Story prompt -> scene breakdown -> frame generation -> video clips                          |
-| **style-trainer** | `src/features/style-trainer/` | Curated image collections used as style references during generation                        |
-| **trash**         | `src/features/trash/`         | Soft-delete recovery for user images                                                        |
-| **user-images**   | `src/features/user-images/`   | Shared image library: hooks, pickers, upload/download used by AI Images, Combine, etc.      |
-
-## Shared Terms
-
-See `shared-terms.md` for domain vocabulary (focused edit view, variations, brainstorm, etc.)
+Each feature has its own `CLAUDE.md` be sure to reference, create and or update when working on features.
 
 ## Key Conventions
 

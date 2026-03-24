@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
 import {
   fileToDataUrl,
@@ -6,9 +6,14 @@ import {
   savePersistedState,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
+import { useCanvasVariations } from '../hooks/use-canvas-variations'
 import { SelectionActions } from './SelectionActions'
+import { CanvasVariationsDialog } from './CanvasVariationsDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
+import type { CollectedImage } from '@/features/user-images'
+import { useAuth } from '@/lib/auth'
+import { ExistingImagePicker, useExistingImages } from '@/features/user-images'
 
 interface InfiniteCanvasProps {
   storageKey?: string
@@ -78,6 +83,24 @@ export function InfiniteCanvas({
   } | null>(null)
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    imageId: string
+  } | null>(null)
+  const [variationsOpen, setVariationsOpen] = useState(false)
+  const [variationSourceId, setVariationSourceId] = useState<string | null>(
+    null,
+  )
+  const dialogOpenRef = useRef(false)
+
+  const { user } = useAuth()
+  const {
+    images: libraryImages,
+    imageUrls: libraryImageUrls,
+    isLoading: libraryLoading,
+  } = useExistingImages(user?.id)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -116,6 +139,11 @@ export function InfiniteCanvas({
     redoStack.current = []
   }, [])
 
+  const { generateVariations, isGenerating } = useCanvasVariations(
+    setImages,
+    pushUndo,
+  )
+
   const undo = useCallback(() => {
     const entry = undoStack.current.pop()
     if (!entry) return
@@ -148,6 +176,9 @@ export function InfiniteCanvas({
   useEffect(() => {
     gRef.current = groups
   }, [groups])
+  useEffect(() => {
+    dialogOpenRef.current = variationsOpen || libraryOpen
+  }, [variationsOpen, libraryOpen])
 
   /* -- Load persisted state -- */
 
@@ -387,6 +418,66 @@ export function InfiniteCanvas({
     [pushUndo],
   )
 
+  /* -- Library picker confirm -- */
+
+  const onLibraryConfirm = useCallback(
+    async (selected: Array<CollectedImage>) => {
+      if (selected.length === 0) return
+      const c = getPasteTarget()
+
+      const loaded = await Promise.all(
+        selected.map(async (item) => {
+          try {
+            const resp = await fetch(item.url)
+            const blob = await resp.blob()
+            const dataUrl = await fileToDataUrl(blob)
+            return new Promise<{
+              dataUrl: string
+              w: number
+              h: number
+            } | null>((resolve) => {
+              const img = new Image()
+              img.onload = () =>
+                resolve({
+                  dataUrl,
+                  w: img.naturalWidth,
+                  h: img.naturalHeight,
+                })
+              img.onerror = () => resolve(null)
+              img.src = dataUrl
+            })
+          } catch {
+            return null
+          }
+        }),
+      )
+
+      const valid = loaded.filter(
+        (r): r is { dataUrl: string; w: number; h: number } => r !== null,
+      )
+      if (valid.length === 0) return
+
+      const items = valid.map(({ w, h }) => ({
+        id: crypto.randomUUID(),
+        width: w,
+        height: h,
+      }))
+      const results = layoutMasonry(items, 6, c.x, c.y, 300)
+
+      const newImages: Array<CanvasImage> = results.map((r, i) => ({
+        ...r,
+        src: valid[i].dataUrl,
+      }))
+
+      const newIds = new Set(newImages.map((img) => img.id))
+      pushUndo()
+      setImages((prev) => [...prev, ...newImages])
+      setSelected(newIds)
+      sRef.current = newIds
+    },
+    [pushUndo, getPasteTarget],
+  )
+
   /* -- Zoom -- */
 
   const zoomAt = useCallback((newScale: number, sx: number, sy: number) => {
@@ -458,6 +549,14 @@ export function InfiniteCanvas({
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (
+        dialogOpenRef.current ||
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT'
+      )
+        return
       if (e.code === 'Space' && !e.repeat) {
         e.preventDefault()
         spaceRef.current = true
@@ -750,7 +849,7 @@ export function InfiniteCanvas({
   /* -- Hotkeys -- */
 
   useEffect(() => {
-    hotkeys.filter = () => true
+    hotkeys.filter = () => !dialogOpenRef.current
 
     hotkeys('command+=,command+plus', (e) => {
       e.preventDefault()
@@ -908,123 +1007,205 @@ export function InfiniteCanvas({
 
   // Detect if current selection is exactly a group
   const selectedGroup = getSelectedGroup()
+  const emptySet = useMemo(() => new Set<string>(), [])
 
   return (
-    <div
-      ref={containerRef}
-      className={rootClass}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      tabIndex={0}
-    >
+    <>
       <div
-        className={styles.inner}
-        style={{
-          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-          transformOrigin: '0 0',
+        ref={containerRef}
+        className={rootClass}
+        onPointerDown={(e) => {
+          // Close context menu on any click
+          if (contextMenu) setContextMenu(null)
+          onPointerDown(e)
         }}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          const target = (e.target as HTMLElement).closest('[data-image-id]')
+          const imageId = target?.getAttribute('data-image-id')
+          if (imageId) {
+            setContextMenu({ x: e.clientX, y: e.clientY, imageId })
+          }
+        }}
+        tabIndex={0}
       >
-        {/* Group backgrounds (rendered behind images) */}
-        {groups.map((group) => {
-          const memberImgs = images.filter((img) =>
-            group.imageIds.includes(img.id),
-          )
-          if (memberImgs.length < 2) return null
-          const bounds = getBounds(memberImgs)
-          const pad = group.padding
-          return (
-            <div
-              key={group.id}
-              data-group-id={group.id}
-              className={styles.groupBackground}
-              style={{
-                left: bounds.x - pad,
-                top: bounds.y - pad,
-                width: bounds.w + pad * 2,
-                height: bounds.h + pad * 2,
-              }}
-            />
-          )
-        })}
+        <div
+          className={styles.inner}
+          style={{
+            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+            transformOrigin: '0 0',
+          }}
+        >
+          {/* Group backgrounds (rendered behind images) */}
+          {groups.map((group) => {
+            const memberImgs = images.filter((img) =>
+              group.imageIds.includes(img.id),
+            )
+            if (memberImgs.length < 2) return null
+            const bounds = getBounds(memberImgs)
+            const pad = group.padding
+            return (
+              <div
+                key={group.id}
+                data-group-id={group.id}
+                className={styles.groupBackground}
+                style={{
+                  left: bounds.x - pad,
+                  top: bounds.y - pad,
+                  width: bounds.w + pad * 2,
+                  height: bounds.h + pad * 2,
+                }}
+              />
+            )
+          })}
 
-        {images.map((img) => (
+          {images.map((img) => (
+            <div
+              key={img.id}
+              data-image-id={img.id}
+              className={`${styles.image}${selected.size >= 2 && selectionBounds && !selected.has(img.id) && img.x + img.width >= selectionBounds.x && img.x <= selectionBounds.x + selectionBounds.w && img.y + img.height >= selectionBounds.y && img.y <= selectionBounds.y + selectionBounds.h ? ` ${styles.dimmed}` : ''}${img.pending ? ` ${styles.pending}` : ''}`}
+              style={{
+                left: img.x,
+                top: img.y,
+                width: img.width,
+                height: img.height,
+              }}
+            >
+              {img.pending ? (
+                <div className={styles.pendingInner} />
+              ) : (
+                <img src={img.src} alt="" draggable={false} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {selectionBounds && (
           <div
-            key={img.id}
-            data-image-id={img.id}
-            className={`${styles.image}${selected.size >= 2 && selectionBounds && !selected.has(img.id) && img.x + img.width >= selectionBounds.x && img.x <= selectionBounds.x + selectionBounds.w && img.y + img.height >= selectionBounds.y && img.y <= selectionBounds.y + selectionBounds.h ? ` ${styles.dimmed}` : ''}`}
+            className={styles.groupBounds}
             style={{
-              left: img.x,
-              top: img.y,
-              width: img.width,
-              height: img.height,
+              left: transform.x + selectionBounds.x * transform.scale - 6,
+              top: transform.y + selectionBounds.y * transform.scale - 6,
+              width: selectionBounds.w * transform.scale + 12,
+              height: selectionBounds.h * transform.scale + 12,
             }}
-          >
-            <img src={img.src} alt="" draggable={false} />
+          />
+        )}
+
+        {marquee &&
+          (() => {
+            const rect = containerRef.current?.getBoundingClientRect()
+            const ox = rect?.left ?? 0
+            const oy = rect?.top ?? 0
+            return (
+              <div
+                className={styles.marquee}
+                style={{
+                  left: Math.min(marquee.x1, marquee.x2) - ox,
+                  top: Math.min(marquee.y1, marquee.y2) - oy,
+                  width: Math.abs(marquee.x2 - marquee.x1),
+                  height: Math.abs(marquee.y2 - marquee.y1),
+                }}
+              />
+            )
+          })()}
+
+        {images.length === 0 && (
+          <div className={styles.empty}>
+            <p>Drop images here, paste from clipboard, or use the + button</p>
+            <p className={styles.emptyHint}>
+              Click to set paste target &middot; Scroll to zoom &middot;
+              Space+drag to pan
+            </p>
           </div>
-        ))}
+        )}
+
+        <SelectionActions
+          count={selected.size}
+          isGrouped={!!selectedGroup}
+          onArrange={arrangeSelected}
+          onGroup={groupSelected}
+          onUngroup={ungroupSelected}
+          zoomPct={zoomPct}
+          onUpload={() => fileInputRef.current?.click()}
+          onLibrary={() => setLibraryOpen(true)}
+        />
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={onFileChange}
+          hidden
+        />
       </div>
 
-      {selectionBounds && (
+      {/* Right-click context menu */}
+      {contextMenu && (
         <div
-          className={styles.groupBounds}
-          style={{
-            left: transform.x + selectionBounds.x * transform.scale - 6,
-            top: transform.y + selectionBounds.y * transform.scale - 6,
-            width: selectionBounds.w * transform.scale + 12,
-            height: selectionBounds.h * transform.scale + 12,
-          }}
-        />
-      )}
-
-      {marquee &&
-        (() => {
-          const rect = containerRef.current?.getBoundingClientRect()
-          const ox = rect?.left ?? 0
-          const oy = rect?.top ?? 0
-          return (
-            <div
-              className={styles.marquee}
-              style={{
-                left: Math.min(marquee.x1, marquee.x2) - ox,
-                top: Math.min(marquee.y1, marquee.y2) - oy,
-                width: Math.abs(marquee.x2 - marquee.x1),
-                height: Math.abs(marquee.y2 - marquee.y1),
-              }}
-            />
-          )
-        })()}
-
-      {images.length === 0 && (
-        <div className={styles.empty}>
-          <p>Drop images here, paste from clipboard, or use the + button</p>
-          <p className={styles.emptyHint}>
-            Click to set paste target &middot; Scroll to zoom &middot;
-            Space+drag to pan
-          </p>
+          className={styles.contextMenu}
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button
+            className={styles.contextMenuItem}
+            onClick={() => {
+              setVariationSourceId(contextMenu.imageId)
+              setVariationsOpen(true)
+              setContextMenu(null)
+            }}
+          >
+            Variations
+          </button>
         </div>
       )}
 
-      <SelectionActions
-        count={selected.size}
-        isGrouped={!!selectedGroup}
-        onArrange={arrangeSelected}
-        onGroup={groupSelected}
-        onUngroup={ungroupSelected}
-        zoomPct={zoomPct}
-        onUpload={() => fileInputRef.current?.click()}
+      <CanvasVariationsDialog
+        open={variationsOpen}
+        onClose={() => {
+          setVariationsOpen(false)
+          setVariationSourceId(null)
+        }}
+        onGenerate={(opts) => {
+          const sourceImage = images.find((img) => img.id === variationSourceId)
+          if (!sourceImage) return
+          setVariationsOpen(false)
+          setVariationSourceId(null)
+          generateVariations({
+            sourceImage,
+            model: opts.model,
+            aspectRatio: opts.aspectRatio,
+            count: opts.count,
+            prompt: opts.prompt,
+          })
+        }}
+        isGenerating={isGenerating}
+        sourceWidth={
+          variationSourceId
+            ? images.find((img) => img.id === variationSourceId)?.width
+            : undefined
+        }
+        sourceHeight={
+          variationSourceId
+            ? images.find((img) => img.id === variationSourceId)?.height
+            : undefined
+        }
       />
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/*"
-        onChange={onFileChange}
-        hidden
+      <ExistingImagePicker
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        images={libraryImages}
+        imageUrls={libraryImageUrls}
+        isLoading={libraryLoading}
+        alreadyCollectedIds={emptySet}
+        onConfirm={onLibraryConfirm}
       />
-    </div>
+    </>
   )
 }

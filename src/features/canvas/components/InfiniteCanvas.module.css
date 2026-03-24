@@ -108,3 +108,64 @@
   background: #1a1a1a;
   border-radius: 4px;
 }
+
+/* Pending placeholder */
+.pending {
+  pointer-events: none;
+}
+
+.pendingInner {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Context menu */
+.contextMenu {
+  position: fixed;
+  z-index: 50;
+  min-width: 160px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.contextMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 13px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition:
+    color 0.1s,
+    background 0.1s;
+}
+
+.contextMenuItem:hover {
+  color: #fff;
+  background: #2a2a2a;
+}
