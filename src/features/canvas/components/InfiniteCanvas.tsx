@@ -87,6 +87,7 @@ export function InfiniteCanvas({
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [dropNotice, setDropNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
@@ -666,7 +667,10 @@ export function InfiniteCanvas({
             addImagesFromFiles([file], pos.x, pos.y)
           })
           .catch(() => {
-            /* URL not fetchable -- skip */
+            setDropNotice(
+              "Couldn't load that image. Try copying it and pasting instead.",
+            )
+            setTimeout(() => setDropNotice(null), 3000)
           })
       }
     },
@@ -1199,6 +1203,12 @@ export function InfiniteCanvas({
         alreadyCollectedIds={emptySet}
         onConfirm={onLibraryConfirm}
       />
+
+      {dropNotice && (
+        <div key={dropNotice} className={styles.dropNotice}>
+          {dropNotice}
+        </div>
+      )}
     </>
   )
 }
