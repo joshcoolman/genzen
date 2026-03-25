@@ -8,7 +8,10 @@ import { checkPendingGenerations } from '@/lib/server/check-pending-generations.
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { CREDIT_COSTS } from '@/features/credits'
 
-const COMBINE_MODEL = 'fal-ai/flux-2-pro/edit'
+export const COMBINE_MODELS = [
+  { id: 'fal-ai/flux-2-pro/edit', name: 'FLUX 2 Pro' },
+  { id: 'fal-ai/nano-banana-2/edit', name: 'Nano Banana 2' },
+]
 
 function getBounds(imgs: Array<CanvasImage>) {
   let x0 = Infinity,
@@ -48,6 +51,9 @@ export function useCanvasCombine(
     'landscape',
   )
   const [runsCount, setRunsCount] = useState(1)
+  const [selectedModels, setSelectedModels] = useState<Array<string>>([
+    'fal-ai/flux-2-pro/edit',
+  ])
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pendingPlaceholdersRef = useRef<Array<string>>([])
@@ -140,6 +146,16 @@ export function useCanvasCombine(
     setRunsCount((prev) => Math.min(Math.max(prev + delta, 1), 2))
   }, [])
 
+  const toggleModel = useCallback((modelId: string) => {
+    setSelectedModels((prev) => {
+      if (prev.includes(modelId)) {
+        if (prev.length === 1) return prev // keep at least one selected
+        return prev.filter((id) => id !== modelId)
+      }
+      return [...prev, modelId]
+    })
+  }, [])
+
   const handleCombineOptimistic = useCallback(async () => {
     if (!accessToken || !prompt.trim() || sourceImages.length === 0) return
 
@@ -157,7 +173,8 @@ export function useCanvasCombine(
         ? `[${labeledParts.join(', ')}]\n\n${prompt.trim()}`
         : prompt.trim()
 
-    const cost = CREDIT_COSTS.variation * runsCount
+    const totalRuns = selectedModels.length * runsCount
+    const cost = CREDIT_COSTS.variation * totalRuns
     if ((credits.balance ?? 0) < cost) {
       credits.showInsufficientCredits(cost)
       return
@@ -173,7 +190,7 @@ export function useCanvasCombine(
 
     const placeholderIds: Array<string> = []
     const placeholders: Array<CanvasImage> = []
-    for (let i = 0; i < runsCount; i++) {
+    for (let i = 0; i < totalRuns; i++) {
       const id = crypto.randomUUID()
       placeholderIds.push(id)
       placeholders.push({
@@ -195,16 +212,18 @@ export function useCanvasCombine(
 
     try {
       const results = await Promise.allSettled(
-        Array.from({ length: runsCount }, () =>
-          generateImage({
-            data: {
-              prompt: finalPrompt,
-              model: COMBINE_MODEL,
-              accessToken: accessToken,
-              aspectRatio,
-              referenceImageIds,
-            },
-          }),
+        selectedModels.flatMap((modelId) =>
+          Array.from({ length: runsCount }, () =>
+            generateImage({
+              data: {
+                prompt: finalPrompt,
+                model: modelId,
+                accessToken: accessToken,
+                aspectRatio,
+                referenceImageIds,
+              },
+            }),
+          ),
         ),
       )
 
@@ -240,6 +259,7 @@ export function useCanvasCombine(
     labels,
     credits,
     runsCount,
+    selectedModels,
     aspectRatio,
     pushUndo,
     setImages,
@@ -280,6 +300,8 @@ export function useCanvasCombine(
     setOrientation,
     runsCount,
     adjustRuns,
+    selectedModels,
+    toggleModel,
     credits,
     error,
     isGenerating,

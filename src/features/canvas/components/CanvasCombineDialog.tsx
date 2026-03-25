@@ -1,3 +1,4 @@
+import { COMBINE_MODELS } from '../hooks/use-canvas-combine'
 import type { useCanvasCombine } from '../hooks/use-canvas-combine'
 import {
   Dialog,
@@ -20,6 +21,7 @@ export function CanvasCombineDialog({
   canvasCombine: cc,
 }: CanvasCombineDialogProps) {
   const canGenerate = cc.prompt.trim().length > 0 && cc.sourceImages.length > 0
+  const totalImages = cc.selectedModels.length * cc.runsCount
 
   return (
     <Dialog open={cc.isOpen} onOpenChange={(open) => !open && cc.close()}>
@@ -76,11 +78,33 @@ export function CanvasCombineDialog({
             className="text-xs"
           />
 
+          {/* Model toggles */}
+          <div className="flex gap-2">
+            {COMBINE_MODELS.map((model) => {
+              const active = cc.selectedModels.includes(model.id)
+              return (
+                <button
+                  key={model.id}
+                  type="button"
+                  onClick={() => cc.toggleModel(model.id)}
+                  disabled={cc.isGenerating}
+                  className={`flex-1 rounded-md border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
+                    active
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-input text-muted-foreground hover:border-foreground hover:text-foreground'
+                  }`}
+                >
+                  {model.name}
+                </button>
+              )
+            })}
+          </div>
+
           {/* Generate button + run count */}
           <div className="flex gap-2 items-center">
             <ActionButton
               onClick={() => {
-                const cost = CREDIT_COSTS.variation * cc.runsCount
+                const cost = CREDIT_COSTS.variation * totalImages
                 if ((cc.credits.balance ?? 0) < cost) {
                   cc.credits.showInsufficientCredits(cost)
                   return
@@ -88,14 +112,14 @@ export function CanvasCombineDialog({
                 void cc.handleCombineOptimistic()
               }}
               loading={cc.isGenerating}
-              loadingText="Generating..."
+              loadingText={`Generating ${totalImages} images...`}
               disabled={!canGenerate && !cc.credits.isEmpty}
               className="flex-1"
             >
               {cc.credits.isEmpty
                 ? 'Out of credits'
-                : cc.runsCount > 1
-                  ? `Generate ${cc.runsCount} images`
+                : totalImages > 1
+                  ? `Generate ${totalImages} images`
                   : 'Generate'}
             </ActionButton>
             <NumberStepper
