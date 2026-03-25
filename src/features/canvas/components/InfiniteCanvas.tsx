@@ -10,8 +10,10 @@ import {
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
 import { useCanvasGenerate } from '../hooks/use-canvas-generate'
+import { useCanvasCombine } from '../hooks/use-canvas-combine'
 import { SelectionActions } from './SelectionActions'
 import { CanvasGenerateDialog } from './CanvasGenerateDialog'
+import { CanvasCombineDialog } from './CanvasCombineDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
@@ -141,6 +143,7 @@ export function InfiniteCanvas({
   }, [])
 
   const canvasGen = useCanvasGenerate(setImages, pushUndo)
+  const canvasCombine = useCanvasCombine(setImages, pushUndo)
 
   const undo = useCallback(() => {
     const entry = undoStack.current.pop()
@@ -175,8 +178,9 @@ export function InfiniteCanvas({
     gRef.current = groups
   }, [groups])
   useEffect(() => {
-    dialogOpenRef.current = canvasGen.isOpen || libraryOpen
-  }, [canvasGen.isOpen, libraryOpen])
+    dialogOpenRef.current =
+      canvasGen.isOpen || canvasCombine.isOpen || libraryOpen
+  }, [canvasGen.isOpen, canvasCombine.isOpen, libraryOpen])
 
   /* -- Load persisted state -- */
 
@@ -1172,6 +1176,16 @@ export function InfiniteCanvas({
                 }
               : undefined
           }
+          onCombine={
+            selected.size >= 2 && selected.size <= 4
+              ? () => {
+                  const selectedImages = images.filter((img) =>
+                    selected.has(img.id),
+                  )
+                  void canvasCombine.open(selectedImages)
+                }
+              : undefined
+          }
         />
 
         <input
@@ -1207,6 +1221,7 @@ export function InfiniteCanvas({
       )}
 
       <CanvasGenerateDialog canvasGen={canvasGen} />
+      <CanvasCombineDialog canvasCombine={canvasCombine} />
 
       <ExistingImagePicker
         open={libraryOpen}
