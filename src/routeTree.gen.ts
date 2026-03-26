@@ -23,6 +23,7 @@ import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardScenesRouteImport } from './routes/dashboard/scenes'
+import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardMultiShotRouteImport } from './routes/dashboard/multi-shot'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
@@ -109,6 +110,11 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
 const DashboardScenesRoute = DashboardScenesRouteImport.update({
   id: '/scenes',
   path: '/scenes',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPendingRoute = DashboardPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardNotesRoute = DashboardNotesRouteImport.update({
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
+  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/notes': typeof DashboardNotesRoute
+  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
+  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
+    | '/dashboard/pending'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/notes'
+    | '/dashboard/pending'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
+    | '/dashboard/pending'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -505,6 +517,13 @@ declare module '@tanstack/react-router' {
       path: '/scenes'
       fullPath: '/dashboard/scenes'
       preLoaderRoute: typeof DashboardScenesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/pending': {
+      id: '/dashboard/pending'
+      path: '/pending'
+      fullPath: '/dashboard/pending'
+      preLoaderRoute: typeof DashboardPendingRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/notes': {
@@ -688,6 +707,7 @@ interface DashboardRouteChildren {
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
   DashboardMultiShotRoute: typeof DashboardMultiShotRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
+  DashboardPendingRoute: typeof DashboardPendingRoute
   DashboardScenesRoute: typeof DashboardScenesRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
@@ -703,6 +723,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
   DashboardMultiShotRoute: DashboardMultiShotRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
+  DashboardPendingRoute: DashboardPendingRoute,
   DashboardScenesRoute: DashboardScenesRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTrashRoute: DashboardTrashRoute,

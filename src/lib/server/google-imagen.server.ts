@@ -59,7 +59,9 @@ function getClient(): GoogleGenAI {
     return new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY })
   }
 
-  throw new Error('No Google credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_GENERATIVE_AI_API_KEY.')
+  throw new Error(
+    'No Google credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_GENERATIVE_AI_API_KEY.',
+  )
 }
 
 export interface GoogleGenerateOptions {
