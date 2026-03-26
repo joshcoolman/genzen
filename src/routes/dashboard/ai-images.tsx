@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import {
   ArrowDown,
   ArrowUp,
@@ -56,6 +56,11 @@ import { useSelection } from '@/lib/use-selection'
 import { SelectionDrawer } from '@/components/SelectionDrawer'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
+  beforeLoad: ({ context }) => {
+    if ((context as { accountStatus: string }).accountStatus !== 'active') {
+      throw redirect({ to: '/dashboard/pending' })
+    }
+  },
   component: AiImagesPage,
 })
 
