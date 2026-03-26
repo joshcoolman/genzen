@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { createThumbnail } from '../server/create-thumbnail.server'
 import type { CollectedImage, CreateUserImageInput } from '../types'
 import { supabase } from '@/lib/supabase'
 
@@ -65,11 +66,23 @@ export function useImageUpload(
           )
         }
 
+        // Generate thumbnail in background — don't block the upload response
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          createThumbnail({
+            data: {
+              accessToken: session.access_token,
+              imageId: newImage.id,
+              storagePath: newImage.storage_path,
+            },
+          }).catch(() => {})
+        }
+
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 86400, {
-            transform: { width: 400, resize: 'contain', quality: 80 },
-          })
+          .createSignedUrl(newImage.storage_path, 86400)
 
         return {
           id: newImage.id,

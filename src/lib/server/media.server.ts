@@ -7,6 +7,7 @@ import crypto from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
+import { generateAndStoreThumbnail } from './generate-thumbnail.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 
@@ -161,12 +162,19 @@ async function submitGoogleGeneration(
       throw new Error(`Upload failed: ${uploadError.message}`)
     }
 
+    const thumbnailPath = await generateAndStoreThumbnail(
+      supabase,
+      options.userId,
+      storagePath,
+    )
+
     // Update record to completed
     const { error: updateError } = await supabase
       .from('user_images')
       .update({
         status: 'completed',
         storage_path: storagePath,
+        thumbnail_path: thumbnailPath,
         file_name: fileName,
         file_hash: fileHash,
         file_size: imageBytes.length,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -23,11 +23,6 @@ import { supabase } from '@/lib/supabase'
 import { checkConnections } from '@/lib/server/check-connections'
 
 export const Route = createFileRoute('/dashboard/account')({
-  beforeLoad: ({ context }) => {
-    if ((context as { accountStatus: string }).accountStatus !== 'active') {
-      throw redirect({ to: '/dashboard' })
-    }
-  },
   component: AccountPage,
 })
 

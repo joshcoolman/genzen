@@ -62,11 +62,12 @@ export function useUserImages(
     for (const image of images) {
       if (!image.storage_path) continue
       try {
+        const path =
+          (image as { thumbnail_path?: string | null }).thumbnail_path ??
+          image.storage_path
         const { data, error } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 86400, {
-            transform: { width: 400, resize: 'contain', quality: 80 },
-          })
+          .createSignedUrl(path, 86400)
 
         if (!error) {
           setState((prev) => ({
@@ -199,9 +200,7 @@ export function useUserImages(
         // Get signed URL for new image
         const { data: urlData } = await supabase.storage
           .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 86400, {
-            transform: { width: 400, resize: 'contain', quality: 80 },
-          })
+          .createSignedUrl(newImage.storage_path, 86400)
 
         // Update state
         setState((prev) => ({

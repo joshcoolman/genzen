@@ -5,6 +5,7 @@ interface EditChild {
   id: string
   url: string
   storagePath: string
+  thumbnailPath?: string | null
 }
 
 export type EditChildrenMap = Record<string, Array<EditChild>>
@@ -24,7 +25,7 @@ export function useEditChildren(
     async function fetchChildren() {
       const { data } = await supabase
         .from('user_images')
-        .select('id, storage_path, generation_metadata')
+        .select('id, storage_path, thumbnail_path, generation_metadata')
         .eq('user_id', userId!)
         .eq('status', 'completed')
         .is('deleted_at', null)
@@ -58,9 +59,16 @@ export function useEditChildren(
       data.forEach((row, i) => recencyIndex.set(row.id, i))
 
       // BFS to collect all descendants for each root parent, then sort newest-first
-      const grouped: Record<string, Array<{ id: string; path: string }>> = {}
+      const grouped: Record<
+        string,
+        Array<{ id: string; path: string; thumbnailPath?: string | null }>
+      > = {}
       for (const rootId of parentIds) {
-        const descendants: Array<{ id: string; path: string }> = []
+        const descendants: Array<{
+          id: string
+          path: string
+          thumbnailPath?: string | null
+        }> = []
         const queue = [rootId]
         const visited = new Set<string>()
         while (queue.length > 0) {
@@ -69,7 +77,12 @@ export function useEditChildren(
             if (visited.has(row.id)) continue
             visited.add(row.id)
             if (row.storage_path) {
-              descendants.push({ id: row.id, path: row.storage_path })
+              descendants.push({
+                id: row.id,
+                path: row.storage_path,
+                thumbnailPath: (row as { thumbnail_path?: string | null })
+                  .thumbnail_path,
+              })
             }
             queue.push(row.id)
           }
@@ -90,16 +103,16 @@ export function useEditChildren(
         Object.entries(grouped).map(async ([parentId, children]) => {
           const urls = await Promise.all(
             children.map(async (child) => {
+              const path = child.thumbnailPath ?? child.path
               const { data: signed } = await supabase.storage
                 .from('user-images')
-                .createSignedUrl(child.path, 86400, {
-                  transform: { width: 400, resize: 'contain', quality: 80 },
-                })
+                .createSignedUrl(path, 86400)
               if (!signed?.signedUrl) return null
               return {
                 id: child.id,
                 url: signed.signedUrl,
                 storagePath: child.path,
+                thumbnailPath: child.thumbnailPath,
               }
             }),
           )
@@ -156,11 +169,11 @@ export function useEditChildren(
             )
           if (!rootParent) return
 
+          const thumbPath = (updated as { thumbnail_path?: string | null })
+            .thumbnail_path
           supabase.storage
             .from('user-images')
-            .createSignedUrl(updated.storage_path, 86400, {
-              transform: { width: 400, resize: 'contain', quality: 80 },
-            })
+            .createSignedUrl(thumbPath ?? updated.storage_path, 86400)
             .then(({ data }) => {
               if (!data?.signedUrl) return
               setChildrenMap((prev) => {

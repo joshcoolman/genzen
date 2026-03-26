@@ -2,6 +2,7 @@ export interface SavedAiImage {
   id: string
   title: string
   storage_path: string | null
+  thumbnail_path?: string | null
   created_at: string
   sort_order?: number | null
   status: 'pending' | 'processing' | 'completed' | 'failed'

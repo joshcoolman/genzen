@@ -91,7 +91,6 @@ export const navItems: Array<NavItem> = [
     label: 'Account',
     href: '/dashboard/account',
     icon: User,
-    activeOnly: true,
     alwaysVisible: true,
   },
 ]

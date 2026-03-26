@@ -13,7 +13,7 @@ export async function processImageResult(
     throw new Error('No image URL in FAL result')
   }
 
-  const { storagePath, fileName, fileHash, fileSize } =
+  const { storagePath, thumbnailPath, fileName, fileHash, fileSize } =
     await downloadAndStoreImage(supabase, userId, imageUrl)
 
   // Fetch current metadata to merge
@@ -37,6 +37,7 @@ export async function processImageResult(
     .update({
       status: 'completed',
       storage_path: storagePath,
+      thumbnail_path: thumbnailPath,
       file_name: fileName,
       file_hash: fileHash,
       file_size: fileSize,

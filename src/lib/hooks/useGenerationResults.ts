@@ -17,6 +17,7 @@ interface UseGenerationResultsOptions {
 interface DbRow {
   id: string
   storage_path: string | null
+  thumbnail_path?: string | null
   status: string
   generation_metadata: Record<string, unknown> | null
   title: string | null
@@ -68,7 +69,7 @@ export function useGenerationResults({
       const { data, error: queryError } = await supabase
         .from('user_images')
         .select(
-          'id, storage_path, status, generation_metadata, title, file_size, created_at',
+          'id, storage_path, thumbnail_path, status, generation_metadata, title, file_size, created_at',
         )
         .eq('user_id', userId!)
         .in('source', ['upload', 'ai_generated'])
@@ -98,11 +99,10 @@ export function useGenerationResults({
         rows
           .filter((r) => r.status === 'completed' && r.storage_path)
           .map(async (r) => {
+            const path = r.thumbnail_path ?? r.storage_path!
             const { data: signed } = await supabase.storage
               .from('user-images')
-              .createSignedUrl(r.storage_path!, 86400, {
-                transform: { width: 400, resize: 'contain', quality: 80 },
-              })
+              .createSignedUrl(path, 86400)
             if (signed) urlMap[r.id] = signed.signedUrl
           }),
       )
@@ -171,11 +171,11 @@ export function useGenerationResults({
             if (updated.status === 'completed' && updated.storage_path) {
               const meta = updated.generation_metadata ?? {}
               const modelId = inferModelId(meta)
+              const thumbPath = (updated as { thumbnail_path?: string | null })
+                .thumbnail_path
               supabase.storage
                 .from('user-images')
-                .createSignedUrl(updated.storage_path, 86400, {
-                  transform: { width: 400, resize: 'contain', quality: 80 },
-                })
+                .createSignedUrl(thumbPath ?? updated.storage_path, 86400)
                 .then(({ data }) => {
                   if (data) {
                     setResults((prev) =>

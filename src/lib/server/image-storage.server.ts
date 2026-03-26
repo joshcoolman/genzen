@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { generateAndStoreThumbnail } from './generate-thumbnail.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export async function downloadAndStoreImage(
@@ -7,6 +8,7 @@ export async function downloadAndStoreImage(
   imageUrl: string,
 ): Promise<{
   storagePath: string
+  thumbnailPath: string | null
   fileName: string
   fileHash: string
   fileSize: number
@@ -38,5 +40,17 @@ export async function downloadAndStoreImage(
     throw new Error(`Upload failed: ${uploadError.message}`)
   }
 
-  return { storagePath, fileName, fileHash, fileSize: imageBytes.length }
+  const thumbnailPath = await generateAndStoreThumbnail(
+    supabase,
+    userId,
+    storagePath,
+  )
+
+  return {
+    storagePath,
+    thumbnailPath,
+    fileName,
+    fileHash,
+    fileSize: imageBytes.length,
+  }
 }

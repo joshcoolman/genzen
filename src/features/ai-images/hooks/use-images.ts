@@ -69,7 +69,7 @@ export function useImages({
       const { data, error: queryError } = await supabase
         .from('user_images')
         .select(
-          'id, title, description, storage_path, created_at, sort_order, status, generation_error, generation_metadata',
+          'id, title, description, storage_path, thumbnail_path, created_at, sort_order, status, generation_error, generation_metadata',
         )
         .eq('user_id', userId)
         .in('source', ['upload', 'ai_generated'])
@@ -90,11 +90,10 @@ export function useImages({
       )
       const urlEntries = await Promise.all(
         completedWithPath.map(async (img) => {
+          const path = img.thumbnail_path ?? img.storage_path!
           const { data: urlData } = await supabase.storage
             .from('user-images')
-            .createSignedUrl(img.storage_path!, 86400, {
-              transform: { width: 400, resize: 'contain', quality: 80 },
-            })
+            .createSignedUrl(path, 86400)
           return urlData ? ([img.id, urlData.signedUrl] as const) : null
         }),
       )
@@ -116,7 +115,7 @@ export function useImages({
       if (rootIds.size > 0) {
         const { data: rootRows } = await supabase
           .from('user_images')
-          .select('id, storage_path, hidden')
+          .select('id, storage_path, thumbnail_path, hidden')
           .in('id', Array.from(rootIds))
           .is('deleted_at', null)
         if (rootRows) {
@@ -125,11 +124,12 @@ export function useImages({
             rootRows
               .filter((r) => r.storage_path)
               .map(async (r) => {
+                const path =
+                  (r as { thumbnail_path?: string | null }).thumbnail_path ??
+                  r.storage_path
                 const { data: urlData } = await supabase.storage
                   .from('user-images')
-                  .createSignedUrl(r.storage_path, 86400, {
-                    transform: { width: 400, resize: 'contain', quality: 80 },
-                  })
+                  .createSignedUrl(path, 86400)
                 return urlData ? ([r.id, urlData.signedUrl] as const) : null
               }),
           )
@@ -255,11 +255,11 @@ export function useImages({
               updatedImage.status === 'completed' &&
               updatedImage.storage_path
             ) {
+              const path =
+                updatedImage.thumbnail_path ?? updatedImage.storage_path
               supabase.storage
                 .from('user-images')
-                .createSignedUrl(updatedImage.storage_path, 86400, {
-                  transform: { width: 400, resize: 'contain', quality: 80 },
-                })
+                .createSignedUrl(path, 86400)
                 .then(({ data }) => {
                   if (data) {
                     setImageUrls((prev) => ({
