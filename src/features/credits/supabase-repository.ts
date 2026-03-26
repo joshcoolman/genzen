@@ -14,10 +14,10 @@ export class SupabaseCreditRepository implements CreditRepository {
       .from('user_profiles')
       .select('credit_balance')
       .eq('id', userId)
-      .single()
+      .maybeSingle()
 
     if (error) throw new Error(`Failed to get balance: ${error.message}`)
-    return data.credit_balance ?? 0
+    return data?.credit_balance ?? 0
   }
 
   async deductCredits(
