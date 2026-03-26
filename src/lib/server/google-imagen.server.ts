@@ -44,8 +44,9 @@ function resolveGeminiModel(appModelId: string): string {
 }
 
 function getClient(): GoogleGenAI {
-  if (process.env.GOOGLE_AI_API_KEY) {
-    return new GoogleGenAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
+  const apiKey = process.env.GOOGLE_AI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  if (apiKey) {
+    return new GoogleGenAI({ apiKey })
   }
 
   const opts: Record<string, unknown> = {
