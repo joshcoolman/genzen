@@ -1,7 +1,7 @@
 /**
  * Google image generation via Gemini generateContent with imageConfig.
- * Uses @google/genai SDK. Prefers Gemini API key, falls back to Vertex AI.
- * Supports native aspect ratio control and multiple inline image parts.
+ * Uses @google/genai SDK. Prefers Vertex AI (GOOGLE_SERVICE_ACCOUNT_JSON),
+ * falls back to Gemini API key (GOOGLE_GENERATIVE_AI_API_KEY).
  */
 import { GoogleGenAI } from '@google/genai'
 
@@ -44,24 +44,22 @@ function resolveGeminiModel(appModelId: string): string {
 }
 
 function getClient(): GoogleGenAI {
-  const apiKey = process.env.GOOGLE_AI_API_KEY ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  if (apiKey) {
-    return new GoogleGenAI({ apiKey })
-  }
-
-  const opts: Record<string, unknown> = {
-    vertexai: true,
-    project: GOOGLE_PROJECT,
-    location: GOOGLE_LOCATION,
-  }
-
   if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-    opts.googleAuthOptions = {
-      credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
-    }
+    return new GoogleGenAI({
+      vertexai: true,
+      project: GOOGLE_PROJECT,
+      location: GOOGLE_LOCATION,
+      googleAuthOptions: {
+        credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON),
+      },
+    })
   }
 
-  return new GoogleGenAI(opts)
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    return new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY })
+  }
+
+  throw new Error('No Google credentials found. Set GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_GENERATIVE_AI_API_KEY.')
 }
 
 export interface GoogleGenerateOptions {
