@@ -56,7 +56,7 @@ export const DOLLARS_PER_CREDIT = 0.1
 
 export const CREDIT_PACKS = [
   { credits: 20, price: 2, description: 'Starter' },
-  { credits: 50, price: 4, description: 'Creator' },
-  { credits: 120, price: 8, description: 'Pro' },
-  { credits: 300, price: 16, description: 'Studio' },
+  { credits: 40, price: 4, description: 'Creator' },
+  { credits: 80, price: 8, description: 'Pro' },
+  { credits: 160, price: 16, description: 'Studio' },
 ]

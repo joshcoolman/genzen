@@ -80,12 +80,11 @@ export function useCreditsProvider(accessToken: string | undefined) {
   const add = useCallback(
     async (amount: number, reason: CreditReason) => {
       if (!accessToken) return { balance: 0 }
-      await addCredits({ data: { accessToken, amount, reason } })
-      // Re-fetch from server to get authoritative balance + updated usage stats
-      await refresh()
-      return { balance: balance ?? 0 }
+      const result = await addCredits({ data: { accessToken, amount, reason } })
+      setBalance(result.balance)
+      return result
     },
-    [accessToken, refresh, balance],
+    [accessToken],
   )
 
   const dollarBalance =
