@@ -32,7 +32,10 @@ export const setGenerationParent = createServerFn({ method: 'POST' })
 
     if (fetchError) throw new Error(fetchError.message)
 
-    type Row = { id: string; generation_metadata: Record<string, unknown> | null }
+    type Row = {
+      id: string
+      generation_metadata: Record<string, unknown> | null
+    }
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const safeRows = (rows ?? []) as Array<Row>
 

@@ -1,4 +1,5 @@
 import {
+  Camera,
   Clapperboard,
   Film,
   FlaskConical,
@@ -40,6 +41,13 @@ export const navItems: Array<NavItem> = [
     label: 'Multi-Shot',
     href: '/dashboard/multi-shot',
     icon: Clapperboard,
+    activeOnly: true,
+  },
+  {
+    id: 'scenes',
+    label: 'Scenes',
+    href: '/dashboard/scenes',
+    icon: Camera,
     activeOnly: true,
   },
   {

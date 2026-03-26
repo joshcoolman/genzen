@@ -1,44 +1,45 @@
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCw, Wand2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import type { ImageModel } from '@/features/ai-images/models'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import type { ModelCellState } from '../types'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { ModelPickerButton } from '@/components/ModelPickerButton'
+import type { SceneCellState } from '../types'
 
-interface ModelShotCellProps {
-  cell: ModelCellState
+interface SceneCellProps {
+  cell: SceneCellState
   imageUrls: Record<string, string>
-  onToggleEnabled: () => void
-  onModelChange: (model: ImageModel) => void
+  onPromptChange: (prompt: string) => void
+  onRegeneratePrompt: () => void
   onRun: () => void
   onSlideChange: (index: number) => void
   onOpenLightbox: (slideIndex: number) => void
+  isQueued?: boolean
   disabled?: boolean
+  promptsDisabled?: boolean
 }
 
-export function ModelShotCell({
+export function SceneCell({
   cell,
   imageUrls,
-  onToggleEnabled,
-  onModelChange,
+  onPromptChange,
+  onRegeneratePrompt,
   onRun,
   onSlideChange,
   onOpenLightbox,
+  isQueued,
   disabled,
-}: ModelShotCellProps) {
+  promptsDisabled,
+}: SceneCellProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
 
   const latestGenIndex = cell.currentSlideIndex
   const latestGen = cell.generations[latestGenIndex] as SavedAiImage | undefined
   const isPending = cell.pendingId !== null
-  const showSlideshow =
-    cell.generations.filter((g) => g.status === 'completed').length > 1
+  const isPendingOrQueued = isPending || !!isQueued
+  const completedGens = cell.generations.filter((g) => g.status === 'completed')
+  const showSlideshow = completedGens.length > 1
 
   const currentUrl =
     latestGen?.status === 'completed' ? imageUrls[latestGen.id] : undefined
 
-  const completedGens = cell.generations.filter((g) => g.status === 'completed')
   const currentCompletedIndex = completedGens.findIndex(
     (g) => g.id === (latestGen ? latestGen.id : ''),
   )
@@ -46,7 +47,6 @@ export function ModelShotCell({
 
   const isFailed = !isPending && latestGen?.status === 'failed'
 
-  // Reset load state when URL changes
   const imgRef = useCallback(
     (el: HTMLImageElement | null) => {
       if (el?.complete && el.naturalWidth > 0) setImgLoaded(true)
@@ -55,45 +55,27 @@ export function ModelShotCell({
   )
 
   return (
-    <div
-      className={`flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-opacity ${
-        cell.isEnabled ? '' : 'opacity-50'
-      }`}
-    >
-      {/* Header: toggle + model name + slideshow counter */}
+    <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+      {/* Header: cell number + regen prompt button + slideshow nav */}
       <div className="flex items-center gap-1.5 px-2 py-1.5">
+        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          {Number(cell.id) + 1}
+        </span>
+
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onToggleEnabled()
+            onRegeneratePrompt()
           }}
-          className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full transition-colors ${
-            cell.isEnabled
-              ? 'bg-green-500/80 text-white'
-              : 'bg-muted/60 text-muted-foreground'
-          }`}
-          title={
-            cell.isEnabled
-              ? 'Enabled — click to disable'
-              : 'Disabled — click to enable'
-          }
+          disabled={promptsDisabled}
+          className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors shrink-0"
+          title="Regenerate prompt for this cell"
         >
-          <span className="text-[9px] font-bold">
-            {cell.isEnabled ? '✓' : '○'}
-          </span>
+          <Wand2 className="h-3 w-3" />
         </button>
 
-        <ModelPickerButton
-          models={ALL_IMAGE_MODELS}
-          selectedId={cell.model.id}
-          onSelect={(id) => {
-            const m = ALL_IMAGE_MODELS.find((model) => model.id === id)
-            if (m) onModelChange(m)
-          }}
-        />
-
         {showSlideshow && (
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-0.5 shrink-0 ml-auto">
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -137,18 +119,29 @@ export function ModelShotCell({
         )}
       </div>
 
-      {/* Preview — square, flush edge-to-edge */}
+      {/* Prompt textarea */}
+      <div className="px-2 pb-1">
+        <textarea
+          value={cell.prompt}
+          onChange={(e) => onPromptChange(e.target.value)}
+          placeholder="Prompt..."
+          rows={2}
+          className="w-full resize-none rounded border border-border bg-transparent px-2 py-1 text-[11px] text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none"
+        />
+      </div>
+
+      {/* Preview — square */}
       <div
-        className={`relative aspect-square w-full bg-black ${
-          currentUrl ? 'cursor-pointer' : ''
-        }`}
+        className={`relative aspect-square w-full bg-black ${currentUrl ? 'cursor-pointer' : ''}`}
         onClick={
           currentUrl ? () => onOpenLightbox(cell.currentSlideIndex) : undefined
         }
       >
-        {isPending ? (
+        {isPendingOrQueued ? (
           <div className="flex h-full w-full items-center justify-center">
-            <div className="size-5 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
+            <div
+              className={`size-5 animate-spin rounded-full border-2 border-border border-t-accent-brand ${isQueued ? 'opacity-40' : ''}`}
+            />
           </div>
         ) : isFailed ? (
           <div className="flex h-full w-full items-center justify-center">
@@ -166,9 +159,7 @@ export function ModelShotCell({
               loading="lazy"
               decoding="async"
               onLoad={() => setImgLoaded(true)}
-              className={`h-full w-full object-contain p-2 transition-opacity duration-300 ${
-                imgLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
+              className={`h-full w-full object-contain p-2 transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
             />
           </>
         ) : (
@@ -183,9 +174,9 @@ export function ModelShotCell({
             e.stopPropagation()
             onRun()
           }}
-          disabled={disabled || isPending || !cell.isEnabled}
+          disabled={disabled || isPending || !cell.prompt.trim()}
           className="flex items-center gap-1 rounded px-1 py-0.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-          title="Re-run this cell"
+          title="Generate image for this cell"
         >
           <RefreshCw className="h-3 w-3" />
         </button>
