@@ -54,8 +54,8 @@ export function useCreditsProvider(accessToken: string | undefined) {
       const data = await getCredits({ data: { accessToken } })
       setBalance(data.balance)
       setUsageStats(data.usageStats)
-    } catch {
-      // silently fail
+    } catch (err) {
+      console.error('[credits] Failed to load balance:', err)
     } finally {
       setLoading(false)
     }
@@ -80,13 +80,12 @@ export function useCreditsProvider(accessToken: string | undefined) {
   const add = useCallback(
     async (amount: number, reason: CreditReason) => {
       if (!accessToken) return { balance: 0 }
-      const result = await addCredits({
-        data: { accessToken, amount, reason },
-      })
-      setBalance(result.balance)
-      return result
+      await addCredits({ data: { accessToken, amount, reason } })
+      // Re-fetch from server to get authoritative balance + updated usage stats
+      await refresh()
+      return { balance: balance ?? 0 }
     },
-    [accessToken],
+    [accessToken, refresh, balance],
   )
 
   const dollarBalance =

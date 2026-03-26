@@ -17,7 +17,7 @@ export class SupabaseCreditRepository implements CreditRepository {
       .single()
 
     if (error) throw new Error(`Failed to get balance: ${error.message}`)
-    return data.credit_balance
+    return data.credit_balance ?? 0
   }
 
   async deductCredits(
