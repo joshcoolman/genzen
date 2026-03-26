@@ -1,0 +1,1 @@
+export { DescribeImageButton } from './DescribeImageButton'

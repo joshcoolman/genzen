@@ -21,6 +21,7 @@ interface GenerateImageInput {
   isRefine?: boolean
   referenceImageIds?: Array<string>
   providerOverride?: 'fal' | 'google'
+  parentImageId?: string
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -208,6 +209,12 @@ export const generateImage = createServerFn({ method: 'POST' })
           ...(data.referenceImageIds?.length
             ? { reference_image_ids: data.referenceImageIds }
             : {}),
+          ...(data.parentImageId
+            ? {
+                source_image_id: data.parentImageId,
+                generation_type: 'variation',
+              }
+            : {}),
         },
       })
 
@@ -257,6 +264,12 @@ export const generateImage = createServerFn({ method: 'POST' })
           ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
           ...(data.referenceImageIds?.length
             ? { reference_image_ids: data.referenceImageIds }
+            : {}),
+          ...(data.parentImageId
+            ? {
+                source_image_id: data.parentImageId,
+                generation_type: 'variation',
+              }
             : {}),
         },
       })

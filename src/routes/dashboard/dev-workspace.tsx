@@ -5,7 +5,13 @@ import {
   createFileRoute,
   useLocation,
 } from '@tanstack/react-router'
-import { Boxes, Expand, FlaskConical, MessageSquare } from 'lucide-react'
+import {
+  Boxes,
+  Expand,
+  FlaskConical,
+  LayoutGrid,
+  MessageSquare,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 import { cn } from '@/lib/utils'
@@ -41,6 +47,12 @@ const DEV_NAV_ITEMS: Array<DevNavItem> = [
     label: 'Model Selector',
     href: '/dashboard/dev-workspace/model-selector',
     icon: FlaskConical,
+  },
+  {
+    id: 'multi-model',
+    label: 'Multi-Model',
+    href: '/dashboard/dev-workspace/multi-model',
+    icon: LayoutGrid,
   },
 ]
 

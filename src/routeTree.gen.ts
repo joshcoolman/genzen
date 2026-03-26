@@ -36,6 +36,7 @@ import { Route as DashboardMultiShotSequenceIdRouteImport } from './routes/dashb
 import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
 import { Route as DashboardDevWorkspacePromptStudioRouteImport } from './routes/dashboard/dev-workspace.prompt-studio'
 import { Route as DashboardDevWorkspaceOutpaintRouteImport } from './routes/dashboard/dev-workspace.outpaint'
+import { Route as DashboardDevWorkspaceMultiModelRouteImport } from './routes/dashboard/dev-workspace.multi-model'
 import { Route as DashboardDevWorkspaceModelsRouteImport } from './routes/dashboard/dev-workspace.models'
 import { Route as DashboardDevWorkspaceModelSelectorRouteImport } from './routes/dashboard/dev-workspace.model-selector'
 
@@ -179,6 +180,12 @@ const DashboardDevWorkspaceOutpaintRoute =
     path: '/outpaint',
     getParentRoute: () => DashboardDevWorkspaceRoute,
   } as any)
+const DashboardDevWorkspaceMultiModelRoute =
+  DashboardDevWorkspaceMultiModelRouteImport.update({
+    id: '/multi-model',
+    path: '/multi-model',
+    getParentRoute: () => DashboardDevWorkspaceRoute,
+  } as any)
 const DashboardDevWorkspaceModelsRoute =
   DashboardDevWorkspaceModelsRouteImport.update({
     id: '/models',
@@ -214,6 +221,7 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof DocsIndexRoute
   '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
   '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/multi-model': typeof DashboardDevWorkspaceMultiModelRoute
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
@@ -240,6 +248,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsIndexRoute
   '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
   '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/multi-model': typeof DashboardDevWorkspaceMultiModelRoute
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
@@ -272,6 +281,7 @@ export interface FileRoutesById {
   '/docs/': typeof DocsIndexRoute
   '/dashboard/dev-workspace/model-selector': typeof DashboardDevWorkspaceModelSelectorRoute
   '/dashboard/dev-workspace/models': typeof DashboardDevWorkspaceModelsRoute
+  '/dashboard/dev-workspace/multi-model': typeof DashboardDevWorkspaceMultiModelRoute
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/dashboard/dev-workspace/model-selector'
     | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/multi-model'
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/dashboard/dev-workspace/model-selector'
     | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/multi-model'
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
@@ -362,6 +374,7 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/dashboard/dev-workspace/model-selector'
     | '/dashboard/dev-workspace/models'
+    | '/dashboard/dev-workspace/multi-model'
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
@@ -573,6 +586,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDevWorkspaceOutpaintRouteImport
       parentRoute: typeof DashboardDevWorkspaceRoute
     }
+    '/dashboard/dev-workspace/multi-model': {
+      id: '/dashboard/dev-workspace/multi-model'
+      path: '/multi-model'
+      fullPath: '/dashboard/dev-workspace/multi-model'
+      preLoaderRoute: typeof DashboardDevWorkspaceMultiModelRouteImport
+      parentRoute: typeof DashboardDevWorkspaceRoute
+    }
     '/dashboard/dev-workspace/models': {
       id: '/dashboard/dev-workspace/models'
       path: '/models'
@@ -593,6 +613,7 @@ declare module '@tanstack/react-router' {
 interface DashboardDevWorkspaceRouteChildren {
   DashboardDevWorkspaceModelSelectorRoute: typeof DashboardDevWorkspaceModelSelectorRoute
   DashboardDevWorkspaceModelsRoute: typeof DashboardDevWorkspaceModelsRoute
+  DashboardDevWorkspaceMultiModelRoute: typeof DashboardDevWorkspaceMultiModelRoute
   DashboardDevWorkspaceOutpaintRoute: typeof DashboardDevWorkspaceOutpaintRoute
   DashboardDevWorkspacePromptStudioRoute: typeof DashboardDevWorkspacePromptStudioRoute
   DashboardDevWorkspaceIndexRoute: typeof DashboardDevWorkspaceIndexRoute
@@ -602,6 +623,7 @@ const DashboardDevWorkspaceRouteChildren: DashboardDevWorkspaceRouteChildren = {
   DashboardDevWorkspaceModelSelectorRoute:
     DashboardDevWorkspaceModelSelectorRoute,
   DashboardDevWorkspaceModelsRoute: DashboardDevWorkspaceModelsRoute,
+  DashboardDevWorkspaceMultiModelRoute: DashboardDevWorkspaceMultiModelRoute,
   DashboardDevWorkspaceOutpaintRoute: DashboardDevWorkspaceOutpaintRoute,
   DashboardDevWorkspacePromptStudioRoute:
     DashboardDevWorkspacePromptStudioRoute,
