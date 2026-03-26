@@ -18,6 +18,7 @@ export function CreditPackSelector({
     CREDIT_PACKS[1].credits.toString(),
   )
   const [purchasing, setPurchasing] = useState(false)
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
 
   const activePack = CREDIT_PACKS.find(
     (p) => p.credits.toString() === selectedPack,
@@ -26,9 +27,14 @@ export function CreditPackSelector({
   async function handlePurchase() {
     if (!activePack || purchasing) return
     setPurchasing(true)
+    setPurchaseError(null)
     try {
       await credits.add(activePack.credits, 'pack_purchase')
       onPurchaseComplete?.(activePack.credits)
+    } catch (err) {
+      setPurchaseError(
+        err instanceof Error ? err.message : 'Purchase failed. Try again.',
+      )
     } finally {
       setPurchasing(false)
     }
@@ -69,6 +75,9 @@ export function CreditPackSelector({
         >
           Quick Buy {activePack ? `$${activePack.price}.00` : ''}
         </ActionButton>
+        {purchaseError && (
+          <p className="mt-2 text-xs text-destructive">{purchaseError}</p>
+        )}
       </div>
     </div>
   )

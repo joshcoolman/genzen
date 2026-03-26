@@ -35,6 +35,7 @@ const REASON_LABELS: Record<CreditReason, string> = {
   first_frame: 'First frame',
   last_frame: 'Last frame',
   video_gen: 'Video generation',
+  multishot_gen: 'Multi-shot generation',
   pack_purchase: 'Credit pack',
   initial_grant: 'Welcome credits',
 }
@@ -46,6 +47,7 @@ const REASON_ICONS: Record<CreditReason, React.ReactNode> = {
   first_frame: <Image className="h-4 w-4" />,
   last_frame: <Image className="h-4 w-4" />,
   video_gen: <Video className="h-4 w-4" />,
+  multishot_gen: <Video className="h-4 w-4" />,
   pack_purchase: <Gift className="h-4 w-4" />,
   initial_grant: <Gift className="h-4 w-4" />,
 }
@@ -137,6 +139,7 @@ function AccountPage() {
   const [transactions, setTransactions] = useState<Array<CreditTransaction>>([])
   const [couponCode, setCouponCode] = useState('')
   const [clearingCredits, setClearingCredits] = useState(false)
+  const [addingTestCredits, setAddingTestCredits] = useState(false)
 
   const refreshTransactions = useCallback(() => {
     if (!session?.access_token) return
@@ -157,6 +160,17 @@ function AccountPage() {
       refreshTransactions()
     } finally {
       setClearingCredits(false)
+    }
+  }
+
+  async function handleAddTestCredits() {
+    if (addingTestCredits) return
+    setAddingTestCredits(true)
+    try {
+      await credits.add(50, 'initial_grant')
+      refreshTransactions()
+    } finally {
+      setAddingTestCredits(false)
     }
   }
 
@@ -285,17 +299,26 @@ function AccountPage() {
             },
           ]}
         />
-        {import.meta.env.DEV &&
-          credits.balance !== null &&
-          credits.balance > 0 && (
+        {import.meta.env.DEV && (
+          <div className="flex gap-3">
             <button
-              onClick={handleClearCredits}
-              disabled={clearingCredits}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              onClick={handleAddTestCredits}
+              disabled={addingTestCredits}
+              className="text-xs text-muted-foreground hover:text-accent-brand transition-colors"
             >
-              {clearingCredits ? 'Clearing...' : 'Dev: Clear Credits'}
+              {addingTestCredits ? 'Adding...' : 'Dev: Add 50 Credits'}
             </button>
-          )}
+            {credits.balance !== null && credits.balance > 0 && (
+              <button
+                onClick={handleClearCredits}
+                disabled={clearingCredits}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                {clearingCredits ? 'Clearing...' : 'Dev: Clear Credits'}
+              </button>
+            )}
+          </div>
+        )}
 
         <SectionCard
           title="Add Credits"
