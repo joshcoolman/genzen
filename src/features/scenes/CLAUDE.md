@@ -1,11 +1,11 @@
 # Scenes
 
-A 5×2 grid of 10 cells for generating multiple camera-angle variations of a source image. Distills the node-based workflow: source image → AI-generated camera-angle prompts (Claude vision) → parallel image generation (Nano Banana 2 / FAL).
+A 3×3 grid of 9 cells for generating multiple camera-angle variations of a source image. Distills the node-based workflow: source image → AI-generated camera-angle prompts (Claude vision) → parallel image generation (Nano Banana 2 / FAL).
 
 ## Key Files
 
 - `types.ts` — `SceneCellState`, `ScenesState` interfaces
-- `constants.ts` — `SCENE_CELL_COUNT` (10), `DEFAULT_SCENE_MODEL_ID`, `SCENE_STORAGE_KEY`, `SCENE_SYSTEM_PROMPT`
+- `constants.ts` — `SCENE_CELL_COUNT` (9), `DEFAULT_SCENE_MODEL_ID`, `SCENE_STORAGE_KEY`, `SCENE_SYSTEM_PROMPT`
 - `hooks/use-scenes.ts` — master hook: per-cell prompts, global model, generation, polling, realtime, lightbox
 - `server/generate-scene-prompts.server.ts` — Claude vision → camera angle prompts (free, no credits)
 - `components/SceneCell.tsx` — single cell: prompt textarea + image preview + regen buttons
