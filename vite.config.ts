@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
 
 const config = defineConfig({
+  nitro: {
+    serverDir: './server',
+  },
   plugins: [
     nitro(),
     // this is the plugin that enables path aliases
