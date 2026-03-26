@@ -4,6 +4,10 @@ import { supabase } from '@/lib/supabase'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
+import {
+  getCachedSignedUrl,
+  invalidateCachedUrl,
+} from '@/lib/storage-url-cache'
 
 interface UseImagesOptions {
   userId: string | undefined
@@ -91,10 +95,8 @@ export function useImages({
       const urlEntries = await Promise.all(
         completedWithPath.map(async (img) => {
           const path = img.thumbnail_path ?? img.storage_path!
-          const { data: urlData } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(path, 86400)
-          return urlData ? ([img.id, urlData.signedUrl] as const) : null
+          const url = await getCachedSignedUrl(supabase, path)
+          return url ? ([img.id, url] as const) : null
         }),
       )
       const urls: Record<string, string> = {}
@@ -127,10 +129,8 @@ export function useImages({
                 const path =
                   (r as { thumbnail_path?: string | null }).thumbnail_path ??
                   r.storage_path
-                const { data: urlData } = await supabase.storage
-                  .from('user-images')
-                  .createSignedUrl(path, 86400)
-                return urlData ? ([r.id, urlData.signedUrl] as const) : null
+                const url = await getCachedSignedUrl(supabase, path)
+                return url ? ([r.id, url] as const) : null
               }),
           )
           for (const r of rootRows) {
@@ -257,14 +257,12 @@ export function useImages({
             ) {
               const path =
                 updatedImage.thumbnail_path ?? updatedImage.storage_path
-              supabase.storage
-                .from('user-images')
-                .createSignedUrl(path, 86400)
-                .then(({ data }) => {
-                  if (data) {
+              getCachedSignedUrl(supabase, path)
+                .then((url) => {
+                  if (url) {
                     setImageUrls((prev) => ({
                       ...prev,
-                      [updatedImage.id]: data.signedUrl,
+                      [updatedImage.id]: url,
                     }))
                   }
                 })
@@ -291,9 +289,10 @@ export function useImages({
     }
   }, [userId])
 
-  // Poll FAL for pending generations
+  // Poll FAL for pending generations (skipped when webhooks are enabled)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
+    if (import.meta.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
     if (!accessToken) return
 
     const hasPending = savedImages.some((img) => img.status === 'pending')
@@ -335,6 +334,8 @@ export function useImages({
   }
 
   async function deleteImage(img: SavedAiImage) {
+    if (img.storage_path) invalidateCachedUrl(img.storage_path)
+    if (img.thumbnail_path) invalidateCachedUrl(img.thumbnail_path)
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
 
     try {

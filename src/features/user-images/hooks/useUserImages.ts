@@ -12,6 +12,7 @@ import type {
   UserImageFilters,
 } from '../types'
 import { supabase } from '@/lib/supabase'
+import { getCachedSignedUrl } from '@/lib/storage-url-cache'
 
 const BUCKET_NAME = 'user-images'
 
@@ -65,14 +66,11 @@ export function useUserImages(
         const path =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const { data, error } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(path, 86400)
-
-        if (!error) {
+        const url = await getCachedSignedUrl(supabase, path)
+        if (url) {
           setState((prev) => ({
             ...prev,
-            imageUrls: { ...prev.imageUrls, [image.id]: data.signedUrl },
+            imageUrls: { ...prev.imageUrls, [image.id]: url },
           }))
         }
       } catch (err) {
@@ -198,16 +196,14 @@ export function useUserImages(
         }
 
         // Get signed URL for new image
-        const { data: urlData } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 86400)
+        const newUrl = await getCachedSignedUrl(supabase, newImage.storage_path)
 
         // Update state
         setState((prev) => ({
           ...prev,
           images: [newImage, ...prev.images],
-          imageUrls: urlData
-            ? { ...prev.imageUrls, [newImage.id]: urlData.signedUrl }
+          imageUrls: newUrl
+            ? { ...prev.imageUrls, [newImage.id]: newUrl }
             : prev.imageUrls,
           isCreating: false,
         }))

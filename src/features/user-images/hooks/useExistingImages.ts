@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '../types'
 import { supabase } from '@/lib/supabase'
+import { getCachedSignedUrl } from '@/lib/storage-url-cache'
 
 const BUCKET_NAME = 'user-images'
 
@@ -27,12 +28,9 @@ export function useExistingImages(
         const path =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const { data, error: urlError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(path, 86400)
-
-        if (!urlError) {
-          setImageUrls((prev) => ({ ...prev, [image.id]: data.signedUrl }))
+        const url = await getCachedSignedUrl(supabase, path)
+        if (url) {
+          setImageUrls((prev) => ({ ...prev, [image.id]: url }))
         }
       } catch (err) {
         console.error(`Failed to load URL for image ${image.id}:`, err)

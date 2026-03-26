@@ -190,9 +190,17 @@ export const submitVariations = createServerFn({ method: 'POST' })
           imageUrls: [imageUrl ?? '', ...referenceUrls],
           safetyLevel: 'permissive',
         })
+        const webhookUrl =
+          process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
+            ? `${process.env.VITE_APP_URL}/api/fal-webhook`
+            : undefined
+
         const { request_id } = await (fal.queue.submit as any)(
           'fal-ai/nano-banana-2/edit',
-          { input: editInput },
+          {
+            input: editInput,
+            ...(webhookUrl ? { webhookUrl } : {}),
+          },
         )
 
         const variationSortOrder = Date.now() / 1000 - 0.001 * (i + 1)

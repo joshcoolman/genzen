@@ -134,10 +134,16 @@ export const editImage = createServerFn({ method: 'POST' })
       extraParams: { num_images: numImagesToGenerate },
     })
 
+    const webhookUrl =
+      process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
+        ? `${process.env.VITE_APP_URL}/api/fal-webhook`
+        : undefined
+
     let request_id: string
     try {
       const result = await (fal.queue.submit as any)(falEditModel, {
         input: falInput,
+        ...(webhookUrl ? { webhookUrl } : {}),
       })
       request_id = result.request_id
     } catch (err) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getCachedSignedUrl } from '@/lib/storage-url-cache'
 
 interface EditChild {
   id: string
@@ -104,13 +105,11 @@ export function useEditChildren(
           const urls = await Promise.all(
             children.map(async (child) => {
               const path = child.thumbnailPath ?? child.path
-              const { data: signed } = await supabase.storage
-                .from('user-images')
-                .createSignedUrl(path, 86400)
-              if (!signed?.signedUrl) return null
+              const url = await getCachedSignedUrl(supabase, path)
+              if (!url) return null
               return {
                 id: child.id,
-                url: signed.signedUrl,
+                url,
                 storagePath: child.path,
                 thumbnailPath: child.thumbnailPath,
               }
@@ -171,11 +170,9 @@ export function useEditChildren(
 
           const thumbPath = (updated as { thumbnail_path?: string | null })
             .thumbnail_path
-          supabase.storage
-            .from('user-images')
-            .createSignedUrl(thumbPath ?? updated.storage_path, 86400)
-            .then(({ data }) => {
-              if (!data?.signedUrl) return
+          getCachedSignedUrl(supabase, thumbPath ?? updated.storage_path)
+            .then((url) => {
+              if (!url) return
               setChildrenMap((prev) => {
                 const existing = prev[rootParent] ?? []
                 if (existing.some((c) => c.id === updated.id)) return prev
@@ -184,7 +181,7 @@ export function useEditChildren(
                   [rootParent]: [
                     {
                       id: updated.id,
-                      url: data.signedUrl,
+                      url,
                       storagePath: updated.storage_path!,
                     },
                     ...existing,

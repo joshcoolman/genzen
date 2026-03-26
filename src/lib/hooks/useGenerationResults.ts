@@ -3,6 +3,7 @@ import type { GenerationResult } from '@/lib/types/generation-result'
 import { supabase } from '@/lib/supabase'
 import { getModelName } from '@/features/ai-images/models'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
+import { getCachedSignedUrl } from '@/lib/storage-url-cache'
 
 const DEFAULT_LIMIT = 50
 
@@ -100,10 +101,8 @@ export function useGenerationResults({
           .filter((r) => r.status === 'completed' && r.storage_path)
           .map(async (r) => {
             const path = r.thumbnail_path ?? r.storage_path!
-            const { data: signed } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(path, 86400)
-            if (signed) urlMap[r.id] = signed.signedUrl
+            const url = await getCachedSignedUrl(supabase, path)
+            if (url) urlMap[r.id] = url
           }),
       )
 
@@ -173,18 +172,16 @@ export function useGenerationResults({
               const modelId = inferModelId(meta)
               const thumbPath = (updated as { thumbnail_path?: string | null })
                 .thumbnail_path
-              supabase.storage
-                .from('user-images')
-                .createSignedUrl(thumbPath ?? updated.storage_path, 86400)
-                .then(({ data }) => {
-                  if (data) {
+              getCachedSignedUrl(supabase, thumbPath ?? updated.storage_path)
+                .then((url) => {
+                  if (url) {
                     setResults((prev) =>
                       prev.map((r) =>
                         r.id === updated.id
                           ? {
                               ...r,
                               status: 'complete' as const,
-                              url: data.signedUrl,
+                              url,
                               storagePath:
                                 updated.storage_path ?? r.storagePath,
                               title: updated.title ?? r.title,
@@ -223,9 +220,10 @@ export function useGenerationResults({
     }
   }, [userId, JSON.stringify(generationType), sourceImageIds?.join(',')])
 
-  // Poll FAL for pending generations
+  // Poll FAL for pending generations (skipped when webhooks are enabled)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
+    if (import.meta.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
     const hasPending = results.some((r) => r.status === 'pending')
 
     if (hasPending && accessToken && !pollingRef.current) {

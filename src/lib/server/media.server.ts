@@ -234,8 +234,14 @@ async function submitFalGeneration(
     aspectRatio: options.aspectRatio,
   })
 
+  const webhookUrl =
+    process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
+      ? `${process.env.VITE_APP_URL}/api/fal-webhook`
+      : undefined
+
   const { request_id } = await (fal.queue.submit as any)(options.modelId, {
     input: falInput,
+    ...(webhookUrl ? { webhookUrl } : {}),
   })
 
   const baseModelId = options.modelId.replace(/\/edit$/, '')

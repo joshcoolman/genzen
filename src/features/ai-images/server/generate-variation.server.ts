@@ -251,11 +251,19 @@ export const generateVariation = createServerFn({ method: 'POST' })
           imageUrls: [falImageUrl ?? ''],
           safetyLevel: 'permissive',
         })
+        const webhookUrl =
+          process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
+            ? `${process.env.VITE_APP_URL}/api/fal-webhook`
+            : undefined
+
         let request_id: string
         try {
           const falResult = await (fal.queue.submit as any)(
             'fal-ai/nano-banana-2/edit',
-            { input: editInput },
+            {
+              input: editInput,
+              ...(webhookUrl ? { webhookUrl } : {}),
+            },
           )
           request_id = falResult.request_id
         } catch (err) {
