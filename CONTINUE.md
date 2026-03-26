@@ -1,51 +1,52 @@
-# Continue: First Test User Readiness
+# Continue: Infrastructure Scaling (Tier 2 — COMPLETE)
 
 ## What was done this session
 
-### 1. Fixed Supabase Storage Image Transformation quota (193/100 → 0)
+### #104 — Local JWT Verification (closed)
+- Installed `jose`
+- `src/lib/server/auth.server.ts` verifies tokens locally via JWKS, cached per-process, with remote fallback
 
-- Added `thumbnail_path` column to `user_images` (migration applied to prod)
-- New server utility `generate-thumbnail.server.ts` — sharp-based 400px WebP thumbnail generation
-- Thumbnails generated automatically at upload time (user uploads) and at completion time (FAL + Google Imagen)
-- All gallery hooks now use `thumbnail_path ?? storage_path` with no `transform` option
-- Eliminated all on-the-fly Supabase Storage Image Transformation API calls
+### #105 — Idempotent Credit Deductions (closed)
+- Migration `20260326000003_idempotency_key.sql`
+- `generate-image.server.ts` + `edit-image.server.ts`: idempotencyKey check + credit refund on FAL error
+- `generate-variation.server.ts`: refunds remaining credits if FAL fails mid-loop
+- `refundCredits()` helper in `check-credits.server.ts`
 
-### 2. First test user onboarding
+### #102 — Signed URL Caching (closed)
+- `src/lib/storage-url-cache.ts`: process-lifetime `Map` cache, `getCachedSignedUrl()` + `invalidateCachedUrl()`
+- All 5 hooks (`use-images`, `useGenerationResults`, `use-edit-children`, `useUserImages`, `useExistingImages`) now use the cache
+- First gallery load calls `createSignedUrl`; subsequent loads hit the in-memory cache
+- Cache entry invalidated on image delete in `use-images.ts`
 
-- **Landing page** — replaced two-button placeholder with name, tagline, and Get Started / Sign In CTAs
-- **Waitlist gate** — all routes now require `account_status = 'active'`; waitlist users land on a minimal pending page ("You're on the list")
-- **Account page** — removed `active`-only gate so waitlist users can see credits and buy more
-- **Account nav item** — visible to all users, not just active accounts
-- **AI Images empty state** — updated copy to direct new users to the prompt panel
+### #101 — FAL Webhooks (closed)
+- `server/api/fal-webhook.post.ts`: Nitro POST handler at `/api/fal-webhook`
+  - HMAC-SHA256 signature verification (`x-fal-signature` header, `FAL_KEY` as secret)
+  - Looks up `user_images` by `request_id`, calls `processImageResult` / `processVideoResult` / `markGenerationFailed`
+- All `fal.queue.submit` calls pass `webhookUrl` when `ENABLE_FAL_WEBHOOKS=true`
+- Polling `setInterval` in `use-images.ts` and `useGenerationResults.ts` guarded by `VITE_ENABLE_FAL_WEBHOOKS !== 'true'`
+- Supabase Realtime handles UPDATE events → webhooks + Realtime = no polling needed in prod
 
-### 3. GitHub epic created: Scale to 1,000 Users (#100)
+---
 
-Issues #101–#108 cover: FAL webhooks, signed URL caching, rate limiting, local JWT verification, credit idempotency, observability, async thumbnails, soft-delete cleanup.
+## New env vars
 
-## Current user flow
+```
+ENABLE_FAL_WEBHOOKS=false        # true in prod; false keeps polling for local dev
+VITE_APP_URL=https://yourapp.com # Used to construct webhook callback URL
+VITE_ENABLE_FAL_WEBHOOKS=false   # Client-side flag to skip polling
+```
 
-1. User hits site → sees landing page with Get Started button
-2. Signs up → gets confirmation email → clicks link → logs in
-3. Lands on pending page: "You're on the list"
-4. **You activate them:** run in Supabase SQL Editor:
-   ```sql
-   UPDATE public.user_profiles
-   SET account_status = 'active'
-   WHERE id = (SELECT id FROM auth.users WHERE email = 'user@example.com');
-   ```
-5. They refresh → full app access
+## Deployment notes
+
+To enable webhooks in production:
+1. Set `ENABLE_FAL_WEBHOOKS=true` and `VITE_APP_URL=https://yourapp.com` in env
+2. Set `VITE_ENABLE_FAL_WEBHOOKS=true` in client env
+3. FAL will POST to `https://yourapp.com/api/fal-webhook` on completion
+4. Local dev: leave all three as `false` — polling continues to work
+
+---
 
 ## Git state
 
 - Branch: `main`
-- All changes committed and pushed
-- Last two commits:
-  - `dc0882f` — Fix Supabase image transformation quota + first user onboarding
-  - `e26a9eb` — Gate app behind account activation with waitlist pending page
-
-## Immediate next steps for test user experience
-
-- [ ] Manually activate test user in Supabase (SQL above)
-- [ ] Have friend use the app without guidance — observe where they get stuck
-- [ ] Consider: does the pending page need a "notify me" or is manual activation fine for now?
-- [ ] Consider: should the signup page mention it's invite-only so users know what to expect?
+- All work committed: JWT caching, idempotent credits, URL caching, FAL webhooks
