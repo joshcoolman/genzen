@@ -3,7 +3,10 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
-import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import {
+  checkAndDeductCredits,
+  refundCredits,
+} from '@/features/credits/server/check-credits.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 
@@ -15,6 +18,7 @@ interface EditImageInput {
   editModelId?: string
   referenceImageIds?: Array<string>
   numImages?: number
+  idempotencyKey?: string
 }
 
 export const editImage = createServerFn({ method: 'POST' })
@@ -40,11 +44,6 @@ export const editImage = createServerFn({ method: 'POST' })
       throw new Error('FAL_KEY environment variable is not set')
     }
 
-    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
-    if (!creditResult.allowed) {
-      throw new Error('Insufficient credits')
-    }
-
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
       process.env.VITE_SUPABASE_ANON_KEY!,
@@ -54,6 +53,23 @@ export const editImage = createServerFn({ method: 'POST' })
         },
       },
     )
+
+    // Idempotency: if key provided and a non-failed record exists, return it
+    if (data.idempotencyKey) {
+      const { data: existing } = await supabase
+        .from('user_images')
+        .select('id, request_id, status')
+        .eq('idempotency_key', data.idempotencyKey)
+        .single()
+      if (existing && existing.status !== 'failed') {
+        return { recordId: existing.id, request_id: existing.request_id ?? '' }
+      }
+    }
+
+    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
+    if (!creditResult.allowed) {
+      throw new Error('Insufficient credits')
+    }
 
     // Fetch source image storage path -- enforce ownership
     const { data: sourceImage } = await supabase
@@ -118,9 +134,16 @@ export const editImage = createServerFn({ method: 'POST' })
       extraParams: { num_images: numImagesToGenerate },
     })
 
-    const { request_id } = await (fal.queue.submit as any)(falEditModel, {
-      input: falInput,
-    })
+    let request_id: string
+    try {
+      const result = await (fal.queue.submit as any)(falEditModel, {
+        input: falInput,
+      })
+      request_id = result.request_id
+    } catch (err) {
+      await refundCredits(user.id, creditResult.cost, 'edit')
+      throw err
+    }
 
     const { recordId } = await createPendingGeneration({
       accessToken: data.accessToken,
@@ -131,6 +154,7 @@ export const editImage = createServerFn({ method: 'POST' })
       prompt: editPrompt.trim(),
       aspectRatio,
       title: 'Editing...',
+      idempotencyKey: data.idempotencyKey,
       extraMetadata: {
         source_image_id: sourceImageId,
         ...(referenceImageIds?.length

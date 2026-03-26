@@ -3,7 +3,10 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
-import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import {
+  checkAndDeductCredits,
+  refundCredits,
+} from '@/features/credits/server/check-credits.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
@@ -22,6 +25,7 @@ interface GenerateImageInput {
   referenceImageIds?: Array<string>
   providerOverride?: 'fal' | 'google'
   parentImageId?: string
+  idempotencyKey?: string
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -54,6 +58,29 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     if (!useGoogle && !process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
+    }
+
+    // Idempotency: if key provided and a non-failed record exists, return it
+    if (data.idempotencyKey) {
+      const { data: existing } = await createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!,
+        {
+          global: { headers: { Authorization: `Bearer ${data.accessToken}` } },
+        },
+      )
+        .from('user_images')
+        .select('id, request_id, status')
+        .eq('idempotency_key', data.idempotencyKey)
+        .single()
+      if (existing && existing.status !== 'failed') {
+        return {
+          recordId: existing.id,
+          request_id: existing.request_id ?? '',
+          prompt,
+          model,
+        }
+      }
     }
 
     const creditResult = await checkAndDeductCredits(
@@ -240,9 +267,16 @@ export const generateImage = createServerFn({ method: 'POST' })
     })
 
     // Submit to FAL async queue (returns immediately)
-    const { request_id } = await (fal.queue.submit as any)(falModelId, {
-      input: falInput,
-    })
+    let request_id: string
+    try {
+      const result = await (fal.queue.submit as any)(falModelId, {
+        input: falInput,
+      })
+      request_id = result.request_id
+    } catch (err) {
+      await refundCredits(user.id, creditResult.cost, 'image_gen')
+      throw err
+    }
 
     // Create database record with pending status
     const { data: record, error: insertError } = await supabase
@@ -254,6 +288,9 @@ export const generateImage = createServerFn({ method: 'POST' })
         source: 'ai_generated',
         title: 'Generating...',
         sort_order: Date.now() / 1000,
+        ...(data.idempotencyKey
+          ? { idempotency_key: data.idempotencyKey }
+          : {}),
         generation_metadata: {
           prompt: metadataPrompt,
           model,
@@ -277,6 +314,7 @@ export const generateImage = createServerFn({ method: 'POST' })
       .single()
 
     if (insertError) {
+      await refundCredits(user.id, creditResult.cost, 'image_gen')
       throw new Error(`Failed to create image record: ${insertError.message}`)
     }
 

@@ -256,6 +256,7 @@ export function useEditPage(imageId: string) {
               editPrompt: prompt.trim(),
               aspectRatio,
               editModelId,
+              idempotencyKey: crypto.randomUUID(),
               ...(referenceImageIds ? { referenceImageIds } : {}),
             },
           })

@@ -4,7 +4,10 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
-import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import {
+  checkAndDeductCredits,
+  refundCredits,
+} from '@/features/credits/server/check-credits.server'
 import { ai } from '@/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
@@ -248,10 +251,19 @@ export const generateVariation = createServerFn({ method: 'POST' })
           imageUrls: [falImageUrl ?? ''],
           safetyLevel: 'permissive',
         })
-        const { request_id } = await (fal.queue.submit as any)(
-          'fal-ai/nano-banana-2/edit',
-          { input: editInput },
-        )
+        let request_id: string
+        try {
+          const falResult = await (fal.queue.submit as any)(
+            'fal-ai/nano-banana-2/edit',
+            { input: editInput },
+          )
+          request_id = falResult.request_id
+        } catch (err) {
+          // Refund remaining credits (already used credits for completed iterations)
+          const remainingCount = count - i
+          await refundCredits(user.id, remainingCount, 'variation')
+          throw err
+        }
 
         const { data: record, error: insertError } = await supabase
           .from('user_images')

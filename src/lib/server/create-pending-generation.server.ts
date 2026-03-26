@@ -10,6 +10,7 @@ interface CreatePendingGenerationOptions {
   aspectRatio?: string
   extraMetadata?: Record<string, unknown>
   title?: string
+  idempotencyKey?: string
 }
 
 export async function createPendingGeneration({
@@ -22,6 +23,7 @@ export async function createPendingGeneration({
   aspectRatio,
   extraMetadata,
   title = 'Generating...',
+  idempotencyKey,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
   const supabase = createClient(
     process.env.VITE_SUPABASE_URL!,
@@ -44,6 +46,7 @@ export async function createPendingGeneration({
       source: 'ai_generated',
       title,
       sort_order: Date.now() / 1000,
+      ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
       generation_metadata: {
         prompt,
         model,

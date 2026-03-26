@@ -17,3 +17,12 @@ export async function checkAndDeductCredits(
   }
   return { allowed: true, balance: result.balance, cost }
 }
+
+export async function refundCredits(
+  userId: string,
+  amount: number,
+  reason: CreditReason,
+): Promise<void> {
+  const repo = getCreditRepository()
+  await repo.addCredits(userId, amount, reason)
+}

@@ -208,6 +208,7 @@ export function useGenerator({
               model: modelId,
               accessToken: accessToken,
               aspectRatio,
+              idempotencyKey: crypto.randomUUID(),
               ...(sourceImage
                 ? sourceImage.base64.startsWith('data:')
                   ? { sourceImageBase64: sourceImage.base64 }
