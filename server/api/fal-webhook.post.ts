@@ -19,36 +19,107 @@ interface FalWebhookBody {
   error?: string
 }
 
-function verifyFalSignature(
+// --- ED25519 JWKS signature verification per FAL docs ---
+
+const JWKS_URL = 'https://rest.fal.ai/.well-known/jwks.json'
+const JWKS_CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+let jwksCache: Array<{ x: string }> | null = null
+let jwksCacheTime = 0
+
+async function fetchJwks(): Promise<Array<{ x: string }>> {
+  const now = Date.now()
+  if (jwksCache && now - jwksCacheTime < JWKS_CACHE_DURATION) {
+    return jwksCache
+  }
+  const response = await fetch(JWKS_URL, { signal: AbortSignal.timeout(10000) })
+  if (!response.ok) throw new Error(`JWKS fetch failed: ${response.status}`)
+  const data = (await response.json()) as { keys?: Array<{ x: string }> }
+  jwksCache = data.keys ?? []
+  jwksCacheTime = now
+  return jwksCache
+}
+
+async function verifyFalWebhookSignature(
   rawBody: string,
-  signature: string,
-  secret: string,
-): boolean {
+  requestId: string,
+  userId: string,
+  timestamp: string,
+  signatureHex: string,
+): Promise<boolean> {
+  // Validate timestamp (within +/- 5 minutes)
+  const timestampInt = parseInt(timestamp, 10)
+  if (isNaN(timestampInt)) return false
+  const now = Math.floor(Date.now() / 1000)
+  if (Math.abs(now - timestampInt) > 300) return false
+
+  // Construct message: requestId\nuserId\ntimestamp\nsha256(body)
+  const bodyHash = crypto
+    .createHash('sha256')
+    .update(Buffer.from(rawBody, 'utf-8'))
+    .digest('hex')
+  const message = `${requestId}\n${userId}\n${timestamp}\n${bodyHash}`
+  const messageBytes = Buffer.from(message, 'utf-8')
+
+  // Decode signature from hex
+  let signatureBytes: Buffer
   try {
-    const expected = crypto
-      .createHmac('sha256', secret)
-      .update(rawBody)
-      .digest('hex')
-    const sig = signature.startsWith('sha256=') ? signature.slice(7) : signature
-    if (expected.length !== sig.length) return false
-    return crypto.timingSafeEqual(
-      Buffer.from(expected, 'hex'),
-      Buffer.from(sig, 'hex'),
-    )
+    signatureBytes = Buffer.from(signatureHex, 'hex')
   } catch {
     return false
   }
+
+  // Fetch JWKS and try each key
+  const keys = await fetchJwks()
+  for (const key of keys) {
+    if (typeof key.x !== 'string') continue
+    try {
+      const publicKeyBytes = Buffer.from(key.x, 'base64url')
+      const keyObject = crypto.createPublicKey({
+        key: Buffer.concat([
+          // ED25519 DER prefix (RFC 8410)
+          Buffer.from('302a300506032b6570032100', 'hex'),
+          publicKeyBytes,
+        ]),
+        format: 'der',
+        type: 'spki',
+      })
+      const valid = crypto.verify(null, messageBytes, keyObject, signatureBytes)
+      if (valid) return true
+    } catch {
+      continue
+    }
+  }
+  return false
 }
 
 export default defineEventHandler(async (event) => {
   const rawBody = (await readRawBody(event)) ?? ''
-  const signature = getHeader(event, 'x-fal-signature') ?? ''
-  const falKey = process.env.FAL_KEY ?? ''
 
-  if (falKey && signature && !verifyFalSignature(rawBody, signature, falKey)) {
-    console.warn('[fal-webhook] Signature verification failed')
-    setResponseStatus(event, 401)
-    return 'Unauthorized'
+  // Extract FAL webhook signature headers
+  const webhookRequestId = getHeader(event, 'x-fal-webhook-request-id') ?? ''
+  const webhookUserId = getHeader(event, 'x-fal-webhook-user-id') ?? ''
+  const webhookTimestamp = getHeader(event, 'x-fal-webhook-timestamp') ?? ''
+  const webhookSignature = getHeader(event, 'x-fal-webhook-signature') ?? ''
+
+  // Verify signature if all headers are present
+  if (webhookRequestId && webhookSignature) {
+    try {
+      const valid = await verifyFalWebhookSignature(
+        rawBody,
+        webhookRequestId,
+        webhookUserId,
+        webhookTimestamp,
+        webhookSignature,
+      )
+      if (!valid) {
+        console.warn('[fal-webhook] ED25519 signature verification failed')
+        setResponseStatus(event, 401)
+        return 'Unauthorized'
+      }
+    } catch (err) {
+      console.warn('[fal-webhook] Signature verification error:', err)
+      // Allow through on verification infrastructure failure to avoid blocking webhooks
+    }
   }
 
   let body: FalWebhookBody
@@ -60,6 +131,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const { request_id, status, payload, error } = body
+
+  console.log(
+    `[fal-webhook] Received: request_id=${request_id} status=${status}`,
+  )
 
   if (!request_id) {
     setResponseStatus(event, 400)
@@ -81,16 +156,21 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    if (status === 'COMPLETED' && payload) {
+    // FAL webhooks send status "OK" for success (not "COMPLETED" like the queue API)
+    if ((status === 'OK' || status === 'COMPLETED') && payload) {
       const isVideo = record.source === 'ai_video'
       if (isVideo) {
         await processVideoResult(supabase, record.id, payload)
       } else {
         await processImageResult(supabase, record.id, record.user_id, payload)
       }
+      console.log(`[fal-webhook] Processed successfully: record=${record.id}`)
     } else if (status === 'FAILED' || status === 'ERROR') {
       const errorMsg = typeof error === 'string' ? error : `FAL job ${status}`
       await markGenerationFailed(supabase, record.id, errorMsg)
+      console.log(
+        `[fal-webhook] Marked failed: record=${record.id} error=${errorMsg}`,
+      )
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
