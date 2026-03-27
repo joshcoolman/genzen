@@ -7,6 +7,7 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
 import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-schema.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
+import { checkRateLimit } from '@/lib/server/rate-limit.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -54,6 +55,7 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateFlfVideoInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+    await checkRateLimit(user.id, 'video')
 
     const { firstFrameRecordId, lastFrameRecordId, prompt } = data
 

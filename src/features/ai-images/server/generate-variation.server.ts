@@ -15,6 +15,7 @@ import {
 } from '@/lib/prompts/image-variation'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
+import { checkRateLimit } from '@/lib/server/rate-limit.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -31,6 +32,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateVariationInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+    await checkRateLimit(user.id, 'image')
 
     const { prompt, model, sourceImageId, aspectRatio } = data
     const variationCount = Math.min(data.count ?? 1, 4)

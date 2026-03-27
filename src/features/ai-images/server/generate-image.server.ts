@@ -12,6 +12,7 @@ import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
+import { checkRateLimit } from '@/lib/server/rate-limit.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -37,6 +38,7 @@ export const generateImage = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateImageInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+    await checkRateLimit(user.id, 'image')
 
     const {
       prompt,

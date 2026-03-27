@@ -8,6 +8,7 @@ import {
   refundCredits,
 } from '@/features/credits/server/check-credits.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
+import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
@@ -26,6 +27,7 @@ export const editImage = createServerFn({ method: 'POST' })
   .inputValidator((data: EditImageInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+    await checkRateLimit(user.id, 'image')
 
     const {
       sourceImageId,
