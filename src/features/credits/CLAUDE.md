@@ -31,8 +31,10 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 
 ## Quirks / Notes
 
-- Deduction uses Supabase RPCs (`deduct_credits`, `add_credits`) not direct table writes -- atomicity is DB-side
+- ALL credit operations use Supabase SECURITY DEFINER RPCs: `get_credit_balance`, `add_credits`, `deduct_credits`
+- Direct table queries must NOT be used for credit reads -- RLS blocks them if the admin client lacks the service role key
+- After `add()` or `deduct()`, the hook fires a background `refresh()` to re-fetch authoritative balance
 - `checkAndDeductCredits` is the main entry point other features call to gate AI operations
 - Video generation and multi-shot generation cost 5 credits; all other operations cost 1
 - `isLow` threshold is < 10 credits
-- Balance reads from `user_profiles.credit_balance`, transactions from `credit_transactions` table
+- Transaction reads (`getTransactions`, `getUsageStats`) still use direct queries via admin client -- these are non-critical display data

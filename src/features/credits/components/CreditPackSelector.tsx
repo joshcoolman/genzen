@@ -30,6 +30,7 @@ export function CreditPackSelector({
     setPurchaseError(null)
     try {
       await credits.add(activePack.credits, 'pack_purchase')
+      await credits.refresh()
       onPurchaseComplete?.(activePack.credits)
     } catch (err) {
       setPurchaseError(

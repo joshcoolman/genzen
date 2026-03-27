@@ -10,14 +10,12 @@ export class SupabaseCreditRepository implements CreditRepository {
   constructor(private supabase: SupabaseClient) {}
 
   async getBalance(userId: string): Promise<number> {
-    const { data, error } = await this.supabase
-      .from('user_profiles')
-      .select('credit_balance')
-      .eq('id', userId)
-      .maybeSingle()
+    const { data, error } = await this.supabase.rpc('get_credit_balance', {
+      p_user_id: userId,
+    })
 
     if (error) throw new Error(`Failed to get balance: ${error.message}`)
-    return data?.credit_balance ?? 0
+    return data as number
   }
 
   async deductCredits(

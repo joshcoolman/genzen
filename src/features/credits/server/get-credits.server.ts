@@ -15,5 +15,6 @@ export const getCredits = createServerFn({ method: 'POST' })
       repo.getBalance(user.id),
       repo.getUsageStats(user.id),
     ])
+    console.log(`[credits] getCredits userId=${user.id} balance=${balance}`)
     return { balance, usageStats }
   })
