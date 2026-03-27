@@ -47,7 +47,7 @@ export function DevWorkspacePage() {
         />
         <Toggle
           label="Display"
-          options={['inline', 'dropdown'] as const}
+          options={['inline', 'dropdown', 'panel'] as const}
           value={display}
           onChange={setDisplay}
         />

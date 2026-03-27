@@ -197,8 +197,9 @@ export function GeneratorPanel({
 
       {/* Model selector */}
       <ModelSelector
-        display="dropdown"
+        display="panel"
         mode="multi"
+        persistKey="genzen:model-panel:expanded"
         selectedIds={modelSelector.selectedIds}
         visibleModels={modelSelector.models}
         onToggleSelected={modelSelector.toggleSelected}
