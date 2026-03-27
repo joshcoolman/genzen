@@ -75,7 +75,7 @@ export async function describeImage(
       {
         role: 'user',
         content: [
-          { type: 'image', image: base64, mimeType: mime },
+          { type: 'image', image: `data:${mime};base64,${base64}` },
           { type: 'text', text: USER_TEXT[mode] },
         ],
       },

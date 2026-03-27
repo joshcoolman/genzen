@@ -21,7 +21,7 @@ export const models = {
 
 // Role assignments - change one line to swap what model handles each job
 export const ai = {
-  fast: models.nemotron,
+  fast: models.haiku,
   reasoning: models.sonnet,
   vision: models.gemini3Flash,
 }

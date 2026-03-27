@@ -42,7 +42,7 @@ export const generateScenePrompts = createServerFn({ method: 'POST' })
         {
           role: 'user',
           content: [
-            { type: 'image', image: base64, mimeType: mime },
+            { type: 'image', image: `data:${mime};base64,${base64}` },
             {
               type: 'text',
               text: `Generate exactly ${count} distinct camera angle prompts for this image. Separate each prompt with an asterisk (*).`,
