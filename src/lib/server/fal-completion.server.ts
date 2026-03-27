@@ -1,5 +1,6 @@
 import { downloadAndStoreImage } from './image-storage.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createImageStorage } from '@/lib/image-storage'
 
 export async function processImageResult(
   supabase: SupabaseClient,
@@ -55,7 +56,7 @@ export async function processImageResult(
     .eq('id', recordId)
 
   if (updateError) {
-    await supabase.storage.from('user-images').remove([storagePath])
+    await createImageStorage(supabase).remove([storagePath])
     throw new Error(`Update failed: ${updateError.message}`)
   }
 }

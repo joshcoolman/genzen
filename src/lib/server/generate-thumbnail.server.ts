@@ -1,5 +1,6 @@
 import sharp from 'sharp'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createImageStorage } from '@/lib/image-storage'
 
 const THUMBNAIL_WIDTH = 400
 const THUMBNAIL_QUALITY = 80
@@ -17,12 +18,9 @@ export async function generateAndStoreThumbnail(
   storagePath: string,
 ): Promise<string | null> {
   try {
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('user-images')
-      .download(storagePath)
+    const storage = createImageStorage(supabase)
 
-    if (downloadError) return null
-
+    const fileData = await storage.download(storagePath)
     const buffer = Buffer.from(await fileData.arrayBuffer())
 
     const thumbBuffer = await sharp(buffer)
@@ -37,15 +35,10 @@ export async function generateAndStoreThumbnail(
     const thumbFilename = filename.replace(/\.[^.]+$/, '.webp')
     const thumbnailPath = `${userId}/thumbs/${thumbFilename}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('user-images')
-      .upload(thumbnailPath, thumbBuffer, {
-        contentType: 'image/webp',
-        cacheControl: '31536000',
-        upsert: true,
-      })
-
-    if (uploadError) return null
+    await storage.upload(thumbnailPath, thumbBuffer, {
+      contentType: 'image/webp',
+      upsert: true,
+    })
 
     return thumbnailPath
   } catch {

@@ -8,6 +8,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
 import { generateAndStoreThumbnail } from './generate-thumbnail.server'
+import { createImageStorage } from '@/lib/image-storage'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
@@ -151,17 +152,8 @@ async function submitGoogleGeneration(
     const fileName = `ai_${timestamp}_${uuid}.png`
     const storagePath = `${options.userId}/${fileName}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('user-images')
-      .upload(storagePath, imageBytes, {
-        contentType: 'image/png',
-        cacheControl: '31536000',
-        upsert: false,
-      })
-
-    if (uploadError) {
-      throw new Error(`Upload failed: ${uploadError.message}`)
-    }
+    const storage = createImageStorage(supabase)
+    await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
 
     const thumbnailPath = await generateAndStoreThumbnail(
       supabase,
@@ -197,7 +189,7 @@ async function submitGoogleGeneration(
       .eq('id', recordId)
 
     if (updateError) {
-      await supabase.storage.from('user-images').remove([storagePath])
+      await storage.remove([storagePath])
       throw new Error(`Update failed: ${updateError.message}`)
     }
   } catch (error) {

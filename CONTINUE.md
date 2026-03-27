@@ -1,57 +1,42 @@
-# Continue: Infrastructure Scaling (Tier 2 — COMPLETE)
+# Continue: ImageStorage Abstraction (#111)
 
 ## What was done this session
 
-### #104 — Local JWT Verification (closed)
+### Rate limiting (#103) -- DONE, merged, issue closed
 
-- Installed `jose`
-- `src/lib/server/auth.server.ts` verifies tokens locally via JWKS, cached per-process, with remote fallback
+- Migration: `rate_window_start`/`rate_window_count` on `user_profiles` + atomic `check_rate_limit()` RPC
+- `src/lib/server/rate-limit.server.ts` — 20 req/min image, 5 req/min video, fails open
+- Wired into `generate-image`, `edit-image`, `generate-variation`, `generate-flf-video`
 
-### #105 — Idempotent Credit Deductions (closed)
+### ModelSelector panel mode -- merged
 
-- Migration `20260326000003_idempotency_key.sql`
-- `generate-image.server.ts` + `edit-image.server.ts`: idempotencyKey check + credit refund on FAL error
-- `generate-variation.server.ts`: refunds remaining credits if FAL fails mid-loop
-- `refundCredits()` helper in `check-credits.server.ts`
+- New `'panel'` DisplayMode in `src/components/ModelSelector/ModelSelector.tsx`
+- Collapsible section with vertical model list (not dropdown, not inline pills)
+- `persistKey` prop saves expand/collapse to localStorage, default expanded
+- `GeneratorPanel.tsx` uses `display="panel"` with `persistKey="genzen:model-panel:expanded"`
 
-### #102 — Signed URL Caching (closed)
+### critical-path.md -- updated and committed
 
-- `src/lib/storage-url-cache.ts`: process-lifetime `Map` cache, `getCachedSignedUrl()` + `invalidateCachedUrl()`
-- All 5 hooks (`use-images`, `useGenerationResults`, `use-edit-children`, `useUserImages`, `useExistingImages`) now use the cache
-- First gallery load calls `createSignedUrl`; subsequent loads hit the in-memory cache
-- Cache entry invalidated on image delete in `use-images.ts`
+- Gate 1 = infra/security/optimization, Gate 2 = payments, Gate 3 = marketing
+- #103 marked DONE, sequence reordered to front-load hardening
 
-### #101 — FAL Webhooks (closed)
+### ImageStorage epic (#111) -- issue created
 
-- `server/api/fal-webhook.post.ts`: Nitro POST handler at `/api/fal-webhook`
-  - HMAC-SHA256 signature verification (`x-fal-signature` header, `FAL_KEY` as secret)
-  - Looks up `user_images` by `request_id`, calls `processImageResult` / `processVideoResult` / `markGenerationFailed`
-- All `fal.queue.submit` calls pass `webhookUrl` when `ENABLE_FAL_WEBHOOKS=true`
-- Polling `setInterval` in `use-images.ts` and `useGenerationResults.ts` guarded by `VITE_ENABLE_FAL_WEBHOOKS !== 'true'`
-- Supabase Realtime handles UPDATE events → webhooks + Realtime = no polling needed in prod
+- Comprehensive GitHub issue with 6-phase plan for storage abstraction + R2 migration
+- Full audit of 30+ files with scattered `supabase.storage.from('user-images')` calls
 
----
+## Next step
 
-## New env vars
+Start #111 Phase 1: create `ImageStorage` interface + `SupabaseImageStorage` implementation in `src/lib/server/image-storage.server.ts` (file already exists with narrow `storeDownloadedImage` function -- expand it). See issue #111 for full phase breakdown and file-by-file migration list.
 
-```
-ENABLE_FAL_WEBHOOKS=false        # true in prod; false keeps polling for local dev
-VITE_APP_URL=https://yourapp.com # Used to construct webhook callback URL
-VITE_ENABLE_FAL_WEBHOOKS=false   # Client-side flag to skip polling
-```
+## Key context for next session
 
-## Deployment notes
-
-To enable webhooks in production:
-
-1. Set `ENABLE_FAL_WEBHOOKS=true` and `VITE_APP_URL=https://yourapp.com` in env
-2. Set `VITE_ENABLE_FAL_WEBHOOKS=true` in client env
-3. FAL will POST to `https://yourapp.com/api/fal-webhook` on completion
-4. Local dev: leave all three as `false` — polling continues to work
-
----
+- Target architecture: R2 + pre-generated Sharp thumbnails (~$16/mo at 1K users vs $2,544 with Supabase transforms)
+- Signed URL cache-busting is the core perf problem (R2 public URLs fix this)
+- Soft-delete confirmed to orphan storage files -- abstraction enables fixing this
+- `storage-url-cache.ts` (getCachedSignedUrl/invalidateCachedUrl) should be absorbed into ImageStorage.getUrl()
+- FAL storage uploads (`fal.storage.upload`) are NOT part of this abstraction
 
 ## Git state
 
-- Branch: `main`
-- All work committed: JWT caching, idempotent credits, URL caching, FAL webhooks
+- Branch: `main`, clean, all pushed

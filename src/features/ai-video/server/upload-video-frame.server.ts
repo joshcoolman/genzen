@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
+import { createImageStorage } from '@/lib/image-storage'
 import { requireAuth } from '@/lib/server/auth.server'
 
 interface UploadVideoFrameInput {
@@ -38,17 +39,12 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
     const croppedFileName = `frame_${timestamp}_${uuid}.jpg`
     const croppedStoragePath = `${user.id}/${croppedFileName}`
 
-    const { error: croppedUploadError } = await supabase.storage
-      .from('user-images')
-      .upload(croppedStoragePath, croppedBuffer, {
-        contentType: 'image/jpeg',
-        cacheControl: '3600',
-        upsert: false,
-      })
+    const storage = createImageStorage(supabase)
 
-    if (croppedUploadError) {
-      throw new Error(`Cropped upload failed: ${croppedUploadError.message}`)
-    }
+    await storage.upload(croppedStoragePath, croppedBuffer, {
+      contentType: 'image/jpeg',
+      cacheControl: '3600',
+    })
 
     // If original provided, upload it and use it for the user_images record
     let recordStoragePath = croppedStoragePath
@@ -64,19 +60,10 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       const originalFileName = `upload_${timestamp}_${uuid}.jpg`
       const originalStoragePath = `${user.id}/${originalFileName}`
 
-      const { error: originalUploadError } = await supabase.storage
-        .from('user-images')
-        .upload(originalStoragePath, originalBuffer, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-          upsert: false,
-        })
-
-      if (originalUploadError) {
-        throw new Error(
-          `Original upload failed: ${originalUploadError.message}`,
-        )
-      }
+      await storage.upload(originalStoragePath, originalBuffer, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+      })
 
       recordStoragePath = originalStoragePath
       recordFileName = originalFileName
@@ -116,19 +103,20 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       // Clean up uploaded files
       const pathsToRemove = [croppedStoragePath]
       if (originalBase64) pathsToRemove.push(recordStoragePath)
-      await supabase.storage.from('user-images').remove(pathsToRemove)
+      await storage.remove(pathsToRemove)
       throw new Error(`Failed to create frame record: ${insertError.message}`)
     }
 
     // Return signed URL for the original version (display uses object-contain)
     const displayPath = originalBase64 ? recordStoragePath : croppedStoragePath
-    const { data: urlData } = await supabase.storage
-      .from('user-images')
-      .createSignedUrl(displayPath, 3600)
+    const signedUrl = await storage.getUrl(displayPath, {
+      ttl: 3600,
+      cached: false,
+    })
 
-    if (!urlData) {
+    if (!signedUrl) {
       throw new Error('Failed to create signed URL')
     }
 
-    return { recordId: record.id, signedUrl: urlData.signedUrl }
+    return { recordId: record.id, signedUrl }
   })

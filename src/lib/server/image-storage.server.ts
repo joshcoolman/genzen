@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { generateAndStoreThumbnail } from './generate-thumbnail.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createImageStorage } from '@/lib/image-storage'
 
 export async function downloadAndStoreImage(
   supabase: SupabaseClient,
@@ -28,17 +29,8 @@ export async function downloadAndStoreImage(
   const fileName = `ai_${timestamp}_${uuid}.png`
   const storagePath = `${userId}/${fileName}`
 
-  const { error: uploadError } = await supabase.storage
-    .from('user-images')
-    .upload(storagePath, imageBytes, {
-      contentType: 'image/png',
-      cacheControl: '31536000',
-      upsert: false,
-    })
-
-  if (uploadError) {
-    throw new Error(`Upload failed: ${uploadError.message}`)
-  }
+  const storage = createImageStorage(supabase)
+  await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
 
   const thumbnailPath = await generateAndStoreThumbnail(
     supabase,
