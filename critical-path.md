@@ -1,40 +1,45 @@
 # Critical Path to Revenue
 
-Generated 2026-03-27. The framing: this project is the only income source until paying customers validate it.
+Updated 2026-03-27. The framing: this project is the only income source until paying customers validate it.
 
-## Gate 1: People can pay you (BLOCKING)
+## Gate 1: It's fast, secure, and production-ready (IN PROGRESS)
 
-| Issue | What                                    | Why                                                        |
-| ----- | --------------------------------------- | ---------------------------------------------------------- |
-| #80   | Real FAL-based pricing & spend tracking | Must know unit economics before setting prices             |
-| #38   | Harden credit system security           | Can't let users bypass credits when real money is involved |
-| #26   | Stripe integration (credit packs)       | No Stripe, no money                                        |
+Infrastructure, optimization, and hardening -- the foundation everything else sits on.
 
-## Gate 2: People can find you and sign up (BLOCKING)
+| Issue | Status | What                                   | Why                                           |
+| ----- | ------ | -------------------------------------- | --------------------------------------------- |
+| #103  | DONE   | Rate limit generation endpoints        | Prevent abuse and runaway FAL costs           |
+| #107  |        | Thumbnail generation off critical path | App feels broken under real load without this |
+| #24   |        | CI/CD pipeline (GitHub Actions)        | Deploys can't be manual for a paid product    |
+| #108  |        | Soft-delete cleanup (pg_cron)          | Operational hygiene before real users         |
+| #38   |        | Harden credit system security          | Can't let users bypass credits                |
 
-| Issue | What                    | Why                                                     |
-| ----- | ----------------------- | ------------------------------------------------------- |
-| #28   | Landing page            | One page explaining what this is + signup CTA           |
-| #27   | Branded emails (Resend) | Password resets and receipts must come from your domain |
+## Gate 2: People can pay you (BLOCKING)
 
-## Gate 3: It doesn't fall over when strangers use it (HIGH RISK)
+| Issue | Status | What                                    | Why                                            |
+| ----- | ------ | --------------------------------------- | ---------------------------------------------- |
+| #80   |        | Real FAL-based pricing & spend tracking | Must know unit economics before setting prices |
+| #26   |        | Stripe integration (credit packs)       | No Stripe, no money                            |
+|       |        | Terms of Service / Privacy Policy       | Stripe requires these for a live account       |
 
-| Issue | What                                   | Why                                           |
-| ----- | -------------------------------------- | --------------------------------------------- |
-| #103  | Rate limit generation endpoints        | Prevent abuse and runaway FAL costs           |
-| #107  | Thumbnail generation off critical path | App feels broken under real load without this |
-| #24   | CI/CD pipeline (GitHub Actions)        | Deploys can't be manual for a paid product    |
-| #108  | Soft-delete cleanup (pg_cron)          | Operational hygiene before real users         |
+## Gate 3: People can find you and sign up (BLOCKING)
+
+| Issue | Status | What                    | Why                                                     |
+| ----- | ------ | ----------------------- | ------------------------------------------------------- |
+| #28   |        | Landing page            | One page explaining what this is + signup CTA           |
+| #27   |        | Branded emails (Resend) | Password resets and receipts must come from your domain |
 
 ## Suggested sequence
 
-1. Finish #103 (rate limiting) -- in progress
-2. #80 (real pricing) -- understand unit economics before setting prices
-3. #38 + #26 (harden credits + Stripe) -- coupled, ship together
-4. #28 (landing page) -- single page, doesn't need to be fancy
-5. #27 (branded emails) -- quick win with Resend
-6. #24 (CI/CD) -- basic GitHub Actions
-7. #107 + #108 (thumbnail + soft-delete cleanup) -- operational hygiene
+1. ~~#103 (rate limiting)~~ -- DONE
+2. #107 (thumbnail off critical path) -- performance under load
+3. #24 (CI/CD) -- unblocks fast iteration on everything below
+4. #108 (soft-delete cleanup) -- operational hygiene
+5. #38 (harden credits) -- security before real money flows
+6. #80 (real pricing) -- understand unit economics
+7. #26 (Stripe) -- payments wired
+8. #28 (landing page) -- front door
+9. #27 (branded emails) -- quick win with Resend
 
 ## Deprioritized (park until revenue flows)
 
