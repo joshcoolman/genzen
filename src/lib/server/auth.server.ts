@@ -1,21 +1,23 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
 
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+
 // JWKS is fetched once and cached by jose for the process lifetime
 const getJWKS = (() => {
   let jwks: ReturnType<typeof createRemoteJWKSet> | null = null
   return () => {
-    if (!jwks) {
-      const url = process.env.VITE_SUPABASE_URL
-      if (url) {
-        jwks = createRemoteJWKSet(
-          new URL(`${url}/auth/v1/.well-known/jwks.json`),
-        )
-      }
+    if (!jwks && supabaseUrl) {
+      jwks = createRemoteJWKSet(
+        new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
+      )
     }
     return jwks
   }
 })()
+
+// Supabase JWT issuer is <project-url>/auth/v1
+const expectedIssuer = supabaseUrl ? `${supabaseUrl}/auth/v1` : undefined
 
 export async function requireAuth(accessToken: string) {
   if (!accessToken) {
@@ -25,12 +27,19 @@ export async function requireAuth(accessToken: string) {
   const jwks = getJWKS()
   if (jwks) {
     try {
-      const { payload } = await jwtVerify(accessToken, jwks)
+      const { payload } = await jwtVerify(accessToken, jwks, {
+        audience: 'authenticated',
+        issuer: expectedIssuer,
+        clockTolerance: 60,
+      })
       if (payload.sub) {
         return { id: payload.sub, email: payload.email as string | undefined }
       }
-    } catch {
-      // fall through to remote verification
+    } catch (err) {
+      console.warn(
+        '[auth] Local JWT verification failed, falling back to remote:',
+        (err as Error).message,
+      )
     }
   }
 
