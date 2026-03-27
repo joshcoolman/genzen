@@ -6,6 +6,7 @@ interface PendingImageCardProps {
   isVariation?: boolean
   sourceImageUrl?: string
   createdAt?: string
+  onDelete?: () => void
 }
 
 export function PendingImageCard({
@@ -14,6 +15,7 @@ export function PendingImageCard({
   isVariation,
   sourceImageUrl,
   createdAt,
+  onDelete,
 }: PendingImageCardProps) {
   return (
     <Thumbnail
@@ -21,6 +23,8 @@ export function PendingImageCard({
       pendingLabel={model}
       pendingBackgroundUrl={sourceImageUrl}
       topLeftBadge={isVariation ? 'Variation' : undefined}
+      onDelete={onDelete}
+      alwaysShowOverlay={!!onDelete}
     >
       <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
         {prompt}

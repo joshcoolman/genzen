@@ -13,6 +13,7 @@ import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
 } from '@/lib/prompts/image-variation'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -251,10 +252,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
           imageUrls: [falImageUrl ?? ''],
           safetyLevel: 'permissive',
         })
-        const webhookUrl =
-          process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
-            ? `${process.env.VITE_APP_URL}/api/fal-webhook`
-            : undefined
+        const webhookUrl = getFalWebhookUrl()
 
         let request_id: string
         try {

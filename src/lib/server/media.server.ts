@@ -10,6 +10,7 @@ import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
 import { generateAndStoreThumbnail } from './generate-thumbnail.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -234,10 +235,7 @@ async function submitFalGeneration(
     aspectRatio: options.aspectRatio,
   })
 
-  const webhookUrl =
-    process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
-      ? `${process.env.VITE_APP_URL}/api/fal-webhook`
-      : undefined
+  const webhookUrl = getFalWebhookUrl()
 
   const { request_id } = await (fal.queue.submit as any)(options.modelId, {
     input: falInput,

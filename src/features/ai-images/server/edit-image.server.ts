@@ -9,6 +9,7 @@ import {
 } from '@/features/credits/server/check-credits.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 interface EditImageInput {
   accessToken: string
@@ -134,10 +135,7 @@ export const editImage = createServerFn({ method: 'POST' })
       extraParams: { num_images: numImagesToGenerate },
     })
 
-    const webhookUrl =
-      process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
-        ? `${process.env.VITE_APP_URL}/api/fal-webhook`
-        : undefined
+    const webhookUrl = getFalWebhookUrl()
 
     let request_id: string
     try {

@@ -5,6 +5,7 @@ import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -190,10 +191,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
           imageUrls: [imageUrl ?? '', ...referenceUrls],
           safetyLevel: 'permissive',
         })
-        const webhookUrl =
-          process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
-            ? `${process.env.VITE_APP_URL}/api/fal-webhook`
-            : undefined
+        const webhookUrl = getFalWebhookUrl()
 
         const { request_id } = await (fal.queue.submit as any)(
           'fal-ai/nano-banana-2/edit',

@@ -117,6 +117,7 @@ export function ImageGallery({
                       : undefined
                   }
                   createdAt={img.created_at}
+                  onDelete={() => onDelete(img)}
                 />
               )
             }

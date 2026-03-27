@@ -10,6 +10,7 @@ import {
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -267,10 +268,7 @@ export const generateImage = createServerFn({ method: 'POST' })
     })
 
     // Submit to FAL async queue (returns immediately)
-    const webhookUrl =
-      process.env.ENABLE_FAL_WEBHOOKS === 'true' && process.env.VITE_APP_URL
-        ? `${process.env.VITE_APP_URL}/api/fal-webhook`
-        : undefined
+    const webhookUrl = getFalWebhookUrl()
 
     let request_id: string
     try {
