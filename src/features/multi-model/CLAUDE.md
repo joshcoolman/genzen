@@ -37,6 +37,7 @@ Side-by-side 3x3 grid for comparing 9 AI models simultaneously on a single promp
 ## State Persistence
 
 All persisted to localStorage under `genzen:multi-model:*`:
+
 - Prompts (system + user), aspect ratio, orientation
 - Cells array (model IDs, enabled state, generations, current slide); pending records filtered on load
 

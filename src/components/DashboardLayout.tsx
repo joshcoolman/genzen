@@ -5,12 +5,10 @@ import { ADContextProvider } from '@/features/ad/context/ad-context'
 import { PromptSheet } from '@/features/prompts/components/PromptSheet'
 import { usePromptSheet } from '@/features/prompts/hooks/use-prompt-sheet'
 import { useADOpen } from '@/lib/use-ad-open'
-import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 import { cn } from '@/lib/utils'
 import { StatusBar } from '@/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isCollapsed } = useSidebarCollapsed()
   const { isOpen: isADOpen } = useADOpen()
   const promptSheet = usePromptSheet()
 
@@ -26,8 +24,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Main content */}
         <main
           className={cn(
-            'min-w-0 flex-1 p-6 transition-all duration-300',
-            isCollapsed ? 'md:ml-16' : 'md:ml-52',
+            'min-w-0 flex-1 p-6 transition-all duration-300 md:ml-16',
             isADOpen && 'md:mr-80',
           )}
         >

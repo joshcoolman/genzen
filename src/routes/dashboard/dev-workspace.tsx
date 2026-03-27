@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import {
   Link,
   Outlet,
@@ -13,7 +12,6 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 import { cn } from '@/lib/utils'
 
 interface DevNavItem {
@@ -62,13 +60,6 @@ export const Route = createFileRoute('/dashboard/dev-workspace')({
 
 function DevWorkspaceLayout() {
   const location = useLocation()
-  const { isCollapsed, setIsCollapsed } = useSidebarCollapsed()
-  const savedCollapsed = useRef(isCollapsed)
-
-  useEffect(() => {
-    setIsCollapsed(true)
-    return () => setIsCollapsed(savedCollapsed.current)
-  }, [setIsCollapsed])
 
   return (
     <div className="flex gap-6 min-h-full">

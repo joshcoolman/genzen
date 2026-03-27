@@ -6,8 +6,7 @@ type Listener = () => void
 const listeners = new Set<Listener>()
 
 function getSnapshot(): boolean {
-  if (typeof window === 'undefined') return false
-  return localStorage.getItem(STORAGE_KEY) === 'true'
+  return true
 }
 
 function getServerSnapshot(): boolean {

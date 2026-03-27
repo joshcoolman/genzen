@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { LogOut, PanelLeft, PanelLeftClose } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,12 +31,9 @@ export function Sidebar({ className }: { className?: string }) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const accountStatus = useAccountStatus()
-  const { isCollapsed, toggleCollapsed } = useSidebarCollapsed()
+  const { isCollapsed } = useSidebarCollapsed()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
-  const isDevWorkspace = location.pathname.startsWith(
-    '/dashboard/dev-workspace',
-  )
   const accountItem = navItems.find((item) => item.id === 'account')!
   const settingsItem = navItems.find((item) => item.id === 'settings')!
 
@@ -78,34 +75,6 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <TooltipProvider delayDuration={0}>
         <nav className="flex-1 space-y-1 p-4">
-          {/* Toggle button - only visible on md+ screens, hidden in dev-workspace */}
-          <div
-            className={cn(
-              'mb-2 hidden justify-end',
-              !isDevWorkspace && 'md:flex',
-            )}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleCollapsed}
-                  className="rounded-md p-2 text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors"
-                  aria-label={
-                    isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
-                  }
-                >
-                  {isCollapsed ? (
-                    <PanelLeft className="h-4 w-4" />
-                  ) : (
-                    <PanelLeftClose className="h-4 w-4" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs" sideOffset={8}>
-                {isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              </TooltipContent>
-            </Tooltip>
-          </div>
           {visibleItems.map((item) => {
             const active = isActive(item.href)
             return (

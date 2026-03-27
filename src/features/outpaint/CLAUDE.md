@@ -20,6 +20,7 @@ Extends images to new aspect ratios using FAL AI edit models or Google Vertex AP
 ## Supported Models
 
 Defined in `useOutpaintPage.ts` (subset of ai-images EDIT_MODELS):
+
 - `fal-ai/nano-banana-2/edit` -- Nano Banana 2 (reasoning-guided)
 - `fal-ai/nano-banana-pro/edit` -- Nano Banana Pro (realism + typography)
 - `fal-ai/gpt-image-1.5/edit` -- GPT Image 1.5

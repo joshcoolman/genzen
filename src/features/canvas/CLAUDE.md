@@ -21,7 +21,10 @@ interface CanvasImage {
   id: string // canvas-local UUID
   recordId: string // user_images.id (required)
   storagePath: string // Supabase storage path (persisted)
-  x; y; width; height
+  x
+  y
+  width
+  height
   pending?: boolean // true during upload/generation
   signedUrl?: string // runtime only, not persisted
 }
