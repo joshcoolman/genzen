@@ -5,20 +5,26 @@ Presentation components for the documentation section. Content loading and types
 ## Key Files
 
 - `components/DocsContent.tsx` -- Renders a single doc page (category label, title, HTML body via `dangerouslySetInnerHTML`)
-- `components/DocsSidebar.tsx` -- Collapsible category navigation with active-slug highlighting
-- `components/TableOfContents.tsx` -- Sticky "On this page" sidebar with IntersectionObserver-based scroll tracking
+- `components/DocsSidebar.tsx` -- Collapsible category navigation with active-slug highlighting and expand/collapse icons
+- `components/TableOfContents.tsx` -- Sticky "On this page" sidebar with IntersectionObserver-based scroll tracking; hidden below xl breakpoint
+- `index.ts` -- barrel export of SpotlightNav... (none -- no barrel export for docs)
 
 ## Route
 
-`src/routes/docs.tsx` (layout), `src/routes/docs/index.tsx`, `src/routes/docs/$.tsx` (splat)
+- `src/routes/docs.tsx` -- Layout that loads categories and renders sidebar + outlet
+- `src/routes/docs/index.tsx` -- Redirects to first doc slug via `getFirstDocSlug()`
+- `src/routes/docs/$.tsx` -- Splat route that loads doc by slug via `getDocBySlug()`, renders content + TOC
 
 ## Shared Dependencies
 
-- `@/lib/docs/types` -- `DocFile`, `DocNavCategory`, `TocHeading` types
+- `@/lib/docs/types` -- `DocFile`, `DocNavCategory`, `DocNavItem`, `TocHeading` types
+- `@/lib/docs/loadDocs.server` -- `getDocNavCategories()`, `getDocBySlug()`, `getFirstDocSlug()`
 - `@/lib/utils` -- `cn()` for class merging
 
 ## Quirks / Notes
 
-- This feature only contains display components; doc loading (`getDocNavCategories`, `loadDoc`) is in `@/lib/docs/`
+- This feature only contains display components; doc loading and parsing is in `@/lib/docs/`
 - HTML content is injected raw -- docs are trusted (markdown pre-rendered server-side)
-- TableOfContents only renders on xl breakpoints and above
+- TableOfContents uses IntersectionObserver with rootMargin `-80px 0px -80% 0px`
+- DocsSidebar extracts current slug by removing `/docs/` prefix from pathname
+- Each category section is independently collapsible (default: open)

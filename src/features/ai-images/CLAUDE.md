@@ -18,11 +18,10 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
 - `reparent-image.server.ts` -- move image under new parent or detach from parent
+- `set-generation-parent.server.ts` -- set parent image for grouping (used by multi-model, scenes)
 - `retry-generation.server.ts` -- resubmit failed image generation to FAL
 - `caption-image.server.ts` -- vision API image captioning
 - `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
-- `generate-prompt.server.ts` -- random prompt generation via Haiku
-- `generate-prompt-enhanced.server.ts` -- enhance existing prompt via Haiku
 - `fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
 - `fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
 - `update-image-order.server.ts` -- reorder images via sort_order
@@ -36,7 +35,6 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
 - `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, signed URLs)
 - `use-reparent.ts` -- adopt/detach images between parents
-- `use-prompt-tools.ts` -- random prompt generation and prompt enhancement
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 - `use-edit-page.ts` -- dedicated edit page state (source loading, aspect ratio, variants, parent picker)
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
@@ -52,6 +50,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `DescribeDialog.tsx` -- auto-generate or edit image captions via vision API
 - `VariationPromptsDialog.tsx` -- manage variation prompts with ref image picker
 - `ParentPickerDialog.tsx` -- select new parent when adopting/moving an image
+- `GroupPickerDialog.tsx` -- select target group for reparenting
 - `DescribeJsonPanel.tsx` -- JSON description output with syntax highlighting
 
 ## Routes
@@ -62,7 +61,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 ## Shared Dependencies
 
 - `src/lib/server/auth.server.ts` -- `requireAuth()`
-- `src/lib/server/ai.server.ts` -- `ai.haiku`, `ai.sonnet` model instances
+- `src/lib/server/ai.server.ts` -- `models.haiku`, `models.sonnet` Vercel AI SDK instances
 - `src/lib/server/describe-image.server.ts` -- vision description for images without prompts
 - `src/lib/prompts/image-variation.ts` -- system prompt + user content builder for variations
 - `src/features/credits/` -- credit checking, deduction, and UI
@@ -72,10 +71,10 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 ## Quirks / Notes
 
 - Variations use Claude Sonnet to rewrite prompts with "creative tension" -- always references the root image, not the immediate parent, to prevent quality drift
-- Brainstorm has been extracted to its own feature module at `src/features/brainstorm/`
 - `fal-params.server.ts` is the central param resolver used by many features (outpaint, describe, edit-image)
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
 - Some models (GPT Image 1.5) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
 - Reparenting allows moving images between parent groups or detaching from a parent entirely
+- `set-generation-parent.server.ts` is used by multi-model and scenes features to group their outputs

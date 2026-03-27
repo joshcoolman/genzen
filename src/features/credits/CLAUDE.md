@@ -4,22 +4,22 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 
 ## Key Files
 
-- `types.ts` -- CreditRepository interface, CreditReason union, cost table, pack definitions
+- `types.ts` -- CreditRepository interface, CreditReason union (9 reasons), cost table (`CREDIT_COSTS`), pack definitions (`CREDIT_PACKS`), `DOLLARS_PER_CREDIT` (0.1)
 - `index.ts` -- Factory function `getCreditRepository()`, re-exports types/constants
-- `supabase-repository.ts` -- Production implementation using Supabase RPCs (`deduct_credits`, `add_credits`)
-- `mock-repository.ts` -- In-memory mock with seed data (47 credits)
+- `supabase-repository.ts` -- Production implementation using Supabase RPCs (`get_credit_balance`, `deduct_credits`, `add_credits`); direct table queries for `credit_transactions`
+- `mock-repository.ts` -- In-memory mock with seed data (47 credits, 4 fake transactions)
 - `handle-credit-error.ts` -- Helper to detect "Insufficient credits" errors
-- `server/check-credits.server.ts` -- `checkAndDeductCredits()` combines auth + cost lookup + deduction
+- `server/check-credits.server.ts` -- `checkAndDeductCredits(accessToken, reason, quantity?)` combines auth + cost lookup + deduction; also exports `refundCredits()` for credit refunds
 - `server/deduct-credits.server.ts` -- TanStack server fn for deducting credits
 - `server/add-credits.server.ts` -- TanStack server fn for adding credits
 - `server/get-credits.server.ts` -- TanStack server fn returning balance + usage stats
-- `server/get-transactions.server.ts` -- TanStack server fn for transaction history
-- `hooks/use-credits.ts` -- React context provider hook + `useCredits()` consumer hook
+- `server/get-transactions.server.ts` -- TanStack server fn for transaction history (optional limit)
+- `hooks/use-credits.ts` -- React context provider hook `useCreditsProvider()` + `useCredits()` consumer; manages balance, dollarBalance, isLow (<10), isEmpty
 - `hooks/use-insufficient-credits-dialog.ts` -- Dialog state management for low-balance prompt
-- `hooks/use-require-credits.ts` -- Pre-action credit check hook used by ai-images, ai-video, multi-shot
-- `components/CreditsProvider.tsx` -- Context provider wrapping `useCreditsProvider` + insufficient credits dialog
-- `components/CreditPackSelector.tsx` -- Radio group UI for buying credit packs
-- `components/InsufficientCreditsDialog.tsx` -- Modal shown when user can't afford an action
+- `hooks/use-require-credits.ts` -- Auto-shows insufficient credits dialog when balance is completely empty (isEmpty check)
+- `components/CreditsProvider.tsx` -- Context provider wrapping `useCreditsProvider`; exposes `showInsufficientCredits()` through context
+- `components/CreditPackSelector.tsx` -- Radio group UI for buying credit packs; pre-selects second pack (40 credits, Creator)
+- `components/InsufficientCreditsDialog.tsx` -- Modal showing cost vs balance; embeds CreditPackSelector; shows success state after purchase
 
 ## Shared Dependencies
 
@@ -32,9 +32,9 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 ## Quirks / Notes
 
 - ALL credit operations use Supabase SECURITY DEFINER RPCs: `get_credit_balance`, `add_credits`, `deduct_credits`
-- Direct table queries must NOT be used for credit reads -- RLS blocks them if the admin client lacks the service role key
 - After `add()` or `deduct()`, the hook fires a background `refresh()` to re-fetch authoritative balance
-- `checkAndDeductCredits` is the main entry point other features call to gate AI operations
+- `checkAndDeductCredits` is the main entry point other features call; supports optional `quantity` multiplier
 - Video generation and multi-shot generation cost 5 credits; all other operations cost 1
-- `isLow` threshold is < 10 credits
-- Transaction reads (`getTransactions`, `getUsageStats`) still use direct queries via admin client -- these are non-critical display data
+- `isLow` threshold is < 10 credits; `isEmpty` is exactly 0
+- `useRequireCredits()` only checks `isEmpty`, not whether balance covers specific cost
+- Credit packs: $2 (20), $4 (40), $8 (80), $16 (160)
