@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -35,8 +36,10 @@ export const generateFirstFrame = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await fal.queue.submit(model, {
       input: { prompt, safety_tolerance: 6 },
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const supabase = createClient(

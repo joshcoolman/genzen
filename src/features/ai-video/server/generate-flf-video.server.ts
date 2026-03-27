@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
 import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-schema.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -159,10 +160,12 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       `[video-gen] model=${videoModel} schema=${JSON.stringify({ imageParam: schema.imageParam, endImageParam: schema.endImageParam, durationIsInteger: schema.durationIsInteger })} input=${JSON.stringify(debugInput)}`,
     )
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await fal.queue.submit(videoModel, {
       input: falInput as Record<string, unknown> & {
         prompt: string
       },
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const { data: record, error: insertError } = await supabase

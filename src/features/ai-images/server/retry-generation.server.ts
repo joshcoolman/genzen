@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -74,8 +75,10 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       safetyLevel: 'permissive',
     })
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const { data: newRecord, error: insertError } = await supabase

@@ -5,6 +5,7 @@ import { MULTISHOT_FAL_MODEL } from '../types'
 import type { MultiShotElement, MultiShotSettings, Shot } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -95,8 +96,10 @@ export const generateMultishot = createServerFn({ method: 'POST' })
       `[multishot-gen] submitting ${shots.length} shots, ${elements.length} elements, total=${totalDuration}s`,
     )
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await fal.queue.submit(MULTISHOT_FAL_MODEL, {
       input: falInput as Record<string, unknown> & { multi_prompt: unknown },
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     // Create user_images record for polling

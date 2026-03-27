@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -116,8 +117,10 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
       }
     }
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await fal.queue.submit(modelId, {
       input: input as never,
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const { data: record, error: insertError } = await supabase

@@ -7,6 +7,7 @@ import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
+import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -249,8 +250,10 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       })
     }
 
+    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await (fal.queue.submit as any)(data.model, {
       input: falInput,
+      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const { recordId } = await createPendingGeneration({
