@@ -10,6 +10,7 @@ import { useExistingImages } from '@/features/user-images/hooks/useExistingImage
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
+import { generateShotList } from '@/features/ai-images/server/generate-shot-list.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -45,8 +46,35 @@ export function useEditPage(imageId: string) {
   const [pageLoading, setPageLoading] = useState(true)
   const [hasParent, setHasParent] = useState(false)
 
-  // Generator adapter state
-  const [prompt, setPrompt] = useState('')
+  // Generator adapter state — multi-prompt
+  const [prompts, setPromptsRaw] = useState<Array<string>>([''])
+  const prompt = prompts[0]
+  const setPrompt = useCallback(
+    (value: string | ((prev: string) => string)) => {
+      setPromptsRaw((prev) => {
+        const next = [...prev]
+        next[0] = typeof value === 'function' ? value(prev[0]) : value
+        return next
+      })
+    },
+    [],
+  )
+  const setPromptAtIndex = useCallback((index: number, value: string) => {
+    setPromptsRaw((prev) => {
+      const next = [...prev]
+      next[index] = value
+      return next
+    })
+  }, [])
+  const addPrompt = useCallback(() => {
+    setPromptsRaw((prev) => [...prev, ''])
+  }, [])
+  const removePrompt = useCallback((index: number) => {
+    setPromptsRaw((prev) => {
+      if (prev.length <= 1 || index === 0) return prev
+      return prev.filter((_, i) => i !== index)
+    })
+  }, [])
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     'landscape',
   )
@@ -221,10 +249,12 @@ export function useEditPage(imageId: string) {
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
-  // Generate edit handler
+  // Generate edit handler — loops over active prompts x models x gens
+  const activePromptCount = prompts.filter((p) => p.trim()).length
+
   const handleGenerate = useCallback(async () => {
     if (
-      !prompt.trim() ||
+      activePromptCount === 0 ||
       !accessToken ||
       editLoading ||
       modelSelector.selectedIds.length === 0
@@ -233,8 +263,11 @@ export function useEditPage(imageId: string) {
     setEditLoading(true)
     setError(null)
 
+    const activePrompts = prompts.filter((p) => p.trim())
     const totalEdits =
-      modelSelector.selectedIds.length * modelSelector.gensPerModel
+      activePrompts.length *
+      modelSelector.selectedIds.length *
+      modelSelector.gensPerModel
     const cost = CREDIT_COSTS.edit * totalEdits
 
     if (credits.balance !== null && credits.balance < cost) {
@@ -247,34 +280,37 @@ export function useEditPage(imageId: string) {
       const referenceImageIds =
         refImages.length > 0 ? refImages.map((r) => r.id) : undefined
 
-      for (const editModelId of modelSelector.selectedIds) {
-        for (let g = 0; g < modelSelector.gensPerModel; g++) {
-          const { recordId } = await editImage({
-            data: {
-              accessToken,
-              sourceImageId: activeSourceId,
-              editPrompt: prompt.trim(),
-              aspectRatio,
-              editModelId,
-              idempotencyKey: crypto.randomUUID(),
-              ...(referenceImageIds ? { referenceImageIds } : {}),
-            },
-          })
+      for (const promptText of activePrompts) {
+        const finalPrompt = promptText.trim()
+        for (const editModelId of modelSelector.selectedIds) {
+          for (let g = 0; g < modelSelector.gensPerModel; g++) {
+            const { recordId } = await editImage({
+              data: {
+                accessToken,
+                sourceImageId: activeSourceId,
+                editPrompt: finalPrompt,
+                aspectRatio,
+                editModelId,
+                idempotencyKey: crypto.randomUUID(),
+                ...(referenceImageIds ? { referenceImageIds } : {}),
+              },
+            })
 
-          results.addPendingResult({
-            id: recordId,
-            status: 'pending',
-            label:
-              EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
-              modelSelector.models.find((m) => m.id === editModelId)?.name ??
-              editModelId,
-            prompt: prompt.trim(),
-            title: prompt.trim(),
-            createdAt: new Date().toISOString(),
-          })
+            results.addPendingResult({
+              id: recordId,
+              status: 'pending',
+              label:
+                EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
+                modelSelector.models.find((m) => m.id === editModelId)?.name ??
+                editModelId,
+              prompt: finalPrompt,
+              title: finalPrompt,
+              createdAt: new Date().toISOString(),
+            })
+          }
         }
       }
-      setPrompt('')
+      setPromptsRaw([''])
       await credits.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to edit image')
@@ -282,7 +318,8 @@ export function useEditPage(imageId: string) {
       setEditLoading(false)
     }
   }, [
-    prompt,
+    prompts,
+    activePromptCount,
     accessToken,
     editLoading,
     activeSourceId,
@@ -294,6 +331,39 @@ export function useEditPage(imageId: string) {
     results,
     refImages,
   ])
+
+  // Shot list prompt generation
+  const [generatingPrompts, setGeneratingPrompts] = useState(false)
+
+  const handleGeneratePrompts = useCallback(
+    async (opts: { count: number; guidance?: string }) => {
+      if (!accessToken || !sourceBase64 || generatingPrompts) return
+      setGeneratingPrompts(true)
+      try {
+        const { prompts: shotPrompts } = await generateShotList({
+          data: {
+            accessToken,
+            imageBase64: sourceBase64,
+            count: opts.count,
+            guidance: opts.guidance,
+          },
+        })
+        setPromptsRaw((prev) => {
+          const kept = prev.filter((p) => p.trim())
+          return kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
+        })
+      } catch {
+        // fail silently like handleCaption
+      } finally {
+        setGeneratingPrompts(false)
+      }
+    },
+    [accessToken, sourceBase64, generatingPrompts],
+  )
+
+  const clearPrompts = useCallback(() => {
+    setPromptsRaw([''])
+  }, [])
 
   // Caption handler
   const handleCaption = useCallback(async () => {
@@ -321,8 +391,11 @@ export function useEditPage(imageId: string) {
   })
 
   const totalImages =
-    modelSelector.selectedIds.length * modelSelector.gensPerModel
-  const canGenerate = !!prompt.trim() && modelSelector.selectedIds.length > 0
+    activePromptCount *
+    modelSelector.selectedIds.length *
+    modelSelector.gensPerModel
+  const canGenerate =
+    activePromptCount > 0 && modelSelector.selectedIds.length > 0
 
   const ratioOptions = getRatioOptions(orientation)
 
@@ -399,7 +472,7 @@ export function useEditPage(imageId: string) {
       setSourceChain((prev) =>
         prev.includes(targetId) ? prev : [...prev, targetId],
       )
-      setPrompt('')
+      setPromptsRaw([''])
     },
     [user?.id],
   )
@@ -416,7 +489,7 @@ export function useEditPage(imageId: string) {
     if (!originalImageMeta) return
     setSourceImageMeta(originalImageMeta)
     setActiveSourceId(imageId)
-    setPrompt('')
+    setPromptsRaw([''])
 
     // Re-convert original to base64
     const img = new Image()
@@ -517,9 +590,9 @@ export function useEditPage(imageId: string) {
   }, [accessToken, sourceImageMeta?.prompt, activeSourceId, variationPrompts])
 
   const handleRunVariations = useCallback(
-    async (prompts: Array<string>) => {
+    async (variationTexts: Array<string>) => {
       if (!accessToken || !variationMeta || !sourceImageMeta) return
-      const cost = CREDIT_COSTS.variation * prompts.length
+      const cost = CREDIT_COSTS.variation * variationTexts.length
       if (credits.balance !== null && credits.balance < cost) {
         credits.showInsufficientCredits(cost)
         return
@@ -529,16 +602,16 @@ export function useEditPage(imageId: string) {
       setVariationDialogOpen(false)
 
       const now = new Date().toISOString()
-      const optimisticIds = prompts.map(
+      const optimisticIds = variationTexts.map(
         (_, i) => `optimistic-var-${Date.now()}-${i}`,
       )
-      for (let i = 0; i < prompts.length; i++) {
+      for (let i = 0; i < variationTexts.length; i++) {
         results.addPendingResult({
           id: optimisticIds[i],
           status: 'pending',
           label: 'Kontext Pro',
-          prompt: prompts[i],
-          title: prompts[i],
+          prompt: variationTexts[i],
+          title: variationTexts[i],
           createdAt: now,
         })
       }
@@ -548,7 +621,7 @@ export function useEditPage(imageId: string) {
         const variationResults = await submitVariations({
           data: {
             accessToken,
-            prompts,
+            prompts: variationTexts,
             model: 'fal-ai/flux-pro/kontext',
             sourceImageId: variationMeta.sourceImageId,
             rootImageId: variationMeta.rootImageId,
@@ -594,6 +667,10 @@ export function useEditPage(imageId: string) {
   const generator: GeneratorState = {
     prompt,
     setPrompt,
+    prompts,
+    setPromptAtIndex,
+    addPrompt,
+    removePrompt,
     orientation,
     setOrientation,
     aspectRatio,
@@ -616,9 +693,13 @@ export function useEditPage(imageId: string) {
     handleGenerate,
     setSourceFile: () => {}, // No file upload in edit mode — source comes from route
     setSourceFromUrl: () => {}, // No URL source in edit mode
+    setSourceFromBase64: () => {}, // No base64 source in edit mode
     handleClear: () => {}, // No-op in edit mode
     handleClearSourceImage: () => {}, // Can't clear in edit mode
     handleCaption,
+    generatingPrompts,
+    handleGeneratePrompts,
+    clearPrompts,
     refImages,
     addRefImages,
     removeRefImage,

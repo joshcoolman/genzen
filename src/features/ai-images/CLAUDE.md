@@ -21,6 +21,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `set-generation-parent.server.ts` -- set parent image for grouping (used by multi-model, scenes)
 - `retry-generation.server.ts` -- resubmit failed image generation to FAL
 - `caption-image.server.ts` -- vision API image captioning
+- `generate-shot-list.server.ts` -- vision-based shot list prompt generation (Gemini Flash)
 - `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
 - `fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
 - `fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
@@ -64,6 +65,8 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/lib/server/ai.server.ts` -- `models.haiku`, `models.sonnet` Vercel AI SDK instances
 - `src/lib/server/describe-image.server.ts` -- vision description for images without prompts
 - `src/lib/prompts/image-variation.ts` -- system prompt + user content builder for variations
+- `src/lib/prompts/shot-list.ts` -- system prompt for shot list generation
+- `src/components/PromptList.tsx` -- reusable prompt list with optional AI generation
 - `src/features/credits/` -- credit checking, deduction, and UI
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/components/AspectRatioSelect.tsx` -- ratio constants re-exported via `constants.ts`

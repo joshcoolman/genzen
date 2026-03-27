@@ -1,15 +1,18 @@
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { ADPanel } from '@/features/ad/components/ADPanel'
-import { ADToggle } from '@/features/ad/components/ADToggle'
 import { ADContextProvider } from '@/features/ad/context/ad-context'
+import { PromptSheet } from '@/features/prompts/components/PromptSheet'
+import { usePromptSheet } from '@/features/prompts/hooks/use-prompt-sheet'
 import { useADOpen } from '@/lib/use-ad-open'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 import { cn } from '@/lib/utils'
+import { StatusBar } from '@/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebarCollapsed()
   const { isOpen: isADOpen } = useADOpen()
+  const promptSheet = usePromptSheet()
 
   return (
     <ADContextProvider>
@@ -31,9 +34,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* AD panel + toggle */}
+        {/* AD panel */}
         <ADPanel />
-        <ADToggle />
+
+        {/* Universal toolbar */}
+        <StatusBar onOpenPrompts={promptSheet.open} />
+
+        {/* Prompt library bottom sheet */}
+        <PromptSheet
+          isOpen={promptSheet.isOpen}
+          onClose={promptSheet.close}
+          prompts={promptSheet.prompts}
+          loading={promptSheet.loading}
+          onAdd={promptSheet.addPrompt}
+          onDelete={promptSheet.removePrompt}
+          onRestore={promptSheet.restore}
+          hasAllDefaults={promptSheet.hasAllDefaults}
+        />
       </div>
     </ADContextProvider>
   )

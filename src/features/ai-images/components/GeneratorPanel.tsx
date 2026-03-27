@@ -4,7 +4,7 @@ import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import type { UserImage } from '@/features/user-images/types'
 import type { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import type { useModelSelector } from '@/components/ModelSelector'
-import { Textarea } from '@/components/ui/textarea'
+import { PromptList } from '@/components/PromptList'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
@@ -88,50 +88,37 @@ export function GeneratorPanel({
         />
       </div>
 
-      {/* Textarea */}
-      <div className="relative">
-        <Textarea
-          id="prompt-textarea"
-          placeholder={
-            generator.describingImage
-              ? 'Describing image...'
-              : isEdit
-                ? 'Describe the edit...'
-                : generator.sourceImage
-                  ? 'Edit prompt (optional)...'
-                  : 'Describe your image...'
-          }
-          value={generator.prompt}
-          onChange={(e) => generator.setPrompt(e.target.value)}
-          disabled={generator.loading || generator.describingImage}
-          rows={4}
-          className="text-xs pr-7"
-        />
-        {(generator.prompt ||
-          generator.sourceImage ||
-          generator.refImages.length > 0) && (
-          <button
-            type="button"
-            onClick={generator.handleClear}
-            className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
-            title="Clear prompt, source image, and references"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        )}
-      </div>
+      {/* Prompt textareas */}
+      <PromptList
+        prompts={generator.prompts}
+        onUpdatePrompt={generator.setPromptAtIndex}
+        onAddPrompt={generator.addPrompt}
+        onRemovePrompt={generator.removePrompt}
+        onClear={generator.handleClear}
+        canClear={
+          !!(
+            generator.prompt ||
+            generator.sourceImage ||
+            generator.refImages.length > 0
+          )
+        }
+        disabled={generator.loading || generator.describingImage}
+        placeholders={{
+          first: generator.describingImage
+            ? 'Describing image...'
+            : isEdit
+              ? 'Describe the edit...'
+              : generator.sourceImage
+                ? 'Edit prompt (optional)...'
+                : 'Describe your image...',
+          additional: 'Additional prompt...',
+        }}
+        onGeneratePrompts={
+          generator.sourceImage ? generator.handleGeneratePrompts : undefined
+        }
+        generatingPrompts={generator.generatingPrompts}
+        onClearPrompts={generator.clearPrompts}
+      />
 
       {/* Ref images -- show when model supports refs */}
       {generator.maxRefImages > 0 && (

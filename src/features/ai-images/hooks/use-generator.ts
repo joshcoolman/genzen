@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
+import { generateShotList } from '@/features/ai-images/server/generate-shot-list.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   LANDSCAPE_RATIOS,
@@ -35,6 +36,10 @@ interface UseGeneratorOptions {
 export interface GeneratorState {
   prompt: string
   setPrompt: (prompt: string | ((prev: string) => string)) => void
+  prompts: Array<string>
+  setPromptAtIndex: (index: number, value: string) => void
+  addPrompt: () => void
+  removePrompt: (index: number) => void
   orientation: 'landscape' | 'portrait'
   aspectRatio: string
   setAspectRatio: (ratio: string) => void
@@ -55,6 +60,12 @@ export interface GeneratorState {
   handleClearSourceImage: () => void
   handleClear: () => void
   handleCaption: () => Promise<void>
+  generatingPrompts: boolean
+  handleGeneratePrompts: (opts: {
+    count: number
+    guidance?: string
+  }) => Promise<void>
+  clearPrompts: () => void
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
@@ -71,14 +82,33 @@ export function useGenerator({
   storagePrefix = 'genzen',
   onAfterSubmit,
 }: UseGeneratorOptions): GeneratorState {
-  const promptKey = `${storagePrefix}:prompt`
+  const promptsKey = `${storagePrefix}:prompts`
+  const legacyPromptKey = `${storagePrefix}:prompt`
   const orientationKey = `${storagePrefix}:orientation`
   const aspectRatioKey = `${storagePrefix}:aspect-ratio`
 
-  const [prompt, setPromptRaw] = useState(() => {
-    if (typeof window === 'undefined') return ''
-    return localStorage.getItem(promptKey) ?? ''
+  function persistPrompts(next: Array<string>) {
+    localStorage.setItem(promptsKey, JSON.stringify(next))
+    localStorage.removeItem(legacyPromptKey)
+  }
+
+  const [prompts, setPromptsRaw] = useState<Array<string>>(() => {
+    if (typeof window === 'undefined') return ['']
+    const stored = localStorage.getItem(promptsKey)
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      } catch {
+        /* ignore */
+      }
+    }
+    const legacy = localStorage.getItem(legacyPromptKey)
+    if (legacy) return [legacy]
+    return ['']
   })
+
+  const prompt = prompts[0]
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     () => {
       if (typeof window === 'undefined') return 'landscape'
@@ -99,17 +129,44 @@ export function useGenerator({
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
-  // Wrap setPrompt to persist
+  // Backwards-compat: setPrompt updates prompts[0]
   const setPrompt = useCallback(
     (value: string | ((prev: string) => string)) => {
-      setPromptRaw((prev) => {
-        const next = typeof value === 'function' ? value(prev) : value
-        localStorage.setItem(promptKey, next)
+      setPromptsRaw((prev) => {
+        const next = [...prev]
+        next[0] = typeof value === 'function' ? value(prev[0]) : value
+        persistPrompts(next)
         return next
       })
     },
     [],
   )
+
+  const setPromptAtIndex = useCallback((index: number, value: string) => {
+    setPromptsRaw((prev) => {
+      const next = [...prev]
+      next[index] = value
+      persistPrompts(next)
+      return next
+    })
+  }, [])
+
+  const addPrompt = useCallback(() => {
+    setPromptsRaw((prev) => {
+      const next = [...prev, '']
+      persistPrompts(next)
+      return next
+    })
+  }, [])
+
+  const removePrompt = useCallback((index: number) => {
+    setPromptsRaw((prev) => {
+      if (prev.length <= 1 || index === 0) return prev
+      const next = prev.filter((_, i) => i !== index)
+      persistPrompts(next)
+      return next
+    })
+  }, [])
 
   // Persist orientation + aspect ratio on change
   useEffect(() => {
@@ -149,9 +206,13 @@ export function useGenerator({
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
-  const totalImages = selectedModels.length * gensPerModel
+  const activePromptCount = prompts.filter((p) => p.trim()).length
+  const totalImages =
+    Math.max(activePromptCount, sourceImage ? 1 : 0) *
+    selectedModels.length *
+    gensPerModel
   const canGenerate =
-    (!!prompt.trim() || !!sourceImage) && selectedModels.length > 0
+    (activePromptCount > 0 || !!sourceImage) && selectedModels.length > 0
 
   const ratioOptions = getRatioOptions(orientation)
 
@@ -184,8 +245,14 @@ export function useGenerator({
       }
       return Array.from({ length: gensPerModel }, () => modelId)
     })
+
+    // Collect non-empty prompts; if none but sourceImage exists, use ['']
+    const activePrompts = prompts.filter((p) => p.trim())
+    const promptsToRun = activePrompts.length > 0 ? activePrompts : ['']
+
+    const totalCalls = promptsToRun.length * modelsToUse.length
     const reason = sourceImage ? 'variation' : 'image_gen'
-    const cost = CREDIT_COSTS[reason] * modelsToUse.length
+    const cost = CREDIT_COSTS[reason] * totalCalls
 
     // Pre-flight credit check
     if (credits.balance !== null && credits.balance < cost) {
@@ -197,11 +264,12 @@ export function useGenerator({
     setError(null)
 
     try {
-      const finalPrompt = prompt.trim()
       const referenceImageIds =
         refImages.length > 0 ? refImages.map((r) => r.id) : undefined
-      const results = await Promise.allSettled(
-        modelsToUse.map((modelId) =>
+
+      const allCalls = promptsToRun.flatMap((promptText) => {
+        const finalPrompt = promptText.trim()
+        return modelsToUse.map((modelId) =>
           generateImage({
             data: {
               prompt: finalPrompt,
@@ -219,8 +287,10 @@ export function useGenerator({
               ...(providerOverride ? { providerOverride } : {}),
             },
           }),
-        ),
-      )
+        )
+      })
+
+      const results = await Promise.allSettled(allCalls)
       const fulfilled = results
         .filter((r) => r.status === 'fulfilled')
         .map((r) => ({
@@ -318,7 +388,8 @@ export function useGenerator({
   }
 
   function handleClear() {
-    setPrompt('')
+    setPromptsRaw([''])
+    persistPrompts([''])
     setSourceImage(null)
     setRefImages([])
   }
@@ -338,9 +409,48 @@ export function useGenerator({
     }
   }, [accessToken, sourceImage, describingImage])
 
+  const [generatingPrompts, setGeneratingPrompts] = useState(false)
+
+  const handleGeneratePrompts = useCallback(
+    async (opts: { count: number; guidance?: string }) => {
+      if (!accessToken || !sourceImage || generatingPrompts) return
+      setGeneratingPrompts(true)
+      try {
+        const { prompts: shotPrompts } = await generateShotList({
+          data: {
+            accessToken,
+            imageBase64: sourceImage.base64,
+            count: opts.count,
+            guidance: opts.guidance,
+          },
+        })
+        setPromptsRaw((prev) => {
+          const kept = prev.filter((p) => p.trim())
+          const next = kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
+          persistPrompts(next)
+          return next
+        })
+      } catch {
+        // fail silently like handleCaption
+      } finally {
+        setGeneratingPrompts(false)
+      }
+    },
+    [accessToken, sourceImage, generatingPrompts],
+  )
+
+  const clearPrompts = useCallback(() => {
+    setPromptsRaw([''])
+    persistPrompts([''])
+  }, [])
+
   return {
     prompt,
     setPrompt,
+    prompts,
+    setPromptAtIndex,
+    addPrompt,
+    removePrompt,
     orientation,
     setOrientation,
     aspectRatio,
@@ -361,6 +471,9 @@ export function useGenerator({
     handleClearSourceImage,
     handleClear,
     handleCaption,
+    generatingPrompts,
+    handleGeneratePrompts,
+    clearPrompts,
     refImages,
     addRefImages,
     removeRefImage,
