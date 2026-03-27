@@ -21,7 +21,21 @@ export const models = {
 
 // Role assignments - change one line to swap what model handles each job
 export const ai = {
-  fast: models.haiku,
+  fast: models.nemotron,
   reasoning: models.sonnet,
   vision: models.gemini3Flash,
 }
+
+// Fast text models selectable from the Ideas page
+export const fastTextModels = {
+  nemotron: { label: 'Nemotron', model: models.nemotron },
+  haiku: { label: 'Haiku', model: models.haiku },
+  geminiFlash: { label: 'Gemini Flash', model: models.geminiFlash },
+  grok: { label: 'Grok', model: models.grok },
+  gpt4oMini: {
+    label: 'GPT-4o Mini',
+    model: openrouter.chatModel('openai/gpt-4o-mini'),
+  },
+} as const
+
+export type FastTextModelKey = keyof typeof fastTextModels

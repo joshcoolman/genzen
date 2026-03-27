@@ -9,7 +9,6 @@ import { useModelSelector } from '@/components/ModelSelector'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useLightbox } from '@/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '@/features/ai-images/hooks/use-variations'
-import { usePromptTools } from '@/features/ai-images/hooks/use-prompt-tools'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { useReparent } from '@/features/ai-images/hooks/use-reparent'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
@@ -115,13 +114,6 @@ export function useAiImagesPage() {
     ),
   })
 
-  const promptTools = usePromptTools({
-    accessToken,
-    setPrompt: generator.setPrompt,
-    getPrompt: () => generator.prompt,
-    setError,
-  })
-
   function handleLoadPrompt(img: SavedAiImage) {
     if (!img.generation_metadata?.prompt) return
     generator.setPrompt(img.generation_metadata.prompt)
@@ -146,7 +138,6 @@ export function useAiImagesPage() {
     reparent,
     lightbox,
     variations,
-    promptTools,
     completedImages,
     error,
     setError,
