@@ -143,15 +143,24 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseAdmin()
 
-  const { data: record } = await supabase
+  const result = await supabase
     .from('user_images')
     .select('id, user_id, source')
     .eq('request_id', request_id)
-    .single()
+    .maybeSingle()
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (result.error) {
+    console.error(
+      `[fal-webhook] DB query failed for request_id=${request_id}: ${result.error.message} (code=${result.error.code})`,
+    )
+    setResponseStatus(event, 500)
+    return 'Internal Server Error'
+  }
+
+  const record = result.data
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- maybeSingle() can return null data
   if (!record) {
-    // Unknown request_id — not our record, ignore
+    console.warn(`[fal-webhook] No record found for request_id=${request_id}`)
     return 'OK'
   }
 
