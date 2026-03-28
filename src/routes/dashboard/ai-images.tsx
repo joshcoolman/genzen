@@ -31,7 +31,6 @@ import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
-import { processAndUploadFiles } from '@/features/user-images/lib/process-files'
 import { supabase } from '@/lib/supabase'
 import {
   AlertDialog,
@@ -152,16 +151,49 @@ function AiImagesPage() {
   })
 
   const handleUploadFiles = useCallback(
-    async (files: Array<File>) => {
-      await processAndUploadFiles(files, async (file, title) => {
-        await upload({ file, title, description: null })
-      })
-      await page.gallery.refresh()
+    (files: Array<File>) => {
+      // Show optimistic cards immediately, upload in parallel, swap on completion
+      for (const file of files) {
+        const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
+        const previewUrl = URL.createObjectURL(file)
+        page.gallery.addOptimisticCard({
+          id: tempId,
+          title: 'Uploading...',
+          storage_path: null,
+          created_at: new Date().toISOString(),
+          status: 'completed',
+          generation_error: null,
+          generation_metadata: null,
+        })
+        page.gallery.setImageUrl(tempId, previewUrl)
+
+        void (async () => {
+          try {
+            const result = await upload({
+              file,
+              title: file.name,
+              description: null,
+            })
+            page.gallery.replaceOptimisticCard(tempId, {
+              id: result.id,
+              title: result.title,
+              storage_path: null,
+              created_at: new Date().toISOString(),
+              status: 'completed',
+              generation_error: null,
+              generation_metadata: null,
+            })
+            page.gallery.setImageUrl(result.id, previewUrl)
+          } catch {
+            page.gallery.removeOptimisticCard(tempId)
+          }
+        })()
+      }
     },
     [upload, page.gallery],
   )
 
-  // Paste handler — show optimistic card instantly, upload in background
+  // Paste handler — delegates to handleUploadFiles for optimistic flow
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
@@ -171,53 +203,14 @@ function AiImagesPage() {
           const file = item.getAsFile()
           if (!file) continue
           e.preventDefault()
-
-          // Instant feedback: show optimistic card with blob URL
-          const tempId = `paste-${Date.now()}`
-          const previewUrl = URL.createObjectURL(file)
-          page.gallery.addOptimisticCard({
-            id: tempId,
-            title: 'Uploading...',
-            storage_path: null,
-            created_at: new Date().toISOString(),
-            status: 'completed',
-            generation_error: null,
-            generation_metadata: null,
-          })
-          page.gallery.setImageUrl(tempId, previewUrl)
-
-          // Upload in background, then swap optimistic for real (no refresh)
-          setTimeout(() => {
-            void (async () => {
-              try {
-                const result = await upload({
-                  file,
-                  title: file.name,
-                  description: null,
-                })
-                // Swap optimistic card for real image, keep blob URL
-                page.gallery.replaceOptimisticCard(tempId, {
-                  id: result.id,
-                  title: result.title,
-                  storage_path: null,
-                  created_at: new Date().toISOString(),
-                  status: 'completed',
-                  generation_error: null,
-                  generation_metadata: null,
-                })
-                page.gallery.setImageUrl(result.id, previewUrl)
-              } catch {
-                page.gallery.removeOptimisticCard(tempId)
-              }
-            })()
-          }, 0)
+          handleUploadFiles([file])
           return
         }
       }
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [upload, page.gallery])
+  }, [handleUploadFiles])
 
   // Delete confirmation for images with children
   const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
