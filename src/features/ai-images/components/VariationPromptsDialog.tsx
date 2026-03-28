@@ -70,6 +70,31 @@ export function VariationPromptsDialog({
     setPrompts((prev) => [...prev, ''])
   }
 
+  function handlePaste(
+    index: number,
+    e: React.ClipboardEvent<HTMLTextAreaElement>,
+  ) {
+    const pasted = e.clipboardData.getData('text')
+    let lines = pasted
+      .split('\n\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+    if (lines.length < 2) {
+      lines = pasted
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+    }
+    if (lines.length >= 2) {
+      e.preventDefault()
+      setPrompts((prev) => {
+        const next = [...prev]
+        next.splice(index, 1, ...lines)
+        return next
+      })
+    }
+  }
+
   function handleRun() {
     const filtered = prompts.filter((p) => p.trim().length > 0)
     if (filtered.length > 0) {
@@ -129,6 +154,7 @@ export function VariationPromptsDialog({
                   <Textarea
                     value={prompt}
                     onChange={(e) => updatePrompt(i, e.target.value)}
+                    onPaste={(e) => handlePaste(i, e)}
                     rows={2}
                     className="flex-1 text-sm resize-none"
                     placeholder="Describe a variation..."
