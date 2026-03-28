@@ -16,6 +16,7 @@ import {
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -117,12 +118,9 @@ export const generateVariation = createServerFn({ method: 'POST' })
       // If root is gone, fall back to sourceImage's storage_path (already set)
     }
 
+    const storage = createImageStorage(supabase)
     const signedUrl = imageStoragePath
-      ? (
-          await supabase.storage
-            .from('user-images')
-            .createSignedUrl(imageStoragePath, 3600)
-        ).data?.signedUrl
+      ? await storage.getUrl(imageStoragePath, { ttl: 3600, cached: false })
       : undefined
 
     // Fetch image bytes — needed for both Claude (base64) and FAL (upload to get HTTPS URL)

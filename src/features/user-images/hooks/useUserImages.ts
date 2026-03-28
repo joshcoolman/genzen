@@ -12,9 +12,7 @@ import type {
   UserImageFilters,
 } from '../types'
 import { supabase } from '@/lib/supabase'
-import { getCachedSignedUrl } from '@/lib/storage-url-cache'
-
-const BUCKET_NAME = 'user-images'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface UseUserImagesState {
   images: Array<UserImage>
@@ -66,7 +64,7 @@ export function useUserImages(
         const path =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const url = await getCachedSignedUrl(supabase, path)
+        const url = await createImageStorage(supabase).getUrl(path)
         if (url) {
           setState((prev) => ({
             ...prev,
@@ -160,16 +158,9 @@ export function useUserImages(
         const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
         // Upload file to storage
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(storagePath, input.file, {
-            cacheControl: '31536000',
-            upsert: false,
-          })
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`)
-        }
+        await createImageStorage(supabase).upload(storagePath, input.file, {
+          contentType: input.file.type,
+        })
 
         // Create database record
         const { data: newImage, error: insertError } = await supabase
@@ -189,14 +180,16 @@ export function useUserImages(
 
         if (insertError) {
           // Rollback: delete uploaded file
-          await supabase.storage.from(BUCKET_NAME).remove([storagePath])
+          await createImageStorage(supabase).remove([storagePath])
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
         }
 
         // Get signed URL for new image
-        const newUrl = await getCachedSignedUrl(supabase, newImage.storage_path)
+        const newUrl = await createImageStorage(supabase).getUrl(
+          newImage.storage_path,
+        )
 
         // Update state
         setState((prev) => ({

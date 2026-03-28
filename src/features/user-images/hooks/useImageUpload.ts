@@ -2,8 +2,7 @@ import { useCallback, useState } from 'react'
 import { createThumbnail } from '../server/create-thumbnail.server'
 import type { CollectedImage, CreateUserImageInput } from '../types'
 import { supabase } from '@/lib/supabase'
-
-const BUCKET_NAME = 'user-images'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface UseImageUploadReturn {
   upload: (input: CreateUserImageInput) => Promise<CollectedImage>
@@ -33,16 +32,9 @@ export function useImageUpload(
         )
         const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
-        const { error: uploadError } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(storagePath, input.file, {
-            cacheControl: '31536000',
-            upsert: false,
-          })
-
-        if (uploadError) {
-          throw new Error(`Failed to upload file: ${uploadError.message}`)
-        }
+        await createImageStorage(supabase).upload(storagePath, input.file, {
+          contentType: input.file.type,
+        })
 
         const { data: newImage, error: insertError } = await supabase
           .from('user_images')
@@ -60,7 +52,7 @@ export function useImageUpload(
           .single()
 
         if (insertError) {
-          await supabase.storage.from(BUCKET_NAME).remove([storagePath])
+          await createImageStorage(supabase).remove([storagePath])
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
@@ -80,14 +72,15 @@ export function useImageUpload(
           }).catch(() => {})
         }
 
-        const { data: urlData } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(newImage.storage_path, 86400)
+        const url = await createImageStorage(supabase).getUrl(
+          newImage.storage_path,
+          { cached: false },
+        )
 
         return {
           id: newImage.id,
           title: newImage.title,
-          url: urlData?.signedUrl ?? '',
+          url: url ?? '',
           source: newImage.source,
           addedInSession: true,
         }

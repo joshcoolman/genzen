@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FrameState, FrameStatus } from '../types'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 interface UseFrameOptions {
@@ -66,12 +67,11 @@ export function useFrame({ accessToken }: UseFrameOptions) {
             storage_path: string | null
           }
           if (updated.status === 'completed' && updated.storage_path) {
-            supabase.storage
-              .from('user-images')
-              .createSignedUrl(updated.storage_path, 86400)
-              .then(({ data }) => {
-                if (data) {
-                  setUrl(data.signedUrl)
+            createImageStorage(supabase)
+              .getUrl(updated.storage_path, { cached: false })
+              .then((signedUrl) => {
+                if (signedUrl) {
+                  setUrl(signedUrl)
                   setStatus('completed')
                 }
               })

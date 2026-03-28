@@ -3,6 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { createImageStorage } from '@/lib/image-storage'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
 import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-schema.server'
@@ -26,15 +27,16 @@ async function uploadFrameToFal(
   supabase: SupabaseClient,
   storagePath: string,
 ): Promise<string> {
-  const { data: signedUrlData } = await supabase.storage
-    .from('user-images')
-    .createSignedUrl(storagePath, 3600)
+  const signedUrl = await createImageStorage(supabase).getUrl(storagePath, {
+    ttl: 3600,
+    cached: false,
+  })
 
-  if (!signedUrlData?.signedUrl) {
+  if (!signedUrl) {
     throw new Error('Failed to create signed URL for frame')
   }
 
-  const res = await fetch(signedUrlData.signedUrl)
+  const res = await fetch(signedUrl)
   if (!res.ok) throw new Error('Failed to fetch frame image')
 
   const buffer = await res.arrayBuffer()

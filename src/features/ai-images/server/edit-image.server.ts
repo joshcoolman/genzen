@@ -11,6 +11,7 @@ import { createPendingGeneration } from '@/lib/server/create-pending-generation.
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface EditImageInput {
   accessToken: string
@@ -87,15 +88,17 @@ export const editImage = createServerFn({ method: 'POST' })
     }
 
     // Get signed URL and fetch image bytes
-    const { data: signedUrlData } = await supabase.storage
-      .from('user-images')
-      .createSignedUrl(sourceImage.storage_path, 3600)
+    const storage = createImageStorage(supabase)
+    const signedUrl = await storage.getUrl(sourceImage.storage_path, {
+      ttl: 3600,
+      cached: false,
+    })
 
-    if (!signedUrlData?.signedUrl) {
+    if (!signedUrl) {
       throw new Error('Failed to get signed URL for source image')
     }
 
-    const imageRes = await fetch(signedUrlData.signedUrl)
+    const imageRes = await fetch(signedUrl)
     const buffer = await imageRes.arrayBuffer()
 
     // Upload to FAL storage using shared utility
@@ -114,11 +117,12 @@ export const editImage = createServerFn({ method: 'POST' })
         const uploads = await Promise.all(
           refImages.data.map(async (ref) => {
             if (!ref.storage_path) return null
-            const { data: signed } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(ref.storage_path, 3600)
-            if (!signed?.signedUrl) return null
-            const res = await fetch(signed.signedUrl)
+            const refSignedUrl = await storage.getUrl(ref.storage_path, {
+              ttl: 3600,
+              cached: false,
+            })
+            if (!refSignedUrl) return null
+            const res = await fetch(refSignedUrl)
             const buf = await res.arrayBuffer()
             return uploadBufferToFal(buf)
           }),

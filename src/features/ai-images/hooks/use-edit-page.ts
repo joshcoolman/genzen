@@ -21,6 +21,7 @@ import {
 import { flipOrientation } from '@/components/AspectRatioSelect'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 
 export function useEditPage(imageId: string) {
   const { user, session } = useAuth()
@@ -164,11 +165,12 @@ export function useEditPage(imageId: string) {
         return
       }
 
-      const { data: signed } = await supabase.storage
-        .from('user-images')
-        .createSignedUrl(data.storage_path, 86400)
+      const signedUrl = await createImageStorage(supabase).getUrl(
+        data.storage_path,
+        { cached: false },
+      )
 
-      if (!signed?.signedUrl) {
+      if (!signedUrl) {
         setError('Failed to load image')
         setPageLoading(false)
         return
@@ -183,7 +185,7 @@ export function useEditPage(imageId: string) {
         storagePath: data.storage_path,
         prompt: (meta?.prompt as string | undefined) ?? null,
         aspectRatio: srcRatio ?? null,
-        url: signed.signedUrl,
+        url: signedUrl,
       }
 
       setSourceImageMeta(imgMeta)
@@ -218,7 +220,7 @@ export function useEditPage(imageId: string) {
           setAspectRatio(detected)
         }
       }
-      img.src = signed.signedUrl
+      img.src = signedUrl
 
       setPageLoading(false)
     }
@@ -420,15 +422,14 @@ export function useEditPage(imageId: string) {
 
       if (!data?.storage_path) return
 
-      const { data: signed } = await supabase.storage
-        .from('user-images')
-        .createSignedUrl(data.storage_path, 86400)
+      const url = await createImageStorage(supabase).getUrl(data.storage_path, {
+        cached: false,
+      })
 
-      if (!signed?.signedUrl) return
+      if (!url) return
 
       const meta = data.generation_metadata as Record<string, unknown> | null
       const srcRatio = meta?.aspect_ratio as string | undefined
-      const url = signed.signedUrl
 
       setSourceImageMeta({
         id: data.id,

@@ -7,11 +7,10 @@ import { detectAspectRatio } from '@/features/ai-images/constants'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { getModelName } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { CREDIT_COSTS } from '@/features/credits'
 import { isCreditError } from '@/features/credits/handle-credit-error'
-
-const BUCKET_NAME = 'user-images'
 
 interface SourceImage {
   id: string
@@ -123,14 +122,14 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
 
   const loadImageUrls = useCallback(
     async (imgs: Array<{ id: string; storage_path: string }>) => {
+      const storage = createImageStorage(supabase)
       for (const image of imgs) {
-        const { data } = await supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 86400, {
-            transform: { width: 400, resize: 'contain', quality: 80 },
-          })
-        if (data) {
-          setImageUrls((prev) => ({ ...prev, [image.id]: data.signedUrl }))
+        const url = await storage.getUrl(image.storage_path, {
+          transform: { width: 400, resize: 'contain', quality: 80 },
+          cached: false,
+        })
+        if (url) {
+          setImageUrls((prev) => ({ ...prev, [image.id]: url }))
         }
       }
     },

@@ -1,10 +1,10 @@
 import type { CanvasImage, PersistedState } from '../types'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 
 const DEFAULT_DB = 'moodboard'
 const STORE_NAME = 'state'
 const DEFAULT_KEY = 'canvas'
-const BUCKET_NAME = 'user-images'
 
 function openDB(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -70,11 +70,7 @@ export async function savePersistedState(
 export async function getSignedUrl(
   storagePath: string,
 ): Promise<string | null> {
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(storagePath, 86400)
-  if (error || !data.signedUrl) return null
-  return data.signedUrl
+  return createImageStorage(supabase).getUrl(storagePath, { cached: false })
 }
 
 /** Batch-fetch signed URLs for canvas images that need them */

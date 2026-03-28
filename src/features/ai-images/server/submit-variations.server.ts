@@ -7,6 +7,7 @@ import { checkAndDeductCredits } from '@/features/credits/server/check-credits.s
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -66,6 +67,8 @@ export const submitVariations = createServerFn({ method: 'POST' })
     // For FAL path, we need a FAL URL
     let imageUrl = falImageUrl
 
+    const storage = createImageStorage(supabase)
+
     if (useGoogle) {
       // Fetch root image as base64 for Google API
       if (!/^[0-9a-f-]{36}$/i.test(rootImageId)) {
@@ -78,11 +81,12 @@ export const submitVariations = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (rootImage?.storage_path) {
-        const { data: signed } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(rootImage.storage_path, 3600)
-        if (signed?.signedUrl) {
-          const imageRes = await fetch(signed.signedUrl)
+        const signedUrl = await storage.getUrl(rootImage.storage_path, {
+          ttl: 3600,
+          cached: false,
+        })
+        if (signedUrl) {
+          const imageRes = await fetch(signedUrl)
           const buffer = await imageRes.arrayBuffer()
           imageBase64ForGoogle = Buffer.from(buffer).toString('base64')
         }
@@ -99,11 +103,12 @@ export const submitVariations = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (rootImage?.storage_path) {
-        const { data: signed } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(rootImage.storage_path, 3600)
-        if (signed?.signedUrl) {
-          const imageRes = await fetch(signed.signedUrl)
+        const signedUrl = await storage.getUrl(rootImage.storage_path, {
+          ttl: 3600,
+          cached: false,
+        })
+        if (signedUrl) {
+          const imageRes = await fetch(signedUrl)
           const buffer = await imageRes.arrayBuffer()
           const bytes = new Uint8Array(buffer)
           let mediaType = 'image/jpeg'
@@ -142,11 +147,12 @@ export const submitVariations = createServerFn({ method: 'POST' })
         const uploads = await Promise.all(
           refImages.data.map(async (ref) => {
             if (!ref.storage_path) return null
-            const { data: signed } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(ref.storage_path, 3600)
-            if (!signed?.signedUrl) return null
-            const res = await fetch(signed.signedUrl)
+            const refSignedUrl = await storage.getUrl(ref.storage_path, {
+              ttl: 3600,
+              cached: false,
+            })
+            if (!refSignedUrl) return null
+            const res = await fetch(refSignedUrl)
             const buf = await res.arrayBuffer()
             return uploadBufferToFal(buf)
           }),

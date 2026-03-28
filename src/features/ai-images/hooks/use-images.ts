@@ -4,10 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import {
-  getCachedSignedUrl,
-  invalidateCachedUrl,
-} from '@/lib/storage-url-cache'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface UseImagesOptions {
   userId: string | undefined
@@ -95,7 +92,7 @@ export function useImages({
       const urlEntries = await Promise.all(
         completedWithPath.map(async (img) => {
           const path = img.thumbnail_path ?? img.storage_path!
-          const url = await getCachedSignedUrl(supabase, path)
+          const url = await createImageStorage(supabase).getUrl(path)
           return url ? ([img.id, url] as const) : null
         }),
       )
@@ -129,7 +126,7 @@ export function useImages({
                 const path =
                   (r as { thumbnail_path?: string | null }).thumbnail_path ??
                   r.storage_path
-                const url = await getCachedSignedUrl(supabase, path)
+                const url = await createImageStorage(supabase).getUrl(path)
                 return url ? ([r.id, url] as const) : null
               }),
           )
@@ -257,7 +254,8 @@ export function useImages({
             ) {
               const path =
                 updatedImage.thumbnail_path ?? updatedImage.storage_path
-              getCachedSignedUrl(supabase, path)
+              createImageStorage(supabase)
+                .getUrl(path)
                 .then((url) => {
                   if (url) {
                     setImageUrls((prev) => ({
@@ -334,8 +332,10 @@ export function useImages({
   }
 
   async function deleteImage(img: SavedAiImage) {
-    if (img.storage_path) invalidateCachedUrl(img.storage_path)
-    if (img.thumbnail_path) invalidateCachedUrl(img.thumbnail_path)
+    if (img.storage_path)
+      createImageStorage(supabase).invalidateUrl(img.storage_path)
+    if (img.thumbnail_path)
+      createImageStorage(supabase).invalidateUrl(img.thumbnail_path)
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
 
     try {

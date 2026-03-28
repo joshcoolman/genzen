@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 
 export interface LightboxItem {
   id: string
@@ -25,10 +26,7 @@ export interface LightboxState {
 }
 
 async function fetchFullResUrl(storagePath: string): Promise<string | null> {
-  const { data } = await supabase.storage
-    .from('user-images')
-    .createSignedUrl(storagePath, 86400)
-  return data?.signedUrl ?? null
+  return createImageStorage(supabase).getUrl(storagePath, { cached: false })
 }
 
 export function useLightbox(

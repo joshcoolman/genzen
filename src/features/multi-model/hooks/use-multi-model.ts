@@ -15,6 +15,7 @@ import { checkPendingGenerations } from '@/lib/server/check-pending-generations.
 import { setGenerationParent } from '@/features/ai-images/server/set-generation-parent.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import { CREDIT_COSTS } from '@/features/credits'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 
@@ -103,12 +104,10 @@ function persistCells(cells: Array<ModelCellState>) {
 // ─── Signed URL helper ────────────────────────────────────────────────────────
 
 async function fetchSignedUrl(storagePath: string): Promise<string | null> {
-  const { data } = await supabase.storage
-    .from('user-images')
-    .createSignedUrl(storagePath, 86400, {
-      transform: { width: 400, resize: 'contain', quality: 80 },
-    })
-  return data?.signedUrl ?? null
+  return createImageStorage(supabase).getUrl(storagePath, {
+    transform: { width: 400, resize: 'contain', quality: 80 },
+    cached: false,
+  })
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

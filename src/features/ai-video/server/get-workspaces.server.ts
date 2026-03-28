@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface GetWorkspacesInput {
   accessToken: string
@@ -67,13 +68,14 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
           .slice(0, 50)
 
         // Sign first_frame URLs for all capped gens in one pass
+        const storage = createImageStorage(supabase)
         const signedFirstFrameUrls = await Promise.all(
           sorted.map(async (gen) => {
             if (!gen.first_frame?.storage_path) return null
-            const { data } = await supabase.storage
-              .from('user-images')
-              .createSignedUrl(gen.first_frame.storage_path, 3600)
-            return data?.signedUrl ?? null
+            return await storage.getUrl(gen.first_frame.storage_path, {
+              ttl: 3600,
+              cached: false,
+            })
           }),
         )
 
@@ -82,10 +84,10 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
         // Last frame from most recent generation
         let lastFrameUrl: string | null = null
         if (sorted.length > 0 && sorted[0].last_frame?.storage_path) {
-          const { data } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(sorted[0].last_frame.storage_path, 3600)
-          lastFrameUrl = data?.signedUrl ?? null
+          lastFrameUrl = await storage.getUrl(
+            sorted[0].last_frame.storage_path,
+            { ttl: 3600, cached: false },
+          )
         }
 
         // Extract prompt from most recent generation_metadata

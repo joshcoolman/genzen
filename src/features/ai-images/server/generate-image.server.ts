@@ -13,6 +13,7 @@ import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -177,16 +178,18 @@ export const generateImage = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
 
       if (refImages.data?.length) {
+        const storage = createImageStorage(supabase)
         if (useGoogle) {
           // Google path: fetch as base64
           const base64Results = await Promise.all(
             refImages.data.map(async (ref) => {
               if (!ref.storage_path) return null
-              const { data: signed } = await supabase.storage
-                .from('user-images')
-                .createSignedUrl(ref.storage_path, 3600)
-              if (!signed?.signedUrl) return null
-              const res = await fetch(signed.signedUrl)
+              const signedUrl = await storage.getUrl(ref.storage_path, {
+                ttl: 3600,
+                cached: false,
+              })
+              if (!signedUrl) return null
+              const res = await fetch(signedUrl)
               const buf = await res.arrayBuffer()
               return Buffer.from(buf).toString('base64')
             }),
@@ -199,11 +202,12 @@ export const generateImage = createServerFn({ method: 'POST' })
           const uploads = await Promise.all(
             refImages.data.map(async (ref) => {
               if (!ref.storage_path) return null
-              const { data: signed } = await supabase.storage
-                .from('user-images')
-                .createSignedUrl(ref.storage_path, 3600)
-              if (!signed?.signedUrl) return null
-              const res = await fetch(signed.signedUrl)
+              const signedUrl = await storage.getUrl(ref.storage_path, {
+                ttl: 3600,
+                cached: false,
+              })
+              if (!signedUrl) return null
+              const res = await fetch(signedUrl)
               const buf = await res.arrayBuffer()
               return uploadBufferToFal(buf)
             }),

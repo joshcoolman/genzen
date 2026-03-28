@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -68,15 +69,16 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
       }
 
       // Create signed URL to fetch the image bytes
-      const { data: signedUrlData } = await supabase.storage
-        .from('user-images')
-        .createSignedUrl(firstFrame.storage_path, 3600)
+      const signedUrl = await createImageStorage(supabase).getUrl(
+        firstFrame.storage_path,
+        { ttl: 3600, cached: false },
+      )
 
-      if (!signedUrlData?.signedUrl) {
+      if (!signedUrl) {
         throw new Error('Failed to create signed URL for first frame')
       }
 
-      const imageRes = await fetch(signedUrlData.signedUrl)
+      const imageRes = await fetch(signedUrl)
       if (!imageRes.ok) {
         throw new Error('Failed to fetch first frame image')
       }

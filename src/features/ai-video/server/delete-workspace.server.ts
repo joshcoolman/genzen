@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface DeleteWorkspaceInput {
   workspaceId: string
@@ -72,7 +73,7 @@ export const deleteWorkspace = createServerFn({ method: 'POST' })
             .map((img) => img.storage_path)
             .filter(Boolean) as Array<string>
           if (storagePaths.length > 0) {
-            await supabase.storage.from('user-images').remove(storagePaths)
+            await createImageStorage(supabase).remove(storagePaths)
           }
 
           // Delete user_images records

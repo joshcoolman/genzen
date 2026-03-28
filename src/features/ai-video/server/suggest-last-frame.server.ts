@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
 import { ai } from '@/lib/server/ai.server'
 import { SUGGEST_LAST_FRAME_SYSTEM } from '@/lib/prompts'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -50,12 +51,13 @@ export const suggestLastFrame = createServerFn({ method: 'POST' })
           ?.storage_path
 
         if (storagePath) {
-          const { data: signedUrlData } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(storagePath, 3600)
+          const signedUrl = await createImageStorage(supabase).getUrl(
+            storagePath,
+            { ttl: 3600, cached: false },
+          )
 
-          if (signedUrlData?.signedUrl) {
-            const imageRes = await fetch(signedUrlData.signedUrl)
+          if (signedUrl) {
+            const imageRes = await fetch(signedUrl)
             if (imageRes.ok) {
               const buffer = await imageRes.arrayBuffer()
               const bytes = new Uint8Array(buffer)

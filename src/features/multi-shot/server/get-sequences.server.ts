@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { DEFAULT_SETTINGS } from '../types'
 import type { MultiShotSequence } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 function parseJsonb<T>(value: unknown, fallback: T): T {
   if (typeof value === 'string') {
@@ -29,10 +30,11 @@ function extractStoragePath(url: string): string | null {
 async function refreshUrl(supabase: any, url: string): Promise<string> {
   const storagePath = extractStoragePath(url)
   if (!storagePath) return url
-  const { data } = await supabase.storage
-    .from('user-images')
-    .createSignedUrl(storagePath, 3600)
-  return data?.signedUrl || url
+  const signedUrl = await createImageStorage(supabase).getUrl(storagePath, {
+    ttl: 3600,
+    cached: false,
+  })
+  return signedUrl || url
 }
 
 interface GetSequencesInput {

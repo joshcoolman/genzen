@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '@/features/user-images/types'
 import { supabase } from '@/lib/supabase'
-
-const BUCKET_NAME = 'user-images'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface UseTrashReturn {
   images: Array<UserImage>
@@ -121,17 +120,18 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       refreshLinked(data)
 
       // Sign URLs in background
+      const storage = createImageStorage(supabase)
       for (const image of data) {
-        supabase.storage
-          .from(BUCKET_NAME)
-          .createSignedUrl(image.storage_path, 86400, {
+        storage
+          .getUrl(image.storage_path, {
             transform: { width: 400, resize: 'contain', quality: 80 },
+            cached: false,
           })
-          .then(({ data: urlData }) => {
-            if (urlData) {
+          .then((url) => {
+            if (url) {
               setImageUrls((prev) => ({
                 ...prev,
-                [image.id]: urlData.signedUrl,
+                [image.id]: url,
               }))
             }
           })
@@ -179,16 +179,16 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 refreshLinked(next)
                 return next
               })
-              supabase.storage
-                .from(BUCKET_NAME)
-                .createSignedUrl(updated.storage_path, 86400, {
+              createImageStorage(supabase)
+                .getUrl(updated.storage_path, {
                   transform: { width: 400, resize: 'contain', quality: 80 },
+                  cached: false,
                 })
-                .then(({ data }) => {
-                  if (data) {
+                .then((url) => {
+                  if (url) {
                     setImageUrls((prev) => ({
                       ...prev,
-                      [updated.id]: data.signedUrl,
+                      [updated.id]: url,
                     }))
                   }
                 })
@@ -256,7 +256,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         throw error
       }
 
-      await supabase.storage.from(BUCKET_NAME).remove([image.storage_path])
+      await createImageStorage(supabase).remove([image.storage_path])
 
       // Cascade cleanup for variations
       const metadata = image.generation_metadata as Record<
@@ -290,9 +290,9 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
             if (count === 0) {
               await supabase.from('user_images').delete().eq('id', rootId)
               if (rootImage.storage_path) {
-                await supabase.storage
-                  .from(BUCKET_NAME)
-                  .remove([rootImage.storage_path])
+                await createImageStorage(supabase).remove([
+                  rootImage.storage_path,
+                ])
               }
             }
           }
@@ -325,7 +325,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       }
 
       if (storagePaths.length > 0) {
-        await supabase.storage.from(BUCKET_NAME).remove(storagePaths)
+        await createImageStorage(supabase).remove(storagePaths)
       }
 
       // Cascade cleanup for variations
@@ -361,9 +361,9 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
               if (count === 0) {
                 await supabase.from('user_images').delete().eq('id', rootId)
                 if (rootImage.storage_path) {
-                  await supabase.storage
-                    .from(BUCKET_NAME)
-                    .remove([rootImage.storage_path])
+                  await createImageStorage(supabase).remove([
+                    rootImage.storage_path,
+                  ])
                 }
               }
             }
@@ -413,24 +413,24 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     }
 
     if (storagePaths.length > 0) {
-      await supabase.storage.from(BUCKET_NAME).remove(storagePaths)
+      await createImageStorage(supabase).remove(storagePaths)
     }
   }, [images, fetchTrashed, linkedImageIds])
 
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
       const urls: Record<string, string> = {}
+      const storage = createImageStorage(supabase)
       const BATCH = 10
       for (let i = 0; i < imgs.length; i += BATCH) {
         const batch = imgs.slice(i, i + BATCH)
         const results = await Promise.all(
           batch.map((img) =>
-            supabase.storage
-              .from(BUCKET_NAME)
-              .createSignedUrl(img.storage_path, 3600)
-              .then(({ data }) => ({
+            storage
+              .getUrl(img.storage_path, { ttl: 3600, cached: false })
+              .then((url) => ({
                 id: img.id,
-                url: data?.signedUrl ?? null,
+                url,
               }))
               .catch(() => ({ id: img.id, url: null })),
           ),

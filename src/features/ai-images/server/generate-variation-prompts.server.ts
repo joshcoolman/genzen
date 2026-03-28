@@ -8,6 +8,7 @@ import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
 } from '@/lib/prompts/image-variation'
+import { createImageStorage } from '@/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -82,11 +83,10 @@ export const generateVariationPrompts = createServerFn({ method: 'POST' })
     }
 
     const signedUrl = imageStoragePath
-      ? (
-          await supabase.storage
-            .from('user-images')
-            .createSignedUrl(imageStoragePath, 3600)
-        ).data?.signedUrl
+      ? await createImageStorage(supabase).getUrl(imageStoragePath, {
+          ttl: 3600,
+          cached: false,
+        })
       : undefined
 
     // Fetch image bytes for Claude vision + FAL upload

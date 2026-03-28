@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { createClient } from '@supabase/supabase-js'
 import { requireAuth } from '@/lib/server/auth.server'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface GetGenerationsInput {
   workspaceId: string
@@ -54,22 +55,23 @@ export const getGenerations = createServerFn({ method: 'POST' })
         const lastFrame = gen.last_frame as unknown as FrameRow | null
         const video = gen.video as unknown as FrameRow | null
 
+        const storage = createImageStorage(supabase)
         let firstFrameUrl: string | null = null
         let lastFrameUrl: string | null = null
         let videoUrl: string | null = null
 
         if (firstFrame?.storage_path) {
-          const { data: urlData } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(firstFrame.storage_path, 3600)
-          firstFrameUrl = urlData?.signedUrl ?? null
+          firstFrameUrl = await storage.getUrl(firstFrame.storage_path, {
+            ttl: 3600,
+            cached: false,
+          })
         }
 
         if (lastFrame?.storage_path) {
-          const { data: urlData } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(lastFrame.storage_path, 3600)
-          lastFrameUrl = urlData?.signedUrl ?? null
+          lastFrameUrl = await storage.getUrl(lastFrame.storage_path, {
+            ttl: 3600,
+            cached: false,
+          })
         }
 
         if (video) {

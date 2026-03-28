@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCachedSignedUrl } from '@/lib/storage-url-cache'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface EditChild {
   id: string
@@ -105,7 +105,7 @@ export function useEditChildren(
           const urls = await Promise.all(
             children.map(async (child) => {
               const path = child.thumbnailPath ?? child.path
-              const url = await getCachedSignedUrl(supabase, path)
+              const url = await createImageStorage(supabase).getUrl(path)
               if (!url) return null
               return {
                 id: child.id,
@@ -170,7 +170,8 @@ export function useEditChildren(
 
           const thumbPath = (updated as { thumbnail_path?: string | null })
             .thumbnail_path
-          getCachedSignedUrl(supabase, thumbPath ?? updated.storage_path)
+          createImageStorage(supabase)
+            .getUrl(thumbPath ?? updated.storage_path)
             .then((url) => {
               if (!url) return
               setChildrenMap((prev) => {

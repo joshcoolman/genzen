@@ -3,7 +3,7 @@ import type { GenerationResult } from '@/lib/types/generation-result'
 import { supabase } from '@/lib/supabase'
 import { getModelName } from '@/features/ai-images/models'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import { getCachedSignedUrl } from '@/lib/storage-url-cache'
+import { createImageStorage } from '@/lib/image-storage'
 
 const DEFAULT_LIMIT = 50
 
@@ -101,7 +101,7 @@ export function useGenerationResults({
           .filter((r) => r.status === 'completed' && r.storage_path)
           .map(async (r) => {
             const path = r.thumbnail_path ?? r.storage_path!
-            const url = await getCachedSignedUrl(supabase, path)
+            const url = await createImageStorage(supabase).getUrl(path)
             if (url) urlMap[r.id] = url
           }),
       )
@@ -172,7 +172,8 @@ export function useGenerationResults({
               const modelId = inferModelId(meta)
               const thumbPath = (updated as { thumbnail_path?: string | null })
                 .thumbnail_path
-              getCachedSignedUrl(supabase, thumbPath ?? updated.storage_path)
+              createImageStorage(supabase)
+                .getUrl(thumbPath ?? updated.storage_path)
                 .then((url) => {
                   if (url) {
                     setResults((prev) =>
