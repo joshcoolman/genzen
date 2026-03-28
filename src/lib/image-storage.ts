@@ -185,12 +185,17 @@ class R2ImageStorage implements ImageStorage {
     )
   }
 
-  async getUrl(key: string): Promise<string | null> {
+  async getUrl(key: string, options?: GetUrlOptions): Promise<string | null> {
+    // Server-side (has S3 client): always use R2 public URLs
+    // Client-side (no S3 client): fall back to Supabase for images not yet in R2
+    if (!this.client && this.fallback) {
+      return this.fallback.getUrl(key, options)
+    }
     return `${this.publicUrl}/${key}`
   }
 
-  invalidateUrl(_key: string): void {
-    // R2 public URLs don't expire — no-op
+  invalidateUrl(key: string): void {
+    if (this.fallback) this.fallback.invalidateUrl(key)
   }
 }
 
