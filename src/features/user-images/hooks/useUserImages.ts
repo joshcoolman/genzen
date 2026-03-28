@@ -14,9 +14,16 @@ import type {
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 
+export interface OptimisticImage {
+  tempId: string
+  title: string
+  previewUrl: string
+}
+
 interface UseUserImagesState {
   images: Array<UserImage>
   imageUrls: Record<string, string>
+  optimisticImages: Array<OptimisticImage>
   isLoading: boolean
   isCreating: boolean
   isDeleting: string | null
@@ -34,6 +41,17 @@ interface UseUserImagesReturn extends UseUserImagesState {
   deleteImage: (id: string) => Promise<void>
   refresh: () => Promise<void>
   clearError: () => void
+  addOptimisticImage: (
+    tempId: string,
+    title: string,
+    previewUrl: string,
+  ) => void
+  resolveOptimisticImage: (
+    tempId: string,
+    realImage: UserImage,
+    realUrl: string | null,
+  ) => void
+  removeOptimisticImage: (tempId: string) => void
 }
 
 /**
@@ -46,6 +64,7 @@ export function useUserImages(
   const [state, setState] = useState<UseUserImagesState>({
     images: [],
     imageUrls: {},
+    optimisticImages: [],
     isLoading: true,
     isCreating: false,
     isDeleting: null,
@@ -324,6 +343,52 @@ export function useUserImages(
     setState((prev) => ({ ...prev, error: null }))
   }, [])
 
+  const addOptimisticImage = useCallback(
+    (tempId: string, title: string, previewUrl: string) => {
+      setState((prev) => ({
+        ...prev,
+        optimisticImages: [
+          { tempId, title, previewUrl },
+          ...prev.optimisticImages,
+        ],
+      }))
+    },
+    [],
+  )
+
+  const resolveOptimisticImage = useCallback(
+    (tempId: string, realImage: UserImage, realUrl: string | null) => {
+      setState((prev) => {
+        const opt = prev.optimisticImages.find((o) => o.tempId === tempId)
+        if (opt) URL.revokeObjectURL(opt.previewUrl)
+        return {
+          ...prev,
+          optimisticImages: prev.optimisticImages.filter(
+            (o) => o.tempId !== tempId,
+          ),
+          images: [realImage, ...prev.images],
+          imageUrls: realUrl
+            ? { ...prev.imageUrls, [realImage.id]: realUrl }
+            : prev.imageUrls,
+        }
+      })
+    },
+    [],
+  )
+
+  const removeOptimisticImage = useCallback((tempId: string) => {
+    setState((prev) => {
+      const opt = prev.optimisticImages.find((o) => o.tempId === tempId)
+      if (opt) URL.revokeObjectURL(opt.previewUrl)
+      return {
+        ...prev,
+        optimisticImages: prev.optimisticImages.filter(
+          (o) => o.tempId !== tempId,
+        ),
+      }
+    })
+  }, [])
+
   return {
     ...state,
     create,
@@ -331,5 +396,8 @@ export function useUserImages(
     deleteImage: deleteImageFn,
     refresh: fetchImages,
     clearError,
+    addOptimisticImage,
+    resolveOptimisticImage,
+    removeOptimisticImage,
   }
 }

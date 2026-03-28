@@ -1,11 +1,14 @@
 /**
  * Clipboard paste-to-upload hook.
  *
- * Listens for paste events and uploads any image data from the clipboard.
+ * Listens for paste events and uploads image data from the clipboard
+ * with optimistic preview using object URLs.
  */
 
 import { useEffect } from 'react'
-import { processAndUploadFiles } from '../lib/process-files'
+import { computeFileHash } from '../lib/file-hash'
+import { parseFilenameToTitle } from '../lib/filename-parser'
+import { createUserImageSchema } from '../types'
 import type { CreateUserImageInput } from '../types'
 
 function formatPastedImageName(mimeType: string): string {
@@ -24,41 +27,68 @@ function formatPastedImageName(mimeType: string): string {
   return `Pasted Image ${timestamp}.${ext}`
 }
 
+export interface PastedImage {
+  file: File
+  previewUrl: string
+  title: string
+  tempId: string
+}
+
 interface UseClipboardPasteOptions {
-  onUpload: (input: CreateUserImageInput) => Promise<void>
-  enabled?: boolean
+  onPasteImage: (image: PastedImage) => void
+  onUpload: (tempId: string, input: CreateUserImageInput) => Promise<void>
 }
 
 export function useClipboardPaste({
+  onPasteImage,
   onUpload,
-  enabled = true,
 }: UseClipboardPasteOptions) {
   useEffect(() => {
-    if (!enabled) return
-
     const handlePaste = async (event: ClipboardEvent) => {
       const items = event.clipboardData?.items
       if (!items) return
 
-      const imageFiles: Array<File> = []
+      let imageFile: File | null = null
 
       for (const item of Array.from(items)) {
         if (!item.type.startsWith('image/')) continue
         const file = item.getAsFile()
         if (!file) continue
-
-        const renamed = new File([file], formatPastedImageName(item.type), {
+        imageFile = new File([file], formatPastedImageName(item.type), {
           type: file.type,
         })
-        imageFiles.push(renamed)
+        break
       }
 
-      if (imageFiles.length === 0) return
+      if (!imageFile) return
 
       event.preventDefault()
 
+      const pasted: PastedImage = {
+        file: imageFile,
+        previewUrl: URL.createObjectURL(imageFile),
+        title: parseFilenameToTitle(imageFile.name),
+        tempId: `paste-${Date.now()}-${crypto.randomUUID()}`,
+      }
+
+      onPasteImage(pasted)
+
       try {
-        await processAndUploadFiles(imageFiles, onUpload)
+        const file_hash = await computeFileHash(pasted.file)
+        const input: CreateUserImageInput = {
+          file: pasted.file,
+          file_hash,
+          title: pasted.title,
+          description: null,
+        }
+
+        const validationResult = createUserImageSchema.safeParse(input)
+        if (!validationResult.success) {
+          console.error('Validation failed:', validationResult.error)
+          return
+        }
+
+        await onUpload(pasted.tempId, input)
       } catch (error) {
         console.error('Clipboard upload failed:', error)
       }
@@ -66,5 +96,5 @@ export function useClipboardPaste({
 
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [onUpload, enabled])
+  }, [onPasteImage, onUpload])
 }

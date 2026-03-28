@@ -1,39 +1,39 @@
 /**
  * Image Upload Button
  *
- * Simple upload button that opens file picker and auto-uploads selected images.
+ * Upload button that opens file picker, shows optimistic previews immediately,
+ * then uploads selected images sequentially in the background.
  */
 
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Upload } from 'lucide-react'
-import { processAndUploadFiles } from '../lib/process-files'
+import { computeFileHash } from '../lib/file-hash'
+import { parseFilenameToTitle } from '../lib/filename-parser'
+import { createUserImageSchema } from '../types'
 import type { CreateUserImageInput } from '../types'
 import { ActionButton } from '@/components/ActionButton'
 
+export interface SelectedFile {
+  file: File
+  previewUrl: string
+  title: string
+  tempId: string
+}
+
 interface ImageUploadButtonProps {
-  onUpload: (input: CreateUserImageInput) => Promise<void>
+  onFilesSelected: (files: Array<SelectedFile>) => void
+  onUploadOne: (tempId: string, input: CreateUserImageInput) => Promise<void>
   isUploading?: boolean
   className?: string
 }
 
-/**
- * Upload button component
- *
- * Flow:
- * 1. User clicks button
- * 2. File picker opens
- * 3. User selects file(s)
- * 4. Auto-compute hash
- * 5. Auto-generate title from filename
- * 6. Call onUpload with prepared data
- */
 export function ImageUploadButton({
-  onUpload,
+  onFilesSelected,
+  onUploadOne,
   isUploading,
   className,
 }: ImageUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
 
   const handleClick = () => {
     fileInputRef.current?.click()
@@ -45,27 +45,52 @@ export function ImageUploadButton({
     const files = event.target.files
     if (!files || files.length === 0) return
 
-    setIsProcessing(true)
+    const fileArray = Array.from(files)
 
-    try {
-      await processAndUploadFiles(Array.from(files), onUpload)
-    } catch (error) {
-      console.error('Upload failed:', error)
-    } finally {
-      setIsProcessing(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+    // Create optimistic entries immediately
+    const selected: Array<SelectedFile> = fileArray.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      title: parseFilenameToTitle(file.name),
+      tempId: `upload-${Date.now()}-${crypto.randomUUID()}`,
+    }))
+
+    onFilesSelected(selected)
+
+    // Reset input so the same files can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+
+    // Upload sequentially in background
+    for (const item of selected) {
+      try {
+        const file_hash = await computeFileHash(item.file)
+        const input: CreateUserImageInput = {
+          file: item.file,
+          file_hash,
+          title: item.title,
+          description: null,
+        }
+
+        const validationResult = createUserImageSchema.safeParse(input)
+        if (!validationResult.success) {
+          console.error('Validation failed:', validationResult.error)
+          continue
+        }
+
+        await onUploadOne(item.tempId, input)
+      } catch (error) {
+        console.error('Upload failed:', error)
       }
     }
   }
-
-  const loading = isUploading || isProcessing
 
   return (
     <>
       <ActionButton
         onClick={handleClick}
-        loading={loading}
+        loading={isUploading}
         loadingText="Uploading..."
         icon={<Upload />}
         className={className}

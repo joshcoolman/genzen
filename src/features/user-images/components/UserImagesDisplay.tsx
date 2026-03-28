@@ -5,16 +5,18 @@
  * Shows uploaded images, AI-generated images, and AI videos.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, EyeOff, Info, LayoutGrid } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useUserImages } from '../hooks/useUserImages'
-import { useClipboardPaste } from '../hooks/useClipboardPaste'
-import { ImageUploadButton } from './ImageUploadButton'
+import {  useClipboardPaste } from '../hooks/useClipboardPaste'
+import { ImageUploadButton  } from './ImageUploadButton'
 import { ImageDownloadButton } from './ImageDownloadButton'
 import { EmptyState, ImageGrid, ImageGridSkeleton } from './ImageGrid'
 import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
+import type {PastedImage} from '../hooks/useClipboardPaste';
+import type {SelectedFile} from './ImageUploadButton';
 import type { CreateUserImageInput, UserImage } from '../types'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
@@ -99,6 +101,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   const {
     images,
     imageUrls,
+    optimisticImages,
     isLoading,
     isCreating,
     isDeleting,
@@ -108,6 +111,8 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     update,
     deleteImage,
     clearError,
+    addOptimisticImage,
+    removeOptimisticImage,
   } = useUserImages(user?.id)
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -253,14 +258,52 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     })
   }, [deepLinkImageId, isLoading, imageOnlyAssets, navigate])
 
-  const handleUpload = async (input: CreateUserImageInput) => {
-    await create(input)
+  const switchToVisibleFilter = useCallback(() => {
     if (sourceFilter === 'ai_generated' || sourceFilter === 'ai_video') {
       handleSourceFilter('all')
     }
-  }
+  }, [sourceFilter, handleSourceFilter])
 
-  useClipboardPaste({ onUpload: handleUpload, enabled: !isCreating })
+  const handleOptimisticAdd = useCallback(
+    (items: Array<{ tempId: string; title: string; previewUrl: string }>) => {
+      for (const item of items) {
+        addOptimisticImage(item.tempId, item.title, item.previewUrl)
+      }
+      switchToVisibleFilter()
+    },
+    [addOptimisticImage, switchToVisibleFilter],
+  )
+
+  const handleOptimisticUpload = useCallback(
+    async (tempId: string, input: CreateUserImageInput) => {
+      try {
+        await create(input)
+        removeOptimisticImage(tempId)
+      } catch {
+        removeOptimisticImage(tempId)
+      }
+    },
+    [create, removeOptimisticImage],
+  )
+
+  // Clipboard paste
+  useClipboardPaste({
+    onPasteImage: useCallback(
+      (pasted: PastedImage) => {
+        handleOptimisticAdd([pasted])
+      },
+      [handleOptimisticAdd],
+    ),
+    onUpload: handleOptimisticUpload,
+  })
+
+  // File picker
+  const handleFilesSelected = useCallback(
+    (files: Array<SelectedFile>) => {
+      handleOptimisticAdd(files)
+    },
+    [handleOptimisticAdd],
+  )
 
   const handleUpdate = async (
     id: string,
@@ -354,7 +397,11 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
 
         <div className="flex items-center gap-2">
           <ImageDownloadButton images={images} imageUrls={imageUrls} />
-          <ImageUploadButton onUpload={handleUpload} isUploading={isCreating} />
+          <ImageUploadButton
+            onFilesSelected={handleFilesSelected}
+            onUploadOne={handleOptimisticUpload}
+            isUploading={isCreating}
+          />
         </div>
       </div>
 
@@ -431,8 +478,23 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
       {/* Asset Grid or Empty State */}
       {loading ? (
         <ImageGridSkeleton size={thumbSize} />
-      ) : assets.length > 0 ? (
+      ) : assets.length > 0 || optimisticImages.length > 0 ? (
         <ImageGrid size={thumbSize}>
+          {optimisticImages.map((opt) => (
+            <div key={opt.tempId}>
+              <Thumbnail
+                url={opt.previewUrl}
+                alt={opt.title}
+                objectFit={thumbSize !== 'lg' ? 'cover' : 'contain'}
+                compact={thumbSize !== 'lg'}
+                imageOverlay={
+                  <div className="absolute bottom-1.5 left-1.5 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded">
+                    Uploading...
+                  </div>
+                }
+              />
+            </div>
+          ))}
           {assets.map((asset) => {
             if (asset.kind === 'image') {
               imageIdx++
