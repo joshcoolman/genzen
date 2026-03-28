@@ -114,20 +114,31 @@ class SupabaseImageStorage implements ImageStorage {
 }
 
 class R2ImageStorage implements ImageStorage {
-  private client: S3Client
+  private client: S3Client | null
 
   constructor(
     private bucket: string,
     private publicUrl: string,
-    accountId: string,
-    accessKeyId: string,
-    secretAccessKey: string,
+    accountId?: string,
+    accessKeyId?: string,
+    secretAccessKey?: string,
   ) {
-    this.client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    })
+    // S3 client is only created server-side where credentials are available
+    this.client =
+      accountId && accessKeyId && secretAccessKey
+        ? new S3Client({
+            region: 'auto',
+            endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+            credentials: { accessKeyId, secretAccessKey },
+          })
+        : null
+  }
+
+  private requireClient(): S3Client {
+    if (!this.client) {
+      throw new Error('R2 S3 client not available (missing server credentials)')
+    }
+    return this.client
   }
 
   async upload(
@@ -137,7 +148,7 @@ class R2ImageStorage implements ImageStorage {
   ): Promise<void> {
     const body =
       data instanceof Blob ? Buffer.from(await data.arrayBuffer()) : data
-    await this.client.send(
+    await this.requireClient().send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
@@ -149,7 +160,7 @@ class R2ImageStorage implements ImageStorage {
   }
 
   async download(key: string): Promise<Blob> {
-    const response = await this.client.send(
+    const response = await this.requireClient().send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
     )
     const bytes = await response.Body!.transformToByteArray()
@@ -158,7 +169,7 @@ class R2ImageStorage implements ImageStorage {
 
   async remove(keys: Array<string>): Promise<void> {
     if (keys.length === 0) return
-    await this.client.send(
+    await this.requireClient().send(
       new DeleteObjectsCommand({
         Bucket: this.bucket,
         Delete: { Objects: keys.map((Key) => ({ Key })) },
@@ -176,29 +187,28 @@ class R2ImageStorage implements ImageStorage {
 }
 
 export function createImageStorage(supabase: SupabaseClient): ImageStorage {
-  const provider = process.env['STORAGE_PROVIDER'] ?? 'supabase'
+  const provider =
+    (import.meta.env.VITE_STORAGE_PROVIDER as string | undefined) ??
+    process.env['STORAGE_PROVIDER'] ??
+    'supabase'
 
   if (provider === 'r2') {
+    const publicUrl =
+      (import.meta.env.VITE_R2_PUBLIC_URL as string | undefined) ??
+      process.env['R2_PUBLIC_URL']
+
+    if (!publicUrl) {
+      throw new Error('R2 storage requires VITE_R2_PUBLIC_URL or R2_PUBLIC_URL')
+    }
+
+    // S3 credentials are only available server-side (no VITE_ prefix)
     const accountId = process.env['R2_ACCOUNT_ID']
     const accessKeyId = process.env['R2_ACCESS_KEY_ID']
     const secretAccessKey = process.env['R2_SECRET_ACCESS_KEY']
     const bucket = process.env['R2_BUCKET_NAME']
-    const publicUrl = process.env['R2_PUBLIC_URL']
-
-    if (
-      !accountId ||
-      !accessKeyId ||
-      !secretAccessKey ||
-      !bucket ||
-      !publicUrl
-    ) {
-      throw new Error(
-        'R2 storage requires R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, and R2_PUBLIC_URL',
-      )
-    }
 
     return new R2ImageStorage(
-      bucket,
+      bucket ?? 'genzen-images',
       publicUrl.replace(/\/$/, ''),
       accountId,
       accessKeyId,
