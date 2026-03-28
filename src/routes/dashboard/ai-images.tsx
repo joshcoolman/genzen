@@ -152,13 +152,15 @@ function AiImagesPage() {
 
   const handleUploadFiles = useCallback(
     (files: Array<File>) => {
-      // Show optimistic cards immediately, upload in parallel, swap on completion
+      // Show optimistic cards immediately, upload in parallel.
+      // On success: update title silently (same card, same key, no layout shift).
+      // On failure: remove the card.
       for (const file of files) {
         const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
         const previewUrl = URL.createObjectURL(file)
         page.gallery.addOptimisticCard({
           id: tempId,
-          title: 'Uploading...',
+          title: file.name,
           storage_path: null,
           created_at: new Date().toISOString(),
           status: 'completed',
@@ -169,21 +171,9 @@ function AiImagesPage() {
 
         void (async () => {
           try {
-            const result = await upload({
-              file,
-              title: file.name,
-              description: null,
-            })
-            page.gallery.replaceOptimisticCard(tempId, {
-              id: result.id,
-              title: result.title,
-              storage_path: null,
-              created_at: new Date().toISOString(),
-              status: 'completed',
-              generation_error: null,
-              generation_metadata: null,
-            })
-            page.gallery.setImageUrl(result.id, previewUrl)
+            await upload({ file, title: file.name, description: null })
+            // Upload succeeded -- card stays as-is with blob URL.
+            // Real image loads on next page visit via gallery refresh.
           } catch {
             page.gallery.removeOptimisticCard(tempId)
           }
