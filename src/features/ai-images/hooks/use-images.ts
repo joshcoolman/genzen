@@ -183,6 +183,23 @@ export function useImages({
 
             setSavedImages((prev) => {
               if (prev.some((img) => img.id === newImage.id)) return prev
+
+              // Check if this is a realtime echo of an optimistic upload.
+              // Optimistic upload cards have temp IDs (upload-* or paste-*)
+              // and the same storage_path as the incoming real image.
+              if (newImage.storage_path) {
+                const optimisticIdx = prev.findIndex(
+                  (img) =>
+                    img.id.startsWith('upload-') || img.id.startsWith('paste-'),
+                )
+                if (optimisticIdx !== -1) {
+                  // Silently swap temp ID for real ID, same position
+                  return prev.map((img, i) =>
+                    i === optimisticIdx ? newImage : img,
+                  )
+                }
+              }
+
               const metadata = newImage.generation_metadata
               if (
                 metadata?.generation_type === 'variation' &&
