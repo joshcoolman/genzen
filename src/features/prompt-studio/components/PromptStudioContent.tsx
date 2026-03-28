@@ -1,5 +1,14 @@
-import { useCallback } from 'react'
-import { BookmarkPlus, Image, Loader2, RotateCcw, Send, X } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import {
+  BookmarkPlus,
+  Check,
+  Copy,
+  Image,
+  Loader2,
+  RotateCcw,
+  Send,
+  X,
+} from 'lucide-react'
 import { TEXT_MODELS } from '../text-models'
 import { ModelResultCard } from './ModelResultCard'
 import { PromptSetsSidebar } from './PromptSetsSidebar'
@@ -33,6 +42,7 @@ async function urlToBase64(url: string): Promise<string> {
 export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   const { session } = useAuth()
   const userImages = useUserImages(session?.user.id)
+  const [copiedAll, setCopiedAll] = useState(false)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -177,6 +187,32 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
                 onToggle={studio.toggleModel}
               />
             </div>
+
+            <button
+              onClick={async () => {
+                const parts = [
+                  studio.prompt,
+                  studio.customSystemPrompt,
+                  studio.negativePrompt,
+                ].filter((s) => s.trim())
+                await navigator.clipboard.writeText(parts.join('\n---\n'))
+                setCopiedAll(true)
+                setTimeout(() => setCopiedAll(false), 2000)
+              }}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                copiedAll
+                  ? 'text-green-500'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {copiedAll ? (
+                <Check className="size-3" />
+              ) : (
+                <Copy className="size-3" />
+              )}
+              {copiedAll ? 'Copied' : 'Copy All'}
+            </button>
 
             {(studio.isSystemPromptModified ||
               studio.isNegativePromptModified) && (
