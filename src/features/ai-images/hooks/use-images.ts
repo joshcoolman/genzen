@@ -320,12 +320,9 @@ export function useImages({
   }
 
   function replaceOptimisticCard(optimisticId: string, realCard: SavedAiImage) {
-    setSavedImages((prev) => {
-      const filtered = prev.filter(
-        (i) => i.id !== optimisticId && i.id !== realCard.id,
-      )
-      return sortByOrder([...filtered, realCard])
-    })
+    setSavedImages((prev) =>
+      prev.map((i) => (i.id === optimisticId ? realCard : i)),
+    )
   }
 
   function removeOptimisticCard(optimisticId: string) {
