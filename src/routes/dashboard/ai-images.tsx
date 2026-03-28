@@ -152,12 +152,11 @@ function AiImagesPage() {
 
   const handleUploadFiles = useCallback(
     (files: Array<File>) => {
-      // Show optimistic cards immediately, upload in parallel.
-      // On success: update title silently (same card, same key, no layout shift).
+      // Show skeleton placeholders immediately, upload in parallel.
+      // No blob preview -- avoids jarring mismatch when realtime swaps the card.
       // On failure: remove the card.
       for (const file of files) {
         const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
-        const previewUrl = URL.createObjectURL(file)
         page.gallery.addOptimisticCard({
           id: tempId,
           title: file.name,
@@ -167,13 +166,10 @@ function AiImagesPage() {
           generation_error: null,
           generation_metadata: null,
         })
-        page.gallery.setImageUrl(tempId, previewUrl)
 
         void (async () => {
           try {
             await upload({ file, title: file.name, description: null })
-            // Upload succeeded -- card stays as-is with blob URL.
-            // Real image loads on next page visit via gallery refresh.
           } catch {
             page.gallery.removeOptimisticCard(tempId)
           }
@@ -183,7 +179,7 @@ function AiImagesPage() {
     [upload, page.gallery],
   )
 
-  // Paste handler — delegates to handleUploadFiles for optimistic flow
+  // Paste handler — shows blob preview (single image, no ordering confusion)
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
@@ -193,14 +189,34 @@ function AiImagesPage() {
           const file = item.getAsFile()
           if (!file) continue
           e.preventDefault()
-          handleUploadFiles([file])
+
+          const tempId = `paste-${Date.now()}-${crypto.randomUUID()}`
+          const previewUrl = URL.createObjectURL(file)
+          page.gallery.addOptimisticCard({
+            id: tempId,
+            title: file.name,
+            storage_path: null,
+            created_at: new Date().toISOString(),
+            status: 'completed',
+            generation_error: null,
+            generation_metadata: null,
+          })
+          page.gallery.setImageUrl(tempId, previewUrl)
+
+          void (async () => {
+            try {
+              await upload({ file, title: file.name, description: null })
+            } catch {
+              page.gallery.removeOptimisticCard(tempId)
+            }
+          })()
           return
         }
       }
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [handleUploadFiles])
+  }, [upload, page.gallery])
 
   // Delete confirmation for images with children
   const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
