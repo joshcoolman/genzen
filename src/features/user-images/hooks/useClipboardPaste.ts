@@ -6,10 +6,7 @@
  */
 
 import { useEffect } from 'react'
-import { computeFileHash } from '../lib/file-hash'
 import { parseFilenameToTitle } from '../lib/filename-parser'
-import { createUserImageSchema } from '../types'
-import type { CreateUserImageInput } from '../types'
 
 function formatPastedImageName(mimeType: string): string {
   const ext = mimeType.split('/')[1] || 'png'
@@ -36,7 +33,12 @@ export interface PastedImage {
 
 interface UseClipboardPasteOptions {
   onPasteImage: (image: PastedImage) => void
-  onUpload: (tempId: string, input: CreateUserImageInput) => Promise<void>
+  onUpload: (
+    tempId: string,
+    file: File,
+    title: string,
+    previewUrl: string,
+  ) => Promise<void>
 }
 
 export function useClipboardPaste({
@@ -73,27 +75,9 @@ export function useClipboardPaste({
 
       onPasteImage(pasted)
 
-      // Defer upload work so the browser can paint the optimistic card first
-      setTimeout(async () => {
-        try {
-          const file_hash = await computeFileHash(pasted.file)
-          const input: CreateUserImageInput = {
-            file: pasted.file,
-            file_hash,
-            title: pasted.title,
-            description: null,
-          }
-
-          const validationResult = createUserImageSchema.safeParse(input)
-          if (!validationResult.success) {
-            console.error('Validation failed:', validationResult.error)
-            return
-          }
-
-          await onUpload(pasted.tempId, input)
-        } catch (error) {
-          console.error('Clipboard upload failed:', error)
-        }
+      // Defer upload so the browser can paint the optimistic card first
+      setTimeout(() => {
+        onUpload(pasted.tempId, pasted.file, pasted.title, pasted.previewUrl)
       }, 0)
     }
 

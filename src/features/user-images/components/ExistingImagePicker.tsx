@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Upload } from 'lucide-react'
-import { useClipboardPaste } from '../hooks/useClipboardPaste'
 import { processAndUploadFiles } from '../lib/process-files'
-import type { CollectedImage, CreateUserImageInput, UserImage } from '../types'
+import type { CollectedImage, UserImage } from '../types'
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,7 @@ interface ExistingImagePickerProps {
   /** When true, immediately confirm after the first selection (useful for single-select pickers). */
   autoConfirm?: boolean
   /** When provided, shows upload button and enables clipboard paste. */
-  onUpload?: (input: CreateUserImageInput) => Promise<void>
+  onUpload?: (file: File, title: string) => Promise<void>
   /** Loading state for upload. */
   isUploading?: boolean
 }
@@ -63,11 +62,6 @@ export function ExistingImagePicker({
     },
     [onUpload],
   )
-
-  useClipboardPaste({
-    onUpload: onUpload ?? (async () => {}),
-    enabled: open && !!onUpload,
-  })
 
   // When picker opens with initialSelectedIds, pre-check them
   useEffect(() => {

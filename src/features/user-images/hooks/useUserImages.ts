@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { computeFileHash } from '../lib/file-hash'
 import type {
   CreateUserImageInput,
   UserImage,
@@ -31,8 +32,17 @@ interface UseUserImagesState {
   error: string | null
 }
 
+interface CreateOptimisticInput {
+  file: File
+  title: string
+  description?: string | null
+  tempId: string
+  previewUrl: string
+}
+
 interface UseUserImagesReturn extends UseUserImagesState {
   create: (input: CreateUserImageInput) => Promise<UserImage>
+  createOptimistic: (input: CreateOptimisticInput) => Promise<void>
   update: (
     id: string,
     title: string,
@@ -358,20 +368,16 @@ export function useUserImages(
 
   const resolveOptimisticImage = useCallback(
     (tempId: string, realImage: UserImage, realUrl: string | null) => {
-      setState((prev) => {
-        const opt = prev.optimisticImages.find((o) => o.tempId === tempId)
-        if (opt) URL.revokeObjectURL(opt.previewUrl)
-        return {
-          ...prev,
-          optimisticImages: prev.optimisticImages.filter(
-            (o) => o.tempId !== tempId,
-          ),
-          images: [realImage, ...prev.images],
-          imageUrls: realUrl
-            ? { ...prev.imageUrls, [realImage.id]: realUrl }
-            : prev.imageUrls,
-        }
-      })
+      setState((prev) => ({
+        ...prev,
+        optimisticImages: prev.optimisticImages.filter(
+          (o) => o.tempId !== tempId,
+        ),
+        images: [realImage, ...prev.images],
+        imageUrls: realUrl
+          ? { ...prev.imageUrls, [realImage.id]: realUrl }
+          : prev.imageUrls,
+      }))
     },
     [],
   )
@@ -389,9 +395,61 @@ export function useUserImages(
     })
   }, [])
 
+  /**
+   * Upload with parallel hash computation and seamless optimistic resolution.
+   * Hash + storage upload run concurrently; signed URL fetch is skipped
+   * (the object URL from the optimistic entry is used for display).
+   */
+  const createOptimistic = useCallback(
+    async (input: CreateOptimisticInput): Promise<void> => {
+      if (!userId) throw new Error('User not authenticated')
+
+      const { file, title, description, tempId, previewUrl } = input
+
+      const timestamp = Date.now()
+      const uuid = crypto.randomUUID()
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
+
+      // Run storage upload and hash computation in parallel
+      const [, hashResult] = await Promise.all([
+        createImageStorage(supabase).upload(storagePath, file, {
+          contentType: file.type,
+        }),
+        computeFileHash(file).catch(() => undefined),
+      ])
+
+      // Insert DB record (hash may be undefined if computation failed)
+      const { data: newImage, error: insertError } = await supabase
+        .from('user_images')
+        .insert({
+          user_id: userId,
+          title,
+          description: description ?? null,
+          storage_path: storagePath,
+          file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          file_hash: hashResult,
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        await createImageStorage(supabase).remove([storagePath])
+        throw new Error(`Failed to create image record: ${insertError.message}`)
+      }
+
+      // Atomically swap optimistic card for real image, keeping the object URL
+      resolveOptimisticImage(tempId, newImage, previewUrl)
+    },
+    [userId, resolveOptimisticImage],
+  )
+
   return {
     ...state,
     create,
+    createOptimistic,
     update,
     deleteImage: deleteImageFn,
     refresh: fetchImages,

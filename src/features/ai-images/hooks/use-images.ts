@@ -45,6 +45,7 @@ export interface GalleryState {
   addOptimisticCard: (card: SavedAiImage) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
+  setImageUrl: (id: string, url: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
   ungroupChildren: (img: SavedAiImage) => Promise<void>
   retryImage: (img: SavedAiImage) => Promise<void>
@@ -329,6 +330,10 @@ export function useImages({
 
   function removeOptimisticCard(optimisticId: string) {
     setSavedImages((prev) => prev.filter((i) => i.id !== optimisticId))
+  }
+
+  function setImageUrl(id: string, url: string) {
+    setImageUrls((prev) => ({ ...prev, [id]: url }))
   }
 
   async function deleteImage(img: SavedAiImage) {
@@ -660,6 +665,7 @@ export function useImages({
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,
+    setImageUrl,
     reorderImages,
     retryImage,
     refresh: loadSavedImages,

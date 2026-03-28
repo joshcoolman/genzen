@@ -2,15 +2,12 @@
  * Image Upload Button
  *
  * Upload button that opens file picker, shows optimistic previews immediately,
- * then uploads selected images sequentially in the background.
+ * then uploads selected images in parallel in the background.
  */
 
 import { useRef } from 'react'
 import { Upload } from 'lucide-react'
-import { computeFileHash } from '../lib/file-hash'
 import { parseFilenameToTitle } from '../lib/filename-parser'
-import { createUserImageSchema } from '../types'
-import type { CreateUserImageInput } from '../types'
 import { ActionButton } from '@/components/ActionButton'
 
 export interface SelectedFile {
@@ -22,7 +19,12 @@ export interface SelectedFile {
 
 interface ImageUploadButtonProps {
   onFilesSelected: (files: Array<SelectedFile>) => void
-  onUploadOne: (tempId: string, input: CreateUserImageInput) => Promise<void>
+  onUploadOne: (
+    tempId: string,
+    file: File,
+    title: string,
+    previewUrl: string,
+  ) => Promise<void>
   isUploading?: boolean
   className?: string
 }
@@ -60,29 +62,14 @@ export function ImageUploadButton({
       fileInputRef.current.value = ''
     }
 
-    // Defer upload work so the browser can paint optimistic cards first
-    setTimeout(async () => {
-      for (const item of selected) {
-        try {
-          const file_hash = await computeFileHash(item.file)
-          const input: CreateUserImageInput = {
-            file: item.file,
-            file_hash,
-            title: item.title,
-            description: null,
-          }
-
-          const validationResult = createUserImageSchema.safeParse(input)
-          if (!validationResult.success) {
-            console.error('Validation failed:', validationResult.error)
-            continue
-          }
-
-          await onUploadOne(item.tempId, input)
-        } catch (error) {
-          console.error('Upload failed:', error)
-        }
-      }
+    // Defer upload work so the browser can paint optimistic cards first.
+    // All files upload in parallel -- no sequential blocking.
+    setTimeout(() => {
+      Promise.allSettled(
+        selected.map((item) =>
+          onUploadOne(item.tempId, item.file, item.title, item.previewUrl),
+        ),
+      )
     }, 0)
   }
 

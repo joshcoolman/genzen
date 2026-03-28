@@ -153,15 +153,15 @@ function AiImagesPage() {
 
   const handleUploadFiles = useCallback(
     async (files: Array<File>) => {
-      await processAndUploadFiles(files, async (input) => {
-        await upload(input)
+      await processAndUploadFiles(files, async (file, title) => {
+        await upload({ file, title, description: null })
       })
       await page.gallery.refresh()
     },
     [upload, page.gallery],
   )
 
-  // Paste handler — upload directly to library
+  // Paste handler — show optimistic card instantly, upload in background
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
@@ -169,17 +169,41 @@ function AiImagesPage() {
       for (const item of Array.from(items)) {
         if (item.type.startsWith('image/')) {
           const file = item.getAsFile()
-          if (file) {
-            e.preventDefault()
-            void handleUploadFiles([file])
-            return
-          }
+          if (!file) continue
+          e.preventDefault()
+
+          // Instant feedback: show optimistic card with blob URL
+          const tempId = `paste-${Date.now()}`
+          const previewUrl = URL.createObjectURL(file)
+          page.gallery.addOptimisticCard({
+            id: tempId,
+            title: 'Uploading...',
+            storage_path: null,
+            created_at: new Date().toISOString(),
+            status: 'completed',
+            generation_error: null,
+            generation_metadata: null,
+          })
+          page.gallery.setImageUrl(tempId, previewUrl)
+
+          // Upload in background, then swap optimistic for real
+          setTimeout(() => {
+            void (async () => {
+              try {
+                await handleUploadFiles([file])
+                page.gallery.removeOptimisticCard(tempId)
+              } catch {
+                page.gallery.removeOptimisticCard(tempId)
+              }
+            })()
+          }, 0)
+          return
         }
       }
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [handleUploadFiles])
+  }, [handleUploadFiles, page.gallery])
 
   // Delete confirmation for images with children
   const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)

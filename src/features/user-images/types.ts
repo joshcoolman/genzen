@@ -20,7 +20,7 @@ export interface CreateUserImageInput {
   title: string
   description?: string | null
   file: File
-  file_hash: string
+  file_hash?: string
 }
 
 export interface CollectedImage {
@@ -96,7 +96,8 @@ export const createUserImageSchema = z.object({
   file_hash: z
     .string()
     .length(64, 'File hash must be a valid SHA-256 hash (64 hex characters)')
-    .regex(/^[a-f0-9]{64}$/, 'File hash must be a valid SHA-256 hash'),
+    .regex(/^[a-f0-9]{64}$/, 'File hash must be a valid SHA-256 hash')
+    .optional(),
 })
 
 /**

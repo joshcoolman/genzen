@@ -17,7 +17,7 @@ import { ImageCard } from './ImageCard'
 import { ImageEditDialog } from './ImageEditDialog'
 import type { PastedImage } from '../hooks/useClipboardPaste'
 import type { SelectedFile } from './ImageUploadButton'
-import type { CreateUserImageInput, UserImage } from '../types'
+import type { UserImage } from '../types'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
@@ -107,7 +107,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     isDeleting,
     isUpdating,
     error,
-    create,
+    createOptimistic,
     update,
     deleteImage,
     clearError,
@@ -275,15 +275,14 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   )
 
   const handleOptimisticUpload = useCallback(
-    async (tempId: string, input: CreateUserImageInput) => {
+    async (tempId: string, file: File, title: string, previewUrl: string) => {
       try {
-        await create(input)
-        removeOptimisticImage(tempId)
+        await createOptimistic({ file, title, tempId, previewUrl })
       } catch {
         removeOptimisticImage(tempId)
       }
     },
-    [create, removeOptimisticImage],
+    [createOptimistic, removeOptimisticImage],
   )
 
   // Clipboard paste

@@ -4,35 +4,20 @@
  * Used by both the file picker (ImageUploadButton) and clipboard paste handler.
  */
 
-import { createUserImageSchema } from '../types'
-import { computeFileHash } from './file-hash'
 import { parseFilenameToTitle } from './filename-parser'
-import type { CreateUserImageInput } from '../types'
 
 /**
- * Process an array of image files: compute hash, generate title, validate, and upload.
+ * Process an array of image files: generate title and upload in parallel.
+ * Hash computation is handled inside the upload function (runs parallel with storage upload).
  */
 export async function processAndUploadFiles(
   files: Array<File>,
-  onUpload: (input: CreateUserImageInput) => Promise<void>,
+  onUpload: (file: File, title: string) => Promise<void>,
 ): Promise<void> {
-  for (const file of files) {
-    const file_hash = await computeFileHash(file)
-    const title = parseFilenameToTitle(file.name)
-
-    const input: CreateUserImageInput = {
-      file,
-      file_hash,
-      title,
-      description: null,
-    }
-
-    const validationResult = createUserImageSchema.safeParse(input)
-    if (!validationResult.success) {
-      console.error('Validation failed:', validationResult.error)
-      continue
-    }
-
-    await onUpload(input)
-  }
+  await Promise.allSettled(
+    files.map((file) => {
+      const title = parseFilenameToTitle(file.name)
+      return onUpload(file, title)
+    }),
+  )
 }
