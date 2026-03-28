@@ -185,12 +185,13 @@ export function useImages({
               if (prev.some((img) => img.id === newImage.id)) return prev
 
               // Check if this is a realtime echo of an optimistic upload.
-              // Optimistic upload cards have temp IDs (upload-* or paste-*)
-              // and the same storage_path as the incoming real image.
-              if (newImage.storage_path) {
+              // Match by title (file name) to find the correct optimistic card
+              // when multiple files are uploading in parallel.
+              const isOptimistic = (img: SavedAiImage) =>
+                img.id.startsWith('upload-') || img.id.startsWith('paste-')
+              if (newImage.storage_path && prev.some(isOptimistic)) {
                 const optimisticIdx = prev.findIndex(
-                  (img) =>
-                    img.id.startsWith('upload-') || img.id.startsWith('paste-'),
+                  (img) => isOptimistic(img) && img.title === newImage.title,
                 )
                 if (optimisticIdx !== -1) {
                   // Silently swap temp ID for real ID, same position

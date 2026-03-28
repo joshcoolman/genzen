@@ -13,8 +13,11 @@ interface PromptListProps {
   disabled?: boolean
   placeholders?: { first: string; additional: string }
   // Optional: generate prompts capability (loosely coupled)
-  onGeneratePrompts?: (opts: { count: number; guidance?: string }) => void
-  generatingPrompts?: boolean
+  generatePromptsConfig?: {
+    accessToken: string
+    imageBase64: string
+    onApply: (prompts: Array<string>) => void
+  }
   // Optional: clear all prompts back to single empty textarea
   onClearPrompts?: () => void
   // Optional: paste multiple prompts at once
@@ -33,8 +36,7 @@ export function PromptList({
     first: 'Describe your image...',
     additional: 'Additional prompt...',
   },
-  onGeneratePrompts,
-  generatingPrompts,
+  generatePromptsConfig,
   onClearPrompts,
   onPastePrompts,
 }: PromptListProps) {
@@ -53,7 +55,7 @@ export function PromptList({
             }
             value={promptText}
             onChange={(e) => onUpdatePrompt(index, e.target.value)}
-            disabled={disabled || generatingPrompts}
+            disabled={disabled}
             rows={index === 0 ? 4 : 3}
             className="text-xs pr-7"
           />
@@ -82,14 +84,14 @@ export function PromptList({
       ))}
       <div
         className={
-          onGeneratePrompts || onPastePrompts ? 'flex gap-2' : undefined
+          generatePromptsConfig || onPastePrompts ? 'flex gap-2' : undefined
         }
       >
         <button
           type="button"
           onClick={onAddPrompt}
-          disabled={disabled || generatingPrompts}
-          className={`py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50 ${onGeneratePrompts || onPastePrompts ? 'flex-1' : 'w-full'}`}
+          disabled={disabled}
+          className={`py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50 ${generatePromptsConfig || onPastePrompts ? 'flex-1' : 'w-full'}`}
         >
           + Add prompt
         </button>
@@ -97,20 +99,20 @@ export function PromptList({
           <button
             type="button"
             onClick={() => setPasteDialogOpen(true)}
-            disabled={disabled || generatingPrompts}
+            disabled={disabled}
             className="flex-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50"
           >
-            Past Prompts
+            Paste Prompts
           </button>
         )}
-        {onGeneratePrompts && (
+        {generatePromptsConfig && (
           <button
             type="button"
             onClick={() => setDialogOpen(true)}
-            disabled={disabled || generatingPrompts}
+            disabled={disabled}
             className="flex-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50"
           >
-            {generatingPrompts ? 'Generating...' : 'Generate prompts'}
+            Generate prompts
           </button>
         )}
       </div>
@@ -118,21 +120,19 @@ export function PromptList({
         <button
           type="button"
           onClick={onClearPrompts}
-          disabled={disabled || generatingPrompts}
+          disabled={disabled}
           className="w-full py-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         >
           Clear prompts
         </button>
       )}
-      {onGeneratePrompts && (
+      {generatePromptsConfig && (
         <GeneratePromptsDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          onGenerate={(opts) => {
-            onGeneratePrompts(opts)
-            setDialogOpen(false)
-          }}
-          loading={generatingPrompts ?? false}
+          onApply={generatePromptsConfig.onApply}
+          accessToken={generatePromptsConfig.accessToken}
+          imageBase64={generatePromptsConfig.imageBase64}
         />
       )}
       {onPastePrompts && (

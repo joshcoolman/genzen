@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
-import { ai } from '@/lib/server/ai.server'
+import { models } from '@/lib/server/ai.server'
 import { SHOT_LIST_SYSTEM, shotListUserContent } from '@/lib/prompts/shot-list'
 
 interface GenerateShotListInput {
@@ -19,7 +19,7 @@ export const generateShotList = createServerFn({ method: 'POST' })
     const count = Math.min(data.count ?? 6, 12)
 
     const { text } = await generateText({
-      model: ai.vision,
+      model: models.sonnet,
       system: SHOT_LIST_SYSTEM,
       messages: [
         {

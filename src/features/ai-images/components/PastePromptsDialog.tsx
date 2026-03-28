@@ -39,7 +39,7 @@ export function PastePromptsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-sm">Past Prompts</DialogTitle>
+          <DialogTitle className="text-sm">Paste Prompts</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <Textarea

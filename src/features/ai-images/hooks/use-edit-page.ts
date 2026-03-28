@@ -10,7 +10,6 @@ import { useExistingImages } from '@/features/user-images/hooks/useExistingImage
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
-import { generateShotList } from '@/features/ai-images/server/generate-shot-list.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -334,33 +333,24 @@ export function useEditPage(imageId: string) {
     refImages,
   ])
 
-  // Shot list prompt generation
-  const [generatingPrompts, setGeneratingPrompts] = useState(false)
+  // Shot list prompt generation — dialog owns API call, hook just merges results
+  const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
+    setPromptsRaw((prev) => {
+      const kept = prev.filter((p) => p.trim())
+      return kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
+    })
+  }, [])
 
-  const handleGeneratePrompts = useCallback(
-    async (opts: { count: number; guidance?: string }) => {
-      if (!accessToken || !sourceBase64 || generatingPrompts) return
-      setGeneratingPrompts(true)
-      try {
-        const { prompts: shotPrompts } = await generateShotList({
-          data: {
+  const generatePromptsConfig = useMemo(
+    () =>
+      accessToken && sourceBase64
+        ? {
             accessToken,
             imageBase64: sourceBase64,
-            count: opts.count,
-            guidance: opts.guidance,
-          },
-        })
-        setPromptsRaw((prev) => {
-          const kept = prev.filter((p) => p.trim())
-          return kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
-        })
-      } catch {
-        // fail silently like handleCaption
-      } finally {
-        setGeneratingPrompts(false)
-      }
-    },
-    [accessToken, sourceBase64, generatingPrompts],
+            onApply: applyGeneratedPrompts,
+          }
+        : null,
+    [accessToken, sourceBase64, applyGeneratedPrompts],
   )
 
   const clearPrompts = useCallback(() => {
@@ -698,8 +688,7 @@ export function useEditPage(imageId: string) {
     handleClear: () => {}, // No-op in edit mode
     handleClearSourceImage: () => {}, // Can't clear in edit mode
     handleCaption,
-    generatingPrompts,
-    handleGeneratePrompts,
+    generatePromptsConfig,
     clearPrompts,
     refImages,
     addRefImages,

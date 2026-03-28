@@ -113,10 +113,7 @@ export function GeneratorPanel({
                 : 'Describe your image...',
           additional: 'Additional prompt...',
         }}
-        onGeneratePrompts={
-          generator.sourceImage ? generator.handleGeneratePrompts : undefined
-        }
-        generatingPrompts={generator.generatingPrompts}
+        generatePromptsConfig={generator.generatePromptsConfig ?? undefined}
         onClearPrompts={generator.clearPrompts}
         onPastePrompts={generator.pastePrompts}
       />

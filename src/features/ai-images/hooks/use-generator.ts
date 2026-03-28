@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
-import { generateShotList } from '@/features/ai-images/server/generate-shot-list.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   LANDSCAPE_RATIOS,
@@ -60,11 +59,11 @@ export interface GeneratorState {
   handleClearSourceImage: () => void
   handleClear: () => void
   handleCaption: () => Promise<void>
-  generatingPrompts: boolean
-  handleGeneratePrompts: (opts: {
-    count: number
-    guidance?: string
-  }) => Promise<void>
+  generatePromptsConfig: {
+    accessToken: string
+    imageBase64: string
+    onApply: (prompts: Array<string>) => void
+  } | null
   clearPrompts: () => void
   pastePrompts: (texts: Array<string>) => void
   refImages: Array<RefImage>
@@ -418,34 +417,25 @@ export function useGenerator({
     }
   }, [accessToken, sourceImage, describingImage])
 
-  const [generatingPrompts, setGeneratingPrompts] = useState(false)
+  const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
+    setPromptsRaw((prev) => {
+      const kept = prev.filter((p) => p.trim())
+      const next = kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
+      persistPrompts(next)
+      return next
+    })
+  }, [])
 
-  const handleGeneratePrompts = useCallback(
-    async (opts: { count: number; guidance?: string }) => {
-      if (!accessToken || !sourceImage || generatingPrompts) return
-      setGeneratingPrompts(true)
-      try {
-        const { prompts: shotPrompts } = await generateShotList({
-          data: {
+  const generatePromptsConfig = useMemo(
+    () =>
+      accessToken && sourceImage
+        ? {
             accessToken,
             imageBase64: sourceImage.base64,
-            count: opts.count,
-            guidance: opts.guidance,
-          },
-        })
-        setPromptsRaw((prev) => {
-          const kept = prev.filter((p) => p.trim())
-          const next = kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
-          persistPrompts(next)
-          return next
-        })
-      } catch {
-        // fail silently like handleCaption
-      } finally {
-        setGeneratingPrompts(false)
-      }
-    },
-    [accessToken, sourceImage, generatingPrompts],
+            onApply: applyGeneratedPrompts,
+          }
+        : null,
+    [accessToken, sourceImage, applyGeneratedPrompts],
   )
 
   const clearPrompts = useCallback(() => {
@@ -480,8 +470,7 @@ export function useGenerator({
     handleClearSourceImage,
     handleClear,
     handleCaption,
-    generatingPrompts,
-    handleGeneratePrompts,
+    generatePromptsConfig,
     clearPrompts,
     pastePrompts,
     refImages,

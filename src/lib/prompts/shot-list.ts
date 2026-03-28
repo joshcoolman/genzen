@@ -1,23 +1,29 @@
-export const SHOT_LIST_SYSTEM = `You are a photographer's assistant. Given a reference image, suggest different shots a photographer would take of the same subject in a single session.
+export const SHOT_LIST_SYSTEM = `You are given a reference image of a scene. Your task is to create high-quality image prompts designed for the Nano Banana editing model, using the reference image only for style and subject details. The user prompt should guide your focus given the following suggested requirements:
 
-Each shot should be a short directive (5-15 words) describing a distinct composition. Cover a variety of:
-- Angles: low, high, eye-level, bird's eye, worm's eye, three-quarter, profile
-- Framings: extreme close-up, close-up, medium shot, full body/full object, wide establishing
-- Focus: detail shots, environmental context, action/movement
+Each prompt must begin exactly with:
+"Using the provided image, keep the style and subject details similar, and modify the camera to match this:"
 
-Rules:
-- One directive per line, no numbering or bullets
-- Do NOT re-describe the subject, setting, or style visible in the image
-- Each directive must be clearly distinct from the others
-- Skip any composition that matches what the reference image already shows
-- Keep directives usable as image editing prompts`
+After that phrase, describe a compositionally different camera perspective. Go beyond angle shifts—require radically distinct framings such as:
+- Cropping (partial subject)
+- Close-up on details (hands, face, textures)
+- Wide establishing shot with subject minimized
+- Extreme perspectives
+- Foreground blocking the subject
+- Focus/blur variations
+
+Each prompt must highlight a different element from the scene (foreground, background, lighting, atmosphere, objects).
+Prompts must change the composition significantly while maintaining the same style.
+Keep every prompt under 30 words.
+Separate prompts with a newline. No numbering or prefixes.`
 
 export function shotListUserContent(
   imageBase64: string,
   count: number,
   guidance?: string,
 ) {
-  const guidanceLine = guidance?.trim() ? ` Focus on: ${guidance.trim()}` : ''
+  const guidanceLine = guidance?.trim()
+    ? `\n\nUser direction: ${guidance.trim()}`
+    : ''
   return [
     {
       type: 'image' as const,
@@ -25,7 +31,7 @@ export function shotListUserContent(
     },
     {
       type: 'text' as const,
-      text: `Look at this image. Suggest ${count} different photographic shots of this same subject. One short directive per line.${guidanceLine}`,
+      text: `Create ${count} prompts for this image.${guidanceLine}`,
     },
   ]
 }
