@@ -186,12 +186,26 @@ function AiImagesPage() {
           })
           page.gallery.setImageUrl(tempId, previewUrl)
 
-          // Upload in background, then swap optimistic for real
+          // Upload in background, then swap optimistic for real (no refresh)
           setTimeout(() => {
             void (async () => {
               try {
-                await handleUploadFiles([file])
-                page.gallery.removeOptimisticCard(tempId)
+                const result = await upload({
+                  file,
+                  title: file.name,
+                  description: null,
+                })
+                // Swap optimistic card for real image, keep blob URL
+                page.gallery.replaceOptimisticCard(tempId, {
+                  id: result.id,
+                  title: result.title,
+                  storage_path: null,
+                  created_at: new Date().toISOString(),
+                  status: 'completed',
+                  generation_error: null,
+                  generation_metadata: null,
+                })
+                page.gallery.setImageUrl(result.id, previewUrl)
               } catch {
                 page.gallery.removeOptimisticCard(tempId)
               }
@@ -203,7 +217,7 @@ function AiImagesPage() {
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [handleUploadFiles, page.gallery])
+  }, [upload, page.gallery])
 
   // Delete confirmation for images with children
   const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
