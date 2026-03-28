@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { TEXT_MODELS } from '../text-models'
-import { DEFAULT_NEGATIVE_PROMPT, PROMPT_MODES } from '../types'
+import { DEFAULT_NEGATIVE_PROMPT, DEFAULT_SYSTEM_PROMPT } from '../types'
 import { runPromptStudio } from '../server/run-prompt-studio.server'
-import type { ModelResult, PromptMode } from '../types'
+import { usePromptSets } from './usePromptSets'
+import type { ModelResult } from '../types'
 import { useAuth } from '@/lib/auth'
 
 const STORAGE_KEY = 'prompt-studio-settings'
 const DEFAULT_PROMPT =
   'A dynamic full body shot of an unusual hero in an interesting setting, establishing shot, suitable for the first frame of a photorealistic video sequence'
-const DEFAULT_SYSTEM_PROMPT =
-  PROMPT_MODES.find((m) => m.id === 'image-prompt')?.systemPrompt ?? ''
 
 function loadSaved(): {
   systemPrompt: string
@@ -35,29 +34,9 @@ function save(systemPrompt: string, negativePrompt: string) {
   }
 }
 
-export interface UsePromptStudioReturn {
-  prompt: string
-  setPrompt: (v: string) => void
-  mode: PromptMode
-  setMode: (v: PromptMode) => void
-  customSystemPrompt: string
-  setCustomSystemPrompt: (v: string) => void
-  negativePrompt: string
-  setNegativePrompt: (v: string) => void
-  isSystemPromptModified: boolean
-  isNegativePromptModified: boolean
-  restoreDefaults: () => void
-  selectedModelIds: Array<string>
-  toggleModel: (id: string) => void
-  results: Array<ModelResult>
-  running: boolean
-  run: () => void
-}
-
-export function usePromptStudio(): UsePromptStudioReturn {
+export function usePromptStudio() {
   const { session } = useAuth()
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
-  const [mode, setModeRaw] = useState<PromptMode>('image-prompt')
 
   const saved = loadSaved()
   const [customSystemPrompt, setCustomSystemPrompt] = useState(
@@ -72,6 +51,14 @@ export function usePromptStudio(): UsePromptStudioReturn {
   const [results, setResults] = useState<Array<ModelResult>>([])
   const [running, setRunning] = useState(false)
 
+  // Image state
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [imageBase64, setImageBase64] = useState<string | null>(null)
+
+  // Prompt sets
+  const promptSets = usePromptSets()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   // Persist system prompt and negative prompt changes
   useEffect(() => {
     save(customSystemPrompt, negativePrompt)
@@ -80,23 +67,55 @@ export function usePromptStudio(): UsePromptStudioReturn {
   const isSystemPromptModified = customSystemPrompt !== DEFAULT_SYSTEM_PROMPT
   const isNegativePromptModified = negativePrompt !== DEFAULT_NEGATIVE_PROMPT
 
+  // Dirty check against active set
+  const isDirty = useMemo(() => {
+    if (!promptSets.activeSetId) return false
+    const activeSet = promptSets.getSet(promptSets.activeSetId)
+    if (!activeSet) return false
+    return (
+      prompt !== activeSet.prompt ||
+      customSystemPrompt !== activeSet.systemPrompt ||
+      negativePrompt !== activeSet.negativePrompt
+    )
+  }, [prompt, customSystemPrompt, negativePrompt, promptSets])
+
   const restoreDefaults = useCallback(() => {
     setCustomSystemPrompt(DEFAULT_SYSTEM_PROMPT)
     setNegativePrompt(DEFAULT_NEGATIVE_PROMPT)
-    setModeRaw('image-prompt')
-  }, [])
+    setImageUrl(null)
+    setImageBase64(null)
+    setSelectedModelIds(TEXT_MODELS.map((m) => m.id))
+    promptSets.setActiveSetId(null)
+  }, [promptSets])
 
-  const setMode = useCallback((newMode: PromptMode) => {
-    setModeRaw(newMode)
-    const modeConfig = PROMPT_MODES.find((m) => m.id === newMode)
-    setCustomSystemPrompt(modeConfig?.systemPrompt ?? '')
-  }, [])
-
-  const toggleModel = useCallback((id: string) => {
-    setSelectedModelIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+  const setImage = useCallback((url: string, base64: string) => {
+    setImageUrl(url)
+    setImageBase64(base64)
+    // Auto-deselect non-vision models
+    const visionIds = TEXT_MODELS.filter((m) => m.supportsVision).map(
+      (m) => m.id,
     )
+    setSelectedModelIds((prev) => prev.filter((id) => visionIds.includes(id)))
   }, [])
+
+  const clearImage = useCallback(() => {
+    setImageUrl(null)
+    setImageBase64(null)
+  }, [])
+
+  const toggleModel = useCallback(
+    (id: string) => {
+      // Prevent selecting non-vision models when image is attached
+      if (imageBase64) {
+        const model = TEXT_MODELS.find((m) => m.id === id)
+        if (model && !model.supportsVision) return
+      }
+      setSelectedModelIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      )
+    },
+    [imageBase64],
+  )
 
   const run = useCallback(async () => {
     if (!prompt.trim() || selectedModelIds.length === 0 || !session) return
@@ -117,6 +136,7 @@ export function usePromptStudio(): UsePromptStudioReturn {
           systemPrompt,
           modelIds: selectedModelIds,
           accessToken: session.access_token,
+          imageBase64,
         },
       })
       setResults(data)
@@ -125,13 +145,48 @@ export function usePromptStudio(): UsePromptStudioReturn {
     } finally {
       setRunning(false)
     }
-  }, [prompt, customSystemPrompt, negativePrompt, selectedModelIds, session])
+  }, [
+    prompt,
+    customSystemPrompt,
+    negativePrompt,
+    selectedModelIds,
+    session,
+    imageBase64,
+  ])
+
+  // Prompt set actions
+  const loadSet = useCallback(
+    (id: string) => {
+      const set = promptSets.getSet(id)
+      if (!set) return
+      setPrompt(set.prompt)
+      setCustomSystemPrompt(set.systemPrompt)
+      setNegativePrompt(set.negativePrompt)
+      promptSets.setActiveSetId(id)
+    },
+    [promptSets],
+  )
+
+  const saveAsNew = useCallback(
+    (name: string) => {
+      promptSets.saveNewSet(name, prompt, customSystemPrompt, negativePrompt)
+    },
+    [prompt, customSystemPrompt, negativePrompt, promptSets],
+  )
+
+  const updateCurrentSet = useCallback(() => {
+    if (!promptSets.activeSetId) return
+    promptSets.updateSet(
+      promptSets.activeSetId,
+      prompt,
+      customSystemPrompt,
+      negativePrompt,
+    )
+  }, [prompt, customSystemPrompt, negativePrompt, promptSets])
 
   return {
     prompt,
     setPrompt,
-    mode,
-    setMode,
     customSystemPrompt,
     setCustomSystemPrompt,
     negativePrompt,
@@ -144,5 +199,21 @@ export function usePromptStudio(): UsePromptStudioReturn {
     results,
     running,
     run,
+    // Image
+    imageUrl,
+    imageBase64,
+    setImage,
+    clearImage,
+    // Prompt sets
+    promptSets,
+    activeSetId: promptSets.activeSetId,
+    isDirty,
+    loadSet,
+    saveAsNew,
+    updateCurrentSet,
+    sidebarOpen,
+    setSidebarOpen,
   }
 }
+
+export type UsePromptStudioReturn = ReturnType<typeof usePromptStudio>

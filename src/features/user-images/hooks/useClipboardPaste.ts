@@ -44,7 +44,7 @@ export function useClipboardPaste({
   onUpload,
 }: UseClipboardPasteOptions) {
   useEffect(() => {
-    const handlePaste = async (event: ClipboardEvent) => {
+    const handlePaste = (event: ClipboardEvent) => {
       const items = event.clipboardData?.items
       if (!items) return
 
@@ -73,25 +73,28 @@ export function useClipboardPaste({
 
       onPasteImage(pasted)
 
-      try {
-        const file_hash = await computeFileHash(pasted.file)
-        const input: CreateUserImageInput = {
-          file: pasted.file,
-          file_hash,
-          title: pasted.title,
-          description: null,
-        }
+      // Defer upload work so the browser can paint the optimistic card first
+      setTimeout(async () => {
+        try {
+          const file_hash = await computeFileHash(pasted.file)
+          const input: CreateUserImageInput = {
+            file: pasted.file,
+            file_hash,
+            title: pasted.title,
+            description: null,
+          }
 
-        const validationResult = createUserImageSchema.safeParse(input)
-        if (!validationResult.success) {
-          console.error('Validation failed:', validationResult.error)
-          return
-        }
+          const validationResult = createUserImageSchema.safeParse(input)
+          if (!validationResult.success) {
+            console.error('Validation failed:', validationResult.error)
+            return
+          }
 
-        await onUpload(pasted.tempId, input)
-      } catch (error) {
-        console.error('Clipboard upload failed:', error)
-      }
+          await onUpload(pasted.tempId, input)
+        } catch (error) {
+          console.error('Clipboard upload failed:', error)
+        }
+      }, 0)
     }
 
     document.addEventListener('paste', handlePaste)

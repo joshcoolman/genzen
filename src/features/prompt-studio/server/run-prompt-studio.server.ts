@@ -9,6 +9,7 @@ interface RunPromptStudioInput {
   systemPrompt: string
   modelIds: Array<string>
   accessToken: string
+  imageBase64?: string | null
 }
 
 export const runPromptStudio = createServerFn({ method: 'POST' })
@@ -24,11 +25,28 @@ export const runPromptStudio = createServerFn({ method: 'POST' })
         }
 
         const start = Date.now()
-        const { text } = await generateText({
-          model,
-          ...(data.systemPrompt ? { system: data.systemPrompt } : {}),
-          prompt: data.prompt,
-        })
+
+        const systemOpt = data.systemPrompt ? { system: data.systemPrompt } : {}
+
+        const { text } = data.imageBase64
+          ? await generateText({
+              model,
+              ...systemOpt,
+              messages: [
+                {
+                  role: 'user' as const,
+                  content: [
+                    { type: 'image' as const, image: data.imageBase64 },
+                    { type: 'text' as const, text: data.prompt },
+                  ],
+                },
+              ],
+            })
+          : await generateText({
+              model,
+              ...systemOpt,
+              prompt: data.prompt,
+            })
         const durationMs = Date.now() - start
 
         return { modelId, text: text.trim(), error: null, durationMs }
