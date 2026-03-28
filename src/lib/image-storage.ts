@@ -7,22 +7,10 @@ import {
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const DEFAULT_CACHE_CONTROL = '31536000'
-
 export interface UploadOptions {
   contentType: string
   cacheControl?: string
   upsert?: boolean
-}
-
-export interface GetUrlOptions {
-  ttl?: number
-  transform?: {
-    width?: number
-    resize?: 'contain' | 'cover' | 'fill'
-    quality?: number
-  }
-  cached?: boolean
-  cacheTtl?: number
 }
 
 export interface ImageStorage {
@@ -33,7 +21,7 @@ export interface ImageStorage {
   ) => Promise<void>
   download: (key: string) => Promise<Blob>
   remove: (keys: Array<string>) => Promise<void>
-  getUrl: (key: string, options?: GetUrlOptions) => Promise<string | null>
+  getUrl: (key: string) => Promise<string | null>
   invalidateUrl: (key: string) => void
 }
 
@@ -103,7 +91,7 @@ class R2ImageStorage implements ImageStorage {
     )
   }
 
-  async getUrl(key: string, _options?: GetUrlOptions): Promise<string | null> {
+  async getUrl(key: string): Promise<string | null> {
     return `${this.publicUrl}/${key}`
   }
 

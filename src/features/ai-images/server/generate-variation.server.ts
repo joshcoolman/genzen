@@ -120,7 +120,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
 
     const storage = createImageStorage(supabase)
     const signedUrl = imageStoragePath
-      ? await storage.getUrl(imageStoragePath, { ttl: 3600, cached: false })
+      ? await storage.getUrl(imageStoragePath)
       : undefined
 
     // Fetch image bytes — needed for both Claude (base64) and FAL (upload to get HTTPS URL)

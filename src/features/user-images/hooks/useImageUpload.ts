@@ -97,7 +97,6 @@ export function useImageUpload(
 
         const url = await createImageStorage(supabase).getUrl(
           newImage.storage_path,
-          { cached: false },
         )
 
         return {

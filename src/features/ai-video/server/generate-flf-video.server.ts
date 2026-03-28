@@ -27,10 +27,7 @@ async function uploadFrameToFal(
   supabase: SupabaseClient,
   storagePath: string,
 ): Promise<string> {
-  const signedUrl = await createImageStorage(supabase).getUrl(storagePath, {
-    ttl: 3600,
-    cached: false,
-  })
+  const signedUrl = await createImageStorage(supabase).getUrl(storagePath)
 
   if (!signedUrl) {
     throw new Error('Failed to create signed URL for frame')

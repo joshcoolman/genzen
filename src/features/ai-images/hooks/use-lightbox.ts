@@ -26,7 +26,7 @@ export interface LightboxState {
 }
 
 async function fetchFullResUrl(storagePath: string): Promise<string | null> {
-  return createImageStorage(supabase).getUrl(storagePath, { cached: false })
+  return createImageStorage(supabase).getUrl(storagePath)
 }
 
 export function useLightbox(

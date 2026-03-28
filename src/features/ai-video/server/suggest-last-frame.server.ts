@@ -51,10 +51,8 @@ export const suggestLastFrame = createServerFn({ method: 'POST' })
           ?.storage_path
 
         if (storagePath) {
-          const signedUrl = await createImageStorage(supabase).getUrl(
-            storagePath,
-            { ttl: 3600, cached: false },
-          )
+          const signedUrl =
+            await createImageStorage(supabase).getUrl(storagePath)
 
           if (signedUrl) {
             const imageRes = await fetch(signedUrl)

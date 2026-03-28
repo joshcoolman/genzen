@@ -104,10 +104,7 @@ function persistCells(cells: Array<ModelCellState>) {
 // ─── Signed URL helper ────────────────────────────────────────────────────────
 
 async function fetchSignedUrl(storagePath: string): Promise<string | null> {
-  return createImageStorage(supabase).getUrl(storagePath, {
-    transform: { width: 400, resize: 'contain', quality: 80 },
-    cached: false,
-  })
+  return createImageStorage(supabase).getUrl(storagePath)
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

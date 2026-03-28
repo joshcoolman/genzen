@@ -109,10 +109,7 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
 
     // Return signed URL for the original version (display uses object-contain)
     const displayPath = originalBase64 ? recordStoragePath : croppedStoragePath
-    const signedUrl = await storage.getUrl(displayPath, {
-      ttl: 3600,
-      cached: false,
-    })
+    const signedUrl = await storage.getUrl(displayPath)
 
     if (!signedUrl) {
       throw new Error('Failed to create signed URL')

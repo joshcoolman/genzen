@@ -30,10 +30,7 @@ function extractStoragePath(url: string): string | null {
 async function refreshUrl(supabase: any, url: string): Promise<string> {
   const storagePath = extractStoragePath(url)
   if (!storagePath) return url
-  const signedUrl = await createImageStorage(supabase).getUrl(storagePath, {
-    ttl: 3600,
-    cached: false,
-  })
+  const signedUrl = await createImageStorage(supabase).getUrl(storagePath)
   return signedUrl || url
 }
 

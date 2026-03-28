@@ -70,7 +70,7 @@ export async function savePersistedState(
 export async function getSignedUrl(
   storagePath: string,
 ): Promise<string | null> {
-  return createImageStorage(supabase).getUrl(storagePath, { cached: false })
+  return createImageStorage(supabase).getUrl(storagePath)
 }
 
 /** Batch-fetch signed URLs for canvas images that need them */

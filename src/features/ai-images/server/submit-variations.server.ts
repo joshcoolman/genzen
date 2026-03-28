@@ -81,10 +81,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (rootImage?.storage_path) {
-        const signedUrl = await storage.getUrl(rootImage.storage_path, {
-          ttl: 3600,
-          cached: false,
-        })
+        const signedUrl = await storage.getUrl(rootImage.storage_path)
         if (signedUrl) {
           const imageRes = await fetch(signedUrl)
           const buffer = await imageRes.arrayBuffer()
@@ -103,10 +100,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (rootImage?.storage_path) {
-        const signedUrl = await storage.getUrl(rootImage.storage_path, {
-          ttl: 3600,
-          cached: false,
-        })
+        const signedUrl = await storage.getUrl(rootImage.storage_path)
         if (signedUrl) {
           const imageRes = await fetch(signedUrl)
           const buffer = await imageRes.arrayBuffer()
@@ -147,10 +141,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
         const uploads = await Promise.all(
           refImages.data.map(async (ref) => {
             if (!ref.storage_path) return null
-            const refSignedUrl = await storage.getUrl(ref.storage_path, {
-              ttl: 3600,
-              cached: false,
-            })
+            const refSignedUrl = await storage.getUrl(ref.storage_path)
             if (!refSignedUrl) return null
             const res = await fetch(refSignedUrl)
             const buf = await res.arrayBuffer()

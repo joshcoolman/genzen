@@ -412,9 +412,7 @@ export function useEditPage(imageId: string) {
 
       if (!data?.storage_path) return
 
-      const url = await createImageStorage(supabase).getUrl(data.storage_path, {
-        cached: false,
-      })
+      const url = await createImageStorage(supabase).getUrl(data.storage_path)
 
       if (!url) return
 

@@ -132,10 +132,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       const storage = createImageStorage(supabase)
       for (const image of data) {
         storage
-          .getUrl(image.storage_path, {
-            transform: { width: 400, resize: 'contain', quality: 80 },
-            cached: false,
-          })
+          .getUrl(image.storage_path)
           .then((url) => {
             if (url) {
               setImageUrls((prev) => ({
@@ -189,10 +186,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 return next
               })
               createImageStorage(supabase)
-                .getUrl(updated.storage_path, {
-                  transform: { width: 400, resize: 'contain', quality: 80 },
-                  cached: false,
-                })
+                .getUrl(updated.storage_path)
                 .then((url) => {
                   if (url) {
                     setImageUrls((prev) => ({
@@ -447,7 +441,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         const results = await Promise.all(
           batch.map((img) =>
             storage
-              .getUrl(img.storage_path, { ttl: 3600, cached: false })
+              .getUrl(img.storage_path)
               .then((url) => ({
                 id: img.id,
                 url,

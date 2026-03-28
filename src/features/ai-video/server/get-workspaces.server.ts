@@ -72,10 +72,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
         const signedFirstFrameUrls = await Promise.all(
           sorted.map(async (gen) => {
             if (!gen.first_frame?.storage_path) return null
-            return await storage.getUrl(gen.first_frame.storage_path, {
-              ttl: 3600,
-              cached: false,
-            })
+            return await storage.getUrl(gen.first_frame.storage_path)
           }),
         )
 
@@ -84,10 +81,7 @@ export const getWorkspaces = createServerFn({ method: 'POST' })
         // Last frame from most recent generation
         let lastFrameUrl: string | null = null
         if (sorted.length > 0 && sorted[0].last_frame?.storage_path) {
-          lastFrameUrl = await storage.getUrl(
-            sorted[0].last_frame.storage_path,
-            { ttl: 3600, cached: false },
-          )
+          lastFrameUrl = await storage.getUrl(sorted[0].last_frame.storage_path)
         }
 
         // Extract prompt from most recent generation_metadata

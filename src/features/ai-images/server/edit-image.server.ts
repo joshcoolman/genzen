@@ -89,10 +89,7 @@ export const editImage = createServerFn({ method: 'POST' })
 
     // Get signed URL and fetch image bytes
     const storage = createImageStorage(supabase)
-    const signedUrl = await storage.getUrl(sourceImage.storage_path, {
-      ttl: 3600,
-      cached: false,
-    })
+    const signedUrl = await storage.getUrl(sourceImage.storage_path)
 
     if (!signedUrl) {
       throw new Error('Failed to get signed URL for source image')
@@ -117,10 +114,7 @@ export const editImage = createServerFn({ method: 'POST' })
         const uploads = await Promise.all(
           refImages.data.map(async (ref) => {
             if (!ref.storage_path) return null
-            const refSignedUrl = await storage.getUrl(ref.storage_path, {
-              ttl: 3600,
-              cached: false,
-            })
+            const refSignedUrl = await storage.getUrl(ref.storage_path)
             if (!refSignedUrl) return null
             const res = await fetch(refSignedUrl)
             const buf = await res.arrayBuffer()

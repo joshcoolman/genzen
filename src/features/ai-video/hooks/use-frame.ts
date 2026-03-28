@@ -68,7 +68,7 @@ export function useFrame({ accessToken }: UseFrameOptions) {
           }
           if (updated.status === 'completed' && updated.storage_path) {
             createImageStorage(supabase)
-              .getUrl(updated.storage_path, { cached: false })
+              .getUrl(updated.storage_path)
               .then((signedUrl) => {
                 if (signedUrl) {
                   setUrl(signedUrl)

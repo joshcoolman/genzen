@@ -61,17 +61,11 @@ export const getGenerations = createServerFn({ method: 'POST' })
         let videoUrl: string | null = null
 
         if (firstFrame?.storage_path) {
-          firstFrameUrl = await storage.getUrl(firstFrame.storage_path, {
-            ttl: 3600,
-            cached: false,
-          })
+          firstFrameUrl = await storage.getUrl(firstFrame.storage_path)
         }
 
         if (lastFrame?.storage_path) {
-          lastFrameUrl = await storage.getUrl(lastFrame.storage_path, {
-            ttl: 3600,
-            cached: false,
-          })
+          lastFrameUrl = await storage.getUrl(lastFrame.storage_path)
         }
 
         if (video) {

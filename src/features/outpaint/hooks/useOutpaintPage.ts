@@ -124,10 +124,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
     async (imgs: Array<{ id: string; storage_path: string }>) => {
       const storage = createImageStorage(supabase)
       for (const image of imgs) {
-        const url = await storage.getUrl(image.storage_path, {
-          transform: { width: 400, resize: 'contain', quality: 80 },
-          cached: false,
-        })
+        const url = await storage.getUrl(image.storage_path)
         if (url) {
           setImageUrls((prev) => ({ ...prev, [image.id]: url }))
         }

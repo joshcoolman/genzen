@@ -184,10 +184,7 @@ export const generateImage = createServerFn({ method: 'POST' })
           const base64Results = await Promise.all(
             refImages.data.map(async (ref) => {
               if (!ref.storage_path) return null
-              const signedUrl = await storage.getUrl(ref.storage_path, {
-                ttl: 3600,
-                cached: false,
-              })
+              const signedUrl = await storage.getUrl(ref.storage_path)
               if (!signedUrl) return null
               const res = await fetch(signedUrl)
               const buf = await res.arrayBuffer()
@@ -202,10 +199,7 @@ export const generateImage = createServerFn({ method: 'POST' })
           const uploads = await Promise.all(
             refImages.data.map(async (ref) => {
               if (!ref.storage_path) return null
-              const signedUrl = await storage.getUrl(ref.storage_path, {
-                ttl: 3600,
-                cached: false,
-              })
+              const signedUrl = await storage.getUrl(ref.storage_path)
               if (!signedUrl) return null
               const res = await fetch(signedUrl)
               const buf = await res.arrayBuffer()
