@@ -316,7 +316,7 @@ export function useImages({
   }, [accessToken, savedImages.some((img) => img.status === 'pending')])
 
   function addOptimisticCard(card: SavedAiImage) {
-    setSavedImages((prev) => sortByOrder([...prev, card]))
+    setSavedImages((prev) => [card, ...prev])
   }
 
   function replaceOptimisticCard(optimisticId: string, realCard: SavedAiImage) {
