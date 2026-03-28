@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react'
 import { createThumbnail } from '../server/create-thumbnail.server'
+import { uploadImage } from '../server/upload-image.server'
+import { removeImages } from '../server/remove-images.server'
 import type { CollectedImage, CreateUserImageInput } from '../types'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
@@ -8,6 +10,16 @@ interface UseImageUploadReturn {
   upload: (input: CreateUserImageInput) => Promise<CollectedImage>
   isUploading: boolean
   error: string | null
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
 }
 
 export function useImageUpload(
@@ -32,8 +44,19 @@ export function useImageUpload(
         )
         const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
-        await createImageStorage(supabase).upload(storagePath, input.file, {
-          contentType: input.file.type,
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (!session?.access_token) throw new Error('No active session')
+
+        const base64Data = await fileToBase64(input.file)
+        await uploadImage({
+          data: {
+            accessToken: session.access_token,
+            storagePath,
+            base64Data,
+            contentType: input.file.type,
+          },
         })
 
         const { data: newImage, error: insertError } = await supabase
@@ -52,25 +75,25 @@ export function useImageUpload(
           .single()
 
         if (insertError) {
-          await createImageStorage(supabase).remove([storagePath])
+          await removeImages({
+            data: {
+              accessToken: session.access_token,
+              storagePaths: [storagePath],
+            },
+          }).catch(() => {})
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
         }
 
-        // Generate thumbnail in background — don't block the upload response
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        if (session?.access_token) {
-          createThumbnail({
-            data: {
-              accessToken: session.access_token,
-              imageId: newImage.id,
-              storagePath: newImage.storage_path,
-            },
-          }).catch(() => {})
-        }
+        // Generate thumbnail in background
+        createThumbnail({
+          data: {
+            accessToken: session.access_token,
+            imageId: newImage.id,
+            storagePath: newImage.storage_path,
+          },
+        }).catch(() => {})
 
         const url = await createImageStorage(supabase).getUrl(
           newImage.storage_path,

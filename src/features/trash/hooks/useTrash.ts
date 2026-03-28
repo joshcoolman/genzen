@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '@/features/user-images/types'
+import { removeImages } from '@/features/user-images/server/remove-images.server'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
+
+async function getAccessToken(): Promise<string> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session?.access_token) throw new Error('No active session')
+  return session.access_token
+}
 
 interface UseTrashReturn {
   images: Array<UserImage>
@@ -256,7 +265,10 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         throw error
       }
 
-      await createImageStorage(supabase).remove([image.storage_path])
+      const accessToken = await getAccessToken()
+      await removeImages({
+        data: { accessToken, storagePaths: [image.storage_path] },
+      })
 
       // Cascade cleanup for variations
       const metadata = image.generation_metadata as Record<
@@ -290,9 +302,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
             if (count === 0) {
               await supabase.from('user_images').delete().eq('id', rootId)
               if (rootImage.storage_path) {
-                await createImageStorage(supabase).remove([
-                  rootImage.storage_path,
-                ])
+                await removeImages({
+                  data: {
+                    accessToken,
+                    storagePaths: [rootImage.storage_path],
+                  },
+                })
               }
             }
           }
@@ -324,8 +339,9 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         throw error
       }
 
+      const accessToken = await getAccessToken()
       if (storagePaths.length > 0) {
-        await createImageStorage(supabase).remove(storagePaths)
+        await removeImages({ data: { accessToken, storagePaths } })
       }
 
       // Cascade cleanup for variations
@@ -361,9 +377,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
               if (count === 0) {
                 await supabase.from('user_images').delete().eq('id', rootId)
                 if (rootImage.storage_path) {
-                  await createImageStorage(supabase).remove([
-                    rootImage.storage_path,
-                  ])
+                  await removeImages({
+                    data: {
+                      accessToken,
+                      storagePaths: [rootImage.storage_path],
+                    },
+                  })
                 }
               }
             }
@@ -413,7 +432,8 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     }
 
     if (storagePaths.length > 0) {
-      await createImageStorage(supabase).remove(storagePaths)
+      const accessToken = await getAccessToken()
+      await removeImages({ data: { accessToken, storagePaths } })
     }
   }, [images, fetchTrashed, linkedImageIds])
 

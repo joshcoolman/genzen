@@ -7,6 +7,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { computeFileHash } from '../lib/file-hash'
+import { uploadImage } from '../server/upload-image.server'
+import { removeImages } from '../server/remove-images.server'
 import type {
   CreateUserImageInput,
   UserImage,
@@ -14,6 +16,16 @@ import type {
 } from '../types'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
+
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary)
+}
 
 export interface OptimisticImage {
   tempId: string
@@ -177,6 +189,11 @@ export function useUserImages(
       try {
         setState((prev) => ({ ...prev, isCreating: true, error: null }))
 
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        if (!session?.access_token) throw new Error('No active session')
+
         // Generate storage path
         const timestamp = Date.now()
         const uuid = crypto.randomUUID()
@@ -186,9 +203,15 @@ export function useUserImages(
         )
         const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
-        // Upload file to storage
-        await createImageStorage(supabase).upload(storagePath, input.file, {
-          contentType: input.file.type,
+        // Upload file via server function
+        const base64Data = await fileToBase64(input.file)
+        await uploadImage({
+          data: {
+            accessToken: session.access_token,
+            storagePath,
+            base64Data,
+            contentType: input.file.type,
+          },
         })
 
         // Create database record
@@ -208,14 +231,19 @@ export function useUserImages(
           .single()
 
         if (insertError) {
-          // Rollback: delete uploaded file
-          await createImageStorage(supabase).remove([storagePath])
+          // Rollback: delete uploaded file via server
+          await removeImages({
+            data: {
+              accessToken: session.access_token,
+              storagePaths: [storagePath],
+            },
+          }).catch(() => {})
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
         }
 
-        // Get signed URL for new image
+        // Get URL for new image
         const newUrl = await createImageStorage(supabase).getUrl(
           newImage.storage_path,
         )
@@ -404,6 +432,11 @@ export function useUserImages(
     async (input: CreateOptimisticInput): Promise<void> => {
       if (!userId) throw new Error('User not authenticated')
 
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('No active session')
+
       const { file, title, description, tempId, previewUrl } = input
 
       const timestamp = Date.now()
@@ -411,10 +444,16 @@ export function useUserImages(
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
       const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
-      // Run storage upload and hash computation in parallel
+      // Run server upload and hash computation in parallel
+      const base64Data = await fileToBase64(file)
       const [, hashResult] = await Promise.all([
-        createImageStorage(supabase).upload(storagePath, file, {
-          contentType: file.type,
+        uploadImage({
+          data: {
+            accessToken: session.access_token,
+            storagePath,
+            base64Data,
+            contentType: file.type,
+          },
         }),
         computeFileHash(file).catch(() => undefined),
       ])
@@ -436,7 +475,12 @@ export function useUserImages(
         .single()
 
       if (insertError) {
-        await createImageStorage(supabase).remove([storagePath])
+        await removeImages({
+          data: {
+            accessToken: session.access_token,
+            storagePaths: [storagePath],
+          },
+        }).catch(() => {})
         throw new Error(`Failed to create image record: ${insertError.message}`)
       }
 
