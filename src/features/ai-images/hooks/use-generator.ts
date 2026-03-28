@@ -66,6 +66,7 @@ export interface GeneratorState {
     guidance?: string
   }) => Promise<void>
   clearPrompts: () => void
+  pastePrompts: (texts: Array<string>) => void
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
@@ -163,6 +164,14 @@ export function useGenerator({
     setPromptsRaw((prev) => {
       if (prev.length <= 1 || index === 0) return prev
       const next = prev.filter((_, i) => i !== index)
+      persistPrompts(next)
+      return next
+    })
+  }, [])
+
+  const pastePrompts = useCallback((texts: Array<string>) => {
+    setPromptsRaw((prev) => {
+      const next = [...prev, ...texts]
       persistPrompts(next)
       return next
     })
@@ -474,6 +483,7 @@ export function useGenerator({
     generatingPrompts,
     handleGeneratePrompts,
     clearPrompts,
+    pastePrompts,
     refImages,
     addRefImages,
     removeRefImage,

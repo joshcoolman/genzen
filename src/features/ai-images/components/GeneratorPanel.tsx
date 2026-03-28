@@ -118,6 +118,7 @@ export function GeneratorPanel({
         }
         generatingPrompts={generator.generatingPrompts}
         onClearPrompts={generator.clearPrompts}
+        onPastePrompts={generator.pastePrompts}
       />
 
       {/* Ref images -- show when model supports refs */}

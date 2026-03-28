@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Textarea } from '@/components/ui/textarea'
 import { GeneratePromptsDialog } from '@/features/ai-images/components/GeneratePromptsDialog'
+import { PastePromptsDialog } from '@/features/ai-images/components/PastePromptsDialog'
 
 interface PromptListProps {
   prompts: Array<string>
@@ -16,6 +17,8 @@ interface PromptListProps {
   generatingPrompts?: boolean
   // Optional: clear all prompts back to single empty textarea
   onClearPrompts?: () => void
+  // Optional: paste multiple prompts at once
+  onPastePrompts?: (prompts: Array<string>) => void
 }
 
 export function PromptList({
@@ -33,8 +36,10 @@ export function PromptList({
   onGeneratePrompts,
   generatingPrompts,
   onClearPrompts,
+  onPastePrompts,
 }: PromptListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
   const hasContent =
     prompts.length > 1 || (prompts.length === 1 && prompts[0].trim() !== '')
   return (
@@ -75,15 +80,29 @@ export function PromptList({
           )}
         </div>
       ))}
-      <div className={onGeneratePrompts ? 'flex gap-2' : undefined}>
+      <div
+        className={
+          onGeneratePrompts || onPastePrompts ? 'flex gap-2' : undefined
+        }
+      >
         <button
           type="button"
           onClick={onAddPrompt}
           disabled={disabled || generatingPrompts}
-          className={`py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50 ${onGeneratePrompts ? 'flex-1' : 'w-full'}`}
+          className={`py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50 ${onGeneratePrompts || onPastePrompts ? 'flex-1' : 'w-full'}`}
         >
           + Add prompt
         </button>
+        {onPastePrompts && (
+          <button
+            type="button"
+            onClick={() => setPasteDialogOpen(true)}
+            disabled={disabled || generatingPrompts}
+            className="flex-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50"
+          >
+            Past Prompts
+          </button>
+        )}
         {onGeneratePrompts && (
           <button
             type="button"
@@ -114,6 +133,13 @@ export function PromptList({
             setDialogOpen(false)
           }}
           loading={generatingPrompts ?? false}
+        />
+      )}
+      {onPastePrompts && (
+        <PastePromptsDialog
+          open={pasteDialogOpen}
+          onOpenChange={setPasteDialogOpen}
+          onAdd={onPastePrompts}
         />
       )}
     </div>
