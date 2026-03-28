@@ -115,6 +115,7 @@ class SupabaseImageStorage implements ImageStorage {
 
 class R2ImageStorage implements ImageStorage {
   private client: S3Client | null
+  private fallback: ImageStorage | null
 
   constructor(
     private bucket: string,
@@ -122,6 +123,7 @@ class R2ImageStorage implements ImageStorage {
     accountId?: string,
     accessKeyId?: string,
     secretAccessKey?: string,
+    fallback?: ImageStorage,
   ) {
     // S3 client is only created server-side where credentials are available
     this.client =
@@ -132,13 +134,7 @@ class R2ImageStorage implements ImageStorage {
             credentials: { accessKeyId, secretAccessKey },
           })
         : null
-  }
-
-  private requireClient(): S3Client {
-    if (!this.client) {
-      throw new Error('R2 S3 client not available (missing server credentials)')
-    }
-    return this.client
+    this.fallback = fallback ?? null
   }
 
   async upload(
@@ -146,9 +142,13 @@ class R2ImageStorage implements ImageStorage {
     data: Uint8Array | Buffer | Blob,
     options: UploadOptions,
   ): Promise<void> {
+    if (!this.client) {
+      if (this.fallback) return this.fallback.upload(key, data, options)
+      throw new Error('R2 S3 client not available (missing server credentials)')
+    }
     const body =
       data instanceof Blob ? Buffer.from(await data.arrayBuffer()) : data
-    await this.requireClient().send(
+    await this.client.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: key,
@@ -160,7 +160,11 @@ class R2ImageStorage implements ImageStorage {
   }
 
   async download(key: string): Promise<Blob> {
-    const response = await this.requireClient().send(
+    if (!this.client) {
+      if (this.fallback) return this.fallback.download(key)
+      throw new Error('R2 S3 client not available (missing server credentials)')
+    }
+    const response = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
     )
     const bytes = await response.Body!.transformToByteArray()
@@ -169,7 +173,11 @@ class R2ImageStorage implements ImageStorage {
 
   async remove(keys: Array<string>): Promise<void> {
     if (keys.length === 0) return
-    await this.requireClient().send(
+    if (!this.client) {
+      if (this.fallback) return this.fallback.remove(keys)
+      throw new Error('R2 S3 client not available (missing server credentials)')
+    }
+    await this.client.send(
       new DeleteObjectsCommand({
         Bucket: this.bucket,
         Delete: { Objects: keys.map((Key) => ({ Key })) },
@@ -207,12 +215,16 @@ export function createImageStorage(supabase: SupabaseClient): ImageStorage {
     const secretAccessKey = process.env['R2_SECRET_ACCESS_KEY']
     const bucket = process.env['R2_BUCKET_NAME']
 
+    // Client-side: use R2 for getUrl, fall back to Supabase for upload/download/remove
+    const supabaseFallback = new SupabaseImageStorage(supabase)
+
     return new R2ImageStorage(
       bucket ?? 'genzen-images',
       publicUrl.replace(/\/$/, ''),
       accountId,
       accessKeyId,
       secretAccessKey,
+      supabaseFallback,
     )
   }
 
