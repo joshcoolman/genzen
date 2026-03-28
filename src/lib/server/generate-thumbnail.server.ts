@@ -45,3 +45,25 @@ export async function generateAndStoreThumbnail(
     return null
   }
 }
+
+/**
+ * Fire-and-forget: generates a thumbnail and updates the DB record's
+ * thumbnail_path. Errors are silently swallowed.
+ */
+export function generateThumbnailInBackground(
+  supabase: SupabaseClient,
+  userId: string,
+  storagePath: string,
+  recordId: string,
+): void {
+  generateAndStoreThumbnail(supabase, userId, storagePath)
+    .then(async (thumbnailPath) => {
+      if (thumbnailPath) {
+        await supabase
+          .from('user_images')
+          .update({ thumbnail_path: thumbnailPath })
+          .eq('id', recordId)
+      }
+    })
+    .catch(() => {})
+}

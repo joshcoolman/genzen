@@ -7,7 +7,7 @@ import crypto from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
-import { generateAndStoreThumbnail } from './generate-thumbnail.server'
+import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
@@ -155,19 +155,13 @@ async function submitGoogleGeneration(
     const storage = createImageStorage(supabase)
     await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
 
-    const thumbnailPath = await generateAndStoreThumbnail(
-      supabase,
-      options.userId,
-      storagePath,
-    )
-
     // Update record to completed
     const { error: updateError } = await supabase
       .from('user_images')
       .update({
         status: 'completed',
         storage_path: storagePath,
-        thumbnail_path: thumbnailPath,
+        thumbnail_path: null,
         file_name: fileName,
         file_hash: fileHash,
         file_size: imageBytes.length,
@@ -192,6 +186,13 @@ async function submitGoogleGeneration(
       await storage.remove([storagePath])
       throw new Error(`Update failed: ${updateError.message}`)
     }
+
+    generateThumbnailInBackground(
+      supabase,
+      options.userId,
+      storagePath,
+      recordId,
+    )
   } catch (error) {
     // Mark the record as failed so the UI shows a failure card
     await supabase

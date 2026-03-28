@@ -1,4 +1,5 @@
 import { downloadAndStoreImage } from './image-storage.server'
+import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createImageStorage } from '@/lib/image-storage'
 
@@ -14,7 +15,7 @@ export async function processImageResult(
     throw new Error('No image URL in FAL result')
   }
 
-  const { storagePath, thumbnailPath, fileName, fileHash, fileSize } =
+  const { storagePath, fileName, fileHash, fileSize } =
     await downloadAndStoreImage(supabase, userId, imageUrl)
 
   // Fetch current metadata to merge
@@ -38,7 +39,7 @@ export async function processImageResult(
     .update({
       status: 'completed',
       storage_path: storagePath,
-      thumbnail_path: thumbnailPath,
+      thumbnail_path: null,
       file_name: fileName,
       file_hash: fileHash,
       file_size: fileSize,
@@ -59,6 +60,8 @@ export async function processImageResult(
     await createImageStorage(supabase).remove([storagePath])
     throw new Error(`Update failed: ${updateError.message}`)
   }
+
+  generateThumbnailInBackground(supabase, userId, storagePath, recordId)
 }
 
 export async function processVideoResult(

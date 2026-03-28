@@ -1,41 +1,50 @@
-# Continue: ImageStorage Abstraction (#111)
+# Continue: Async Thumbnail Generation (#111 Phase 4)
 
 ## What was done this session
 
-### Rate limiting (#103) -- DONE, merged, issue closed
+### ImageStorage abstraction (#111 Phases 1-3) -- DONE, merged to main
 
-- Migration: `rate_window_start`/`rate_window_count` on `user_profiles` + atomic `check_rate_limit()` RPC
-- `src/lib/server/rate-limit.server.ts` — 20 req/min image, 5 req/min video, fails open
-- Wired into `generate-image`, `edit-image`, `generate-variation`, `generate-flf-video`
+- Created `src/lib/image-storage.ts`: `ImageStorage` interface, `SupabaseImageStorage` class, `createImageStorage(supabase)` factory
+- Migrated all ~30 files that called `supabase.storage.from('user-images')` to use the abstraction
+- Deleted `src/lib/storage-url-cache.ts` (absorbed into `ImageStorage.getUrl()` with built-in cache)
+- Two commits: Phase 1-2 (interface + server callers), Phase 3 (client callers + cleanup)
 
-### ModelSelector panel mode -- merged
+### R2 migration issue (#112) -- created
 
-- New `'panel'` DisplayMode in `src/components/ModelSelector/ModelSelector.tsx`
-- Collapsible section with vertical model list (not dropdown, not inline pills)
-- `persistKey` prop saves expand/collapse to localStorage, default expanded
-- `GeneratorPanel.tsx` uses `display="panel"` with `persistKey="genzen:model-panel:expanded"`
-
-### critical-path.md -- updated and committed
-
-- Gate 1 = infra/security/optimization, Gate 2 = payments, Gate 3 = marketing
-- #103 marked DONE, sequence reordered to front-load hardening
-
-### ImageStorage epic (#111) -- issue created
-
-- Comprehensive GitHub issue with 6-phase plan for storage abstraction + R2 migration
-- Full audit of 30+ files with scattered `supabase.storage.from('user-images')` calls
+- Covers Phases 5-6: `R2ImageStorage` implementation, batch migration, orphan cleanup, gallery virtualization
+- Separate from #111 because it introduces a new vendor (Cloudflare R2)
 
 ## Next step
 
-Start #111 Phase 1: create `ImageStorage` interface + `SupabaseImageStorage` implementation in `src/lib/server/image-storage.server.ts` (file already exists with narrow `storeDownloadedImage` function -- expand it). See issue #111 for full phase breakdown and file-by-file migration list.
+#111 Phase 4: Async thumbnail generation. Decouple `generateAndStoreThumbnail` from the synchronous image completion pipeline so images appear ~200-500ms faster.
 
-## Key context for next session
+### Current flow (synchronous)
 
-- Target architecture: R2 + pre-generated Sharp thumbnails (~$16/mo at 1K users vs $2,544 with Supabase transforms)
-- Signed URL cache-busting is the core perf problem (R2 public URLs fix this)
-- Soft-delete confirmed to orphan storage files -- abstraction enables fixing this
-- `storage-url-cache.ts` (getCachedSignedUrl/invalidateCachedUrl) should be absorbed into ImageStorage.getUrl()
-- FAL storage uploads (`fal.storage.upload`) are NOT part of this abstraction
+1. Image completes (FAL/Google) -> download + upload via `ImageStorage`
+2. **Blocking:** `generateAndStoreThumbnail()` downloads, resizes with Sharp, uploads WebP
+3. DB update with `storage_path` + `thumbnail_path` -> UI shows completed image
+
+### Target flow (async)
+
+1. Image completes -> download + upload via `ImageStorage`
+2. DB update with `storage_path` + `thumbnail_path: null` -> status `completed` -> UI shows full image
+3. **Background:** generate thumbnail, then update `thumbnail_path` via DB
+4. Gallery picks up `thumbnail_path` via existing Supabase Realtime subscription
+
+### Key files
+
+- `src/lib/server/generate-thumbnail.server.ts` -- the Sharp resize + upload function (already uses `ImageStorage`)
+- `src/lib/server/image-storage.server.ts` -- `downloadAndStoreImage()` calls `generateAndStoreThumbnail` synchronously
+- `src/lib/server/media.server.ts` -- Google provider path, also calls `generateAndStoreThumbnail` synchronously
+- `src/lib/server/fal-completion.server.ts` -- FAL path, calls `downloadAndStoreImage` which handles thumbnail
+- Gallery hooks (`use-images.ts`, `useUserImages.ts`) -- already prefer `thumbnail_path` when available, fall back to `storage_path`
+
+### Approach
+
+- Remove `generateAndStoreThumbnail` call from `downloadAndStoreImage` and `media.server.ts`
+- Fire thumbnail generation as a background task after DB update (fire-and-forget)
+- When thumbnail completes, update `thumbnail_path` on the DB record
+- Gallery already handles null `thumbnail_path` by falling back to `storage_path`
 
 ## Git state
 
