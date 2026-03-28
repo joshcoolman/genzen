@@ -32,7 +32,7 @@ async function urlToBase64(url: string): Promise<string> {
 
 export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   const { session } = useAuth()
-  const userImages = useUserImages(session?.user?.id)
+  const userImages = useUserImages(session?.user.id)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
