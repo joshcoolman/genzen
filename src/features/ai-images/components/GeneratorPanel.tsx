@@ -31,6 +31,7 @@ interface GeneratorPanelProps {
   error: string | null
   describe?: ReturnType<typeof useDescribeJson>
   mode?: 'generate' | 'edit'
+  modelDisplay?: 'panel' | 'dropdown'
   providerOverride?: 'fal' | 'google'
   onProviderOverrideChange?: (value: 'fal' | 'google' | undefined) => void
 }
@@ -43,6 +44,7 @@ export function GeneratorPanel({
   error,
   describe,
   mode = 'generate',
+  modelDisplay = 'panel',
   providerOverride,
   onProviderOverrideChange,
 }: GeneratorPanelProps) {
@@ -195,7 +197,7 @@ export function GeneratorPanel({
 
       {/* Model selector */}
       <ModelSelector
-        display="panel"
+        display={modelDisplay}
         mode="multi"
         persistKey="genzen:model-panel:expanded"
         selectedIds={modelSelector.selectedIds}

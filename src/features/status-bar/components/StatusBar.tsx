@@ -16,7 +16,7 @@ export function StatusBar({ onOpenPrompts }: StatusBarProps) {
 
   return (
     <div
-      className="fixed bottom-6 left-6 z-40 flex items-center gap-3 rounded-[10px] px-3.5 py-2 animate-in fade-in slide-in-from-bottom-2 duration-300"
+      className="fixed bottom-6 left-6 z-40 hidden items-center gap-3 rounded-[10px] px-3.5 py-2 animate-in fade-in slide-in-from-bottom-2 duration-300 xs:flex"
       style={{
         background: '#141414',
         border: '1px solid #2a2a2a',
