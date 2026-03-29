@@ -6,13 +6,14 @@ import { SourceImagePreview } from '@/components/SourceImagePreview/SourceImageP
 import { DescribeImageButton } from '@/components/DescribeImageButton'
 import { ModelPickerButton } from '@/components/ModelPickerButton'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect/AspectRatioSelect'
-import { IMAGE_INPUT_MODELS } from '@/features/ai-images/models'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 
 interface ScenesPanelProps {
   state: ScenesState
 }
 
 export function ScenesPanel({ state }: ScenesPanelProps) {
+  const { enabledImageInputModels } = useEnabledModels()
   const nonEmptyCells = state.cells.filter((c) => c.prompt.trim()).length
   const canGenerateImages = nonEmptyCells > 0 && !state.isGeneratingAll
   const hasAnyGenerations = state.cells.some((c) => c.generations.length > 0)
@@ -64,10 +65,10 @@ export function ScenesPanel({ state }: ScenesPanelProps) {
             Model
           </label>
           <ModelPickerButton
-            models={IMAGE_INPUT_MODELS}
+            models={enabledImageInputModels}
             selectedId={state.model.id}
             onSelect={(id) => {
-              const m = IMAGE_INPUT_MODELS.find((model) => model.id === id)
+              const m = enabledImageInputModels.find((model) => model.id === id)
               if (m) state.setModel(m)
             }}
           />

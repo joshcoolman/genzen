@@ -27,6 +27,15 @@ export function ModelSelect({
   disabled,
   className,
 }: ModelSelectProps) {
+  if (models.length <= 1) {
+    const name = models[0]?.name ?? 'No models'
+    return (
+      <span className={cn('text-xs text-muted-foreground', className)}>
+        {name}
+      </span>
+    )
+  }
+
   return (
     <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger className={cn('w-40 shrink-0', className)}>

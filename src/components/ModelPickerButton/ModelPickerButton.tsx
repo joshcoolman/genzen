@@ -16,6 +16,14 @@ export function ModelPickerButton({
   const [open, setOpen] = useState(false)
   const selected = models.find((m) => m.id === selectedId)
 
+  if (models.length <= 1) {
+    return (
+      <span className={`truncate text-[11px] text-white/70 ${className ?? ''}`}>
+        {models[0]?.name ?? 'No models'}
+      </span>
+    )
+  }
+
   return (
     <div className={`relative min-w-0 flex-1 ${className ?? ''}`}>
       <button

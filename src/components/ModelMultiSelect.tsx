@@ -16,6 +16,14 @@ export function ModelMultiSelect({
   selectedIds,
   onToggle,
 }: ModelMultiSelectProps) {
+  if (models.length <= 1) {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {models[0]?.name ?? 'No models'}
+      </span>
+    )
+  }
+
   return (
     <div className="flex flex-wrap gap-1">
       {models.map((model) => {

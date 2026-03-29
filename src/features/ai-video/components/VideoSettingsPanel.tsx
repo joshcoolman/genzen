@@ -1,7 +1,8 @@
-import { ALL_VIDEO_MODELS, getVideoModel } from '../video-models'
+import { getVideoModel } from '../video-models'
 import type { VideoSettings } from '../types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 import { cn } from '@/lib/utils'
 
 interface VideoSettingsPanelProps {
@@ -21,8 +22,17 @@ export function VideoSettingsPanel({
   generating,
   firstFrameReady,
 }: VideoSettingsPanelProps) {
+  const { enabledVideoModels } = useEnabledModels()
   const selectedModel = getVideoModel(settings.videoModel)
   const durations = selectedModel?.durations ?? ['5', '10']
+
+  // Fallback if the currently selected model was disabled in settings
+  const isSelectedEnabled = enabledVideoModels.some(
+    (m) => m.id === settings.videoModel,
+  )
+  if (!isSelectedEnabled && enabledVideoModels.length > 0) {
+    onChange({ ...settings, videoModel: enabledVideoModels[0].id })
+  }
 
   function handleModelChange(modelId: string) {
     const model = getVideoModel(modelId)
@@ -41,7 +51,7 @@ export function VideoSettingsPanel({
       <div className="space-y-1.5">
         <label className="text-xs text-muted-foreground">Model</label>
         <div className="flex flex-wrap gap-1">
-          {ALL_VIDEO_MODELS.map((m) => (
+          {enabledVideoModels.map((m) => (
             <button
               key={m.id}
               onClick={() => handleModelChange(m.id)}

@@ -9,6 +9,7 @@ export interface ImageModel {
   provider?: ModelProvider
   supportsImageInput?: boolean
   imageInputModelId?: string
+  locked?: boolean
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -90,6 +91,14 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     provider: 'google',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
+    locked: true,
+  },
+  {
+    id: 'fal-ai/flux-pro/kontext/text-to-image',
+    name: 'FLUX Kontext Pro',
+    description: 'Pro img2img + text steering',
+    category: 'FLUX',
+    supportsImageInput: true,
   },
   {
     id: 'fal-ai/recraft/v3/text-to-image',
@@ -115,6 +124,20 @@ export const STORYBOARD_FRAME_MODEL = ALL_IMAGE_MODELS.find(
 export const CHARACTER_REF_MODEL = ALL_IMAGE_MODELS.find(
   (m) => m.id === 'fal-ai/flux/schnell',
 )!.id
+
+export const FLUX_KONTEXT_PRO_ID = ALL_IMAGE_MODELS.find(
+  (m) => m.id === 'fal-ai/flux-pro/kontext/text-to-image',
+)!.id
+
+export const KONTEXT_DEV_ID = ALL_IMAGE_MODELS.find(
+  (m) => m.id === 'fal-ai/flux-kontext/dev',
+)!.id
+
+export const KONTEXT_DEV_FALLBACK_ID = ALL_IMAGE_MODELS.find(
+  (m) => m.id === 'fal-ai/flux/dev',
+)!.id
+
+export const LOCKED_IMAGE_MODEL_ID = ALL_IMAGE_MODELS.find((m) => m.locked)!.id
 
 export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
   (m) => m.supportsImageInput,

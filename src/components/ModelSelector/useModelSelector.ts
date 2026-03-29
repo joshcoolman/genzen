@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDefaultSelectedId, getModelsByCapability } from './models'
 import type { ModelCapability, SelectionMode } from './types'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 
 interface UseModelSelectorOptions {
   capability: ModelCapability
@@ -27,7 +28,15 @@ export function useModelSelector({
   capability,
   mode,
 }: UseModelSelectorOptions) {
-  const models = useMemo(() => getModelsByCapability(capability), [capability])
+  const { isModelEnabled } = useEnabledModels()
+  const allModels = useMemo(
+    () => getModelsByCapability(capability),
+    [capability],
+  )
+  const models = useMemo(
+    () => allModels.filter((m) => isModelEnabled(m.id)),
+    [allModels, isModelEnabled],
+  )
   const modelIds = useMemo(() => models.map((m) => m.id), [models])
 
   const [selectedIds, setSelectedIds] = useState<Array<string>>(() => {

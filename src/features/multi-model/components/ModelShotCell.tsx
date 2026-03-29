@@ -5,6 +5,7 @@ import type { SavedAiImage } from '@/features/ai-images/types'
 import type { ModelCellState } from '../types'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ModelPickerButton } from '@/components/ModelPickerButton'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 
 interface ModelShotCellProps {
   cell: ModelCellState
@@ -27,6 +28,7 @@ export function ModelShotCell({
   onOpenLightbox,
   disabled,
 }: ModelShotCellProps) {
+  const { enabledImageModels } = useEnabledModels()
   const [imgLoaded, setImgLoaded] = useState(false)
 
   const latestGenIndex = cell.currentSlideIndex
@@ -84,7 +86,7 @@ export function ModelShotCell({
         </button>
 
         <ModelPickerButton
-          models={ALL_IMAGE_MODELS}
+          models={enabledImageModels}
           selectedId={cell.model.id}
           onSelect={(id) => {
             const m = ALL_IMAGE_MODELS.find((model) => model.id === id)

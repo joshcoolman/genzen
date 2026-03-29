@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { TEXT_MODELS } from '../text-models'
 import { DEFAULT_NEGATIVE_PROMPT, DEFAULT_SYSTEM_PROMPT } from '../types'
 import { runPromptStudio } from '../server/run-prompt-studio.server'
 import { usePromptSets } from './usePromptSets'
 import type { ModelResult } from '../types'
 import { useAuth } from '@/lib/auth'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 
 const STORAGE_KEY = 'prompt-studio-settings'
 const DEFAULT_PROMPT =
@@ -36,6 +36,7 @@ function save(systemPrompt: string, negativePrompt: string) {
 
 export function usePromptStudio() {
   const { session } = useAuth()
+  const { enabledTextModels } = useEnabledModels()
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
 
   const saved = loadSaved()
@@ -46,7 +47,7 @@ export function usePromptStudio() {
     saved?.negativePrompt ?? DEFAULT_NEGATIVE_PROMPT,
   )
   const [selectedModelIds, setSelectedModelIds] = useState<Array<string>>(
-    TEXT_MODELS.map((m) => m.id),
+    enabledTextModels.map((m) => m.id),
   )
   const [results, setResults] = useState<Array<ModelResult>>([])
   const [running, setRunning] = useState(false)
@@ -84,19 +85,22 @@ export function usePromptStudio() {
     setNegativePrompt(DEFAULT_NEGATIVE_PROMPT)
     setImageUrl(null)
     setImageBase64(null)
-    setSelectedModelIds(TEXT_MODELS.map((m) => m.id))
+    setSelectedModelIds(enabledTextModels.map((m) => m.id))
     promptSets.setActiveSetId(null)
-  }, [promptSets])
+  }, [promptSets, enabledTextModels])
 
-  const setImage = useCallback((url: string, base64: string) => {
-    setImageUrl(url)
-    setImageBase64(base64)
-    // Auto-deselect non-vision models
-    const visionIds = TEXT_MODELS.filter((m) => m.supportsVision).map(
-      (m) => m.id,
-    )
-    setSelectedModelIds((prev) => prev.filter((id) => visionIds.includes(id)))
-  }, [])
+  const setImage = useCallback(
+    (url: string, base64: string) => {
+      setImageUrl(url)
+      setImageBase64(base64)
+      // Auto-deselect non-vision models
+      const visionIds = enabledTextModels
+        .filter((m) => m.supportsVision)
+        .map((m) => m.id)
+      setSelectedModelIds((prev) => prev.filter((id) => visionIds.includes(id)))
+    },
+    [enabledTextModels],
+  )
 
   const clearImage = useCallback(() => {
     setImageUrl(null)
@@ -107,14 +111,14 @@ export function usePromptStudio() {
     (id: string) => {
       // Prevent selecting non-vision models when image is attached
       if (imageBase64) {
-        const model = TEXT_MODELS.find((m) => m.id === id)
+        const model = enabledTextModels.find((m) => m.id === id)
         if (model && !model.supportsVision) return
       }
       setSelectedModelIds((prev) =>
         prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
       )
     },
-    [imageBase64],
+    [imageBase64, enabledTextModels],
   )
 
   const run = useCallback(async () => {
@@ -211,6 +215,7 @@ export function usePromptStudio() {
     loadSet,
     saveAsNew,
     updateCurrentSet,
+    enabledTextModels,
     sidebarOpen,
     setSidebarOpen,
   }
