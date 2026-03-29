@@ -5,7 +5,7 @@ import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import {
   checkAndDeductCredits,
-  refundCredits,
+  withCreditRefund,
 } from '@/features/credits/server/check-credits.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
@@ -95,237 +95,243 @@ export const generateImage = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    // Create Supabase client authenticated as the user
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: { Authorization: `Bearer ${data.accessToken}` },
-        },
+    return withCreditRefund(
+      creditResult.userId,
+      creditResult.cost,
+      'image_gen',
+      async () => {
+        // Create Supabase client authenticated as the user
+        const supabase = createClient(
+          process.env.VITE_SUPABASE_URL!,
+          process.env.VITE_SUPABASE_ANON_KEY!,
+          {
+            global: {
+              headers: { Authorization: `Bearer ${data.accessToken}` },
+            },
+          },
+        )
+
+        const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
+
+        let falModelId = model
+        let effectivePrompt = prompt.trim()
+        let imageUrl: string | null = null
+        let sourceBase64Data: string | null = null
+
+        if (sourceImageUrl) {
+          imageUrl = sourceImageUrl
+          falModelId = modelDef?.imageInputModelId ?? model
+        } else if (sourceImageBase64) {
+          // Strip data URL prefix and decode to buffer
+          const base64Data = sourceImageBase64.replace(
+            /^data:image\/\w+;base64,/,
+            '',
+          )
+          const buffer = Buffer.from(base64Data, 'base64')
+
+          // Detect mime type from magic bytes
+          let mimeType:
+            | 'image/jpeg'
+            | 'image/png'
+            | 'image/gif'
+            | 'image/webp' = 'image/jpeg'
+          const bytes = new Uint8Array(buffer.slice(0, 4))
+          if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+            mimeType = 'image/png'
+          } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
+            mimeType = 'image/gif'
+          } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
+            mimeType = 'image/webp'
+          }
+
+          // If no user prompt, ask Haiku for a plain factual description of the image
+          if (!effectivePrompt) {
+            try {
+              effectivePrompt = await describeImage(base64Data, 'anchor')
+            } catch {
+              effectivePrompt = 'image'
+            }
+          }
+
+          // Store raw base64 for Google path
+          sourceBase64Data = base64Data
+
+          // Upload to FAL storage (only needed for FAL path)
+          if (!useGoogle) {
+            imageUrl = await fal.storage.upload(
+              new Blob([buffer], { type: mimeType }),
+            )
+          }
+
+          // Use image-mode endpoint if specified
+          falModelId = modelDef?.imageInputModelId ?? model
+        }
+
+        // Save the user-facing prompt before any model-specific wrapping
+        const metadataPrompt = effectivePrompt
+
+        // Apply refine wrapping for FAL only
+        if (sourceImageUrl && isRefine) {
+          effectivePrompt = buildRefinePrompt(effectivePrompt)
+        }
+
+        // Fetch reference images -- as base64 for Google, as FAL URLs for FAL
+        let referenceUrls: Array<string> = []
+        let referenceImagesBase64: Array<string> = []
+        if (data.referenceImageIds?.length) {
+          const refImages = await supabase
+            .from('user_images')
+            .select('id, storage_path')
+            .in('id', data.referenceImageIds)
+            .eq('user_id', user.id)
+
+          if (refImages.data?.length) {
+            const storage = createImageStorage(supabase)
+            if (useGoogle) {
+              // Google path: fetch as base64
+              const base64Results = await Promise.all(
+                refImages.data.map(async (ref) => {
+                  if (!ref.storage_path) return null
+                  const signedUrl = await storage.getUrl(ref.storage_path)
+                  if (!signedUrl) return null
+                  const res = await fetch(signedUrl)
+                  const buf = await res.arrayBuffer()
+                  return Buffer.from(buf).toString('base64')
+                }),
+              )
+              referenceImagesBase64 = base64Results.filter(
+                (b): b is string => b !== null,
+              )
+            } else {
+              // FAL path: upload to FAL storage
+              const uploads = await Promise.all(
+                refImages.data.map(async (ref) => {
+                  if (!ref.storage_path) return null
+                  const signedUrl = await storage.getUrl(ref.storage_path)
+                  if (!signedUrl) return null
+                  const res = await fetch(signedUrl)
+                  const buf = await res.arrayBuffer()
+                  return uploadBufferToFal(buf)
+                }),
+              )
+              referenceUrls = uploads.filter((u): u is string => u !== null)
+            }
+          }
+
+          // Reference images require image-input model variant
+          if (
+            (referenceUrls.length > 0 || referenceImagesBase64.length > 0) &&
+            !imageUrl
+          ) {
+            falModelId = modelDef?.imageInputModelId ?? model
+          }
+        }
+
+        // --- Google provider: route through submitGeneration ---
+        if (useGoogle) {
+          const result = await submitGeneration({
+            accessToken: data.accessToken,
+            userId: user.id,
+            prompt: effectivePrompt,
+            modelId: falModelId,
+            aspectRatio,
+            imageBase64: sourceBase64Data ?? undefined,
+            referenceImagesBase64:
+              referenceImagesBase64.length > 0
+                ? referenceImagesBase64
+                : undefined,
+            providerOverride,
+            metadata: {
+              ...(sourceImageBase64 ? { has_source_image: true } : {}),
+              ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
+              ...(data.referenceImageIds?.length
+                ? { reference_image_ids: data.referenceImageIds }
+                : {}),
+              ...(data.parentImageId
+                ? {
+                    source_image_id: data.parentImageId,
+                    generation_type: 'variation',
+                  }
+                : {}),
+            },
+          })
+
+          return {
+            recordId: result.recordId,
+            request_id: result.request_id,
+            prompt,
+            model,
+          }
+        }
+
+        // --- FAL provider: existing queue-based path ---
+        // Combine source image + ref images + style refs into imageUrls
+        const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...referenceUrls]
+
+        // Build FAL input using schema-driven param resolution
+        const falInput = await buildFalInput({
+          modelId: falModelId,
+          prompt: effectivePrompt,
+          aspectRatio,
+          ...(allImageUrls.length > 0 ? { imageUrls: allImageUrls } : {}),
+          safetyLevel: 'permissive',
+        })
+
+        // Submit to FAL async queue (returns immediately)
+        const webhookUrl = getFalWebhookUrl()
+
+        const { request_id } = await (fal.queue.submit as any)(falModelId, {
+          input: falInput,
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
+
+        // Create database record with pending status
+        const { data: record, error: insertError } = await supabase
+          .from('user_images')
+          .insert({
+            user_id: user.id,
+            request_id: request_id,
+            status: 'pending',
+            source: 'ai_generated',
+            title: 'Generating...',
+            sort_order: Date.now() / 1000,
+            ...(data.idempotencyKey
+              ? { idempotency_key: data.idempotencyKey }
+              : {}),
+            generation_metadata: {
+              prompt: metadataPrompt,
+              model,
+              fal_model_id: falModelId,
+              submitted_at: new Date().toISOString(),
+              ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+              ...(sourceImageBase64 ? { has_source_image: true } : {}),
+              ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
+              ...(data.referenceImageIds?.length
+                ? { reference_image_ids: data.referenceImageIds }
+                : {}),
+              ...(data.parentImageId
+                ? {
+                    source_image_id: data.parentImageId,
+                    generation_type: 'variation',
+                  }
+                : {}),
+            },
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          throw new Error(
+            `Failed to create image record: ${insertError.message}`,
+          )
+        }
+
+        return {
+          recordId: record.id,
+          request_id,
+          prompt,
+          model,
+        }
       },
     )
-
-    const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
-
-    let falModelId = model
-    let effectivePrompt = prompt.trim()
-    let imageUrl: string | null = null
-    let sourceBase64Data: string | null = null
-
-    if (sourceImageUrl) {
-      imageUrl = sourceImageUrl
-      falModelId = modelDef?.imageInputModelId ?? model
-    } else if (sourceImageBase64) {
-      // Strip data URL prefix and decode to buffer
-      const base64Data = sourceImageBase64.replace(
-        /^data:image\/\w+;base64,/,
-        '',
-      )
-      const buffer = Buffer.from(base64Data, 'base64')
-
-      // Detect mime type from magic bytes
-      let mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' =
-        'image/jpeg'
-      const bytes = new Uint8Array(buffer.slice(0, 4))
-      if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-        mimeType = 'image/png'
-      } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-        mimeType = 'image/gif'
-      } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-        mimeType = 'image/webp'
-      }
-
-      // If no user prompt, ask Haiku for a plain factual description of the image
-      if (!effectivePrompt) {
-        try {
-          effectivePrompt = await describeImage(base64Data, 'anchor')
-        } catch {
-          effectivePrompt = 'image'
-        }
-      }
-
-      // Store raw base64 for Google path
-      sourceBase64Data = base64Data
-
-      // Upload to FAL storage (only needed for FAL path)
-      if (!useGoogle) {
-        imageUrl = await fal.storage.upload(
-          new Blob([buffer], { type: mimeType }),
-        )
-      }
-
-      // Use image-mode endpoint if specified
-      falModelId = modelDef?.imageInputModelId ?? model
-    }
-
-    // Save the user-facing prompt before any model-specific wrapping
-    const metadataPrompt = effectivePrompt
-
-    // Apply refine wrapping for FAL only
-    if (sourceImageUrl && isRefine) {
-      effectivePrompt = buildRefinePrompt(effectivePrompt)
-    }
-
-    // Fetch reference images -- as base64 for Google, as FAL URLs for FAL
-    let referenceUrls: Array<string> = []
-    let referenceImagesBase64: Array<string> = []
-    if (data.referenceImageIds?.length) {
-      const refImages = await supabase
-        .from('user_images')
-        .select('id, storage_path')
-        .in('id', data.referenceImageIds)
-        .eq('user_id', user.id)
-
-      if (refImages.data?.length) {
-        const storage = createImageStorage(supabase)
-        if (useGoogle) {
-          // Google path: fetch as base64
-          const base64Results = await Promise.all(
-            refImages.data.map(async (ref) => {
-              if (!ref.storage_path) return null
-              const signedUrl = await storage.getUrl(ref.storage_path)
-              if (!signedUrl) return null
-              const res = await fetch(signedUrl)
-              const buf = await res.arrayBuffer()
-              return Buffer.from(buf).toString('base64')
-            }),
-          )
-          referenceImagesBase64 = base64Results.filter(
-            (b): b is string => b !== null,
-          )
-        } else {
-          // FAL path: upload to FAL storage
-          const uploads = await Promise.all(
-            refImages.data.map(async (ref) => {
-              if (!ref.storage_path) return null
-              const signedUrl = await storage.getUrl(ref.storage_path)
-              if (!signedUrl) return null
-              const res = await fetch(signedUrl)
-              const buf = await res.arrayBuffer()
-              return uploadBufferToFal(buf)
-            }),
-          )
-          referenceUrls = uploads.filter((u): u is string => u !== null)
-        }
-      }
-
-      // Reference images require image-input model variant
-      if (
-        (referenceUrls.length > 0 || referenceImagesBase64.length > 0) &&
-        !imageUrl
-      ) {
-        falModelId = modelDef?.imageInputModelId ?? model
-      }
-    }
-
-    // --- Google provider: route through submitGeneration ---
-    if (useGoogle) {
-      const result = await submitGeneration({
-        accessToken: data.accessToken,
-        userId: user.id,
-        prompt: effectivePrompt,
-        modelId: falModelId,
-        aspectRatio,
-        imageBase64: sourceBase64Data ?? undefined,
-        referenceImagesBase64:
-          referenceImagesBase64.length > 0 ? referenceImagesBase64 : undefined,
-        providerOverride,
-        metadata: {
-          ...(sourceImageBase64 ? { has_source_image: true } : {}),
-          ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
-          ...(data.referenceImageIds?.length
-            ? { reference_image_ids: data.referenceImageIds }
-            : {}),
-          ...(data.parentImageId
-            ? {
-                source_image_id: data.parentImageId,
-                generation_type: 'variation',
-              }
-            : {}),
-        },
-      })
-
-      return {
-        recordId: result.recordId,
-        request_id: result.request_id,
-        prompt,
-        model,
-      }
-    }
-
-    // --- FAL provider: existing queue-based path ---
-    // Combine source image + ref images + style refs into imageUrls
-    const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...referenceUrls]
-
-    // Build FAL input using schema-driven param resolution
-    const falInput = await buildFalInput({
-      modelId: falModelId,
-      prompt: effectivePrompt,
-      aspectRatio,
-      ...(allImageUrls.length > 0 ? { imageUrls: allImageUrls } : {}),
-      safetyLevel: 'permissive',
-    })
-
-    // Submit to FAL async queue (returns immediately)
-    const webhookUrl = getFalWebhookUrl()
-
-    let request_id: string
-    try {
-      const result = await (fal.queue.submit as any)(falModelId, {
-        input: falInput,
-        ...(webhookUrl ? { webhookUrl } : {}),
-      })
-      request_id = result.request_id
-    } catch (err) {
-      await refundCredits(user.id, creditResult.cost, 'image_gen')
-      throw err
-    }
-
-    // Create database record with pending status
-    const { data: record, error: insertError } = await supabase
-      .from('user_images')
-      .insert({
-        user_id: user.id,
-        request_id: request_id,
-        status: 'pending',
-        source: 'ai_generated',
-        title: 'Generating...',
-        sort_order: Date.now() / 1000,
-        ...(data.idempotencyKey
-          ? { idempotency_key: data.idempotencyKey }
-          : {}),
-        generation_metadata: {
-          prompt: metadataPrompt,
-          model,
-          fal_model_id: falModelId,
-          submitted_at: new Date().toISOString(),
-          ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-          ...(sourceImageBase64 ? { has_source_image: true } : {}),
-          ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
-          ...(data.referenceImageIds?.length
-            ? { reference_image_ids: data.referenceImageIds }
-            : {}),
-          ...(data.parentImageId
-            ? {
-                source_image_id: data.parentImageId,
-                generation_type: 'variation',
-              }
-            : {}),
-        },
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      await refundCredits(user.id, creditResult.cost, 'image_gen')
-      throw new Error(`Failed to create image record: ${insertError.message}`)
-    }
-
-    return {
-      recordId: record.id,
-      request_id,
-      prompt,
-      model,
-    }
   })

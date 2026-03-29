@@ -5,7 +5,7 @@ import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import {
   checkAndDeductCredits,
-  refundCredits,
+  withCreditRefund,
 } from '@/features/credits/server/check-credits.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
@@ -75,97 +75,99 @@ export const editImage = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    // Fetch source image storage path -- enforce ownership
-    const { data: sourceImage } = await supabase
-      .from('user_images')
-      .select('storage_path, created_at, generation_metadata')
-      .eq('id', sourceImageId)
-      .eq('user_id', user.id)
-      .single()
+    return withCreditRefund(
+      creditResult.userId,
+      creditResult.cost,
+      'edit',
+      async () => {
+        // Fetch source image storage path -- enforce ownership
+        const { data: sourceImage } = await supabase
+          .from('user_images')
+          .select('storage_path, created_at, generation_metadata')
+          .eq('id', sourceImageId)
+          .eq('user_id', user.id)
+          .single()
 
-    if (!sourceImage?.storage_path) {
-      throw new Error('Source image not found')
-    }
+        if (!sourceImage?.storage_path) {
+          throw new Error('Source image not found')
+        }
 
-    // Get signed URL and fetch image bytes
-    const storage = createImageStorage(supabase)
-    const signedUrl = await storage.getUrl(sourceImage.storage_path)
+        // Get signed URL and fetch image bytes
+        const storage = createImageStorage(supabase)
+        const signedUrl = await storage.getUrl(sourceImage.storage_path)
 
-    if (!signedUrl) {
-      throw new Error('Failed to get signed URL for source image')
-    }
+        if (!signedUrl) {
+          throw new Error('Failed to get signed URL for source image')
+        }
 
-    const imageRes = await fetch(signedUrl)
-    const buffer = await imageRes.arrayBuffer()
+        const imageRes = await fetch(signedUrl)
+        const buffer = await imageRes.arrayBuffer()
 
-    // Upload to FAL storage using shared utility
-    const falImageUrl = await uploadBufferToFal(buffer)
+        // Upload to FAL storage using shared utility
+        const falImageUrl = await uploadBufferToFal(buffer)
 
-    // Fetch and upload reference images in parallel
-    const referenceUrls: Array<string> = []
-    if (referenceImageIds?.length) {
-      const refImages = await supabase
-        .from('user_images')
-        .select('id, storage_path')
-        .in('id', referenceImageIds)
-        .eq('user_id', user.id)
+        // Fetch and upload reference images in parallel
+        const referenceUrls: Array<string> = []
+        if (referenceImageIds?.length) {
+          const refImages = await supabase
+            .from('user_images')
+            .select('id, storage_path')
+            .in('id', referenceImageIds)
+            .eq('user_id', user.id)
 
-      if (refImages.data?.length) {
-        const uploads = await Promise.all(
-          refImages.data.map(async (ref) => {
-            if (!ref.storage_path) return null
-            const refSignedUrl = await storage.getUrl(ref.storage_path)
-            if (!refSignedUrl) return null
-            const res = await fetch(refSignedUrl)
-            const buf = await res.arrayBuffer()
-            return uploadBufferToFal(buf)
-          }),
-        )
-        referenceUrls.push(...uploads.filter((u): u is string => u !== null))
-      }
-    }
+          if (refImages.data?.length) {
+            const uploads = await Promise.all(
+              refImages.data.map(async (ref) => {
+                if (!ref.storage_path) return null
+                const refSignedUrl = await storage.getUrl(ref.storage_path)
+                if (!refSignedUrl) return null
+                const res = await fetch(refSignedUrl)
+                const buf = await res.arrayBuffer()
+                return uploadBufferToFal(buf)
+              }),
+            )
+            referenceUrls.push(
+              ...uploads.filter((u): u is string => u !== null),
+            )
+          }
+        }
 
-    // Submit to selected edit model using schema-driven param resolution
-    const falInput = await buildFalInput({
-      modelId: falEditModel,
-      prompt: editPrompt.trim(),
-      aspectRatio,
-      imageUrls: [falImageUrl, ...referenceUrls],
-      safetyLevel: 'permissive',
-      extraParams: { num_images: numImagesToGenerate },
-    })
+        // Submit to selected edit model using schema-driven param resolution
+        const falInput = await buildFalInput({
+          modelId: falEditModel,
+          prompt: editPrompt.trim(),
+          aspectRatio,
+          imageUrls: [falImageUrl, ...referenceUrls],
+          safetyLevel: 'permissive',
+          extraParams: { num_images: numImagesToGenerate },
+        })
 
-    const webhookUrl = getFalWebhookUrl()
+        const webhookUrl = getFalWebhookUrl()
 
-    let request_id: string
-    try {
-      const result = await (fal.queue.submit as any)(falEditModel, {
-        input: falInput,
-        ...(webhookUrl ? { webhookUrl } : {}),
-      })
-      request_id = result.request_id
-    } catch (err) {
-      await refundCredits(user.id, creditResult.cost, 'edit')
-      throw err
-    }
+        const { request_id } = await (fal.queue.submit as any)(falEditModel, {
+          input: falInput,
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
 
-    const { recordId } = await createPendingGeneration({
-      accessToken: data.accessToken,
-      userId: user.id,
-      requestId: request_id,
-      generationType: 'edit',
-      falModelId: falEditModel,
-      prompt: editPrompt.trim(),
-      aspectRatio,
-      title: 'Editing...',
-      idempotencyKey: data.idempotencyKey,
-      extraMetadata: {
-        source_image_id: sourceImageId,
-        ...(referenceImageIds?.length
-          ? { reference_image_ids: referenceImageIds }
-          : {}),
+        const { recordId } = await createPendingGeneration({
+          accessToken: data.accessToken,
+          userId: user.id,
+          requestId: request_id,
+          generationType: 'edit',
+          falModelId: falEditModel,
+          prompt: editPrompt.trim(),
+          aspectRatio,
+          title: 'Editing...',
+          idempotencyKey: data.idempotencyKey,
+          extraMetadata: {
+            source_image_id: sourceImageId,
+            ...(referenceImageIds?.length
+              ? { reference_image_ids: referenceImageIds }
+              : {}),
+          },
+        })
+
+        return { recordId, request_id }
       },
-    })
-
-    return { recordId, request_id }
+    )
   })

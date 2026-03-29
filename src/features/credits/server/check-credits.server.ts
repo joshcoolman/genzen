@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { addCreditsInternal } from './add-credits.server'
-import type { CreditReason } from '@/features/credits'
+import type { CreditReason, DeductionReason } from '@/features/credits'
 import { requireAuth } from '@/lib/server/auth.server'
 import {
   CREDIT_COSTS,
@@ -16,7 +16,7 @@ const CheckAndDeductSchema = z.object({
 
 export async function checkAndDeductCredits(
   accessToken: string,
-  reason: CreditReason,
+  reason: DeductionReason,
   quantity: number = 1,
 ): Promise<{
   allowed: boolean
@@ -31,7 +31,7 @@ export async function checkAndDeductCredits(
   })
   const user = await requireAuth(validated.accessToken)
   const repo = getCreditRepository()
-  const unitCost = CREDIT_COSTS[reason as keyof typeof CREDIT_COSTS]
+  const unitCost = CREDIT_COSTS[reason]
   const cost = unitCost * validated.quantity
   const result = await repo.deductCredits(user.id, cost, reason)
   if (!result.success) {
