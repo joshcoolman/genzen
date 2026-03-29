@@ -1,9 +1,8 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { CheckCircle2, Circle } from 'lucide-react'
-import type { SlotTier } from '@/lib/model-slots'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
-import { SLOT_DEFAULTS, useModelSlots } from '@/lib/model-slots'
+import { useEnabledModels } from '@/lib/use-enabled-models'
 import { navItems } from '@/lib/nav-items'
 import { useNavVisibility } from '@/lib/use-nav-visibility'
 import { cn } from '@/lib/utils'
@@ -17,34 +16,14 @@ export const Route = createFileRoute('/dashboard/settings')({
   component: SettingsPage,
 })
 
-const SLOT_CONFIG: Array<{
-  tier: SlotTier
-  label: string
-  description: string
-  models: Array<{ id: string; name: string }>
-}> = [
-  {
-    tier: 'draft',
-    label: 'Draft',
-    description: 'Fast iteration, brainstorming, quick previews',
-    models: ALL_IMAGE_MODELS.map((m) => ({ id: m.id, name: m.name })),
-  },
-  {
-    tier: 'quality',
-    label: 'Quality',
-    description: 'Final renders, hero images, polished output',
-    models: ALL_IMAGE_MODELS.map((m) => ({ id: m.id, name: m.name })),
-  },
-  {
-    tier: 'video',
-    label: 'Video',
-    description: 'Video generation model',
-    models: ALL_VIDEO_MODELS.map((m) => ({ id: m.id, name: m.name })),
-  },
-]
-
 function SettingsPage() {
-  const { slots, setSlot } = useModelSlots()
+  const {
+    isModelEnabled,
+    toggleModel,
+    resetToDefaults,
+    enabledImageCount,
+    enabledVideoCount,
+  } = useEnabledModels()
   const { toggleItem, isItemHidden, showMoreNav, toggleShowMore } =
     useNavVisibility()
 
@@ -58,45 +37,108 @@ function SettingsPage() {
         <div>
           <h2 className="text-lg font-medium">Models</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose which model fills each slot. Draft for speed, Quality for
-            polish.
+            Manage which models appear in selectors across the app.
           </p>
         </div>
 
-        <div className="space-y-4">
-          {SLOT_CONFIG.map(({ tier, label, description, models }) => (
-            <div
-              key={tier}
-              className="flex items-center justify-between gap-4 py-3 border-b border-border last:border-0"
-            >
-              <div className="min-w-0">
-                <div className="text-sm font-medium">{label}</div>
-                <div className="text-xs text-muted-foreground">
-                  {description}
-                </div>
-              </div>
-              <select
-                value={slots[tier]}
-                onChange={(e) => setSlot(tier, e.target.value)}
-                className="rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm text-foreground min-w-[200px]"
-              >
-                {models.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                    {m.id === SLOT_DEFAULTS[tier] ? ' (default)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Text to Image{' '}
+            <span className="text-xs font-normal">
+              ({enabledImageCount} of {ALL_IMAGE_MODELS.length} enabled)
+            </span>
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {ALL_IMAGE_MODELS.map((model) => {
+              const enabled = isModelEnabled(model.id)
+              const isLastEnabled = enabled && enabledImageCount === 1
+              return (
+                <button
+                  key={model.id}
+                  onClick={() => toggleModel(model.id)}
+                  disabled={isLastEnabled}
+                  className={cn(
+                    'flex items-start gap-2 rounded-md px-3 py-2 text-left transition-colors',
+                    isLastEnabled ? 'cursor-default' : 'cursor-pointer',
+                    enabled
+                      ? 'bg-accent-brand/10 text-foreground'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {enabled ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm truncate">{model.name}</span>
+                      {model.supportsImageInput && (
+                        <span className="shrink-0 rounded bg-accent-brand/15 px-1 py-px text-[10px] text-accent-brand">
+                          img
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] truncate text-[#7dac8e]">
+                      {model.description}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Video{' '}
+            <span className="text-xs font-normal">
+              ({enabledVideoCount} of {ALL_VIDEO_MODELS.length} enabled)
+            </span>
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {ALL_VIDEO_MODELS.map((model) => {
+              const enabled = isModelEnabled(model.id)
+              const isLastEnabled = enabled && enabledVideoCount === 1
+              return (
+                <button
+                  key={model.id}
+                  onClick={() => toggleModel(model.id)}
+                  disabled={isLastEnabled}
+                  className={cn(
+                    'flex items-start gap-2 rounded-md px-3 py-2 text-left transition-colors',
+                    isLastEnabled ? 'cursor-default' : 'cursor-pointer',
+                    enabled
+                      ? 'bg-accent-brand/10 text-foreground'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {enabled ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm truncate">{model.name}</span>
+                      {model.supportsFlf && (
+                        <span className="shrink-0 rounded bg-accent-brand/15 px-1 py-px text-[10px] text-accent-brand">
+                          FLF
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] truncate text-[#7dac8e]">
+                      {model.description}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <button
-          onClick={() => {
-            setSlot('draft', SLOT_DEFAULTS.draft)
-            setSlot('quality', SLOT_DEFAULTS.quality)
-            setSlot('video', SLOT_DEFAULTS.video)
-          }}
+          onClick={resetToDefaults}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Reset to defaults
