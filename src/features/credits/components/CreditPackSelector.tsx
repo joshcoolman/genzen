@@ -3,6 +3,8 @@ import { ActionButton } from '@/components/ActionButton'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { CREDIT_PACKS } from '@/features/credits'
 import { useCredits } from '@/features/credits/hooks/use-credits'
+import { purchaseCredits } from '@/features/credits/server/purchase-credits.server'
+import { useAuth } from '@/lib/auth'
 
 interface CreditPackSelectorProps {
   onPurchaseComplete?: (creditsAdded: number) => void
@@ -14,6 +16,8 @@ export function CreditPackSelector({
   compact,
 }: CreditPackSelectorProps) {
   const credits = useCredits()
+  const { session } = useAuth()
+  const accessToken = session?.access_token
   const [selectedPack, setSelectedPack] = useState<string>(
     CREDIT_PACKS[1].credits.toString(),
   )
@@ -25,11 +29,13 @@ export function CreditPackSelector({
   )
 
   async function handlePurchase() {
-    if (!activePack || purchasing) return
+    if (!activePack || purchasing || !accessToken) return
     setPurchasing(true)
     setPurchaseError(null)
     try {
-      await credits.add(activePack.credits, 'pack_purchase')
+      await purchaseCredits({
+        data: { accessToken, packCredits: activePack.credits },
+      })
       await credits.refresh()
       onPurchaseComplete?.(activePack.credits)
     } catch (err) {

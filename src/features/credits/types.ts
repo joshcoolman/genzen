@@ -1,4 +1,23 @@
-export type CreditReason =
+import { z } from 'zod'
+
+export const CREDIT_REASONS = [
+  'image_gen',
+  'variation',
+  'edit',
+  'first_frame',
+  'last_frame',
+  'video_gen',
+  'multishot_gen',
+  'pack_purchase',
+  'initial_grant',
+] as const
+
+export const CreditReasonSchema = z.enum(CREDIT_REASONS)
+
+export type CreditReason = (typeof CREDIT_REASONS)[number]
+
+export type DeductionReason = Extract<
+  CreditReason,
   | 'image_gen'
   | 'variation'
   | 'edit'
@@ -6,8 +25,7 @@ export type CreditReason =
   | 'last_frame'
   | 'video_gen'
   | 'multishot_gen'
-  | 'pack_purchase'
-  | 'initial_grant'
+>
 
 export interface CreditTransaction {
   id: string
@@ -19,6 +37,7 @@ export interface CreditTransaction {
 }
 
 export interface UsageStats {
+  today: number
   thisMonth: number
   dailyAverage: number
 }
@@ -42,7 +61,7 @@ export interface CreditRepository {
   getUsageStats: (userId: string) => Promise<UsageStats>
 }
 
-export const CREDIT_COSTS: Record<string, number> = {
+export const CREDIT_COSTS: Record<DeductionReason, number> = {
   image_gen: 1,
   variation: 1,
   edit: 1,

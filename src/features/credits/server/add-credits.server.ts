@@ -1,18 +1,23 @@
-import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 import type { CreditReason } from '@/features/credits'
-import { requireAuth } from '@/lib/server/auth.server'
-import { getCreditRepository } from '@/features/credits'
+import { CreditReasonSchema, getCreditRepository } from '@/features/credits'
 
-interface AddCreditsInput {
-  accessToken: string
-  amount: number
-  reason: CreditReason
+const AddCreditsSchema = z.object({
+  userId: z.string().min(1),
+  amount: z.number().int().positive(),
+  reason: CreditReasonSchema,
+})
+
+/**
+ * Internal-only function for adding credits. NOT a public server fn.
+ * Only callable from other server code (refunds, future Stripe webhook).
+ */
+export async function addCreditsInternal(
+  userId: string,
+  amount: number,
+  reason: CreditReason,
+): Promise<{ balance: number }> {
+  const validated = AddCreditsSchema.parse({ userId, amount, reason })
+  const repo = getCreditRepository()
+  return repo.addCredits(validated.userId, validated.amount, validated.reason)
 }
-
-export const addCredits = createServerFn({ method: 'POST' })
-  .inputValidator((data: AddCreditsInput) => data)
-  .handler(async ({ data }) => {
-    const user = await requireAuth(data.accessToken)
-    const repo = getCreditRepository()
-    return repo.addCredits(user.id, data.amount, data.reason)
-  })

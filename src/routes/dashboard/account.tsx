@@ -10,8 +10,6 @@ import {
   Video,
 } from 'lucide-react'
 import type { CreditReason, CreditTransaction } from '@/features/credits'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { StatsRow } from '@/components/StatsRow'
 import { SectionCard } from '@/components/SectionCard'
 import { useAuth } from '@/lib/auth'
@@ -137,9 +135,6 @@ function AccountPage() {
 
   // Credits state
   const [transactions, setTransactions] = useState<Array<CreditTransaction>>([])
-  const [couponCode, setCouponCode] = useState('')
-  const [clearingCredits, setClearingCredits] = useState(false)
-  const [addingTestCredits, setAddingTestCredits] = useState(false)
 
   const refreshTransactions = useCallback(() => {
     if (!session?.access_token) return
@@ -151,28 +146,6 @@ function AccountPage() {
   useEffect(() => {
     refreshTransactions()
   }, [refreshTransactions])
-
-  async function handleClearCredits() {
-    if (!credits.balance || clearingCredits) return
-    setClearingCredits(true)
-    try {
-      await credits.deduct(credits.balance, 'image_gen')
-      refreshTransactions()
-    } finally {
-      setClearingCredits(false)
-    }
-  }
-
-  async function handleAddTestCredits() {
-    if (addingTestCredits) return
-    setAddingTestCredits(true)
-    try {
-      await credits.add(50, 'initial_grant')
-      refreshTransactions()
-    } finally {
-      setAddingTestCredits(false)
-    }
-  }
 
   // Status state
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -278,6 +251,16 @@ function AccountPage() {
                   : 'Loading...',
             },
             {
+              label: 'Spent today',
+              labelClassName: 'text-warm-gold',
+              value: credits.usageStats
+                ? formatDollars(credits.usageStats.today)
+                : '--',
+              detail: credits.usageStats
+                ? `${credits.usageStats.today} credits`
+                : undefined,
+            },
+            {
               label: 'Usage this month',
               labelClassName: 'text-warm-gold',
               value: credits.usageStats
@@ -299,43 +282,7 @@ function AccountPage() {
             },
           ]}
         />
-        {import.meta.env.DEV && (
-          <div className="flex gap-3">
-            <button
-              onClick={handleAddTestCredits}
-              disabled={addingTestCredits}
-              className="text-xs text-muted-foreground hover:text-accent-brand transition-colors"
-            >
-              {addingTestCredits ? 'Adding...' : 'Dev: Add 50 Credits'}
-            </button>
-            {credits.balance !== null && credits.balance > 0 && (
-              <button
-                onClick={handleClearCredits}
-                disabled={clearingCredits}
-                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-              >
-                {clearingCredits ? 'Clearing...' : 'Dev: Clear Credits'}
-              </button>
-            )}
-          </div>
-        )}
-
-        <SectionCard
-          title="Add Credits"
-          footer={
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Enter coupon code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="w-44 h-9"
-              />
-              <Button variant="outline" size="sm" disabled={!couponCode}>
-                Redeem
-              </Button>
-            </div>
-          }
-        >
+        <SectionCard title="Add Credits">
           <div className="-mx-6 -my-6">
             <CreditPackSelector onPurchaseComplete={refreshTransactions} />
           </div>

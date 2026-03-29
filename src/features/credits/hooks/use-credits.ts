@@ -5,22 +5,15 @@ import {
   useEffect,
   useState,
 } from 'react'
-import type { CreditReason, UsageStats } from '@/features/credits'
+import type { UsageStats } from '@/features/credits'
 import { DOLLARS_PER_CREDIT } from '@/features/credits'
 import { getCredits } from '@/features/credits/server/get-credits.server'
-import { deductCredits } from '@/features/credits/server/deduct-credits.server'
-import { addCredits } from '@/features/credits/server/add-credits.server'
 
 export interface CreditsState {
   balance: number | null
   dollarBalance: string | null
   usageStats: UsageStats | null
   loading: boolean
-  deduct: (
-    amount: number,
-    reason: CreditReason,
-  ) => Promise<{ success: boolean; balance: number }>
-  add: (amount: number, reason: CreditReason) => Promise<{ balance: number }>
   refresh: () => Promise<void>
   showInsufficientCredits: (cost: number) => void
   isLow: boolean
@@ -32,8 +25,6 @@ const defaultState: CreditsState = {
   dollarBalance: null,
   usageStats: null,
   loading: false,
-  deduct: async () => ({ success: false, balance: 0 }),
-  add: async () => ({ balance: 0 }),
   refresh: async () => {},
   showInsufficientCredits: () => {},
   isLow: false,
@@ -65,32 +56,6 @@ export function useCreditsProvider(accessToken: string | undefined) {
     void refresh()
   }, [refresh])
 
-  const deduct = useCallback(
-    async (amount: number, reason: CreditReason) => {
-      if (!accessToken) return { success: false, balance: 0 }
-      const result = await deductCredits({
-        data: { accessToken, amount, reason },
-      })
-      setBalance(result.balance)
-      // Re-fetch authoritative balance from DB
-      void refresh()
-      return result
-    },
-    [accessToken, refresh],
-  )
-
-  const add = useCallback(
-    async (amount: number, reason: CreditReason) => {
-      if (!accessToken) return { balance: 0 }
-      const result = await addCredits({ data: { accessToken, amount, reason } })
-      setBalance(result.balance)
-      // Re-fetch authoritative balance from DB
-      void refresh()
-      return result
-    },
-    [accessToken, refresh],
-  )
-
   const dollarBalance =
     balance !== null ? `$${(balance * DOLLARS_PER_CREDIT).toFixed(2)}` : null
 
@@ -99,8 +64,6 @@ export function useCreditsProvider(accessToken: string | undefined) {
     dollarBalance,
     usageStats,
     loading,
-    deduct,
-    add,
     refresh,
     isLow: balance !== null && balance < 10,
     isEmpty: balance !== null && balance === 0,
