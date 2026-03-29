@@ -2,7 +2,10 @@ import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
 import sharp from 'sharp'
 import { requireAuth } from '@/lib/server/auth.server'
-import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import {
+  checkAndDeductCredits,
+  withCreditRefund,
+} from '@/features/credits/server/check-credits.server'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { createPendingGeneration } from '@/lib/server/create-pending-generation.server'
 import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
@@ -163,108 +166,115 @@ export const outpaintImage = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    // Source image URL is a signed Supabase URL or data URL — fetch into buffer
-    const imageRes = await fetch(data.sourceImageUrl)
-    const buffer = Buffer.from(await imageRes.arrayBuffer())
+    return withCreditRefund(
+      creditResult.userId,
+      creditResult.cost,
+      'image_gen',
+      async () => {
+        // Source image URL is a signed Supabase URL or data URL — fetch into buffer
+        const imageRes = await fetch(data.sourceImageUrl)
+        const buffer = Buffer.from(await imageRes.arrayBuffer())
 
-    let uploadBuffer: Buffer
-    let mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
-      'image/jpeg'
+        let uploadBuffer: Buffer
+        let mimeType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
+          'image/jpeg'
 
-    if (data.offset) {
-      // Compose at offset — always outputs PNG
-      uploadBuffer = await composeAtOffset(
-        buffer,
-        data.aspectRatio,
-        data.offset,
-      )
-      mimeType = 'image/png'
-    } else {
-      // Center (default behavior) — pass through original
-      uploadBuffer = buffer
-      const bytes = new Uint8Array(buffer)
-      if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-        mimeType = 'image/png'
-      } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-        mimeType = 'image/webp'
-      } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-        mimeType = 'image/gif'
-      }
-    }
+        if (data.offset) {
+          // Compose at offset — always outputs PNG
+          uploadBuffer = await composeAtOffset(
+            buffer,
+            data.aspectRatio,
+            data.offset,
+          )
+          mimeType = 'image/png'
+        } else {
+          // Center (default behavior) — pass through original
+          uploadBuffer = buffer
+          const bytes = new Uint8Array(buffer)
+          if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+            mimeType = 'image/png'
+          } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
+            mimeType = 'image/webp'
+          } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
+            mimeType = 'image/gif'
+          }
+        }
 
-    const isNanoBanana = data.model.includes('nano-banana')
-    const effectivePrompt = data.prompt
-      ? `${OUTPAINT_PROMPT} ${data.prompt}`
-      : OUTPAINT_PROMPT
+        const isNanoBanana = data.model.includes('nano-banana')
+        const effectivePrompt = data.prompt
+          ? `${OUTPAINT_PROMPT} ${data.prompt}`
+          : OUTPAINT_PROMPT
 
-    // --- Google provider path ---
-    if (useGoogle && isNanoBanana) {
-      const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
-      const prompt = supported
-        ? effectivePrompt
-        : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
+        // --- Google provider path ---
+        if (useGoogle && isNanoBanana) {
+          const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
+          const prompt = supported
+            ? effectivePrompt
+            : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
 
-      const imageBase64 = uploadBuffer.toString('base64')
+          const imageBase64 = uploadBuffer.toString('base64')
 
-      const result = await submitGeneration({
-        accessToken: data.accessToken,
-        userId: user.id,
-        prompt,
-        modelId: data.model,
-        aspectRatio: data.aspectRatio,
-        imageBase64,
-        metadata: {
-          generation_type: 'outpaint',
-        },
-      })
+          const result = await submitGeneration({
+            accessToken: data.accessToken,
+            userId: user.id,
+            prompt,
+            modelId: data.model,
+            aspectRatio: data.aspectRatio,
+            imageBase64,
+            metadata: {
+              generation_type: 'outpaint',
+            },
+          })
 
-      return { recordId: result.recordId }
-    }
+          return { recordId: result.recordId }
+        }
 
-    // --- FAL provider path ---
-    const falImageUrl = await fal.storage.upload(
-      new Blob([uploadBuffer], { type: mimeType }),
+        // --- FAL provider path ---
+        const falImageUrl = await fal.storage.upload(
+          new Blob([uploadBuffer], { type: mimeType }),
+        )
+
+        let falInput: Record<string, unknown>
+
+        if (isNanoBanana) {
+          const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
+          const prompt = supported
+            ? effectivePrompt
+            : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
+
+          falInput = {
+            prompt,
+            image_urls: [falImageUrl],
+            aspect_ratio: supported ? data.aspectRatio : 'auto',
+            safety_tolerance: 6,
+          }
+        } else {
+          falInput = await buildFalInput({
+            modelId: data.model,
+            prompt: effectivePrompt,
+            aspectRatio: data.aspectRatio,
+            imageUrls: [falImageUrl],
+            safetyLevel: 'default',
+          })
+        }
+
+        const webhookUrl = getFalWebhookUrl()
+        const { request_id } = await (fal.queue.submit as any)(data.model, {
+          input: falInput,
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
+
+        const { recordId } = await createPendingGeneration({
+          accessToken: data.accessToken,
+          userId: user.id,
+          requestId: request_id,
+          generationType: 'outpaint',
+          falModelId: data.model,
+          prompt: effectivePrompt,
+          aspectRatio: data.aspectRatio,
+        })
+
+        return { recordId }
+      },
     )
-
-    let falInput: Record<string, unknown>
-
-    if (isNanoBanana) {
-      const supported = NANO_BANANA_RATIOS.has(data.aspectRatio)
-      const prompt = supported
-        ? effectivePrompt
-        : `${effectivePrompt} Target aspect ratio: ${data.aspectRatio}.`
-
-      falInput = {
-        prompt,
-        image_urls: [falImageUrl],
-        aspect_ratio: supported ? data.aspectRatio : 'auto',
-        safety_tolerance: 6,
-      }
-    } else {
-      falInput = await buildFalInput({
-        modelId: data.model,
-        prompt: effectivePrompt,
-        aspectRatio: data.aspectRatio,
-        imageUrls: [falImageUrl],
-        safetyLevel: 'default',
-      })
-    }
-
-    const webhookUrl = getFalWebhookUrl()
-    const { request_id } = await (fal.queue.submit as any)(data.model, {
-      input: falInput,
-      ...(webhookUrl ? { webhookUrl } : {}),
-    })
-
-    const { recordId } = await createPendingGeneration({
-      accessToken: data.accessToken,
-      userId: user.id,
-      requestId: request_id,
-      generationType: 'outpaint',
-      falModelId: data.model,
-      prompt: effectivePrompt,
-      aspectRatio: data.aspectRatio,
-    })
-
-    return { recordId }
   })

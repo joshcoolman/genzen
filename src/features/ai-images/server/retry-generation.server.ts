@@ -3,7 +3,10 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
-import { checkAndDeductCredits } from '@/features/credits/server/check-credits.server'
+import {
+  checkAndDeductCredits,
+  withCreditRefund,
+} from '@/features/credits/server/check-credits.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -65,43 +68,52 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       throw new Error('Insufficient credits')
     }
 
-    const falModelId = meta.fal_model_id ?? meta.model
+    return withCreditRefund(
+      creditResult.userId,
+      creditResult.cost,
+      'image_gen',
+      async () => {
+        const falModelId = meta.fal_model_id ?? meta.model
 
-    const falInput = await buildFalInput({
-      modelId: falModelId,
-      prompt: meta.prompt,
-      aspectRatio: meta.aspect_ratio,
-      ...(meta.source_image_url ? { imageUrl: meta.source_image_url } : {}),
-      safetyLevel: 'permissive',
-    })
+        const falInput = await buildFalInput({
+          modelId: falModelId,
+          prompt: meta.prompt,
+          aspectRatio: meta.aspect_ratio,
+          ...(meta.source_image_url ? { imageUrl: meta.source_image_url } : {}),
+          safetyLevel: 'permissive',
+        })
 
-    const webhookUrl = getFalWebhookUrl()
-    const { request_id } = await (fal.queue.submit as any)(falModelId, {
-      input: falInput,
-      ...(webhookUrl ? { webhookUrl } : {}),
-    })
+        const webhookUrl = getFalWebhookUrl()
+        const { request_id } = await (fal.queue.submit as any)(falModelId, {
+          input: falInput,
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
 
-    const { data: newRecord, error: insertError } = await supabase
-      .from('user_images')
-      .insert({
-        user_id: user.id,
-        request_id,
-        status: 'pending',
-        source: 'ai_generated',
-        title: 'Generating...',
-        sort_order: Date.now() / 1000,
-        generation_metadata: {
-          ...meta,
-          retried_from: data.recordId,
-          submitted_at: new Date().toISOString(),
-        },
-      })
-      .select()
-      .single()
+        const { data: newRecord, error: insertError } = await supabase
+          .from('user_images')
+          .insert({
+            user_id: user.id,
+            request_id,
+            status: 'pending',
+            source: 'ai_generated',
+            title: 'Generating...',
+            sort_order: Date.now() / 1000,
+            generation_metadata: {
+              ...meta,
+              retried_from: data.recordId,
+              submitted_at: new Date().toISOString(),
+            },
+          })
+          .select()
+          .single()
 
-    if (insertError) {
-      throw new Error(`Failed to create retry record: ${insertError.message}`)
-    }
+        if (insertError) {
+          throw new Error(
+            `Failed to create retry record: ${insertError.message}`,
+          )
+        }
 
-    return { recordId: newRecord.id }
+        return { recordId: newRecord.id }
+      },
+    )
   })
