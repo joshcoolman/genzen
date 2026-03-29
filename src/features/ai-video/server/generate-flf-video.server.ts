@@ -86,7 +86,7 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
 
     const { data: frames } = await supabase
       .from('user_images')
-      .select('id, storage_path')
+      .select('id, storage_path, generation_metadata')
       .in('id', frameIds)
       .eq('user_id', user.id)
       .eq('status', 'completed')
@@ -103,13 +103,27 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
       throw new Error('Last frame not found or not completed')
     }
 
+    // Prefer cropped_storage_path from metadata (guaranteed ≥ 300x300) to handle
+    // old records where storage_path points to a potentially-small original.
+    const firstFramePath =
+      (
+        firstFrame.generation_metadata as {
+          cropped_storage_path?: string
+        } | null
+      )?.cropped_storage_path ?? firstFrame.storage_path
+
+    const lastFramePath = lastFrame
+      ? ((
+          lastFrame.generation_metadata as {
+            cropped_storage_path?: string
+          } | null
+        )?.cropped_storage_path ?? lastFrame.storage_path)
+      : null
+
     // Upload frames to FAL storage
-    const startImageUrl = await uploadFrameToFal(
-      supabase,
-      firstFrame.storage_path,
-    )
-    const endImageUrl = lastFrame?.storage_path
-      ? await uploadFrameToFal(supabase, lastFrame.storage_path)
+    const startImageUrl = await uploadFrameToFal(supabase, firstFramePath)
+    const endImageUrl = lastFramePath
+      ? await uploadFrameToFal(supabase, lastFramePath)
       : null
 
     const videoModel = data.videoModel || DEFAULT_VIDEO_MODEL

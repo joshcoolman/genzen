@@ -46,10 +46,8 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       cacheControl: '3600',
     })
 
-    // If original provided, upload it and use it for the user_images record
-    let recordStoragePath = croppedStoragePath
-    let recordFileName = croppedFileName
-    let recordBuffer = croppedBuffer
+    // If original provided, upload it to R2 but keep cropped as the canonical record
+    let originalStoragePath: string | null = null
 
     if (originalBase64) {
       const originalBase64Data = originalBase64.replace(
@@ -58,21 +56,19 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
       )
       const originalBuffer = Buffer.from(originalBase64Data, 'base64')
       const originalFileName = `upload_${timestamp}_${uuid}.jpg`
-      const originalStoragePath = `${user.id}/${originalFileName}`
+      originalStoragePath = `${user.id}/${originalFileName}`
 
       await storage.upload(originalStoragePath, originalBuffer, {
         contentType: 'image/jpeg',
         cacheControl: '3600',
       })
-
-      recordStoragePath = originalStoragePath
-      recordFileName = originalFileName
-      recordBuffer = originalBuffer
     }
 
+    // Always use the 1280x720 cropped version as the canonical record —
+    // it is guaranteed ≥ 300x300 and is the correct aspect ratio for FAL video gen.
     const fileHash = crypto
       .createHash('sha256')
-      .update(recordBuffer)
+      .update(croppedBuffer)
       .digest('hex')
 
     const { data: record, error: insertError } = await supabase
@@ -82,17 +78,20 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
         status: 'completed',
         source: 'ai_video_frame',
         title: `Uploaded ${frameType} frame`,
-        storage_path: recordStoragePath,
-        file_name: recordFileName,
+        storage_path: croppedStoragePath,
+        file_name: croppedFileName,
         file_hash: fileHash,
-        file_size: recordBuffer.length,
+        file_size: croppedBuffer.length,
         mime_type: 'image/jpeg',
         generation_metadata: {
           frame_type: frameType,
           uploaded: true,
           uploaded_at: new Date().toISOString(),
-          ...(originalBase64
-            ? { cropped_storage_path: croppedStoragePath }
+          ...(originalStoragePath
+            ? {
+                original_storage_path: originalStoragePath,
+                cropped_storage_path: croppedStoragePath,
+              }
             : {}),
         },
       })
@@ -102,14 +101,13 @@ export const uploadVideoFrame = createServerFn({ method: 'POST' })
     if (insertError) {
       // Clean up uploaded files
       const pathsToRemove = [croppedStoragePath]
-      if (originalBase64) pathsToRemove.push(recordStoragePath)
+      if (originalStoragePath) pathsToRemove.push(originalStoragePath)
       await storage.remove(pathsToRemove)
       throw new Error(`Failed to create frame record: ${insertError.message}`)
     }
 
-    // Return signed URL for the original version (display uses object-contain)
-    const displayPath = originalBase64 ? recordStoragePath : croppedStoragePath
-    const signedUrl = await storage.getUrl(displayPath)
+    // Return signed URL for display — use cropped (canonical) path
+    const signedUrl = await storage.getUrl(croppedStoragePath)
 
     if (!signedUrl) {
       throw new Error('Failed to create signed URL')
