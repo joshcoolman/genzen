@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import { Check, Copy } from 'lucide-react'
 import type { ADMessage } from '../hooks/useADChat'
 import { cn } from '@/lib/utils'
@@ -58,7 +59,9 @@ function MessageBubble({ message }: { message: ADMessage }) {
     )
   }
 
-  const html = marked.parse(message.content, { async: false })
+  const html = DOMPurify.sanitize(
+    marked.parse(message.content, { async: false }),
+  )
 
   return (
     <div className="group flex gap-1">

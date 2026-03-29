@@ -25,6 +25,8 @@ const JWKS_URL = 'https://rest.fal.ai/.well-known/jwks.json'
 const JWKS_CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 let jwksCache: Array<{ x: string }> | null = null
 let jwksCacheTime = 0
+let jwksConsecutiveFailures = 0
+const JWKS_MAX_CONSECUTIVE_FAILURES = 3
 
 async function fetchJwks(): Promise<Array<{ x: string }>> {
   const now = Date.now()
@@ -36,6 +38,7 @@ async function fetchJwks(): Promise<Array<{ x: string }>> {
   const data = (await response.json()) as { keys?: Array<{ x: string }> }
   jwksCache = data.keys ?? []
   jwksCacheTime = now
+  jwksConsecutiveFailures = 0
   return jwksCache
 }
 
@@ -117,8 +120,18 @@ export default defineEventHandler(async (event) => {
         return 'Unauthorized'
       }
     } catch (err) {
-      console.warn('[fal-webhook] Signature verification error:', err)
-      // Allow through on verification infrastructure failure to avoid blocking webhooks
+      jwksConsecutiveFailures++
+      console.warn(
+        `[fal-webhook] Signature verification error (consecutive failures: ${jwksConsecutiveFailures}):`,
+        err,
+      )
+      if (jwksConsecutiveFailures >= JWKS_MAX_CONSECUTIVE_FAILURES) {
+        console.warn(
+          '[fal-webhook] Rejecting webhook: JWKS failure threshold exceeded',
+        )
+        setResponseStatus(event, 401)
+        return 'Unauthorized'
+      }
     }
   }
 

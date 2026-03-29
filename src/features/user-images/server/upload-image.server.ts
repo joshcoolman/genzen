@@ -3,6 +3,29 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { createImageStorage } from '@/lib/image-storage'
 
+function validateImageBuffer(buffer: Buffer): string {
+  if (buffer.length > 50 * 1024 * 1024) throw new Error('File too large')
+  const magic = buffer.subarray(0, 4)
+  if (magic[0] === 0xff && magic[1] === 0xd8) return 'image/jpeg'
+  if (
+    magic[0] === 0x89 &&
+    magic[1] === 0x50 &&
+    magic[2] === 0x4e &&
+    magic[3] === 0x47
+  )
+    return 'image/png'
+  if (
+    magic[0] === 0x52 &&
+    magic[1] === 0x49 &&
+    magic[2] === 0x46 &&
+    magic[3] === 0x46
+  )
+    return 'image/webp'
+  if (magic[0] === 0x47 && magic[1] === 0x49 && magic[2] === 0x46)
+    return 'image/gif'
+  throw new Error('Invalid file type')
+}
+
 interface UploadImageInput {
   accessToken: string
   storagePath: string
@@ -21,11 +44,12 @@ export const uploadImage = createServerFn({ method: 'POST' })
     }
 
     const buffer = Buffer.from(data.base64Data, 'base64')
+    const detectedType = validateImageBuffer(buffer)
     const supabase = getSupabaseAdmin()
     const storage = createImageStorage(supabase)
 
     await storage.upload(data.storagePath, buffer, {
-      contentType: data.contentType,
+      contentType: detectedType,
     })
 
     return { storagePath: data.storagePath }
