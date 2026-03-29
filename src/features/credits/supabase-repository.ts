@@ -86,11 +86,19 @@ export class SupabaseCreditRepository implements CreditRepository {
 
     if (error) throw new Error(`Failed to get usage stats: ${error.message}`)
 
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    )
     const totalSpent = data.reduce((sum, row) => sum + Math.abs(row.amount), 0)
+    const todaySpent = data
+      .filter((row) => new Date(row.created_at) >= startOfDay)
+      .reduce((sum, row) => sum + Math.abs(row.amount), 0)
     const dayOfMonth = now.getDate()
     const dailyAverage =
       dayOfMonth > 0 ? Math.round(totalSpent / dayOfMonth) : 0
 
-    return { thisMonth: totalSpent, dailyAverage }
+    return { today: todaySpent, thisMonth: totalSpent, dailyAverage }
   }
 }

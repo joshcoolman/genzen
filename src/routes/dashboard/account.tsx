@@ -251,6 +251,16 @@ function AccountPage() {
                   : 'Loading...',
             },
             {
+              label: 'Spent today',
+              labelClassName: 'text-warm-gold',
+              value: credits.usageStats
+                ? formatDollars(credits.usageStats.today)
+                : '--',
+              detail: credits.usageStats
+                ? `${credits.usageStats.today} credits`
+                : undefined,
+            },
+            {
               label: 'Usage this month',
               labelClassName: 'text-warm-gold',
               value: credits.usageStats

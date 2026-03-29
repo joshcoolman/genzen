@@ -37,6 +37,7 @@ export interface CreditTransaction {
 }
 
 export interface UsageStats {
+  today: number
   thisMonth: number
   dailyAverage: number
 }
