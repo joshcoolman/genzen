@@ -167,3 +167,11 @@ export const getFirstDocSlug = createServerFn({ method: 'GET' }).handler(() => {
   const items = scanDocsDirectory()
   return items.length > 0 ? items[0].slug : null
 })
+
+export const verifyDocsPassword = createServerFn({ method: 'POST' })
+  .inputValidator((data: { password: string }) => data)
+  .handler(({ data }) => {
+    const expected = process.env.DOCS_PASSWORD
+    if (!expected) return true
+    return data.password === expected
+  })
