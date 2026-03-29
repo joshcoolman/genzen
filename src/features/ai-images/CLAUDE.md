@@ -49,7 +49,9 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `PendingImageCard.tsx` -- skeleton card during generation
 - `FailedImageCard.tsx` -- error card with retry (if retryable)
 - `DescribeDialog.tsx` -- auto-generate or edit image captions via vision API
-- `VariationPromptsDialog.tsx` -- manage variation prompts with ref image picker
+- `VariationPromptsDialog.tsx` -- manage variation prompts with ref image picker; supports smart paste (multi-line text splits into prompts)
+- `GeneratePromptsDialog.tsx` -- generate shot list prompts from images via vision API
+- `PastePromptsDialog.tsx` -- paste/import bulk prompts for batch generation
 - `ParentPickerDialog.tsx` -- select new parent when adopting/moving an image
 - `GroupPickerDialog.tsx` -- select target group for reparenting
 - `DescribeJsonPanel.tsx` -- JSON description output with syntax highlighting
