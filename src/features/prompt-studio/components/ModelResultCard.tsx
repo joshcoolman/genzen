@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AlertCircle, Check, Copy } from 'lucide-react'
-import { TEXT_MODELS } from '../text-models'
 import type { ModelResult } from '../types'
+import { ALL_TEXT_MODELS } from '@/lib/text-models'
 import { cn } from '@/lib/utils'
 
 interface ModelResultCardProps {
@@ -10,7 +10,7 @@ interface ModelResultCardProps {
 
 export function ModelResultCard({ result }: ModelResultCardProps) {
   const [copied, setCopied] = useState(false)
-  const model = TEXT_MODELS.find((m) => m.id === result.modelId)
+  const model = ALL_TEXT_MODELS.find((m) => m.id === result.modelId)
 
   const handleCopy = async () => {
     if (!result.text) return

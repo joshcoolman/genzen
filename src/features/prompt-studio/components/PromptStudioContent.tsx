@@ -9,7 +9,6 @@ import {
   Send,
   X,
 } from 'lucide-react'
-import { TEXT_MODELS } from '../text-models'
 import { ModelResultCard } from './ModelResultCard'
 import { PromptSetsSidebar } from './PromptSetsSidebar'
 import type { UsePromptStudioReturn } from '../hooks/usePromptStudio'
@@ -69,8 +68,8 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   )
 
   const hasImage = !!studio.imageUrl
-  const visionModels = TEXT_MODELS.filter((m) => m.supportsVision)
-  const displayModels = hasImage ? visionModels : TEXT_MODELS
+  const visionModels = studio.enabledTextModels.filter((m) => m.supportsVision)
+  const displayModels = hasImage ? visionModels : studio.enabledTextModels
 
   return (
     <div className="flex gap-0">

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
+import { ALL_TEXT_MODELS } from '@/lib/text-models'
 
 const STORAGE_KEY = 'genzen:disabled-models'
 
@@ -15,6 +16,22 @@ function readDisabledSet(): Set<string> {
   }
 }
 
+export function isModelLocked(id: string): boolean {
+  return (
+    ALL_IMAGE_MODELS.some((m) => m.id === id && m.locked) ||
+    ALL_VIDEO_MODELS.some((m) => m.id === id && m.locked) ||
+    ALL_TEXT_MODELS.some((m) => m.id === id && m.locked)
+  )
+}
+
+export function resolveModel(preferredId: string, fallbackId: string): string {
+  const disabled = readDisabledSet()
+  if (isModelLocked(preferredId) || !disabled.has(preferredId)) {
+    return preferredId
+  }
+  return fallbackId
+}
+
 export function useEnabledModels() {
   const [disabledIds, setDisabledIds] = useState<Set<string>>(readDisabledSet)
 
@@ -23,43 +40,34 @@ export function useEnabledModels() {
   }, [disabledIds])
 
   const enabledImageModels = useMemo(
-    () => ALL_IMAGE_MODELS.filter((m) => !disabledIds.has(m.id)),
+    () => ALL_IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
     [disabledIds],
   )
 
   const enabledVideoModels = useMemo(
-    () => ALL_VIDEO_MODELS.filter((m) => !disabledIds.has(m.id)),
+    () => ALL_VIDEO_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
+    [disabledIds],
+  )
+
+  const enabledTextModels = useMemo(
+    () => ALL_TEXT_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
     [disabledIds],
   )
 
   const isModelEnabled = useCallback(
-    (id: string) => !disabledIds.has(id),
+    (id: string) => isModelLocked(id) || !disabledIds.has(id),
     [disabledIds],
   )
 
   const toggleModel = useCallback((id: string) => {
+    if (isModelLocked(id)) return
     setDisabledIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
         next.delete(id)
-        return next
+      } else {
+        next.add(id)
       }
-      // Min-1 enforcement: don't disable the last model in a group
-      const isImage = ALL_IMAGE_MODELS.some((m) => m.id === id)
-      const isVideo = ALL_VIDEO_MODELS.some((m) => m.id === id)
-      if (isImage) {
-        const remainingImage = ALL_IMAGE_MODELS.filter(
-          (m) => !next.has(m.id) && m.id !== id,
-        )
-        if (remainingImage.length === 0) return prev
-      }
-      if (isVideo) {
-        const remainingVideo = ALL_VIDEO_MODELS.filter(
-          (m) => !next.has(m.id) && m.id !== id,
-        )
-        if (remainingVideo.length === 0) return prev
-      }
-      next.add(id)
       return next
     })
   }, [])
@@ -68,16 +76,25 @@ export function useEnabledModels() {
     setDisabledIds(new Set())
   }, [])
 
+  const enabledImageInputModels = useMemo(
+    () => enabledImageModels.filter((m) => m.supportsImageInput),
+    [enabledImageModels],
+  )
+
   const enabledImageCount = enabledImageModels.length
   const enabledVideoCount = enabledVideoModels.length
+  const enabledTextCount = enabledTextModels.length
 
   return {
     enabledImageModels,
+    enabledImageInputModels,
     enabledVideoModels,
+    enabledTextModels,
     isModelEnabled,
     toggleModel,
     resetToDefaults,
     enabledImageCount,
     enabledVideoCount,
+    enabledTextCount,
   }
 }

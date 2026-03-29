@@ -13,7 +13,11 @@ import { useCredits } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { setGenerationParent } from '@/features/ai-images/server/set-generation-parent.server'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import {
+  ALL_IMAGE_MODELS,
+  LOCKED_IMAGE_MODEL_ID,
+} from '@/features/ai-images/models'
+import { resolveModel } from '@/lib/use-enabled-models'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -114,8 +118,9 @@ export function useScenes(): ScenesState {
   const [cells, setCells] = useState<Array<SceneCellState>>(loadPersistedCells)
   const [model, setModelRaw] = useState<ImageModel>(() => {
     const storedId = ls('model', DEFAULT_SCENE_MODEL_ID)
+    const resolvedId = resolveModel(storedId, LOCKED_IMAGE_MODEL_ID)
     return (
-      ALL_IMAGE_MODELS.find((m) => m.id === storedId) ??
+      ALL_IMAGE_MODELS.find((m) => m.id === resolvedId) ??
       ALL_IMAGE_MODELS.find((m) => m.id === DEFAULT_SCENE_MODEL_ID) ??
       ALL_IMAGE_MODELS[0]
     )

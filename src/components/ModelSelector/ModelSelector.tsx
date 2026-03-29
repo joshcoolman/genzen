@@ -52,6 +52,37 @@ export function ModelSelector({
     })
   }
 
+  if (visibleModels.length <= 1) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          {visibleModels[0]?.name ?? 'No models'}
+        </span>
+        {showGensPerModel && gensPerModel !== undefined && onAdjustGens && (
+          <div className="flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 shadow-xs dark:bg-input/30">
+            <button
+              onClick={() => onAdjustGens(-1)}
+              disabled={gensPerModel <= 1}
+              className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <span className="w-4 text-center text-sm font-medium">
+              {gensPerModel}
+            </span>
+            <button
+              onClick={() => onAdjustGens(1)}
+              disabled={gensPerModel >= 5}
+              className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const gensControl = showGensPerModel &&
     gensPerModel !== undefined &&
     onAdjustGens && (

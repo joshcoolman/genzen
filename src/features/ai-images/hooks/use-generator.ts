@@ -10,11 +10,16 @@ import {
   flipOrientation,
   getRatioOptions,
 } from '@/features/ai-images/constants'
-import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
+import {
+  ALL_IMAGE_MODELS,
+  EDIT_MODELS,
+  KONTEXT_DEV_FALLBACK_ID,
+  KONTEXT_DEV_ID,
+} from '@/features/ai-images/models'
 
 // Kontext Dev is image-input only -- fall back to FLUX Dev for text-only
-const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
-const DRAFT_TEXT_ONLY_FALLBACK = 'fal-ai/flux/dev'
+const KONTEXT_DEV = KONTEXT_DEV_ID
+const DRAFT_TEXT_ONLY_FALLBACK = KONTEXT_DEV_FALLBACK_ID
 
 export interface RefImage {
   id: string

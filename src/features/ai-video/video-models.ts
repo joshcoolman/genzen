@@ -7,6 +7,7 @@ export interface VideoModel {
   durations: Array<string>
   supportsCfgScale: boolean
   supportsNegativePrompt: boolean
+  locked?: boolean
 }
 
 export const ALL_VIDEO_MODELS: Array<VideoModel> = [
@@ -19,6 +20,7 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: true,
     supportsNegativePrompt: true,
+    locked: true,
   },
   {
     id: 'fal-ai/kling-video/o3/standard/image-to-video',
