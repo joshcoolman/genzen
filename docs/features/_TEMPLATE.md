@@ -1,44 +1,31 @@
-# Feature Name
-
-Brief description of what this feature does.
-
-## Status
-
-- [ ] Planned
-- [ ] In Progress
-- [x] Complete
-
 ## Overview
 
-What problem does this solve? Why does it exist?
+What this feature does, what problem it solves, why it exists.
 
-## Implementation
+## How It Works
 
-### Key Files
-
-- `src/path/to/file.ts` - Description
-- `src/path/to/other.ts` - Description
-
-### How It Works
-
-Technical explanation of the implementation.
-
-### Dependencies
-
-- External services or packages this feature relies on
+Technical flow from user action to result.
 
 ## Usage
 
-How to use this feature (code examples, UI flows, etc.)
+How to use this feature (UI flows).
+
+## Key Files
+
+- `src/path/to/file.ts` -- Description
+
+## Dependencies
+
+- External services or packages this feature relies on
+
+## Route
+
+`/dashboard/route-path`
+
+## Database
+
+Tables this feature uses (if any).
 
 ## Configuration
 
-Environment variables, settings, or options.
-
-## Testing
-
-How to verify this feature works.
-
-## Future Improvements
-
-Ideas for enhancement.
+Environment variables, settings, or options (if any).
