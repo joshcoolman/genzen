@@ -261,7 +261,13 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
 
       const accessToken = await getAccessToken()
       await removeImages({
-        data: { accessToken, storagePaths: [image.storage_path] },
+        data: {
+          accessToken,
+          storagePaths: [
+            image.storage_path,
+            ...(image.thumbnail_path ? [image.thumbnail_path] : []),
+          ],
+        },
       })
 
       // Cascade cleanup for variations
@@ -280,7 +286,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         if (rootId) {
           const { data: rootImage } = await supabase
             .from('user_images')
-            .select('id, storage_path, hidden')
+            .select('id, storage_path, thumbnail_path, hidden')
             .eq('id', rootId)
             .single()
 
@@ -299,7 +305,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 await removeImages({
                   data: {
                     accessToken,
-                    storagePaths: [rootImage.storage_path],
+                    storagePaths: [
+                      rootImage.storage_path,
+                      ...(rootImage.thumbnail_path
+                        ? [rootImage.thumbnail_path]
+                        : []),
+                    ],
                   },
                 })
               }
@@ -319,7 +330,10 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       if (targetImages.length === 0) return
 
       const idSet = new Set(safeIds)
-      const storagePaths = targetImages.map((img) => img.storage_path)
+      const storagePaths = targetImages.flatMap((img) => [
+        img.storage_path,
+        ...(img.thumbnail_path ? [img.thumbnail_path] : []),
+      ])
 
       setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
 
@@ -355,7 +369,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
           if (rootId) {
             const { data: rootImage } = await supabase
               .from('user_images')
-              .select('id, storage_path, hidden')
+              .select('id, storage_path, thumbnail_path, hidden')
               .eq('id', rootId)
               .single()
 
@@ -374,7 +388,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                   await removeImages({
                     data: {
                       accessToken,
-                      storagePaths: [rootImage.storage_path],
+                      storagePaths: [
+                        rootImage.storage_path,
+                        ...(rootImage.thumbnail_path
+                          ? [rootImage.thumbnail_path]
+                          : []),
+                      ],
                     },
                   })
                 }
@@ -411,7 +430,10 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     const deletable = images.filter((img) => !linkedImageIds.has(img.id))
     if (deletable.length === 0) return
 
-    const storagePaths = deletable.map((img) => img.storage_path)
+    const storagePaths = deletable.flatMap((img) => [
+      img.storage_path,
+      ...(img.thumbnail_path ? [img.thumbnail_path] : []),
+    ])
     const ids = deletable.map((img) => img.id)
 
     // Optimistic: keep only linked images

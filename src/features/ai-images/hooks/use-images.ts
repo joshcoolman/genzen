@@ -5,6 +5,7 @@ import { retryGeneration } from '@/features/ai-images/server/retry-generation.se
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { removeImages } from '@/features/user-images/server/remove-images.server'
 
 interface UseImagesOptions {
   userId: string | undefined
@@ -402,7 +403,7 @@ export function useImages({
     // Check if root is hidden
     const { data: rootImage } = await supabase
       .from('user_images')
-      .select('id, storage_path, hidden')
+      .select('id, storage_path, thumbnail_path, hidden')
       .eq('id', rootId)
       .single()
 
@@ -422,9 +423,13 @@ export function useImages({
       // No more living variations — permanently delete the hidden root
       await supabase.from('user_images').delete().eq('id', rootId)
       if (rootImage.storage_path) {
-        await supabase.storage
-          .from('user-images')
-          .remove([rootImage.storage_path])
+        const paths = [
+          rootImage.storage_path,
+          ...(rootImage.thumbnail_path ? [rootImage.thumbnail_path] : []),
+        ]
+        await removeImages({
+          data: { accessToken: accessToken!, storagePaths: paths },
+        })
       }
     }
   }
