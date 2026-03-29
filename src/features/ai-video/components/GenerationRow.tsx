@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 import { deleteGeneration } from '@/features/ai-video/server/delete-generation.server'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 
@@ -108,14 +109,13 @@ export function GenerationRow({
             storage_path: string | null
           }
           if (updated.status === 'completed' && updated.storage_path) {
-            supabase.storage
-              .from('user-images')
-              .createSignedUrl(updated.storage_path, 86400)
-              .then(({ data: urlData }) => {
-                if (urlData) {
+            createImageStorage()
+              .getUrl(updated.storage_path)
+              .then((url) => {
+                if (url) {
                   const completedLastFrame = {
                     id: lastFrameRecordId,
-                    url: urlData.signedUrl,
+                    url,
                     status: 'completed' as const,
                   }
                   onUpdate(generation.id, { lastFrame: completedLastFrame })

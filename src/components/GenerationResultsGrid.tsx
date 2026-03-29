@@ -13,7 +13,7 @@ import {
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
 import { Lightbox } from '@/components/Lightbox'
-import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import { Thumbnail } from '@/components/Thumbnail'
 import { ImageGrid } from '@/components/ImageGrid'
 import { ExpandableText } from '@/components/ExpandableText'
@@ -356,12 +356,11 @@ export function GenerationResultsGrid({
       if (!r.storagePath || fullResUrls[r.id] || fetchingRef.current.has(r.id))
         continue
       fetchingRef.current.add(r.id)
-      supabase.storage
-        .from('user-images')
-        .createSignedUrl(r.storagePath, 86400)
-        .then(({ data }) => {
-          if (data?.signedUrl) {
-            setFullResUrls((prev) => ({ ...prev, [r.id]: data.signedUrl }))
+      createImageStorage()
+        .getUrl(r.storagePath)
+        .then((url) => {
+          if (url) {
+            setFullResUrls((prev) => ({ ...prev, [r.id]: url }))
           }
         })
         .catch(() => {})

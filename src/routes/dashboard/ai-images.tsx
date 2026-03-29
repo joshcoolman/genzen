@@ -32,6 +32,7 @@ import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDi
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -453,11 +454,9 @@ function AiImagesPage() {
       const hasChildren = (children?.length ?? 0) > 0
 
       if (!hasChildren) {
-        const { data } = await supabase.storage
-          .from('user-images')
-          .createSignedUrl(storagePath, 3600)
-        if (!data?.signedUrl) return
-        const response = await fetch(data.signedUrl)
+        const url = await createImageStorage().getUrl(storagePath)
+        if (!url) return
+        const response = await fetch(url)
         const blob = await response.blob()
         saveAs(blob, `${baseName}${extOf(storagePath)}`)
       } else {
@@ -508,11 +507,9 @@ function AiImagesPage() {
 
         const zip = new JSZip()
         for (const item of items) {
-          const { data } = await supabase.storage
-            .from('user-images')
-            .createSignedUrl(item.path, 3600)
-          if (!data?.signedUrl) continue
-          const response = await fetch(data.signedUrl)
+          const url = await createImageStorage().getUrl(item.path)
+          if (!url) continue
+          const response = await fetch(url)
           const blob = await response.blob()
           zip.file(item.name, blob)
         }

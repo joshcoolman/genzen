@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { UserImage } from '../types'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { supabase } from '@/lib/supabase'
+import { createImageStorage } from '@/lib/image-storage'
 
 interface ImageEditDialogProps {
   image: UserImage | null
@@ -55,11 +55,10 @@ export function ImageEditDialog({
       return
     }
     let cancelled = false
-    supabase.storage
-      .from('user-images')
-      .createSignedUrl(image.storage_path, 86400)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) setFullResUrl(data.signedUrl)
+    createImageStorage()
+      .getUrl(image.storage_path)
+      .then((url) => {
+        if (!cancelled && url) setFullResUrl(url)
       })
       .catch(() => {})
     return () => {
