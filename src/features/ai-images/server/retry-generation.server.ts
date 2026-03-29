@@ -60,6 +60,10 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       throw new Error('Missing generation metadata — cannot retry')
     }
 
+    // Capture after guard so TS knows these are defined inside the closure
+    const prompt = meta.prompt
+    const falModelId = meta.fal_model_id ?? meta.model
+
     const creditResult = await checkAndDeductCredits(
       data.accessToken,
       'image_gen',
@@ -73,11 +77,9 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       creditResult.cost,
       'image_gen',
       async () => {
-        const falModelId = meta.fal_model_id ?? meta.model
-
         const falInput = await buildFalInput({
           modelId: falModelId,
-          prompt: meta.prompt,
+          prompt,
           aspectRatio: meta.aspect_ratio,
           ...(meta.source_image_url ? { imageUrl: meta.source_image_url } : {}),
           safetyLevel: 'permissive',

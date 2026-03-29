@@ -231,7 +231,7 @@ export const outpaintImage = createServerFn({ method: 'POST' })
 
         // --- FAL provider path ---
         const falImageUrl = await fal.storage.upload(
-          new Blob([uploadBuffer], { type: mimeType }),
+          new Blob([new Uint8Array(uploadBuffer)], { type: mimeType }),
         )
 
         let falInput: Record<string, unknown>
