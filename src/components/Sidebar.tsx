@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { LogOut } from 'lucide-react'
+import { BookOpen, LogOut } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -165,6 +165,36 @@ export function Sidebar({ className }: { className?: string }) {
               </TooltipContent>
             </Tooltip>
           ))}
+          <div className="my-2 border-t border-border" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <a
+                href="/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                  'gap-3',
+                  isCollapsed
+                    ? 'justify-center'
+                    : 'justify-center md:justify-start',
+                  'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                )}
+              >
+                <BookOpen className="h-4 w-4 shrink-0" />
+                {!isCollapsed && (
+                  <span className="hidden flex-1 md:inline">Docs</span>
+                )}
+              </a>
+            </TooltipTrigger>
+            <TooltipContent
+              side="right"
+              className={cn('text-xs', !isCollapsed && 'md:hidden')}
+              sideOffset={8}
+            >
+              Docs
+            </TooltipContent>
+          </Tooltip>
           <AlertDialog>
             <Tooltip>
               <TooltipTrigger asChild>

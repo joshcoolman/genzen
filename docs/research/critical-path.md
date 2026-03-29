@@ -1,18 +1,22 @@
 # Critical Path to Revenue
 
-Updated 2026-03-27. The framing: this project is the only income source until paying customers validate it.
+Updated 2026-03-29. The framing: this project is the only income source until paying customers validate it.
 
-## Gate 1: It's fast, secure, and production-ready (IN PROGRESS)
+## Where we are
+
+Gate 1 is nearly complete -- 3 of 5 items done, #38 (credit hardening) is the last real blocker. Gates 2 and 3 are untouched: no Stripe, no Resend, no real landing page. The next meaningful milestone is wiring payments.
+
+## Gate 1: It's fast, secure, and production-ready (NEARLY DONE)
 
 Infrastructure, optimization, and hardening -- the foundation everything else sits on.
 
-| Issue | Status | What                                   | Why                                           |
-| ----- | ------ | -------------------------------------- | --------------------------------------------- |
-| #103  | DONE   | Rate limit generation endpoints        | Prevent abuse and runaway FAL costs           |
-| #107  |        | Thumbnail generation off critical path | App feels broken under real load without this |
-| #24   |        | CI/CD pipeline (GitHub Actions)        | Deploys can't be manual for a paid product    |
-| #108  |        | Soft-delete cleanup (pg_cron)          | Operational hygiene before real users         |
-| #38   |        | Harden credit system security          | Can't let users bypass credits                |
+| Issue | Status | What                                   | Why                                                       |
+| ----- | ------ | -------------------------------------- | --------------------------------------------------------- |
+| #103  | DONE   | Rate limit generation endpoints        | Prevent abuse and runaway FAL costs                       |
+| #107  | DONE   | Thumbnail generation off critical path | App feels broken under real load without this             |
+| #108  | DONE   | Soft-delete cleanup (pg_cron)          | Operational hygiene before real users                     |
+| #38   |        | Harden credit system security          | Can't let users bypass credits                            |
+| #24   |        | CI/CD pipeline (GitHub Actions)        | PR checks (lint/build/test). Vercel handles deploys today |
 
 ## Gate 2: People can pay you (BLOCKING)
 
@@ -32,10 +36,10 @@ Infrastructure, optimization, and hardening -- the foundation everything else si
 ## Suggested sequence
 
 1. ~~#103 (rate limiting)~~ -- DONE
-2. #107 (thumbnail off critical path) -- performance under load
-3. #24 (CI/CD) -- unblocks fast iteration on everything below
-4. #108 (soft-delete cleanup) -- operational hygiene
-5. #38 (harden credits) -- security before real money flows
+2. ~~#107 (thumbnail off critical path)~~ -- DONE
+3. ~~#108 (soft-delete cleanup)~~ -- DONE
+4. #38 (harden credits) -- last Gate 1 blocker before real money flows
+5. #24 (CI/CD) -- PR quality gates; Vercel covers deploys already
 6. #80 (real pricing) -- understand unit economics
 7. #26 (Stripe) -- payments wired
 8. #28 (landing page) -- front door
