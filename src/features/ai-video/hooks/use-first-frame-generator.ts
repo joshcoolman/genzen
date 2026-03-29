@@ -1,5 +1,6 @@
 import { uploadVideoFrame } from '@/features/ai-video/server/upload-video-frame.server'
 import { cropTo16x9, fileToBase64 } from '@/features/ai-video/lib/crop-to-16x9'
+import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 
 interface UseFirstFrameGeneratorOptions {
   accessToken: string | undefined
@@ -62,25 +63,19 @@ export function useFirstFrameGenerator({
     processFile(file)
   }
 
-  function setSourceFromUrl(url: string, _name: string) {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-      ctx.drawImage(img, 0, 0)
-      canvas.toBlob((blob) => {
-        if (!blob) return
-        const file = new File([blob], 'library-image.png', {
-          type: 'image/png',
-        })
-        processFile(file)
-      }, 'image/png')
+  async function setSourceFromUrl(url: string, _name: string) {
+    if (!accessToken) return
+    try {
+      const { base64 } = await fetchImageAsBase64({
+        data: { url, accessToken },
+      })
+      const res = await fetch(base64)
+      const blob = await res.blob()
+      const file = new File([blob], 'library-image.png', { type: 'image/png' })
+      processFile(file)
+    } catch (err) {
+      console.error('Failed to load image from library:', err)
     }
-    img.src = url
   }
 
   return {

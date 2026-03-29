@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 import { CREDIT_COSTS } from '@/features/credits'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
+import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 
 // ─── localStorage helpers ────────────────────────────────────────────────────
 
@@ -276,21 +277,18 @@ export function useMultiModel(): MultiModelState {
   )
 
   const setSourceFromUrl = useCallback(
-    (url: string, name: string, id?: string) => {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-        ctx.drawImage(img, 0, 0)
-        applySourceBase64(canvas.toDataURL('image/png'), name, id)
+    async (url: string, name: string, id?: string) => {
+      if (!accessToken) return
+      try {
+        const { base64 } = await fetchImageAsBase64({
+          data: { url, accessToken },
+        })
+        applySourceBase64(base64, name, id)
+      } catch (err) {
+        console.error('Failed to load image from library:', err)
       }
-      img.src = url
     },
-    [applySourceBase64],
+    [accessToken, applySourceBase64],
   )
 
   const clearSourceImage = useCallback(() => {
