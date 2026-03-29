@@ -79,7 +79,6 @@ export const generateLastFrame = createServerFn({ method: 'POST' })
           // Create signed URL to fetch the image bytes
           const signedUrl = await createImageStorage(supabase).getUrl(
             firstFrame.storage_path,
-            { ttl: 3600, cached: false },
           )
 
           if (!signedUrl) {

@@ -135,7 +135,7 @@ export const generateImage = createServerFn({ method: 'POST' })
             | 'image/png'
             | 'image/gif'
             | 'image/webp' = 'image/jpeg'
-          const bytes = new Uint8Array(buffer.slice(0, 4))
+          const bytes = new Uint8Array(buffer.subarray(0, 4))
           if (bytes[0] === 0x89 && bytes[1] === 0x50) {
             mimeType = 'image/png'
           } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
