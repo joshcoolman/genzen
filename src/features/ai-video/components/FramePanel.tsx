@@ -15,6 +15,7 @@ interface UserImagesData {
     [key: string]: unknown
   }>
   imageUrls: Record<string, string>
+  originalUrls?: Record<string, string>
   isLoading: boolean
 }
 
@@ -68,6 +69,7 @@ function FirstFramePanel({
           <LibraryPickerButton
             images={userImages.images}
             imageUrls={userImages.imageUrls}
+            originalUrls={userImages.originalUrls}
             isLoading={userImages.isLoading}
             onSelect={(img) => onImageFromUrl(img.url, img.title)}
             className="size-7"
@@ -127,6 +129,7 @@ function LastFramePanel({
           <LibraryPickerButton
             images={userImages.images}
             imageUrls={userImages.imageUrls}
+            originalUrls={userImages.originalUrls}
             isLoading={userImages.isLoading}
             onSelect={(img) => onImageFromUrl(img.url, img.title)}
             className="size-7"

@@ -20,6 +20,7 @@ interface UserImageRow {
 interface LibraryPickerButtonProps {
   images: Array<UserImageRow>
   imageUrls: Record<string, string>
+  originalUrls?: Record<string, string>
   isLoading: boolean
   onSelect: (image: SelectedImage) => void
   onSelectMultiple?: (images: Array<SelectedImage>) => void
@@ -31,6 +32,7 @@ interface LibraryPickerButtonProps {
 export function LibraryPickerButton({
   images,
   imageUrls,
+  originalUrls,
   isLoading,
   onSelect,
   onSelectMultiple,
@@ -61,6 +63,7 @@ export function LibraryPickerButton({
         onOpenChange={setOpen}
         images={images}
         imageUrls={imageUrls}
+        originalUrls={originalUrls}
         isLoading={isLoading}
         onSelect={onSelect}
         onSelectMultiple={onSelectMultiple}

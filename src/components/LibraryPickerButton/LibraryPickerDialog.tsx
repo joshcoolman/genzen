@@ -26,6 +26,7 @@ interface LibraryPickerDialogProps {
   onOpenChange: (open: boolean) => void
   images: Array<UserImageRow>
   imageUrls: Record<string, string>
+  originalUrls?: Record<string, string>
   isLoading: boolean
   onSelect: (image: SelectedImage) => void
   onSelectMultiple?: (images: Array<SelectedImage>) => void
@@ -37,6 +38,7 @@ export function LibraryPickerDialog({
   onOpenChange,
   images,
   imageUrls,
+  originalUrls,
   isLoading,
   onSelect,
   onSelectMultiple,
@@ -60,12 +62,12 @@ export function LibraryPickerDialog({
 
   const handleSingleSelect = useCallback(
     (image: UserImageRow) => {
-      const url = imageUrls[image.id]
+      const url = (originalUrls ?? imageUrls)[image.id]
       if (!url) return
       onSelect({ id: image.id, url, title: image.title })
       onOpenChange(false)
     },
-    [imageUrls, onSelect, onOpenChange],
+    [imageUrls, originalUrls, onSelect, onOpenChange],
   )
 
   const handleToggle = useCallback((id: string) => {
@@ -85,7 +87,7 @@ export function LibraryPickerDialog({
       .filter((img) => selectedIds.has(img.id))
       .map((img) => ({
         id: img.id,
-        url: imageUrls[img.id] ?? '',
+        url: (originalUrls ?? imageUrls)[img.id] ?? '',
         title: img.title,
       }))
       .filter((img) => img.url)
@@ -97,7 +99,15 @@ export function LibraryPickerDialog({
     }
     setSelectedIds(new Set())
     onOpenChange(false)
-  }, [images, imageUrls, selectedIds, onSelect, onSelectMultiple, onOpenChange])
+  }, [
+    images,
+    imageUrls,
+    originalUrls,
+    selectedIds,
+    onSelect,
+    onSelectMultiple,
+    onOpenChange,
+  ])
 
   const filterButtons: Array<{ value: SourceFilter; label: string }> = [
     { value: 'all', label: 'All' },

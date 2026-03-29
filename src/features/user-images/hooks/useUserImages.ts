@@ -36,6 +36,7 @@ export interface OptimisticImage {
 interface UseUserImagesState {
   images: Array<UserImage>
   imageUrls: Record<string, string>
+  originalUrls: Record<string, string>
   optimisticImages: Array<OptimisticImage>
   isLoading: boolean
   isCreating: boolean
@@ -86,6 +87,7 @@ export function useUserImages(
   const [state, setState] = useState<UseUserImagesState>({
     images: [],
     imageUrls: {},
+    originalUrls: {},
     optimisticImages: [],
     isLoading: true,
     isCreating: false,
@@ -102,14 +104,19 @@ export function useUserImages(
     for (const image of images) {
       if (!image.storage_path) continue
       try {
-        const path =
+        const thumbnailPath =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const url = await createImageStorage(supabase).getUrl(path)
+        const storage = createImageStorage(supabase)
+        const url = await storage.getUrl(thumbnailPath)
+        const originalUrl = await storage.getUrl(image.storage_path)
         if (url) {
           setState((prev) => ({
             ...prev,
             imageUrls: { ...prev.imageUrls, [image.id]: url },
+            originalUrls: originalUrl
+              ? { ...prev.originalUrls, [image.id]: originalUrl }
+              : prev.originalUrls,
           }))
         }
       } catch (err) {
