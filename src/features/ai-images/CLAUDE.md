@@ -34,7 +34,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
-- `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, signed URLs)
+- `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, R2 public URLs)
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 - `use-edit-page.ts` -- dedicated edit page state (source loading, aspect ratio, variants, parent picker)

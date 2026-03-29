@@ -5,7 +5,7 @@ Multi-shot video generation using Kling V3 Pro via FAL. Users define elements (c
 ## Architecture: List/Detail Split
 
 - **List page** (`multi-shot.index.tsx`): Shows sequence cards with start image thumbnails. "New Sequence" creates a draft and navigates to detail.
-- **Detail page** (`multi-shot.$sequenceId.tsx`): Editor + generation history. Uses `useSequenceDetail` hook. Route ID "new" for creating new sequences.
+- **Detail page** (`multi-shot.$sequenceId.tsx`): Editor + generation history. Uses `useSequenceDetail` hook. "New Sequence" creates a DB record and navigates to the returned ID.
 - **Element locking**: After first generation, elements are locked (add/remove disabled). Lock state computed as `generations.length > 0`. Duplicate sequence to modify.
 - **Generation history**: Queries `user_images` by `generation_metadata->>'sequence_id'` -- all past attempts visible in a grid with customizable size, sort order, and info display.
 
@@ -60,6 +60,6 @@ Key params: `multi_prompt` (array of {prompt, duration}), `elements` (array of {
 - Sequences stored in `multishot_sequences` table with JSONB columns for shots/elements/settings
 - Total duration budget: 15 seconds across all shots, minimum 3s per shot
 - Dual pricing: 0.168 credits/s with audio, 0.14 credits/s without
-- Supabase signed URLs for element/start images re-signed on each fetch (expire in 1 hour)
+- Element/start image URLs resolved via R2 public URLs on each fetch
 - GenerationHistory preferences (sort, info, thumbSize) persisted in localStorage
 - Future: reusable element library with naming (#79)

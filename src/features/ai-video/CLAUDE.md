@@ -16,7 +16,7 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 - `server/create-workspace.server.ts` -- create new workspace
 - `server/delete-workspace.server.ts` -- delete workspace; intelligently cleans up non-shared image records
 - `server/delete-generation.server.ts` -- delete single generation; intelligently cleans up shared images
-- `server/get-generations.server.ts` -- fetch generations for a workspace with signed URLs
+- `server/get-generations.server.ts` -- fetch generations for a workspace with R2 public URLs
 - `server/get-workspace.server.ts` -- fetch single workspace
 - `server/get-workspaces.server.ts` -- list all workspaces with preview data (hero image, thumbnails, prompt)
 - `server/get-video-url.server.ts` -- resolve video URL from FAL metadata
@@ -62,7 +62,7 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 - **Realtime**: GenerationRow subscribes to `postgres_changes` on `user_images` for live status updates
 - **Intelligent cleanup**: delete functions only remove image records not referenced by other generations
 - **Schema auto-detection**: `fal-video-schema.server.ts` caches FAL OpenAPI specs and auto-detects param names, duration type, cfg_scale/negative_prompt support
-- **Signed URLs**: 3600s TTL, generated on-demand by server functions
+- **Image URLs**: R2 public URLs via `createImageStorage()`, no signing/expiry
 
 ## Quirks / Notes
 
@@ -71,5 +71,5 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 - Only FLF-capable models (7 of 8) support last frame; Sora 2 is image-to-video only
 - First frame has two modes: "prompt" (text-to-image via Kling O3) and "image" (reference image via FLUX Kontext Pro)
 - Frame cropping enforces 16:9 at 1280x720
-- Video supports deep-linking via `?workspaceId=X&gen=Y`
+- Video supports deep-linking via `?workspaceId=X&generationId=Y`
 - Orchestrator hook owns `firstFrameMode` to break circular dep between frame and generator hooks

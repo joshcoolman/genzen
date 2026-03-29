@@ -40,7 +40,7 @@ A 3x3 grid of 9 cells for generating multiple camera-angle variations of a sourc
 
 ## State Persistence
 
-Persisted to localStorage under `genzen:scenes:*`: cells, model, aspect ratio, orientation, text prompt, source image (if from library). Signed URLs hydrated on mount.
+Persisted to localStorage under `genzen:scenes:*`: cells, model, aspect ratio, orientation, text prompt, source image (if from library). R2 public URLs hydrated on mount.
 
 ## Patterns
 

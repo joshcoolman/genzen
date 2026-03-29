@@ -4,7 +4,7 @@ Spatial moodboard with infinite pan-and-zoom canvas for organizing images. Suppo
 
 ## Architecture: Supabase-Backed Images
 
-All canvas images are stored in Supabase (`user_images` table + `user-images` storage bucket). Canvas state in IndexedDB only stores layout data (positions, groups, transform) plus `recordId` and `storagePath` per image -- never image data.
+All canvas images are stored in R2 (`user_images` table + R2 storage via `createImageStorage()`). Canvas state in IndexedDB only stores layout data (positions, groups, transform) plus `recordId` and `storagePath` per image -- never image data.
 
 **Image lifecycle:**
 
@@ -12,7 +12,7 @@ All canvas images are stored in Supabase (`user_images` table + `user-images` st
 2. Library pick -> existing `recordId` + `storagePath` from `user_images` record
 3. AI generation -> pending placeholder -> poll for completion -> `recordId` + `storagePath` on success
 4. Image combination -> multiple source images + prompt -> pending placeholders -> poll -> `recordId` + `storagePath` on success
-5. Display -> full-res signed URL fetched on canvas load (24h TTL, not persisted)
+5. Display -> R2 public URL fetched on canvas load (no expiry, not persisted)
 
 **Key type:**
 
@@ -44,13 +44,13 @@ interface CanvasImage {
 
 ## Hooks
 
-- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. Creates optimistic placeholders, polls for completion, uses Supabase signed URLs for source images (CORS-safe). Pre-fills prompt from `generation_metadata`.
+- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. Creates optimistic placeholders, polls for completion, uses R2 public URLs for source images. Pre-fills prompt from `generation_metadata`.
 - `use-canvas-combine.ts` -- `useCanvasCombine()`: manages multi-image combination state (sourceImages, labels, prompt, aspectRatio, runsCount). Supports FLUX 2 Pro and Nano Banana 2 models. Cost: `CREDIT_COSTS.variation * (models.length * runsCount)`.
 
 ## Lib
 
 - `masonry.ts` -- `layoutMasonry()`: column-based masonry algorithm using median input width as default column width
-- `persistence.ts` -- IndexedDB read/write, `getSignedUrl()`, `resolveSignedUrls()`, `getImageDimensions()`, `syncCanvasFlags()`. Strips `signedUrl`/`pending` before save, filters old-format images on load.
+- `persistence.ts` -- IndexedDB read/write, `getSignedUrl()` (now R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `syncCanvasFlags()`. Strips `signedUrl`/`pending` before save, filters old-format images on load.
 
 ## Shared Dependencies
 
@@ -67,7 +67,7 @@ interface CanvasImage {
 - All layout state persists to IndexedDB, debounced at 500ms. Image data lives in Supabase only.
 - Pending images (empty `recordId`) and `signedUrl` fields are stripped before IndexedDB save
 - Old-format images (with `src` data URLs, no `recordId`) are filtered out on load (migration)
-- Signed URLs expire after 24h; re-fetched on canvas load via `resolveSignedUrls()`
+- Image URLs are R2 public URLs (no expiry); re-fetched on canvas load via `resolveSignedUrls()` (legacy name)
 - High-frequency events (drag, wheel) update refs directly to avoid React re-renders
 - Undo/redo stack capped at 50 entries
 - Zoom range: 0.02 to 1.0 scale (default 0.5)

@@ -11,13 +11,12 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 - `hooks/useClaudeClient.ts` -- Memoized Anthropic SDK client initialization (`dangerouslyAllowBrowser: true`)
 - `components/ADPanel.tsx` -- Fixed right-sidebar (640px on md+) with header, chat body, or setup form; copy/save/clear actions
 - `components/ADSetup.tsx` -- API key entry form with `sk-ant-` validation
-- `components/ADToggle.tsx` -- Floating toggle button (bottom-right) for opening/closing the AD panel; hidden on mobile
 - `components/ChatMessages.tsx` -- Message list with markdown rendering via `marked`, copy buttons, auto-scroll
 - `components/ChatInput.tsx` -- Auto-growing textarea with image paste/drag-drop support, streaming abort button
 
 ## Route
 
-No dedicated route -- sidebar panel integrated in `src/routes/__root.tsx`. Opens/closes via `useADOpen()` from `@/lib/use-ad-open`.
+No dedicated route -- sidebar panel integrated in `src/components/DashboardLayout.tsx`. Opens/closes via `useADOpen()` from `@/lib/use-ad-open`. Toggle button lives in the status-bar feature.
 
 ## System Prompt Assembly
 
@@ -40,7 +39,7 @@ No dedicated route -- sidebar panel integrated in `src/routes/__root.tsx`. Opens
 
 - Features register context via `useRegisterADContext(key, summary)` -- auto-unregisters on unmount
 - Notes feature can save chat as markdown and load previous conversations back via `setLoadedNote()`
-- `ADContextProvider` wraps the app in `__root.tsx`
+- `ADContextProvider` wraps dashboard content in `DashboardLayout.tsx`
 - API key stored in browser localStorage only (never sent to server)
 
 ## Quirks / Notes

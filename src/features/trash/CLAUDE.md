@@ -31,5 +31,5 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 - **Linked image protection**: prevents deletion of images referenced by active (non-deleted, non-hidden) images via `generation_metadata` or placed on canvas (`on_canvas = true`)
 - Permanent delete cascades: if deleting a variation whose hidden root image has no remaining living variations, the root is also cleaned up
 - All mutations use optimistic updates with rollback on error
-- Thumbnail URLs signed with 24-hour (86400s) expiry; full-res download URLs signed with 1-hour (3600s) expiry
+- Image URLs are public R2 URLs via `createImageStorage()` (no signing/expiry)
 - Batch operations: select multiple images via `useSelection` hook for bulk restore/delete
