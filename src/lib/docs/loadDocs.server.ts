@@ -1,13 +1,17 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { createServerFn } from '@tanstack/react-start'
 import matter from 'gray-matter'
 import { marked } from 'marked'
-import { DOCS_DIR } from './config'
 import { parseFileName, sortFileNames } from './parseFileName'
 import { extractHeadings } from './extractHeadings'
 import { slugToTitle, slugify } from './slugify'
 import type { DocFile, DocNavCategory, DocNavItem } from './types'
+
+// Bundle all markdown files at build time (no filesystem access at runtime)
+const docModules = import.meta.glob('/docs/**/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
 
 // Configure marked with heading IDs
 const renderer = new marked.Renderer()
@@ -18,88 +22,87 @@ renderer.heading = ({ text, depth }: { text: string; depth: number }) => {
 
 marked.use({ renderer, gfm: true })
 
-function scanDocsDirectory(): Array<DocNavItem> {
-  const items: Array<DocNavItem> = []
+interface DocEntry {
+  slug: string
+  fileName: string
+  category?: string
+  content: string
+}
 
-  // Root-level markdown files
-  const rootFiles = fs
-    .readdirSync(DOCS_DIR)
-    .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
-  const sortedRoot = sortFileNames(rootFiles)
+function buildDocEntries(): Array<DocEntry> {
+  const rootEntries: Array<DocEntry> = []
+  const categoryEntries: Map<string, Array<DocEntry>> = new Map()
 
-  for (const fileName of sortedRoot) {
-    const parsed = parseFileName(fileName)
-    items.push({ slug: parsed.slug, title: slugToTitle(parsed.slug) })
-  }
+  for (const [filePath, rawContent] of Object.entries(
+    docModules as Record<string, string>,
+  )) {
+    const relativePath = filePath.replace(/^\/docs\//, '')
+    const parts = relativePath.split('/')
 
-  // Category directories
-  const dirs = fs
-    .readdirSync(DOCS_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('_'))
-    .map((d) => d.name)
-    .sort()
-
-  for (const dir of dirs) {
-    const dirPath = path.join(DOCS_DIR, dir)
-    const files = fs
-      .readdirSync(dirPath)
-      .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
-    const sortedFiles = sortFileNames(files)
-
-    for (const fileName of sortedFiles) {
+    if (parts.length === 1) {
+      const fileName = parts[0]
+      if (!fileName.endsWith('.md') || fileName.startsWith('_')) continue
       const parsed = parseFileName(fileName)
-      items.push({
+      rootEntries.push({
+        slug: parsed.slug,
+        fileName,
+        content: rawContent,
+      })
+    } else if (parts.length === 2) {
+      const [dir, fileName] = parts
+      if (
+        dir.startsWith('_') ||
+        !fileName.endsWith('.md') ||
+        fileName.startsWith('_')
+      )
+        continue
+      const parsed = parseFileName(fileName)
+      if (!categoryEntries.has(dir)) categoryEntries.set(dir, [])
+      categoryEntries.get(dir)!.push({
         slug: `${dir}/${parsed.slug}`,
-        title: slugToTitle(parsed.slug),
-        category: slugToTitle(dir),
+        fileName,
+        category: dir,
+        content: rawContent,
       })
     }
   }
 
-  return items
+  // Sort root files by numeric prefix, then alphabetically
+  const sortedRootFileNames = sortFileNames(rootEntries.map((e) => e.fileName))
+  const sortedRoot = sortedRootFileNames.map(
+    (fn) => rootEntries.find((e) => e.fileName === fn)!,
+  )
+
+  // Sort category dirs alphabetically, then files within each
+  const sortedDirs = [...categoryEntries.keys()].sort()
+  const sortedCategory: Array<DocEntry> = []
+  for (const dir of sortedDirs) {
+    const entries = categoryEntries.get(dir)!
+    const sortedFileNames = sortFileNames(entries.map((e) => e.fileName))
+    for (const fn of sortedFileNames) {
+      sortedCategory.push(entries.find((e) => e.fileName === fn)!)
+    }
+  }
+
+  return [...sortedRoot, ...sortedCategory]
+}
+
+function scanDocsDirectory(): Array<DocNavItem> {
+  return buildDocEntries().map((entry) => ({
+    slug: entry.slug,
+    title: slugToTitle(entry.slug.split('/').pop()!),
+    category: entry.category ? slugToTitle(entry.category) : undefined,
+  }))
 }
 
 function readDocFile(slug: string): DocFile | null {
-  // Try root-level first, then category
-  const parts = slug.split('/')
-  let filePath: string | null = null
-  let category: string | undefined
+  const entries = buildDocEntries()
+  const entry = entries.find((e) => e.slug === slug)
+  if (!entry) return null
 
-  if (parts.length === 1) {
-    // Root-level doc - find file matching slug
-    const rootFiles = fs
-      .readdirSync(DOCS_DIR)
-      .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
-    const match = rootFiles.find((f) => {
-      const parsed = parseFileName(f)
-      return parsed.slug === parts[0]
-    })
-    if (match) {
-      filePath = path.join(DOCS_DIR, match)
-    }
-  } else if (parts.length === 2) {
-    // Category doc
-    const dirPath = path.join(DOCS_DIR, parts[0])
-    if (fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory()) {
-      const files = fs
-        .readdirSync(dirPath)
-        .filter((f) => f.endsWith('.md') && !f.startsWith('_'))
-      const match = files.find((f) => {
-        const parsed = parseFileName(f)
-        return parsed.slug === parts[1]
-      })
-      if (match) {
-        filePath = path.join(dirPath, match)
-        category = slugToTitle(parts[0])
-      }
-    }
-  }
-
-  if (!filePath || !fs.existsSync(filePath)) return null
-
-  const raw = fs.readFileSync(filePath, 'utf-8')
-  const { data, content } = matter(raw)
+  const { data, content } = matter(entry.content)
   const html = marked(content) as string
+  const parts = slug.split('/')
 
   return {
     slug,
@@ -111,7 +114,7 @@ function readDocFile(slug: string): DocFile | null {
     },
     content,
     html,
-    category,
+    category: entry.category ? slugToTitle(entry.category) : undefined,
   }
 }
 
@@ -120,7 +123,6 @@ export const getAllDocSlugs = createServerFn({ method: 'GET' }).handler(() => {
 })
 
 export const getDocBySlug = createServerFn({ method: 'GET' }).handler(
-  // @ts-expect-error -- TanStack Start handler receives ctx with .data at runtime
   (ctx: { data?: { slug?: string }; slug?: string }) => {
     const slug: string = ctx.data?.slug ?? ctx.slug ?? ''
     const doc = readDocFile(slug)

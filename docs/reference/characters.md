@@ -1,88 +1,116 @@
-# Characters
+# Character Reference Sheets
 
-## Character Library
+How to create consistent character reference sheets for AI image and video generation. A reference sheet locks down a character's identity (face, body, clothing, proportions) so you can reproduce them across multiple generations.
 
-Freepik has a dedicated Characters page with:
+## What is a Character Reference Sheet
 
-- Pre-built stock characters (diverse headshot portraits, named)
-- "My Characters" tab for uploading your own face references
-- Each character = a clean portrait photo used as face reference input
-- Characters are separate from styles -- you combine: prompt + style ref + character ref(s)
+A single image showing a character from multiple angles with consistent lighting, proportions, and style. Think of it as a blueprint -- any model that sees this sheet has enough information to reproduce the character faithfully in new scenes and poses.
 
-For genzen: a character is just a saved face image. Freepik makes it look sophisticated but under the hood it's a reference headshot fed to the model.
+## Where They're Used
 
-### Simplified genzen approach
+- **First frame for video generation** -- feed as `start_image_url` to anchor character identity across the clip
+- **Multi-shot consistency** -- use as an element reference so the same character appears across multiple shots
+- **Scene composition** -- reference when generating a scene with multiple characters, each from their own sheet
+- **Image-to-image variations** -- use as input for edits, outpainting, or style transfers while preserving identity
 
-- Seed with a few pre-generated diverse headshots as starter characters
-- Let users generate new faces on demand via image gen ("generate a 30-year-old woman with red hair")
-- Save any generated face to personal character library (name + image)
-- Select from library when generating video -- feeds as face_reference param to Kling/FAL
-- No complex infrastructure needed -- it's just an image collection with a picker UI
+## What Makes a Good Sheet
 
-### Bookmark pattern
+- **Neutral background** -- white or light gray, no environment distractions
+- **Consistent lighting** -- flat, even studio lighting across all views. Same direction, intensity, and softness in every panel
+- **Multiple angles** -- front, side profile, 3/4 view, and optionally back view
+- **Relaxed A-pose** -- arms slightly away from the body so clothing and silhouette are visible
+- **Consistent scale** -- same head height and proportions across all panels
+- **Clear panel separation** -- thin lines or even spacing between views
+- **Detail close-ups** -- portrait-level crops for face detail (front, left profile, right profile)
 
-Stock characters can be bookmarked into "My Characters" -- no upload needed, just save from defaults. Two taps to build your cast. New character creation is just: upload reference image + name it. Dead simple.
+## Standard Layout
 
-## @ Mention UX
+**Top row:** 4 full-body standing views -- front, left profile, right profile, back
+**Bottom row:** 3 close-up portraits -- front, left profile, right profile
 
-Freepik lets you type `@CharacterName` inline in prompts to reference saved characters. Natural and intuitive -- feels like chat. No separate "select character" step. Could reference multiple characters in one prompt.
+This gives you both the full silhouette and the facial detail a model needs to reproduce the character.
 
-- Typing `@` in any prompt field triggers a character picker dropdown
-- `@Noah` resolves to that character's face reference image behind the scenes
-- Works across image gen, video gen, first/last frame prompts -- same syntax everywhere
-- Familiar pattern (Slack/GitHub mentions) applied to AI generation
-- Multi-character: "@Noah arm wrestles with @Matt while @Jane watches"
+## Creating Sheets with Nano Banana 2
 
-### Multi-character testing results
+Nano Banana 2 (`fal-ai/nano-banana-2`) works well for character sheets because it's built on Gemini and handles structured, descriptive prompts effectively. Use the `/edit` endpoint when working from a reference image, or the base endpoint for text-only generation.
 
-Tested on Freepik with 3 characters (Noah, Helena, Raphael):
+### From a Reference Image
 
-- Single character (Noah alone): good coherence across scenes
-- Multi-character: hit or miss. Noah drifted in later gens, Helena and Raphael held better
-- Lighting/style inconsistency across generations (without style ref locked in)
-- Conclusion: character refs are "good enough" for storyboarding, not pixel-perfect. The iterate-and-curate workflow compensates -- generate several, keep the best, discard the rest.
-
-## Character Reference Image Prompt (Triptych)
-
-For generating a character reference to use as a face reference in video generation. Produces a triptych (three angles) from one generation.
-
-**Template prompt:**
+Use `fal-ai/nano-banana-2/edit` with the reference image as input:
 
 ```
-A clean studio-style triptych portrait of the same character, divided into three
-vertical sections: left, center, and right, separated by thin, subtle lines.
+Create a professional character reference sheet based strictly on the
+uploaded reference image. Use a clean, neutral plain background and
+present the sheet as a technical model turnaround while matching the
+exact visual style of the reference (same realism level, rendering
+approach, texture, color treatment, and overall aesthetic).
 
-The character is wearing [insert clothing details]
+Arrange the composition into two horizontal rows.
 
-The framing is a medium close-up showing only the top half of his body (chest-up),
-allowing for clear, realistic skin texture and facial detail.
+Top row: four full-body standing views placed side-by-side in this
+order: front view, left profile view (facing left), right profile view
+(facing right), back view.
+
+Bottom row: three highly detailed close-up portraits aligned beneath
+the full-body row in this order: front portrait, left profile portrait
+(facing left), right profile portrait (facing right).
+
+Maintain perfect identity consistency across every panel. Keep the
+subject in a relaxed A-pose with consistent scale and alignment between
+views, accurate anatomy, and clear silhouette. Ensure even spacing and
+clean panel separation, with uniform framing and consistent head height
+across the full-body lineup and consistent facial scale across the
+portraits.
+
+Lighting should be consistent across all panels (same direction,
+intensity, and softness), with natural, controlled shadows that preserve
+detail without dramatic mood shifts.
+
+Output a crisp, print-ready reference sheet look, sharp details.
 ```
 
-**Why triptych:**
+### From Text Description Only
 
-- Three angles (left profile, front, right profile) in one generation
-- All three match -- same character, same lighting, same clothing
-- More useful as a face reference than a single-angle portrait
-- Cost-efficient: one generation = three usable reference angles
+Same layout prompt, but replace the first line:
 
-**Usage:** Generate this with FLUX Kontext Pro or Kling Image O3. Save the result as a character in the library. Feed as `face_reference` or `elements` param when generating video.
+```
+Create a professional character reference sheet of [CHARACTER DESCRIPTION].
+Use a clean, neutral plain background and present the sheet as a technical
+model turnaround in a photographic style.
 
-## Nano Banana Pro Character Reference Sheets
+[...same layout and quality instructions as above...]
+```
 
-Works well with Nano Banana Pro's /edit endpoint for creating consistent multi-angle character sheets.
+Replace `[CHARACTER DESCRIPTION]` with specific traits: age, gender, build, skin tone, hair color/style, clothing, and any distinguishing features.
 
-**With reference image:**
-Create a professional character reference sheet based strictly on the uploaded reference image. Use a clean, neutral plain background and present the sheet as a technical model turnaround while matching the exact visual style of the reference (same realism level, rendering approach, texture, color treatment, and overall aesthetic). Arrange the composition into two horizontal rows. Top row: four full-body standing views placed side-by-side in this order: front view, left profile view (facing left), right profile view (facing right), back view. Bottom row: three highly detailed close-up portraits aligned beneath the full-body row in this order: front portrait, left profile portrait (facing left), right profile portrait (facing right). Maintain perfect identity consistency across every panel. Keep the subject in a relaxed A-pose and with consistent scale and alignment between views, accurate anatomy, and clear silhouette; ensure even spacing and clean panel separation, with uniform framing and consistent head height across the full-body lineup and consistent facial scale across the portraits. Lighting should be consistent across all panels (same direction, intensity, and softness), with natural, controlled shadows that preserve detail without dramatic mood shifts. Output a crisp, print-ready reference sheet look, sharp details.
+### Prompting Tips
 
-**Without reference image:**
-Create a professional character reference sheet of [CHARACTER DESCRIPTION]. Use a clean, neutral plain background and present the sheet as a technical model turnaround in a photographic style. (Same layout/composition instructions as above.)
+- **Be specific with traits** -- "short copper hair, freckles, dark green military jacket" not "a woman in a jacket." Vague descriptions cause drift between panels.
+- **Lock trait language** -- if you say "emerald eyes" in one generation, use exactly "emerald eyes" again. Synonyms like "green eyes" cause subtle visual drift.
+- **Specify the style explicitly** -- "photographic," "stylized 3D," "2D animation" -- otherwise the model picks its own interpretation.
+- **Request "orthographic camera"** -- reduces perspective distortion across panels, keeping proportions consistent.
 
-### Workflow: Character Sheets -> Scene -> Video
+## Triptych (Quick Alternative)
 
-The pipeline for consistent AI video with multiple characters:
+When you don't need the full 7-panel sheet, a triptych gives you three angles in one generation:
 
-1. Generate character reference sheets (one per character) using the prompts above
-2. Use those sheets as image references when generating a scene -- the model picks up identity, clothing, and style from the sheets
-3. The composed scene becomes the first frame for video generation
+```
+A clean studio-style triptych portrait of the same character, divided
+into three vertical sections: left, center, and right, separated by
+thin, subtle lines.
 
-This gives you character consistency across shots because each character's identity is locked in via the reference sheet. The scene image references the sheets as "ingredients" rather than trying to describe characters from scratch each time.
+The character is [CHARACTER DESCRIPTION].
+
+The framing is a medium close-up showing only the top half of the body
+(chest-up), allowing for clear, realistic skin texture and facial detail.
+```
+
+Three angles (left profile, front, right profile) in one shot. Cheaper and faster than the full sheet, useful when you just need face consistency for video frames.
+
+## Workflow: Sheet to Scene to Video
+
+1. **Generate character sheet** -- one per character, using the prompts above
+2. **Generate scene** -- reference the sheet(s) as image input so the model picks up identity, clothing, and style
+3. **Use scene as first frame** -- the composed scene becomes `start_image_url` for video generation
+
+This gives you character consistency across shots because identity is locked in via the reference sheet rather than re-described from scratch each time.
