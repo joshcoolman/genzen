@@ -101,7 +101,7 @@ function DocsLayout() {
       {/* Content: always visible on md+, hidden when mobile menu is open */}
       <div
         className={cn(
-          'flex-1 overflow-y-auto',
+          'flex-1 overflow-y-auto overflow-x-hidden',
           mobileMenuOpen ? 'hidden md:block' : 'block',
         )}
       >

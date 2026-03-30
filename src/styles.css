@@ -244,6 +244,8 @@
   width: 100%;
   border-collapse: collapse;
   margin: 1em 0;
+  display: block;
+  overflow-x: auto;
 }
 .prose th,
 .prose td {
