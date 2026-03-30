@@ -3,7 +3,7 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 ## Key Files
 
 - `types.ts` -- DEFAULT_SYSTEM_PROMPT, DEFAULT_NEGATIVE_PROMPT, ModelResult, PromptSet types
-- `text-models.ts` -- TEXT_MODELS registry (5 models, with `supportsVision` flag) and TEXT_MODEL_MAP to Vercel AI SDK instances
+- `text-models.ts` -- TEXT_MODELS registry (6 models, with `supportsVision` flag) and TEXT_MODEL_MAP to Vercel AI SDK instances
 - `hooks/usePromptStudio.ts` -- Page state: prompt, system prompt, negative prompt, image, model selection, prompt sets integration, run lifecycle
 - `hooks/usePromptSets.ts` -- localStorage CRUD for saved prompt sets (save, update, delete, rename, load)
 - `server/run-prompt-studio.server.ts` -- Server function: runs generateText across selected models via Promise.allSettled, supports multimodal (image+text) messages
@@ -23,6 +23,7 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 3. Gemini Flash (Google) -- vision
 4. Grok (xAI) -- vision
 5. Nemotron Super (NVIDIA via OpenRouter) -- text-only
+6. GPT-4o Mini (OpenAI via OpenRouter) -- vision
 
 ## Prompt Sets
 
@@ -49,5 +50,5 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 - All models run concurrently via Promise.allSettled -- partial failures don't block others
 - Image is sent as base64 data URL via multimodal messages format
 - Cmd+Enter keyboard shortcut triggers run from any textarea
-- All 5 models selected by default (vision-only subset when image attached)
+- All 6 models selected by default (vision-only subset when image attached)
 - No credit system integration -- runs are free

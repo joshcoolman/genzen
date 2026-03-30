@@ -4,7 +4,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Key Files
 
-- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`
+- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`; exports `KONTEXT_DEV_ID`, `KONTEXT_DEV_FALLBACK_ID`, `FLUX_KONTEXT_PRO_ID`, `LOCKED_IMAGE_MODEL_ID`; models have optional `locked` flag
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent

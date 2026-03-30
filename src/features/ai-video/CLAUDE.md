@@ -68,8 +68,8 @@ Workspace-based video generation using first-frame/last-frame (FLF) workflow via
 
 - FLF = first-last-frame: generates start + end frames as images, then creates video transitioning between them
 - Kling models use special prompt format: `@Image1 {prompt} @Image2` for FLF transitions
-- Only FLF-capable models (7 of 8) support last frame; Sora 2 is image-to-video only
+- Only FLF-capable models (6 of 8) support last frame; Sora 2 and WAN 2.5 are image-to-video only
 - First frame has two modes: "prompt" (text-to-image via Kling O3) and "image" (reference image via FLUX Kontext Pro)
 - Frame cropping enforces 16:9 at 1280x720
 - Video supports deep-linking via `?workspaceId=X&generationId=Y`
-- Orchestrator hook owns `firstFrameMode` to break circular dep between frame and generator hooks
+- Prefer `cropped_storage_path` from generation metadata for frames, falling back to `storage_path` for old records

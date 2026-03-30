@@ -1,17 +1,16 @@
 # Credits
 
-Credit balance system for metering AI generation usage. Repository pattern with Supabase backend and mock for dev.
+Credit balance system for metering AI generation usage. Repository pattern with Supabase backend.
 
 ## Key Files
 
 - `types.ts` -- CreditRepository interface, CreditReason union (9 reasons), cost table (`CREDIT_COSTS`), pack definitions (`CREDIT_PACKS`), `DOLLARS_PER_CREDIT` (0.1)
 - `index.ts` -- Factory function `getCreditRepository()`, re-exports types/constants
 - `supabase-repository.ts` -- Production implementation using Supabase RPCs (`get_credit_balance`, `deduct_credits`, `add_credits`); direct table queries for `credit_transactions`
-- `mock-repository.ts` -- In-memory mock with seed data (47 credits, 4 fake transactions)
 - `handle-credit-error.ts` -- Helper to detect "Insufficient credits" errors
-- `server/check-credits.server.ts` -- `checkAndDeductCredits(accessToken, reason, quantity?)` combines auth + cost lookup + deduction; also exports `refundCredits()` for credit refunds
-- `server/deduct-credits.server.ts` -- TanStack server fn for deducting credits
+- `server/check-credits.server.ts` -- `checkAndDeductCredits(accessToken, reason, quantity?)` combines auth + cost lookup + deduction; also exports `refundCredits()` and `withCreditRefund<T>()` (wraps post-deduction work with automatic refund on failure)
 - `server/add-credits.server.ts` -- TanStack server fn for adding credits
+- `server/purchase-credits.server.ts` -- TanStack server fn for purchasing credit packs (validates pack, calls addCreditsInternal)
 - `server/get-credits.server.ts` -- TanStack server fn returning balance + usage stats
 - `server/get-transactions.server.ts` -- TanStack server fn for transaction history (optional limit)
 - `hooks/use-credits.ts` -- React context provider hook `useCreditsProvider()` + `useCredits()` consumer; manages balance, dollarBalance, isLow (<10), isEmpty
