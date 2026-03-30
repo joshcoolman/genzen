@@ -13,7 +13,7 @@ export function DocsSidebar({ categories }: DocsSidebarProps) {
   const currentSlug = location.pathname.replace(/^\/docs\/?/, '')
 
   return (
-    <aside className="w-64 shrink-0 border-r border-border overflow-y-auto h-full">
+    <aside className="w-full md:w-64 shrink-0 md:border-r border-border overflow-y-auto h-full">
       <div className="p-4">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
           Documentation

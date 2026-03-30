@@ -6,7 +6,7 @@ interface DocsContentProps {
 
 export function DocsContent({ doc }: DocsContentProps) {
   return (
-    <article className="flex-1 min-w-0 px-8 py-6">
+    <article className="flex-1 min-w-0 px-4 py-4 md:px-8 md:py-6">
       {doc.category && (
         <p className="text-sm text-muted-foreground mb-1">{doc.category}</p>
       )}
