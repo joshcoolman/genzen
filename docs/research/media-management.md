@@ -154,7 +154,7 @@ GenZen's `source_image_id` / `root_image_id` metadata already captures parent-ch
 
 **Content provenance standards**: The C2PA standard (Coalition for Content Provenance and Authenticity) allows embedding metadata in media for verifying origin and history. C2PA data is cryptographically signed and tamper-evident, creating an unbroken chain of history as files are edited and shared. OpenAI's ChatGPT images already include C2PA manifests. ([C2PA in ChatGPP Images](https://help.openai.com/en/articles/8912793-c2pa-in-chatgpt-images))
 
-**Distinction**: Data *lineage* maps technical connections (how data moved through pipelines), while data *provenance* highlights authenticity and integrity (who created it, when, what changes were made). For AI image tools, both matter: lineage tracks the generation tree, provenance tracks the creative intent and approval status. ([Snowflake: Lineage vs Provenance](https://www.snowflake.com/en/fundamentals/data-lineage/lineage-vs-provenance/))
+**Distinction**: Data _lineage_ maps technical connections (how data moved through pipelines), while data _provenance_ highlights authenticity and integrity (who created it, when, what changes were made). For AI image tools, both matter: lineage tracks the generation tree, provenance tracks the creative intent and approval status. ([Snowflake: Lineage vs Provenance](https://www.snowflake.com/en/fundamentals/data-lineage/lineage-vs-provenance/))
 
 ### 4. Version Control for Visual Assets
 
@@ -360,17 +360,17 @@ Side-by-side or overlay comparison of two images. Critical for evaluating consis
 
 ### What Existing Tools Do
 
-| Tool               | Organization                                    | Strength                            | Weakness                                                     |
-| ------------------ | ----------------------------------------------- | ----------------------------------- | ------------------------------------------------------------ |
-| **Midjourney**     | Folders, folder groups, saved searches, filters | Mature web UI, smart folder system  | No project structure, no reference management, no lineage    |
-| **ComfyUI**        | Workflow-based, node graphs                     | Full provenance via saved workflows | Hostile UX, no visual organization, developer-oriented       |
-| **Runway**         | Project-based, asset library                    | Closest to production thinking      | Limited generation, focused on video editing                 |
-| **Pika**           | Chronological feed                              | Simple, fast, great for prototyping | No organization whatsoever                                   |
-| **Leonardo.AI**    | Basic folders, style presets, character ref      | Good consistency tools              | Still fundamentally prompt-box-centric                       |
-| **LTX Studio**     | Full pipeline: storyboard to video              | Elements system, auto-extraction    | Newer platform, less generation model variety                |
-| **Freepik Mystic** | Multi-model, style references                   | Good UX for generation              | Weak on long-term asset management                           |
-| **CinemaDrop**     | Character sheets, storyboard sequences          | Reference-based generation          | Narrower scope, character-focused                            |
-| **Adobe Firefly**  | Multi-model hub, node-based enterprise workflow | Brand asset integration, ecosystem  | Enterprise-focused, less indie-friendly                      |
+| Tool               | Organization                                    | Strength                            | Weakness                                                  |
+| ------------------ | ----------------------------------------------- | ----------------------------------- | --------------------------------------------------------- |
+| **Midjourney**     | Folders, folder groups, saved searches, filters | Mature web UI, smart folder system  | No project structure, no reference management, no lineage |
+| **ComfyUI**        | Workflow-based, node graphs                     | Full provenance via saved workflows | Hostile UX, no visual organization, developer-oriented    |
+| **Runway**         | Project-based, asset library                    | Closest to production thinking      | Limited generation, focused on video editing              |
+| **Pika**           | Chronological feed                              | Simple, fast, great for prototyping | No organization whatsoever                                |
+| **Leonardo.AI**    | Basic folders, style presets, character ref     | Good consistency tools              | Still fundamentally prompt-box-centric                    |
+| **LTX Studio**     | Full pipeline: storyboard to video              | Elements system, auto-extraction    | Newer platform, less generation model variety             |
+| **Freepik Mystic** | Multi-model, style references                   | Good UX for generation              | Weak on long-term asset management                        |
+| **CinemaDrop**     | Character sheets, storyboard sequences          | Reference-based generation          | Narrower scope, character-focused                         |
+| **Adobe Firefly**  | Multi-model hub, node-based enterprise workflow | Brand asset integration, ecosystem  | Enterprise-focused, less indie-friendly                   |
 
 ### Midjourney's Organization Evolution (2025-2026)
 
@@ -532,6 +532,7 @@ Google's research noted that "artists often struggle to locate past work based o
 ## Sources
 
 ### Traditional Film Post-Production
+
 - [Media Asset Management in DaVinci, Premiere, and FCP](https://massive.io/how-to/media-asset-management-in-nles/)
 - [Organizing Footage Using Keywords and Smart Bins (DaVinci Resolve)](https://dvresolve.com/tutorial/organizing-footage-keywords-smart-bins/)
 - [How to Use Markers, Flags, and Keywords in DaVinci Resolve](https://www.simonsaysai.com/blog/how-and-why-to-use-markers-flags-and-keywords-in-blackmagic-design-davinci-resolve-16)
@@ -549,6 +550,7 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Netflix Dailies Best Practices](https://partnerhelp.netflixstudios.com/hc/en-us/articles/4415931246995-Dailies-Best-Practices)
 
 ### DAM Principles
+
 - [IntelligenceBank: Ultimate Guide to Digital Asset Management](https://intelligencebank.com/insights/the-ultimate-guide-to-digital-asset-management/)
 - [Springer: Metadata Principles, Application, and Best Practices](https://link.springer.com/article/10.1057/dam.2010.27)
 - [Acquia: What Is Digital Asset Management?](https://www.acquia.com/blog/digital-asset-management)
@@ -559,12 +561,14 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Perforce Media & Entertainment Solutions](https://www.perforce.com/solutions/media-entertainment)
 
 ### Asset Lineage & Provenance
+
 - [HCP Packer Image Ancestry Tracking](https://www.hashicorp.com/en/blog/hcp-packer-adds-ancestry-to-track-image-relationships)
 - [Image Provenance Analysis via Graph Encoding](https://arxiv.org/html/2408.14170v1)
 - [C2PA in ChatGPT Images](https://help.openai.com/en/articles/8912793-c2pa-in-chatgpt-images)
 - [Snowflake: Data Lineage vs Provenance](https://www.snowflake.com/en/fundamentals/data-lineage/lineage-vs-provenance/)
 
 ### AI Filmmaking Workflows
+
 - [601 Media: AI Film Workflow 2026](https://www.601media.com/ai-film-workflow-from-script-to-final-cut-no-camera-no-crew/)
 - [Vitrina: AI in Film Making Strategic Framework](https://vitrina.ai/blog/ai-in-film-making-strategic-framework/)
 - [McKinsey: What AI Could Mean for Film and TV Production](https://www.mckinsey.com/industries/technology-media-and-telecommunications/our-insights/what-ai-could-mean-for-film-and-tv-production-and-the-industrys-future)
@@ -577,6 +581,7 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Neolemon: AI Storyboard to Animation Pipeline](https://www.neolemon.com/blog/ai-storyboard-to-animation-pipeline-workflow/)
 
 ### Character Consistency
+
 - [CinemaDrop: Complete Guide to Consistent AI Characters 2026](https://www.cinemadrop.com/blog/how-to-create-consistent-ai-characters-the-complete-guide-for-ai-filmmakers-in-2026)
 - [Artlist: Consistent Character AI Pro Tips](https://artlist.io/blog/consistent-character-ai/)
 - [Multic: AI Video Character Consistency Guide](https://www.multic.com/guides/ai-video-character-consistency/)
@@ -584,6 +589,7 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Anifusion: Character Sheet Generator](https://anifusion.ai/dashboard/character-sheets)
 
 ### AI Tool UX & Anti-Patterns
+
 - [NN/g: 4 Stages of AI Image Generation](https://www.nngroup.com/articles/ai-imagegen-stages/)
 - [PrompTHis: Visualizing Prompt Editing Process](https://arxiv.org/html/2403.09615v1)
 - [Jakob Nielsen: Prompt Augmentation UX Patterns](https://jakobnielsenphd.substack.com/p/prompt-augmentation)
@@ -592,12 +598,14 @@ Google's research noted that "artists often struggle to locate past work based o
 - [getimg.ai: Working with and Organizing Generated Images](https://getimg.ai/guides/working-with-and-organizing-generated-images)
 
 ### Midjourney Organization
+
 - [Midjourney: Organizing Your Creations](https://docs.midjourney.com/hc/en-us/articles/33329462451469-Organizing-Your-Creations)
 - [Midjourney: Using Folders](https://docs.midjourney.com/hc/en-us/articles/34580542725645-Using-Folders)
 - [Midjourney February 2025 Updates](https://www.toolify.ai/ai-news/midjourney-updates-february-2025-folders-image-editor-v7-3332022)
 - [Midjourney 2026 Guide](https://aitoolsdevpro.com/ai-tools/midjourney-guide/)
 
 ### Visual Similarity Search
+
 - [Ultralytics: Semantic Image Search with CLIP and FAISS](https://docs.ultralytics.com/guides/similarity-search/)
 - [Google Developers: Personalizing Visual Search with Multimodal Embeddings](https://developers.googleblog.com/see-the-similarity-personalizing-visual-search-with-multimodal-embeddings/)
 - [Eden AI: Image Embeddings and Visual Similarity Search](https://www.edenai.co/post/step-by-step-guide-to-image-embeddings-and-visual-similarity-search)
@@ -606,6 +614,7 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Elastic: 5 Technical Components of Image Similarity Search](https://www.elastic.co/blog/5-technical-components-image-similarity-search)
 
 ### Emerging Platforms
+
 - [Runway vs Pika vs Luma 2026](https://genesysgrowth.com/blog/runway-vs-pika-vs-luma-ai)
 - [Adobe AI Max 2025](https://www.theneuron.ai/explainer-articles/adobe-goes-all-in-on-ai-max-2025-unleashes-creative-ai-arsenal-across-every-tool)
 - [Higgsfield Storyboard Generator](https://higgsfield.ai/storyboard-generator)
