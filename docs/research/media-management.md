@@ -620,3 +620,58 @@ Google's research noted that "artists often struggle to locate past work based o
 - [Higgsfield Storyboard Generator](https://higgsfield.ai/storyboard-generator)
 - [Katalist](https://www.katalist.ai/)
 - [No Film School: Higgsfield All-in-One AI Platform](https://nofilmschool.com/higgsfield-all-in-one-ai-platform)
+
+---
+
+## Key Insights from Chat Conversation (2026-03-30)
+
+Discussion exploring how the concepts in this document relate to GenZen's existing architecture and potential directions. These are exploratory ideas, not implementation plans.
+
+### 1. The "Generation Recipe" — Reloadable Input State
+
+The core idea: when a user generates an image, the full input state (prompt, model, source image, reference images, aspect ratio) should be reconstructable from stored metadata so the user can reload and re-run it later — potentially with modifications — without manually hunting down the original prompt and reference images.
+
+**Current state**: `generation_metadata` JSONB already stores the full prompt (not truncated), `source_image_id`, `reference_image_ids`, `model`, `aspect_ratio`, and `generation_type`. The data for a complete recipe exists. The `description` column truncates prompts at 997 chars, but that's display-only — the full prompt lives in the metadata.
+
+**The gap**: No UI surfaces reference image thumbnails on image cards, and there's no "reload recipe" action to reconstruct the generation form from stored metadata.
+
+### 2. Reference Image Thumbnails on Image Cards
+
+For ungrouped images, display reference images used during generation as small thumbnails on the card — similar to how grouped images show child thumbnails, but indicating "these references were used to create this." This serves as both visual provenance and a path to reloading the generation state.
+
+For grouped parent-child views, the source image is implicit (you're looking at it), but reference images for each child could still be surfaced.
+
+### 3. Reference Image Protection in Trash
+
+The trash system currently checks `source_image_id` and `root_image_id` when determining if a trashed image is referenced by living images. It does **not** check `reference_image_ids`. This means you can permanently delete an image that's part of another generation's recipe. Extending `fetchLinkedIds` to also scan `generation_metadata.reference_image_ids` would prevent accidental deletion of recipe ingredients.
+
+### 4. Auto-Laid-Out Relationship Graph (Read-Only)
+
+Idea inspired by the node-based workflow patterns in wev.ai and ComfyUI, but with a critical difference: **the graph is a consequence of creative decisions, not a prerequisite**. It's auto-generated from existing `generation_metadata` relationships — not manually arranged.
+
+- `source_image_id` defines parent-child edges
+- `reference_image_ids` defines reference dependency edges (visually distinct — dashed lines, different color)
+- `root_image_id` identifies the tree root
+- Layout is automatic; the user never arranges nodes
+
+This is separate from the existing canvas feature. It's a read-only provenance explorer — an "X-ray" of the creative decisions that produced a set of images. The `useEditChildren` hook already does BFS traversal to find descendants; the graph would use the same traversal with a different renderer.
+
+Key differentiator from ComfyUI/wev.ai: users of those tools spend significant time manually organizing images into columns and groups on canvases. Here, the system manages spatial arrangement; the user manages creative decisions.
+
+### 5. Right-Click-to-Regenerate from the Graph
+
+The graph could be interactive without being a workflow editor. Right-clicking a node to kick off a new generation (reusing that node's recipe) would cause the graph to grow a new branch and auto-position it. This collapses the distance between comprehension and action — you see the full context of a generation and can immediately produce another from it, without switching views or reconstructing state.
+
+### 6. Versioning Reframed as Creative Provenance
+
+Traditional DAM versioning (V1, V2, V3 of a single asset) doesn't map cleanly to AI generation, where every generation creates a new immutable image. GenZen's parent-child tree already provides version history — it's just expressed as a tree of distinct images rather than a linear stack.
+
+What's actually missing isn't version numbers but the ability to **promote** an image — to mark "this is the current best" within a tree. That's a selects/favorites concept, not a versioning concept. The tree gives you history; a star or pin gives you "current winner."
+
+### 7. Deletion as Curation, Tombstones as History
+
+Key tension: users delete images to manage noise in their working view, but deletion destroys provenance. The full story of "I tried four models, deleted two bad results, edited the best one with new references" is lost.
+
+Reframe: the gallery view is like `HEAD` in git — just the stuff you kept. The graph view would be `git log --all` — every branch tried, including abandoned ones. Deleted images could persist as lightweight metadata-only tombstones (no image file, no storage cost) — preserving the node in the graph ("prompt X, model Y, parent Z, deleted by user") while reclaiming storage.
+
+This also solves reference protection more elegantly: if a deleted image exists as a tombstone, its relationships are preserved even though the pixels are gone. The graph stays intact; the storage is reclaimed.
