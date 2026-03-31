@@ -31,6 +31,12 @@ import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 import {
@@ -118,6 +124,19 @@ function AiImagesPage() {
   )
   const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
   const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+
+  // Force md thumb size on mobile (<400px)
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 400,
+  )
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 399px)')
+    setIsMobile(mql.matches)
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [])
+  const effectiveThumbSize = isMobile ? 'md' : thumbSize
 
   const handleToggleThumbSize = () => {
     setThumbSize((v) => {
@@ -563,8 +582,8 @@ function AiImagesPage() {
   return (
     <div className={generatorOpen && panelPinned ? 'mr-80' : ''}>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground tabular-nums">
+        <div className="flex items-center justify-end xs:justify-between">
+          <span className="hidden text-sm text-muted-foreground tabular-nums xs:inline">
             AI Images
             {page.credits.balance !== null && (
               <>
@@ -577,7 +596,7 @@ function AiImagesPage() {
             {/* Thumb size toggle */}
             <button
               onClick={handleToggleThumbSize}
-              className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="hidden w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors xs:flex"
               aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -589,7 +608,7 @@ function AiImagesPage() {
             {/* Sort toggle */}
             <button
               onClick={handleToggleSort}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              className="hidden rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors xs:block"
               aria-label={sortAsc ? 'Sort oldest first' : 'Sort newest first'}
             >
               {sortAsc ? (
@@ -602,7 +621,7 @@ function AiImagesPage() {
             {/* Info toggle */}
             <button
               onClick={handleToggleInfo}
-              className={`rounded-md p-1.5 transition-colors ${
+              className={`hidden rounded-md p-1.5 transition-colors xs:block ${
                 showInfo
                   ? 'text-foreground bg-muted'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -649,7 +668,7 @@ function AiImagesPage() {
           rootImageMeta={page.gallery.rootImageMeta}
           editChildrenMap={page.editChildrenMap}
           loadingGallery={page.gallery.loadingGallery}
-          thumbSize={thumbSize}
+          thumbSize={effectiveThumbSize}
           showInfo={showInfo}
           onLoadPrompt={page.handleLoadPrompt}
           onLoadPromptAndModel={page.handleLoadPromptAndModel}
@@ -713,58 +732,91 @@ function AiImagesPage() {
         </SelectionDrawer>
       </div>
 
-      {/* Dismiss overlay when unpinned */}
-      {generatorOpen && !panelPinned && (
-        <div
-          className="fixed inset-0 z-20"
-          onClick={() => setGeneratorOpen(false)}
-        />
-      )}
-
-      {/* Right sidebar generator panel */}
-      {generatorOpen && (
-        <div
-          className={
-            panelPinned
-              ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
-              : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
-          }
+      {/* Generator panel — bottom drawer on mobile, right sidebar on desktop */}
+      {isMobile ? (
+        <Drawer
+          open={generatorOpen}
+          onOpenChange={setGeneratorOpen}
+          direction="bottom"
+          shouldScaleBackground={false}
         >
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <span className="text-xs text-muted-foreground">Generate</span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPanelPinned((p) => !p)}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
-              >
-                {panelPinned ? (
-                  <Pin className="h-3.5 w-3.5" />
-                ) : (
-                  <PinOff className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
-                onClick={() => setGeneratorOpen(false)}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
+          <DrawerContent className="h-[75vh] bg-black/95 backdrop-blur-2xl border-border">
+            <DrawerHeader className="pb-0">
+              <DrawerTitle className="text-xs text-muted-foreground font-normal">
+                Generate
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+              <GeneratorPanel
+                generator={page.generator}
+                modelSelector={page.modelSelector}
+                credits={page.credits}
+                userImages={page.userImages}
+                error={page.error}
+                describe={page.describe}
+                modelDisplay="dropdown"
+                providerOverride={page.providerOverride}
+                onProviderOverrideChange={page.setProviderOverride}
+              />
             </div>
-          </div>
-          <div className="px-4 pb-4">
-            <GeneratorPanel
-              generator={page.generator}
-              modelSelector={page.modelSelector}
-              credits={page.credits}
-              userImages={page.userImages}
-              error={page.error}
-              describe={page.describe}
-              providerOverride={page.providerOverride}
-              onProviderOverrideChange={page.setProviderOverride}
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <>
+          {/* Dismiss overlay when unpinned */}
+          {generatorOpen && !panelPinned && (
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setGeneratorOpen(false)}
             />
-          </div>
-        </div>
+          )}
+
+          {/* Right sidebar generator panel */}
+          {generatorOpen && (
+            <div
+              className={
+                panelPinned
+                  ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
+                  : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
+              }
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <span className="text-xs text-muted-foreground">Generate</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPanelPinned((p) => !p)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+                  >
+                    {panelPinned ? (
+                      <Pin className="h-3.5 w-3.5" />
+                    ) : (
+                      <PinOff className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setGeneratorOpen(false)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
+                <GeneratorPanel
+                  generator={page.generator}
+                  modelSelector={page.modelSelector}
+                  credits={page.credits}
+                  userImages={page.userImages}
+                  error={page.error}
+                  describe={page.describe}
+                  providerOverride={page.providerOverride}
+                  onProviderOverrideChange={page.setProviderOverride}
+                />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <VariationPromptsDialog
