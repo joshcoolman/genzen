@@ -166,7 +166,6 @@ export function useEditPage(imageId: string) {
 
       const signedUrl = await createImageStorage(supabase).getUrl(
         data.storage_path,
-        { cached: false },
       )
 
       if (!signedUrl) {
@@ -688,6 +687,12 @@ export function useEditPage(imageId: string) {
     handleCaption,
     generatePromptsConfig,
     clearPrompts,
+    pastePrompts: (texts) => {
+      setPromptsRaw((prev) => {
+        const next = [...prev, ...texts]
+        return next
+      })
+    },
     refImages,
     addRefImages,
     removeRefImage,

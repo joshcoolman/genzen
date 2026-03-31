@@ -91,8 +91,8 @@ class R2ImageStorage implements ImageStorage {
     )
   }
 
-  async getUrl(key: string): Promise<string | null> {
-    return `${this.publicUrl}/${key}`
+  getUrl(key: string): Promise<string | null> {
+    return Promise.resolve(`${this.publicUrl}/${key}`)
   }
 
   invalidateUrl(_key: string): void {

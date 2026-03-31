@@ -122,16 +122,16 @@ export const getAllDocSlugs = createServerFn({ method: 'GET' }).handler(() => {
   return scanDocsDirectory().map((item) => item.slug)
 })
 
-export const getDocBySlug = createServerFn({ method: 'GET' }).handler(
-  (ctx: { data?: { slug?: string }; slug?: string }) => {
+export const getDocBySlug = createServerFn({ method: 'GET' })
+  .inputValidator((data: { slug: string }) => data)
+  .handler((ctx: { data?: { slug?: string }; slug?: string }) => {
     const slug: string = ctx.data?.slug ?? ctx.slug ?? ''
     const doc = readDocFile(slug)
     if (!doc) throw new Error(`Doc not found: ${slug}`)
 
     const headings = extractHeadings(doc.content)
     return { doc, headings }
-  },
-)
+  })
 
 export const getDocNavCategories = createServerFn({ method: 'GET' }).handler(
   () => {

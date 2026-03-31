@@ -131,6 +131,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       // Sign URLs in background
       const storage = createImageStorage(supabase)
       for (const image of data) {
+        if (!image.storage_path) continue
         storage
           .getUrl(image.storage_path)
           .then((url) => {
@@ -186,7 +187,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 return next
               })
               createImageStorage(supabase)
-                .getUrl(updated.storage_path)
+                .getUrl(updated.storage_path ?? '')
                 .then((url) => {
                   if (url) {
                     setImageUrls((prev) => ({
@@ -264,7 +265,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         data: {
           accessToken,
           storagePaths: [
-            image.storage_path,
+            ...(image.storage_path ? [image.storage_path] : []),
             ...(image.thumbnail_path ? [image.thumbnail_path] : []),
           ],
         },
@@ -331,7 +332,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
 
       const idSet = new Set(safeIds)
       const storagePaths = targetImages.flatMap((img) => [
-        img.storage_path,
+        ...(img.storage_path ? [img.storage_path] : []),
         ...(img.thumbnail_path ? [img.thumbnail_path] : []),
       ])
 
@@ -431,7 +432,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     if (deletable.length === 0) return
 
     const storagePaths = deletable.flatMap((img) => [
-      img.storage_path,
+      ...(img.storage_path ? [img.storage_path] : []),
       ...(img.thumbnail_path ? [img.thumbnail_path] : []),
     ])
     const ids = deletable.map((img) => img.id)
@@ -463,7 +464,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         const results = await Promise.all(
           batch.map((img) =>
             storage
-              .getUrl(img.storage_path)
+              .getUrl(img.storage_path ?? '')
               .then((url) => ({
                 id: img.id,
                 url,

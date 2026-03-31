@@ -19,8 +19,10 @@ export function usePromptSheet() {
     if (!accessToken) return
     setLoading(true)
     try {
-      const { prompts } = await listPrompts({ data: { accessToken } })
-      setPrompts(prompts)
+      const { prompts: nextPrompts } = await listPrompts({
+        data: { accessToken },
+      })
+      setPrompts(nextPrompts)
     } catch (err) {
       console.error('Failed to list prompts:', err)
     } finally {

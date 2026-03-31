@@ -282,6 +282,7 @@ export type Database = {
           status: string
           storage_path: string | null
           task_id: string | null
+          thumbnail_path: string | null
           title: string
           updated_at: string
           user_id: string
@@ -308,6 +309,7 @@ export type Database = {
           status?: string
           storage_path?: string | null
           task_id?: string | null
+          thumbnail_path?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -334,6 +336,7 @@ export type Database = {
           status?: string
           storage_path?: string | null
           task_id?: string | null
+          thumbnail_path?: string | null
           title?: string
           updated_at?: string
           user_id?: string

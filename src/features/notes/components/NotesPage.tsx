@@ -36,10 +36,10 @@ export function NotesPage() {
   const fetchNotes = useCallback(async () => {
     if (!session?.access_token) return
     try {
-      const { notes } = await listNotes({
+      const { notes: nextNotes } = await listNotes({
         data: { accessToken: session.access_token },
       })
-      setNotes(notes)
+      setNotes(nextNotes)
     } catch (err) {
       console.error('Failed to list notes:', err)
     } finally {

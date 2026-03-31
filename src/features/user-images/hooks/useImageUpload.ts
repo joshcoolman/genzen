@@ -16,8 +16,8 @@ async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)
   let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
   }
   return btoa(binary)
 }
@@ -86,18 +86,22 @@ export function useImageUpload(
           )
         }
 
+        if (!newImage.storage_path) {
+          throw new Error('Created image is missing a storage path')
+        }
+        const persistedStoragePath = newImage.storage_path
+
         // Generate thumbnail in background
         createThumbnail({
           data: {
             accessToken: session.access_token,
             imageId: newImage.id,
-            storagePath: newImage.storage_path,
+            storagePath: persistedStoragePath,
           },
         }).catch(() => {})
 
-        const url = await createImageStorage(supabase).getUrl(
-          newImage.storage_path,
-        )
+        const url =
+          await createImageStorage(supabase).getUrl(persistedStoragePath)
 
         return {
           id: newImage.id,

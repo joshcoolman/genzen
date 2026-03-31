@@ -144,7 +144,6 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     }>
   }
   const [workspaces, setWorkspaces] = useState<Array<Workspace>>([])
-  const [workspacesLoading, setWorkspacesLoading] = useState(true)
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
 
@@ -153,7 +152,6 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     getWorkspaces({ data: { accessToken: session.access_token } })
       .then(setWorkspaces)
       .catch(() => {})
-      .finally(() => setWorkspacesLoading(false))
   }, [session?.access_token])
 
   const handleSourceFilter = (filter: SourceFilter) => {
@@ -252,8 +250,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     }
 
     void navigate({
-      to: '/dashboard/assets',
-      search: { imageId: undefined },
+      to: '/dashboard/ai-images',
       replace: true,
     })
   }, [deepLinkImageId, isLoading, imageOnlyAssets, navigate])

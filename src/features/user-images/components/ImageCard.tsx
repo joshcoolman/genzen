@@ -56,7 +56,9 @@ export function ImageCard({
             </div>
             <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
               <div className="flex justify-between items-center">
-                <span>{loading ? '--' : formatFileSize(image.file_size)}</span>
+                <span>
+                  {loading ? '--' : formatFileSize(image.file_size ?? 0)}
+                </span>
                 <span>
                   {loading
                     ? '--'

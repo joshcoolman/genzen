@@ -100,7 +100,8 @@ export function useCanvasCombine(
             pendingRecordIds.delete(recordId)
             const placeholderId = recordToPlaceholder.get(recordId)
             if (!placeholderId) continue
-            const signedUrl = await getSignedUrl(record.storage_path)
+            const storagePath = record.storage_path
+            const signedUrl = await getSignedUrl(storagePath)
             if (signedUrl) {
               setImages((prev) =>
                 prev.map((ci) =>
@@ -108,7 +109,7 @@ export function useCanvasCombine(
                     ? {
                         ...ci,
                         recordId,
-                        storagePath: record.storage_path,
+                        storagePath,
                         signedUrl,
                         pending: false,
                       }

@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
+import type { Tables } from '@/lib/types/supabase'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
+
+type EditChildRow = Pick<
+  Tables<'user_images'>,
+  'id' | 'storage_path' | 'thumbnail_path' | 'generation_metadata'
+>
 
 interface EditChild {
   id: string
   url: string
   storagePath: string
-  thumbnailPath?: string | null
+  thumbnailPath: string | null
 }
 
 export type EditChildrenMap = Record<string, Array<EditChild>>
@@ -33,9 +39,10 @@ export function useEditChildren(
         .order('created_at', { ascending: false })
 
       if (!data) return
+      const rows = data as Array<EditChildRow>
 
       // Build a map of all child images (edits, variations, etc.) by source_image_id
-      const allEdits = data.filter((row) => {
+      const allEdits = rows.filter((row) => {
         const meta = row.generation_metadata as Record<string, unknown> | null
         return typeof meta?.source_image_id === 'string'
       })
@@ -57,18 +64,18 @@ export function useEditChildren(
 
       // Build index for recency ordering (data is already sorted created_at desc)
       const recencyIndex = new Map<string, number>()
-      data.forEach((row, i) => recencyIndex.set(row.id, i))
+      rows.forEach((row, i) => recencyIndex.set(row.id, i))
 
       // BFS to collect all descendants for each root parent, then sort newest-first
       const grouped: Record<
         string,
-        Array<{ id: string; path: string; thumbnailPath?: string | null }>
+        Array<{ id: string; path: string; thumbnailPath: string | null }>
       > = {}
       for (const rootId of parentIds) {
         const descendants: Array<{
           id: string
           path: string
-          thumbnailPath?: string | null
+          thumbnailPath: string | null
         }> = []
         const queue = [rootId]
         const visited = new Set<string>()
@@ -81,8 +88,7 @@ export function useEditChildren(
               descendants.push({
                 id: row.id,
                 path: row.storage_path,
-                thumbnailPath: (row as { thumbnail_path?: string | null })
-                  .thumbnail_path,
+                thumbnailPath: row.thumbnail_path,
               })
             }
             queue.push(row.id)
@@ -115,7 +121,9 @@ export function useEditChildren(
               }
             }),
           )
-          result[parentId] = urls.filter((u): u is EditChild => u !== null)
+          result[parentId] = urls.filter(
+            (child): child is EditChild => child !== null,
+          )
         }),
       )
 
@@ -184,6 +192,7 @@ export function useEditChildren(
                       id: updated.id,
                       url,
                       storagePath: updated.storage_path!,
+                      thumbnailPath: thumbPath ?? null,
                     },
                     ...existing,
                   ],

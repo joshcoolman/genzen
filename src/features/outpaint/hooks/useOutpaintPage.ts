@@ -60,7 +60,7 @@ export interface UseOutpaintPageReturn {
       id: string
       title: string
       source: string
-      storage_path: string
+      storage_path: string | null
       [key: string]: unknown
     }>
     imageUrls: Record<string, string>
@@ -113,7 +113,7 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
       id: string
       title: string
       source: string
-      storage_path: string
+      storage_path: string | null
       [key: string]: unknown
     }>
   >([])
@@ -121,9 +121,10 @@ export function useOutpaintPage(): UseOutpaintPageReturn {
   const [isLoadingImages, setIsLoadingImages] = useState(false)
 
   const loadImageUrls = useCallback(
-    async (imgs: Array<{ id: string; storage_path: string }>) => {
+    async (imgs: Array<{ id: string; storage_path: string | null }>) => {
       const storage = createImageStorage(supabase)
       for (const image of imgs) {
+        if (!image.storage_path) continue
         const url = await storage.getUrl(image.storage_path)
         if (url) {
           setImageUrls((prev) => ({ ...prev, [image.id]: url }))

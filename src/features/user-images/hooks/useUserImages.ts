@@ -21,8 +21,8 @@ async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)
   let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
   }
   return btoa(binary)
 }
@@ -251,6 +251,10 @@ export function useUserImages(
         }
 
         // Get URL for new image
+        if (!newImage.storage_path) {
+          throw new Error('Created image is missing a storage path')
+        }
+
         const newUrl = await createImageStorage(supabase).getUrl(
           newImage.storage_path,
         )

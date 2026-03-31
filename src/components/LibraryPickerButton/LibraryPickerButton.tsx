@@ -13,7 +13,7 @@ interface UserImageRow {
   id: string
   title: string
   source: string
-  storage_path: string
+  storage_path: string | null
   [key: string]: unknown
 }
 

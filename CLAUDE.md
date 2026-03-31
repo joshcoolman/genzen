@@ -43,7 +43,7 @@ Each feature has its own `CLAUDE.md` -- reference it before working on a feature
 | **ad**            | Embedded AI chat sidebar (Assistant Director) with vision              | `src/features/ad/CLAUDE.md`            |
 | **notes**         | Save/load AD chat conversations as markdown snapshots                  | `src/features/notes/CLAUDE.md`         |
 | **prompt-studio** | Run prompts against multiple LLMs in parallel                          | `src/features/prompt-studio/CLAUDE.md` |
-| **prompts**       | Personal prompt library bottom sheet with seeded defaults               | `src/features/prompts/CLAUDE.md`       |
+| **prompts**       | Personal prompt library bottom sheet with seeded defaults              | `src/features/prompts/CLAUDE.md`       |
 | **models**        | Browsable FAL AI model catalog with search and filtering               | `src/features/models/CLAUDE.md`        |
 | **trash**         | Soft-delete recovery with linked image protection                      | `src/features/trash/CLAUDE.md`         |
 | **docs**          | Documentation presentation components                                  | `src/features/docs/CLAUDE.md`          |

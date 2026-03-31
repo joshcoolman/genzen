@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { Plus, Sparkles } from 'lucide-react'
 import { ShotCard } from './ShotCard'
-import type {
-  CreateUserImageInput,
-  UserImage,
-} from '@/features/user-images/types'
+import type { UserImage } from '@/features/user-images/types'
 import type { useMultishotEditor } from '../hooks/use-multishot-editor'
 import { Label } from '@/components/ui/label'
 import { RefImageStrip } from '@/components/RefImageStrip'
@@ -32,7 +29,7 @@ interface MultiShotEditorProps {
   imagesLoading: boolean
   elementsLocked?: boolean
   children?: React.ReactNode
-  onUpload?: (input: CreateUserImageInput) => Promise<void>
+  onUpload?: (file: File, title: string) => Promise<void>
   isUploading?: boolean
 }
 

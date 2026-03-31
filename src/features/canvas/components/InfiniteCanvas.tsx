@@ -318,8 +318,8 @@ export function InfiniteCanvas({
         const results = layoutMasonry(items, columns, centerX, originY)
         const posMap = new Map(results.map((r) => [r.id, r]))
 
-        setImages((prev) =>
-          prev.map((img) => {
+        setImages((currentImages) =>
+          currentImages.map((img) => {
             const pos = posMap.get(img.id)
             return pos
               ? {
@@ -411,8 +411,12 @@ export function InfiniteCanvas({
               file,
               file_hash: fileHash,
             })
+            if (!record.storage_path) {
+              throw new Error('Created image is missing a storage path')
+            }
+            const storagePath = record.storage_path
 
-            const signedUrl = await getSignedUrl(record.storage_path)
+            const signedUrl = await getSignedUrl(storagePath)
             if (!signedUrl) throw new Error('Failed to get signed URL')
 
             setImages((prev) =>
@@ -421,7 +425,7 @@ export function InfiniteCanvas({
                   ? {
                       ...ci,
                       recordId: record.id,
-                      storagePath: record.storage_path,
+                      storagePath,
                       signedUrl,
                       pending: false,
                     }
@@ -440,13 +444,13 @@ export function InfiniteCanvas({
   /* -- Library picker confirm -- */
 
   const onLibraryConfirm = useCallback(
-    async (selected: Array<CollectedImage>) => {
-      if (selected.length === 0) return
+    async (selectedImages: Array<CollectedImage>) => {
+      if (selectedImages.length === 0) return
       const c = getPasteTarget()
 
       // Look up storage_path from libraryImages and get full-res signed URLs
       const resolved = await Promise.all(
-        selected.map(async (item) => {
+        selectedImages.map(async (item) => {
           const record = libraryImages.find((img) => img.id === item.id)
           if (!record?.storage_path) return null
           const signedUrl = await getSignedUrl(record.storage_path)

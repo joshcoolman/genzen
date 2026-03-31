@@ -85,7 +85,7 @@ export function useLightbox(
         fetchFullResUrl(item.storagePath)
           .then((url) => {
             if (url) {
-              setFullResUrls((prev) => ({ ...prev, [item.id]: url }))
+              setFullResUrls((current) => ({ ...current, [item.id]: url }))
             }
           })
           .catch(() => {})

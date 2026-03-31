@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
+import type { Tables } from '@/lib/types/supabase'
 import { supabase } from '@/lib/supabase'
 import { getModelName } from '@/features/ai-images/models'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
@@ -15,15 +16,24 @@ interface UseGenerationResultsOptions {
   sourceImageIds?: Array<string>
 }
 
-interface DbRow {
-  id: string
-  storage_path: string | null
-  thumbnail_path?: string | null
-  status: string
-  generation_metadata: Record<string, unknown> | null
-  title: string | null
-  file_size: number | null
-  created_at: string | null
+type DbRow = Pick<
+  Tables<'user_images'>,
+  | 'id'
+  | 'storage_path'
+  | 'thumbnail_path'
+  | 'status'
+  | 'generation_metadata'
+  | 'title'
+  | 'file_size'
+  | 'created_at'
+>
+
+function getMetadata(
+  value: Tables<'user_images'>['generation_metadata'],
+): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
 }
 
 function inferModelId(meta: Record<string, unknown>): string {
@@ -78,14 +88,14 @@ export function useGenerationResults({
         .order('created_at', { ascending: false })
         .limit(limit)
 
-      if (queryError ?? !data) return
+      if (queryError) return
 
       const rows = (data as Array<DbRow>).filter((r) => {
         if (sourceImageIds && sourceImageIds.length > 0) {
           // When filtering by source chain, include any image whose
           // source_image_id is in the chain (regardless of generation_type).
           // This ensures re-parented images appear even without edit/variation type.
-          const meta = r.generation_metadata
+          const meta = getMetadata(r.generation_metadata)
           const srcId = meta?.source_image_id as string | undefined
           if (!srcId || !sourceImageIds.includes(srcId)) return false
         } else {
@@ -107,7 +117,7 @@ export function useGenerationResults({
       )
 
       const loaded: Array<GenerationResult> = rows.map((r) => {
-        const meta = r.generation_metadata ?? {}
+        const meta = getMetadata(r.generation_metadata) ?? {}
         const modelId = inferModelId(meta)
         const status =
           r.status === 'completed'
@@ -126,9 +136,9 @@ export function useGenerationResults({
             (meta.enhanced_prompt as string | undefined) ?? undefined,
           originalPrompt:
             (meta.original_prompt as string | undefined) ?? undefined,
-          title: r.title ?? undefined,
+          title: r.title,
           fileSize: r.file_size ?? undefined,
-          createdAt: r.created_at ?? undefined,
+          createdAt: r.created_at,
         }
       })
 
@@ -160,7 +170,7 @@ export function useGenerationResults({
           if (payload.eventType === 'UPDATE') {
             const updated = payload.new as DbRow
             if (sourceImageIds && sourceImageIds.length > 0) {
-              const meta = updated.generation_metadata
+              const meta = getMetadata(updated.generation_metadata)
               const srcId = meta?.source_image_id as string | undefined
               if (!srcId || !sourceImageIds.includes(srcId)) return
             } else {
@@ -168,10 +178,9 @@ export function useGenerationResults({
             }
 
             if (updated.status === 'completed' && updated.storage_path) {
-              const meta = updated.generation_metadata ?? {}
+              const meta = getMetadata(updated.generation_metadata) ?? {}
               const modelId = inferModelId(meta)
-              const thumbPath = (updated as { thumbnail_path?: string | null })
-                .thumbnail_path
+              const thumbPath = updated.thumbnail_path
               createImageStorage(supabase)
                 .getUrl(thumbPath ?? updated.storage_path)
                 .then((url) => {
@@ -185,10 +194,10 @@ export function useGenerationResults({
                               url,
                               storagePath:
                                 updated.storage_path ?? r.storagePath,
-                              title: updated.title ?? r.title,
+                              title: updated.title,
                               label: getModelName(modelId),
                               fileSize: updated.file_size ?? r.fileSize,
-                              createdAt: updated.created_at ?? r.createdAt,
+                              createdAt: updated.created_at,
                               prompt:
                                 (meta.prompt as string | undefined) ?? r.prompt,
                               enhancedPrompt:

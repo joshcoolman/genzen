@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import type { Tables } from '@/lib/types/supabase'
 import { supabase } from '@/lib/supabase'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
@@ -81,8 +82,7 @@ export function useImages({
 
       if (queryError) throw queryError
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const allImages = (data ?? []) as Array<SavedAiImage>
+      const allImages = data as Array<SavedAiImage>
       const images = sortByOrder(allImages)
       setSavedImages(images)
       setLoadingGallery(false)
@@ -122,15 +122,13 @@ export function useImages({
         if (rootRows) {
           const meta: Record<string, { hidden: boolean }> = {}
           const rootUrlEntries = await Promise.all(
-            rootRows
-              .filter((r) => r.storage_path)
-              .map(async (r) => {
-                const path =
-                  (r as { thumbnail_path?: string | null }).thumbnail_path ??
-                  r.storage_path
-                const url = await createImageStorage(supabase).getUrl(path)
-                return url ? ([r.id, url] as const) : null
-              }),
+            (rootRows as Array<RootImageRow>).map(async (r) => {
+              const storagePath = r.storage_path
+              if (!storagePath) return null
+              const path = r.thumbnail_path ?? storagePath
+              const url = await createImageStorage(supabase).getUrl(path)
+              return url ? ([r.id, url] as const) : null
+            }),
           )
           for (const r of rootRows) {
             meta[r.id] = { hidden: !!r.hidden }
@@ -691,3 +689,7 @@ export function useImages({
     refresh: loadSavedImages,
   }
 }
+type RootImageRow = Pick<
+  Tables<'user_images'>,
+  'id' | 'storage_path' | 'thumbnail_path' | 'hidden'
+>

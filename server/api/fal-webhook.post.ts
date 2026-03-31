@@ -5,6 +5,7 @@ import {
   readRawBody,
   setResponseStatus,
 } from 'h3'
+import type { Tables } from '@/lib/types/supabase'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import {
   markGenerationFailed,
@@ -18,6 +19,8 @@ interface FalWebhookBody {
   payload?: Record<string, unknown>
   error?: string
 }
+
+type WebhookRecord = Pick<Tables<'user_images'>, 'id' | 'user_id' | 'source'>
 
 // --- ED25519 JWKS signature verification per FAL docs ---
 
@@ -170,8 +173,7 @@ export default defineEventHandler(async (event) => {
     return 'Internal Server Error'
   }
 
-  const record = result.data
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- maybeSingle() can return null data
+  const record = result.data as WebhookRecord | null
   if (!record) {
     console.warn(`[fal-webhook] No record found for request_id=${request_id}`)
     return 'OK'

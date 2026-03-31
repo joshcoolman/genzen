@@ -284,7 +284,7 @@ export function TrashDisplay() {
                                 ? 'AI'
                                 : 'Upload'}
                               {' -- '}
-                              {formatFileSize(image.file_size)}
+                              {formatFileSize(image.file_size ?? 0)}
                               {' -- '}
                               Deleted {formatDeletedDate(image.deleted_at)}
                             </p>

@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import type { CreateUserImageInput } from '@/features/user-images/types'
 import { CREDIT_COSTS } from '@/features/credits'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useAuth } from '@/lib/auth'
@@ -26,8 +25,8 @@ function SequenceDetailPage() {
   const userImagesHook = useUserImages(user?.id)
 
   const handleUpload = useCallback(
-    async (input: CreateUserImageInput) => {
-      await userImagesHook.create(input)
+    async (file: File, title: string) => {
+      await userImagesHook.create({ file, title })
     },
     [userImagesHook.create],
   )

@@ -30,8 +30,8 @@ export function GlobalNav() {
         genzen
       </Link>
       <div className="flex items-center gap-4">
-        <Link to="/about" className={linkClass('/about')}>
-          About
+        <Link to="/docs" className={linkClass('/docs')}>
+          Docs
         </Link>
         {!loading &&
           (user ? (

@@ -5,7 +5,10 @@ export const Route = createFileRoute('/docs/')({
   loader: async () => {
     const firstSlug = await getFirstDocSlug()
     if (firstSlug) {
-      throw redirect({ to: `/docs/${firstSlug}` })
+      throw redirect({
+        to: '/docs/$',
+        params: { _splat: firstSlug },
+      })
     }
     return {}
   },

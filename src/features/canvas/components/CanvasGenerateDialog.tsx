@@ -17,8 +17,8 @@ export function CanvasGenerateDialog({ canvasGen }: CanvasGenerateDialogProps) {
   const generatorOverride = useMemo(
     () => ({
       ...canvasGen.generator,
-      handleGenerate: async () => {
-        canvasGen.handleGenerateOptimistic()
+      handleGenerate: () => {
+        return Promise.resolve(canvasGen.handleGenerateOptimistic())
       },
     }),
     [canvasGen.generator, canvasGen.handleGenerateOptimistic],
