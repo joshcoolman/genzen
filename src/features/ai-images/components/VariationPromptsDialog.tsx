@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Loader2, Plus, Sparkles, X } from 'lucide-react'
+import { Loader2, Plus, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -24,10 +24,8 @@ interface VariationPromptsDialogProps {
   onOpenChange: (open: boolean) => void
   prompts: Array<string>
   loading: boolean
-  submitting: boolean
-  onRun: (prompts: Array<string>) => void
-  onGenerateMore: () => void
-  generatingMore: boolean
+  onGenerate: (guidance: string, count: number) => void
+  onApply: (prompts: Array<string>) => void
   sourceImageUrl?: string
   referenceImages: Array<ReferenceImage>
   onAddReference: () => void
@@ -35,15 +33,16 @@ interface VariationPromptsDialogProps {
   maxReferences?: number
 }
 
+const COUNT_OPTIONS = [1, 2, 3, 4]
+const DEFAULT_COUNT = 4
+
 export function VariationPromptsDialog({
   open,
   onOpenChange,
   prompts: initialPrompts,
   loading,
-  submitting,
-  onRun,
-  onGenerateMore,
-  generatingMore,
+  onGenerate,
+  onApply,
   sourceImageUrl,
   referenceImages,
   onAddReference,
@@ -51,12 +50,24 @@ export function VariationPromptsDialog({
   maxReferences = 5,
 }: VariationPromptsDialogProps) {
   const [prompts, setPrompts] = useState<Array<string>>([])
+  const [guidance, setGuidance] = useState('')
+  const [count, setCount] = useState(DEFAULT_COUNT)
 
+  // Sync incoming prompts (after generation)
   useEffect(() => {
     if (initialPrompts.length > 0) {
       setPrompts(initialPrompts)
     }
   }, [initialPrompts])
+
+  // Reset to pre-generation state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPrompts([])
+      setGuidance('')
+      setCount(DEFAULT_COUNT)
+    }
+  }, [open])
 
   function updatePrompt(index: number, value: string) {
     setPrompts((prev) => prev.map((p, i) => (i === index ? value : p)))
@@ -95,20 +106,22 @@ export function VariationPromptsDialog({
     }
   }
 
-  function handleRun() {
+  function handleApply() {
     const filtered = prompts.filter((p) => p.trim().length > 0)
     if (filtered.length > 0) {
-      onRun(filtered)
+      onApply(filtered)
+      onOpenChange(false)
     }
   }
 
+  const isPreGeneration = !loading && prompts.length === 0
   const validCount = prompts.filter((p) => p.trim().length > 0).length
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Variation Prompts</DialogTitle>
+          <DialogTitle>Generate Variations</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
@@ -134,11 +147,46 @@ export function VariationPromptsDialog({
               max={maxReferences}
               onAdd={onAddReference}
               onRemove={onRemoveReference}
-              disabled={submitting}
+              disabled={loading}
             />
           </div>
 
-          {loading ? (
+          {isPreGeneration && (
+            <>
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">
+                  Guidance (optional)
+                </span>
+                <Textarea
+                  value={guidance}
+                  onChange={(e) => setGuidance(e.target.value)}
+                  rows={2}
+                  className="text-sm resize-none"
+                  placeholder="Describe a direction or mood..."
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-xs text-muted-foreground">Count</span>
+                <div className="flex gap-1.5">
+                  {COUNT_OPTIONS.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setCount(n)}
+                      className={`h-7 w-7 rounded text-xs font-medium transition-colors cursor-pointer ${
+                        count === n
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {loading && (
             <div className="space-y-3">
               {Array.from({ length: 2 }).map((_, i) => (
                 <Skeleton key={i} className="h-16 w-full rounded-md" />
@@ -147,7 +195,9 @@ export function VariationPromptsDialog({
                 Generating prompts...
               </p>
             </div>
-          ) : (
+          )}
+
+          {!loading && prompts.length > 0 && (
             <>
               {prompts.map((prompt, i) => (
                 <div key={i} className="flex gap-2">
@@ -168,51 +218,37 @@ export function VariationPromptsDialog({
                   </button>
                 </div>
               ))}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addPrompt}
-                  className="flex-1"
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
-                  Add prompt
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onGenerateMore}
-                  disabled={generatingMore || submitting}
-                  className="flex-1"
-                >
-                  {generatingMore ? (
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                  )}
-                  {generatingMore ? 'Generating...' : 'Generate more'}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addPrompt}
+                className="w-full"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add prompt
+              </Button>
             </>
           )}
         </div>
 
         <DialogFooter>
-          <Button
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <ActionButton
-            onClick={handleRun}
-            disabled={loading || validCount === 0}
-            loading={submitting}
-            loadingText="Running..."
-          >
-            Run {validCount} variation{validCount !== 1 ? 's' : ''}
-          </ActionButton>
+          {isPreGeneration ? (
+            <Button onClick={() => onGenerate(guidance, count)}>
+              Generate {count}
+            </Button>
+          ) : (
+            <ActionButton
+              onClick={handleApply}
+              disabled={loading || validCount === 0}
+              loading={loading}
+              loadingText="Generating..."
+            >
+              Apply {validCount} prompt{validCount !== 1 ? 's' : ''}
+            </ActionButton>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

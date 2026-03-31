@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Circle,
   Download,
+  Layers,
   Maximize2,
   MessageSquare,
   MoreHorizontal,
@@ -36,6 +37,7 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
+  onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
   selected?: boolean
   selectionActive?: boolean
@@ -57,6 +59,7 @@ export function ImageCard({
   onDownload,
   onUngroup,
   onDescribe,
+  onGenerateVariations,
   onGallery,
   selected,
   selectionActive,
@@ -102,6 +105,12 @@ export function ImageCard({
           <DropdownMenuItem onClick={() => onDescribe(img)}>
             <MessageSquare className="h-4 w-4" />
             Describe
+          </DropdownMenuItem>
+        )}
+        {onGenerateVariations && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onGenerateVariations(img)}>
+            <Layers className="h-4 w-4" />
+            Generate Variations
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

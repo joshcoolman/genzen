@@ -45,37 +45,8 @@ export function DescribeDialog({
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(imageUrl)
-      if (!response.ok) {
-        setError(`Failed to fetch image (${response.status})`)
-        return
-      }
-      const blob = await response.blob()
-
-      // Resize to fit within 5MB / 1024px for the vision API
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const img = new Image()
-        img.onload = () => {
-          const MAX = 1024
-          let { width, height } = img
-          if (width > MAX || height > MAX) {
-            const scale = MAX / Math.max(width, height)
-            width = Math.round(width * scale)
-            height = Math.round(height * scale)
-          }
-          const canvas = document.createElement('canvas')
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')!
-          ctx.drawImage(img, 0, 0, width, height)
-          resolve(canvas.toDataURL('image/jpeg', 0.85))
-        }
-        img.onerror = () => reject(new Error('Failed to load image'))
-        img.src = URL.createObjectURL(blob)
-      })
-
       const result = await captionImage({
-        data: { imageBase64: base64, accessToken, mode: 'reconstruct' },
+        data: { imageId, accessToken, mode: 'reconstruct' },
       })
       setDescription(result.caption)
     } catch (err) {

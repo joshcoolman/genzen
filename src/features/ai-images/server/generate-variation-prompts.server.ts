@@ -18,6 +18,7 @@ interface GenerateVariationPromptsInput {
   sourceImageId: string
   count: number
   existingPrompts?: Array<string>
+  guidance?: string
 }
 
 export const generateVariationPrompts = createServerFn({ method: 'POST' })
@@ -170,6 +171,7 @@ export const generateVariationPrompts = createServerFn({ method: 'POST' })
         hasImage: !!imageBase64,
         imageBase64,
         rootPrompt,
+        guidance: data.guidance,
       })
 
       const response = await generateText({

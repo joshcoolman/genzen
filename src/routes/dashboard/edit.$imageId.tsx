@@ -192,7 +192,7 @@ function EditPage() {
           {/* Variations button */}
           <ActionButton
             variant="outline"
-            onClick={page.handleGenerateVariations}
+            onClick={page.handleOpenVariationDialog}
             loading={page.variationPromptsLoading}
             loadingText="Generating..."
             className="w-full"
@@ -208,10 +208,13 @@ function EditPage() {
         onOpenChange={page.setVariationDialogOpen}
         prompts={page.variationPrompts}
         loading={page.variationPromptsLoading}
-        submitting={page.variationSubmitting}
-        onRun={page.handleRunVariations}
-        onGenerateMore={page.handleGenerateMoreVariations}
-        generatingMore={page.generatingMore}
+        onGenerate={(guidance, count) =>
+          void page.handleGenerateVariations(guidance, count)
+        }
+        onApply={(prompts) => {
+          page.generator.pastePrompts(prompts)
+          page.setVariationDialogOpen(false)
+        }}
         sourceImageUrl={page.sourceImageMeta.url}
         referenceImages={page.generator.refImages}
         onAddReference={() => setRefPickerOpen(true)}

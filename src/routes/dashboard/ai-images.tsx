@@ -679,6 +679,7 @@ function AiImagesPage() {
           onDownload={handleDownload}
           onUngroup={handleUngroup}
           onDescribe={handleDescribe}
+          onGenerateVariations={page.variations.openVariationDialog}
           onGallery={page.lightbox.open}
           selectionActive={selection.count > 0}
           isSelected={selection.isSelected}
@@ -820,26 +821,34 @@ function AiImagesPage() {
       )}
 
       <VariationPromptsDialog
-        open={!!page.variations.pendingVariation}
+        open={page.variations.variationDialogOpen}
         onOpenChange={(open) => {
           if (!open) page.variations.cancelVariationPreview()
         }}
-        prompts={page.variations.pendingVariation?.prompts ?? []}
+        prompts={page.variations.variationPrompts}
         loading={page.variations.generatingPrompts}
-        submitting={page.variations.submittingVariations}
-        onRun={page.variations.handleRunVariations}
+        onGenerate={(guidance, count) =>
+          void page.variations.handlePreviewVariations(guidance, count)
+        }
+        onApply={(prompts) => {
+          const sourceUrl = page.variations.pendingSourceImage
+            ? page.gallery.imageUrls[page.variations.pendingSourceImage.id]
+            : undefined
+          page.variations.handleApplyVariations(
+            prompts,
+            page.generator.pastePrompts,
+            sourceUrl,
+            page.generator.setSourceFromUrl,
+          )
+        }}
         sourceImageUrl={
-          page.variations.pendingVariation
-            ? page.gallery.imageUrls[
-                page.variations.pendingVariation.sourceImageId
-              ]
+          page.variations.pendingSourceImage
+            ? page.gallery.imageUrls[page.variations.pendingSourceImage.id]
             : undefined
         }
         referenceImages={[]}
         onAddReference={() => {}}
         onRemoveReference={() => {}}
-        onGenerateMore={() => {}}
-        generatingMore={false}
       />
 
       {page.reparent.adoptTarget && (

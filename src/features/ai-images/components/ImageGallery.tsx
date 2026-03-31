@@ -30,6 +30,7 @@ interface ImageGalleryProps {
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
+  onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
@@ -51,6 +52,7 @@ export function ImageGallery({
   onDownload,
   onUngroup,
   onDescribe,
+  onGenerateVariations,
   onGallery,
   selectionActive,
   isSelected,
@@ -150,6 +152,7 @@ export function ImageGallery({
                 onDownload={onDownload}
                 onUngroup={onUngroup}
                 onDescribe={onDescribe}
+                onGenerateVariations={onGenerateVariations}
                 onGallery={onGallery}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}

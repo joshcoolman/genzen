@@ -11,7 +11,6 @@ import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
-import { submitVariations } from '@/features/ai-images/server/submit-variations.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
   detectAspectRatio,
@@ -203,20 +202,11 @@ export function useEditPage(imageId: string) {
           setSourceBase64(canvas.toDataURL('image/png'))
         }
 
-        // Set aspect ratio
-        if (srcRatio) {
-          const [a, b] = srcRatio.split(':').map(Number)
-          setOrientation(a >= b ? 'landscape' : 'portrait')
-          setAspectRatio(srcRatio)
-        } else {
-          const detected = detectAspectRatio(
-            img.naturalWidth,
-            img.naturalHeight,
-          )
-          const [a, b] = detected.split(':').map(Number)
-          setOrientation(a >= b ? 'landscape' : 'portrait')
-          setAspectRatio(detected)
-        }
+        // Set aspect ratio from actual image dimensions to correctly detect orientation
+        const detected = detectAspectRatio(img.naturalWidth, img.naturalHeight)
+        const [a, b] = detected.split(':').map(Number)
+        setOrientation(a >= b ? 'landscape' : 'portrait')
+        setAspectRatio(detected)
       }
       img.src = signedUrl
 
@@ -440,19 +430,10 @@ export function useEditPage(imageId: string) {
           setSourceBase64(canvas.toDataURL('image/png'))
         }
 
-        if (srcRatio) {
-          const [a, b] = srcRatio.split(':').map(Number)
-          setOrientation(a >= b ? 'landscape' : 'portrait')
-          setAspectRatio(srcRatio)
-        } else {
-          const detected = detectAspectRatio(
-            img.naturalWidth,
-            img.naturalHeight,
-          )
-          const [a, b] = detected.split(':').map(Number)
-          setOrientation(a >= b ? 'landscape' : 'portrait')
-          setAspectRatio(detected)
-        }
+        const detected = detectAspectRatio(img.naturalWidth, img.naturalHeight)
+        const [a, b] = detected.split(':').map(Number)
+        setOrientation(a >= b ? 'landscape' : 'portrait')
+        setAspectRatio(detected)
       }
       img.src = url
 
@@ -491,6 +472,12 @@ export function useEditPage(imageId: string) {
         ctx.drawImage(img, 0, 0)
         setSourceBase64(canvas.toDataURL('image/png'))
       }
+
+      // Restore aspect ratio from actual image dimensions
+      const detected = detectAspectRatio(img.naturalWidth, img.naturalHeight)
+      const [da, db] = detected.split(':').map(Number)
+      setOrientation(da >= db ? 'landscape' : 'portrait')
+      setAspectRatio(detected)
     }
     img.src = originalImageMeta.url
   }, [originalImageMeta, imageId])
@@ -501,154 +488,52 @@ export function useEditPage(imageId: string) {
   const [variationDialogOpen, setVariationDialogOpen] = useState(false)
   const [variationPrompts, setVariationPrompts] = useState<Array<string>>([])
   const [variationPromptsLoading, setVariationPromptsLoading] = useState(false)
-  const [variationSubmitting] = useState(false)
-  const [generatingMore, setGeneratingMore] = useState(false)
-  const [variationMeta, setVariationMeta] = useState<{
-    rootPrompt: string
-    rootImageId: string
-    sourceImageId: string
-    falImageUrl?: string
-  } | null>(null)
 
-  const handleGenerateVariations = useCallback(async () => {
-    if (!accessToken || !sourceImageMeta) return
-    setError(null)
-    setVariationDialogOpen(true)
-    setVariationPromptsLoading(true)
+  const handleOpenVariationDialog = useCallback(() => {
     setVariationPrompts([])
+    setVariationDialogOpen(true)
+  }, [])
 
-    try {
-      let sourcePrompt = sourceImageMeta.prompt
-      if (!sourcePrompt) {
-        const { caption } = await captionImage({
-          data: { imageBase64: sourceImageMeta.url, accessToken },
-        })
-        sourcePrompt = caption
-        setSourceImageMeta((prev) =>
-          prev ? { ...prev, prompt: caption } : prev,
-        )
-      }
-
-      const result = await generateVariationPrompts({
-        data: {
-          accessToken,
-          prompt: sourcePrompt,
-          sourceImageId: activeSourceId,
-          count: 4,
-        },
-      })
-      setVariationPrompts(result.prompts)
-      setVariationMeta({
-        rootPrompt: result.rootPrompt,
-        rootImageId: result.rootImageId,
-        sourceImageId: result.sourceImageId,
-        falImageUrl: result.falImageUrl,
-      })
-    } catch (err) {
-      setVariationDialogOpen(false)
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to generate variation prompts',
-      )
-    } finally {
-      setVariationPromptsLoading(false)
-    }
-  }, [accessToken, sourceImageMeta?.prompt, activeSourceId])
-
-  const handleGenerateMoreVariations = useCallback(async () => {
-    if (!accessToken || !sourceImageMeta?.prompt) return
-    setGeneratingMore(true)
-    try {
-      const result = await generateVariationPrompts({
-        data: {
-          accessToken,
-          prompt: sourceImageMeta.prompt,
-          sourceImageId: activeSourceId,
-          count: 1,
-          existingPrompts: variationPrompts,
-        },
-      })
-      setVariationPrompts((prev) => [...prev, ...result.prompts])
-    } catch {
-      // silently fail
-    } finally {
-      setGeneratingMore(false)
-    }
-  }, [accessToken, sourceImageMeta?.prompt, activeSourceId, variationPrompts])
-
-  const handleRunVariations = useCallback(
-    async (variationTexts: Array<string>) => {
-      if (!accessToken || !variationMeta || !sourceImageMeta) return
-      const cost = CREDIT_COSTS.variation * variationTexts.length
-      if (credits.balance !== null && credits.balance < cost) {
-        credits.showInsufficientCredits(cost)
-        return
-      }
-
-      // Close dialog and add optimistic pending results immediately
-      setVariationDialogOpen(false)
-
-      const now = new Date().toISOString()
-      const optimisticIds = variationTexts.map(
-        (_, i) => `optimistic-var-${Date.now()}-${i}`,
-      )
-      for (let i = 0; i < variationTexts.length; i++) {
-        results.addPendingResult({
-          id: optimisticIds[i],
-          status: 'pending',
-          label: 'Kontext Pro',
-          prompt: variationTexts[i],
-          title: variationTexts[i],
-          createdAt: now,
-        })
-      }
+  const handleGenerateVariations = useCallback(
+    async (guidance: string, count: number) => {
+      if (!accessToken || !sourceImageMeta) return
+      setError(null)
+      setVariationPromptsLoading(true)
 
       try {
-        const refIds = refImages.map((r) => r.id)
-        const variationResults = await submitVariations({
+        let sourcePrompt = sourceImageMeta.prompt
+        if (!sourcePrompt) {
+          const { caption } = await captionImage({
+            data: { imageBase64: sourceImageMeta.url, accessToken },
+          })
+          sourcePrompt = caption
+          setSourceImageMeta((prev) =>
+            prev ? { ...prev, prompt: caption } : prev,
+          )
+        }
+
+        const result = await generateVariationPrompts({
           data: {
             accessToken,
-            prompts: variationTexts,
-            model: 'fal-ai/flux-pro/kontext',
-            sourceImageId: variationMeta.sourceImageId,
-            rootImageId: variationMeta.rootImageId,
-            rootPrompt: variationMeta.rootPrompt,
-            aspectRatio,
-            falImageUrl: variationMeta.falImageUrl,
-            ...(refIds.length > 0 ? { referenceImageIds: refIds } : {}),
+            prompt: sourcePrompt,
+            sourceImageId: activeSourceId,
+            count,
+            ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
           },
         })
-
-        // Replace optimistic IDs with real DB IDs
-        for (let i = 0; i < variationResults.length; i++) {
-          if (i < optimisticIds.length) {
-            results.replaceTempId(
-              optimisticIds[i],
-              variationResults[i].recordId,
-            )
-          }
-        }
-        // Remove any extra optimistic cards that didn't get a real result
-        for (let i = variationResults.length; i < optimisticIds.length; i++) {
-          results.dismissResult(optimisticIds[i])
-        }
-
-        await credits.refresh()
+        setVariationPrompts(result.prompts)
       } catch (err) {
-        // Remove all optimistic cards on error
-        for (const id of optimisticIds) {
-          results.dismissResult(id)
-        }
-        const message = err instanceof Error ? err.message : String(err)
-        if (message.includes('Insufficient credits')) {
-          credits.showInsufficientCredits(cost)
-        } else {
-          setError(message)
-        }
+        setVariationDialogOpen(false)
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to generate variation prompts',
+        )
+      } finally {
+        setVariationPromptsLoading(false)
       }
     },
-    [accessToken, variationMeta, aspectRatio, credits, results, refImages],
+    [accessToken, sourceImageMeta, activeSourceId],
   )
 
   // GeneratorState adapter — makes this hook's state compatible with GeneratorPanel
@@ -735,10 +620,7 @@ export function useEditPage(imageId: string) {
     setVariationDialogOpen,
     variationPrompts,
     variationPromptsLoading,
-    variationSubmitting,
+    handleOpenVariationDialog,
     handleGenerateVariations,
-    handleRunVariations,
-    handleGenerateMoreVariations,
-    generatingMore,
   }
 }

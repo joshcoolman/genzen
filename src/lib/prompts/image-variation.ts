@@ -24,7 +24,12 @@ export function variationUserContent(opts: {
   hasImage: boolean
   imageBase64?: { data: string; mediaType: string }
   rootPrompt: string
+  guidance?: string
 }) {
+  const guidanceSection = opts.guidance?.trim()
+    ? `\n\nUser guidance: ${opts.guidance.trim()}`
+    : ''
+
   if (opts.hasImage && opts.imageBase64) {
     return [
       {
@@ -33,9 +38,9 @@ export function variationUserContent(opts: {
       },
       {
         type: 'text' as const,
-        text: `Look at this image. Write a short directive for the next shot -- just the change, not the scene.${opts.avoidSection}`,
+        text: `Look at this image. Write a short directive for the next shot -- just the change, not the scene.${opts.avoidSection}${guidanceSection}`,
       },
     ]
   }
-  return `Write a short variation directive for this scene:\n\n${opts.rootPrompt}${opts.avoidSection}`
+  return `Write a short variation directive for this scene:\n\n${opts.rootPrompt}${opts.avoidSection}${guidanceSection}`
 }
