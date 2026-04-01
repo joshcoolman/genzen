@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GeneratorState, RefImage } from './use-generator'
 import type { GenerationResult } from '@/lib/types/generation-result'
+import type { SavedAiImage } from '@/features/ai-images/types'
 import { useAuth } from '@/lib/auth'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { useModelSelector } from '@/components/ModelSelector'
 import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
+import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
@@ -88,6 +90,7 @@ export function useEditPage(imageId: string) {
   const [sourceChain, setSourceChain] = useState<Array<string>>([imageId])
 
   const existingImages = useExistingImages(user?.id)
+  const editChildren = useEditChildren(sourceChain, user?.id)
 
   // BFS descendant discovery
   useEffect(() => {
@@ -536,6 +539,39 @@ export function useEditPage(imageId: string) {
     [accessToken, sourceImageMeta, activeSourceId],
   )
 
+  // Chain images: original parent pinned at position 0, followed by all edit results
+  const chainImages = useMemo((): Array<SavedAiImage> => {
+    if (!originalImageMeta) return results.savedImages
+
+    const parentAsSaved: SavedAiImage = {
+      id: originalImageMeta.id,
+      title: originalImageMeta.title ?? 'Source',
+      storage_path: originalImageMeta.storagePath,
+      status: 'completed',
+      generation_error: null,
+      generation_metadata: {
+        prompt: originalImageMeta.prompt ?? '',
+        model: '',
+        aspect_ratio: originalImageMeta.aspectRatio ?? undefined,
+      },
+      created_at: new Date().toISOString(),
+    }
+
+    // Don't duplicate the parent if it already appears in results
+    const filteredResults = results.savedImages.filter(
+      (r) => r.id !== originalImageMeta.id,
+    )
+    return [parentAsSaved, ...filteredResults]
+  }, [originalImageMeta, results.savedImages])
+
+  const chainImageUrls = useMemo((): Record<string, string> => {
+    const urls: Record<string, string> = { ...results.savedImageUrls }
+    if (originalImageMeta) {
+      urls[originalImageMeta.id] = originalImageMeta.url
+    }
+    return urls
+  }, [originalImageMeta, results.savedImageUrls])
+
   // GeneratorState adapter — makes this hook's state compatible with GeneratorPanel
   const generator: GeneratorState = {
     prompt,
@@ -593,8 +629,13 @@ export function useEditPage(imageId: string) {
     setError,
     describe,
     results,
+    chainImages,
+    chainImageUrls,
+    editChildrenMap: editChildren.map,
+    accessToken: accessToken ?? null,
     sourceImageMeta,
     originalImageMeta,
+    activeSourceId,
     pageLoading,
     hasParent,
     isChained,

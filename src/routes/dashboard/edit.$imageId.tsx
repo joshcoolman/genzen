@@ -1,13 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowLeft, Pin, PinOff, RotateCcw, Unlink } from 'lucide-react'
-import type { GenerationResult } from '@/lib/types/generation-result'
-import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Download,
+  EyeOff,
+  Info,
+  LayoutGrid,
+  Pin,
+  PinOff,
+  RotateCcw,
+  Trash2,
+  Unlink,
+} from 'lucide-react'
+import { saveAs } from 'file-saver'
+import JSZip from 'jszip'
+import type { SavedAiImage } from '@/features/ai-images/types'
+import { ImageGallery } from '@/features/ai-images/components/ImageGallery'
 import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
-import { GenerationResultsGrid } from '@/components/GenerationResultsGrid'
-import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
+import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
+import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
 import { ActionButton } from '@/components/ActionButton'
+import { SelectionDrawer } from '@/components/SelectionDrawer'
+import { Lightbox } from '@/components/Lightbox'
+import { Button } from '@/components/ui/button'
+import { useSelection } from '@/lib/use-selection'
+import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
+import { createImageStorage } from '@/lib/image-storage'
+import { supabase } from '@/lib/supabase'
 
 export const Route = createFileRoute('/dashboard/edit/$imageId')({
   component: EditPage,
@@ -15,6 +37,42 @@ export const Route = createFileRoute('/dashboard/edit/$imageId')({
     sourceId: (search.sourceId as string) || undefined,
   }),
 })
+
+const THUMB_SIZES = ['lg', 'md', 'sm'] as const
+const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
+  lg: 'LG',
+  md: 'MD',
+  sm: 'SM',
+}
+
+interface EditPrefs {
+  thumbSize: 'lg' | 'md' | 'sm'
+  showInfo: boolean
+  sortAsc: boolean
+}
+
+const PREFS_KEY = 'genzen:edit-page-prefs'
+
+function getStoredPrefs(): EditPrefs {
+  if (typeof window === 'undefined')
+    return { thumbSize: 'lg', showInfo: true, sortAsc: false }
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (raw)
+      return {
+        ...{ thumbSize: 'lg', showInfo: true, sortAsc: false },
+        ...JSON.parse(raw),
+      }
+  } catch {}
+  return { thumbSize: 'lg', showInfo: true, sortAsc: false }
+}
+
+function storePrefs(partial: Partial<EditPrefs>) {
+  try {
+    const current = getStoredPrefs()
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...partial }))
+  } catch {}
+}
 
 function EditPage() {
   const { imageId } = Route.useParams()
@@ -30,36 +88,60 @@ function EditPage() {
     localStorage.setItem('genzen:edit-panel-pinned', String(panelPinned))
   }, [panelPinned])
 
+  // View prefs — same controls as main view
+  const [storedPrefs] = useState(getStoredPrefs)
+  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
+    storedPrefs.thumbSize,
+  )
+  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+
+  const handleToggleThumbSize = () => {
+    setThumbSize((v) => {
+      const idx = THUMB_SIZES.indexOf(v)
+      const next = THUMB_SIZES[(idx + 1) % THUMB_SIZES.length]
+      storePrefs({ thumbSize: next })
+      return next
+    })
+  }
+
+  const handleToggleInfo = () => {
+    setShowInfo((v) => {
+      storePrefs({ showInfo: !v })
+      return !v
+    })
+  }
+
+  const handleToggleSort = () => {
+    setSortAsc((v) => {
+      storePrefs({ sortAsc: !v })
+      return !v
+    })
+  }
+
   // Ref image picker state
   const [refPickerOpen, setRefPickerOpen] = useState(false)
 
-  // Pin the original parent image at position 0 so the grid never shifts.
-  // sourceImageMeta is the selection cursor (changes on click);
-  // originalImageMeta is the group identity (set once on load, never changes).
-  const sourceId = page.sourceImageMeta?.id
-  const allResults = useMemo(() => {
-    if (!page.originalImageMeta) return page.results.results
-    if (page.results.results.some((r) => r.id === page.originalImageMeta!.id))
-      return page.results.results
-    const parentResult: GenerationResult = {
-      id: page.originalImageMeta.id,
-      status: 'complete',
-      url: page.originalImageMeta.url,
-      label: page.originalImageMeta.title ?? 'Source',
-      title: page.originalImageMeta.title ?? undefined,
-    }
-    return [parentResult, ...page.results.results]
-  }, [page.results.results, page.originalImageMeta])
-
-  // Click card = promote to source
-  const handleSelectCard = useCallback(
-    (id: string) => {
-      if (id === sourceId) return
-      const result = allResults.find((r) => r.id === id)
-      if (result) page.selectImage(result)
-    },
-    [allResults, sourceId, page.selectImage],
+  // Describe dialog
+  const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
+    null,
   )
+
+  // Lightbox
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  // Sort chain images — parent always stays at position 0
+  const sortedChainImages = sortAsc
+    ? page.chainImages.length > 1
+      ? [page.chainImages[0], ...[...page.chainImages.slice(1)].reverse()]
+      : page.chainImages
+    : page.chainImages
+
+  // Selection
+  const selection = useSelection({
+    items: sortedChainImages.map((img) => img.id),
+  })
+  const selectionActive = selection.count > 0
 
   // Pre-select child when navigating from main page thumb click
   const didApplyInitialSource = useRef(false)
@@ -69,6 +151,93 @@ function EditPage() {
     didApplyInitialSource.current = true
     void page.selectImageById(initialSourceId)
   }, [initialSourceId, page.pageLoading, page.selectImageById])
+
+  // Card click = promote to source (not navigate)
+  const handleOpen = useCallback(
+    (img: SavedAiImage) => {
+      if (img.id === page.activeSourceId) return
+      void page.selectImageById(img.id)
+    },
+    [page.activeSourceId, page.selectImageById],
+  )
+
+  // Child thumbnail click = promote that child to source
+  const handleChildOpen = useCallback(
+    (childId: string) => {
+      void page.selectImageById(childId)
+    },
+    [page.selectImageById],
+  )
+
+  // Delete — prevent deleting the current source
+  const handleDelete = useCallback(
+    (img: SavedAiImage) => {
+      if (img.id === page.activeSourceId) return
+      void page.results.deleteResult(img.id)
+    },
+    [page.activeSourceId, page.results.deleteResult],
+  )
+
+  // Download single image
+  const handleDownload = useCallback(async (img: SavedAiImage) => {
+    const path = img.storage_path
+    if (!path) return
+    const url = await createImageStorage(supabase).getUrl(path)
+    if (!url) return
+    saveAs(url, `${img.title}.png`)
+  }, [])
+
+  // Batch download selected
+  const handleDownloadSelected = useCallback(async () => {
+    const selected = sortedChainImages.filter(
+      (img) => selection.selectedIds.has(img.id) && img.storage_path,
+    )
+    if (selected.length === 0) return
+    if (selected.length === 1) {
+      await handleDownload(selected[0])
+      selection.clearSelection()
+      return
+    }
+    const zip = new JSZip()
+    await Promise.all(
+      selected.map(async (img) => {
+        const url = await createImageStorage(supabase).getUrl(img.storage_path!)
+        if (!url) return
+        const resp = await fetch(url)
+        const blob = await resp.blob()
+        zip.file(`${img.title}.png`, blob)
+      }),
+    )
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    saveAs(zipBlob, 'edit-images.zip')
+    selection.clearSelection()
+  }, [sortedChainImages, selection, handleDownload])
+
+  // Batch delete selected
+  const handleDeleteSelected = useCallback(async () => {
+    const toDelete = Array.from(selection.selectedIds).filter(
+      (id) => id !== page.activeSourceId,
+    )
+    await Promise.all(toDelete.map((id) => page.results.deleteResult(id)))
+    selection.clearSelection()
+  }, [selection, page.activeSourceId, page.results.deleteResult])
+
+  // Lightbox images (completed only)
+  const lightboxImages = sortedChainImages
+    .filter((img) => img.status === 'completed' && page.chainImageUrls[img.id])
+    .map((img) => ({
+      id: img.id,
+      url: page.chainImageUrls[img.id],
+      title: img.title,
+    }))
+
+  const handleGallery = useCallback(
+    (img: SavedAiImage) => {
+      const idx = lightboxImages.findIndex((i) => i.id === img.id)
+      if (idx >= 0) setLightboxIndex(idx)
+    },
+    [lightboxImages],
+  )
 
   if (page.pageLoading) {
     return (
@@ -111,6 +280,42 @@ function EditPage() {
             Back to AI Images
           </Link>
           <div className="flex items-center gap-3">
+            {/* View controls — same as main view */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleToggleThumbSize}
+                className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium">
+                  {THUMB_LABELS[thumbSize]}
+                </span>
+              </button>
+              <button
+                onClick={handleToggleSort}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                aria-label={sortAsc ? 'Sort newest first' : 'Sort oldest first'}
+              >
+                {sortAsc ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </button>
+              <button
+                onClick={handleToggleInfo}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                aria-label={showInfo ? 'Hide info' : 'Show info'}
+              >
+                {showInfo ? (
+                  <Info className="h-4 w-4" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+
             {page.isChained && (
               <button
                 onClick={page.resetToOriginal}
@@ -137,21 +342,25 @@ function EditPage() {
           </div>
         </div>
 
-        {/* Results grid */}
-        <GenerationResultsGrid
-          results={allResults}
-          selectedId={sourceId}
-          selectedClassName="border-emerald-500 ring-1 ring-emerald-500"
-          onSelect={handleSelectCard}
-          onDelete={(id) => {
-            if (id === sourceId) return
-            void page.results.deleteResult(id)
-          }}
-          onDetach={(id) => void page.detachResult(id)}
-          onAddPrompt={(text) => page.generator.pastePrompts([text])}
-          editMode
-          title="Edits"
-          prefsKey="edit-page-results"
+        {/* Image gallery — same component as main view, scoped to edit chain */}
+        <ImageGallery
+          images={sortedChainImages}
+          imageUrls={page.chainImageUrls}
+          rootImageMeta={{}}
+          editChildrenMap={page.editChildrenMap}
+          loadingGallery={false}
+          thumbSize={thumbSize}
+          showInfo={showInfo}
+          onDelete={handleDelete}
+          onRestoreRoot={() => {}}
+          onDownload={handleDownload}
+          onDescribe={(img) => setDescribeTarget(img)}
+          onGallery={handleGallery}
+          onOpen={handleOpen}
+          onChildOpen={handleChildOpen}
+          selectionActive={selectionActive}
+          isSelected={selection.isSelected}
+          onSelect={(id, shiftKey) => selection.toggle(id, shiftKey)}
         />
       </div>
 
@@ -203,6 +412,29 @@ function EditPage() {
         </div>
       </div>
 
+      {/* Batch selection drawer — delete + download only (no group/ungroup/move) */}
+      <SelectionDrawer
+        count={selection.count}
+        onClear={selection.clearSelection}
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleDownloadSelected()}
+        >
+          <Download className="h-4 w-4 mr-1.5" />
+          Download
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleDeleteSelected()}
+        >
+          <Trash2 className="h-4 w-4 mr-1.5" />
+          Delete
+        </Button>
+      </SelectionDrawer>
+
       {/* Variation prompts dialog */}
       <VariationPromptsDialog
         open={page.variationDialogOpen}
@@ -241,6 +473,51 @@ function EditPage() {
         }
         max={page.generator.maxRefImages - page.generator.refImages.length}
       />
+
+      {/* Describe dialog */}
+      {describeTarget && (
+        <DescribeDialog
+          open={!!describeTarget}
+          onOpenChange={(open) => {
+            if (!open) setDescribeTarget(null)
+          }}
+          imageUrl={page.chainImageUrls[describeTarget.id]}
+          imageId={describeTarget.id}
+          currentDescription={describeTarget.description}
+          accessToken={page.accessToken ?? undefined}
+        />
+      )}
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && lightboxImages.length > 0 && (
+        <Lightbox
+          images={lightboxImages}
+          imageUrls={page.chainImageUrls}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNext={() =>
+            setLightboxIndex((i) =>
+              i === null ? 0 : (i + 1) % lightboxImages.length,
+            )
+          }
+          onPrev={() =>
+            setLightboxIndex((i) =>
+              i === null
+                ? 0
+                : (i - 1 + lightboxImages.length) % lightboxImages.length,
+            )
+          }
+          onDelete={() => {
+            const img = lightboxImages[lightboxIndex]
+            void page.results.deleteResult(img.id)
+            if (lightboxImages.length <= 1) {
+              setLightboxIndex(null)
+            } else if (lightboxIndex >= lightboxImages.length - 1) {
+              setLightboxIndex(lightboxIndex - 1)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

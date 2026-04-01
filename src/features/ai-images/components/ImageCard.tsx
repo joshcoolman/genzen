@@ -40,6 +40,10 @@ interface ImageCardProps {
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
+  /** Override default navigate-to-edit behavior on card click */
+  onOpen?: (img: SavedAiImage) => void
+  /** Override default navigate-to-edit behavior on child thumbnail click */
+  onChildOpen?: (childId: string, parentImg: SavedAiImage) => void
   selected?: boolean
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
@@ -62,6 +66,8 @@ export function ImageCard({
   onDescribe,
   onGenerateVariations,
   onGallery,
+  onOpen,
+  onChildOpen,
   selected,
   selectionActive,
   onSelect,
@@ -171,11 +177,15 @@ export function ImageCard({
       }
       onClick={() => {
         if (!selectionActive) {
-          navigate({
-            to: '/dashboard/edit/$imageId',
-            params: { imageId: img.id },
-            search: { sourceId: undefined },
-          })
+          if (onOpen) {
+            onOpen(img)
+          } else {
+            navigate({
+              to: '/dashboard/edit/$imageId',
+              params: { imageId: img.id },
+              search: { sourceId: undefined },
+            })
+          }
         }
       }}
     >
@@ -225,11 +235,15 @@ export function ImageCard({
                     key={child.id}
                     onClick={(e) => {
                       e.stopPropagation()
-                      navigate({
-                        to: '/dashboard/edit/$imageId',
-                        params: { imageId: img.id },
-                        search: { sourceId: child.id },
-                      })
+                      if (onChildOpen) {
+                        onChildOpen(child.id, img)
+                      } else {
+                        navigate({
+                          to: '/dashboard/edit/$imageId',
+                          params: { imageId: img.id },
+                          search: { sourceId: child.id },
+                        })
+                      }
                     }}
                     className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
                   >

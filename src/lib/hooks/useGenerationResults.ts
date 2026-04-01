@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { Tables } from '@/lib/types/supabase'
+import type { SavedAiImage } from '@/features/ai-images/types'
 import { supabase } from '@/lib/supabase'
 import { getModelName } from '@/features/ai-images/models'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
@@ -69,6 +70,10 @@ export function useGenerationResults({
   sourceImageIds,
 }: UseGenerationResultsOptions) {
   const [results, setResults] = useState<Array<GenerationResult>>([])
+  const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
+  const [savedImageUrls, setSavedImageUrls] = useState<Record<string, string>>(
+    {},
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -142,7 +147,34 @@ export function useGenerationResults({
         }
       })
 
+      const loadedSaved: Array<SavedAiImage> = rows.map((r) => {
+        const meta = getMetadata(r.generation_metadata) ?? {}
+        return {
+          id: r.id,
+          title: r.title,
+          storage_path: r.storage_path ?? null,
+          thumbnail_path: r.thumbnail_path ?? null,
+          status: r.status as SavedAiImage['status'],
+          generation_error: null,
+          generation_metadata: {
+            prompt: (meta.prompt as string | undefined) ?? '',
+            model: inferModelId(meta),
+            generation_type:
+              (meta.generation_type as string | undefined) ?? undefined,
+            source_image_id:
+              (meta.source_image_id as string | undefined) ?? undefined,
+            root_image_id:
+              (meta.root_image_id as string | undefined) ?? undefined,
+            aspect_ratio:
+              (meta.aspect_ratio as string | undefined) ?? undefined,
+          },
+          created_at: r.created_at,
+        }
+      })
+
       setResults(loaded)
+      setSavedImages(loadedSaved)
+      setSavedImageUrls(urlMap)
     }
 
     void load()
@@ -210,6 +242,32 @@ export function useGenerationResults({
                           : r,
                       ),
                     )
+                    setSavedImages((prev) =>
+                      prev.map((r) =>
+                        r.id === updated.id
+                          ? {
+                              ...r,
+                              status: 'completed' as const,
+                              storage_path:
+                                updated.storage_path ?? r.storage_path,
+                              thumbnail_path: thumbPath ?? r.thumbnail_path,
+                              title: updated.title,
+                              generation_metadata: r.generation_metadata
+                                ? {
+                                    ...r.generation_metadata,
+                                    prompt:
+                                      (meta.prompt as string | undefined) ??
+                                      r.generation_metadata.prompt,
+                                  }
+                                : r.generation_metadata,
+                            }
+                          : r,
+                      ),
+                    )
+                    setSavedImageUrls((prev) => ({
+                      ...prev,
+                      [updated.id]: url,
+                    }))
                   }
                 })
                 .catch(() => {})
@@ -217,6 +275,11 @@ export function useGenerationResults({
               setResults((prev) =>
                 prev.map((r) =>
                   r.id === updated.id ? { ...r, status: 'failed' } : r,
+                ),
+              )
+              setSavedImages((prev) =>
+                prev.map((r) =>
+                  r.id === updated.id ? { ...r, status: 'failed' as const } : r,
                 ),
               )
             }
@@ -256,6 +319,21 @@ export function useGenerationResults({
 
   const addPendingResult = useCallback((result: GenerationResult) => {
     setResults((prev) => [result, ...prev])
+    setSavedImages((prev) => [
+      {
+        id: result.id,
+        title: result.title ?? result.label,
+        storage_path: null,
+        status: 'pending' as const,
+        generation_error: null,
+        generation_metadata: {
+          prompt: result.prompt ?? '',
+          model: result.label,
+        },
+        created_at: result.createdAt ?? new Date().toISOString(),
+      },
+      ...prev,
+    ])
   }, [])
 
   const replaceTempId = useCallback((tempId: string, realId: string) => {
@@ -266,6 +344,12 @@ export function useGenerationResults({
 
   const deleteResult = useCallback(async (id: string) => {
     setResults((prev) => prev.filter((r) => r.id !== id))
+    setSavedImages((prev) => prev.filter((r) => r.id !== id))
+    setSavedImageUrls((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
     await supabase
       .from('user_images')
       .update({ deleted_at: new Date().toISOString() })
@@ -274,10 +358,13 @@ export function useGenerationResults({
 
   const dismissResult = useCallback((id: string) => {
     setResults((prev) => prev.filter((r) => r.id !== id))
+    setSavedImages((prev) => prev.filter((r) => r.id !== id))
   }, [])
 
   return {
     results,
+    savedImages,
+    savedImageUrls,
     isSubmitting,
     setIsSubmitting,
     error,

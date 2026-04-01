@@ -32,6 +32,8 @@ interface ImageGalleryProps {
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
+  onOpen?: (img: SavedAiImage) => void
+  onChildOpen?: (childId: string, parentImg: SavedAiImage) => void
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
@@ -54,6 +56,8 @@ export function ImageGallery({
   onDescribe,
   onGenerateVariations,
   onGallery,
+  onOpen,
+  onChildOpen,
   selectionActive,
   isSelected,
   onSelect,
@@ -154,6 +158,8 @@ export function ImageGallery({
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onGallery={onGallery}
+                onOpen={onOpen}
+                onChildOpen={onChildOpen}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}
