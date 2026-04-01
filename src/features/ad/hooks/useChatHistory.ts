@@ -5,19 +5,21 @@ const STORAGE_KEY = 'ad-chat-history'
 const MAX_MESSAGES = 50
 const DEBOUNCE_MS = 500
 
-/** Strip images from messages before persisting to avoid blowing up localStorage */
+/** Strip images and tool calls from messages before persisting to avoid blowing up localStorage */
 function stripImagesForStorage(messages: Array<ADMessage>): Array<ADMessage> {
   return messages.map((m) => {
-    if (!m.images) return m
-    return {
+    const base = {
+      id: m.id,
       role: m.role,
       content: m.content,
       // Store a flag that images were attached but not the data
-      images: m.images.map((img) => ({
+      images: m.images?.map((img) => ({
         base64: '',
         mediaType: img.mediaType,
       })),
+      // Strip tool calls to save space
     }
+    return base as ADMessage
   })
 }
 
@@ -30,10 +32,17 @@ function loadMessages(): Array<ADMessage> {
     if (!Array.isArray(parsed)) return []
     // Filter out empty-base64 image placeholders from storage
     return parsed.slice(-MAX_MESSAGES).map((m: ADMessage) => {
-      if (m.images?.every((img) => !img.base64)) {
-        return { ...m, images: undefined }
+      // Ensure message has an id (for backward compatibility)
+      const message = {
+        ...m,
+        id:
+          m.id ||
+          `${m.role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       }
-      return m
+      if (message.images?.every((img) => !img.base64)) {
+        return { ...message, images: undefined }
+      }
+      return message
     })
   } catch {
     return []

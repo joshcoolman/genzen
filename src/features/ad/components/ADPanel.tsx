@@ -3,6 +3,7 @@ import { Check, Clipboard, KeyRound, Save, Trash2, X } from 'lucide-react'
 import { useAnthropicKey } from '../hooks/useAnthropicKey'
 import { useADChat } from '../hooks/useADChat'
 import { useADContext } from '../context/ad-context'
+
 import { ADSetup } from './ADSetup'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
@@ -11,6 +12,7 @@ import { useADOpen } from '@/lib/use-ad-open'
 import { useAuth } from '@/lib/auth'
 import { saveNote } from '@/features/notes/server/save-note.server'
 import { cn } from '@/lib/utils'
+import { savePrompt } from '@/features/prompts/server/save-prompt.server'
 
 function formatChatAsMarkdown(messages: Array<ADMessage>): string {
   return messages
@@ -77,6 +79,25 @@ function ChatBody() {
     'idle',
   )
 
+  const handleCopyPrompt = (prompt: string) => {
+    navigator.clipboard.writeText(prompt)
+  }
+
+  const handleSavePrompt = async (title: string, content: string) => {
+    if (!session?.access_token) return
+    try {
+      await savePrompt({
+        data: {
+          accessToken: session.access_token,
+          title,
+          content,
+        },
+      })
+    } catch (err) {
+      console.error('Failed to save prompt:', err)
+    }
+  }
+
   function handleCopy() {
     const md = formatChatAsMarkdown(messages)
     navigator.clipboard.writeText(md)
@@ -124,7 +145,11 @@ function ChatBody() {
           </button>
         </div>
       )}
-      <ChatMessages messages={messages} />
+      <ChatMessages
+        messages={messages}
+        onCopyPrompt={handleCopyPrompt}
+        onSavePrompt={handleSavePrompt}
+      />
       <ChatInput
         onSend={sendMessage}
         onAbort={abort}

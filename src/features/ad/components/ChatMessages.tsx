@@ -1,9 +1,94 @@
 import { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { Check, Copy } from 'lucide-react'
-import type { ADMessage } from '../hooks/useADChat'
+import { Check, Copy, Save } from 'lucide-react'
+import type { ADMessage, PromptCardTool } from '../hooks/useADChat'
 import { cn } from '@/lib/utils'
+
+interface PromptCardProps extends PromptCardTool {
+  onCopy: (prompt: string) => void
+  onSave: (title: string, content: string) => void
+}
+
+function PromptCard({ prompt, title, tags, onCopy, onSave }: PromptCardProps) {
+  const [copied, setCopied] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const handleCopy = () => {
+    onCopy(prompt)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSave = () => {
+    const saveTitle = title || 'Generated Prompt'
+    onSave(saveTitle, prompt)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div className="my-3 rounded-lg border border-border bg-card p-4">
+      {/* Title */}
+      {title && <div className="mb-2 text-sm font-medium">{title}</div>}
+
+      {/* Prompt content */}
+      <div className="mb-3 whitespace-pre-wrap rounded bg-muted/50 p-3 font-mono text-sm leading-relaxed">
+        {prompt}
+      </div>
+
+      {/* Tags */}
+      {tags && tags.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {tags.map((tag, i) => (
+            <span
+              key={`${tag}-${i}`}
+              className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3 w-3" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="h-3 w-3" />
+              Copy
+            </>
+          )}
+        </button>
+        <button
+          onClick={handleSave}
+          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+        >
+          {saved ? (
+            <>
+              <Check className="h-3 w-3" />
+              Saved
+            </>
+          ) : (
+            <>
+              <Save className="h-3 w-3" />
+              Save
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -25,7 +110,15 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
-function MessageBubble({ message }: { message: ADMessage }) {
+function MessageBubble({
+  message,
+  onCopyPrompt,
+  onSavePrompt,
+}: {
+  message: ADMessage
+  onCopyPrompt: (prompt: string) => void
+  onSavePrompt: (title: string, content: string) => void
+}) {
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -37,14 +130,14 @@ function MessageBubble({ message }: { message: ADMessage }) {
               {message.images.map((img, i) =>
                 img.base64 ? (
                   <img
-                    key={i}
+                    key={`img-${message.id}-${i}`}
                     src={`data:${img.mediaType};base64,${img.base64}`}
                     alt={`Attached ${i + 1}`}
                     className="h-20 w-20 rounded border border-primary-foreground/20 object-cover"
                   />
                 ) : (
                   <div
-                    key={i}
+                    key={`img-placeholder-${message.id}-${i}`}
                     className="flex h-20 w-20 items-center justify-center rounded border border-primary-foreground/20 bg-primary-foreground/10 text-xs text-primary-foreground/60"
                   >
                     Image
@@ -64,17 +157,41 @@ function MessageBubble({ message }: { message: ADMessage }) {
   )
 
   return (
-    <div className="group flex gap-1">
-      <div
-        className="ad-prose max-w-[85%] text-sm"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-      <CopyButton text={message.content} />
+    <div className="flex w-full flex-col gap-2">
+      {message.content && (
+        <div className="group flex gap-1">
+          <div
+            className="ad-prose max-w-[85%] text-sm"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+          <CopyButton text={message.content} />
+        </div>
+      )}
+      {message.toolCalls && message.toolCalls.length > 0 && (
+        <div className="w-full">
+          {message.toolCalls.map((toolCall) => (
+            <PromptCard
+              key={toolCall.id}
+              {...toolCall.input}
+              onCopy={onCopyPrompt}
+              onSave={onSavePrompt}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-export function ChatMessages({ messages }: { messages: Array<ADMessage> }) {
+export function ChatMessages({
+  messages,
+  onCopyPrompt,
+  onSavePrompt,
+}: {
+  messages: Array<ADMessage>
+  onCopyPrompt: (prompt: string) => void
+  onSavePrompt: (title: string, content: string) => void
+}) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const shouldAutoScroll = useRef(true)
@@ -118,8 +235,13 @@ export function ChatMessages({ messages }: { messages: Array<ADMessage> }) {
         '[&_.ad-prose_ol]:my-1 [&_.ad-prose_ol]:list-decimal [&_.ad-prose_ol]:pl-4',
       )}
     >
-      {messages.map((msg, i) => (
-        <MessageBubble key={i} message={msg} />
+      {messages.map((msg) => (
+        <MessageBubble
+          key={msg.id}
+          message={msg}
+          onCopyPrompt={onCopyPrompt}
+          onSavePrompt={onSavePrompt}
+        />
       ))}
       <div ref={bottomRef} />
     </div>

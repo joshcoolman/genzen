@@ -11,10 +11,22 @@ export interface ADImage {
   mediaType: string
 }
 
+export interface PromptCardTool {
+  prompt: string
+  title?: string
+  tags?: Array<string>
+}
+
 export interface ADMessage {
+  id: string
   role: 'user' | 'assistant'
   content: string
   images?: Array<ADImage>
+  toolCalls?: Array<{
+    id: string
+    name: string
+    input: PromptCardTool
+  }>
 }
 
 function buildMessageContent(
@@ -41,6 +53,33 @@ function buildMessageContent(
   ]
 }
 
+const PROMPT_CARD_TOOL: Anthropic.Tool = {
+  name: 'create_prompt_card',
+  description:
+    'Display an image generation prompt with copy and save buttons. Use when writing, improving, or analyzing prompts for image generation.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      prompt: {
+        type: 'string',
+        description:
+          'The detailed image generation prompt (10-2000 characters)',
+      },
+      title: {
+        type: 'string',
+        description: 'A short title for the prompt (optional, max 100 chars)',
+      },
+      tags: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Category/style keywords (optional, max 8 tags, each max 30 chars)',
+      },
+    },
+    required: ['prompt'],
+  },
+}
+
 export function useADChat() {
   const client = useClaudeClient()
   const { messages, setMessages, clearHistory } = useChatHistory()
@@ -54,6 +93,7 @@ export function useADChat() {
       if (!client || !text.trim() || isStreaming) return
 
       const userMsg: ADMessage = {
+        id: `user-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         role: 'user',
         content: text.trim(),
         images: images && images.length > 0 ? images : undefined,
@@ -66,7 +106,11 @@ export function useADChat() {
       abortRef.current = controller
 
       let accumulated = ''
-      const assistantMsg: ADMessage = { role: 'assistant', content: '' }
+      const assistantMsg: ADMessage = {
+        id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        role: 'assistant',
+        content: '',
+      }
 
       // Add placeholder assistant message
       setMessages([...next, assistantMsg])
@@ -77,6 +121,7 @@ export function useADChat() {
             model: 'claude-sonnet-4-6',
             max_tokens: 4096,
             system: systemPrompt,
+            tools: [PROMPT_CARD_TOOL],
             messages: next.map((m) => ({
               role: m.role,
               content: buildMessageContent(m.content, m.images),
@@ -94,7 +139,7 @@ export function useADChat() {
               setMessages((prev: Array<ADMessage>) => {
                 const updated = [...prev]
                 updated[updated.length - 1] = {
-                  role: 'assistant',
+                  ...updated[updated.length - 1],
                   content: accumulated,
                 }
                 return updated
@@ -103,18 +148,29 @@ export function useADChat() {
           }
         })
 
-        await stream.finalMessage()
+        const finalMsg = await stream.finalMessage()
 
         // Final flush
         if (rafRef.current !== null) {
           cancelAnimationFrame(rafRef.current)
           rafRef.current = null
         }
+
+        // Extract tool calls from final message
+        const toolCalls = finalMsg.content
+          .filter((block) => block.type === 'tool_use')
+          .map((block) => ({
+            id: block.id,
+            name: block.name,
+            input: block.input as PromptCardTool,
+          }))
+
         setMessages((prev: Array<ADMessage>) => {
           const updated = [...prev]
           updated[updated.length - 1] = {
-            role: 'assistant',
+            ...updated[updated.length - 1],
             content: accumulated,
+            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
           }
           return updated
         })

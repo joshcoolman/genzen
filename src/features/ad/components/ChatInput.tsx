@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { Send, Square, X } from 'lucide-react'
+import { ImagePlus, Send, Square, X } from 'lucide-react'
 import type { ADImage } from '../hooks/useADChat'
 
 interface ChatInputProps {
@@ -26,6 +26,7 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [pendingImages, setPendingImages] = useState<Array<ADImage>>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = useCallback(() => {
     if ((!value.trim() && pendingImages.length === 0) || isStreaming) return
@@ -91,6 +92,22 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
     setPendingImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files) return
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        addImageFile(file)
+      }
+    }
+    // Reset input so same file can be selected again
+    e.target.value = ''
+  }
+
+  function openFilePicker() {
+    fileInputRef.current?.click()
+  }
+
   return (
     <div
       className="border-t border-border p-3"
@@ -118,6 +135,24 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
         </div>
       )}
       <div className="flex items-end gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileInputChange}
+          className="hidden"
+          aria-label="Upload images"
+        />
+        <button
+          onClick={openFilePicker}
+          disabled={isStreaming}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          aria-label="Upload images"
+          title="Upload images"
+        >
+          <ImagePlus className="h-4 w-4" />
+        </button>
         <textarea
           ref={textareaRef}
           value={value}
@@ -127,7 +162,7 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
           placeholder={
             pendingImages.length > 0
               ? 'Ask about these images...'
-              : 'Ask AD anything... (paste images here)'
+              : 'Ask AD anything...'
           }
           disabled={isStreaming}
           rows={1}
