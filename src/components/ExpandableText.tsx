@@ -36,9 +36,7 @@ export function ExpandableText({
       </p>
       {(copyable || onAddPrompt) && (
         <div className="flex flex-col gap-1 shrink-0 self-start">
-          {copyable && (
-            <CopyButton text={text} />
-          )}
+          {copyable && <CopyButton text={text} />}
           {onAddPrompt && (
             <ExpandableIconButton
               icon={<CirclePlus className="h-3.5 w-3.5" />}

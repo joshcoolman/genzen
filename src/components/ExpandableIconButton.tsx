@@ -1,8 +1,7 @@
 import { forwardRef } from 'react'
 import type { ReactNode } from 'react'
 
-interface ExpandableIconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ExpandableIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode
   label: string
   variant?: 'default' | 'destructive'

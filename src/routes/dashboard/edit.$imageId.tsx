@@ -347,7 +347,7 @@ function EditPage() {
           images={sortedChainImages}
           imageUrls={page.chainImageUrls}
           rootImageMeta={{}}
-          editChildrenMap={page.editChildrenMap}
+          editChildrenMap={{}}
           loadingGallery={false}
           thumbSize={thumbSize}
           showInfo={showInfo}
