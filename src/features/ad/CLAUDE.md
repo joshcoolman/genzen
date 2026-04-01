@@ -72,7 +72,11 @@ Displays an image generation prompt with Copy and Save buttons.
 - Copy button (copies to clipboard)
 - Save button (saves to prompts library, requires auth)
 
-Tool calls are detected via `content_block_start` events with `type: 'tool_use'` and rendered inline in the chat.
+Tool calls are extracted from `stream.finalMessage()` by filtering content blocks with `type: 'tool_use'`, then rendered inline in the chat via PromptCard components.
+
+## Legacy: render/ Directory
+
+The `render/` directory contains unused json-render code (catalog, registry, README, TESTING, TOOL-CALLING docs) from a previous approach. The codebase has fully migrated to native Anthropic tool calling. These files are not imported anywhere and can be safely deleted.
 
 ## Quirks / Notes
 
