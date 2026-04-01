@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
+import { ExpandableIconButton } from '@/components/ExpandableIconButton'
 
 function Skeleton({ className = '' }: { className?: string }) {
   return (
@@ -228,16 +229,12 @@ export function Thumbnail({
           >
             {overlayActions}
             {onDelete && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete()
-                }}
-                className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-destructive transition-all"
-                aria-label="Delete"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <ExpandableIconButton
+                icon={<Trash2 className="h-3.5 w-3.5" />}
+                label="Delete"
+                variant="destructive"
+                onClick={onDelete}
+              />
             )}
           </div>
         )}

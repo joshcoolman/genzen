@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CirclePlus } from 'lucide-react'
 import { CopyButton } from './CopyButton'
+import { ExpandableIconButton } from './ExpandableIconButton'
 
 interface ExpandableTextProps {
   text: string
@@ -36,22 +37,14 @@ export function ExpandableText({
       {(copyable || onAddPrompt) && (
         <div className="flex flex-col gap-1 shrink-0 self-start">
           {copyable && (
-            <CopyButton
-              text={text}
-              className="text-muted-foreground/60 hover:text-foreground transition-colors"
-            />
+            <CopyButton text={text} />
           )}
           {onAddPrompt && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onAddPrompt(text)
-              }}
-              className="text-muted-foreground/60 hover:text-foreground transition-colors"
-              aria-label="Add prompt to sidebar"
-            >
-              <CirclePlus className="h-3.5 w-3.5" />
-            </button>
+            <ExpandableIconButton
+              icon={<CirclePlus className="h-3.5 w-3.5" />}
+              label="Add prompt to sidebar"
+              onClick={() => onAddPrompt(text)}
+            />
           )}
         </div>
       )}

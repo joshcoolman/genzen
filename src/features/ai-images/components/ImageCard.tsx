@@ -15,6 +15,7 @@ import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import { Thumbnail } from '@/components/Thumbnail'
 import { ExpandableText } from '@/components/ExpandableText'
+import { ExpandableIconButton } from '@/components/ExpandableIconButton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,15 +73,10 @@ export function ImageCard({
   const moreButton = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="group/btn flex items-center justify-center p-2.5 -m-1 cursor-pointer"
-          aria-label="More actions"
-        >
-          <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/btn:bg-sidebar-selected group-hover/btn:text-sidebar-selected-text group-hover/btn:scale-[1.75] group-hover/btn:shadow-sm transition-all duration-150">
-            <MoreHorizontal className="h-3.5 w-3.5" />
-          </span>
-        </button>
+        <ExpandableIconButton
+          icon={<MoreHorizontal className="h-3.5 w-3.5" />}
+          label="More actions"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         {onDownload && (
@@ -118,18 +114,12 @@ export function ImageCard({
   )
 
   const rightButtons = (
-    <button
-      onClick={(e) => {
-        e.stopPropagation()
-        onDelete(img)
-      }}
-      className="group/del flex items-center justify-center p-2.5 -m-1 cursor-pointer"
-      aria-label="Delete"
-    >
-      <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/del:bg-sidebar-selected group-hover/del:text-destructive group-hover/del:scale-[1.75] group-hover/del:shadow-sm transition-all duration-150">
-        <Trash2 className="h-3.5 w-3.5" />
-      </span>
-    </button>
+    <ExpandableIconButton
+      icon={<Trash2 className="h-3.5 w-3.5" />}
+      label="Delete"
+      variant="destructive"
+      onClick={() => onDelete(img)}
+    />
   )
 
   return (
@@ -146,38 +136,26 @@ export function ImageCard({
       overlayActions={selectionActive ? undefined : rightButtons}
       overlayActionsBottomLeft={
         onSelect ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect(img.id, e.shiftKey)
-            }}
-            className="group/sel flex items-center justify-center p-2.5 -m-1 cursor-pointer"
-            aria-label={selected ? 'Deselect' : 'Select'}
-          >
-            <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/sel:bg-sidebar-selected group-hover/sel:text-sidebar-selected-text group-hover/sel:scale-[1.75] group-hover/sel:shadow-sm transition-all duration-150">
-              {selected ? (
+          <ExpandableIconButton
+            icon={
+              selected ? (
                 <CheckCircle2 className="h-4 w-4 text-accent-brand" />
               ) : (
                 <Circle className="h-4 w-4" />
-              )}
-            </span>
-          </button>
+              )
+            }
+            label={selected ? 'Deselect' : 'Select'}
+            onClick={(e) => onSelect(img.id, e.shiftKey)}
+          />
         ) : undefined
       }
       overlayActionsBottomRight={
         onGallery && !selectionActive ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onGallery(img)
-            }}
-            className="group/lb flex items-center justify-center p-2.5 -m-1 cursor-pointer"
-            aria-label="View in lightbox"
-          >
-            <span className="flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground group-hover/lb:bg-sidebar-selected group-hover/lb:text-sidebar-selected-text group-hover/lb:scale-[1.75] group-hover/lb:shadow-sm transition-all duration-150">
-              <Maximize2 className="h-3.5 w-3.5" />
-            </span>
-          </button>
+          <ExpandableIconButton
+            icon={<Maximize2 className="h-3.5 w-3.5" />}
+            label="View in lightbox"
+            onClick={() => onGallery(img)}
+          />
         ) : undefined
       }
       imageOverlay={

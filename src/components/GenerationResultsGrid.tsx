@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { LightboxImage } from '@/components/Lightbox'
+import { ExpandableIconButton } from '@/components/ExpandableIconButton'
 import { Lightbox } from '@/components/Lightbox'
 import { createImageStorage } from '@/lib/image-storage'
 import { Thumbnail } from '@/components/Thumbnail'
@@ -157,61 +158,44 @@ function GenerationResultCard({
       onClick={onOpen}
       onDelete={onDelete}
       imageOverlay={
-        <>
-          {/* Regenerate button — hidden in edit mode */}
-          {!editMode &&
-          onRegenerate &&
-          regenerateModels &&
-          result.status === 'complete' &&
-          result.url &&
-          result.prompt ? (
-            <RegenerateButton
-              result={result}
-              models={regenerateModels}
-              onRegenerate={onRegenerate}
-            />
-          ) : undefined}
-          {/* Expand icon to open lightbox when card click is hijacked by onSelect */}
-          {onExpand && result.status === 'complete' && result.url && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                onExpand()
-              }}
-              className="absolute bottom-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-all"
-              aria-label="View full size"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </>
+        !editMode &&
+        onRegenerate &&
+        regenerateModels &&
+        result.status === 'complete' &&
+        result.url &&
+        result.prompt ? (
+          <RegenerateButton
+            result={result}
+            models={regenerateModels}
+            onRegenerate={onRegenerate}
+          />
+        ) : undefined
+      }
+      overlayActionsBottomRight={
+        onExpand && result.status === 'complete' && result.url ? (
+          <ExpandableIconButton
+            icon={<Maximize2 className="h-3.5 w-3.5" />}
+            label="View full size"
+            onClick={onExpand}
+          />
+        ) : undefined
       }
       overlayActions={
         result.status === 'complete' && result.url ? (
           <>
             {onDetach && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDetach()
-                }}
-                className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all"
-                aria-label="Detach"
-              >
-                <Unlink className="h-3.5 w-3.5" />
-              </button>
+              <ExpandableIconButton
+                icon={<Unlink className="h-3.5 w-3.5" />}
+                label="Detach"
+                onClick={onDetach}
+              />
             )}
             {!editMode && onAdd && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onAdd()
-                }}
-                className="rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground hover:text-foreground transition-all"
-                aria-label="Use as source"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+              <ExpandableIconButton
+                icon={<Plus className="h-3.5 w-3.5" />}
+                label="Use as source"
+                onClick={onAdd}
+              />
             )}
           </>
         ) : undefined
