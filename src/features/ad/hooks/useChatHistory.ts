@@ -5,22 +5,20 @@ const STORAGE_KEY = 'ad-chat-history'
 const MAX_MESSAGES = 50
 const DEBOUNCE_MS = 500
 
-/** Strip images and tool calls from messages before persisting to avoid blowing up localStorage */
+/** Strip image data from messages before persisting to avoid blowing up localStorage */
 function stripImagesForStorage(messages: Array<ADMessage>): Array<ADMessage> {
-  return messages.map((m) => {
-    const base = {
-      id: m.id,
-      role: m.role,
-      content: m.content,
-      // Store a flag that images were attached but not the data
-      images: m.images?.map((img) => ({
-        base64: '',
-        mediaType: img.mediaType,
-      })),
-      // Strip tool calls to save space
-    }
-    return base as ADMessage
-  })
+  return messages.map((m) => ({
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    // Store a flag that images were attached but not the base64 data
+    images: m.images?.map((img) => ({
+      base64: '',
+      mediaType: img.mediaType,
+    })),
+    // Persist tool calls so PromptCards/ClarifyingCards survive panel close/reopen
+    toolCalls: m.toolCalls,
+  }))
 }
 
 function loadMessages(): Array<ADMessage> {

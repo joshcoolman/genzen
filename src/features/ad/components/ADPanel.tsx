@@ -149,6 +149,7 @@ function ChatBody() {
         messages={messages}
         onCopyPrompt={handleCopyPrompt}
         onSavePrompt={handleSavePrompt}
+        onSelectOption={sendMessage}
       />
       <ChatInput
         onSend={sendMessage}

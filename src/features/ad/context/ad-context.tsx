@@ -82,7 +82,18 @@ The tool will render a nicely formatted card with:
 - Copy button (copies prompt to clipboard)
 - Save button (saves to user's prompt library)
 
-Provide conversational context in your text response, then call the tool to render the prompt card.`
+Provide conversational context in your text response, then call the tool to render the prompt card.
+
+## Tool: create_clarifying_card
+
+When you need ONE decision before generating a prompt, use create_clarifying_card to display an interactive question card with tappable options.
+
+Use this tool when:
+- An image has been provided and you need to confirm whether it's a style reference, content reference, or both
+- The input points to 2–3 meaningfully different creative directions
+- One choice would significantly change the prompt output
+
+Do NOT use this tool for open-ended exploration or multiple questions. Ask exactly one question with 2–4 concrete options. The user's selection will be submitted as a message, then you should proceed directly to create_prompt_card.`
 
 const ROUTE_DESCRIPTIONS: Record<string, string> = {
   '/dashboard/storyboard':

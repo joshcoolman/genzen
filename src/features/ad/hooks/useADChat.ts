@@ -17,16 +17,21 @@ export interface PromptCardTool {
   tags?: Array<string>
 }
 
+export interface ClarifyingCardTool {
+  interpretation: string
+  question: string
+  options: Array<string>
+}
+
 export interface ADMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   images?: Array<ADImage>
-  toolCalls?: Array<{
-    id: string
-    name: string
-    input: PromptCardTool
-  }>
+  toolCalls?: Array<
+    | { id: string; name: 'create_prompt_card'; input: PromptCardTool }
+    | { id: string; name: 'create_clarifying_card'; input: ClarifyingCardTool }
+  >
 }
 
 function buildMessageContent(
@@ -51,6 +56,33 @@ function buildMessageContent(
     ),
     { type: 'text' as const, text },
   ]
+}
+
+const CLARIFYING_CARD_TOOL: Anthropic.Tool = {
+  name: 'create_clarifying_card',
+  description:
+    'Ask the user one targeted clarifying question with 2–4 tappable option buttons before generating a prompt. Use when a single decision point would meaningfully improve the output — especially when an image has been provided.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      interpretation: {
+        type: 'string',
+        description:
+          "One-line statement of how you are interpreting the user's input or image (max 200 chars)",
+      },
+      question: {
+        type: 'string',
+        description: 'The single clarifying question (max 150 chars)',
+      },
+      options: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          '2–4 short option labels the user can tap (each max 60 chars)',
+      },
+    },
+    required: ['interpretation', 'question', 'options'],
+  },
 }
 
 const PROMPT_CARD_TOOL: Anthropic.Tool = {
@@ -121,7 +153,7 @@ export function useADChat() {
             model: 'claude-sonnet-4-6',
             max_tokens: 4096,
             system: systemPrompt,
-            tools: [PROMPT_CARD_TOOL],
+            tools: [PROMPT_CARD_TOOL, CLARIFYING_CARD_TOOL],
             messages: next.map((m) => ({
               role: m.role,
               content: buildMessageContent(m.content, m.images),
@@ -159,11 +191,20 @@ export function useADChat() {
         // Extract tool calls from final message
         const toolCalls = finalMsg.content
           .filter((block) => block.type === 'tool_use')
-          .map((block) => ({
-            id: block.id,
-            name: block.name,
-            input: block.input as PromptCardTool,
-          }))
+          .map((block) => {
+            if (block.name === 'create_clarifying_card') {
+              return {
+                id: block.id,
+                name: 'create_clarifying_card' as const,
+                input: block.input as ClarifyingCardTool,
+              }
+            }
+            return {
+              id: block.id,
+              name: 'create_prompt_card' as const,
+              input: block.input as PromptCardTool,
+            }
+          })
 
         setMessages((prev: Array<ADMessage>) => {
           const updated = [...prev]
