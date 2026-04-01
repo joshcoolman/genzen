@@ -20,6 +20,7 @@ Add a **"Run it"** button to PromptCard components when the user is on the AI Im
 ### Behavior
 
 When clicked, the "Run it" button should:
+
 1. Take the prompt text from the PromptCard
 2. Close the AD panel
 3. Fill the prompt input in the AI Images generator
@@ -40,22 +41,26 @@ User: *clicks "Run it"*
 ### Implementation Notes
 
 **Context Detection:**
+
 - Use `useLocation()` to check if current route is `/dashboard/ai-images`
 - Only show "Run it" button when on AI Images page
 - Keep Copy/Save buttons everywhere
 
 **Integration Points:**
+
 - `src/features/ai-images/` - Need access to prompt setter and generate function
 - `src/features/ad/components/ChatMessages.tsx` - PromptCard needs route awareness and generate handler
 - Consider using `useADContext()` to pass feature-specific actions
 
 **Optional Enhancements (future):**
+
 - Allow setting model/aspect ratio from chat (e.g., "run it with FLUX 1.1 Pro at 16:9")
 - Show generation progress in chat
 - Allow variations/iterations without closing panel
 - Extend to other features (Canvas, Scenes, etc.)
 
 **Benefits:**
+
 - Keeps user in conversational flow
 - Reduces clicks from 6 steps to 1
 - Makes AD feel more integrated with the app
