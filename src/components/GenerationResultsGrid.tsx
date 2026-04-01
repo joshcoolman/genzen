@@ -123,6 +123,7 @@ function GenerationResultCard({
   onExpand,
   onDetach,
   onRegenerate,
+  onAddPrompt,
   regenerateModels,
   showFooter,
   compact,
@@ -137,6 +138,7 @@ function GenerationResultCard({
   onExpand?: () => void
   onDetach?: () => void
   onRegenerate?: (result: GenerationResult, modelId: string) => void
+  onAddPrompt?: (text: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
   showFooter?: boolean
   compact?: boolean
@@ -226,7 +228,12 @@ function GenerationResultCard({
             )}
             {result.status !== 'pending' &&
               result.prompt &&
-              !result.enhancedPrompt && <ExpandableText text={result.prompt} />}
+              !result.enhancedPrompt && (
+                <ExpandableText
+                  text={result.prompt}
+                  onAddPrompt={onAddPrompt}
+                />
+              )}
             {result.enhancedPrompt && (
               <div className="px-4 pt-2 pb-1">
                 <p className="text-[11px] text-muted-foreground line-clamp-2">
@@ -273,6 +280,7 @@ interface GenerationResultsGridProps {
   onAdd?: (result: GenerationResult) => void
   onDetach?: (id: string) => void
   onRegenerate?: (result: GenerationResult, modelId: string) => void
+  onAddPrompt?: (text: string) => void
   regenerateModels?: Array<{ id: string; name: string }>
   selectedId?: string | null
   selectedClassName?: string
@@ -288,6 +296,7 @@ export function GenerationResultsGrid({
   onAdd,
   onDetach,
   onRegenerate,
+  onAddPrompt,
   regenerateModels,
   selectedId,
   selectedClassName,
@@ -457,6 +466,7 @@ export function GenerationResultsGrid({
             onExpand={onSelect ? () => handleOpen(result) : undefined}
             onDetach={onDetach ? () => onDetach(result.id) : undefined}
             onRegenerate={onRegenerate}
+            onAddPrompt={onAddPrompt}
             regenerateModels={regenerateModels}
           />
         ))}

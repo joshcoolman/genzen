@@ -582,6 +582,7 @@ export function useEditPage(imageId: string) {
     addRefImages,
     removeRefImage,
     maxRefImages,
+    setAutoRefImageIds: () => {},
   }
 
   return {

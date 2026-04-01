@@ -148,6 +148,7 @@ function EditPage() {
             void page.results.deleteResult(id)
           }}
           onDetach={(id) => void page.detachResult(id)}
+          onAddPrompt={(text) => page.generator.pastePrompts([text])}
           editMode
           title="Edits"
           prefsKey="edit-page-results"

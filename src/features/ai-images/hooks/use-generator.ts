@@ -36,6 +36,7 @@ interface UseGeneratorOptions {
   providerOverride?: 'fal' | 'google'
   storagePrefix?: string
   onAfterSubmit?: (results: Array<{ recordId: string }>) => void
+  autoRefImageIds?: Array<string>
 }
 
 export interface GeneratorState {
@@ -76,6 +77,7 @@ export interface GeneratorState {
   addRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
   maxRefImages: number
+  setAutoRefImageIds: (ids: Array<string>) => void
 }
 
 export function useGenerator({
@@ -87,6 +89,7 @@ export function useGenerator({
   providerOverride,
   storagePrefix = 'genzen',
   onAfterSubmit,
+  autoRefImageIds: autoRefImageIdsProp,
 }: UseGeneratorOptions): GeneratorState {
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
@@ -134,6 +137,9 @@ export function useGenerator({
   const [describingImage, setDescribingImage] = useState(false)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
+  const [autoRefImageIds, setAutoRefImageIds] = useState<Array<string>>(
+    autoRefImageIdsProp ?? [],
+  )
 
   // Backwards-compat: setPrompt updates prompts[0]
   const setPrompt = useCallback(
@@ -278,8 +284,16 @@ export function useGenerator({
     setError(null)
 
     try {
-      const referenceImageIds =
-        refImages.length > 0 ? refImages.map((r) => r.id) : undefined
+      const explicitIds = refImages.map((r) => r.id)
+      const autoIds =
+        maxRefImages > 0
+          ? autoRefImageIds.filter((id) => !explicitIds.includes(id))
+          : []
+      const mergedIds = [...explicitIds, ...autoIds].slice(
+        0,
+        maxRefImages > 0 ? maxRefImages : 0,
+      )
+      const referenceImageIds = mergedIds.length > 0 ? mergedIds : undefined
 
       const allCalls = promptsToRun.flatMap((promptText) => {
         const finalPrompt = promptText.trim()
@@ -479,5 +493,6 @@ export function useGenerator({
     addRefImages,
     removeRefImage,
     maxRefImages,
+    setAutoRefImageIds,
   }
 }

@@ -170,6 +170,14 @@ function AiImagesPage() {
     items: sortedImages.map((img) => img.id),
   })
 
+  useEffect(() => {
+    const completedSelectedIds = Array.from(selection.selectedIds).filter(
+      (id) =>
+        page.gallery.images.find((i) => i.id === id)?.status === 'completed',
+    )
+    page.generator.setAutoRefImageIds(completedSelectedIds)
+  }, [selection.selectedIds, page.gallery.images])
+
   const handleUploadFiles = useCallback(
     (files: Array<File>) => {
       // Show skeleton placeholders immediately, upload in parallel.
