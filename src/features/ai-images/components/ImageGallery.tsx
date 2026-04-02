@@ -104,13 +104,15 @@ export function ImageGallery({
             // Skip images already shown as thumbnails on a parent card
             if (childIds.has(img.id)) return null
 
-            const rootId =
-              img.generation_metadata?.generation_type === 'variation'
-                ? (img.generation_metadata.root_image_id ??
-                  img.generation_metadata.source_image_id ??
-                  '')
-                : ''
-            const rootMeta = rootId ? rootImageMeta[rootId] : undefined
+            // Show "Original" for both edits and variations (using source_image_id)
+            const generationType = img.generation_metadata?.generation_type
+            const sourceImageId =
+              generationType === 'edit' || generationType === 'variation'
+                ? (img.generation_metadata?.source_image_id)
+                : undefined
+            const rootMeta = sourceImageId
+              ? rootImageMeta[sourceImageId]
+              : undefined
 
             if (img.status === 'pending') {
               return (
@@ -151,10 +153,14 @@ export function ImageGallery({
                 objectFit="contain"
                 compact={compact}
                 showInfo={showInfo}
-                rootImageUrl={rootId ? imageUrls[rootId] : undefined}
+                rootImageUrl={
+                  sourceImageId ? imageUrls[sourceImageId] : undefined
+                }
                 rootIsHidden={rootMeta?.hidden}
                 editChildren={editChildrenMap[img.id]}
-                onRestore={rootId ? () => onRestoreRoot(rootId) : undefined}
+                onRestore={
+                  sourceImageId ? () => onRestoreRoot(sourceImageId) : undefined
+                }
                 onDelete={onDelete}
                 onStartAdopt={onStartAdopt}
                 onDownload={onDownload}

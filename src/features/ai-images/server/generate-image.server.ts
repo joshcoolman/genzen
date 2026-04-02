@@ -249,7 +249,8 @@ export const generateImage = createServerFn({ method: 'POST' })
                 : {}),
               ...(data.parentImageId
                 ? {
-                    source_image_id: data.parentImageId,
+                    source_image_id: data.parentImageId, // Immutable: actual generation source
+                    parent_id: data.parentImageId, // Mutable: group parent (same initially)
                     generation_type: 'variation',
                   }
                 : {}),
@@ -311,7 +312,8 @@ export const generateImage = createServerFn({ method: 'POST' })
                 : {}),
               ...(data.parentImageId
                 ? {
-                    source_image_id: data.parentImageId,
+                    source_image_id: data.parentImageId, // Immutable: actual generation source
+                    parent_id: data.parentImageId, // Mutable: group parent (same initially)
                     generation_type: 'variation',
                   }
                 : {}),

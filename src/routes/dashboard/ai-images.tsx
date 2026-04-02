@@ -500,11 +500,12 @@ function AiImagesPage() {
         >()
         for (const row of allRows ?? []) {
           const meta = row.generation_metadata as Record<string, unknown> | null
-          const srcId = meta?.source_image_id as string | undefined
-          if (srcId) {
-            const siblings = childrenOf.get(srcId) ?? []
+          // Use parent_id for group membership (mutable organizational parent)
+          const parentId = meta?.parent_id as string | undefined
+          if (parentId) {
+            const siblings = childrenOf.get(parentId) ?? []
             siblings.push(row)
-            childrenOf.set(srcId, siblings)
+            childrenOf.set(parentId, siblings)
           }
         }
         const descendants: Array<{ path: string }> = []

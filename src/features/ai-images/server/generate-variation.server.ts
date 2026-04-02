@@ -242,7 +242,8 @@ export const generateVariation = createServerFn({ method: 'POST' })
               metadata: {
                 original_prompt: rootPrompt,
                 generation_type: 'variation',
-                source_image_id: sourceImageId,
+                source_image_id: sourceImageId, // Immutable: actual generation source
+                parent_id: rootImageId, // Mutable: group parent (variations group under root)
                 root_image_id: rootImageId,
               },
             })
@@ -285,7 +286,8 @@ export const generateVariation = createServerFn({ method: 'POST' })
                   model,
                   fal_model_id: 'fal-ai/nano-banana-2/edit',
                   generation_type: 'variation',
-                  source_image_id: sourceImageId,
+                  source_image_id: sourceImageId, // Immutable: actual generation source
+                  parent_id: rootImageId, // Mutable: group parent (variations group under root)
                   root_image_id: rootImageId,
                   submitted_at: new Date().toISOString(),
                   ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),

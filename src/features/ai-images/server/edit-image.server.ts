@@ -16,6 +16,7 @@ import { createImageStorage } from '@/lib/image-storage'
 interface EditImageInput {
   accessToken: string
   sourceImageId: string
+  parentId?: string // Optional organizational parent (defaults to sourceImageId)
   editPrompt: string
   aspectRatio?: string
   editModelId?: string
@@ -160,7 +161,8 @@ export const editImage = createServerFn({ method: 'POST' })
           title: 'Editing...',
           idempotencyKey: data.idempotencyKey,
           extraMetadata: {
-            source_image_id: sourceImageId,
+            source_image_id: sourceImageId, // Immutable: actual generation source
+            parent_id: data.parentId ?? sourceImageId, // Mutable: group parent
             ...(referenceImageIds?.length
               ? { reference_image_ids: referenceImageIds }
               : {}),

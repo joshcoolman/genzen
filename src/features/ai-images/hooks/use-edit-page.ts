@@ -95,7 +95,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const imageUpload = useImageUpload(user?.id)
   const editChildren = useEditChildren(sourceChain, user?.id)
 
-  // BFS descendant discovery
+  // BFS descendant discovery - uses parent_id (mutable grouping)
   const discoverDescendants = useCallback(async () => {
     if (!user?.id) return
 
@@ -111,11 +111,12 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     const childrenOf = new Map<string, Array<string>>()
     for (const row of data) {
       const meta = row.generation_metadata as Record<string, unknown> | null
-      if (typeof meta?.source_image_id === 'string') {
-        const srcId = meta.source_image_id
-        const siblings = childrenOf.get(srcId) ?? []
+      // Use parent_id for group membership (mutable)
+      if (typeof meta?.parent_id === 'string') {
+        const parentId = meta.parent_id
+        const siblings = childrenOf.get(parentId) ?? []
         siblings.push(row.id)
-        childrenOf.set(srcId, siblings)
+        childrenOf.set(parentId, siblings)
       }
     }
 
@@ -295,7 +296,8 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
             const { recordId } = await editImage({
               data: {
                 accessToken,
-                sourceImageId: sourceId,
+                sourceImageId: sourceId, // Actual image being edited (immutable history)
+                parentId: imageId, // Group parent (mutable, can be reparented)
                 editPrompt: finalPrompt,
                 aspectRatio,
                 editModelId,

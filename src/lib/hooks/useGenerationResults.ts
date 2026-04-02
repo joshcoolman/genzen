@@ -98,11 +98,12 @@ export function useGenerationResults({
       const rows = (data as Array<DbRow>).filter((r) => {
         if (sourceImageIds && sourceImageIds.length > 0) {
           // When filtering by source chain, include any image whose
-          // source_image_id is in the chain (regardless of generation_type).
-          // This ensures re-parented images appear even without edit/variation type.
+          // parent_id is in the chain (group membership).
+          // Note: source_image_id is immutable (true generation history),
+          // parent_id is mutable (organizational grouping).
           const meta = getMetadata(r.generation_metadata)
-          const srcId = meta?.source_image_id as string | undefined
-          if (!srcId || !sourceImageIds.includes(srcId)) return false
+          const parentId = meta?.parent_id as string | undefined
+          if (!parentId || !sourceImageIds.includes(parentId)) return false
         } else {
           if (!matchesType(r, generationType)) return false
         }
@@ -203,8 +204,9 @@ export function useGenerationResults({
             const updated = payload.new as DbRow
             if (sourceImageIds && sourceImageIds.length > 0) {
               const meta = getMetadata(updated.generation_metadata)
-              const srcId = meta?.source_image_id as string | undefined
-              if (!srcId || !sourceImageIds.includes(srcId)) return
+              // Use parent_id for group filtering (mutable organizational parent)
+              const parentId = meta?.parent_id as string | undefined
+              if (!parentId || !sourceImageIds.includes(parentId)) return
             } else {
               if (!matchesType(updated, generationType)) return
             }

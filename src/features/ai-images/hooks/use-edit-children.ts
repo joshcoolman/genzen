@@ -41,10 +41,10 @@ export function useEditChildren(
       if (!data) return
       const rows = data as Array<EditChildRow>
 
-      // Build a map of all child images (edits, variations, etc.) by source_image_id
+      // Build a map of all child images (edits, variations, etc.) by parent_id (organizational grouping)
       const allEdits = rows.filter((row) => {
         const meta = row.generation_metadata as Record<string, unknown> | null
-        return typeof meta?.source_image_id === 'string'
+        return typeof meta?.parent_id === 'string'
       })
 
       if (allEdits.length === 0) {
@@ -56,10 +56,10 @@ export function useEditChildren(
       const childrenOf = new Map<string, typeof allEdits>()
       for (const row of allEdits) {
         const meta = row.generation_metadata as Record<string, unknown>
-        const srcId = meta.source_image_id as string
-        const siblings = childrenOf.get(srcId) ?? []
+        const parentId = meta.parent_id as string
+        const siblings = childrenOf.get(parentId) ?? []
         siblings.push(row)
-        childrenOf.set(srcId, siblings)
+        childrenOf.set(parentId, siblings)
       }
 
       // Build index for recency ordering (data is already sorted created_at desc)
@@ -156,8 +156,9 @@ export function useEditChildren(
           }
           if (updated.status !== 'completed' || !updated.storage_path) return
           const meta = updated.generation_metadata
-          if (typeof meta?.source_image_id !== 'string') return
-          const parentId = meta.source_image_id as string | undefined
+          // Use parent_id for group membership (mutable organizational parent)
+          if (typeof meta?.parent_id !== 'string') return
+          const parentId = meta.parent_id as string | undefined
           if (!parentId) return
           // Check if this edit belongs to any root parent's descendant tree
           // For realtime, check if the parent is either a root or already a known child

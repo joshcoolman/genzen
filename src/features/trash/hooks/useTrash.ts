@@ -29,8 +29,11 @@ interface UseTrashReturn {
 
 /**
  * Checks which trashed image IDs are referenced by living (non-deleted, non-hidden)
- * images via source_image_id or root_image_id in generation_metadata,
- * or are currently placed on the canvas (on_canvas = true).
+ * images via source_image_id (immutable generation history) or root_image_id
+ * in generation_metadata, or are currently placed on the canvas (on_canvas = true).
+ *
+ * Images with active references cannot be permanently deleted until those references
+ * are removed or the referencing images are also deleted.
  */
 async function fetchLinkedIds(trashedIds: Array<string>): Promise<{
   ids: Set<string>

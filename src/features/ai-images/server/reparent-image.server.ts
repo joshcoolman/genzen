@@ -40,16 +40,14 @@ export const reparentImage = createServerFn({ method: 'POST' })
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     const rows = (allImages ?? []) as Array<Row>
 
-    // Build parent->children map
+    // Build parent->children map using parent_id (mutable grouping)
     const childrenOf = new Map<string, Array<Row>>()
     for (const row of rows) {
-      const srcId = row.generation_metadata?.source_image_id as
-        | string
-        | undefined
-      if (srcId) {
-        const siblings = childrenOf.get(srcId) ?? []
+      const parentId = row.generation_metadata?.parent_id as string | undefined
+      if (parentId) {
+        const siblings = childrenOf.get(parentId) ?? []
         siblings.push(row)
-        childrenOf.set(srcId, siblings)
+        childrenOf.set(parentId, siblings)
       }
     }
 
@@ -99,15 +97,15 @@ export const reparentImage = createServerFn({ method: 'POST' })
         newRootId = parentId
       }
 
-      // Update imageId: set source_image_id to newParentId
-      // Ensure generation_type is 'edit' or 'variation' so it appears in edit view
+      // Update imageId: set parent_id to newParentId (organizational parent)
+      // NOTE: source_image_id remains immutable - it's the true generation source
       const existingType = targetRow.generation_metadata?.generation_type as
         | string
         | undefined
       const needsType = existingType !== 'edit' && existingType !== 'variation'
       const targetMeta = {
         ...(targetRow.generation_metadata ?? {}),
-        source_image_id: data.newParentId,
+        parent_id: data.newParentId, // Set group parent (mutable)
         ...(needsType ? { generation_type: 'variation' } : {}),
       }
       const { error: updateError } = await supabase
@@ -152,9 +150,10 @@ export const reparentImage = createServerFn({ method: 'POST' })
       const descendants = getDescendants(data.imageId)
       const rowMap = new Map(rows.map((r) => [r.id, r]))
 
-      // Update imageId: remove source_image_id and generation_type
+      // Update imageId: remove parent_id and generation_type
+      // NOTE: source_image_id remains immutable - preserves true generation history
       const targetMeta = { ...(targetRow.generation_metadata ?? {}) }
-      delete targetMeta.source_image_id
+      delete targetMeta.parent_id // Remove from group (mutable)
       delete targetMeta.generation_type
       const { error: updateError } = await supabase
         .from('user_images')
