@@ -108,7 +108,7 @@ export function ImageGallery({
             const generationType = img.generation_metadata?.generation_type
             const sourceImageId =
               generationType === 'edit' || generationType === 'variation'
-                ? (img.generation_metadata?.source_image_id)
+                ? img.generation_metadata?.source_image_id
                 : undefined
             const rootMeta = sourceImageId
               ? rootImageMeta[sourceImageId]

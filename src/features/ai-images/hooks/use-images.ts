@@ -104,13 +104,15 @@ export function useImages({
       }
       setImageUrls(urls)
 
-      // Fetch root image URLs for variations (including hidden roots)
+      // Fetch source image URLs for edits and variations (including hidden sources)
       const rootIds = new Set<string>()
       for (const img of images) {
         const meta = img.generation_metadata
-        if (meta?.generation_type === 'variation') {
-          const rootId = meta.root_image_id ?? meta.source_image_id
-          if (rootId && !urls[rootId]) rootIds.add(rootId)
+        const generationType = meta?.generation_type
+        if (generationType === 'edit' || generationType === 'variation') {
+          // Use source_image_id (immutable generation history)
+          const sourceId = meta?.source_image_id
+          if (sourceId && !urls[sourceId]) rootIds.add(sourceId)
         }
       }
       if (rootIds.size > 0) {
