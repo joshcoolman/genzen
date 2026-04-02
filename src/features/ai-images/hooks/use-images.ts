@@ -519,7 +519,7 @@ export function useImages({
   }
 
   async function deleteAndDetachChildren(img: SavedAiImage) {
-    // Find direct children and remove their source_image_id, then delete parent
+    // Find direct children (using parent_id) and remove their parent_id, then delete parent
     const { data: allRows } = await supabase
       .from('user_images')
       .select('id, generation_metadata')
@@ -528,17 +528,16 @@ export function useImages({
 
     const directChildren = (allRows ?? []).filter((row) => {
       const meta = row.generation_metadata as Record<string, unknown> | null
-      return meta?.source_image_id === img.id
+      return meta?.parent_id === img.id
     })
 
-    // Detach each direct child
+    // Detach each direct child (remove parent_id only)
     await Promise.all(
       directChildren.map(async (child) => {
         const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
         const meta = { ...raw }
-        delete meta.source_image_id
-        delete meta.generation_type
-        delete meta.root_image_id
+        delete meta.parent_id // Only remove organizational parent
+        // source_image_id and generation_type remain (immutable history)
         await supabase
           .from('user_images')
           .update({
@@ -559,9 +558,8 @@ export function useImages({
             ? { ...i.generation_metadata }
             : null
           if (meta) {
-            delete (meta as Record<string, unknown>).source_image_id
-            delete (meta as Record<string, unknown>).generation_type
-            delete (meta as Record<string, unknown>).root_image_id
+            delete (meta as Record<string, unknown>).parent_id // Only remove parent
+            // source_image_id and generation_type remain (immutable history)
           }
           return { ...i, generation_metadata: meta }
         }),
@@ -613,19 +611,18 @@ export function useImages({
 
     const directChildren = (allRows ?? []).filter((row) => {
       const meta = row.generation_metadata as Record<string, unknown> | null
-      return meta?.source_image_id === img.id
+      return meta?.parent_id === img.id
     })
 
     if (directChildren.length === 0) return
 
-    // Detach each direct child
+    // Detach each direct child (remove parent_id only)
     await Promise.all(
       directChildren.map(async (child) => {
         const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
         const meta = { ...raw }
-        delete meta.source_image_id
-        delete meta.generation_type
-        delete meta.root_image_id
+        delete meta.parent_id // Only remove organizational parent
+        // source_image_id and generation_type remain (immutable history)
         await supabase
           .from('user_images')
           .update({
@@ -642,9 +639,8 @@ export function useImages({
         if (!detachedIds.has(i.id)) return i
         const meta = i.generation_metadata ? { ...i.generation_metadata } : null
         if (meta) {
-          delete (meta as Record<string, unknown>).source_image_id
-          delete (meta as Record<string, unknown>).generation_type
-          delete (meta as Record<string, unknown>).root_image_id
+          delete (meta as Record<string, unknown>).parent_id // Only remove parent
+          // source_image_id and generation_type remain (immutable history)
         }
         return { ...i, generation_metadata: meta }
       }),

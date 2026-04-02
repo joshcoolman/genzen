@@ -150,11 +150,10 @@ export const reparentImage = createServerFn({ method: 'POST' })
       const descendants = getDescendants(data.imageId)
       const rowMap = new Map(rows.map((r) => [r.id, r]))
 
-      // Update imageId: remove parent_id and generation_type
-      // NOTE: source_image_id remains immutable - preserves true generation history
+      // Update imageId: remove parent_id only
+      // NOTE: source_image_id AND generation_type remain immutable - part of true history
       const targetMeta = { ...(targetRow.generation_metadata ?? {}) }
       delete targetMeta.parent_id // Remove from group (mutable)
-      delete targetMeta.generation_type
       const { error: updateError } = await supabase
         .from('user_images')
         .update({ generation_metadata: targetMeta })
