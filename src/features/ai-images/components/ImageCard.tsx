@@ -37,6 +37,7 @@ interface ImageCardProps {
   onStartAdopt?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
+  onUnlink?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
@@ -47,6 +48,7 @@ interface ImageCardProps {
   selected?: boolean
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  active?: boolean // Active source in edit view
 }
 
 export function ImageCard({
@@ -63,6 +65,7 @@ export function ImageCard({
   onStartAdopt,
   onDownload,
   onUngroup,
+  onUnlink,
   onDescribe,
   onGenerateVariations,
   onGallery,
@@ -71,6 +74,7 @@ export function ImageCard({
   selected,
   selectionActive,
   onSelect,
+  active,
 }: ImageCardProps) {
   const navigate = useNavigate()
 
@@ -101,6 +105,12 @@ export function ImageCard({
           <DropdownMenuItem onClick={() => onUngroup(img)}>
             <Unlink className="h-4 w-4" />
             Ungroup
+          </DropdownMenuItem>
+        )}
+        {onUnlink && (
+          <DropdownMenuItem onClick={() => onUnlink(img)}>
+            <Unlink className="h-4 w-4" />
+            Unlink
           </DropdownMenuItem>
         )}
         {onDescribe && (
@@ -136,8 +146,12 @@ export function ImageCard({
       objectFit={objectFit}
       compact={compact}
       alwaysShowOverlay
-      selected={selected}
-      selectedClassName="border-accent-brand ring-1 ring-accent-brand"
+      selected={selected || (active && !selectionActive)}
+      selectedClassName={
+        active && !selectionActive
+          ? 'border-primary ring-2 ring-primary shadow-lg shadow-primary/20'
+          : 'border-accent-brand ring-1 ring-accent-brand'
+      }
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : rightButtons}
       overlayActionsBottomLeft={

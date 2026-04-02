@@ -21,14 +21,15 @@ interface ImageGalleryProps {
   loadingGallery: boolean
   thumbSize?: 'lg' | 'md' | 'sm'
   showInfo?: boolean
-  onLoadPrompt: (img: SavedAiImage) => void
-  onLoadPromptAndModel: (img: SavedAiImage) => void
+  onLoadPrompt?: (img: SavedAiImage) => void
+  onLoadPromptAndModel?: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   onRestoreRoot: (rootId: string) => void
   onRetry?: (img: SavedAiImage) => void
   onStartAdopt?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
+  onUnlink?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
@@ -37,6 +38,7 @@ interface ImageGalleryProps {
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  activeId?: string // Highlight active source in edit view
 }
 
 export function ImageGallery({
@@ -53,6 +55,7 @@ export function ImageGallery({
   onStartAdopt,
   onDownload,
   onUngroup,
+  onUnlink,
   onDescribe,
   onGenerateVariations,
   onGallery,
@@ -61,6 +64,7 @@ export function ImageGallery({
   selectionActive,
   isSelected,
   onSelect,
+  activeId,
 }: ImageGalleryProps) {
   const compact = thumbSize !== 'lg'
 
@@ -155,6 +159,7 @@ export function ImageGallery({
                 onStartAdopt={onStartAdopt}
                 onDownload={onDownload}
                 onUngroup={onUngroup}
+                onUnlink={onUnlink}
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onGallery={onGallery}
@@ -163,6 +168,7 @@ export function ImageGallery({
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}
+                active={activeId === img.id}
               />
             )
           })}

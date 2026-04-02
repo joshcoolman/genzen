@@ -34,6 +34,8 @@ interface GeneratorPanelProps {
   modelDisplay?: 'panel' | 'dropdown'
   providerOverride?: 'fal' | 'google'
   onProviderOverrideChange?: (value: 'fal' | 'google' | undefined) => void
+  refImagesReadOnly?: boolean
+  libraryFilterIds?: Set<string>
 }
 
 export function GeneratorPanel({
@@ -47,9 +49,16 @@ export function GeneratorPanel({
   modelDisplay = 'panel',
   providerOverride,
   onProviderOverrideChange,
+  refImagesReadOnly = false,
+  libraryFilterIds,
 }: GeneratorPanelProps) {
   const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  // Filter library images to exclude ones already in the chain
+  const filteredLibraryImages = libraryFilterIds
+    ? userImages.images.filter((img) => !libraryFilterIds.has(img.id))
+    : userImages.images
 
   return (
     <div className="space-y-3">
@@ -58,28 +67,31 @@ export function GeneratorPanel({
         <SourceImagePreview
           src={generator.sourceImage.base64}
           name={generator.sourceImage.name}
-          onRemove={generator.handleClearSourceImage}
-          variant={isEdit ? 'square' : 'compact'}
+          onRemove={isEdit ? undefined : generator.handleClearSourceImage}
+          variant="compact"
         />
       )}
 
       {/* Image source buttons + aspect ratio */}
       <div className="flex gap-2 items-center">
-        {!isEdit && (
-          <ImageSourceButtons
-            onFileSelected={generator.setSourceFile}
-            showPaste={false}
-            library={{
-              images: userImages.images,
-              imageUrls: userImages.imageUrls,
-              isLoading: userImages.isLoading,
-              onSelect: (image) =>
-                generator.setSourceFromUrl(image.url, image.title),
-              onOpen: userImages.refresh,
-            }}
-            className="contents"
-          />
-        )}
+        <ImageSourceButtons
+          onFileSelected={generator.setSourceFile}
+          showPaste={false}
+          multiple={isEdit}
+          library={{
+            images: filteredLibraryImages,
+            imageUrls: userImages.imageUrls,
+            isLoading: userImages.isLoading,
+            onSelect: (image) =>
+              generator.setSourceFromUrl(image.url, image.title),
+            onSelectMultiple:
+              isEdit && generator.setSourceFromUrls
+                ? (images) => generator.setSourceFromUrls?.(images)
+                : undefined,
+            onOpen: userImages.refresh,
+          }}
+          className="contents"
+        />
         <AspectRatioSelect
           orientation={generator.orientation}
           aspectRatio={generator.aspectRatio}
@@ -126,11 +138,15 @@ export function GeneratorPanel({
           <RefImageStrip
             images={generator.refImages}
             max={generator.maxRefImages}
-            onAdd={() => {
-              userImages.refresh()
-              setPickerOpen(true)
-            }}
-            onRemove={generator.removeRefImage}
+            onAdd={
+              refImagesReadOnly
+                ? undefined
+                : () => {
+                    userImages.refresh()
+                    setPickerOpen(true)
+                  }
+            }
+            onRemove={refImagesReadOnly ? undefined : generator.removeRefImage}
             disabled={generator.loading}
           />
           <ExistingImagePicker

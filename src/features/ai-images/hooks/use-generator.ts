@@ -62,6 +62,9 @@ export interface GeneratorState {
   handleGenerate: () => Promise<void>
   setSourceFile: (file: File) => void
   setSourceFromUrl: (url: string, name: string) => void
+  setSourceFromUrls?: (
+    images: Array<{ id: string; url: string; title: string }>,
+  ) => void
   setSourceFromBase64: (base64: string, name: string) => void
   handleClearSourceImage: () => void
   handleClear: () => void

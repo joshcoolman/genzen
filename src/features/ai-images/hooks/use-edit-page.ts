@@ -9,6 +9,7 @@ import { useModelSelector } from '@/components/ModelSelector'
 import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
+import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -23,7 +24,7 @@ import { EDIT_MODELS } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 
-export function useEditPage(imageId: string) {
+export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const { user, session } = useAuth()
   const accessToken = session?.access_token
   const credits = useRequireCredits(CREDIT_COSTS.edit)
@@ -31,6 +32,7 @@ export function useEditPage(imageId: string) {
   const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
 
   const [error, setError] = useState<string | null>(null)
+  const [_adoptingImage, setAdoptingImage] = useState(false)
 
   // Source image state (DB metadata + signed URL)
   const [sourceImageMeta, setSourceImageMeta] = useState<{
@@ -47,7 +49,7 @@ export function useEditPage(imageId: string) {
   const [pageLoading, setPageLoading] = useState(true)
   const [hasParent, setHasParent] = useState(false)
 
-  // Generator adapter state — multi-prompt
+  // Generator adapter state - multi-prompt
   const [prompts, setPromptsRaw] = useState<Array<string>>([''])
   const prompt = prompts[0]
   const setPrompt = useCallback(
@@ -90,54 +92,55 @@ export function useEditPage(imageId: string) {
   const [sourceChain, setSourceChain] = useState<Array<string>>([imageId])
 
   const existingImages = useExistingImages(user?.id)
+  const imageUpload = useImageUpload(user?.id)
   const editChildren = useEditChildren(sourceChain, user?.id)
 
   // BFS descendant discovery
-  useEffect(() => {
+  const discoverDescendants = useCallback(async () => {
     if (!user?.id) return
 
-    async function discoverDescendants() {
-      const { data } = await supabase
-        .from('user_images')
-        .select('id, generation_metadata')
-        .eq('user_id', user!.id)
-        .in('source', ['upload', 'ai_generated'])
-        .is('deleted_at', null)
+    const { data } = await supabase
+      .from('user_images')
+      .select('id, generation_metadata')
+      .eq('user_id', user.id)
+      .in('source', ['upload', 'ai_generated'])
+      .is('deleted_at', null)
 
-      if (!data) return
+    if (!data) return
 
-      const childrenOf = new Map<string, Array<string>>()
-      for (const row of data) {
-        const meta = row.generation_metadata as Record<string, unknown> | null
-        if (typeof meta?.source_image_id === 'string') {
-          const srcId = meta.source_image_id
-          const siblings = childrenOf.get(srcId) ?? []
-          siblings.push(row.id)
-          childrenOf.set(srcId, siblings)
-        }
-      }
-
-      const chain = [imageId]
-      const visited = new Set([imageId])
-      const queue = [imageId]
-      while (queue.length > 0) {
-        const current = queue.shift()!
-        for (const childId of childrenOf.get(current) ?? []) {
-          if (!visited.has(childId)) {
-            visited.add(childId)
-            chain.push(childId)
-            queue.push(childId)
-          }
-        }
-      }
-
-      if (chain.length > 1) {
-        setSourceChain(chain)
+    const childrenOf = new Map<string, Array<string>>()
+    for (const row of data) {
+      const meta = row.generation_metadata as Record<string, unknown> | null
+      if (typeof meta?.source_image_id === 'string') {
+        const srcId = meta.source_image_id
+        const siblings = childrenOf.get(srcId) ?? []
+        siblings.push(row.id)
+        childrenOf.set(srcId, siblings)
       }
     }
 
-    void discoverDescendants()
+    const chain = [imageId]
+    const visited = new Set([imageId])
+    const queue = [imageId]
+    while (queue.length > 0) {
+      const current = queue.shift()!
+      for (const childId of childrenOf.get(current) ?? []) {
+        if (!visited.has(childId)) {
+          visited.add(childId)
+          chain.push(childId)
+          queue.push(childId)
+        }
+      }
+    }
+
+    if (chain.length > 1) {
+      setSourceChain(chain)
+    }
   }, [user?.id, imageId])
+
+  useEffect(() => {
+    void discoverDescendants()
+  }, [discoverDescendants])
 
   const results = useGenerationResults({
     userId: user?.id,
@@ -242,8 +245,11 @@ export function useEditPage(imageId: string) {
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
-  // Generate edit handler — loops over active prompts x models x gens
+  // Generate edit handler - loops over active prompts x models x gens
   const activePromptCount = prompts.filter((p) => p.trim()).length
+
+  // Multi-select mode: use selection as references, parent as source
+  const isMultiSelectMode = multiSelectIds && multiSelectIds.size > 0
 
   const handleGenerate = useCallback(async () => {
     if (
@@ -270,8 +276,17 @@ export function useEditPage(imageId: string) {
     }
 
     try {
-      const referenceImageIds =
-        refImages.length > 0 ? refImages.map((r) => r.id) : undefined
+      // Multi-select mode: use selected images as references
+      // Single-select mode: use manual ref images if any
+      const referenceImageIds = isMultiSelectMode
+        ? Array.from(multiSelectIds)
+        : refImages.length > 0
+          ? refImages.map((r) => r.id)
+          : undefined
+
+      // Multi-select mode: always use original parent as source
+      // Single-select mode: use active source
+      const sourceId = isMultiSelectMode ? imageId : activeSourceId
 
       for (const promptText of activePrompts) {
         const finalPrompt = promptText.trim()
@@ -280,7 +295,7 @@ export function useEditPage(imageId: string) {
             const { recordId } = await editImage({
               data: {
                 accessToken,
-                sourceImageId: activeSourceId,
+                sourceImageId: sourceId,
                 editPrompt: finalPrompt,
                 aspectRatio,
                 editModelId,
@@ -323,9 +338,12 @@ export function useEditPage(imageId: string) {
     credits,
     results,
     refImages,
+    isMultiSelectMode,
+    multiSelectIds,
+    imageId,
   ])
 
-  // Shot list prompt generation — dialog owns API call, hook just merges results
+  // Shot list prompt generation - dialog owns API call, hook just merges results
   const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
     setPromptsRaw((prev) => {
       const kept = prev.filter((p) => p.trim())
@@ -390,7 +408,7 @@ export function useEditPage(imageId: string) {
   }
 
   // Select image for editing
-  // Select which image to edit — works with just an ID (fetches from DB)
+  // Select which image to edit - works with just an ID (fetches from DB)
   const selectImageById = useCallback(
     async (targetId: string) => {
       if (!user?.id) return
@@ -572,7 +590,66 @@ export function useEditPage(imageId: string) {
     return urls
   }, [originalImageMeta, results.savedImageUrls])
 
-  // GeneratorState adapter — makes this hook's state compatible with GeneratorPanel
+  // Multi-select mode: populate ref images from selection
+  const effectiveRefImages = useMemo(() => {
+    if (isMultiSelectMode) {
+      // Convert selected IDs to RefImage objects
+      return Array.from(multiSelectIds)
+        .map((id) => {
+          const image = chainImages.find((img) => img.id === id)
+          const url = chainImageUrls[id]
+          if (!image || !url) return null
+          return {
+            id: image.id,
+            url,
+            title: image.title,
+          }
+        })
+        .filter((ref): ref is RefImage => ref !== null)
+    }
+    return refImages
+  }, [
+    isMultiSelectMode,
+    multiSelectIds,
+    chainImages,
+    chainImageUrls,
+    refImages,
+  ])
+
+  // Active source preview: derive from activeSourceId
+  const activeSourcePreview = useMemo(() => {
+    if (isMultiSelectMode) return null
+
+    // For the initial parent, use the loaded metadata
+    if (activeSourceId === imageId && sourceBase64 && sourceImageMeta) {
+      return {
+        base64: sourceBase64,
+        name: sourceImageMeta.title ?? 'Source image',
+      }
+    }
+
+    // For other images, use the URL from chainImageUrls
+    const url = chainImageUrls[activeSourceId]
+    const image = chainImages.find((img) => img.id === activeSourceId)
+    if (url && image) {
+      return {
+        base64: url, // Use the URL directly instead of base64
+        name: image.title,
+      }
+    }
+
+    return null
+  }, [
+    isMultiSelectMode,
+    activeSourceId,
+    imageId,
+    sourceBase64,
+    sourceImageMeta,
+    chainImageUrls,
+    chainImages,
+  ])
+
+  // GeneratorState adapter - makes this hook's state compatible with GeneratorPanel
   const generator: GeneratorState = {
     prompt,
     setPrompt,
@@ -585,13 +662,8 @@ export function useEditPage(imageId: string) {
     aspectRatio,
     setAspectRatio,
     loading: editLoading,
-    sourceImage:
-      sourceBase64 && sourceImageMeta
-        ? {
-            base64: sourceBase64,
-            name: sourceImageMeta.title ?? 'Source image',
-          }
-        : null,
+    // Hide source image in multi-select mode
+    sourceImage: activeSourcePreview,
     describingImage,
     totalImages,
     canGenerate,
@@ -600,8 +672,91 @@ export function useEditPage(imageId: string) {
     setSelectedStyleId,
     handleOrientationToggle,
     handleGenerate,
-    setSourceFile: () => {}, // No file upload in edit mode — source comes from route
-    setSourceFromUrl: () => {}, // No URL source in edit mode
+    setSourceFile: async (file: File) => {
+      // Upload and adopt into this chain
+      if (!accessToken) return
+      setError(null)
+      setAdoptingImage(true)
+      try {
+        const uploaded = await imageUpload.upload({
+          file,
+          title: file.name,
+        })
+        // Adopt the uploaded image under the original parent
+        await reparentImage({
+          data: {
+            accessToken,
+            imageId: uploaded.id,
+            action: 'adopt',
+            newParentId: imageId,
+          },
+        })
+        // Refresh to discover the new child and update the gallery
+        await discoverDescendants()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to upload image')
+      } finally {
+        setAdoptingImage(false)
+      }
+    },
+    setSourceFromUrl: async (url: string, _name: string) => {
+      // Adopt existing library image into this chain
+      if (!accessToken) return
+      setError(null)
+      setAdoptingImage(true)
+      try {
+        // Find the image by URL (it's in existingImages)
+        const libraryImage = existingImages.images.find(
+          (img) => existingImages.imageUrls[img.id] === url,
+        )
+        if (!libraryImage) throw new Error('Image not found')
+
+        // Adopt it under the original parent
+        await reparentImage({
+          data: {
+            accessToken,
+            imageId: libraryImage.id,
+            action: 'adopt',
+            newParentId: imageId,
+          },
+        })
+        // Refresh to discover the adopted child and update the gallery
+        await discoverDescendants()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to add image')
+      } finally {
+        setAdoptingImage(false)
+      }
+    },
+    setSourceFromUrls: async (
+      images: Array<{ id: string; url: string; title: string }>,
+    ) => {
+      // Adopt multiple library images into this chain
+      if (!accessToken) return
+      setError(null)
+      setAdoptingImage(true)
+      try {
+        // Adopt all selected images under the original parent
+        await Promise.all(
+          images.map((img) =>
+            reparentImage({
+              data: {
+                accessToken,
+                imageId: img.id,
+                action: 'adopt',
+                newParentId: imageId,
+              },
+            }),
+          ),
+        )
+        // Refresh to discover the adopted children and update the gallery
+        await discoverDescendants()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to add images')
+      } finally {
+        setAdoptingImage(false)
+      }
+    },
     setSourceFromBase64: () => {}, // No base64 source in edit mode
     handleClear: () => {}, // No-op in edit mode
     handleClearSourceImage: () => {}, // Can't clear in edit mode
@@ -614,7 +769,7 @@ export function useEditPage(imageId: string) {
         return next
       })
     },
-    refImages,
+    refImages: effectiveRefImages,
     addRefImages,
     removeRefImage,
     maxRefImages,

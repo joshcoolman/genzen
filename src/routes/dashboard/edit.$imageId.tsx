@@ -77,7 +77,6 @@ function storePrefs(partial: Partial<EditPrefs>) {
 function EditPage() {
   const { imageId } = Route.useParams()
   const { sourceId: initialSourceId } = Route.useSearch()
-  const page = useEditPage(imageId)
 
   const [panelPinned, setPanelPinned] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -95,6 +94,13 @@ function EditPage() {
   )
   const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
   const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+
+  // Selection state (initialized early so it can be passed to useEditPage)
+  const [selectionItems, setSelectionItems] = useState<Array<string>>([])
+  const selection = useSelection({ items: selectionItems })
+  const selectionActive = selection.count > 0
+
+  const page = useEditPage(imageId, selection.selectedIds)
 
   const handleToggleThumbSize = () => {
     setThumbSize((v) => {
@@ -137,11 +143,10 @@ function EditPage() {
       : page.chainImages
     : page.chainImages
 
-  // Selection
-  const selection = useSelection({
-    items: sortedChainImages.map((img) => img.id),
-  })
-  const selectionActive = selection.count > 0
+  // Update selection items when images change
+  useEffect(() => {
+    setSelectionItems(sortedChainImages.map((img) => img.id))
+  }, [sortedChainImages])
 
   // Pre-select child when navigating from main page thumb click
   const didApplyInitialSource = useRef(false)
@@ -176,6 +181,15 @@ function EditPage() {
       void page.results.deleteResult(img.id)
     },
     [page.activeSourceId, page.results.deleteResult],
+  )
+
+  // Unlink — prevent unlinking the original parent
+  const handleUnlink = useCallback(
+    (img: SavedAiImage) => {
+      if (img.id === imageId) return
+      void page.detachResult(img.id)
+    },
+    [imageId, page],
   )
 
   // Download single image
@@ -221,6 +235,15 @@ function EditPage() {
     await Promise.all(toDelete.map((id) => page.results.deleteResult(id)))
     selection.clearSelection()
   }, [selection, page.activeSourceId, page.results.deleteResult])
+
+  // Batch unlink selected
+  const handleUnlinkSelected = useCallback(async () => {
+    const toUnlink = Array.from(selection.selectedIds).filter(
+      (id) => id !== imageId, // Don't unlink the original parent
+    )
+    await Promise.all(toUnlink.map((id) => page.detachResult(id)))
+    selection.clearSelection()
+  }, [selection, imageId, page])
 
   // Lightbox images (completed only)
   const lightboxImages = sortedChainImages
@@ -354,6 +377,7 @@ function EditPage() {
           onDelete={handleDelete}
           onRestoreRoot={() => {}}
           onDownload={handleDownload}
+          onUnlink={handleUnlink}
           onDescribe={(img) => setDescribeTarget(img)}
           onGallery={handleGallery}
           onOpen={handleOpen}
@@ -361,6 +385,7 @@ function EditPage() {
           selectionActive={selectionActive}
           isSelected={selection.isSelected}
           onSelect={(id, shiftKey) => selection.toggle(id, shiftKey)}
+          activeId={page.activeSourceId}
         />
       </div>
 
@@ -396,7 +421,9 @@ function EditPage() {
             userImages={page.existingImages}
             error={page.error}
             describe={page.describe}
-            mode="edit"
+            mode={selectionActive ? 'generate' : 'edit'}
+            refImagesReadOnly={selectionActive}
+            libraryFilterIds={new Set(sortedChainImages.map((img) => img.id))}
           />
 
           {/* Variations button */}
@@ -412,11 +439,19 @@ function EditPage() {
         </div>
       </div>
 
-      {/* Batch selection drawer — delete + download only (no group/ungroup/move) */}
+      {/* Batch selection drawer — unlink, delete, download */}
       <SelectionDrawer
         count={selection.count}
         onClear={selection.clearSelection}
       >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleUnlinkSelected()}
+        >
+          <Unlink className="h-4 w-4 mr-1.5" />
+          Unlink
+        </Button>
         <Button
           variant="outline"
           size="sm"

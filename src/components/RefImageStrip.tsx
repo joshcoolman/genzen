@@ -3,8 +3,8 @@ import { Plus, X } from 'lucide-react'
 interface RefImageStripProps {
   images: Array<{ id: string; url: string; title: string }>
   max: number
-  onAdd: () => void
-  onRemove: (id: string) => void
+  onAdd?: () => void
+  onRemove?: (id: string) => void
   onImageClick?: () => void
   disabled?: boolean
   /** Show element label under each thumbnail */
@@ -34,7 +34,7 @@ export function RefImageStrip({
               className={`h-full w-full rounded object-cover ${onImageClick && !disabled ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
               onClick={onImageClick && !disabled ? onImageClick : undefined}
             />
-            {!disabled && (
+            {!disabled && onRemove && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -53,7 +53,7 @@ export function RefImageStrip({
           )}
         </div>
       ))}
-      {images.length < max && (
+      {images.length < max && onAdd && (
         <div className={`shrink-0 ${showLabels ? 'w-14' : 'w-12'}`}>
           <button
             onClick={onAdd}
