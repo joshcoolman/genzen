@@ -13,6 +13,7 @@ import {
   Trash2,
   Ungroup,
   Upload,
+  X,
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
