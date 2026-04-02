@@ -13,11 +13,12 @@ import {
   Trash2,
   Ungroup,
   Upload,
-  X,
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import { useIsMobile } from '@/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 import {
   GeneratorPanel,
   ImageGallery,
@@ -125,18 +126,9 @@ function AiImagesPage() {
   const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
   const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
 
-  // Force md thumb size on mobile (<400px)
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 400,
-  )
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 399px)')
-    setIsMobile(mql.matches)
-    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [])
-  const effectiveThumbSize = isMobile ? 'md' : thumbSize
+  // Force lg thumb size on mobile (<400px)
+  const isMobile = useIsMobile()
+  const effectiveThumbSize = isMobile ? 'lg' : thumbSize
 
   const handleToggleThumbSize = () => {
     setThumbSize((v) => {
@@ -742,21 +734,15 @@ function AiImagesPage() {
         </SelectionDrawer>
       </div>
 
-      {/* Generator panel — bottom drawer on mobile, right sidebar on desktop */}
+      {/* Generator panel — full-screen dialog on mobile, right sidebar on desktop */}
       {isMobile ? (
-        <Drawer
-          open={generatorOpen}
-          onOpenChange={setGeneratorOpen}
-          direction="bottom"
-          shouldScaleBackground={false}
-        >
-          <DrawerContent className="h-[75vh] bg-black/95 backdrop-blur-2xl border-border">
-            <DrawerHeader className="pb-0">
-              <DrawerTitle className="text-xs text-muted-foreground font-normal">
-                Generate
-              </DrawerTitle>
-            </DrawerHeader>
-            <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4">
+        <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen}>
+          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+            <MobileDialogHeader
+              title="Generate"
+              onClose={() => setGeneratorOpen(false)}
+            />
+            <div className="flex-1 overflow-y-auto px-3 py-2">
               <GeneratorPanel
                 generator={page.generator}
                 modelSelector={page.modelSelector}
@@ -769,8 +755,8 @@ function AiImagesPage() {
                 onProviderOverrideChange={page.setProviderOverride}
               />
             </div>
-          </DrawerContent>
-        </Drawer>
+          </DialogContent>
+        </Dialog>
       ) : (
         <>
           {/* Dismiss overlay when unpinned */}

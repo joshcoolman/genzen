@@ -10,9 +10,11 @@ import {
   LayoutGrid,
   Pin,
   PinOff,
+  Plus,
   RotateCcw,
   Trash2,
   Unlink,
+  Upload,
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
@@ -26,6 +28,15 @@ import { ActionButton } from '@/components/ActionButton'
 import { SelectionDrawer } from '@/components/SelectionDrawer'
 import { Lightbox } from '@/components/Lightbox'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { CircularIconButton } from '@/components/CircularIconButton'
+import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { useSelection } from '@/lib/use-selection'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
 import { createImageStorage } from '@/lib/image-storage'
@@ -78,6 +89,9 @@ function EditPage() {
   const { imageId } = Route.useParams()
   const { sourceId: initialSourceId } = Route.useSearch()
 
+  // Mobile detection
+  const isMobile = useIsMobile()
+
   const [panelPinned, setPanelPinned] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('genzen:edit-panel-pinned') !== 'false'
@@ -86,6 +100,15 @@ function EditPage() {
   useEffect(() => {
     localStorage.setItem('genzen:edit-panel-pinned', String(panelPinned))
   }, [panelPinned])
+
+  const [panelOpen, setPanelOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:edit-panel-open') !== 'false'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('genzen:edit-panel-open', String(panelOpen))
+  }, [panelOpen])
 
   // View prefs — same controls as main view
   const [storedPrefs] = useState(getStoredPrefs)
@@ -150,6 +173,7 @@ function EditPage() {
 
   // Pre-select child when navigating from main page thumb click
   const didApplyInitialSource = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!initialSourceId || didApplyInitialSource.current || page.pageLoading)
       return
@@ -273,13 +297,11 @@ function EditPage() {
   if (!page.sourceImageMeta) {
     return (
       <div className="space-y-4">
-        <Link
+        <CircularIconButton
+          icon={ArrowLeft}
           to="/dashboard/ai-images"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to AI Images
-        </Link>
+          title="Back to AI Images"
+        />
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
           <h3 className="mb-2 text-lg font-semibold">Image not found</h3>
           <p className="text-sm text-muted-foreground">
@@ -291,78 +313,100 @@ function EditPage() {
   }
 
   return (
-    <div className={panelPinned ? 'mr-80' : ''}>
+    <div className={panelPinned && !isMobile ? 'mr-80' : ''}>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Link
+          <CircularIconButton
+            icon={ArrowLeft}
             to="/dashboard/ai-images"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to AI Images
-          </Link>
-          <div className="flex items-center gap-3">
-            {/* View controls — same as main view */}
-            <div className="flex items-center gap-1">
+            title="Back to AI Images"
+          />
+          {/* Desktop: full controls, Mobile: just generate button */}
+          {isMobile ? (
+            !panelOpen && (
               <button
-                onClick={handleToggleThumbSize}
-                className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+                onClick={() => setPanelOpen(true)}
+                className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                title="Open edit panel"
               >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-medium">
-                  {THUMB_LABELS[thumbSize]}
-                </span>
+                <Plus className="h-4 w-4" />
               </button>
-              <button
-                onClick={handleToggleSort}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                aria-label={sortAsc ? 'Sort newest first' : 'Sort oldest first'}
-              >
-                {sortAsc ? (
-                  <ArrowUp className="h-4 w-4" />
-                ) : (
-                  <ArrowDown className="h-4 w-4" />
-                )}
-              </button>
-              <button
-                onClick={handleToggleInfo}
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                aria-label={showInfo ? 'Hide info' : 'Show info'}
-              >
-                {showInfo ? (
-                  <Info className="h-4 w-4" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-              </button>
-            </div>
+            )
+          ) : (
+            <div className="flex items-center gap-3">
+              {/* View controls — same as main view */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleToggleThumbSize}
+                  className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">
+                    {THUMB_LABELS[thumbSize]}
+                  </span>
+                </button>
+                <button
+                  onClick={handleToggleSort}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label={
+                    sortAsc ? 'Sort newest first' : 'Sort oldest first'
+                  }
+                >
+                  {sortAsc ? (
+                    <ArrowUp className="h-4 w-4" />
+                  ) : (
+                    <ArrowDown className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  onClick={handleToggleInfo}
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  aria-label={showInfo ? 'Hide info' : 'Show info'}
+                >
+                  {showInfo ? (
+                    <Info className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
 
-            {page.isChained && (
-              <button
-                onClick={page.resetToOriginal}
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Reset
-              </button>
-            )}
-            {page.hasParent && (
-              <button
-                onClick={() => void page.detachFromParent()}
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <Unlink className="h-3.5 w-3.5" />
-                Detach
-              </button>
-            )}
-            {page.credits.balance !== null && (
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {page.credits.balance} credits
-              </span>
-            )}
-          </div>
+              {page.isChained && (
+                <button
+                  onClick={page.resetToOriginal}
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset
+                </button>
+              )}
+              {page.hasParent && (
+                <button
+                  onClick={() => void page.detachFromParent()}
+                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <Unlink className="h-3.5 w-3.5" />
+                  Detach
+                </button>
+              )}
+              {page.credits.balance !== null && (
+                <span className="text-sm text-muted-foreground tabular-nums">
+                  {page.credits.balance} credits
+                </span>
+              )}
+              {!panelOpen && (
+                <button
+                  onClick={() => setPanelOpen(true)}
+                  className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                  title="Open edit panel"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Image gallery — same component as main view, scoped to edit chain */}
@@ -389,55 +433,92 @@ function EditPage() {
         />
       </div>
 
-      {/* Right sidebar */}
-      <div
-        className={
-          panelPinned
-            ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
-            : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
-        }
-      >
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <span className="text-xs text-muted-foreground">Edit</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPanelPinned((p) => !p)}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
-              title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+      {/* Edit panel — full-screen dialog on mobile, right sidebar on desktop */}
+      {isMobile ? (
+        <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
+          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+            <MobileDialogHeader
+              title="Edit"
+              onClose={() => setPanelOpen(false)}
+            />
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+              <GeneratorPanel
+                generator={page.generator}
+                modelSelector={page.modelSelector}
+                credits={page.credits}
+                userImages={page.existingImages}
+                error={page.error}
+                describe={page.describe}
+                mode={selectionActive ? 'generate' : 'edit'}
+                refImagesReadOnly={selectionActive}
+                libraryFilterIds={
+                  new Set(sortedChainImages.map((img) => img.id))
+                }
+              />
+
+              {/* Variations button */}
+              <ActionButton
+                variant="outline"
+                onClick={page.handleOpenVariationDialog}
+                loading={page.variationPromptsLoading}
+                loadingText="Generating..."
+                className="w-full"
+              >
+                Generate Variations
+              </ActionButton>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <div
+          className={
+            panelPinned
+              ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
+              : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
+          }
+        >
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <span className="text-xs text-muted-foreground">Edit</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPanelPinned((p) => !p)}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+              >
+                {panelPinned ? (
+                  <Pin className="h-3.5 w-3.5" />
+                ) : (
+                  <PinOff className="h-3.5 w-3.5" />
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="px-4 pb-4 space-y-3">
+            <GeneratorPanel
+              generator={page.generator}
+              modelSelector={page.modelSelector}
+              credits={page.credits}
+              userImages={page.existingImages}
+              error={page.error}
+              describe={page.describe}
+              mode={selectionActive ? 'generate' : 'edit'}
+              refImagesReadOnly={selectionActive}
+              libraryFilterIds={new Set(sortedChainImages.map((img) => img.id))}
+            />
+
+            {/* Variations button */}
+            <ActionButton
+              variant="outline"
+              onClick={page.handleOpenVariationDialog}
+              loading={page.variationPromptsLoading}
+              loadingText="Generating..."
+              className="w-full"
             >
-              {panelPinned ? (
-                <Pin className="h-3.5 w-3.5" />
-              ) : (
-                <PinOff className="h-3.5 w-3.5" />
-              )}
-            </button>
+              Generate Variations
+            </ActionButton>
           </div>
         </div>
-        <div className="px-4 pb-4 space-y-3">
-          <GeneratorPanel
-            generator={page.generator}
-            modelSelector={page.modelSelector}
-            credits={page.credits}
-            userImages={page.existingImages}
-            error={page.error}
-            describe={page.describe}
-            mode={selectionActive ? 'generate' : 'edit'}
-            refImagesReadOnly={selectionActive}
-            libraryFilterIds={new Set(sortedChainImages.map((img) => img.id))}
-          />
-
-          {/* Variations button */}
-          <ActionButton
-            variant="outline"
-            onClick={page.handleOpenVariationDialog}
-            loading={page.variationPromptsLoading}
-            loadingText="Generating..."
-            className="w-full"
-          >
-            Generate Variations
-          </ActionButton>
-        </div>
-      </div>
+      )}
 
       {/* Batch selection drawer — unlink, delete, download */}
       <SelectionDrawer

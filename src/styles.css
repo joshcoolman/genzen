@@ -258,3 +258,12 @@
   background: var(--card);
   font-weight: 600;
 }
+
+/* Prevent iOS Safari auto-zoom on input focus */
+@media screen and (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1rem) !important;
+  }
+}

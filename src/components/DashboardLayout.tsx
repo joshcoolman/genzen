@@ -1,5 +1,7 @@
+import { useLocation } from '@tanstack/react-router'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
+import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { ADPanel } from '@/features/ad/components/ADPanel'
 import { ADContextProvider } from '@/features/ad/context/ad-context'
 import { PromptSheet } from '@/features/prompts/components/PromptSheet'
@@ -9,8 +11,12 @@ import { cn } from '@/lib/utils'
 import { StatusBar } from '@/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
   const { isOpen: isADOpen } = useADOpen()
   const promptSheet = usePromptSheet()
+
+  // Hide mobile nav on edit pages for focused editing experience
+  const isEditPage = location.pathname.startsWith('/dashboard/edit/')
 
   return (
     <ADContextProvider>
@@ -18,8 +24,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Desktop sidebar - collapsed on md+, always icons-only on sm */}
         <Sidebar className="hidden md:flex" />
 
-        {/* Mobile nav trigger */}
-        <MobileNav className="md:hidden" />
+        {/* Mobile nav trigger (hidden on edit pages) */}
+        {!isEditPage && <MobileNav className="md:hidden" />}
 
         {/* Main content */}
         <main
