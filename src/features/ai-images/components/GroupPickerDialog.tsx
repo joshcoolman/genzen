@@ -115,7 +115,7 @@ export function GroupPickerDialog({
                   if (!loading) setPrimaryId(item.id)
                 }}
                 overlayActionsBottomLeft={
-                  <div className="p-1.5">
+                  <div className="pointer-events-none p-1.5">
                     {primaryId === item.id ? (
                       <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
                         <Check className="h-3 w-3" />

@@ -77,7 +77,6 @@ Standardized header for full-screen mobile dialogs:
 
 ```tsx
 import { MobileDialogHeader } from '@/components/MobileDialogHeader'
-
 ;<Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
     <MobileDialogHeader title="Generate" onClose={() => setIsOpen(false)} />

@@ -28,17 +28,12 @@ import {
 } from '@/features/ai-images'
 import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
 import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
-import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
+import { groupImages } from '@/features/ai-images/server/group-images.server'
+import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
 import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 import {
@@ -332,26 +327,30 @@ function AiImagesPage() {
       const images = batchSelectedImages()
       setIsBatchMoving(true)
       try {
-        for (const img of images) {
-          await reparentImage({
-            data: {
-              accessToken: page.accessToken,
-              imageId: img.id,
-              action: 'adopt',
-              newParentId,
-            },
-          })
-        }
+        await groupImages({
+          data: {
+            accessToken: page.accessToken,
+            primaryId: newParentId,
+            childIds: images.map((img) => img.id),
+          },
+        })
         selection.clearSelection()
         setBatchMoveOpen(false)
         await page.gallery.refresh()
+        page.refreshEditChildren()
       } catch (err) {
         console.error('Batch move failed:', err)
       } finally {
         setIsBatchMoving(false)
       }
     },
-    [page.accessToken, batchSelectedImages, selection, page.gallery],
+    [
+      page.accessToken,
+      batchSelectedImages,
+      selection,
+      page.gallery,
+      page.refreshEditChildren,
+    ],
   )
 
   // Group
@@ -364,33 +363,25 @@ function AiImagesPage() {
       const selected = batchSelectedImages()
       setIsGrouping(true)
       try {
-        // Collect all image IDs involved: selected images + their children
+        // Collect all image IDs: selected images + their existing children
         const allIds = new Set<string>()
         for (const img of selected) {
           allIds.add(img.id)
-          const children = page.editChildrenMap[img.id] as
-            | Array<unknown>
-            | undefined
-          if (children) {
-            for (const child of children as Array<{ id: string }>) {
-              allIds.add(child.id)
-            }
+          for (const child of page.editChildrenMap[img.id] ?? []) {
+            allIds.add(child.id)
           }
         }
-        // Remove the primary — it stays as root
+        // Remove the primary — it stays as the group parent
         allIds.delete(primaryId)
 
-        // Adopt all others under primaryId
-        for (const id of allIds) {
-          await reparentImage({
-            data: {
-              accessToken: page.accessToken,
-              imageId: id,
-              action: 'adopt',
-              newParentId: primaryId,
-            },
-          })
-        }
+        // Single batch call
+        await groupImages({
+          data: {
+            accessToken: page.accessToken,
+            primaryId,
+            childIds: Array.from(allIds),
+          },
+        })
         selection.clearSelection()
         setGroupOpen(false)
         await page.gallery.refresh()
@@ -415,15 +406,16 @@ function AiImagesPage() {
   const [isBatchUngrouping, setIsBatchUngrouping] = useState(false)
 
   const handleBatchUngroup = useCallback(async () => {
+    if (!page.accessToken) return
     const selected = batchSelectedImages()
     setIsBatchUngrouping(true)
     try {
+      // Ungroup each selected parent that has children
       for (const img of selected) {
-        const children = page.editChildrenMap[img.id] as
-          | Array<unknown>
-          | undefined
-        if (children && children.length > 0) {
-          await page.gallery.ungroupChildren(img)
+        if ((page.editChildrenMap[img.id] ?? []).length > 0) {
+          await ungroupImages({
+            data: { accessToken: page.accessToken, parentId: img.id },
+          })
         }
       }
       selection.clearSelection()
@@ -435,6 +427,7 @@ function AiImagesPage() {
       setIsBatchUngrouping(false)
     }
   }, [
+    page.accessToken,
     batchSelectedImages,
     page.editChildrenMap,
     page.gallery,
@@ -552,6 +545,19 @@ function AiImagesPage() {
       page.refreshEditChildren()
     },
     [page.gallery, page.refreshEditChildren],
+  )
+
+  // Unlink handler — detach a single image from its group parent
+  const handleUnlink = useCallback(
+    async (img: SavedAiImage) => {
+      if (!page.accessToken) return
+      await ungroupImages({
+        data: { accessToken: page.accessToken, imageIds: [img.id] },
+      })
+      await page.gallery.refresh()
+      page.refreshEditChildren()
+    },
+    [page.accessToken, page.gallery, page.refreshEditChildren],
   )
 
   // Describe dialog state
@@ -680,6 +686,7 @@ function AiImagesPage() {
           onStartAdopt={page.reparent.startAdopt}
           onDownload={handleDownload}
           onUngroup={handleUngroup}
+          onUnlink={handleUnlink}
           onDescribe={handleDescribe}
           onGenerateVariations={page.variations.openVariationDialog}
           onGallery={page.lightbox.open}

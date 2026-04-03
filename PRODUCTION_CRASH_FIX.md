@@ -3,6 +3,7 @@
 ## Issue
 
 Production site was crashing with:
+
 ```
 ReferenceError: X is not defined
 ```
@@ -22,7 +23,7 @@ However, `X` was still being used on **line 798** for the desktop generator pane
 
 ```tsx
 <button onClick={() => setGeneratorOpen(false)}>
-  <X className="h-3.5 w-3.5" />  {/* ❌ X not imported */}
+  <X className="h-3.5 w-3.5" /> {/* ❌ X not imported */}
 </button>
 ```
 
@@ -52,7 +53,7 @@ import {
   Trash2,
   Ungroup,
   Upload,
-  X,  // ✅ Added back
+  X, // ✅ Added back
 } from 'lucide-react'
 ```
 
@@ -74,6 +75,7 @@ import {
 ## Deployment
 
 After this fix:
+
 1. Commit the change
 2. Push to production
 3. Test on both desktop and mobile

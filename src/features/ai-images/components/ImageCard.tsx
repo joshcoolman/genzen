@@ -107,12 +107,14 @@ export function ImageCard({
             Ungroup
           </DropdownMenuItem>
         )}
-        {onUnlink && (
-          <DropdownMenuItem onClick={() => onUnlink(img)}>
-            <Unlink className="h-4 w-4" />
-            Unlink
-          </DropdownMenuItem>
-        )}
+        {onUnlink &&
+          typeof (img.generation_metadata as Record<string, unknown> | null)
+            ?.parent_id === 'string' && (
+            <DropdownMenuItem onClick={() => onUnlink(img)}>
+              <Unlink className="h-4 w-4" />
+              Unlink
+            </DropdownMenuItem>
+          )}
         {onDescribe && (
           <DropdownMenuItem onClick={() => onDescribe(img)}>
             <MessageSquare className="h-4 w-4" />

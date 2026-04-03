@@ -7,6 +7,7 @@ import { updateImageOrder } from '@/features/ai-images/server/update-image-order
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { removeImages } from '@/features/user-images/server/remove-images.server'
+import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
 
 interface UseImagesOptions {
   userId: string | undefined
@@ -435,7 +436,7 @@ export function useImages({
   }
 
   async function deleteImageWithDescendants(img: SavedAiImage) {
-    // Collect all descendant IDs via BFS
+    // Collect group children via BFS on parent_id (grouping, not genealogy)
     const { data: allRows } = await supabase
       .from('user_images')
       .select('id, generation_metadata')
@@ -445,11 +446,11 @@ export function useImages({
     const childrenOf = new Map<string, Array<string>>()
     for (const row of allRows ?? []) {
       const meta = row.generation_metadata as Record<string, unknown> | null
-      const srcId = meta?.source_image_id as string | undefined
-      if (srcId) {
-        const siblings = childrenOf.get(srcId) ?? []
+      const pid = meta?.parent_id as string | undefined
+      if (pid) {
+        const siblings = childrenOf.get(pid) ?? []
         siblings.push(row.id)
-        childrenOf.set(srcId, siblings)
+        childrenOf.set(pid, siblings)
       }
     }
 
@@ -474,97 +475,51 @@ export function useImages({
     })
 
     try {
-      const now = new Date().toISOString()
-      const allIds = Array.from(idsToDelete)
+      // Remove parent_id from children so they're independent in trash
+      // Genealogy fields (source_image_id, root_image_id, generation_type) stay intact
+      const childIds = Array.from(idsToDelete).filter((id) => id !== img.id)
+      if (childIds.length > 0 && accessToken) {
+        await ungroupImages({
+          data: { accessToken, imageIds: childIds },
+        })
+      }
 
       // Soft-delete all
       await supabase
         .from('user_images')
-        .update({ deleted_at: now })
-        .in('id', allIds)
-
-      // Flatten: strip parent/root references so they're independent in trash
-      // and restore as individual images (not grouped)
-      const childIds = allIds.filter((id) => id !== img.id)
-      if (childIds.length > 0) {
-        // Fetch current metadata for children, remove parent pointers
-        const { data: children } = await supabase
-          .from('user_images')
-          .select('id, generation_metadata')
-          .in('id', childIds)
-
-        if (children) {
-          await Promise.all(
-            children.map((child) => {
-              const raw = child.generation_metadata as Record<
-                string,
-                unknown
-              > | null
-              const meta = { ...(raw ?? {}) }
-              delete meta.source_image_id
-              delete meta.root_image_id
-              meta.generation_type = 'generate'
-              return supabase
-                .from('user_images')
-
-                .update({ generation_metadata: meta as any })
-                .eq('id', child.id)
-            }),
-          )
-        }
-      }
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', Array.from(idsToDelete))
     } catch {
       loadSavedImages()
     }
   }
 
   async function deleteAndDetachChildren(img: SavedAiImage) {
-    // Find direct children (using parent_id) and remove their parent_id, then delete parent
-    const { data: allRows } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', userId!)
-      .is('deleted_at', null)
-
-    const directChildren = (allRows ?? []).filter((row) => {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      return meta?.parent_id === img.id
-    })
-
-    // Detach each direct child (remove parent_id only)
-    await Promise.all(
-      directChildren.map(async (child) => {
-        const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
-        const meta = { ...raw }
-        delete meta.parent_id // Only remove organizational parent
-        // source_image_id and generation_type remain (immutable history)
-        await supabase
-          .from('user_images')
-          .update({
-            generation_metadata: meta as unknown as Record<string, never>,
-          })
-          .eq('id', child.id)
-      }),
-    )
-
-    // Update local state: detach children + remove parent
-    const detachedIds = new Set(directChildren.map((c) => c.id))
+    // Optimistic: remove parent from view, clear parent_id on children
     setSavedImages((prev) =>
       prev
         .filter((i) => i.id !== img.id)
         .map((i) => {
-          if (!detachedIds.has(i.id)) return i
-          const meta = i.generation_metadata
-            ? { ...i.generation_metadata }
-            : null
-          if (meta) {
-            delete (meta as Record<string, unknown>).parent_id // Only remove parent
-            // source_image_id and generation_type remain (immutable history)
+          if (i.generation_metadata?.parent_id !== img.id) return i
+          return {
+            ...i,
+            generation_metadata: {
+              ...i.generation_metadata,
+              parent_id: undefined,
+            },
           }
-          return { ...i, generation_metadata: meta }
         }),
     )
+
     try {
+      // Detach all children via server function
+      if (accessToken) {
+        await ungroupImages({
+          data: { accessToken, parentId: img.id },
+        })
+      }
+
+      // Soft-delete the parent
       const { error: deleteError } = await supabase
         .from('user_images')
         .update({ deleted_at: new Date().toISOString() })
@@ -602,49 +557,26 @@ export function useImages({
   }
 
   async function ungroupChildren(img: SavedAiImage) {
-    // Detach all direct children to top-level without deleting the parent
-    const { data: allRows } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', userId!)
-      .is('deleted_at', null)
+    if (!accessToken) return
 
-    const directChildren = (allRows ?? []).filter((row) => {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      return meta?.parent_id === img.id
-    })
-
-    if (directChildren.length === 0) return
-
-    // Detach each direct child (remove parent_id only)
-    await Promise.all(
-      directChildren.map(async (child) => {
-        const raw = (child.generation_metadata ?? {}) as Record<string, unknown>
-        const meta = { ...raw }
-        delete meta.parent_id // Only remove organizational parent
-        // source_image_id and generation_type remain (immutable history)
-        await supabase
-          .from('user_images')
-          .update({
-            generation_metadata: meta as unknown as Record<string, never>,
-          })
-          .eq('id', child.id)
-      }),
-    )
-
-    // Update local state: detach children, keep parent
-    const detachedIds = new Set(directChildren.map((c) => c.id))
+    // Optimistic: clear parent_id on children in local state
     setSavedImages((prev) =>
       prev.map((i) => {
-        if (!detachedIds.has(i.id)) return i
-        const meta = i.generation_metadata ? { ...i.generation_metadata } : null
-        if (meta) {
-          delete (meta as Record<string, unknown>).parent_id // Only remove parent
-          // source_image_id and generation_type remain (immutable history)
+        if (i.generation_metadata?.parent_id !== img.id) return i
+        return {
+          ...i,
+          generation_metadata: {
+            ...i.generation_metadata,
+            parent_id: undefined,
+          },
         }
-        return { ...i, generation_metadata: meta }
       }),
     )
+
+    // Detach all children via server function
+    await ungroupImages({
+      data: { accessToken, parentId: img.id },
+    })
   }
 
   async function reorderImages(draggedId: string, newSortOrder: number) {

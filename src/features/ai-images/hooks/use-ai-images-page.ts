@@ -67,10 +67,7 @@ export function useAiImagesPage() {
   )
 
   const parentIds = useMemo(
-    () =>
-      completedImages
-        .filter((img) => img.generation_metadata?.generation_type !== 'edit')
-        .map((img) => img.id),
+    () => completedImages.map((img) => img.id),
     [completedImages],
   )
 
