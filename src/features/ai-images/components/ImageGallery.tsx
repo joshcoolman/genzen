@@ -104,10 +104,14 @@ export function ImageGallery({
             // Skip images already shown as thumbnails on a parent card
             if (childIds.has(img.id)) return null
 
-            // Show "Original" for both edits and variations (using source_image_id)
+            // Show "Original" for edits/variations that are NOT grouped under a different parent
+            // When an image is in a group, the group context takes over — showing
+            // a genealogy "Original" for a grouped child is misleading
             const generationType = img.generation_metadata?.generation_type
+            const isGroupChild = !!img.generation_metadata?.parent_id
             const sourceImageId =
-              generationType === 'edit' || generationType === 'variation'
+              !isGroupChild &&
+              (generationType === 'edit' || generationType === 'variation')
                 ? img.generation_metadata?.source_image_id
                 : undefined
             const rootMeta = sourceImageId
