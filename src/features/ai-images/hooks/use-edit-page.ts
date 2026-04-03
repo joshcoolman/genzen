@@ -42,6 +42,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     prompt: string | null
     aspectRatio: string | null
     url: string
+    generationMetadata: Record<string, unknown> | null
   } | null>(null)
   const [originalImageMeta, setOriginalImageMeta] =
     useState<typeof sourceImageMeta>(null)
@@ -190,6 +191,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         prompt: (meta?.prompt as string | undefined) ?? null,
         aspectRatio: srcRatio ?? null,
         url: signedUrl,
+        generationMetadata: meta,
       }
 
       setSourceImageMeta(imgMeta)
@@ -438,6 +440,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         prompt: (meta?.prompt as string | undefined) ?? null,
         aspectRatio: srcRatio ?? null,
         url,
+        generationMetadata: meta,
       })
 
       // Convert to base64
@@ -563,6 +566,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const chainImages = useMemo((): Array<SavedAiImage> => {
     if (!originalImageMeta) return results.savedImages
 
+    const rawMeta = originalImageMeta.generationMetadata ?? {}
     const parentAsSaved: SavedAiImage = {
       id: originalImageMeta.id,
       title: originalImageMeta.title ?? 'Source',
@@ -571,8 +575,12 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       generation_error: null,
       generation_metadata: {
         prompt: originalImageMeta.prompt ?? '',
-        model: '',
+        model: (rawMeta.model as string | undefined) ?? '',
         aspect_ratio: originalImageMeta.aspectRatio ?? undefined,
+        generation_type: rawMeta.generation_type as string | undefined,
+        source_image_id: rawMeta.source_image_id as string | undefined,
+        root_image_id: rawMeta.root_image_id as string | undefined,
+        parent_id: rawMeta.parent_id as string | undefined,
       },
       created_at: new Date().toISOString(),
     }
@@ -584,13 +592,64 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     return [parentAsSaved, ...filteredResults]
   }, [originalImageMeta, results.savedImages])
 
+  // Fetch source image URLs for "Original" display on chain images
+  const [sourceImageUrls, setSourceImageUrls] = useState<
+    Record<string, string>
+  >({})
+  const [rootImageMeta, setRootImageMeta] = useState<
+    Record<string, { hidden: boolean }>
+  >({})
+
+  useEffect(() => {
+    const allImages = chainImages
+    const sourceIds = new Set<string>()
+    for (const img of allImages) {
+      const meta = img.generation_metadata
+      const genType = meta?.generation_type
+      if (
+        (genType === 'edit' || genType === 'variation') &&
+        meta?.source_image_id
+      ) {
+        sourceIds.add(meta.source_image_id)
+      }
+    }
+    if (sourceIds.size === 0) return
+
+    async function fetchSourceUrls() {
+      const { data: rows } = await supabase
+        .from('user_images')
+        .select('id, storage_path, thumbnail_path, hidden')
+        .in('id', Array.from(sourceIds))
+        .is('deleted_at', null)
+      if (!rows) return
+
+      const meta: Record<string, { hidden: boolean }> = {}
+      const urls: Record<string, string> = {}
+      await Promise.all(
+        rows.map(async (r) => {
+          meta[r.id] = { hidden: !!r.hidden }
+          if (!r.storage_path) return
+          const path = r.thumbnail_path ?? r.storage_path
+          const url = await createImageStorage(supabase).getUrl(path)
+          if (url) urls[r.id] = url
+        }),
+      )
+      setSourceImageUrls(urls)
+      setRootImageMeta(meta)
+    }
+    void fetchSourceUrls()
+  }, [chainImages])
+
   const chainImageUrls = useMemo((): Record<string, string> => {
-    const urls: Record<string, string> = { ...results.savedImageUrls }
+    const urls: Record<string, string> = {
+      ...results.savedImageUrls,
+      ...sourceImageUrls,
+    }
     if (originalImageMeta) {
       urls[originalImageMeta.id] = originalImageMeta.url
     }
     return urls
-  }, [originalImageMeta, results.savedImageUrls])
+  }, [originalImageMeta, results.savedImageUrls, sourceImageUrls])
 
   // Multi-select mode: populate ref images from selection
   const effectiveRefImages = useMemo(() => {
@@ -788,6 +847,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     results,
     chainImages,
     chainImageUrls,
+    rootImageMeta,
     editChildrenMap: editChildren.map,
     accessToken: accessToken ?? null,
     sourceImageMeta,

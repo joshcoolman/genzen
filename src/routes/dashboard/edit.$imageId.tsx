@@ -413,7 +413,7 @@ function EditPage() {
         <ImageGallery
           images={sortedChainImages}
           imageUrls={page.chainImageUrls}
-          rootImageMeta={{}}
+          rootImageMeta={page.rootImageMeta}
           editChildrenMap={{}}
           loadingGallery={false}
           thumbSize={thumbSize}
