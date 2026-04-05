@@ -5,6 +5,7 @@ export interface TextModel {
   description: string
   supportsVision: boolean
   locked?: boolean
+  isNew?: boolean
 }
 
 export const ALL_TEXT_MODELS: Array<TextModel> = [
@@ -29,6 +30,14 @@ export const ALL_TEXT_MODELS: Array<TextModel> = [
     provider: 'Google',
     description: 'Fast multimodal with long context',
     supportsVision: true,
+  },
+  {
+    id: 'gemma-4',
+    name: 'Gemma 4',
+    provider: 'Google (OpenRouter)',
+    description: 'Open-weight, 256K context, 140 languages',
+    supportsVision: true,
+    isNew: true,
   },
   {
     id: 'grok',

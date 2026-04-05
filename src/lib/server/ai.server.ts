@@ -17,6 +17,7 @@ export const models = {
   gemini3Flash: google('gemini-3-flash-preview'),
   grok: xai('grok-3-mini'),
   nemotron: openrouter.chatModel('nvidia/nemotron-3-super-120b-a12b'),
+  gemma4: openrouter.chatModel('google/gemma-4-31b-it'),
 }
 
 // Role assignments - change one line to swap what model handles each job

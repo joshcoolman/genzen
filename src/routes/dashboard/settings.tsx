@@ -203,6 +203,11 @@ function SettingsPage() {
                             vision
                           </span>
                         )}
+                        {model.isNew && (
+                          <span className="shrink-0 rounded bg-warm-gold/15 px-1 py-px text-[10px] text-warm-gold">
+                            new
+                          </span>
+                        )}
                       </div>
                       <div className="text-[10px] truncate text-[#7dac8e]">
                         {model.description}

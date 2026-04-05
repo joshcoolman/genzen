@@ -11,4 +11,5 @@ export const TEXT_MODEL_MAP: Record<string, LanguageModel> = {
   grok: models.grok,
   nemotron: models.nemotron,
   'gpt-4o-mini': fastTextModels.gpt4oMini.model,
+  'gemma-4': models.gemma4,
 }

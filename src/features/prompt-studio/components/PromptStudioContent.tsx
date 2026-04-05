@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import {
   BookmarkPlus,
   Check,
+  ClipboardCopy,
   Copy,
   Image,
   Loader2,
@@ -12,12 +13,14 @@ import {
 import { ModelResultCard } from './ModelResultCard'
 import { PromptSetsSidebar } from './PromptSetsSidebar'
 import type { UsePromptStudioReturn } from '../hooks/usePromptStudio'
+import type { ModelResult } from '../types'
 import { ModelMultiSelect } from '@/components/ModelMultiSelect'
 import { ActionButton } from '@/components/ActionButton'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { ALL_TEXT_MODELS } from '@/lib/text-models'
 
 interface PromptStudioContentProps {
   studio: UsePromptStudioReturn
@@ -32,16 +35,65 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
-async function urlToBase64(url: string): Promise<string> {
-  const res = await fetch(url)
-  const blob = await res.blob()
-  return fileToBase64(new File([blob], 'image'))
+function formatResults(
+  prompt: string,
+  systemPrompt: string,
+  negativePrompt: string,
+  hasImage: boolean,
+  results: Array<ModelResult>,
+): string {
+  const lines: Array<string> = []
+  lines.push('## Prompt Studio Run')
+  lines.push('')
+  lines.push(`**Prompt:** ${prompt}`)
+  if (systemPrompt) lines.push(`**System:** ${systemPrompt}`)
+  if (negativePrompt) lines.push(`**Avoid:** ${negativePrompt}`)
+  if (hasImage) lines.push('**Image:** attached')
+  lines.push('')
+
+  const sorted = [...results].sort((a, b) => a.durationMs - b.durationMs)
+
+  for (const r of sorted) {
+    const model = ALL_TEXT_MODELS.find((m) => m.id === r.modelId)
+    const name = model?.name ?? r.modelId
+    const provider = model?.provider ?? ''
+    const time = r.durationMs > 0 ? `${(r.durationMs / 1000).toFixed(1)}s` : ''
+
+    lines.push(
+      `### ${name}${provider ? ` (${provider})` : ''}${time ? ` -- ${time}` : ''}`,
+    )
+    if (r.error) {
+      lines.push(`ERROR: ${r.error}`)
+    } else if (r.text) {
+      lines.push(r.text)
+    }
+    lines.push('')
+  }
+
+  return lines.join('\n')
+}
+
+function urlToBase64(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      canvas.getContext('2d')!.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => reject(new Error('Failed to load image'))
+    img.src = url
+  })
 }
 
 export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   const { session } = useAuth()
   const userImages = useUserImages(session?.user.id)
   const [copiedAll, setCopiedAll] = useState(false)
+  const [copiedResults, setCopiedResults] = useState(false)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -277,10 +329,41 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
         )}
 
         {studio.results.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {studio.results.map((result) => (
-              <ModelResultCard key={result.modelId} result={result} />
-            ))}
+          <div className="space-y-3">
+            <div className="flex items-center justify-end">
+              <button
+                onClick={async () => {
+                  const md = formatResults(
+                    studio.prompt,
+                    studio.customSystemPrompt,
+                    studio.negativePrompt,
+                    !!studio.imageUrl,
+                    studio.results,
+                  )
+                  await navigator.clipboard.writeText(md)
+                  setCopiedResults(true)
+                  setTimeout(() => setCopiedResults(false), 2000)
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                  copiedResults
+                    ? 'text-green-500'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {copiedResults ? (
+                  <Check className="size-3" />
+                ) : (
+                  <ClipboardCopy className="size-3" />
+                )}
+                {copiedResults ? 'Copied' : 'Copy Results'}
+              </button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {studio.results.map((result) => (
+                <ModelResultCard key={result.modelId} result={result} />
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -1,8 +1,10 @@
 import { CheckCircle2, Circle } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 export interface ModelOption {
   id: string
   name: string
+  isNew?: boolean
 }
 
 interface ModelMultiSelectProps {
@@ -44,6 +46,11 @@ export function ModelMultiSelect({
               <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
             )}
             <span className="text-xs font-medium">{model.name}</span>
+            {model.isNew && (
+              <Badge variant="new" className="ml-1 px-1 py-0 text-[10px]">
+                New
+              </Badge>
+            )}
           </button>
         )
       })}
