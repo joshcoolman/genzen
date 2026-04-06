@@ -33,7 +33,7 @@ interface ImageCardProps {
   compact?: boolean
   showInfo?: boolean
   onRestore?: () => void
-  onDelete: (img: SavedAiImage) => void
+  onDelete?: (img: SavedAiImage) => void
   onStartAdopt?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onUngroup?: (img: SavedAiImage) => void
@@ -131,14 +131,14 @@ export function ImageCard({
     </DropdownMenu>
   )
 
-  const rightButtons = (
+  const rightButtons = onDelete ? (
     <ExpandableIconButton
       icon={<Trash2 className="h-3.5 w-3.5" />}
       label="Delete"
       variant="destructive"
       onClick={() => onDelete(img)}
     />
-  )
+  ) : undefined
 
   return (
     <Thumbnail

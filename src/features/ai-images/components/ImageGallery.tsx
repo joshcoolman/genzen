@@ -39,6 +39,7 @@ interface ImageGalleryProps {
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
   activeId?: string // Highlight active source in edit view
+  parentId?: string // Parent image ID — no delete/select in edit view
 }
 
 export function ImageGallery({
@@ -65,6 +66,7 @@ export function ImageGallery({
   isSelected,
   onSelect,
   activeId,
+  parentId,
 }: ImageGalleryProps) {
   const compact = thumbSize !== 'lg'
 
@@ -148,6 +150,8 @@ export function ImageGallery({
               )
             }
 
+            const isParent = parentId === img.id
+
             return (
               <ImageCard
                 key={img.id}
@@ -164,19 +168,19 @@ export function ImageGallery({
                 onRestore={
                   sourceImageId ? () => onRestoreRoot(sourceImageId) : undefined
                 }
-                onDelete={onDelete}
+                onDelete={isParent ? undefined : onDelete}
                 onStartAdopt={onStartAdopt}
                 onDownload={onDownload}
                 onUngroup={onUngroup}
-                onUnlink={onUnlink}
+                onUnlink={isParent ? undefined : onUnlink}
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onGallery={onGallery}
                 onOpen={onOpen}
                 onChildOpen={onChildOpen}
-                selected={isSelected?.(img.id)}
-                selectionActive={selectionActive}
-                onSelect={onSelect}
+                selected={isParent ? undefined : isSelected?.(img.id)}
+                selectionActive={isParent ? false : selectionActive}
+                onSelect={isParent ? undefined : onSelect}
                 active={activeId === img.id}
               />
             )

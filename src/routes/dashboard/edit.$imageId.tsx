@@ -198,13 +198,28 @@ function EditPage() {
     [page.selectImageById],
   )
 
-  // Delete — prevent deleting the current source
+  // Delete — auto-select next image if deleting active source
   const handleDelete = useCallback(
     (img: SavedAiImage) => {
-      if (img.id === page.activeSourceId) return
+      // If deleting the active source, select the next available image first
+      if (img.id === page.activeSourceId) {
+        const currentIndex = sortedChainImages.findIndex((i) => i.id === img.id)
+        const next =
+          sortedChainImages[currentIndex + 1] ??
+          sortedChainImages[currentIndex - 1]
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- index may be out of bounds
+        if (next) {
+          void page.selectImageById(next.id)
+        }
+      }
       void page.results.deleteResult(img.id)
     },
-    [page.activeSourceId, page.results.deleteResult],
+    [
+      page.activeSourceId,
+      page.results.deleteResult,
+      sortedChainImages,
+      page.selectImageById,
+    ],
   )
 
   // Unlink — prevent unlinking the original parent
@@ -430,6 +445,7 @@ function EditPage() {
           isSelected={selection.isSelected}
           onSelect={(id, shiftKey) => selection.toggle(id, shiftKey)}
           activeId={page.activeSourceId}
+          parentId={imageId}
         />
       </div>
 
