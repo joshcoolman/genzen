@@ -44,7 +44,7 @@ export const ALL_TEXT_MODELS: Array<TextModel> = [
     name: 'Grok',
     provider: 'xAI',
     description: 'Creative and unfiltered',
-    supportsVision: true,
+    supportsVision: false,
   },
   {
     id: 'nemotron',
