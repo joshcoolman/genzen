@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Circle } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { ActionButton } from '@/components/ActionButton'
 import { ImageGrid } from '@/components/ImageGrid'
 import { Thumbnail } from '@/components/Thumbnail'
 
@@ -90,19 +88,33 @@ export function GroupPickerDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Group images</DialogTitle>
+          <DialogTitle>Select Primary Image</DialogTitle>
         </DialogHeader>
 
-        <p className="text-sm text-muted-foreground">
-          Select the primary image. All others will be grouped under it.
-        </p>
+        <div className="flex gap-2 justify-end">
+          <ActionButton
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={loading}
+          >
+            Cancel
+          </ActionButton>
+          <ActionButton
+            onClick={() => onConfirm(primaryId)}
+            loading={loading}
+            loadingText="Grouping..."
+            disabled={!primaryId}
+          >
+            Create Group
+          </ActionButton>
+        </div>
 
         {allImages.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
             No images to group
           </p>
         ) : (
-          <ImageGrid size="md">
+          <ImageGrid size="sm">
             {allImages.map((item) => (
               <Thumbnail
                 key={item.id}
@@ -111,42 +123,16 @@ export function GroupPickerDialog({
                 status="complete"
                 compact
                 selected={primaryId === item.id}
+                selectedClassName="ring-2 ring-inset ring-primary border-primary"
+                objectFit="cover"
+                className={primaryId !== item.id ? 'opacity-30' : undefined}
                 onClick={() => {
                   if (!loading) setPrimaryId(item.id)
                 }}
-                overlayActionsBottomLeft={
-                  <div className="pointer-events-none p-1.5">
-                    {primaryId === item.id ? (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white">
-                        <Check className="h-3 w-3" />
-                      </div>
-                    ) : (
-                      <Circle className="h-5 w-5 text-white/60" />
-                    )}
-                  </div>
-                }
               />
             ))}
           </ImageGrid>
         )}
-
-        <DialogFooter>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleOpenChange(false)}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={!primaryId || loading}
-            onClick={() => onConfirm(primaryId)}
-          >
-            {loading ? 'Grouping...' : 'Group'}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
