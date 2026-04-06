@@ -4,12 +4,17 @@ import {
   Check,
   ClipboardCopy,
   Copy,
-  Image,
+  Image as ImageIcon,
   Loader2,
+  MessageSquare,
   RotateCcw,
   Send,
   X,
 } from 'lucide-react'
+import {
+  fetchImageBase64,
+  runSingleModel,
+} from '../server/run-prompt-studio.server'
 import { ModelResultCard } from './ModelResultCard'
 import { PromptSetsSidebar } from './PromptSetsSidebar'
 import type { UsePromptStudioReturn } from '../hooks/usePromptStudio'
@@ -21,6 +26,24 @@ import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+
+const DESCRIBE_SYSTEM_PROMPT = `You are an image-to-prompt converter for an image generation pipeline. Your output will be fed directly to a text-to-image model as the prompt. Output ONLY the prompt text -- no headers, labels, hashtags, markdown, or commentary.
+
+Write a concise visual description suitable for image generation. Include:
+- Subject and composition
+- For people: specific physical appearance -- ethnicity, gender, approximate age, build, hair color/style, and distinguishing features. These details are critical for generation fidelity.
+- Style, medium, and artistic qualities
+- Lighting, color palette, and mood
+- Key visual details
+
+Keep it under 400 characters. Plain text only. No line breaks.`
 
 interface PromptStudioContentProps {
   studio: UsePromptStudioReturn
@@ -73,20 +96,22 @@ function formatResults(
   return lines.join('\n')
 }
 
-function urlToBase64(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-      canvas.getContext('2d')!.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/png'))
-    }
-    img.onerror = () => reject(new Error('Failed to load image'))
-    img.src = url
-  })
+function PendingModelCard({ modelId }: { modelId: string }) {
+  const model = ALL_TEXT_MODELS.find((m) => m.id === modelId)
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-medium">{model?.name ?? modelId}</h3>
+          <p className="text-xs text-muted-foreground">{model?.provider}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 py-4 text-muted-foreground">
+        <Loader2 className="size-3.5 animate-spin" />
+        <span className="text-xs">Generating...</span>
+      </div>
+    </div>
+  )
 }
 
 export function PromptStudioContent({ studio }: PromptStudioContentProps) {
@@ -94,6 +119,34 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   const userImages = useUserImages(session?.user.id)
   const [copiedAll, setCopiedAll] = useState(false)
   const [copiedResults, setCopiedResults] = useState(false)
+
+  const [describing, setDescribing] = useState(false)
+
+  const handleDescribe = useCallback(
+    async (modelId: string) => {
+      if (!studio.imageBase64 || !session) return
+      setDescribing(true)
+      try {
+        const result = await runSingleModel({
+          data: {
+            prompt: 'Write an image generation prompt for this image.',
+            systemPrompt: DESCRIBE_SYSTEM_PROMPT,
+            modelId,
+            accessToken: session.access_token,
+            imageBase64: studio.imageBase64,
+          },
+        })
+        if (result.text) {
+          studio.setPrompt(result.text)
+        }
+      } catch {
+        // silent
+      } finally {
+        setDescribing(false)
+      }
+    },
+    [studio, session],
+  )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -113,10 +166,13 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
 
   const handleLibrarySelect = useCallback(
     async (image: { url: string }) => {
-      const base64 = await urlToBase64(image.url)
+      if (!session) return
+      const base64 = await fetchImageBase64({
+        data: { url: image.url, accessToken: session.access_token },
+      })
       studio.setImage(image.url, base64)
     },
-    [studio],
+    [studio, session],
   )
 
   const hasImage = !!studio.imageUrl
@@ -149,21 +205,55 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-input aspect-square text-muted-foreground">
-                  <Image className="size-6 mb-2 opacity-40" />
+                  <ImageIcon className="size-6 mb-2 opacity-40" />
                   <span className="text-[10px]">Optional</span>
                 </div>
               )}
-              <ImageSourceButtons
-                onFileSelected={handleFileSelected}
-                library={{
-                  images: userImages.images,
-                  imageUrls: userImages.imageUrls,
-                  isLoading: userImages.isLoading,
-                  onSelect: handleLibrarySelect,
-                }}
-                showPaste={true}
-                className="justify-center"
-              />
+              <div className="flex items-center gap-1 justify-center">
+                <ImageSourceButtons
+                  onFileSelected={handleFileSelected}
+                  library={{
+                    images: userImages.images,
+                    imageUrls: userImages.imageUrls,
+                    isLoading: userImages.isLoading,
+                    onSelect: handleLibrarySelect,
+                  }}
+                  showPaste={true}
+                />
+                {hasImage && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={describing}
+                        title="Describe image into prompt"
+                        className="shrink-0 size-8"
+                      >
+                        <MessageSquare
+                          className={cn(
+                            'size-3.5',
+                            describing && 'animate-pulse',
+                          )}
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      {visionModels.map((model) => (
+                        <DropdownMenuItem
+                          key={model.id}
+                          onClick={() => void handleDescribe(model.id)}
+                        >
+                          <span className="text-xs">{model.name}</span>
+                          <span className="ml-auto text-[10px] text-muted-foreground">
+                            {model.provider}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
 
             {/* Prompt columns */}
@@ -318,50 +408,56 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
           </div>
         </div>
 
-        {studio.running && (
-          <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            <span className="text-sm">
-              Running across {studio.selectedModelIds.length} model
-              {studio.selectedModelIds.length !== 1 ? 's' : ''}...
-            </span>
-          </div>
-        )}
-
-        {studio.results.length > 0 && (
+        {(studio.results.length > 0 || studio.pendingModelIds.size > 0) && (
           <div className="space-y-3">
-            <div className="flex items-center justify-end">
-              <button
-                onClick={async () => {
-                  const md = formatResults(
-                    studio.prompt,
-                    studio.customSystemPrompt,
-                    studio.negativePrompt,
-                    !!studio.imageUrl,
-                    studio.results,
-                  )
-                  await navigator.clipboard.writeText(md)
-                  setCopiedResults(true)
-                  setTimeout(() => setCopiedResults(false), 2000)
-                }}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
-                  copiedResults
-                    ? 'text-green-500'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {copiedResults ? (
-                  <Check className="size-3" />
-                ) : (
-                  <ClipboardCopy className="size-3" />
-                )}
-                {copiedResults ? 'Copied' : 'Copy Results'}
-              </button>
+            <div className="flex items-center justify-between">
+              {studio.running && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span className="text-xs">
+                    {studio.results.length} of{' '}
+                    {studio.results.length + studio.pendingModelIds.size}{' '}
+                    complete
+                  </span>
+                </div>
+              )}
+              {!studio.running && <div />}
+              {studio.results.length > 0 && (
+                <button
+                  onClick={async () => {
+                    const md = formatResults(
+                      studio.prompt,
+                      studio.customSystemPrompt,
+                      studio.negativePrompt,
+                      !!studio.imageUrl,
+                      studio.results,
+                    )
+                    await navigator.clipboard.writeText(md)
+                    setCopiedResults(true)
+                    setTimeout(() => setCopiedResults(false), 2000)
+                  }}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                    copiedResults
+                      ? 'text-green-500'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {copiedResults ? (
+                    <Check className="size-3" />
+                  ) : (
+                    <ClipboardCopy className="size-3" />
+                  )}
+                  {copiedResults ? 'Copied' : 'Copy Results'}
+                </button>
+              )}
             </div>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {studio.results.map((result) => (
                 <ModelResultCard key={result.modelId} result={result} />
+              ))}
+              {Array.from(studio.pendingModelIds).map((modelId) => (
+                <PendingModelCard key={modelId} modelId={modelId} />
               ))}
             </div>
           </div>

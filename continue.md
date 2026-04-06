@@ -1,60 +1,77 @@
-# Continue: Image Grouping & Genealogy Separation
+# Continue: Prompt Studio Improvements & Model Onboarding
 
 ## What was worked on
 
-Major refactor of the ai-images feature to fully separate **grouping** (mutable, user-driven organization via `parent_id`) from **genealogy** (immutable generation lineage via `source_image_id`, `root_image_id`, `generation_type`). This was a multi-session effort spanning ~10 commits over the past week.
+Prompt Studio (`src/features/prompt-studio/`) -- adding new models, fixing bugs, and improving evaluation workflow. Also added marketing content to the home page.
 
-## Architecture established
+## Changes made (all committed and pushed to main)
 
-Two systems that never intersect in code:
+### Model additions
 
-- **Grouping**: `parent_id` in `generation_metadata`. Managed by `group-images.server.ts` (batch set) and `ungroup-images.server.ts` (batch remove). `reparent-image.server.ts` is a thin single-image wrapper. These functions only touch `parent_id` — zero genealogy awareness.
-- **Genealogy**: `source_image_id`, `root_image_id`, `generation_type`. Set once at generation time by generation endpoints. Never modified by grouping operations.
+- **Gemma 4 31B** added via OpenRouter (`google/gemma-4-31b-it`) -- `isNew: true` flag, registered in `text-models.ts`, `ai.server.ts`, `prompt-studio/text-models.ts`
+- **Grok upgraded** from `grok-3-mini` (no vision) to `grok-4-1-fast-non-reasoning` (vision capable) via xAI direct
+- Nemotron stays on `nvidia/nemotron-3-super-120b-a12b` via OpenRouter
 
-## Key changes this week (chronological)
+### "New" badge system
 
-- **414f8c2**: Initial separation — added `parent_id` field, updated generation endpoints to set both `parent_id` and `source_image_id`, changed group discovery to use `parent_id`
-- **bb26f87**: Fixed unlink/ungroup destroying `generation_type` (immutable)
-- **3bd3d26**: Fixed "Original" thumbnail showing for edits (was only variations)
-- **2723517**: Mobile UI improvements — `useIsMobile` hook, `MobileDialogHeader`, `CircularIconButton`, full-screen dialogs replacing drawers
-- **84209c7**: The big refactor — new `group-images.server.ts` and `ungroup-images.server.ts`, gutted `reparent-image.server.ts` (187 → 72 lines), replaced all client-side Supabase grouping mutations with server function calls, added `parent_id` to `SavedAiImage` TypeScript type, fixed `deleteImageWithDescendants` to walk `parent_id` instead of `source_image_id`
-- **f65b312 → fad82cd**: "Original" thumbnail display rules — children hidden from gallery grid don't need suppression, group parents legitimately show their Original
-- **b489f68**: Fixed edit view not showing "Original" — `use-edit-page.ts` was discarding `generation_metadata` when constructing `parentAsSaved`, and passing empty `rootImageMeta={}`. Now carries full metadata and fetches source image URLs
+- Added `new` variant to `src/components/ui/badge.tsx` using `--warm-gold: #d4a853`
+- `TextModel` interface gained `isNew?: boolean` in `src/lib/text-models.ts`
+- `ModelMultiSelect.tsx` renders `<Badge variant="new">` when `isNew` is true
+- Settings page (`settings.tsx`) shows inline "new" badge next to "vision" badge
 
-## Key files modified
+### Home page model showcase
 
-| File | What changed |
-|------|-------------|
-| `src/features/ai-images/types.ts` | Added `parent_id?: string` to `generation_metadata` |
-| `src/features/ai-images/server/group-images.server.ts` | **NEW** — batch set `parent_id` |
-| `src/features/ai-images/server/ungroup-images.server.ts` | **NEW** — batch remove `parent_id` (by IDs or parentId) |
-| `src/features/ai-images/server/reparent-image.server.ts` | Gutted — only sets/removes `parent_id`, no tree walking |
-| `src/features/ai-images/hooks/use-images.ts` | `ungroupChildren`, `deleteAndDetachChildren`, `deleteImageWithDescendants` use server functions |
-| `src/features/ai-images/hooks/use-edit-page.ts` | Carries full `generation_metadata` through, fetches source URLs, exposes `rootImageMeta` |
-| `src/features/ai-images/hooks/use-ai-images-page.ts` | Removed `generation_type !== 'edit'` filter from `parentIds` |
-| `src/features/ai-images/components/ImageGallery.tsx` | "Original" display logic — shows for edits and variations |
-| `src/features/ai-images/components/ImageCard.tsx` | "Unlink" menu only shows when image has `parent_id` |
-| `src/features/ai-images/components/GroupPickerDialog.tsx` | `pointer-events-none` on circle indicator for full-area click |
-| `src/routes/dashboard/ai-images.tsx` | All handlers use batch `groupImages`/`ungroupImages` calls, `onUnlink` wired up |
-| `src/routes/dashboard/edit.$imageId.tsx` | Passes `page.rootImageMeta` instead of `{}` |
+- Created `src/components/ModelShowcase.tsx` -- pulls from `ALL_IMAGE_MODELS`, `ALL_VIDEO_MODELS`, `ALL_TEXT_MODELS` so it auto-syncs
+- Three sections: Text to Image (13), Video (8), Text (7)
+- Added `<GlobalNav />` to home page (was missing)
+- Home page layout changed from centered to top-down flow with `max-w-3xl` showcase section
+
+### Prompt Studio fixes
+
+- **Library picker fix**: replaced `fetch()`-based `urlToBase64` with `canvas + img.crossOrigin = 'anonymous'` approach (CORS fix for R2 URLs) in `PromptStudioContent.tsx`
+- **"Copy Results" button**: formats all run outputs as structured markdown (prompt, system prompt, per-model results sorted by speed) -- uses `formatResults()` function
+- **Better error reporting**: `run-prompt-studio.server.ts` now digs into Vercel AI SDK `.cause` chain and `.responseBody` to surface actual provider errors instead of generic messages
 
 ## Key decisions
 
-- Grouping is flat: one level only (primary + children). No nested groups, no cycle detection needed.
-- `generation_type`, `source_image_id`, `root_image_id` are **never** modified after initial generation
-- Client-side Supabase mutations for grouping replaced with auth-checked server functions
-- "Original" thumbnail shows on ungrouped images and group parents (children are filtered from gallery grid by `childIds`)
-- `deleteImageWithDescendants` BFS walks `parent_id` (group children), not `source_image_id` (genealogy descendants)
+- **OpenRouter for new models** when no direct API available (Gemma 4 not on Gemini API, only downloadable or via OpenRouter)
+- **Non-reasoning Grok variant chosen** for speed -- reasoning overhead not needed for creative prompt writing tasks. Can swap to `grok-4-1-fast-reasoning` with one line if quality is lacking
+- **Grok `supportsVision: false` for grok-3-mini** was a bug -- was marked true, causing "Bad Request" when images attached
+- xAI account needed credits added at `console.x.ai` -- was returning "Forbidden" before funding
+- Gemma 4 has intermittent OpenRouter failures ("Provider returned error") -- likely cold-start or provider availability. First run was 104s, subsequent runs 6s
 
-## Outstanding / next steps
+## Outstanding work (user wants to continue on Prompt Studio)
 
-- **Genealogy visualization**: The `source_image_id` chain enables family tree / branching history views. No UI for this yet — deferred until grouping is fully settled.
-- **Data cleanup**: Old `reparent-image.server.ts` previously set `generation_type: 'variation'` on adopted images. Existing data may have corrupted `generation_type` on user uploads. A migration to clean this up was discussed but not implemented.
-- **Revenue gate**: All feature/R&D work is parked until Gate 2 (payments: FAL pricing, Stripe, ToS) is done. See memory `project_critical_path.md`.
+1. **Incremental results**: Currently `Promise.allSettled` waits for ALL models before showing ANY results. User wants results to appear as each model finishes -- this is the biggest UX improvement pending
+2. **Session history**: Save run results to localStorage or Supabase so past runs can be reviewed
+3. **Observability/logging**: User expressed interest in better debugging, error tracking, and operational visibility across the app
+4. **xAI Imagine models**: `grok-imagine-image`, `grok-imagine-image-pro`, `grok-imagine-video` are available on the account -- could be added to image/video model registries
+5. **Nemotron `supportsVision`**: Currently `false` -- should verify if the OpenRouter model supports vision
+
+## Model performance benchmarks (from user testing)
+
+| Model         | Speed               | Vision | Quality (prompt writing)     |
+| ------------- | ------------------- | ------ | ---------------------------- |
+| Grok 4        | 3.0s                | Yes    | Strong, specific details     |
+| Claude Haiku  | 3.9-5.2s            | Yes    | Best speed/quality ratio     |
+| Gemma 4       | 6.0s (after warmup) | Yes    | Functional but less detailed |
+| Claude Sonnet | 6.9-7.8s            | Yes    | Most precise/cinematic       |
+| Gemini Flash  | 7.1-8.5s            | Yes    | Good but slightly generic    |
+| GPT-4o Mini   | 2.3-9.1s            | Yes    | Refused image-related tasks  |
+| Nemotron      | untested            | No     | Text-only                    |
 
 ## Git state
 
-- Branch: `main`
-- Working tree: clean
-- Latest commit: `b489f68` — all changes committed and pushed
-- Remote: up to date with `origin/main`
+- Branch: `main`, all changes committed and pushed
+- 3 commits this session: `06f2ae6`, `aa16f90`, `5d46641`
+- GitHub issue #122 closed by first commit
+
+## Key files
+
+- `src/features/prompt-studio/components/PromptStudioContent.tsx` -- main UI, formatResults, urlToBase64
+- `src/features/prompt-studio/server/run-prompt-studio.server.ts` -- server execution, error handling
+- `src/features/prompt-studio/hooks/usePromptStudio.ts` -- state management
+- `src/lib/text-models.ts` -- TextModel interface + ALL_TEXT_MODELS
+- `src/lib/server/ai.server.ts` -- model SDK instances
+- `src/components/ModelShowcase.tsx` -- home page showcase
+- `src/components/ui/badge.tsx` -- badge variants including "new"

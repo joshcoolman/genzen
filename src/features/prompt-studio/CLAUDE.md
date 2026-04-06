@@ -4,9 +4,9 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 
 - `types.ts` -- DEFAULT_SYSTEM_PROMPT, DEFAULT_NEGATIVE_PROMPT, ModelResult, PromptSet types
 - `text-models.ts` -- TEXT_MODELS registry (6 models, with `supportsVision` flag) and TEXT_MODEL_MAP to Vercel AI SDK instances
-- `hooks/usePromptStudio.ts` -- Page state: prompt, system prompt, negative prompt, image, model selection, prompt sets integration, run lifecycle
+- `hooks/usePromptStudio.ts` -- Page state with full persistence: localStorage for text/settings, IndexedDB for images. Incremental per-model execution via `runSingleModel`
 - `hooks/usePromptSets.ts` -- localStorage CRUD for saved prompt sets (save, update, delete, rename, load)
-- `server/run-prompt-studio.server.ts` -- Server function: runs generateText across selected models via Promise.allSettled, supports multimodal (image+text) messages
+- `server/run-prompt-studio.server.ts` -- `runSingleModel` for per-model execution (incremental results), `runPromptStudio` legacy batch function
 - `components/PromptStudioContent.tsx` -- Layout: image picker + three-column textareas (prompt, system prompt, avoid) + model selector + results grid + sidebar toggle
 - `components/PromptSetsSidebar.tsx` -- Collapsible right panel for managing saved prompt sets
 - `components/ModelResultCard.tsx` -- Displays single model result with provider, duration, copy button
@@ -42,12 +42,24 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 - `@/components/ImageSourceButtons` -- Library picker + file upload + clipboard paste
 - `@/features/user-images/hooks/useUserImages` -- User image library for picker
 
+## State Persistence
+
+All state survives navigation and page refresh:
+
+- **localStorage** (`prompt-studio:session`): prompt, system prompt, negative prompt, selected models, results, sidebar, active set ID
+- **IndexedDB** (`prompt-studio:image`): attached image (url + base64) -- too large for localStorage
+- **Prompt sets** (`prompt-studio-sets`): saved sets managed by `usePromptSets` (separate key)
+- Debounced writes (500ms localStorage, 1000ms IndexedDB)
+- Migration: reads old `prompt-studio-settings` key on first load
+
+Uses reusable hooks from `@/lib/hooks/`: `usePersistedBlob` (IndexedDB), `usePersistedState` (localStorage)
+
 ## Quirks / Notes
 
-- System prompt and negative prompt persist to localStorage across sessions
 - Negative prompt is appended to system prompt as "NEVER use these words" instruction
 - When an image is attached, non-vision models are auto-deselected and can't be re-selected
-- All models run concurrently via Promise.allSettled -- partial failures don't block others
+- Each model runs as an independent server call (`runSingleModel`) -- results appear incrementally as each model finishes
+- `pendingModelIds` tracks which models are still running; UI shows placeholder cards with spinners
 - Image is sent as base64 data URL via multimodal messages format
 - Cmd+Enter keyboard shortcut triggers run from any textarea
 - All 6 models selected by default (vision-only subset when image attached)
