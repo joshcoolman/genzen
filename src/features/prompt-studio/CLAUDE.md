@@ -3,7 +3,7 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 ## Key Files
 
 - `types.ts` -- DEFAULT_SYSTEM_PROMPT, DEFAULT_NEGATIVE_PROMPT, ModelResult, PromptSet types
-- `text-models.ts` -- TEXT_MODELS registry (6 models, with `supportsVision` flag) and TEXT_MODEL_MAP to Vercel AI SDK instances
+- `text-models.ts` -- re-exports `TextModel` and `ALL_TEXT_MODELS` from `@/lib/text-models`; defines `TEXT_MODEL_MAP` mapping model IDs to Vercel AI SDK instances
 - `hooks/usePromptStudio.ts` -- Page state with full persistence: localStorage for text/settings, IndexedDB for images. Incremental per-model execution via `runSingleModel`
 - `hooks/usePromptSets.ts` -- localStorage CRUD for saved prompt sets (save, update, delete, rename, load)
 - `server/run-prompt-studio.server.ts` -- `runSingleModel` for per-model execution (incremental results), `runPromptStudio` legacy batch function
@@ -18,12 +18,15 @@ Run a text prompt (with optional image) against multiple LLMs in parallel and co
 
 ## Models
 
-1. Claude Sonnet (Anthropic) -- vision
+1. Claude Sonnet (Anthropic) -- vision, locked (always selected)
 2. Claude Haiku (Anthropic) -- vision
 3. Gemini Flash (Google) -- vision
-4. Grok (xAI) -- vision
-5. Nemotron Super (NVIDIA via OpenRouter) -- text-only
-6. GPT-4o Mini (OpenAI via OpenRouter) -- vision
+4. Gemma 4 (Google via OpenRouter) -- vision, new
+5. Grok 4 (xAI) -- vision
+6. Nemotron Super (NVIDIA via OpenRouter) -- text-only
+7. GPT-4o Mini (OpenAI via OpenRouter) -- vision
+
+Model registry lives in `@/lib/text-models.ts`; models support `locked` and `isNew` flags.
 
 ## Prompt Sets
 
@@ -62,5 +65,6 @@ Uses reusable hooks from `@/lib/hooks/`: `usePersistedBlob` (IndexedDB), `usePer
 - `pendingModelIds` tracks which models are still running; UI shows placeholder cards with spinners
 - Image is sent as base64 data URL via multimodal messages format
 - Cmd+Enter keyboard shortcut triggers run from any textarea
-- All 6 models selected by default (vision-only subset when image attached)
+- All 7 models selected by default (vision-only subset when image attached); Claude Sonnet is locked and cannot be deselected
+- "Describe" button on image picker runs a vision model to convert the attached image into a text prompt
 - No credit system integration -- runs are free
