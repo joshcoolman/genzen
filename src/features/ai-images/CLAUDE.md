@@ -25,6 +25,8 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
 - `fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
 - `fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
+- `group-images.server.ts` -- group selected images under a new or existing parent
+- `ungroup-images.server.ts` -- ungroup images by removing parent association
 - `update-image-order.server.ts` -- reorder images via sort_order
 
 ## Hooks
