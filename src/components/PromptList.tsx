@@ -46,6 +46,16 @@ export function PromptList({
     prompts.length > 1 || (prompts.length === 1 && prompts[0].trim() !== '')
   return (
     <div className="space-y-2">
+      {onClearPrompts && hasContent && (
+        <button
+          type="button"
+          onClick={onClearPrompts}
+          disabled={disabled}
+          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          Clear prompts
+        </button>
+      )}
       {prompts.map((promptText, index) => (
         <div key={index} className="relative">
           <Textarea
@@ -116,16 +126,6 @@ export function PromptList({
           </button>
         )}
       </div>
-      {onClearPrompts && hasContent && (
-        <button
-          type="button"
-          onClick={onClearPrompts}
-          disabled={disabled}
-          className="w-full py-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-        >
-          Clear prompts
-        </button>
-      )}
       {generatePromptsConfig && (
         <GeneratePromptsDialog
           open={dialogOpen}
