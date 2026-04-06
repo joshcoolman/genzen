@@ -55,13 +55,39 @@ export const runPromptStudio = createServerFn({ method: 'POST' })
 
     return results.map((result, i) => {
       if (result.status === 'fulfilled') return result.value
+
+      const err = result.reason
+      let message = 'Unknown error'
+      if (err instanceof Error) {
+        // Vercel AI SDK wraps provider errors -- dig into cause chain
+        const cause = (err as Error & { cause?: unknown }).cause
+        if (cause instanceof Error) {
+          message = cause.message
+        } else {
+          message = err.message
+        }
+        // Append response body if available (OpenRouter includes details)
+        const responseBody = (err as unknown as Record<string, unknown>)
+          .responseBody
+        if (typeof responseBody === 'string') {
+          try {
+            const parsed = JSON.parse(responseBody)
+            const detail =
+              parsed?.error?.message || parsed?.error || parsed?.message
+            if (detail && typeof detail === 'string') {
+              message = detail
+            }
+          } catch {
+            // not JSON, use as-is if short
+            if (responseBody.length < 200) message = responseBody
+          }
+        }
+      }
+
       return {
         modelId: data.modelIds[i],
         text: null,
-        error:
-          result.reason instanceof Error
-            ? result.reason.message
-            : 'Unknown error',
+        error: message,
         durationMs: 0,
       }
     })

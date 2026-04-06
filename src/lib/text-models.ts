@@ -41,10 +41,10 @@ export const ALL_TEXT_MODELS: Array<TextModel> = [
   },
   {
     id: 'grok',
-    name: 'Grok',
+    name: 'Grok 4',
     provider: 'xAI',
-    description: 'Creative and unfiltered',
-    supportsVision: false,
+    description: 'Fast vision, creative and unfiltered',
+    supportsVision: true,
   },
   {
     id: 'nemotron',

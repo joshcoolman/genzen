@@ -15,7 +15,7 @@ export const models = {
   sonnet: anthropic('claude-sonnet-4-6'),
   geminiFlash: google('gemini-2.5-flash'),
   gemini3Flash: google('gemini-3-flash-preview'),
-  grok: xai('grok-3-mini'),
+  grok: xai('grok-4-1-fast-non-reasoning'),
   nemotron: openrouter.chatModel('nvidia/nemotron-3-super-120b-a12b'),
   gemma4: openrouter.chatModel('google/gemma-4-31b-it'),
 }
