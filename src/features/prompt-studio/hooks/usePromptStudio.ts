@@ -227,8 +227,12 @@ export function usePromptStudio() {
         return next
       })
 
+      const MODEL_TIMEOUT_MS = 90_000
+
       for (const modelId of modelIds) {
-        runSingleModel({
+        const start = Date.now()
+
+        const callPromise = runSingleModel({
           data: {
             prompt: runPrompt,
             systemPrompt: runSystemPrompt,
@@ -237,6 +241,15 @@ export function usePromptStudio() {
             imageBase64: runImageBase64,
           },
         })
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Request timed out after 90s')),
+            MODEL_TIMEOUT_MS,
+          ),
+        )
+
+        Promise.race([callPromise, timeoutPromise])
           .then((result) => {
             setResults((prev) => [...prev, result])
             setPendingModelIds((prev) => {
@@ -252,7 +265,7 @@ export function usePromptStudio() {
                 modelId,
                 text: null,
                 error: err instanceof Error ? err.message : 'Unknown error',
-                durationMs: 0,
+                durationMs: Date.now() - start,
               },
             ])
             setPendingModelIds((prev) => {

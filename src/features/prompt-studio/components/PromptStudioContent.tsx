@@ -3,7 +3,6 @@ import {
   BookmarkPlus,
   Check,
   ClipboardCopy,
-  Copy,
   Image as ImageIcon,
   Loader2,
   MessageSquare,
@@ -117,8 +116,8 @@ function PendingModelCard({ modelId }: { modelId: string }) {
 export function PromptStudioContent({ studio }: PromptStudioContentProps) {
   const { session } = useAuth()
   const userImages = useUserImages(session?.user.id)
-  const [copiedAll, setCopiedAll] = useState(false)
   const [copiedResults, setCopiedResults] = useState(false)
+  const [systemPromptExpanded, setSystemPromptExpanded] = useState(false)
 
   const [describing, setDescribing] = useState(false)
 
@@ -184,32 +183,88 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
       {/* Main content */}
       <div className="flex-1 min-w-0 space-y-6">
         <div className="rounded-lg border border-border bg-card p-6 space-y-5">
+          {/* Controls -- two rows above the text inputs */}
+          <div className="space-y-2">
+            {/* Top row: active set (left) + secondary controls (right) */}
+            <div className="flex items-center justify-between">
+              {studio.activeSetId ? (
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs',
+                    studio.isDirty
+                      ? 'text-yellow-500 border border-yellow-500/30'
+                      : 'text-accent-brand border border-accent-brand/30',
+                  )}
+                >
+                  {studio.promptSets.getSet(studio.activeSetId)?.name}
+                  {studio.isDirty && ' (modified)'}
+                </span>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-1">
+                {(studio.isSystemPromptModified ||
+                  studio.isNegativePromptModified) && (
+                  <button
+                    onClick={studio.restoreDefaults}
+                    className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <RotateCcw className="size-3" />
+                    Restore Defaults
+                  </button>
+                )}
+                <button
+                  onClick={() => studio.setSidebarOpen(!studio.sidebarOpen)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
+                    studio.sidebarOpen
+                      ? 'text-accent-brand'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <BookmarkPlus className="size-4" />
+                  Sets
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom row: models (left) + run (right) */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1 space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Models
+                  {hasImage && (
+                    <span className="ml-1 text-muted-foreground/60">
+                      (vision only)
+                    </span>
+                  )}
+                </label>
+                <ModelMultiSelect
+                  models={displayModels}
+                  selectedIds={studio.selectedModelIds}
+                  onToggle={studio.toggleModel}
+                />
+              </div>
+              <ActionButton
+                onClick={studio.run}
+                loading={studio.running}
+                loadingText="Running..."
+                icon={<Send className="size-4" />}
+                disabled={
+                  !studio.prompt.trim() || studio.selectedModelIds.length === 0
+                }
+              >
+                Run
+              </ActionButton>
+            </div>
+          </div>
+
           {/* Image + three-column text areas */}
           <div className="flex gap-4 items-start">
             {/* Image column */}
             <div className="w-[160px] shrink-0 space-y-1.5">
               <label className="text-xs text-muted-foreground">Image</label>
-              {hasImage ? (
-                <div className="relative group">
-                  <img
-                    src={studio.imageUrl!}
-                    alt="Reference"
-                    className="w-full rounded-md border border-input object-cover aspect-square"
-                  />
-                  <button
-                    onClick={studio.clearImage}
-                    className="absolute top-1 right-1 rounded-full bg-black/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="size-3 text-white" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-input aspect-square text-muted-foreground">
-                  <ImageIcon className="size-6 mb-2 opacity-40" />
-                  <span className="text-[10px]">Optional</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1 justify-center">
+              <div className="flex items-center gap-1">
                 <ImageSourceButtons
                   onFileSelected={handleFileSelected}
                   library={{
@@ -254,6 +309,26 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
                   </DropdownMenu>
                 )}
               </div>
+              {hasImage ? (
+                <div className="relative group">
+                  <img
+                    src={studio.imageUrl!}
+                    alt="Reference"
+                    className="w-full rounded-md border border-input object-cover aspect-square"
+                  />
+                  <button
+                    onClick={studio.clearImage}
+                    className="absolute top-1 right-1 rounded-full bg-black/60 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="size-3 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-input aspect-square text-muted-foreground">
+                  <ImageIcon className="size-6 mb-2 opacity-40" />
+                  <span className="text-[10px]">Optional</span>
+                </div>
+              )}
             </div>
 
             {/* Prompt columns */}
@@ -271,25 +346,58 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
                   onChange={(e) => studio.setPrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="An elf walks into a bar..."
-                  className="w-full min-h-[350px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
+                  className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label
-                  className="text-xs text-muted-foreground"
-                  htmlFor="system-prompt"
-                >
-                  System Prompt
-                </label>
-                <textarea
-                  id="system-prompt"
-                  value={studio.customSystemPrompt}
-                  onChange={(e) => studio.setCustomSystemPrompt(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Instructions for the model..."
-                  className="w-full min-h-[350px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
-                />
+                <div className="flex items-center justify-between">
+                  <label
+                    className="text-xs text-muted-foreground"
+                    htmlFor="system-prompt"
+                  >
+                    System Prompt
+                  </label>
+                  {studio.customSystemPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => setSystemPromptExpanded((v) => !v)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {systemPromptExpanded ? 'Collapse' : 'Expand'}
+                    </button>
+                  )}
+                </div>
+                {systemPromptExpanded ? (
+                  <textarea
+                    id="system-prompt"
+                    value={studio.customSystemPrompt}
+                    onChange={(e) =>
+                      studio.setCustomSystemPrompt(e.target.value)
+                    }
+                    onKeyDown={handleKeyDown}
+                    placeholder="Instructions for the model..."
+                    className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setSystemPromptExpanded(true)}
+                    className="w-full text-left"
+                  >
+                    <div className="relative rounded-md border border-input bg-transparent px-3 py-2 overflow-hidden max-h-[5.5rem]">
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-3">
+                        {studio.customSystemPrompt || (
+                          <span className="italic">
+                            Instructions for the model...
+                          </span>
+                        )}
+                      </p>
+                      <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent" />
+                    </div>
+                  </button>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -305,106 +413,10 @@ export function PromptStudioContent({ studio }: PromptStudioContentProps) {
                   onChange={(e) => studio.setNegativePrompt(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Words to avoid..."
-                  className="w-full min-h-[350px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
+                  className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none [field-sizing:content]"
                 />
               </div>
             </div>
-          </div>
-
-          {/* Models + Run controls */}
-          <div className="flex items-end gap-4">
-            <div className="flex-1 space-y-1.5">
-              <label className="text-xs text-muted-foreground">
-                Models
-                {hasImage && (
-                  <span className="ml-1 text-muted-foreground/60">
-                    (vision only)
-                  </span>
-                )}
-              </label>
-              <ModelMultiSelect
-                models={displayModels}
-                selectedIds={studio.selectedModelIds}
-                onToggle={studio.toggleModel}
-              />
-            </div>
-
-            <button
-              onClick={async () => {
-                const parts = [
-                  studio.prompt,
-                  studio.customSystemPrompt,
-                  studio.negativePrompt,
-                ].filter((s) => s.trim())
-                await navigator.clipboard.writeText(parts.join('\n---\n'))
-                setCopiedAll(true)
-                setTimeout(() => setCopiedAll(false), 2000)
-              }}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
-                copiedAll
-                  ? 'text-green-500'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {copiedAll ? (
-                <Check className="size-3" />
-              ) : (
-                <Copy className="size-3" />
-              )}
-              {copiedAll ? 'Copied' : 'Copy All'}
-            </button>
-
-            {(studio.isSystemPromptModified ||
-              studio.isNegativePromptModified) && (
-              <button
-                onClick={studio.restoreDefaults}
-                className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <RotateCcw className="size-3" />
-                Restore Defaults
-              </button>
-            )}
-
-            {/* Active set indicator */}
-            {studio.activeSetId && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs',
-                  studio.isDirty
-                    ? 'text-yellow-500 border border-yellow-500/30'
-                    : 'text-accent-brand border border-accent-brand/30',
-                )}
-              >
-                {studio.promptSets.getSet(studio.activeSetId)?.name}
-                {studio.isDirty && ' (modified)'}
-              </span>
-            )}
-
-            <button
-              onClick={() => studio.setSidebarOpen(!studio.sidebarOpen)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
-                studio.sidebarOpen
-                  ? 'text-accent-brand'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <BookmarkPlus className="size-4" />
-              Sets
-            </button>
-
-            <ActionButton
-              onClick={studio.run}
-              loading={studio.running}
-              loadingText="Running..."
-              icon={<Send className="size-4" />}
-              disabled={
-                !studio.prompt.trim() || studio.selectedModelIds.length === 0
-              }
-            >
-              Run
-            </ActionButton>
           </div>
         </div>
 
