@@ -1,6 +1,7 @@
 import {
   Camera,
   Clapperboard,
+  Clock,
   Film,
   FlaskConical,
   Frame,
@@ -63,6 +64,13 @@ export const navItems: Array<NavItem> = [
     label: 'Canvas',
     href: '/dashboard/canvas',
     icon: Frame,
+    activeOnly: true,
+  },
+  {
+    id: 'history',
+    label: 'History',
+    href: '/dashboard/history',
+    icon: Clock,
     activeOnly: true,
   },
   {

@@ -20,6 +20,7 @@ export interface PromptSet {
   prompt: string
   systemPrompt: string
   negativePrompt: string
+  selectedModelIds: Array<string>
   createdAt: string
   updatedAt: string
 }

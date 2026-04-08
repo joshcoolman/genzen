@@ -359,16 +359,29 @@ export function usePromptStudio() {
       setPrompt(set.prompt)
       setCustomSystemPrompt(set.systemPrompt)
       setNegativePrompt(set.negativePrompt)
+      if (set.selectedModelIds.length > 0) {
+        const enabledIds = enabledTextModels.map((m) => m.id)
+        const valid = set.selectedModelIds.filter((mid) =>
+          enabledIds.includes(mid),
+        )
+        if (valid.length > 0) setSelectedModelIds(valid)
+      }
       promptSets.setActiveSetId(id)
     },
-    [promptSets],
+    [promptSets, enabledTextModels],
   )
 
   const saveAsNew = useCallback(
     (name: string) => {
-      promptSets.saveNewSet(name, prompt, customSystemPrompt, negativePrompt)
+      promptSets.saveNewSet(
+        name,
+        prompt,
+        customSystemPrompt,
+        negativePrompt,
+        selectedModelIds,
+      )
     },
-    [prompt, customSystemPrompt, negativePrompt, promptSets],
+    [prompt, customSystemPrompt, negativePrompt, selectedModelIds, promptSets],
   )
 
   const updateCurrentSet = useCallback(() => {
@@ -378,8 +391,9 @@ export function usePromptStudio() {
       prompt,
       customSystemPrompt,
       negativePrompt,
+      selectedModelIds,
     )
-  }, [prompt, customSystemPrompt, negativePrompt, promptSets])
+  }, [prompt, customSystemPrompt, negativePrompt, selectedModelIds, promptSets])
 
   return {
     prompt,

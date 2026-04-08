@@ -26,6 +26,7 @@ import { Route as DashboardScenesRouteImport } from './routes/dashboard/scenes'
 import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardMultiShotRouteImport } from './routes/dashboard/multi-shot'
+import { Route as DashboardHistoryRouteImport } from './routes/dashboard/history'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
@@ -127,6 +128,11 @@ const DashboardMultiShotRoute = DashboardMultiShotRouteImport.update({
   path: '/multi-shot',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardHistoryRoute = DashboardHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardDevWorkspaceRoute = DashboardDevWorkspaceRouteImport.update({
   id: '/dev-workspace',
   path: '/dev-workspace',
@@ -223,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
+  '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/dashboard/account': typeof DashboardAccountRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
+  '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
@@ -287,6 +295,7 @@ export interface FileRoutesById {
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
+  '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
@@ -323,6 +332,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
+    | '/dashboard/history'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/pending'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/dashboard/account'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
+    | '/dashboard/history'
     | '/dashboard/notes'
     | '/dashboard/pending'
     | '/dashboard/scenes'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
+    | '/dashboard/history'
     | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/pending'
@@ -538,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/multi-shot'
       fullPath: '/dashboard/multi-shot'
       preLoaderRoute: typeof DashboardMultiShotRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/history': {
+      id: '/dashboard/history'
+      path: '/history'
+      fullPath: '/dashboard/history'
+      preLoaderRoute: typeof DashboardHistoryRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/dev-workspace': {
@@ -705,6 +724,7 @@ interface DashboardRouteChildren {
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardCanvasRoute: typeof DashboardCanvasRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
+  DashboardHistoryRoute: typeof DashboardHistoryRoute
   DashboardMultiShotRoute: typeof DashboardMultiShotRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardPendingRoute: typeof DashboardPendingRoute
@@ -721,6 +741,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardCanvasRoute: DashboardCanvasRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
+  DashboardHistoryRoute: DashboardHistoryRoute,
   DashboardMultiShotRoute: DashboardMultiShotRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardPendingRoute: DashboardPendingRoute,

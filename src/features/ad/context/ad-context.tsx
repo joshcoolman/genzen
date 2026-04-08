@@ -133,6 +133,10 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
     'The user is on the Multi-Shot page -- multi-shot video generation using Kling 3.0.',
   '/dashboard/notes':
     'The user is on the Notes page -- browsing saved AD conversation snapshots.',
+  '/dashboard/history':
+    'The user is on the History page -- browsing completed AI generations with search and prompt reuse.',
+  '/dashboard/dev-workspace/prompt-studio':
+    'The user is on the Prompt Studio page -- running prompts against multiple LLMs in parallel.',
 }
 
 function buildSystemPrompt(
