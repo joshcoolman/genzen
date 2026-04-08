@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   ArrowDown,
@@ -39,7 +39,7 @@ import { CircularIconButton } from '@/components/CircularIconButton'
 import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { useSelection } from '@/lib/use-selection'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage, getR2PublicUrl } from '@/lib/image-storage'
 import { supabase } from '@/lib/supabase'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
@@ -298,14 +298,22 @@ function EditPage() {
     selection.clearSelection()
   }, [selection, imageId, page])
 
-  // Lightbox images (completed only)
+  // Lightbox images (completed only) -- always use full-res storage_path URLs
   const lightboxImages = sortedChainImages
-    .filter((img) => img.status === 'completed' && page.chainImageUrls[img.id])
+    .filter((img) => img.status === 'completed' && img.storage_path)
     .map((img) => ({
       id: img.id,
-      url: page.chainImageUrls[img.id],
+      url: getR2PublicUrl(img.storage_path!),
       title: img.title,
     }))
+
+  const lightboxImageUrls = useMemo(() => {
+    const urls: Record<string, string> = {}
+    for (const img of lightboxImages) {
+      urls[img.id] = img.url
+    }
+    return urls
+  }, [lightboxImages])
 
   const handleGallery = useCallback(
     (img: SavedAiImage) => {
@@ -645,7 +653,7 @@ function EditPage() {
       {lightboxIndex !== null && lightboxImages.length > 0 && (
         <Lightbox
           images={lightboxImages}
-          imageUrls={page.chainImageUrls}
+          imageUrls={lightboxImageUrls}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onNext={() =>

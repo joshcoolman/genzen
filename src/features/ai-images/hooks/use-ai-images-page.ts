@@ -86,7 +86,6 @@ export function useAiImagesPage() {
     completedImages,
     gallery.deleteImage,
     editChildrenMap,
-    gallery.imageUrls,
   )
 
   const variations = useVariations({

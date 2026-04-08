@@ -1,3 +1,4 @@
+import { useCallback, useEffect } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
 
@@ -10,7 +11,6 @@ export interface LightboxImage {
 interface LightboxProps {
   images: Array<LightboxImage>
   imageUrls: Record<string, string>
-  fullResUrls?: Record<string, string>
   currentIndex: number
   onClose: () => void
   onNext: () => void
@@ -22,7 +22,6 @@ interface LightboxProps {
 export function Lightbox({
   images,
   imageUrls,
-  fullResUrls,
   currentIndex,
   onClose,
   onNext,
@@ -31,7 +30,25 @@ export function Lightbox({
   onEdit,
 }: LightboxProps) {
   const img = images[currentIndex]
-  const imageUrl = fullResUrls?.[img.id] ?? imageUrls[img.id]
+  const imageUrl = imageUrls[img.id]
+
+  // Preload adjacent images into browser cache
+  const preloadAdjacent = useCallback(() => {
+    for (const offset of [-1, 1, -2, 2]) {
+      const adjIdx = currentIndex + offset
+      if (adjIdx < 0 || adjIdx >= images.length) continue
+      const adjImg = images[adjIdx]
+      const adjUrl = imageUrls[adjImg.id]
+      if (adjUrl) {
+        const preload = new Image()
+        preload.src = adjUrl
+      }
+    }
+  }, [imageUrls, currentIndex, images])
+
+  useEffect(() => {
+    preloadAdjacent()
+  }, [preloadAdjacent])
 
   useHotkey('Escape', onClose)
   useHotkey('ArrowRight', onNext)

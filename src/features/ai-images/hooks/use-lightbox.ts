@@ -1,23 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
-import { supabase } from '@/lib/supabase'
-import { createImageStorage } from '@/lib/image-storage'
+import { getR2PublicUrl } from '@/lib/image-storage'
 
 export interface LightboxItem {
   id: string
   title: string
   isChild: boolean
   parentId?: string
-  storagePath?: string
 }
 
 export interface LightboxState {
   index: number | null
   isOpen: boolean
   items: Array<LightboxItem>
-  mergedUrls: Record<string, string>
-  fullResUrls: Record<string, string>
+  /** Full-resolution URLs keyed by image id -- always uses storage_path, never thumbnails */
+  imageUrls: Record<string, string>
   open: (img: SavedAiImage | { id: string }) => void
   close: () => void
   next: () => void
@@ -25,31 +23,27 @@ export interface LightboxState {
   deleteAndAdvance: () => void
 }
 
-async function fetchFullResUrl(storagePath: string): Promise<string | null> {
-  return createImageStorage(supabase).getUrl(storagePath)
-}
-
 export function useLightbox(
   completedImages: Array<SavedAiImage>,
   deleteImage?: (img: SavedAiImage) => Promise<void>,
   editChildrenMap?: EditChildrenMap,
-  imageUrls?: Record<string, string>,
 ): LightboxState {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [fullResUrls, setFullResUrls] = useState<Record<string, string>>({})
-  const fetchingRef = useRef<Set<string>>(new Set())
 
-  const { items, mergedUrls } = useMemo(() => {
+  const { items, imageUrls } = useMemo(() => {
     const flatItems: Array<LightboxItem> = []
-    const urls: Record<string, string> = { ...(imageUrls ?? {}) }
+    const urls: Record<string, string> = {}
 
     for (const img of completedImages) {
       flatItems.push({
         id: img.id,
         title: img.title,
         isChild: false,
-        storagePath: img.storage_path ?? undefined,
       })
+      // Always use storage_path (full-res) for lightbox
+      if (img.storage_path) {
+        urls[img.id] = getR2PublicUrl(img.storage_path)
+      }
 
       const children = editChildrenMap?.[img.id]
       if (children) {
@@ -59,50 +53,19 @@ export function useLightbox(
             title: img.title,
             isChild: true,
             parentId: img.id,
-            storagePath: child.storagePath,
           })
-          if (child.url) urls[child.id] = child.url
+          // Use storagePath (full-res) for children too
+          if (child.storagePath) {
+            urls[child.id] = getR2PublicUrl(child.storagePath)
+          } else if (child.url) {
+            urls[child.id] = child.url
+          }
         }
       }
     }
 
-    return { items: flatItems, mergedUrls: urls }
-  }, [completedImages, editChildrenMap, imageUrls])
-
-  // Fetch full-res URL for the current lightbox image (and prefetch adjacent)
-  const fetchFullRes = useCallback(
-    (index: number) => {
-      const indices = [index, index - 1, index + 1].filter(
-        (i) => i >= 0 && i < items.length,
-      )
-      for (const i of indices) {
-        const item = items[i]
-        if (!item.storagePath) continue
-        if (fullResUrls[item.id]) continue
-        if (fetchingRef.current.has(item.id)) continue
-
-        fetchingRef.current.add(item.id)
-        fetchFullResUrl(item.storagePath)
-          .then((url) => {
-            if (url) {
-              setFullResUrls((current) => ({ ...current, [item.id]: url }))
-            }
-          })
-          .catch(() => {})
-          .finally(() => {
-            fetchingRef.current.delete(item.id)
-          })
-      }
-    },
-    [items, fullResUrls],
-  )
-
-  // Trigger fetch when lightbox opens or navigates
-  useEffect(() => {
-    if (lightboxIndex !== null) {
-      fetchFullRes(lightboxIndex)
-    }
-  }, [lightboxIndex, fetchFullRes])
+    return { items: flatItems, imageUrls: urls }
+  }, [completedImages, editChildrenMap])
 
   function open(img: SavedAiImage | { id: string }) {
     const idx = items.findIndex((i) => i.id === img.id)
@@ -141,8 +104,7 @@ export function useLightbox(
     index: lightboxIndex,
     isOpen: lightboxIndex !== null,
     items,
-    mergedUrls,
-    fullResUrls,
+    imageUrls,
     open,
     close,
     next,

@@ -5,7 +5,6 @@ import { Lightbox } from '@/components/Lightbox'
 interface ImageLightboxProps {
   items: Array<LightboxItem>
   imageUrls: Record<string, string>
-  fullResUrls?: Record<string, string>
   currentIndex: number
   onClose: () => void
   onNext: () => void
@@ -17,7 +16,6 @@ interface ImageLightboxProps {
 export function ImageLightbox({
   items,
   imageUrls,
-  fullResUrls,
   currentIndex,
   onClose,
   onNext,
@@ -35,7 +33,6 @@ export function ImageLightbox({
     <Lightbox
       images={lightboxImages}
       imageUrls={imageUrls}
-      fullResUrls={fullResUrls}
       currentIndex={currentIndex}
       onClose={onClose}
       onNext={onNext}
