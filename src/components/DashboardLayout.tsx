@@ -33,7 +33,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <main
           className={cn(
             'min-w-0 flex-1 p-6 transition-all duration-300 md:ml-16',
-            isADOpen && !hasOwnSidebar && 'md:mr-[480px]',
+            isADOpen && !hasOwnSidebar && 'md:mr-80',
             hasOwnSidebar && 'pr-0',
           )}
         >

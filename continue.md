@@ -1,65 +1,42 @@
-# Continue: History Page + Prompt Studio DB Migration
+# Continue: AD Context-Aware Edit Page + Push-In Layout
 
 ## What was worked on
 
-Planning session -- no code changes. Explored the entire codebase to inventory all prompt/history/memory systems, then designed a "compounding value" initiative. User narrowed to two concrete deliverables after reviewing FAL's history UI as reference.
+Two commits shipped to main in this session:
+
+1. **History page + Prompt Studio sets to Supabase** (`7ea4c1e`) -- merged from `feature/history-and-studio-sets` branch that had been sitting uncommitted. History page with list/grid views, prompt search, Supabase migration for prompt studio sets, AD context hooks for history + prompt studio.
+
+2. **AD context-aware edit page with push-in layout** (`50353d2`) -- the main work of this session.
+
+## Changes made (commit `50353d2`)
+
+- **ADContext extended** (`src/features/ad/context/ad-context.tsx`): Added `ADContextImage` type, `contextImages` map, `registerImage`/`unregisterImage` callbacks, and `useRegisterADImage` hook. Features can now register images that AD auto-injects as vision blocks.
+- **useADChat** (`src/features/ad/hooks/useADChat.ts`): On `sendMessage`, merges context images from `ADContext.contextImages` into the user's message as vision blocks. Deduplicates against user-attached images.
+- **useEditPageADContext** (`src/features/ai-images/hooks/useEditPageADContext.ts`): New hook. Registers: (1) text context (image title, original prompt, model, aspect ratio, chain info) via `useRegisterADContext`, (2) the selected source image's base64 via `useRegisterADImage`. Strips data URL prefix to raw base64 + mediaType.
+- **Edit page route** (`src/routes/dashboard/edit.$imageId.tsx`): Calls `useEditPageADContext`, uses `useADOpen` for AD-aware layout. Content div margin adjusts for edit sidebar (320px) + AD panel (480px). Edit sidebar shifts to `right-[480px]` when AD is open.
+- **AI Images route** (`src/routes/dashboard/ai-images.tsx`): Same AD push-in treatment -- Generate sidebar shifts to `right-[480px]`, content margin adjusts for both panels.
+- **DashboardLayout** (`src/components/DashboardLayout.tsx`): Pages with own sidebars (`isEditPage || isAiImagesPage`) are excluded from generic AD margin and get `pr-0`. Other pages get `md:mr-[480px]` push.
+- **AD panel width**: Reduced from 640px to 480px (`src/features/ad/components/ADPanel.tsx`).
+- **Source image preview**: `GeneratorPanel` uses `variant="square"` in edit mode instead of `compact`.
 
 ## Key decisions
 
-### 1. History Page (must-have, build first)
+- **Context image tracks selection**: When user clicks a different image in the edit chain, `generator.sourceImage` updates, which triggers the AD context hook to re-register the new image. AD sees whatever the user has selected.
+- **Image injected per-message, not in system prompt**: Context images are merged into user messages as vision blocks, not baked into the system prompt. This means AD only "sees" the image on the turn it's sent.
+- **Run button removed**: Built a `runPrompt` callback system (ADContext -> PromptCard -> edit page generator), tested it, then removed it at user's request. Copy+paste workflow is sufficient for now. The infrastructure pattern is documented in git history if needed later.
+- **Push-in vs overlay**: AD panel pushes content on all pages. Pages with fixed sidebars (AI Images, edit) handle their own margin math. Other pages use DashboardLayout's generic `mr-[480px]`.
 
-- New "History" route in the sidebar nav
-- Two view modes: **list view** (FAL-style vertical feed) and **grid view** (card grid with thumbnails)
-- Each entry shows: thumbnail, prompt text, model name, elapsed generation time, relative timestamp
-- **Searchable** by prompt text (start with `ILIKE` on `generation_metadata->>'prompt'`)
-- Actions per entry: "Copy prompt", "Use again" (populates generator)
-- Data source: `user_images` table, `generation_metadata` JSONB -- all data already exists, no new tables needed
-- Reverse chronological, completed generations only (`status = 'completed'`)
-- Reference UI: FAL's `fal.ai/dashboard/recent-history` (user provided screenshots -- list and grid views)
-- Follow composable feature pattern: Route -> Hook -> PageContent
+## Outstanding work / known issues
 
-### 2. Prompt Studio Sets -> Supabase (must-have)
-
-- Currently `prompt-studio-sets` in localStorage -- device-bound, fragile
-- Migrate to a new Supabase table (similar to `user_prompts` or `notes`)
-- Sets contain: name, prompt, systemPrompt, negativePrompt, selected model IDs
-- Key files: `src/features/prompt-studio/hooks/usePromptSets.ts`, `src/features/prompt-studio/types.ts`
-
-### 3. AD Context Awareness (stretch goal, not for this session)
-
-- Give AD access to current page state so user doesn't have to copy/paste screenshots or text
-- Could extend existing `useRegisterADContext` pattern to inject richer feature state
-- Or: automated screenshot capture for AD vision
-- User noted the manual workflow (copy prompt, paste into AD) works well but has friction
-
-## Existing infrastructure (from codebase exploration)
-
-- **Prompts stored in**: `generation_metadata.prompt` (per image, JSONB), `user_prompts` table (curated library), localStorage (Prompt Studio session)
-- **Image lineage**: `source_image_id` (immutable edit source), `root_image_id` (variation ancestor), `parent_id` (mutable org grouping)
-- **AD chat**: localStorage only, 50 msg cap, no cross-session memory
-- **Notes**: Supabase `notes` table, markdown snapshots of AD chats
-- **Persistence hooks**: `use-persisted-state.ts` (localStorage), `use-persisted-blob.ts` (IndexedDB)
-- **No search exists** for images by prompt text currently
-- **No mem0 or memory system** exists
-
-## Outstanding work
-
-Everything -- this was planning only. Next session should:
-
-1. Create feature branch
-2. Build the History feature (`src/features/history/`)
-3. Add server function to query `user_images` with prompt search
-4. Build list + grid view components
-5. Add nav item to sidebar
-6. Then tackle Prompt Studio sets -> Supabase migration
-
-## Unstaged changes
-
-11 file deletions (old review docs, moved claude configs) -- unrelated cleanup, not part of this initiative. Should be committed or discarded separately.
+- **Edit page gap**: ~90px gap between content scrollbar and the edit sidebar when AD is open. `pr-0` on `<main>` helped but didn't fully close it. Likely needs the margin calc fine-tuned or the edit page content restructured. User accepted this as polish for later.
+- **Run button**: Removed but the pattern exists in git if user wants it back after more testing.
+- **Future AD context expansion**: Discussed but deferred -- registering recent generation results (not just source image) so AD can see "what just came back" without user clicking it. User wants to test the current select-and-talk workflow first before expanding.
+- **Issue #87** (AD page-aware context): The `useRegisterADContext` + `useRegisterADImage` hooks are the per-feature approach. DOM scraping / screenshot capture discussed as a generic fallback but not built. Issue updated with progress.
 
 ## Git state
 
 - Branch: `main`
-- Last commit: `d21a239 fix: prompt-studio UX -- layout reorder, collapsible system prompt, timeout fix`
-- Working tree has unstaged deletions of old files (cleanup from prior sessions)
-- No new code written yet for history/memory features
+- Clean working tree -- all changes committed and pushed
+- Last commit: `50353d2`
+- All stale branches cleaned up
+- Supabase migrations from `7ea4c1e` may need `supabase db push` if not already applied

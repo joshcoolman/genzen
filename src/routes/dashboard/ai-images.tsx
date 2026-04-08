@@ -595,8 +595,8 @@ function AiImagesPage() {
       className={cn(
         'transition-all duration-300',
         generatorOpen && panelPinned && !isADOpen && 'mr-80',
-        generatorOpen && panelPinned && isADOpen && !isMobile && 'mr-[800px]',
-        !panelPinned && isADOpen && !isMobile && 'mr-[480px]',
+        generatorOpen && panelPinned && isADOpen && !isMobile && 'mr-[640px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-80',
       )}
     >
       <div className="space-y-4">
@@ -790,7 +790,7 @@ function AiImagesPage() {
             <div
               className={cn(
                 'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
-                isADOpen ? 'right-[480px]' : 'right-0',
+                isADOpen ? 'right-80' : 'right-0',
                 !panelPinned && 'shadow-xl',
               )}
             >

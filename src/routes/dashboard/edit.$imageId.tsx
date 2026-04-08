@@ -354,8 +354,8 @@ function EditPage() {
       className={cn(
         'transition-all duration-300',
         panelPinned && !isMobile && !isADOpen && 'mr-80',
-        panelPinned && !isMobile && isADOpen && 'mr-[800px]',
-        !panelPinned && isADOpen && !isMobile && 'mr-[480px]',
+        panelPinned && !isMobile && isADOpen && 'mr-[640px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-80',
       )}
     >
       <div className="space-y-4">
@@ -518,7 +518,7 @@ function EditPage() {
         <div
           className={cn(
             'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
-            isADOpen ? 'right-[640px]' : 'right-0',
+            isADOpen ? 'right-80' : 'right-0',
             !panelPinned && 'shadow-xl',
           )}
         >
