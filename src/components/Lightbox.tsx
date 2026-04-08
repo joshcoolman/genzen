@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
 
@@ -31,6 +31,11 @@ export function Lightbox({
 }: LightboxProps) {
   const img = images[currentIndex]
   const imageUrl = imageUrls[img.id]
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    setLoaded(false)
+  }, [imageUrl])
 
   // Preload adjacent images into browser cache
   const preloadAdjacent = useCallback(() => {
@@ -91,11 +96,18 @@ export function Lightbox({
       >
         <div className="relative flex items-center justify-center">
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={img.title}
-              className="max-h-[82vh] max-w-[85vw] object-contain"
-            />
+            <div className="relative">
+              {!loaded && (
+                <div className="absolute inset-0 min-w-32 min-h-32 bg-muted animate-pulse rounded" />
+              )}
+              <img
+                key={imageUrl}
+                src={imageUrl}
+                alt={img.title}
+                className={`max-h-[82vh] max-w-[85vw] object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                onLoad={() => setLoaded(true)}
+              />
+            </div>
           ) : (
             <div className="w-64 h-64 bg-muted animate-pulse rounded" />
           )}
