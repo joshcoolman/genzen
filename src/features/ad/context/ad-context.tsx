@@ -15,6 +15,13 @@ interface LoadedNote {
   content: string
 }
 
+export interface ADContextImage {
+  /** Raw base64 data (no data: prefix) */
+  base64: string
+  /** MIME type e.g. image/png, image/jpeg */
+  mediaType: string
+}
+
 interface ADContextValue {
   /** Current route path */
   route: string
@@ -32,6 +39,12 @@ interface ADContextValue {
   setLoadedNote: (note: LoadedNote) => void
   /** Clear loaded note from AD context */
   clearLoadedNote: () => void
+  /** Context images registered by features (auto-injected into AD messages) */
+  contextImages: Map<string, ADContextImage>
+  /** Register a context image (call from feature routes) */
+  registerImage: (key: string, image: ADContextImage) => void
+  /** Unregister a context image (on unmount) */
+  unregisterImage: (key: string) => void
 }
 
 const ADContext = createContext<ADContextValue | null>(null)
@@ -178,7 +191,9 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
     () => new Map(),
   )
   const [loadedNote, setLoadedNoteState] = useState<LoadedNote | null>(null)
-
+  const [contextImages, setContextImages] = useState<
+    Map<string, ADContextImage>
+  >(() => new Map())
   const register = useCallback((key: string, summary: string) => {
     setFeatureContexts((prev) => {
       if (prev.get(key) === summary) return prev
@@ -205,6 +220,28 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
     setLoadedNoteState(null)
   }, [])
 
+  const registerImage = useCallback((key: string, image: ADContextImage) => {
+    setContextImages((prev) => {
+      if (
+        prev.get(key)?.base64 === image.base64 &&
+        prev.get(key)?.mediaType === image.mediaType
+      )
+        return prev
+      const next = new Map(prev)
+      next.set(key, image)
+      return next
+    })
+  }, [])
+
+  const unregisterImage = useCallback((key: string) => {
+    setContextImages((prev) => {
+      if (!prev.has(key)) return prev
+      const next = new Map(prev)
+      next.delete(key)
+      return next
+    })
+  }, [])
+
   const systemPrompt = useMemo(
     () => buildSystemPrompt(route, featureContexts, loadedNote),
     [route, featureContexts, loadedNote],
@@ -220,6 +257,9 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
       loadedNote,
       setLoadedNote,
       clearLoadedNote,
+      contextImages,
+      registerImage,
+      unregisterImage,
     }),
     [
       route,
@@ -230,6 +270,9 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
       loadedNote,
       setLoadedNote,
       clearLoadedNote,
+      contextImages,
+      registerImage,
+      unregisterImage,
     ],
   )
 
@@ -257,6 +300,31 @@ export function useRegisterADContext(key: string, summary: string) {
   useEffect(() => {
     registerRef.current?.(key, summary)
   }, [key, summary])
+
+  useEffect(() => {
+    return () => unregisterRef.current?.(key)
+  }, [key])
+}
+
+/**
+ * Register a context image from a route component.
+ * AD will auto-inject this image as a vision block when the user sends a message.
+ * Automatically unregisters on unmount.
+ */
+export function useRegisterADImage(key: string, image: ADContextImage | null) {
+  const ctx = useContext(ADContext)
+  const registerRef = useRef(ctx?.registerImage)
+  const unregisterRef = useRef(ctx?.unregisterImage)
+  registerRef.current = ctx?.registerImage
+  unregisterRef.current = ctx?.unregisterImage
+
+  useEffect(() => {
+    if (image) {
+      registerRef.current?.(key, image)
+    } else {
+      unregisterRef.current?.(key)
+    }
+  }, [key, image?.base64, image?.mediaType])
 
   useEffect(() => {
     return () => unregisterRef.current?.(key)

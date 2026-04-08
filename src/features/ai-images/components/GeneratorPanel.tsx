@@ -68,7 +68,7 @@ export function GeneratorPanel({
           src={generator.sourceImage.base64}
           name={generator.sourceImage.name}
           onRemove={isEdit ? undefined : generator.handleClearSourceImage}
-          variant="compact"
+          variant={isEdit ? 'square' : 'compact'}
         />
       )}
 

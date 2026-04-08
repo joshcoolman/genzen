@@ -115,7 +115,7 @@ const PROMPT_CARD_TOOL: Anthropic.Tool = {
 export function useADChat() {
   const client = useClaudeClient()
   const { messages, setMessages, clearHistory } = useChatHistory()
-  const { systemPrompt } = useADContext()
+  const { systemPrompt, contextImages } = useADContext()
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const rafRef = useRef<number | null>(null)
@@ -124,11 +124,23 @@ export function useADChat() {
     async (text: string, images?: Array<ADImage>) => {
       if (!client || !text.trim() || isStreaming) return
 
+      // Merge user-attached images with context images from features
+      const allImages = [...(images ?? [])]
+      for (const [, ctxImg] of contextImages) {
+        // Don't duplicate if user already attached the same image
+        if (!allImages.some((img) => img.base64 === ctxImg.base64)) {
+          allImages.push({
+            base64: ctxImg.base64,
+            mediaType: ctxImg.mediaType,
+          })
+        }
+      }
+
       const userMsg: ADMessage = {
         id: `user-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         role: 'user',
         content: text.trim(),
-        images: images && images.length > 0 ? images : undefined,
+        images: allImages.length > 0 ? allImages : undefined,
       }
       const next = [...messages, userMsg]
       setMessages(next)
@@ -234,7 +246,7 @@ export function useADChat() {
         setIsStreaming(false)
       }
     },
-    [client, messages, isStreaming, setMessages, systemPrompt],
+    [client, messages, isStreaming, setMessages, systemPrompt, contextImages],
   )
 
   const abort = useCallback(() => {

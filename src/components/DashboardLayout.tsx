@@ -15,8 +15,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isOpen: isADOpen } = useADOpen()
   const promptSheet = usePromptSheet()
 
-  // Hide mobile nav on edit pages for focused editing experience
+  // Pages with fixed sidebars manage their own AD push-in margins
   const isEditPage = location.pathname.startsWith('/dashboard/edit/')
+  const isAiImagesPage = location.pathname === '/dashboard/ai-images'
+  const hasOwnSidebar = isEditPage || isAiImagesPage
 
   return (
     <ADContextProvider>
@@ -27,11 +29,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile nav trigger (hidden on edit pages) */}
         {!isEditPage && <MobileNav className="md:hidden" />}
 
-        {/* Main content */}
+        {/* Main content — edit page manages its own right margin for AD push-in */}
         <main
           className={cn(
             'min-w-0 flex-1 p-6 transition-all duration-300 md:ml-16',
-            isADOpen && 'md:mr-80',
+            isADOpen && !hasOwnSidebar && 'md:mr-[480px]',
+            hasOwnSidebar && 'pr-0',
           )}
         >
           {children}

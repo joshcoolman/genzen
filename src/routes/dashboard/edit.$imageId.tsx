@@ -41,6 +41,9 @@ import { useSelection } from '@/lib/use-selection'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
 import { createImageStorage } from '@/lib/image-storage'
 import { supabase } from '@/lib/supabase'
+import { useADOpen } from '@/lib/use-ad-open'
+import { cn } from '@/lib/utils'
+import { useEditPageADContext } from '@/features/ai-images/hooks/useEditPageADContext'
 
 export const Route = createFileRoute('/dashboard/edit/$imageId')({
   component: EditPage,
@@ -91,6 +94,7 @@ function EditPage() {
 
   // Mobile detection
   const isMobile = useIsMobile()
+  const { isOpen: isADOpen } = useADOpen()
 
   const [panelPinned, setPanelPinned] = useState(() => {
     if (typeof window === 'undefined') return true
@@ -124,6 +128,16 @@ function EditPage() {
   const selectionActive = selection.count > 0
 
   const page = useEditPage(imageId, selection.selectedIds)
+
+  // Register edit page context with AD (image + metadata)
+  useEditPageADContext({
+    sourceImageMeta: page.sourceImageMeta,
+    generator: page.generator,
+    modelSelector: page.modelSelector,
+    chainImageCount: page.chainImages.length,
+    activeSourceId: page.activeSourceId,
+    isChained: page.isChained,
+  })
 
   const handleToggleThumbSize = () => {
     setThumbSize((v) => {
@@ -328,7 +342,14 @@ function EditPage() {
   }
 
   return (
-    <div className={panelPinned && !isMobile ? 'mr-80' : ''}>
+    <div
+      className={cn(
+        'transition-all duration-300',
+        panelPinned && !isMobile && !isADOpen && 'mr-80',
+        panelPinned && !isMobile && isADOpen && 'mr-[800px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-[480px]',
+      )}
+    >
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -487,11 +508,11 @@ function EditPage() {
         </Dialog>
       ) : (
         <div
-          className={
-            panelPinned
-              ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
-              : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
-          }
+          className={cn(
+            'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
+            isADOpen ? 'right-[640px]' : 'right-0',
+            !panelPinned && 'shadow-xl',
+          )}
         >
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <span className="text-xs text-muted-foreground">Edit</span>

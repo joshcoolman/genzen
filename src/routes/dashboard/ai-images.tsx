@@ -57,6 +57,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSelection } from '@/lib/use-selection'
 import { SelectionDrawer } from '@/components/SelectionDrawer'
+import { useADOpen } from '@/lib/use-ad-open'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
   beforeLoad: ({ context }) => {
@@ -124,6 +126,7 @@ function AiImagesPage() {
 
   // Force lg thumb size on mobile (<400px)
   const isMobile = useIsMobile()
+  const { isOpen: isADOpen } = useADOpen()
   const effectiveThumbSize = isMobile ? 'lg' : thumbSize
 
   const handleToggleThumbSize = () => {
@@ -588,7 +591,14 @@ function AiImagesPage() {
   }, [panelPinned])
 
   return (
-    <div className={generatorOpen && panelPinned ? 'mr-80' : ''}>
+    <div
+      className={cn(
+        'transition-all duration-300',
+        generatorOpen && panelPinned && !isADOpen && 'mr-80',
+        generatorOpen && panelPinned && isADOpen && !isMobile && 'mr-[800px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-[480px]',
+      )}
+    >
       <div className="space-y-4">
         <div className="flex items-center justify-end xs:justify-between">
           <span className="hidden text-sm text-muted-foreground tabular-nums xs:inline">
@@ -778,11 +788,11 @@ function AiImagesPage() {
           {/* Right sidebar generator panel */}
           {generatorOpen && (
             <div
-              className={
-                panelPinned
-                  ? 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30'
-                  : 'fixed top-0 right-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 shadow-xl'
-              }
+              className={cn(
+                'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
+                isADOpen ? 'right-[480px]' : 'right-0',
+                !panelPinned && 'shadow-xl',
+              )}
             >
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className="text-xs text-muted-foreground">Generate</span>

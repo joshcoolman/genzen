@@ -31,7 +31,7 @@ export function ADPanel() {
   return (
     <aside
       className={cn(
-        'fixed right-0 top-0 z-40 hidden h-screen w-[640px] flex-col border-l border-border bg-background transition-transform duration-300 md:flex',
+        'fixed right-0 top-0 z-40 hidden h-screen w-[480px] flex-col border-l border-border bg-background transition-transform duration-300 md:flex',
         isOpen ? 'translate-x-0' : 'translate-x-full',
       )}
     >
