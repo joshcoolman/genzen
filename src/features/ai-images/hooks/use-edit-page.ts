@@ -23,6 +23,7 @@ import { flipOrientation } from '@/components/AspectRatioSelect'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
+import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 
 export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const { user, session } = useAuth()
@@ -198,20 +199,16 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       setOriginalImageMeta(imgMeta)
       setHasParent(typeof meta?.source_image_id === 'string')
 
-      // Convert signed URL to base64 via canvas
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.drawImage(img, 0, 0)
-          setSourceBase64(canvas.toDataURL('image/png'))
-        }
+      // Fetch base64 server-side to avoid R2 CORS restrictions
+      if (accessToken) {
+        fetchImageAsBase64({ data: { url: signedUrl, accessToken } })
+          .then(({ base64 }) => setSourceBase64(base64))
+          .catch(() => {})
+      }
 
-        // Set aspect ratio from actual image dimensions to correctly detect orientation
+      // Detect aspect ratio from image dimensions
+      const img = new Image()
+      img.onload = () => {
         const detected = detectAspectRatio(img.naturalWidth, img.naturalHeight)
         const [a, b] = detected.split(':').map(Number)
         setOrientation(a >= b ? 'landscape' : 'portrait')

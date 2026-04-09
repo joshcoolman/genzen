@@ -26,6 +26,7 @@ interface MultiShotEditorProps {
   editor: ReturnType<typeof useMultishotEditor>
   userImages: Array<UserImage>
   imageUrls: Record<string, string>
+  originalUrls?: Record<string, string>
   imagesLoading: boolean
   elementsLocked?: boolean
   children?: React.ReactNode
@@ -37,6 +38,7 @@ export function MultiShotEditor({
   editor,
   userImages,
   imageUrls,
+  originalUrls,
   imagesLoading,
   elementsLocked = false,
   children,
@@ -274,10 +276,12 @@ export function MultiShotEditor({
         }
         autoConfirm={pickerMode === 'startImage'}
         onConfirm={(selected) => {
+          const resolveUrl = (img: (typeof selected)[number]) =>
+            (originalUrls ?? imageUrls)[img.id] ?? img.url
           if (pickerMode === 'startImage') {
             const img = selected[0] as (typeof selected)[number] | undefined
             if (img) {
-              const url = imageUrls[img.id] ?? img.url
+              const url = resolveUrl(img)
               if (url) {
                 editor.setSettings({
                   ...editor.settings,
@@ -286,9 +290,7 @@ export function MultiShotEditor({
               }
             }
           } else {
-            const urls = selected
-              .map((img) => imageUrls[img.id] ?? img.url)
-              .filter(Boolean)
+            const urls = selected.map(resolveUrl).filter(Boolean)
             editor.replaceElements(urls)
           }
           setPickerOpen(false)

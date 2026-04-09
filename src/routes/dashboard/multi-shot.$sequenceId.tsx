@@ -73,6 +73,7 @@ function SequenceDetailPage() {
         editor={editor}
         userImages={userImagesHook.images}
         imageUrls={userImagesHook.imageUrls}
+        originalUrls={userImagesHook.originalUrls}
         imagesLoading={userImagesHook.isLoading}
         elementsLocked={elementsLocked}
         onUpload={handleUpload}
