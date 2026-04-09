@@ -39,7 +39,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, R2 public URLs)
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
-- `use-edit-page.ts` -- dedicated edit page state (source loading, aspect ratio, variants, parent picker)
+- `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker)
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
 
 ## Components
@@ -73,6 +73,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/components/PromptList.tsx` -- reusable prompt list with optional AI generation
 - `src/features/credits/` -- credit checking, deduction, and UI
 - `src/features/user-images/` -- `useUserImages` for image picker
+- `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
 - `src/components/AspectRatioSelect.tsx` -- ratio constants re-exported via `constants.ts`
 
 ## Quirks / Notes

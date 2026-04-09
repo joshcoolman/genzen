@@ -25,7 +25,7 @@ Multi-shot video generation using Kling V3 Pro via FAL. Users define elements (c
 - `hooks/use-multishot-editor.ts` -- Main editor state: shots CRUD, elements, settings, budget calc, estimated cost. Supports `elementsLocked` option.
 - `hooks/use-multishot-sequences.ts` -- Sequence list with polling for pending status (every 5s)
 - `hooks/use-sequence-detail.ts` -- Detail page hook: loads sequence, manages generation history, computes element lock state
-- `components/MultiShotEditor.tsx` -- Main editor: start image picker (with QuickOutpaintDialog), elements (RefImageStrip), settings, shot cards, time budget bar
+- `components/MultiShotEditor.tsx` -- Main editor: start image picker (with QuickOutpaintDialog), elements (RefImageStrip), settings, shot cards, time budget bar; accepts `originalUrls` to resolve full-res URLs for generation
 - `components/ShotCard.tsx` -- Single shot: prompt textarea, duration stepper (min 3s)
 - `components/ElementCard.tsx` -- Element thumbnail with label and delete. Accepts `locked` prop
 - `components/TimeBudgetBar.tsx` -- Segmented progress bar showing 15s budget with estimated cost
@@ -60,6 +60,6 @@ Key params: `multi_prompt` (array of {prompt, duration}), `elements` (array of {
 - Sequences stored in `multishot_sequences` table with JSONB columns for shots/elements/settings
 - Total duration budget: 15 seconds across all shots, minimum 3s per shot
 - Dual pricing: 0.168 credits/s with audio, 0.14 credits/s without
-- Element/start image URLs resolved via R2 public URLs on each fetch
+- Element/start image URLs resolved via R2 public URLs on each fetch; picker uses full-res original URLs (not thumbnails) for FAL generation
 - GenerationHistory preferences (sort, info, thumbSize) persisted in localStorage
 - Future: reusable element library with naming (#79)

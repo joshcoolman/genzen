@@ -9,7 +9,7 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 - `hooks/useChatHistory.ts` -- localStorage persistence (50 msg cap, 500ms debounce, strips image base64 and tool call data)
 - `hooks/useAnthropicKey.ts` -- API key management via external store pattern (localStorage, `sk-ant-` prefix)
 - `hooks/useClaudeClient.ts` -- Memoized Anthropic SDK client initialization (`dangerouslyAllowBrowser: true`)
-- `components/ADPanel.tsx` -- Fixed right-sidebar (640px on md+) with header, chat body, or setup form; copy/save/clear actions; prompt save/copy handlers
+- `components/ADPanel.tsx` -- Fixed right-sidebar (w-80 / 320px on md+) with header, chat body, or setup form; copy/save/clear actions; prompt save/copy handlers
 - `components/ADSetup.tsx` -- API key entry form with `sk-ant-` validation
 - `components/ChatMessages.tsx` -- Message list with markdown rendering via `marked`, PromptCard tool rendering, copy buttons, auto-scroll
 - `components/ChatInput.tsx` -- Auto-growing textarea with image paste/drag-drop/upload button support, streaming abort button
