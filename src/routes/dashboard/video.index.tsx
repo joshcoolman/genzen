@@ -1,264 +1,408 @@
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  ArrowUpRight,
+  Group,
+  Pin,
+  PinOff,
+  Plus,
+  Trash2,
+  Ungroup,
+  X,
+} from 'lucide-react'
+import type { SavedAiVideo } from '@/features/ai-video/video-types'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth'
-import {
-  FramePanel,
-  GenerationRow,
-  SelectionBar,
-  VideoSettingsPanel,
-  WorkspaceHeader,
-  WorkspaceStrip,
-  useActiveWorkspace,
-  useVideoWorkspacePage,
-} from '@/features/ai-video'
-import { ConfirmDialog } from '@/components/confirm-dialog'
+import { VideoGeneratorPanel } from '@/features/ai-video/components/VideoGeneratorPanel'
+import { VideoGallery } from '@/features/ai-video/components/VideoGallery'
+import { VideoParentPickerDialog } from '@/features/ai-video/components/VideoParentPickerDialog'
+import { useVideos } from '@/features/ai-video/hooks/use-videos'
+import { useVideoSidebar } from '@/features/ai-video/hooks/use-video-sidebar'
+import { useReparentVideo } from '@/features/ai-video/hooks/use-reparent-video'
+import { groupVideos } from '@/features/ai-video/server/group-videos.server'
+import { ungroupVideos } from '@/features/ai-video/server/ungroup-videos.server'
+import { useUserImages } from '@/features/user-images/hooks/useUserImages'
+import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
+import { CREDIT_COSTS } from '@/features/credits'
+import { SelectionDrawer } from '@/components/SelectionDrawer'
+import { useSelection } from '@/lib/use-selection'
+import { useIsMobile } from '@/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { useADOpen } from '@/lib/use-ad-open'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/video/')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    workspaceId:
-      typeof search.workspaceId === 'string' ? search.workspaceId : undefined,
-    generationId:
-      typeof search.generationId === 'string' ? search.generationId : undefined,
-  }),
   component: VideoPage,
 })
 
 function VideoPage() {
-  const { session } = useAuth()
-  const { workspaceId: searchWorkspaceId, generationId } = Route.useSearch()
+  const { user, session } = useAuth()
+  const accessToken = session?.access_token
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
+  const { isOpen: isADOpen } = useADOpen()
 
-  const aws = useActiveWorkspace({
-    accessToken: session?.access_token,
-    initialWorkspaceId: searchWorkspaceId,
+  const credits = useRequireCredits(CREDIT_COSTS.video_gen)
+
+  const gallery = useVideos({ userId: user?.id, accessToken })
+  const userImagesHook = useUserImages(user?.id)
+
+  const sidebar = useVideoSidebar({
+    accessToken,
+    sessionParentId: null, // Main page has no session origin
+    onGenerated: () => {
+      // The realtime subscription will pick up the new row automatically.
+    },
   })
 
-  if (aws.loading || !aws.activeWorkspaceId) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
-    )
-  }
+  // Panel open/pinned state -- mirrors ai-images
+  const [panelOpen, setPanelOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:video-panel-open') !== 'false'
+  })
+  const [panelPinned, setPanelPinned] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:video-panel-pinned') !== 'false'
+  })
+  useEffect(() => {
+    localStorage.setItem('genzen:video-panel-open', String(panelOpen))
+  }, [panelOpen])
+  useEffect(() => {
+    localStorage.setItem('genzen:video-panel-pinned', String(panelPinned))
+  }, [panelPinned])
 
-  return (
-    <VideoCreationView
-      workspaceId={aws.activeWorkspaceId}
-      generationId={generationId}
-      aws={aws}
-      navigate={navigate}
-    />
+  // Selection for bulk actions
+  const selectionItems = gallery.videos.map((v) => v.id)
+  const selection = useSelection({ items: selectionItems })
+
+  const reparent = useReparentVideo({
+    accessToken,
+    onComplete: () => {
+      void gallery.refresh()
+    },
+  })
+
+  const [isBulkBusy, setIsBulkBusy] = useState(false)
+
+  const handleOpenVideo = useCallback(
+    (video: SavedAiVideo) => {
+      navigate({
+        to: '/dashboard/video/edit/$videoId',
+        params: { videoId: video.id },
+      })
+    },
+    [navigate],
   )
-}
 
-function VideoCreationView({
-  workspaceId,
-  generationId,
-  aws,
-  navigate,
-}: {
-  workspaceId: string
-  generationId: string | undefined
-  aws: ReturnType<typeof useActiveWorkspace>
-  navigate: ReturnType<typeof useNavigate>
-}) {
-  const page = useVideoWorkspacePage({
-    workspaceId,
-    generationId,
-    navigate,
-    onDeleted: aws.refresh,
-  })
+  const handleDeleteVideo = useCallback(
+    async (video: SavedAiVideo) => {
+      await gallery.deleteVideo(video)
+    },
+    [gallery],
+  )
 
-  const headerVariant = aws.workspaceCount <= 1 ? 'minimal' : 'full'
+  const handleUngroupVideo = useCallback(
+    async (video: SavedAiVideo) => {
+      if (!accessToken) return
+      try {
+        await ungroupVideos({ data: { accessToken, parentId: video.id } })
+        await gallery.refresh()
+      } catch (err) {
+        console.error('Ungroup failed', err)
+      }
+    },
+    [accessToken, gallery],
+  )
+
+  const handleDownloadVideo = useCallback((video: SavedAiVideo) => {
+    const url = video.generation_metadata?.fal_url
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${video.title || 'video'}.mp4`
+    a.target = '_blank'
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }, [])
+
+  const handleBulkGroup = useCallback(async () => {
+    if (!accessToken) return
+    const selectedIds = gallery.videos
+      .filter((v) => selection.isSelected(v.id))
+      .map((v) => v.id)
+    if (selectedIds.length < 2) return
+    const [primaryId, ...childIds] = selectedIds
+    setIsBulkBusy(true)
+    try {
+      await groupVideos({ data: { accessToken, primaryId, childIds } })
+      selection.clearSelection()
+      await gallery.refresh()
+    } catch (err) {
+      console.error('Group failed', err)
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }, [accessToken, gallery, selection])
+
+  const handleBulkUngroup = useCallback(async () => {
+    if (!accessToken) return
+    const selectedParents = gallery.videos.filter((v) => {
+      if (!selection.isSelected(v.id)) return false
+      // Only parents (videos that have at least one child in the gallery)
+      return gallery.videos.some(
+        (c) => c.generation_metadata?.parent_id === v.id,
+      )
+    })
+    if (selectedParents.length === 0) return
+    setIsBulkBusy(true)
+    try {
+      await Promise.all(
+        selectedParents.map((p) =>
+          ungroupVideos({ data: { accessToken, parentId: p.id } }),
+        ),
+      )
+      selection.clearSelection()
+      await gallery.refresh()
+    } catch (err) {
+      console.error('Bulk ungroup failed', err)
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }, [accessToken, gallery, selection])
+
+  const handleBulkMove = useCallback(() => {
+    const selected = gallery.videos.filter((v) => selection.isSelected(v.id))
+    if (selected.length === 0) return
+    // Disallow moving any video that already has children -- the gallery
+    // only renders one level of parent/child nesting, so deeper chains
+    // would orphan grandchildren.
+    const anyIsParent = selected.some((v) =>
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
+    )
+    if (anyIsParent) return
+    reparent.startAdoptBatch(selected)
+  }, [gallery.videos, selection, reparent])
+
+  const bulkMoveDisabledReason = gallery.videos.some(
+    (v) =>
+      selection.isSelected(v.id) &&
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
+  )
+    ? 'Cannot move a video that has children'
+    : undefined
+
+  const hasSelectedParent = gallery.videos.some(
+    (v) =>
+      selection.isSelected(v.id) &&
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
+  )
+
+  const handleUploadToLibrary = useCallback(
+    async (file: File) => {
+      await userImagesHook.create({ file, title: file.name })
+    },
+    [userImagesHook],
+  )
 
   const userImagesData = {
-    images: page.userImages.images,
-    imageUrls: page.userImages.imageUrls,
-    isLoading: page.userImages.isLoading,
+    images: userImagesHook.images,
+    imageUrls: userImagesHook.imageUrls,
+    originalUrls: userImagesHook.originalUrls,
+    isLoading: userImagesHook.isLoading,
   }
 
   return (
-    <div className="flex -m-6">
-      <div className="flex-1 p-6 space-y-5 min-w-0">
-        <WorkspaceHeader
-          wsName={page.wsName}
-          creditBalance={page.credits.balance}
-          onDelete={page.wsDelete.startDelete}
-          variant={headerVariant}
-        />
-
-        <ConfirmDialog
-          open={page.wsDelete.deleteStep === 1}
-          onOpenChange={(open) => {
-            if (!open) page.wsDelete.closeDelete()
-          }}
-          title="Are you absolutely sure?"
-          description="This will delete all generations in this workspace permanently. This cannot be undone."
-          confirmLabel="Delete workspace"
-          onConfirm={page.wsDelete.handleConfirmStep1}
-        />
-
-        <ConfirmDialog
-          open={page.wsDelete.deleteStep === 2}
-          onOpenChange={(open) => {
-            if (!open) page.wsDelete.closeDelete()
-          }}
-          title={
-            page.wsDelete.deleteMessage ?? 'Are you really sure about this?'
-          }
-          description={
-            page.wsDelete.deleteMessage
-              ? ''
-              : 'Last chance. Every generation, every frame -- gone forever.'
-          }
-          confirmLabel="Yes, I'm really sure"
-          onConfirm={page.wsDelete.handleConfirmStep2}
-          loading={page.wsDelete.deleting}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FramePanel
-            type="first"
-            status={page.firstFrame.status}
-            url={page.firstFrame.url}
-            error={page.firstFrame.error}
-            onFileSelected={page.firstFrameGen.setSourceFile}
-            onImageFromUrl={page.firstFrameGen.setSourceFromUrl}
-            userImages={userImagesData}
-          />
-
-          <FramePanel
-            type="last"
-            status={page.lastFrame.status}
-            url={page.lastFrame.url}
-            error={page.lastFrame.error}
-            onFileSelected={page.lastFrameGen.setSourceFile}
-            onImageFromUrl={page.lastFrameGen.setSourceFromUrl}
-            userImages={userImagesData}
-          />
-        </div>
-
-        {page.firstFrame.status !== 'idle' && (
-          <div className="flex justify-end">
-            <button
-              onClick={page.resetAllState}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              + Start new generation
-            </button>
+    <div
+      className={cn(
+        'transition-all duration-300',
+        panelOpen && panelPinned && !isADOpen && 'mr-80',
+        panelOpen && panelPinned && isADOpen && !isMobile && 'mr-[640px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-80',
+      )}
+    >
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-medium">AI Video</h1>
+            <p className="text-xs text-muted-foreground">
+              {credits.balance !== null ? `${credits.balance} credits` : ''}
+            </p>
           </div>
-        )}
-
-        {aws.workspaceCount >= 2 && (
-          <WorkspaceStrip
-            workspaces={aws.workspaces}
-            activeWorkspaceId={aws.activeWorkspaceId}
-            onSelect={aws.setActiveWorkspaceId}
-            onCreateNew={() => aws.setDialogOpen(true)}
-          />
-        )}
-
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium">Generations</h2>
-          {page.gens.generations.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-6 flex items-center justify-center">
-              <p className="text-xs text-muted-foreground">
-                Generated videos will appear here
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {page.gens.generations.map((gen) => (
-                <GenerationRow
-                  key={gen.id}
-                  generation={gen}
-                  selected={page.selection.selectedIds.has(gen.id)}
-                  onToggleSelect={page.selection.toggleSelect}
-                  onLoad={page.handleLoadGeneration}
-                  onContinue={page.handleContinueGeneration}
-                  onUpdate={page.gens.updateGeneration}
-                  onDelete={page.handleDeleteGeneration}
-                  onGenerateVideo={page.videoGen.handleGenerateVideoFromRow}
-                  onLastFrameCompleted={page.handleLastFrameCompleted}
-                  accessToken={page.accessToken}
-                />
-              ))}
-            </div>
+          {!panelOpen && (
+            <button
+              onClick={() => setPanelOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+              title="Open video settings"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
           )}
         </div>
 
-        <SelectionBar
-          selectedCount={page.selection.selectedIds.size}
-          isMoving={page.selection.isMoving}
-          onNewWorkspace={page.selection.openCreateDialog}
-          onMoveToWorkspace={page.selection.openMoveDialog}
-          onCancel={page.selection.clearSelection}
-          createDialogOpen={page.selection.createDialogOpen}
-          onCreateDialogChange={page.selection.setCreateDialogOpen}
-          newWorkspaceName={page.selection.newWorkspaceName}
-          onNewWorkspaceNameChange={page.selection.setNewWorkspaceName}
-          onCreateConfirm={page.selection.handleCreateAndMove}
-          moveDialogOpen={page.selection.moveDialogOpen}
-          onMoveDialogChange={page.selection.setMoveDialogOpen}
-          targetWorkspaceId={page.selection.targetWorkspaceId}
-          onTargetChange={page.selection.setTargetWorkspaceId}
-          availableWorkspaces={page.selection.availableWorkspaces}
-          onMoveConfirm={page.selection.handleMoveToWorkspace}
+        <VideoGallery
+          videos={gallery.videos}
+          thumbnailUrls={gallery.thumbnailUrls}
+          loadingGallery={gallery.loadingGallery}
+          thumbSize="lg"
+          showInfo
+          onOpen={handleOpenVideo}
+          onDelete={handleDeleteVideo}
+          onStartAdopt={reparent.startAdopt}
+          onUnlink={(v) => void reparent.detach(v.id)}
+          onUngroup={(v) => void handleUngroupVideo(v)}
+          onDownload={handleDownloadVideo}
+          onCaptureFrame={gallery.captureFrame}
+          onRemoveThumb={gallery.removeThumbnail}
+          selectionActive={selection.count > 0}
+          isSelected={selection.isSelected}
+          onSelect={selection.toggle}
         />
+
+        <SelectionDrawer
+          count={selection.count}
+          onClear={selection.clearSelection}
+        >
+          {selection.count >= 2 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isBulkBusy}
+              onClick={() => void handleBulkGroup()}
+            >
+              <Group className="mr-1 h-3 w-3" />
+              {isBulkBusy ? 'Grouping...' : 'Group'}
+            </Button>
+          )}
+          {hasSelectedParent && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isBulkBusy}
+              onClick={() => void handleBulkUngroup()}
+            >
+              <Ungroup className="mr-1 h-3 w-3" />
+              {isBulkBusy ? 'Ungrouping...' : 'Ungroup'}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={reparent.isReparenting || !!bulkMoveDisabledReason}
+            title={bulkMoveDisabledReason}
+            onClick={handleBulkMove}
+          >
+            <ArrowUpRight className="mr-1 h-3 w-3" />
+            {reparent.isReparenting ? 'Moving...' : `Move (${selection.count})`}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={async () => {
+              for (const v of gallery.videos) {
+                if (selection.isSelected(v.id)) {
+                  await gallery.deleteVideo(v)
+                }
+              }
+              selection.clearSelection()
+            }}
+          >
+            <Trash2 className="mr-1 h-3 w-3" />
+            Delete ({selection.count})
+          </Button>
+        </SelectionDrawer>
+
+        {reparent.adoptTarget && (
+          <VideoParentPickerDialog
+            open={!!reparent.adoptTarget}
+            onOpenChange={(open) => {
+              if (!open) reparent.cancelAdopt()
+            }}
+            movingVideo={reparent.adoptTarget}
+            movingVideoUrl={gallery.thumbnailUrls[reparent.adoptTarget.id]}
+            movingVideos={reparent.adoptBatch ?? undefined}
+            videos={gallery.videos}
+            thumbnailUrls={gallery.thumbnailUrls}
+            loading={reparent.isReparenting}
+            onConfirm={(newParentId) => {
+              void reparent.confirmAdopt(newParentId).then(() => {
+                selection.clearSelection()
+              })
+            }}
+          />
+        )}
       </div>
 
-      <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-0 h-screen overflow-y-auto p-4">
-        <VideoSettingsPanel
-          settings={page.videoGen.videoSettings}
-          onChange={page.videoGen.setVideoSettings}
-          onGenerate={page.videoGen.handleGenerateVideo}
-          disabled={
-            page.firstFrame.status !== 'completed' || !page.firstFrame.recordId
-          }
-          generating={page.videoGen.generatingVideo}
-          firstFrameReady={page.firstFrame.status === 'completed'}
-        />
-      </aside>
-
-      <Dialog open={aws.dialogOpen} onOpenChange={aws.setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Workspace</DialogTitle>
-          </DialogHeader>
-          <Input
-            placeholder="Workspace name"
-            value={aws.newName}
-            onChange={(e) => aws.setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') aws.handleCreate()
-            }}
-            autoFocus
-          />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => aws.setDialogOpen(false)}
-              disabled={aws.creating}
+      {/* Generator sidebar -- mobile = fullscreen dialog, desktop = pinnable panel */}
+      {isMobile ? (
+        <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
+          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+            <MobileDialogHeader
+              title="Video"
+              onClose={() => setPanelOpen(false)}
+            />
+            <div className="flex-1 overflow-y-auto px-3 py-2">
+              <VideoGeneratorPanel
+                sidebar={sidebar}
+                userImages={userImagesData}
+                onUploadToLibrary={handleUploadToLibrary}
+                creditBalance={credits.balance}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <>
+          {panelOpen && !panelPinned && (
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setPanelOpen(false)}
+            />
+          )}
+          {panelOpen && (
+            <div
+              className={cn(
+                'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
+                isADOpen ? 'right-80' : 'right-0',
+                !panelPinned && 'shadow-xl',
+              )}
             >
-              Cancel
-            </Button>
-            <Button
-              onClick={aws.handleCreate}
-              disabled={!aws.newName.trim() || aws.creating}
-            >
-              {aws.creating ? 'Creating...' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <span className="text-xs text-muted-foreground">Video</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPanelPinned((p) => !p)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+                  >
+                    {panelPinned ? (
+                      <Pin className="h-3.5 w-3.5" />
+                    ) : (
+                      <PinOff className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setPanelOpen(false)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
+                <VideoGeneratorPanel
+                  sidebar={sidebar}
+                  userImages={userImagesData}
+                  onUploadToLibrary={handleUploadToLibrary}
+                  creditBalance={credits.balance}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

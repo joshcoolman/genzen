@@ -1,75 +1,89 @@
 # AI Video
 
-Workspace-based video generation using first-frame/last-frame (FLF) workflow via FAL AI.
+Video generation aligned with the AI Images model. A video is a single
+`user_images` row with `source='ai_video'` and a generation snapshot in
+`generation_metadata`. FLF and multi-shot are just different `method`
+values inside the snapshot, not separate feature worlds.
+
+## Data Model
+
+Videos live in `user_images` alongside images. Identity is the row id;
+grouping is `generation_metadata.parent_id` (mutable, mirrors ai-images);
+the method + inputs that produced the video live in the rest of the
+metadata blob:
+
+```
+generation_metadata = {
+  method: 'flf' | 'multishot',
+  parent_id?: string,
+  fal_url?: string,
+  // flf fields
+  transition_prompt?, first_frame_url?, last_frame_url?, duration?, cfg_scale?, ...
+  // multishot fields
+  shots?, elements?, start_image_url?, aspect_ratio?, shot_type?, generate_audio?, ...
+  // thumbnail metadata
+  thumbnail_updated_at?: number,  // cache-bust stamp
+  thumbnail_cleared?: boolean,    // user explicitly removed thumb
+}
+```
+
+Thumbnails are stored at `thumbnail_path` (R2 key). The gallery prefers
+the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 
 ## Key Files
 
-- `types.ts` -- `Generation`, `FrameState`, `VideoSettings`, default prompts, frame model defs
-- `video-models.ts` -- `ALL_VIDEO_MODELS` (8 models: Kling 3.0/O3/2.6/2.5-Turbo/O1, LTX-2.3, Sora 2, WAN 2.5) with capability flags
-- `constants.ts` -- `FIRST_FRAME_MODEL_FOR_MODE` mapping (prompt mode vs image mode)
-- `lib/crop-to-16x9.ts` -- client-side canvas crop to 1280x720 + `fileToBase64`
-- `server/generate-flf-video.server.ts` -- main video gen: uploads frames to FAL, schema-driven param resolution, Kling prompt format
-- `server/generate-first-frame.server.ts` -- generate first frame image from prompt or reference
-- `server/generate-last-frame.server.ts` -- generate last frame (FLUX Kontext or nano-banana, optionally includes first frame context)
-- `server/suggest-last-frame.server.ts` -- Claude AI suggestion for last frame prompt (with optional vision grounding)
-- `server/create-generation.server.ts` -- create generation record linking frames and video
-- `server/create-workspace.server.ts` -- create new workspace
-- `server/delete-workspace.server.ts` -- delete workspace; intelligently cleans up non-shared image records
-- `server/delete-generation.server.ts` -- delete single generation; intelligently cleans up shared images
-- `server/get-generations.server.ts` -- fetch generations for a workspace with R2 public URLs
-- `server/get-workspace.server.ts` -- fetch single workspace
-- `server/get-workspaces.server.ts` -- list all workspaces with preview data (hero image, thumbnails, prompt)
-- `server/get-video-url.server.ts` -- resolve video URL from FAL metadata
-- `server/rename-workspace.server.ts` -- rename workspace
-- `server/move-generations.server.ts` -- batch move generations between workspaces
-- `server/update-generation.server.ts` -- link video record to generation
-- `server/upload-video-frame.server.ts` -- upload user image as frame; stores cropped (1280x720) + original
-- `server/fal-video-schema.server.ts` -- fetches + caches FAL video model OpenAPI schemas; auto-detects params
-- `hooks/use-video-workspace-page.ts` -- master orchestrator composing all sub-hooks
-- `hooks/use-first-frame-generator.ts` -- first frame generation + file upload/library selection
-- `hooks/use-last-frame-generator.ts` -- last frame generation
-- `hooks/use-video-generator.ts` -- video settings + generation submission
-- `hooks/use-frame.ts` -- shared frame state (status, URL, polling)
-- `hooks/use-generations.ts` -- workspace generation list management
-- `hooks/use-generation-selection.ts` -- multi-select for batch operations
-- `hooks/use-workspaces.ts` -- workspace list
-- `hooks/use-active-workspace.ts` -- active workspace routing
-- `hooks/use-workspace-name.ts` -- inline rename
-- `hooks/use-workspace-delete.ts` -- workspace deletion with navigation
-- `components/FramePanel.tsx` -- first/last frame editing panel with library/upload/paste/outpaint
-- `components/FrameImageArea.tsx` -- frame image display with generate/upload controls
-- `components/VideoSettingsPanel.tsx` -- model selector (8 models), transition prompt, duration, cfg_scale, negative prompt; hides unsupported options per model
-- `components/GenerationRow.tsx` -- single generation with frames + video; realtime Supabase subscriptions for status
-- `components/SelectionBar.tsx` -- bulk actions for selected generations (move, delete)
-- `components/WorkspaceHeader.tsx` -- workspace name + rename/delete actions
-- `components/WorkspaceCard.tsx` -- workspace list card with hero image and thumbnails
-- `components/WorkspaceStrip.tsx` -- horizontal workspace list
-- `index.ts` -- barrel export
+- `video-types.ts` -- `SavedAiVideo`, `VideoMethod`, `VideoShot`, `VideoElement`, `FlfSnapshot`, `MultishotSnapshot`, `VideoGenerationMetadata`, `getVideoMethod()`
+- `types.ts` -- residual FLF frame-picker types still used by `VideoGeneratorPanel` + `FrameImageArea`: `FrameStatus`, `FrameMode`, `FIRST_FRAME_MODELS`, `FLUX_KONTEXT_MODEL_ID`
+- `video-models.ts` -- `ALL_VIDEO_MODELS` (Kling 3.0/O3/2.6/2.5-Turbo/O1, LTX-2.3, Sora 2, WAN 2.5) with capability flags
+- `constants.ts` -- `FIRST_FRAME_MODEL_FOR_MODE` mapping (prompt vs image mode)
+- `lib/crop-to-16x9.ts` -- client canvas crop + `fileToBase64`
+- `index.ts` -- barrel exports
 
-## Route
+## Server
 
-`src/routes/dashboard/video.tsx` (layout), `video.index.tsx` (workspace list + detail via query params), `video.$workspaceId.tsx` (redirect to `video.index.tsx?workspaceId=X`)
+- `generate-video.server.ts` -- unified FLF + multishot entry. Takes a discriminated `method` union, handles credits + rate limiting, submits to FAL, persists the snapshot + optional `parent_id`
+- `group-videos.server.ts` -- set `parent_id` on many children under a primary (mirror of `group-images.server.ts`)
+- `ungroup-videos.server.ts` -- clear `parent_id` on all children of a parent
+- `reparent-video.server.ts` -- adopt or detach a single video (`action: 'adopt' | 'detach'`)
+- `extract-video-thumbnail.server.ts` -- auto middle-frame extraction via `fal-ai/ffmpeg-api/extract-frame`, upload to R2 under `{user_id}/video-thumbnails/{video_id}.jpg`, stamp `thumbnail_updated_at`. Silent no-op on failure; the gallery falls back to the source frame
+- `upload-video-thumbnail.server.ts` -- user-picked frame (base64 data URL from canvas capture). Clears `thumbnail_cleared`, stamps `thumbnail_updated_at`
+- `upload-video-frame.server.ts` -- upload a user image as an FLF first/last frame, stores cropped (1280x720) + original
+- `fal-video-schema.server.ts` -- cached FAL OpenAPI schemas for video models; auto-detects param names, duration type, cfg/negative prompt support
+
+## Hooks
+
+- `use-videos.ts` -- gallery fetch (direct Supabase), parent-bubble sort, realtime `user_images` subscription, polling for pending gens when webhooks are off, auto middle-frame extraction for completed videos without a thumbnail, `captureFrame` / `removeThumbnail` / `deleteVideo` / optimistic cards / `ungroupChildren` / `refresh`
+- `use-video-sidebar.ts` -- single-mode state machine (`mode: 'flf' | 'multishot'`), `loadFromVideo()` rehydrates from a snapshot, mode toggle with field mapping, `clearPrompts()`, `generate()` dispatches to `generate-video.server.ts` with optional `sessionParentId`
+- `use-reparent-video.ts` -- thin video version of the ai-images reparent hook: `startAdopt` / `startAdoptBatch` / `cancelAdopt` / `confirmAdopt` / `detach`
+
+## Components
+
+- `VideoGeneratorPanel.tsx` -- the sidebar. Mode toggle, FLF frame area (via `FrameImageArea`), multishot shot list + elements, aspect ratio, model select, duration, negative prompt, generate button. Used on both the main page and the edit route
+- `VideoGallery.tsx` -- parent-anchor grid on the main view. `scopedIds` prop flips it into flat mode for the edit view (every scoped video rendered as an equal-sized card)
+- `VideoCard.tsx` -- mirrors `ImageCard` overlay layout: More menu top-left, Delete top-right, Select circle bottom-left, Play bottom-right, `alwaysShowOverlay`. Menu: Generate Thumb / Remove Thumb / Download / Move / Ungroup / Unlink / Delete
+- `VideoParentPickerDialog.tsx` -- picker for the Move action, thin video copy of `ParentPickerDialog.tsx`
+- `VideoFramePickerDialog.tsx` -- scrub-only video picker for user-picked thumbnails. Routes the video through `/api/video-proxy?url=...` so `canvas.toDataURL()` works across CDN CORS
+- `FrameImageArea.tsx` -- FLF first/last frame slot (generate / upload / library / paste)
+
+## Routes
+
+- `src/routes/dashboard/video.index.tsx` -- main gallery + pinnable `VideoGeneratorPanel` sidebar. SelectionDrawer bulk actions: Group (2+), Ungroup (when a selected video is a parent), Move, Delete
+- `src/routes/dashboard/video.edit.$videoId.tsx` -- scoped group view. Pre-populates the sidebar from the video's snapshot, locks a `sessionParentId` on entry (X's parent or X itself) so every gen in the session joins the same group regardless of which thumb is highlighted
+- `server/api/video-proxy.get.ts` -- CORS-enabled streaming proxy for FAL video URLs (allowlisted hosts), forwards Range headers for scrubbing
 
 ## Shared Dependencies
 
 - `src/lib/server/auth.server.ts` -- `requireAuth()`
-- `src/features/credits/` -- credit checking and deduction (video_gen, first_frame, last_frame costs)
-- `src/features/user-images/` -- `useUserImages` for image picker in frame upload
-- `src/lib/server/check-pending-generations.server.ts` -- shared polling utility for FAL queue results
-
-## Key Patterns
-
-- **Realtime**: GenerationRow subscribes to `postgres_changes` on `user_images` for live status updates
-- **Intelligent cleanup**: delete functions only remove image records not referenced by other generations
-- **Schema auto-detection**: `fal-video-schema.server.ts` caches FAL OpenAPI specs and auto-detects param names, duration type, cfg_scale/negative_prompt support
-- **Image URLs**: R2 public URLs via `createImageStorage()`, no signing/expiry
+- `src/lib/image-storage.ts` -- `createImageStorage()`, `getR2PublicUrl()`
+- `src/lib/server/check-pending-generations.server.ts` -- shared polling for FAL queue results when webhooks are off
+- `src/features/credits/` -- credit check + deduction (`video_gen` cost)
+- `src/features/user-images/` -- `useUserImages` for image picker in frame / start image flows
 
 ## Quirks / Notes
 
-- FLF = first-last-frame: generates start + end frames as images, then creates video transitioning between them
-- Kling models use special prompt format: `@Image1 {prompt} @Image2` for FLF transitions
-- Only FLF-capable models (6 of 8) support last frame; Sora 2 and WAN 2.5 are image-to-video only
-- First frame has two modes: "prompt" (text-to-image via Kling O3) and "image" (reference image via FLUX Kontext Pro)
-- Frame cropping enforces 16:9 at 1280x720
-- Video supports deep-linking via `?workspaceId=X&generationId=Y`
-- Prefer `cropped_storage_path` from generation metadata for frames, falling back to `storage_path` for old records
+- Videos and images share the `user_images` table and `source` column discriminates; never forget the `.eq('source', 'ai_video')` filter in video queries
+- Kling `@Image1`/`@Image2` prompt syntax references the `elements` array -- don't use it for FLF (which uses `start_image_url` / `end_image_url`)
+- Only FLF-capable models support the last frame; Sora 2 and WAN 2.5 are image-to-video only
+- Thumbnail cache-busting: the R2 URL includes a `?v={thumbnail_updated_at}` query so picking a new frame actually reloads (same storage path would otherwise serve stale bytes)
+- `thumbnail_cleared: true` in metadata tells the auto-extractor to leave the row alone (user explicitly removed the thumb)
+- The old workspace model (`video_workspaces`, `video_generations`, workspace strip) was deleted in Phase 5. Any reference to "workspace" in tool output is stale

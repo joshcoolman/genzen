@@ -20,7 +20,7 @@ import type { SelectedFile } from './ImageUploadButton'
 import type { UserImage } from '../types'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
-import { getVideoUrl, getWorkspaces } from '@/features/ai-video'
+import { useVideos } from '@/features/ai-video/hooks/use-videos'
 import { Thumbnail } from '@/components/Thumbnail'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
 
@@ -83,8 +83,8 @@ type AssetItem =
       label: string
       thumbnailUrl: string | null
       createdAt: string
-      workspaceId: string
-      generationId: string
+      videoId: string
+      videoUrl: string | null
       videoReady: boolean
     }
 
@@ -131,28 +131,13 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     storedPrefs.filter,
   )
 
-  // Video state
-  type Workspace = {
-    id: string
-    name: string
-    createdAt: string
-    generations: Array<{
-      id: string
-      createdAt: string
-      firstFrameUrl: string | null
-      videoReady: boolean
-    }>
-  }
-  const [workspaces, setWorkspaces] = useState<Array<Workspace>>([])
+  // Video state -- unified videos via useVideos
+  const videoGallery = useVideos({
+    userId: user?.id,
+    accessToken: session?.access_token,
+  })
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
   const [videoDialogOpen, setVideoDialogOpen] = useState(false)
-
-  useEffect(() => {
-    if (!session?.access_token) return
-    getWorkspaces({ data: { accessToken: session.access_token } })
-      .then(setWorkspaces)
-      .catch(() => {})
-  }, [session?.access_token])
 
   const handleSourceFilter = (filter: SourceFilter) => {
     setSourceFilter(filter)
@@ -201,18 +186,16 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     const videoAssets: Array<AssetItem> =
       sourceFilter === 'upload' || sourceFilter === 'ai_generated'
         ? []
-        : workspaces.flatMap((ws) =>
-            ws.generations.map((gen) => ({
-              kind: 'video' as const,
-              id: gen.id,
-              label: ws.name,
-              thumbnailUrl: gen.firstFrameUrl,
-              createdAt: gen.createdAt,
-              workspaceId: ws.id,
-              generationId: gen.id,
-              videoReady: gen.videoReady,
-            })),
-          )
+        : videoGallery.videos.map((v) => ({
+            kind: 'video' as const,
+            id: v.id,
+            label: v.title,
+            thumbnailUrl: videoGallery.thumbnailUrls[v.id] ?? null,
+            createdAt: v.created_at,
+            videoId: v.id,
+            videoUrl: v.generation_metadata?.fal_url ?? null,
+            videoReady: v.status === 'completed',
+          }))
 
     const combined = [...imageAssets, ...videoAssets]
 
@@ -225,7 +208,14 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     })
 
     return combined
-  }, [images, imageUrls, workspaces, sourceFilter, sortAsc])
+  }, [
+    images,
+    imageUrls,
+    videoGallery.videos,
+    videoGallery.thumbnailUrls,
+    sourceFilter,
+    sortAsc,
+  ])
 
   // For image-only operations (edit dialog), get filtered image list
   const imageOnlyAssets = useMemo(
@@ -346,22 +336,16 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
     }
   }
 
-  const handlePlayVideo = async (generationId: string) => {
-    if (!session?.access_token) return
-    const result = await getVideoUrl({
-      data: { generationId, accessToken: session.access_token },
-    })
-    if (result.videoUrl) {
-      setActiveVideoUrl(result.videoUrl)
-      setVideoDialogOpen(true)
-    }
+  const handlePlayVideo = (videoUrl: string | null) => {
+    if (!videoUrl) return
+    setActiveVideoUrl(videoUrl)
+    setVideoDialogOpen(true)
   }
 
-  const handleVideoClick = (workspaceId: string, generationId: string) => {
+  const handleVideoClick = (videoId: string) => {
     void navigate({
-      to: '/dashboard/video/$workspaceId',
-      params: { workspaceId },
-      search: { generationId },
+      to: '/dashboard/video/edit/$videoId',
+      params: { videoId },
     })
   }
 
@@ -378,7 +362,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
   const hasAiContent =
     !loading &&
     (images.some((img) => img.source === 'ai_generated') ||
-      workspaces.some((ws) => ws.generations.length > 0))
+      videoGallery.videos.length > 0)
 
   return (
     <div className="space-y-6">
@@ -517,9 +501,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
                 <Thumbnail
                   url={asset.thumbnailUrl}
                   alt={asset.label}
-                  onClick={() =>
-                    handleVideoClick(asset.workspaceId, asset.generationId)
-                  }
+                  onClick={() => handleVideoClick(asset.videoId)}
                   objectFit={compact ? 'cover' : 'contain'}
                   compact={compact}
                   asButton
@@ -533,7 +515,7 @@ export function UserImagesDisplay({ deepLinkImageId }: UserImagesDisplayProps) {
                           role="button"
                           onClick={(e) => {
                             e.stopPropagation()
-                            void handlePlayVideo(asset.generationId)
+                            handlePlayVideo(asset.videoUrl)
                           }}
                           className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center hover:bg-black/80 transition-colors"
                         >

@@ -5,38 +5,6 @@ import {
 
 export type FrameStatus = 'idle' | 'generating' | 'completed' | 'error'
 export type FrameMode = 'prompt' | 'image'
-export type LastFrameMode = FrameMode
-
-export type Generation = {
-  id: string
-  createdAt: string
-  firstFrame: {
-    id: string
-    url: string | null
-    status?: 'pending' | 'completed' | 'failed'
-  } | null
-  lastFrame: {
-    id: string
-    url: string | null
-    status?: 'pending' | 'completed' | 'failed'
-  } | null
-  video: {
-    id: string
-    url: string | null
-    status: 'pending' | 'completed' | 'failed'
-  } | null
-  videoPrompt?: string
-}
-
-export interface FrameState {
-  status: FrameStatus
-  url: string | null
-  recordId: string | null
-  error: string | null
-}
-
-export const DEFAULT_FIRST_FRAME_PROMPT =
-  'A visceral side-mounted camera angle hugging just above the wheel arch of a red-and-white 1980s Formula 1 car blasting out of the Monaco tunnel into blinding Mediterranean sunlight. Tire sidewalls ripple with speed, polished livery shimmers, chrome suspension arms catch the light. Vintage 35mm racing documentary aesthetic, natural motion blur, golden hour.'
 
 export const FIRST_FRAME_MODELS = [
   {
@@ -50,21 +18,3 @@ export const FIRST_FRAME_MODELS = [
 ]
 
 export const FLUX_KONTEXT_MODEL_ID = FLUX_KONTEXT_PRO_ID
-
-export const LAST_FRAME_MODEL = 'nano-banana' as const
-
-export interface VideoSettings {
-  prompt: string
-  duration: string
-  cfgScale: number
-  negativePrompt: string
-  videoModel: string
-}
-
-export const DEFAULT_VIDEO_SETTINGS: VideoSettings = {
-  prompt: '',
-  duration: '5',
-  cfgScale: 0.5,
-  negativePrompt: 'blur, distort, and low quality',
-  videoModel: 'fal-ai/kling-video/v3/pro/image-to-video',
-}

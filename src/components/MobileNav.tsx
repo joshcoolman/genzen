@@ -57,9 +57,12 @@ export function MobileNav({ className }: { className?: string }) {
     setOpen(false)
   }, [location.pathname])
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return location.pathname === '/dashboard'
-    return location.pathname.startsWith(href)
+  const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
+    if (item.href === '/dashboard') return location.pathname === '/dashboard'
+    if (location.pathname.startsWith(item.href)) return true
+    return (
+      item.matchPaths?.some((p) => location.pathname.startsWith(p)) ?? false
+    )
   }
 
   return (
@@ -77,7 +80,7 @@ export function MobileNav({ className }: { className?: string }) {
           {/* Nav items */}
           <nav className="space-y-1 p-4">
             {visibleItems.map((item) => {
-              const active = isActive(item.href)
+              const active = isActive(item)
               return (
                 <div key={item.href}>
                   {item.dividerBefore && (
@@ -108,7 +111,7 @@ export function MobileNav({ className }: { className?: string }) {
                 to={item.href}
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                  isActive(item.href)
+                  isActive(item)
                     ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
                     : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
                 )}
