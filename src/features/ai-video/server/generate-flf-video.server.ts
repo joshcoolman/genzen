@@ -49,10 +49,6 @@ async function uploadFrameToFal(
   return fal.storage.upload(new Blob([buffer], { type: mediaType }))
 }
 
-function isKlingModel(modelId: string): boolean {
-  return modelId.includes('kling-video')
-}
-
 export const generateFlfVideo = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateFlfVideoInput) => data)
   .handler(async ({ data }) => {
@@ -141,14 +137,9 @@ export const generateFlfVideo = createServerFn({ method: 'POST' })
 
         const falInput: Record<string, unknown> = {}
 
-        // Prompt — Kling models have special FLF prompt format
-        if (isKlingModel(videoModel) && endImageUrl) {
-          falInput.prompt = prompt
-            ? `@Image1 ${prompt} @Image2`
-            : '@Image1 smoothly transitions to @Image2 with fluid natural motion'
-        } else {
-          falInput.prompt = prompt || 'Natural motion with cinematic quality'
-        }
+        // Prompt — @Image references are for the `elements` array, not start/end URLs.
+        // Since we use start_image_url/end_image_url, just pass the prompt directly.
+        falInput.prompt = prompt || 'Natural motion with cinematic quality'
 
         // Image params — use schema-detected parameter names
         falInput[schema.imageParam] = startImageUrl

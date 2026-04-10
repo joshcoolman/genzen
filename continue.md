@@ -1,42 +1,53 @@
-# Continue: AD Context-Aware Edit Page + Push-In Layout
+# Continue: AI Video UI Convergence -- Phase 2
 
 ## What was worked on
 
-Two commits shipped to main in this session:
+Unifying AI Video and Multi-Shot UX with AI Images conventions. This is a 4-phase initiative with a plan at `.claude/plans/wild-nibbling-moonbeam.md`.
 
-1. **History page + Prompt Studio sets to Supabase** (`7ea4c1e`) -- merged from `feature/history-and-studio-sets` branch that had been sitting uncommitted. History page with list/grid views, prompt search, Supabase migration for prompt studio sets, AD context hooks for history + prompt studio.
+## Phase 1 (DONE, committed)
 
-2. **AD context-aware edit page with push-in layout** (`50353d2`) -- the main work of this session.
-
-## Changes made (commit `50353d2`)
-
-- **ADContext extended** (`src/features/ad/context/ad-context.tsx`): Added `ADContextImage` type, `contextImages` map, `registerImage`/`unregisterImage` callbacks, and `useRegisterADImage` hook. Features can now register images that AD auto-injects as vision blocks.
-- **useADChat** (`src/features/ad/hooks/useADChat.ts`): On `sendMessage`, merges context images from `ADContext.contextImages` into the user's message as vision blocks. Deduplicates against user-attached images.
-- **useEditPageADContext** (`src/features/ai-images/hooks/useEditPageADContext.ts`): New hook. Registers: (1) text context (image title, original prompt, model, aspect ratio, chain info) via `useRegisterADContext`, (2) the selected source image's base64 via `useRegisterADImage`. Strips data URL prefix to raw base64 + mediaType.
-- **Edit page route** (`src/routes/dashboard/edit.$imageId.tsx`): Calls `useEditPageADContext`, uses `useADOpen` for AD-aware layout. Content div margin adjusts for edit sidebar (320px) + AD panel (480px). Edit sidebar shifts to `right-[480px]` when AD is open.
-- **AI Images route** (`src/routes/dashboard/ai-images.tsx`): Same AD push-in treatment -- Generate sidebar shifts to `right-[480px]`, content margin adjusts for both panels.
-- **DashboardLayout** (`src/components/DashboardLayout.tsx`): Pages with own sidebars (`isEditPage || isAiImagesPage`) are excluded from generic AD margin and get `pr-0`. Other pages get `md:mr-[480px]` push.
-- **AD panel width**: Reduced from 640px to 480px (`src/features/ad/components/ADPanel.tsx`).
-- **Source image preview**: `GeneratorPanel` uses `variant="square"` in edit mode instead of `compact`.
+- Replaced AI Video's static `w-72` sidebar with pinnable `w-80` right sidebar matching AI Images (pin/unpin, mobile dialog fallback, localStorage persistence via `genzen:video-panel-open` / `genzen:video-panel-pinned`)
+- Created `src/features/ai-video/components/VideoGeneratorPanel.tsx` -- combined panel with first/last frame pickers + video settings in one sidebar component
+- Moved first/last frame panels from main content 2-column grid into the sidebar (stacked vertically)
+- Replaced inline video model pill buttons with shared `ModelSelector` dropdown (`display="dropdown"`, `mode="single"`)
+  - Added `'video'` to `ModelCapability` in `src/components/ModelSelector/types.ts`
+  - Registered `UNIFIED_VIDEO_MODELS` in `src/components/ModelSelector/models.ts`
+  - Sync effect in `video.index.tsx` keeps `videoModelSelector.selectedIds[0]` in sync with `videoSettings.videoModel`
+- Created `src/components/ImageSourceDialog/` -- shared reusable popup for image selection
+  - Uses `createPortal` (not Radix Dialog) to avoid event trapping issues
+  - Library grid with source filters (All/Uploads/AI Generated)
+  - Upload button in header -- uploads to library, stays open, grid refreshes
+  - Paste detection via `window.addEventListener('paste', ..., true)` (capture phase) -- pastes to library without dismissing
+  - Selection is explicit thumbnail click only (upload/paste don't auto-select)
+  - URL resolution: `originalUrls?.[id] ?? imageUrls[id]` (per-key fallback, not whole-object)
+- Frame placeholders use muted text ("Click to choose first frame") with cursor-pointer, no button treatment
+- `FrameImageArea.tsx` hover overlay shows muted "Change Image" text instead of Button
 
 ## Key decisions
 
-- **Context image tracks selection**: When user clicks a different image in the edit chain, `generator.sourceImage` updates, which triggers the AD context hook to re-register the new image. AD sees whatever the user has selected.
-- **Image injected per-message, not in system prompt**: Context images are merged into user messages as vision blocks, not baked into the system prompt. This means AD only "sees" the image on the turn it's sent.
-- **Run button removed**: Built a `runPrompt` callback system (ADContext -> PromptCard -> edit page generator), tested it, then removed it at user's request. Copy+paste workflow is sufficient for now. The infrastructure pattern is documented in git history if needed later.
-- **Push-in vs overlay**: AD panel pushes content on all pages. Pages with fixed sidebars (AI Images, edit) handle their own margin math. Other pages use DashboardLayout's generic `mr-[480px]`.
+- AI Images is the gold standard -- all features converge to its sidebar/gallery pattern
+- Conventions first, then merge nav: Phase 1 sidebar, Phase 2 gallery grid, Phase 3 merge nav items, Phase 4 multi-shot sidebar
+- Frames go in sidebar (not main content) -- user confirmed this
+- ImageSourceDialog is dual-purpose: browse/select AND add to library -- upload/paste add without assuming selection intent
+- `onUploadToLibrary` callback uses `page.userImages.create({ file, title: file.name })` which writes to Supabase `user_images` table, visible everywhere
 
-## Outstanding work / known issues
+## Phase 2 (NEXT -- Video Gallery Grid)
 
-- **Edit page gap**: ~90px gap between content scrollbar and the edit sidebar when AD is open. `pr-0` on `<main>` helped but didn't fully close it. Likely needs the margin calc fine-tuned or the edit page content restructured. User accepted this as polish for later.
-- **Run button**: Removed but the pattern exists in git if user wants it back after more testing.
-- **Future AD context expansion**: Discussed but deferred -- registering recent generation results (not just source image) so AD can see "what just came back" without user clicking it. User wants to test the current select-and-talk workflow first before expanding.
-- **Issue #87** (AD page-aware context): The `useRegisterADContext` + `useRegisterADImage` hooks are the per-feature approach. DOM scraping / screenshot capture discussed as a generic fallback but not built. Issue updated with progress.
+Replace horizontal `GenerationRow` list with thumbnail grid matching AI Images' `ImageGallery`:
+- New `src/features/ai-video/components/VideoGallery.tsx` -- grid using `ImageGrid` with video-specific cards
+- New `src/features/ai-video/components/VideoCard.tsx` -- wraps `Thumbnail` with play button overlay, status badge, model label
+- Gallery toolbar: thumb size toggle (lg/md/sm), sort toggle, info toggle, localStorage prefs `genzen:video-prefs`
+- Card actions: play video, load frames, continue, generate video, delete
+- Move realtime Supabase subscriptions from `GenerationRow` into `use-generations.ts` hook
+- Port `SelectionBar` to work with grid cards
+
+## Phases 3-4 (future)
+
+- Phase 3: Merge "AI Video" + "Multi-Shot" nav items into one with tabs (`?mode=flf` / `?mode=multishot`)
+- Phase 4: Flip Multi-Shot controls to right sidebar, extract shared `SidebarPanel` component
 
 ## Git state
 
-- Branch: `main`
-- Clean working tree -- all changes committed and pushed
-- Last commit: `50353d2`
-- All stale branches cleaned up
-- Supabase migrations from `7ea4c1e` may need `supabase db push` if not already applied
+- Branch: `feature/video-ui-convergence`
+- All changes committed and pushed: `9b81692 feat: AI Video pinnable sidebar + shared ImageSourceDialog`
+- Clean working tree

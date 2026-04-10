@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Generation } from '../types'
 import { getGenerations } from '@/features/ai-video/server/get-generations.server'
+import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 export function useGenerations(
   workspaceId: string,
@@ -17,6 +18,36 @@ export function useGenerations(
       .then(setGenerations)
       .catch(() => {})
   }, [workspaceId, accessToken])
+
+  // Poll for pending videos and last frames
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    const hasPending = generations.some(
+      (g) =>
+        g.video?.status === 'pending' ||
+        g.lastFrame?.status === 'pending',
+    )
+    if (!hasPending || !accessToken) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      return
+    }
+
+    // Immediate check + interval
+    checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    pollingRef.current = setInterval(() => {
+      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    }, 5000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [generations, accessToken])
 
   const addGeneration = useCallback((gen: Generation) => {
     setGenerations((prev) => [gen, ...prev])
