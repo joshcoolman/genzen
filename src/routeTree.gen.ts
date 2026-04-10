@@ -25,23 +25,20 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settin
 import { Route as DashboardScenesRouteImport } from './routes/dashboard/scenes'
 import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
-import { Route as DashboardMultiShotRouteImport } from './routes/dashboard/multi-shot'
 import { Route as DashboardHistoryRouteImport } from './routes/dashboard/history'
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
-import { Route as DashboardMultiShotIndexRouteImport } from './routes/dashboard/multi-shot.index'
 import { Route as DashboardDevWorkspaceIndexRouteImport } from './routes/dashboard/dev-workspace.index'
-import { Route as DashboardVideoWorkspaceIdRouteImport } from './routes/dashboard/video.$workspaceId'
-import { Route as DashboardMultiShotSequenceIdRouteImport } from './routes/dashboard/multi-shot.$sequenceId'
 import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
 import { Route as DashboardDevWorkspacePromptStudioRouteImport } from './routes/dashboard/dev-workspace.prompt-studio'
 import { Route as DashboardDevWorkspaceOutpaintRouteImport } from './routes/dashboard/dev-workspace.outpaint'
 import { Route as DashboardDevWorkspaceMultiModelRouteImport } from './routes/dashboard/dev-workspace.multi-model'
 import { Route as DashboardDevWorkspaceModelsRouteImport } from './routes/dashboard/dev-workspace.models'
 import { Route as DashboardDevWorkspaceModelSelectorRouteImport } from './routes/dashboard/dev-workspace.model-selector'
+import { Route as DashboardVideoEditVideoIdRouteImport } from './routes/dashboard/video.edit.$videoId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -123,11 +120,6 @@ const DashboardNotesRoute = DashboardNotesRouteImport.update({
   path: '/notes',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardMultiShotRoute = DashboardMultiShotRouteImport.update({
-  id: '/multi-shot',
-  path: '/multi-shot',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardHistoryRoute = DashboardHistoryRouteImport.update({
   id: '/history',
   path: '/history',
@@ -158,28 +150,11 @@ const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardVideoRoute,
 } as any)
-const DashboardMultiShotIndexRoute = DashboardMultiShotIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardMultiShotRoute,
-} as any)
 const DashboardDevWorkspaceIndexRoute =
   DashboardDevWorkspaceIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => DashboardDevWorkspaceRoute,
-  } as any)
-const DashboardVideoWorkspaceIdRoute =
-  DashboardVideoWorkspaceIdRouteImport.update({
-    id: '/$workspaceId',
-    path: '/$workspaceId',
-    getParentRoute: () => DashboardVideoRoute,
-  } as any)
-const DashboardMultiShotSequenceIdRoute =
-  DashboardMultiShotSequenceIdRouteImport.update({
-    id: '/$sequenceId',
-    path: '/$sequenceId',
-    getParentRoute: () => DashboardMultiShotRoute,
   } as any)
 const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
   id: '/edit/$imageId',
@@ -216,6 +191,12 @@ const DashboardDevWorkspaceModelSelectorRoute =
     path: '/model-selector',
     getParentRoute: () => DashboardDevWorkspaceRoute,
   } as any)
+const DashboardVideoEditVideoIdRoute =
+  DashboardVideoEditVideoIdRouteImport.update({
+    id: '/edit/$videoId',
+    path: '/edit/$videoId',
+    getParentRoute: () => DashboardVideoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -230,7 +211,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/history': typeof DashboardHistoryRoute
-  '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
@@ -246,11 +226,9 @@ export interface FileRoutesByFullPath {
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
-  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
-  '/dashboard/multi-shot/': typeof DashboardMultiShotIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
+  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -276,11 +254,9 @@ export interface FileRoutesByTo {
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
-  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceIndexRoute
-  '/dashboard/multi-shot': typeof DashboardMultiShotIndexRoute
   '/dashboard/video': typeof DashboardVideoIndexRoute
+  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -296,7 +272,6 @@ export interface FileRoutesById {
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
   '/dashboard/history': typeof DashboardHistoryRoute
-  '/dashboard/multi-shot': typeof DashboardMultiShotRouteWithChildren
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
@@ -312,11 +287,9 @@ export interface FileRoutesById {
   '/dashboard/dev-workspace/outpaint': typeof DashboardDevWorkspaceOutpaintRoute
   '/dashboard/dev-workspace/prompt-studio': typeof DashboardDevWorkspacePromptStudioRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/multi-shot/$sequenceId': typeof DashboardMultiShotSequenceIdRoute
-  '/dashboard/video/$workspaceId': typeof DashboardVideoWorkspaceIdRoute
   '/dashboard/dev-workspace/': typeof DashboardDevWorkspaceIndexRoute
-  '/dashboard/multi-shot/': typeof DashboardMultiShotIndexRoute
   '/dashboard/video/': typeof DashboardVideoIndexRoute
+  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -333,7 +306,6 @@ export interface FileRouteTypes {
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
     | '/dashboard/history'
-    | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/pending'
     | '/dashboard/scenes'
@@ -349,11 +321,9 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/multi-shot/$sequenceId'
-    | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace/'
-    | '/dashboard/multi-shot/'
     | '/dashboard/video/'
+    | '/dashboard/video/edit/$videoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -379,11 +349,9 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/multi-shot/$sequenceId'
-    | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace'
-    | '/dashboard/multi-shot'
     | '/dashboard/video'
+    | '/dashboard/video/edit/$videoId'
   id:
     | '__root__'
     | '/'
@@ -398,7 +366,6 @@ export interface FileRouteTypes {
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
     | '/dashboard/history'
-    | '/dashboard/multi-shot'
     | '/dashboard/notes'
     | '/dashboard/pending'
     | '/dashboard/scenes'
@@ -414,11 +381,9 @@ export interface FileRouteTypes {
     | '/dashboard/dev-workspace/outpaint'
     | '/dashboard/dev-workspace/prompt-studio'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/multi-shot/$sequenceId'
-    | '/dashboard/video/$workspaceId'
     | '/dashboard/dev-workspace/'
-    | '/dashboard/multi-shot/'
     | '/dashboard/video/'
+    | '/dashboard/video/edit/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -545,13 +510,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardNotesRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/multi-shot': {
-      id: '/dashboard/multi-shot'
-      path: '/multi-shot'
-      fullPath: '/dashboard/multi-shot'
-      preLoaderRoute: typeof DashboardMultiShotRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/history': {
       id: '/dashboard/history'
       path: '/history'
@@ -594,33 +552,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardVideoIndexRouteImport
       parentRoute: typeof DashboardVideoRoute
     }
-    '/dashboard/multi-shot/': {
-      id: '/dashboard/multi-shot/'
-      path: '/'
-      fullPath: '/dashboard/multi-shot/'
-      preLoaderRoute: typeof DashboardMultiShotIndexRouteImport
-      parentRoute: typeof DashboardMultiShotRoute
-    }
     '/dashboard/dev-workspace/': {
       id: '/dashboard/dev-workspace/'
       path: '/'
       fullPath: '/dashboard/dev-workspace/'
       preLoaderRoute: typeof DashboardDevWorkspaceIndexRouteImport
       parentRoute: typeof DashboardDevWorkspaceRoute
-    }
-    '/dashboard/video/$workspaceId': {
-      id: '/dashboard/video/$workspaceId'
-      path: '/$workspaceId'
-      fullPath: '/dashboard/video/$workspaceId'
-      preLoaderRoute: typeof DashboardVideoWorkspaceIdRouteImport
-      parentRoute: typeof DashboardVideoRoute
-    }
-    '/dashboard/multi-shot/$sequenceId': {
-      id: '/dashboard/multi-shot/$sequenceId'
-      path: '/$sequenceId'
-      fullPath: '/dashboard/multi-shot/$sequenceId'
-      preLoaderRoute: typeof DashboardMultiShotSequenceIdRouteImport
-      parentRoute: typeof DashboardMultiShotRoute
     }
     '/dashboard/edit/$imageId': {
       id: '/dashboard/edit/$imageId'
@@ -664,6 +601,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDevWorkspaceModelSelectorRouteImport
       parentRoute: typeof DashboardDevWorkspaceRoute
     }
+    '/dashboard/video/edit/$videoId': {
+      id: '/dashboard/video/edit/$videoId'
+      path: '/edit/$videoId'
+      fullPath: '/dashboard/video/edit/$videoId'
+      preLoaderRoute: typeof DashboardVideoEditVideoIdRouteImport
+      parentRoute: typeof DashboardVideoRoute
+    }
   }
 }
 
@@ -692,27 +636,14 @@ const DashboardDevWorkspaceRouteWithChildren =
     DashboardDevWorkspaceRouteChildren,
   )
 
-interface DashboardMultiShotRouteChildren {
-  DashboardMultiShotSequenceIdRoute: typeof DashboardMultiShotSequenceIdRoute
-  DashboardMultiShotIndexRoute: typeof DashboardMultiShotIndexRoute
-}
-
-const DashboardMultiShotRouteChildren: DashboardMultiShotRouteChildren = {
-  DashboardMultiShotSequenceIdRoute: DashboardMultiShotSequenceIdRoute,
-  DashboardMultiShotIndexRoute: DashboardMultiShotIndexRoute,
-}
-
-const DashboardMultiShotRouteWithChildren =
-  DashboardMultiShotRoute._addFileChildren(DashboardMultiShotRouteChildren)
-
 interface DashboardVideoRouteChildren {
-  DashboardVideoWorkspaceIdRoute: typeof DashboardVideoWorkspaceIdRoute
   DashboardVideoIndexRoute: typeof DashboardVideoIndexRoute
+  DashboardVideoEditVideoIdRoute: typeof DashboardVideoEditVideoIdRoute
 }
 
 const DashboardVideoRouteChildren: DashboardVideoRouteChildren = {
-  DashboardVideoWorkspaceIdRoute: DashboardVideoWorkspaceIdRoute,
   DashboardVideoIndexRoute: DashboardVideoIndexRoute,
+  DashboardVideoEditVideoIdRoute: DashboardVideoEditVideoIdRoute,
 }
 
 const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
@@ -725,7 +656,6 @@ interface DashboardRouteChildren {
   DashboardCanvasRoute: typeof DashboardCanvasRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
   DashboardHistoryRoute: typeof DashboardHistoryRoute
-  DashboardMultiShotRoute: typeof DashboardMultiShotRouteWithChildren
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardPendingRoute: typeof DashboardPendingRoute
   DashboardScenesRoute: typeof DashboardScenesRoute
@@ -742,7 +672,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCanvasRoute: DashboardCanvasRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
   DashboardHistoryRoute: DashboardHistoryRoute,
-  DashboardMultiShotRoute: DashboardMultiShotRouteWithChildren,
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardPendingRoute: DashboardPendingRoute,
   DashboardScenesRoute: DashboardScenesRoute,

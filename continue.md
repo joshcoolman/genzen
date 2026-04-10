@@ -1,8 +1,8 @@
-# Continue: AI Video UI Convergence -- Phase 3 Complete
+# Continue: AI Video UI Convergence -- Phase 4 Complete
 
 ## What was worked on
 
-AI Video UI convergence with AI Images patterns. 4-phase initiative. Phases 1, 2, and 3 are done.
+AI Video UI convergence with AI Images patterns. 4-phase initiative. All phases done.
 
 ## Phase 1 (DONE -- commit `9b81692`)
 
@@ -12,32 +12,33 @@ AI Video UI convergence with AI Images patterns. 4-phase initiative. Phases 1, 2
 
 Gallery grid with first-frame-as-parent model, replacing flat `GenerationRow` list.
 
-## Phase 3 (DONE -- this session)
+## Phase 3 (DONE -- commit `3ccfa3c`)
 
 Merged "AI Video" + "Multi-Shot" into single nav item with tabbed UI (`?mode=flf` / `?mode=multishot`).
 
+## Phase 4 (DONE -- this session)
+
+Mode-aware sidebar + unified gallery. Multi-shot controls inline in sidebar, sequence concept eliminated.
+
 ### Changes:
 
-- **`src/lib/nav-items.ts`** -- Removed `multi-shot` nav entry. Added `matchPaths` field to `NavItem` interface; `ai-video` entry uses `matchPaths: ['/dashboard/multi-shot']` so sidebar highlights correctly on multi-shot detail pages.
-- **`src/components/Sidebar.tsx`** + **`MobileNav.tsx`** -- `isActive()` now checks `matchPaths` array in addition to primary `href`.
-- **`src/routes/dashboard/video.index.tsx`** -- Added `mode` search param (`flf` | `multishot`). Added `VideoModeTabs` tab bar component. When `mode=multishot`, renders embedded `MultiShotListContent`. When `mode=flf` (default), renders the FLF video workspace. Refactored into `VideoPage` -> `FLFVideoPage` -> `VideoCreationView` flow.
-- **`src/routes/dashboard/multi-shot.index.tsx`** -- Replaced list page with `<Navigate>` redirect to `/dashboard/video?mode=multishot`.
-- **`src/routes/dashboard/multi-shot.$sequenceId.tsx`** -- "Back to sequences" link now points to `/dashboard/video?mode=multishot`.
+- **`src/features/ai-video/components/VideoGeneratorPanel.tsx`** -- Added `mode` prop (`flf` | `multishot`). FLF mode shows all existing controls. Multi-shot mode shows: start image picker, elements strip (RefImageStrip), inline shot list (ShotCard), multi-shot settings (aspect ratio, shot type, generate audio), time budget bar. Hides model selector, last frame, transition prompt, duration, CFG, negative prompt.
+- **`src/routes/dashboard/video.index.tsx`** -- Removed `MultiShotListContent` component and sequence grid. Both modes now use the same sidebar + gallery layout. Instantiates `useMultishotEditor` for multi-shot state. Element picker dialog (`ExistingImagePicker`) wired for multi-shot elements. Start image synced through first frame picker. Generate button calls `multishotEditor.handleGenerate` in multi-shot mode.
+- **`src/features/ai-video/components/VideoGallery.tsx`** -- Now accepts optional `multishotVideos` prop. Merges FLF groups and multishot standalone cards into one date-sorted grid.
+- **`src/features/ai-video/components/MultishotVideoCard.tsx`** -- New component. Standalone card for multishot videos using `Thumbnail` + `VideoPlayerDialog`. Shows "Multi-Shot" badge, start image thumbnail, shot count, duration.
+- **`src/features/ai-video/server/get-multishot-videos.server.ts`** -- New server function. Queries `user_images` where `source=ai_video` and `type=multishot`, returns start image URL, video URL, status, metadata.
+- **`src/features/ai-video/hooks/use-generations.ts`** -- Added multishot video fetching + polling alongside existing FLF generation management.
+- **`src/features/multi-shot/server/generate-multishot.server.ts`** -- Added `start_image_url` to generation_metadata for gallery thumbnails.
+- **`src/routes/dashboard/multi-shot.$sequenceId.tsx`** -- Replaced detail page with redirect to `/dashboard/video?mode=multishot`.
 
 ### Key decisions:
 
-- **Custom tab bar** -- simple `border-b-2` tab buttons, not shadcn Tabs.
-- **Multi-shot detail route stays** at `/dashboard/multi-shot/$sequenceId` -- only the list view moved into the video page.
-- **`matchPaths` on NavItem** -- extensible pattern for sidebar highlighting when routes consolidate.
-- **Redirect for old URL** -- `/dashboard/multi-shot` still works, redirects to tabbed view.
-
-## Outstanding work / Phase 4
-
-- **Phase 4**: Flip Multi-Shot controls to right sidebar, extract shared `SidebarPanel` component
-- **Future**: Dedicated edit route (`/dashboard/video/edit/{firstFrameId}`) for full-screen generation chain view
-- **Polish**: GenerationChain detail view could use visual refinement
+- **No server refactor needed** -- `useMultishotEditor.handleGenerate` already auto-saves a sequence then generates. Sequence management is now transparent (no user-facing UI).
+- **Standalone gallery cards** -- Multishot videos appear as standalone cards (not grouped by first frame). "Multi-Shot" badge distinguishes them from FLF groups.
+- **Shared first frame picker** -- Start image in multi-shot mode reuses the same `ImageSourceDialog` as first frame in FLF mode.
+- **Element picker at page level** -- `ExistingImagePicker` dialog lives in `video.index.tsx`, triggered by `onOpenElementPicker` callback from `VideoGeneratorPanel`.
 
 ## Git state
 
 - Branch: `feature/video-ui-convergence`
-- Uncommitted changes ready for commit
+- Clean working tree (not yet committed)

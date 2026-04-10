@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Pin, PinOff, Plus, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Pin, PinOff, Plus, X } from 'lucide-react'
 import type { SavedAiVideo } from '@/features/ai-video/video-types'
-import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth'
 import { VideoGeneratorPanel } from '@/features/ai-video/components/VideoGeneratorPanel'
@@ -12,18 +11,17 @@ import { useVideoSidebar } from '@/features/ai-video/hooks/use-video-sidebar'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { CREDIT_COSTS } from '@/features/credits'
-import { SelectionDrawer } from '@/components/SelectionDrawer'
-import { useSelection } from '@/lib/use-selection'
 import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 
-export const Route = createFileRoute('/dashboard/video/')({
-  component: VideoPage,
+export const Route = createFileRoute('/dashboard/video/edit/$videoId')({
+  component: VideoEditPage,
 })
 
-function VideoPage() {
+function VideoEditPage() {
+  const { videoId } = Route.useParams()
   const { user, session } = useAuth()
   const accessToken = session?.access_token
   const navigate = useNavigate()
@@ -31,19 +29,92 @@ function VideoPage() {
   const { isOpen: isADOpen } = useADOpen()
 
   const credits = useRequireCredits(CREDIT_COSTS.video_gen)
-
   const gallery = useVideos({ userId: user?.id, accessToken })
   const userImagesHook = useUserImages(user?.id)
 
+  // Find the origin video. Resolves null during initial load.
+  const originVideo: SavedAiVideo | null = useMemo(() => {
+    return gallery.videos.find((v) => v.id === videoId) ?? null
+  }, [gallery.videos, videoId])
+
+  // Session parent: origin's parent if it has one, else origin itself.
+  // Sticky for the lifetime of this route.
+  const sessionParentId = useMemo(() => {
+    if (!originVideo) return null
+    return originVideo.generation_metadata?.parent_id ?? originVideo.id
+  }, [originVideo])
+
+  // Highlighted thumb: defaults to origin, swaps when you click siblings, swaps
+  // to placeholder on generate. Cleared on mode toggle / clear prompts.
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+
   const sidebar = useVideoSidebar({
     accessToken,
-    sessionParentId: null, // Main page has no session origin
-    onGenerated: () => {
-      // The realtime subscription will pick up the new row automatically.
+    sessionParentId,
+    onGenerated: (result) => {
+      // Highlight the freshly generated placeholder
+      setHighlightedId(result.recordId)
     },
   })
 
-  // Panel open/pinned state -- mirrors ai-images
+  // Rehydrate sidebar + highlight when origin video first resolves.
+  const [rehydrated, setRehydrated] = useState(false)
+  useEffect(() => {
+    if (originVideo && !rehydrated) {
+      sidebar.loadFromVideo(originVideo)
+      setHighlightedId(originVideo.id)
+      setRehydrated(true)
+    }
+  }, [originVideo, rehydrated, sidebar])
+
+  // Scope the gallery to just this group: origin video + all videos sharing
+  // the same session parent.
+  const scopedIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (sessionParentId) ids.add(sessionParentId)
+    for (const v of gallery.videos) {
+      const pid = v.generation_metadata?.parent_id
+      if (pid === sessionParentId) ids.add(v.id)
+    }
+    return ids
+  }, [gallery.videos, sessionParentId])
+
+  // Clicking a thumb in the main area = load its snapshot into sidebar,
+  // highlight it. The sidebar replaces wholesale (no dual-mode retention).
+  const handleOpenThumb = useCallback(
+    (video: SavedAiVideo) => {
+      sidebar.loadFromVideo(video)
+      setHighlightedId(video.id)
+    },
+    [sidebar],
+  )
+
+  // Wrap mode toggle to clear highlight (sidebar no longer represents any thumb)
+  const handleModeToggle = useCallback(
+    (mode: 'flf' | 'multishot') => {
+      sidebar.setMode(mode)
+      setHighlightedId(null)
+    },
+    [sidebar],
+  )
+
+  // Wrap clear prompts to clear highlight
+  const handleClearPrompts = useCallback(() => {
+    sidebar.clearPrompts()
+    setHighlightedId(null)
+  }, [sidebar])
+
+  // Decorate the sidebar return with our wrapped setters so the panel uses them
+  const decoratedSidebar = useMemo(
+    () => ({
+      ...sidebar,
+      setMode: handleModeToggle,
+      clearPrompts: handleClearPrompts,
+    }),
+    [sidebar, handleModeToggle, handleClearPrompts],
+  )
+
+  // Panel open/pinned state -- mirrors main page
   const [panelOpen, setPanelOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('genzen:video-panel-open') !== 'false'
@@ -59,25 +130,16 @@ function VideoPage() {
     localStorage.setItem('genzen:video-panel-pinned', String(panelPinned))
   }, [panelPinned])
 
-  // Selection for bulk actions
-  const selectionItems = gallery.videos.map((v) => v.id)
-  const selection = useSelection({ items: selectionItems })
-
-  const handleOpenVideo = useCallback(
-    (video: SavedAiVideo) => {
-      navigate({
-        to: '/dashboard/video/edit/$videoId',
-        params: { videoId: video.id },
-      })
-    },
-    [navigate],
-  )
-
   const handleDeleteVideo = useCallback(
     async (video: SavedAiVideo) => {
       await gallery.deleteVideo(video)
+      if (highlightedId === video.id) setHighlightedId(null)
+      // If we deleted the origin, bounce back to main
+      if (video.id === sessionParentId) {
+        navigate({ to: '/dashboard/video' })
+      }
     },
-    [gallery],
+    [gallery, highlightedId, sessionParentId, navigate],
   )
 
   const handleUploadToLibrary = useCallback(
@@ -94,6 +156,30 @@ function VideoPage() {
     isLoading: userImagesHook.isLoading,
   }
 
+  // Loading state
+  if (gallery.loadingGallery && !originVideo) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <span className="text-sm text-muted-foreground">Loading...</span>
+      </div>
+    )
+  }
+
+  if (!originVideo && !gallery.loadingGallery) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <p className="text-sm text-muted-foreground">Video not found.</p>
+        <Link
+          to="/dashboard/video"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back to all generations
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -105,12 +191,13 @@ function VideoPage() {
     >
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-medium">AI Video</h1>
-            <p className="text-xs text-muted-foreground">
-              {credits.balance !== null ? `${credits.balance} credits` : ''}
-            </p>
-          </div>
+          <Link
+            to="/dashboard/video"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to all generations
+          </Link>
           {!panelOpen && (
             <button
               onClick={() => setPanelOpen(true)}
@@ -128,45 +215,25 @@ function VideoPage() {
           loadingGallery={gallery.loadingGallery}
           thumbSize="lg"
           showInfo
-          onOpen={handleOpenVideo}
+          scopedIds={scopedIds}
+          activeId={highlightedId ?? undefined}
+          allowDelete
+          onOpen={handleOpenThumb}
           onDelete={handleDeleteVideo}
-          selectionActive={selection.count > 0}
-          isSelected={selection.isSelected}
-          onSelect={selection.toggle}
         />
-
-        <SelectionDrawer
-          count={selection.count}
-          onClear={selection.clearSelection}
-        >
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={async () => {
-              for (const v of gallery.videos) {
-                if (selection.isSelected(v.id)) {
-                  await gallery.deleteVideo(v)
-                }
-              }
-              selection.clearSelection()
-            }}
-          >
-            Delete selected
-          </Button>
-        </SelectionDrawer>
       </div>
 
-      {/* Generator sidebar -- mobile = fullscreen dialog, desktop = pinnable panel */}
+      {/* Sidebar -- same component as main page */}
       {isMobile ? (
         <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
           <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
             <MobileDialogHeader
-              title="Video"
+              title="Edit Video"
               onClose={() => setPanelOpen(false)}
             />
             <div className="flex-1 overflow-y-auto px-3 py-2">
               <VideoGeneratorPanel
-                sidebar={sidebar}
+                sidebar={decoratedSidebar}
                 userImages={userImagesData}
                 onUploadToLibrary={handleUploadToLibrary}
                 creditBalance={credits.balance}
@@ -191,7 +258,7 @@ function VideoPage() {
               )}
             >
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span className="text-xs text-muted-foreground">Video</span>
+                <span className="text-xs text-muted-foreground">Edit</span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setPanelPinned((p) => !p)}
@@ -214,7 +281,7 @@ function VideoPage() {
               </div>
               <div className="px-4 pb-4">
                 <VideoGeneratorPanel
-                  sidebar={sidebar}
+                  sidebar={decoratedSidebar}
                   userImages={userImagesData}
                   onUploadToLibrary={handleUploadToLibrary}
                   creditBalance={credits.balance}

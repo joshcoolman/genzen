@@ -1,24 +1,21 @@
 // Types
-export type { Generation } from './types'
+export type {
+  SavedAiVideo,
+  VideoMethod,
+  VideoShot,
+  VideoElement,
+  FlfSnapshot,
+  MultishotSnapshot,
+  VideoGenerationMetadata,
+} from './video-types'
+export { getVideoMethod } from './video-types'
 
 // Hooks
-export { useVideoWorkspacePage } from './hooks/use-video-workspace-page'
-export { useWorkspaces } from './hooks/use-workspaces'
-export { useActiveWorkspace } from './hooks/use-active-workspace'
-
-// Server
-export { getWorkspaces } from './server/get-workspaces.server'
-export { getVideoUrl } from './server/get-video-url.server'
+export { useVideos } from './hooks/use-videos'
+export { useVideoSidebar } from './hooks/use-video-sidebar'
+export type { UseVideoSidebarReturn } from './hooks/use-video-sidebar'
 
 // Components
-export { WorkspaceHeader } from './components/WorkspaceHeader'
-export { FramePanel } from './components/FramePanel'
-export { GenerationRow } from './components/GenerationRow'
 export { VideoCard } from './components/VideoCard'
 export { VideoGallery } from './components/VideoGallery'
-export { GenerationChain } from './components/GenerationChain'
-export { SelectionBar } from './components/SelectionBar'
-export { VideoSettingsPanel } from './components/VideoSettingsPanel'
 export { VideoGeneratorPanel } from './components/VideoGeneratorPanel'
-export { WorkspaceCard } from './components/WorkspaceCard'
-export { WorkspaceStrip } from './components/WorkspaceStrip'
