@@ -1,5 +1,4 @@
 import type { FrameStatus } from '../types'
-import { Button } from '@/components/ui/button'
 
 export function FrameImageArea({
   status,
@@ -16,7 +15,11 @@ export function FrameImageArea({
 }) {
   if (imageUrl && status !== 'generating') {
     return (
-      <div className="relative group">
+      <div
+        className="relative group cursor-pointer"
+        onClick={onChooseImage}
+        role={onChooseImage ? 'button' : undefined}
+      >
         <img
           src={imageUrl}
           alt="Frame"
@@ -24,9 +27,7 @@ export function FrameImageArea({
         />
         {onChooseImage && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 rounded-md">
-            <Button variant="outline" size="sm" onClick={onChooseImage}>
-              Change Image
-            </Button>
+            <span className="text-xs text-muted-foreground">Change Image</span>
           </div>
         )}
       </div>
@@ -50,14 +51,12 @@ export function FrameImageArea({
   }
 
   return (
-    <div className="aspect-video w-full rounded-md border border-dashed border-border bg-muted/30 flex items-center justify-center">
-      {onChooseImage ? (
-        <Button variant="outline" size="sm" onClick={onChooseImage}>
-          Choose Image
-        </Button>
-      ) : (
-        <p className="text-xs text-muted-foreground">{placeholder}</p>
-      )}
+    <div
+      className="aspect-video w-full rounded-md border border-dashed border-border bg-muted/30 flex items-center justify-center cursor-pointer hover:border-foreground/30 transition-colors"
+      onClick={onChooseImage}
+      role={onChooseImage ? 'button' : undefined}
+    >
+      <p className="text-xs text-muted-foreground">{placeholder}</p>
     </div>
   )
 }

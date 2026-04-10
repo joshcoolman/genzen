@@ -4,6 +4,7 @@ import {
   EDIT_MODELS,
   IMAGE_INPUT_MODELS,
 } from '@/features/ai-images/models'
+import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
 
 export const UNIFIED_GENERATE_MODELS: Array<UnifiedModel> =
   ALL_IMAGE_MODELS.map((m) => ({
@@ -39,10 +40,20 @@ export const UNIFIED_SIDEBAR_MODELS: Array<UnifiedModel> =
     }
   })
 
+export const UNIFIED_VIDEO_MODELS: Array<UnifiedModel> = ALL_VIDEO_MODELS.map(
+  (m) => ({
+    id: m.id,
+    name: m.name,
+    description: m.description,
+    capability: 'video' as const,
+  }),
+)
+
 export function getModelsByCapability(
   capability: ModelCapability,
 ): Array<UnifiedModel> {
   if (capability === 'sidebar') return UNIFIED_SIDEBAR_MODELS
+  if (capability === 'video') return UNIFIED_VIDEO_MODELS
   return capability === 'generate'
     ? UNIFIED_GENERATE_MODELS
     : UNIFIED_EDIT_MODELS
@@ -50,5 +61,6 @@ export function getModelsByCapability(
 
 export function getDefaultSelectedId(capability: ModelCapability): string {
   if (capability === 'sidebar') return UNIFIED_SIDEBAR_MODELS[0]?.id ?? ''
+  if (capability === 'video') return ALL_VIDEO_MODELS[0].id
   return capability === 'generate' ? ALL_IMAGE_MODELS[0].id : EDIT_MODELS[0].id
 }

@@ -1,4 +1,6 @@
+import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Pin, PinOff, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -10,16 +12,20 @@ import {
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
 import {
-  FramePanel,
   GenerationRow,
   SelectionBar,
-  VideoSettingsPanel,
+  VideoGeneratorPanel,
   WorkspaceHeader,
   WorkspaceStrip,
   useActiveWorkspace,
   useVideoWorkspacePage,
 } from '@/features/ai-video'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { useIsMobile } from '@/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { useADOpen } from '@/lib/use-ad-open'
+import { useModelSelector } from '@/components/ModelSelector'
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/video/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -77,23 +83,87 @@ function VideoCreationView({
     onDeleted: aws.refresh,
   })
 
+  const isMobile = useIsMobile()
+  const { isOpen: isADOpen } = useADOpen()
+
+  const videoModelSelector = useModelSelector({
+    capability: 'video',
+    mode: 'single',
+  })
+
+  // Sync shared ModelSelector selection → videoSettings.videoModel
+  useEffect(() => {
+    const selectedId = videoModelSelector.selectedIds[0]
+    if (selectedId && selectedId !== page.videoGen.videoSettings.videoModel) {
+      page.videoGen.setVideoSettings({
+        ...page.videoGen.videoSettings,
+        videoModel: selectedId,
+      })
+    }
+  }, [videoModelSelector.selectedIds])
+
+  const handleUploadToLibrary = useCallback(
+    async (file: File) => {
+      await page.userImages.create({ file, title: file.name })
+    },
+    [page.userImages],
+  )
+
   const headerVariant = aws.workspaceCount <= 1 ? 'minimal' : 'full'
 
   const userImagesData = {
     images: page.userImages.images,
     imageUrls: page.userImages.imageUrls,
+    originalUrls: page.userImages.originalUrls,
     isLoading: page.userImages.isLoading,
   }
 
+  // Panel open/pinned state — matches AI Images pattern
+  const [panelOpen, setPanelOpen] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:video-panel-open') !== 'false'
+  })
+
+  const [panelPinned, setPanelPinned] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return localStorage.getItem('genzen:video-panel-pinned') !== 'false'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('genzen:video-panel-open', String(panelOpen))
+  }, [panelOpen])
+
+  useEffect(() => {
+    localStorage.setItem('genzen:video-panel-pinned', String(panelPinned))
+  }, [panelPinned])
+
   return (
-    <div className="flex -m-6">
-      <div className="flex-1 p-6 space-y-5 min-w-0">
-        <WorkspaceHeader
-          wsName={page.wsName}
-          creditBalance={page.credits.balance}
-          onDelete={page.wsDelete.startDelete}
-          variant={headerVariant}
-        />
+    <div
+      className={cn(
+        'transition-all duration-300',
+        panelOpen && panelPinned && !isADOpen && 'mr-80',
+        panelOpen && panelPinned && isADOpen && !isMobile && 'mr-[640px]',
+        !panelPinned && isADOpen && !isMobile && 'mr-80',
+      )}
+    >
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <WorkspaceHeader
+            wsName={page.wsName}
+            creditBalance={page.credits.balance}
+            onDelete={page.wsDelete.startDelete}
+            variant={headerVariant}
+          />
+          {!panelOpen && (
+            <button
+              onClick={() => setPanelOpen(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+              title="Open video settings"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
+        </div>
 
         <ConfirmDialog
           open={page.wsDelete.deleteStep === 1}
@@ -123,39 +193,6 @@ function VideoCreationView({
           onConfirm={page.wsDelete.handleConfirmStep2}
           loading={page.wsDelete.deleting}
         />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FramePanel
-            type="first"
-            status={page.firstFrame.status}
-            url={page.firstFrame.url}
-            error={page.firstFrame.error}
-            onFileSelected={page.firstFrameGen.setSourceFile}
-            onImageFromUrl={page.firstFrameGen.setSourceFromUrl}
-            userImages={userImagesData}
-          />
-
-          <FramePanel
-            type="last"
-            status={page.lastFrame.status}
-            url={page.lastFrame.url}
-            error={page.lastFrame.error}
-            onFileSelected={page.lastFrameGen.setSourceFile}
-            onImageFromUrl={page.lastFrameGen.setSourceFromUrl}
-            userImages={userImagesData}
-          />
-        </div>
-
-        {page.firstFrame.status !== 'idle' && (
-          <div className="flex justify-end">
-            <button
-              onClick={page.resetAllState}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              + Start new generation
-            </button>
-          </div>
-        )}
 
         {aws.workspaceCount >= 2 && (
           <WorkspaceStrip
@@ -215,18 +252,107 @@ function VideoCreationView({
         />
       </div>
 
-      <aside className="hidden md:block w-72 shrink-0 border-l border-border bg-sidebar sticky top-0 h-screen overflow-y-auto p-4">
-        <VideoSettingsPanel
-          settings={page.videoGen.videoSettings}
-          onChange={page.videoGen.setVideoSettings}
-          onGenerate={page.videoGen.handleGenerateVideo}
-          disabled={
-            page.firstFrame.status !== 'completed' || !page.firstFrame.recordId
-          }
-          generating={page.videoGen.generatingVideo}
-          firstFrameReady={page.firstFrame.status === 'completed'}
-        />
-      </aside>
+      {/* Generator panel — full-screen dialog on mobile, right sidebar on desktop */}
+      {isMobile ? (
+        <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
+          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+            <MobileDialogHeader
+              title="Video Settings"
+              onClose={() => setPanelOpen(false)}
+            />
+            <div className="flex-1 overflow-y-auto px-3 py-2">
+              <VideoGeneratorPanel
+                modelSelector={videoModelSelector}
+                firstFrameStatus={page.firstFrame.status}
+                firstFrameUrl={page.firstFrame.url}
+                firstFrameError={page.firstFrame.error}
+                onFirstFrameImageFromUrl={page.firstFrameGen.setSourceFromUrl}
+                lastFrameStatus={page.lastFrame.status}
+                lastFrameUrl={page.lastFrame.url}
+                lastFrameError={page.lastFrame.error}
+                onLastFrameImageFromUrl={page.lastFrameGen.setSourceFromUrl}
+                settings={page.videoGen.videoSettings}
+                onSettingsChange={page.videoGen.setVideoSettings}
+                onGenerate={page.videoGen.handleGenerateVideo}
+                generating={page.videoGen.generatingVideo}
+                userImages={userImagesData}
+                onReset={page.resetAllState}
+                showReset={page.firstFrame.status !== 'idle'}
+                onUploadToLibrary={handleUploadToLibrary}
+                creditBalance={page.credits.balance}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <>
+          {/* Dismiss overlay when unpinned */}
+          {panelOpen && !panelPinned && (
+            <div
+              className="fixed inset-0 z-20"
+              onClick={() => setPanelOpen(false)}
+            />
+          )}
+
+          {/* Right sidebar panel */}
+          {panelOpen && (
+            <div
+              className={cn(
+                'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
+                isADOpen ? 'right-80' : 'right-0',
+                !panelPinned && 'shadow-xl',
+              )}
+            >
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <span className="text-xs text-muted-foreground">
+                  Video Settings
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPanelPinned((p) => !p)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
+                  >
+                    {panelPinned ? (
+                      <Pin className="h-3.5 w-3.5" />
+                    ) : (
+                      <PinOff className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setPanelOpen(false)}
+                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="px-4 pb-4">
+                <VideoGeneratorPanel
+                  modelSelector={videoModelSelector}
+                  firstFrameStatus={page.firstFrame.status}
+                  firstFrameUrl={page.firstFrame.url}
+                  firstFrameError={page.firstFrame.error}
+                  onFirstFrameImageFromUrl={page.firstFrameGen.setSourceFromUrl}
+                  lastFrameStatus={page.lastFrame.status}
+                  lastFrameUrl={page.lastFrame.url}
+                  lastFrameError={page.lastFrame.error}
+                  onLastFrameImageFromUrl={page.lastFrameGen.setSourceFromUrl}
+                  settings={page.videoGen.videoSettings}
+                  onSettingsChange={page.videoGen.setVideoSettings}
+                  onGenerate={page.videoGen.handleGenerateVideo}
+                  generating={page.videoGen.generatingVideo}
+                  userImages={userImagesData}
+                  onReset={page.resetAllState}
+                  showReset={page.firstFrame.status !== 'idle'}
+                  onUploadToLibrary={handleUploadToLibrary}
+                  creditBalance={page.credits.balance}
+                />
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       <Dialog open={aws.dialogOpen} onOpenChange={aws.setDialogOpen}>
         <DialogContent>

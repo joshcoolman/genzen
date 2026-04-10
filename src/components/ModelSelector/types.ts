@@ -1,4 +1,4 @@
-export type ModelCapability = 'generate' | 'edit' | 'sidebar'
+export type ModelCapability = 'generate' | 'edit' | 'sidebar' | 'video'
 export type SelectionMode = 'single' | 'multi'
 
 export interface UnifiedModel {
