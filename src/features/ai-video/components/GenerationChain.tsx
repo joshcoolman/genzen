@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, Play, Trash2  } from 'lucide-react'
+import { ArrowLeft, Play, Trash2 } from 'lucide-react'
 import type { Generation } from '../types'
 import { Thumbnail } from '@/components/Thumbnail'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'

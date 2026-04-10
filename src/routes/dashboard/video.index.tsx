@@ -37,9 +37,16 @@ import { useADOpen } from '@/lib/use-ad-open'
 import { useModelSelector } from '@/components/ModelSelector'
 import { cn } from '@/lib/utils'
 import { deleteGeneration as deleteGenerationServer } from '@/features/ai-video/server/delete-generation.server'
+import { ActionButton } from '@/components/ActionButton'
+import { SequenceGrid, useMultishotSequences } from '@/features/multi-shot'
+import { saveSequence } from '@/features/multi-shot/server/save-sequence.server'
+import { DEFAULT_SETTINGS } from '@/features/multi-shot/types'
+
+type VideoMode = 'flf' | 'multishot'
 
 export const Route = createFileRoute('/dashboard/video/')({
   validateSearch: (search: Record<string, unknown>) => ({
+    mode: (search.mode === 'multishot' ? 'multishot' : 'flf') as VideoMode,
     workspaceId:
       typeof search.workspaceId === 'string' ? search.workspaceId : undefined,
     generationId:
@@ -79,20 +86,174 @@ function storePrefs(partial: Partial<VideoPrefs>) {
   } catch {}
 }
 
+// -- Mode tabs --
+
+const MODE_TABS: Array<{ value: VideoMode; label: string }> = [
+  { value: 'flf', label: 'First/Last Frame' },
+  { value: 'multishot', label: 'Multi-Shot' },
+]
+
+function VideoModeTabs({
+  mode,
+  onChange,
+}: {
+  mode: VideoMode
+  onChange: (mode: VideoMode) => void
+}) {
+  return (
+    <div className="flex items-center gap-1 border-b border-border mb-5">
+      {MODE_TABS.map((tab) => (
+        <button
+          key={tab.value}
+          onClick={() => onChange(tab.value)}
+          className={cn(
+            'px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
+            mode === tab.value
+              ? 'border-accent-brand text-foreground'
+              : 'border-transparent text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// -- Multi-Shot list (embedded) --
+
+function MultiShotListContent() {
+  const { session } = useAuth()
+  const accessToken = session?.access_token
+  const navigate = useNavigate()
+  const sequences = useMultishotSequences({ accessToken })
+  const [creating, setCreating] = useState(false)
+
+  const handleNewSequence = async () => {
+    if (!accessToken) return
+    setCreating(true)
+    try {
+      const { id } = await saveSequence({
+        data: {
+          accessToken,
+          name: 'Untitled',
+          shots: [{ id: crypto.randomUUID(), prompt: '', duration: 5 }],
+          elements: [],
+          settings: DEFAULT_SETTINGS,
+        },
+      })
+      navigate({
+        to: '/dashboard/multi-shot/$sequenceId',
+        params: { sequenceId: id },
+      })
+    } catch {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium">Sequences</h2>
+        <ActionButton
+          onClick={handleNewSequence}
+          loading={creating}
+          loadingText="Creating..."
+          icon={<Plus className="h-4 w-4" />}
+        >
+          New Sequence
+        </ActionButton>
+      </div>
+
+      <SequenceGrid
+        sequences={sequences.sequences}
+        loading={sequences.loading}
+        onNavigate={(id) =>
+          navigate({
+            to: '/dashboard/multi-shot/$sequenceId',
+            params: { sequenceId: id },
+          })
+        }
+        onDuplicate={sequences.handleDuplicate}
+        onDelete={sequences.handleDelete}
+      />
+    </div>
+  )
+}
+
+// -- Main page --
+
 function VideoPage() {
   const { session } = useAuth()
-  const { workspaceId: searchWorkspaceId, generationId } = Route.useSearch()
+  const {
+    mode,
+    workspaceId: searchWorkspaceId,
+    generationId,
+  } = Route.useSearch()
+  const navigate = useNavigate()
+
+  const handleModeChange = useCallback(
+    (newMode: VideoMode) => {
+      navigate({
+        to: '/dashboard/video',
+        search: {
+          mode: newMode,
+          workspaceId: undefined,
+          generationId: undefined,
+        },
+        replace: true,
+      })
+    },
+    [navigate],
+  )
+
+  if (mode === 'multishot') {
+    return (
+      <div>
+        <VideoModeTabs mode={mode} onChange={handleModeChange} />
+        <MultiShotListContent />
+      </div>
+    )
+  }
+
+  return (
+    <FLFVideoPage
+      searchWorkspaceId={searchWorkspaceId}
+      generationId={generationId}
+      accessToken={session?.access_token}
+      mode={mode}
+      onModeChange={handleModeChange}
+    />
+  )
+}
+
+function FLFVideoPage({
+  searchWorkspaceId,
+  generationId,
+  accessToken,
+  mode,
+  onModeChange,
+}: {
+  searchWorkspaceId: string | undefined
+  generationId: string | undefined
+  accessToken: string | undefined
+  mode: VideoMode
+  onModeChange: (mode: VideoMode) => void
+}) {
   const navigate = useNavigate()
 
   const aws = useActiveWorkspace({
-    accessToken: session?.access_token,
+    accessToken,
     initialWorkspaceId: searchWorkspaceId,
   })
 
   if (aws.loading || !aws.activeWorkspaceId) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-sm text-muted-foreground">Loading...</div>
+      <div>
+        <VideoModeTabs mode={mode} onChange={onModeChange} />
+        <div className="flex items-center justify-center py-24">
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        </div>
       </div>
     )
   }
@@ -103,6 +264,8 @@ function VideoPage() {
       generationId={generationId}
       aws={aws}
       navigate={navigate}
+      mode={mode}
+      onModeChange={onModeChange}
     />
   )
 }
@@ -112,11 +275,15 @@ function VideoCreationView({
   generationId,
   aws,
   navigate,
+  mode,
+  onModeChange,
 }: {
   workspaceId: string
   generationId: string | undefined
   aws: ReturnType<typeof useActiveWorkspace>
   navigate: ReturnType<typeof useNavigate>
+  mode: VideoMode
+  onModeChange: (mode: VideoMode) => void
 }) {
   const page = useVideoWorkspacePage({
     workspaceId,
@@ -294,6 +461,7 @@ function VideoCreationView({
         !panelPinned && isADOpen && !isMobile && 'mr-80',
       )}
     >
+      <VideoModeTabs mode={mode} onChange={onModeChange} />
       <div className="space-y-5">
         <div className="flex items-center justify-between">
           <WorkspaceHeader

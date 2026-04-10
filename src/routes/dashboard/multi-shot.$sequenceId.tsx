@@ -53,7 +53,12 @@ function SequenceDetailPage() {
       <div className="flex gap-4">
         <div className="w-80 shrink-0 flex items-center">
           <Link
-            to="/dashboard/multi-shot"
+            to="/dashboard/video"
+            search={{
+              mode: 'multishot' as const,
+              workspaceId: undefined,
+              generationId: undefined,
+            }}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3 w-3" />

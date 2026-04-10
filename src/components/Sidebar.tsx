@@ -57,11 +57,14 @@ export function Sidebar({ className }: { className?: string }) {
     navigate({ to: '/' })
   }
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
+  const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
+    if (item.href === '/dashboard') {
       return location.pathname === '/dashboard'
     }
-    return location.pathname.startsWith(href)
+    if (location.pathname.startsWith(item.href)) return true
+    return (
+      item.matchPaths?.some((p) => location.pathname.startsWith(p)) ?? false
+    )
   }
 
   return (
@@ -76,7 +79,7 @@ export function Sidebar({ className }: { className?: string }) {
       <TooltipProvider delayDuration={0}>
         <nav className="flex-1 space-y-1 p-4">
           {visibleItems.map((item) => {
-            const active = isActive(item.href)
+            const active = isActive(item)
             return (
               <div key={item.href}>
                 {item.dividerBefore && (
@@ -139,7 +142,7 @@ export function Sidebar({ className }: { className?: string }) {
                     isCollapsed
                       ? 'justify-center'
                       : 'justify-center md:justify-start',
-                    isActive(item.href)
+                    isActive(item)
                       ? cn(
                           'bg-sidebar-selected text-sidebar-selected-text',
                           !isCollapsed &&

@@ -1,6 +1,5 @@
 import {
   Camera,
-  Clapperboard,
   Clock,
   Film,
   FlaskConical,
@@ -21,6 +20,7 @@ export interface NavItem {
   activeOnly?: boolean
   dividerBefore?: boolean
   alwaysVisible?: boolean
+  matchPaths?: Array<string>
 }
 
 export const navItems: Array<NavItem> = [
@@ -37,13 +37,7 @@ export const navItems: Array<NavItem> = [
     href: '/dashboard/video',
     icon: Film,
     activeOnly: true,
-  },
-  {
-    id: 'multi-shot',
-    label: 'Multi-Shot',
-    href: '/dashboard/multi-shot',
-    icon: Clapperboard,
-    activeOnly: true,
+    matchPaths: ['/dashboard/multi-shot'],
   },
   {
     id: 'scenes',
