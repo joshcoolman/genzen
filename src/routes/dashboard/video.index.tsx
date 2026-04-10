@@ -176,8 +176,23 @@ function VideoPage() {
   const handleBulkMove = useCallback(() => {
     const selected = gallery.videos.filter((v) => selection.isSelected(v.id))
     if (selected.length === 0) return
+    // Disallow moving any video that already has children -- the gallery
+    // only renders one level of parent/child nesting, so deeper chains
+    // would orphan grandchildren.
+    const anyIsParent = selected.some((v) =>
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
+    )
+    if (anyIsParent) return
     reparent.startAdoptBatch(selected)
   }, [gallery.videos, selection, reparent])
+
+  const bulkMoveDisabledReason = gallery.videos.some(
+    (v) =>
+      selection.isSelected(v.id) &&
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
+  )
+    ? 'Cannot move a video that has children'
+    : undefined
 
   const hasSelectedParent = gallery.videos.some(
     (v) =>
@@ -275,7 +290,8 @@ function VideoPage() {
           <Button
             variant="ghost"
             size="sm"
-            disabled={reparent.isReparenting}
+            disabled={reparent.isReparenting || !!bulkMoveDisabledReason}
+            title={bulkMoveDisabledReason}
             onClick={handleBulkMove}
           >
             <ArrowUpRight className="mr-1 h-3 w-3" />

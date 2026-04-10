@@ -50,14 +50,15 @@ export function VideoGeneratorPanel({
     mode: 'single',
   })
 
-  // Sync selected model from ModelSelector into sidebar state on change
-  if (
-    isFlf &&
-    modelSelector.selectedIds[0] &&
-    modelSelector.selectedIds[0] !== sidebar.videoModel
-  ) {
-    sidebar.setVideoModel(modelSelector.selectedIds[0])
-  }
+  // In FLF mode, the sidebar's videoModel is the source of truth. Edit view
+  // rehydrates it from the selected video's snapshot via loadFromVideo(), so
+  // we can't let the locally-persisted model selector overwrite it. Drive the
+  // selector directly from sidebar state, and forward user clicks back to
+  // setVideoModel.
+  const flfSelectedIds = isFlf
+    ? [sidebar.videoModel]
+    : modelSelector.selectedIds
+  const handleToggleFlfModel = (id: string) => sidebar.setVideoModel(id)
 
   const selectedModel = getVideoModel(sidebar.videoModel)
   const durations = selectedModel?.durations ?? ['5', '10']
@@ -117,9 +118,9 @@ export function VideoGeneratorPanel({
           display="dropdown"
           mode="single"
           persistKey="genzen:video-model-panel:expanded"
-          selectedIds={modelSelector.selectedIds}
+          selectedIds={flfSelectedIds}
           visibleModels={modelSelector.models}
-          onToggleSelected={modelSelector.toggleSelected}
+          onToggleSelected={handleToggleFlfModel}
         />
       )}
 

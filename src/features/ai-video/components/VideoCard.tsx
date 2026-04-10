@@ -138,7 +138,7 @@ export function VideoCard({
             Download
           </DropdownMenuItem>
         )}
-        {onStartAdopt && (
+        {onStartAdopt && !hasChildren && (
           <DropdownMenuItem onClick={() => onStartAdopt(video)}>
             <ArrowUpRight className="h-4 w-4" />
             Move
