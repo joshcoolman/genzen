@@ -24,6 +24,8 @@ interface VideoGalleryProps {
   allowDelete?: boolean
   onOpen?: (video: SavedAiVideo) => void
   onDelete?: (video: SavedAiVideo) => void
+  onCaptureFrame?: (video: SavedAiVideo, imageBase64: string) => Promise<void>
+  onRemoveThumb?: (video: SavedAiVideo) => void
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
@@ -40,6 +42,8 @@ export function VideoGallery({
   allowDelete = true,
   onOpen,
   onDelete,
+  onCaptureFrame,
+  onRemoveThumb,
   selectionActive,
   isSelected,
   onSelect,
@@ -165,6 +169,8 @@ export function VideoGallery({
             onOpen={onOpen}
             onSelect={onSelect}
             onDelete={allowDelete ? onDelete : undefined}
+            onCaptureFrame={onCaptureFrame}
+            onRemoveThumb={onRemoveThumb}
           />
         )
       })}

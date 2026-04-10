@@ -1,10 +1,17 @@
 import { useState } from 'react'
-import { Play, Trash2 } from 'lucide-react'
+import { ImageIcon, ImageOff, MoreHorizontal, Play, Trash2 } from 'lucide-react'
+import { VideoFramePickerDialog } from './VideoFramePickerDialog'
 import type { SavedAiVideo } from '../video-types'
 import { Thumbnail } from '@/components/Thumbnail'
+import { ExpandableText } from '@/components/ExpandableText'
 import { ExpandableIconButton } from '@/components/ExpandableIconButton'
 import { VideoPlayerDialog } from '@/components/video-player-dialog'
-import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface VideoCardProps {
   video: SavedAiVideo
@@ -18,10 +25,35 @@ interface VideoCardProps {
   onOpen?: (video: SavedAiVideo) => void
   onSelect?: (id: string, shiftKey: boolean) => void
   onDelete?: (video: SavedAiVideo) => void
+  /**
+   * Called after the user picks a frame in the thumbnail picker dialog.
+   * Receives the capturing video and a JPEG data URL. Expected to upload
+   * it and update the row's thumbnail_path.
+   */
+  onCaptureFrame?: (video: SavedAiVideo, imageBase64: string) => Promise<void>
+  onRemoveThumb?: (video: SavedAiVideo) => void
 }
 
 function getVideoUrl(video: SavedAiVideo): string | null {
   return video.generation_metadata?.fal_url ?? null
+}
+
+function getPromptText(video: SavedAiVideo): string | null {
+  const meta = video.generation_metadata
+  if (!meta) return null
+  // FLF: transition prompt. Multishot: concatenate shot prompts.
+  const flfPrompt =
+    (meta as { transition_prompt?: string }).transition_prompt ??
+    (meta as { prompt?: string }).prompt
+  if (flfPrompt) return flfPrompt
+  const shots = (meta as { shots?: Array<{ prompt?: string }> }).shots
+  if (shots && shots.length > 0) {
+    return shots
+      .map((s) => s.prompt)
+      .filter(Boolean)
+      .join(' · ')
+  }
+  return null
 }
 
 export function VideoCard({
@@ -35,9 +67,12 @@ export function VideoCard({
   onOpen,
   onSelect,
   onDelete,
+  onCaptureFrame,
+  onRemoveThumb,
 }: VideoCardProps) {
   const [playerOpen, setPlayerOpen] = useState(false)
   const [playingUrl, setPlayingUrl] = useState<string | null>(null)
+  const [framePickerOpen, setFramePickerOpen] = useState(false)
 
   const childCount = children?.length ?? 0
   const videoUrl = getVideoUrl(video)
@@ -47,6 +82,8 @@ export function VideoCard({
     : video.status === 'failed'
       ? 'failed'
       : 'complete'
+
+  const promptText = getPromptText(video)
 
   const handleClick = (e?: React.MouseEvent) => {
     if (selectionActive && onSelect) {
@@ -66,7 +103,7 @@ export function VideoCard({
     <>
       <Thumbnail
         url={thumbnailUrl}
-        objectFit="cover"
+        objectFit="contain"
         status={thumbnailStatus}
         pendingLabel="Processing..."
         pendingBackgroundUrl={thumbnailUrl ?? undefined}
@@ -83,16 +120,41 @@ export function VideoCard({
             : undefined
         }
         overlayActions={
-          onDelete ? (
-            <ExpandableIconButton
-              icon={<Trash2 className="h-3.5 w-3.5" />}
-              label="Delete"
-              variant="destructive"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(video)
-              }}
-            />
+          onDelete || onCaptureFrame || onRemoveThumb ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <ExpandableIconButton
+                  icon={<MoreHorizontal className="h-3.5 w-3.5" />}
+                  label="More actions"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {onCaptureFrame && videoUrl && !isPending && (
+                  <DropdownMenuItem onClick={() => setFramePickerOpen(true)}>
+                    <ImageIcon className="h-4 w-4" />
+                    Generate Thumb
+                  </DropdownMenuItem>
+                )}
+                {onRemoveThumb && video.thumbnail_path && (
+                  <DropdownMenuItem onClick={() => onRemoveThumb(video)}>
+                    <ImageOff className="h-4 w-4" />
+                    Remove Thumb
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={() => onDelete(video)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : undefined
         }
         overlayActionsBottomRight={
@@ -105,37 +167,47 @@ export function VideoCard({
             </button>
           ) : undefined
         }
-        footer={
-          showInfo ? (
-            <div className="px-3 py-2 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">
-                  {new Date(video.created_at).toLocaleDateString()}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {childCount + 1} gens
-                </span>
-              </div>
-              {childCount > 0 && children && (
-                <div className="flex gap-1">
-                  {children.slice(0, 4).map((c) => {
+        imageOverlay={
+          selectionActive && onSelect ? (
+            <div
+              className="absolute inset-0 z-10 cursor-pointer select-none"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelect(video.id, e.shiftKey)
+              }}
+            />
+          ) : undefined
+        }
+      >
+        {showInfo && (
+          <>
+            <ExpandableText
+              text={promptText ?? video.title}
+              className="px-3 pt-2 pb-3"
+              textClassName="text-xs text-muted-foreground"
+            />
+            {childCount > 0 && children && (
+              <div className="px-1.5 pb-1.5">
+                <div className="flex flex-wrap gap-1">
+                  {children.slice(0, 6).map((c) => {
                     const cvUrl = getVideoUrl(c.video)
                     return (
                       <button
                         key={c.video.id}
-                        onClick={(e) =>
-                          cvUrl ? handlePlay(cvUrl, e) : e.stopPropagation()
-                        }
-                        className={cn(
-                          'relative w-10 h-10 rounded bg-black flex items-center justify-center',
-                          'border border-border hover:border-foreground/30 transition-colors',
-                        )}
+                        onClick={(e) => {
+                          if (cvUrl) {
+                            handlePlay(cvUrl, e)
+                          } else {
+                            e.stopPropagation()
+                          }
+                        }}
+                        className="relative w-10 h-10 rounded bg-black flex items-center justify-center border border-border hover:border-foreground/30 transition-colors overflow-hidden"
                       >
                         {c.thumbnailUrl && (
                           <img
                             src={c.thumbnailUrl}
                             alt=""
-                            className="absolute inset-0 w-full h-full object-cover rounded opacity-50"
+                            className="absolute inset-0 w-full h-full object-cover opacity-70"
                           />
                         )}
                         <Play
@@ -146,16 +218,26 @@ export function VideoCard({
                     )
                   })}
                 </div>
-              )}
-            </div>
-          ) : undefined
-        }
-      />
+              </div>
+            )}
+          </>
+        )}
+      </Thumbnail>
       <VideoPlayerDialog
         videoUrl={playingUrl}
         open={playerOpen}
         onOpenChange={setPlayerOpen}
       />
+      {onCaptureFrame && (
+        <VideoFramePickerDialog
+          open={framePickerOpen}
+          onOpenChange={setFramePickerOpen}
+          videoUrl={videoUrl}
+          onCapture={async (imageBase64) => {
+            await onCaptureFrame(video, imageBase64)
+          }}
+        />
+      )}
     </>
   )
 }

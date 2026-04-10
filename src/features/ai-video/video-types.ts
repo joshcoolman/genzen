@@ -61,7 +61,12 @@ export interface SavedAiVideo {
   id: string
   title: string
   storage_path: string | null
-  thumbnail_path?: string | null
+  /**
+   * Path in R2 to the extracted middle-frame poster. Populated by
+   * extract-video-thumbnail.server.ts after a video completes. Falls back
+   * to the source start/first frame URL in generation_metadata if null.
+   */
+  thumbnail_path: string | null
   created_at: string
   sort_order?: number | null
   status: 'pending' | 'processing' | 'completed' | 'failed'

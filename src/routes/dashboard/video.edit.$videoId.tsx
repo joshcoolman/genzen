@@ -220,6 +220,8 @@ function VideoEditPage() {
           allowDelete
           onOpen={handleOpenThumb}
           onDelete={handleDeleteVideo}
+          onCaptureFrame={gallery.captureFrame}
+          onRemoveThumb={gallery.removeThumbnail}
         />
       </div>
 

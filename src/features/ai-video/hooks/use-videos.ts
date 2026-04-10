@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiVideo } from '../video-types'
 import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import { createImageStorage } from '@/lib/image-storage'
+import { getR2PublicUrl } from '@/lib/image-storage'
 import { ungroupVideos } from '@/features/ai-video/server/ungroup-videos.server'
+import { extractVideoThumbnail } from '@/features/ai-video/server/extract-video-thumbnail.server'
+import { uploadVideoThumbnail } from '@/features/ai-video/server/upload-video-thumbnail.server'
 
 interface UseVideosOptions {
   userId: string | undefined
@@ -40,6 +42,8 @@ export interface VideoGalleryState {
   thumbnailUrls: Record<string, string>
   loadingGallery: boolean
   deleteVideo: (v: SavedAiVideo) => Promise<void>
+  captureFrame: (v: SavedAiVideo, imageBase64: string) => Promise<void>
+  removeThumbnail: (v: SavedAiVideo) => Promise<void>
   addOptimisticCard: (card: SavedAiVideo) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiVideo) => void
   removeOptimisticCard: (optimisticId: string) => void
@@ -47,10 +51,28 @@ export interface VideoGalleryState {
   refresh: () => Promise<void>
 }
 
-function getThumbnailPath(v: SavedAiVideo): string | null {
+function getThumbnailUrl(v: SavedAiVideo): string | null {
+  // Prefer the extracted / user-picked thumbnail stored as an R2 path --
+  // we resolve it synchronously to a public URL so there's no flash of a
+  // raw relative path hitting <img src>. Append a cache-bust based on the
+  // server-stamped thumbnail_updated_at so picking a new frame actually
+  // reloads (same storage_path + same URL = browser cache hit otherwise).
+  if (v.thumbnail_path) {
+    try {
+      const base = getR2PublicUrl(v.thumbnail_path)
+      const stamp = (
+        v.generation_metadata as { thumbnail_updated_at?: number } | null
+      )?.thumbnail_updated_at
+      return stamp ? `${base}?v=${stamp}` : base
+    } catch {
+      // fall through to source frame
+    }
+  }
+
   const meta = v.generation_metadata
   if (!meta) return null
-  // Multishot stores start_image_url, FLF stores first_frame_url
+  // Source start / first frame URL is already a full http URL (stored at
+  // generation time from the user's library or outpaint flow).
   const candidate =
     (meta as { start_image_url?: string }).start_image_url ??
     (meta as { first_frame_url?: string }).first_frame_url ??
@@ -96,7 +118,7 @@ export function useVideos({
       // future work can re-sign from storage_path on demand.
       const urls: Record<string, string> = {}
       for (const v of sorted) {
-        const path = getThumbnailPath(v)
+        const path = getThumbnailUrl(v)
         if (path) urls[v.id] = path
       }
       setThumbnailUrls(urls)
@@ -160,7 +182,7 @@ export function useVideos({
             })
 
             // Add thumbnail URL for the new video
-            const thumb = getThumbnailPath(newVideo)
+            const thumb = getThumbnailUrl(newVideo)
             if (thumb) {
               setThumbnailUrls((prev) => ({ ...prev, [newVideo.id]: thumb }))
             }
@@ -187,7 +209,7 @@ export function useVideos({
               return sortByOrder([...prev, updated])
             })
 
-            const thumb = getThumbnailPath(updated)
+            const thumb = getThumbnailUrl(updated)
             if (thumb) {
               setThumbnailUrls((prev) => ({ ...prev, [updated.id]: thumb }))
             }
@@ -239,37 +261,77 @@ export function useVideos({
     }
   }, [videos, accessToken])
 
-  // Resolve thumbnail URL from storage_path if needed -- for videos the
-  // thumbnail lives in generation_metadata.start_image_url/first_frame_url.
-  // If that URL is an R2 storage path rather than a full URL, resolve it.
-  useEffect(() => {
-    const needsResolving = videos.filter((v) => {
-      const current = thumbnailUrls[v.id]
-      return (
-        current &&
-        !current.startsWith('http') &&
-        !current.startsWith('data:') &&
-        !current.startsWith('blob:')
-      )
-    })
-    if (needsResolving.length === 0) return
+  // Thumbnail URLs are resolved synchronously in getThumbnailUrl via
+  // getR2PublicUrl, so no async resolver effect is needed. Stored paths
+  // turn into full public URLs the moment they land in state, which
+  // prevents a brief 404 flash of the raw R2 path hitting <img src>.
 
-    Promise.all(
-      needsResolving.map(async (v) => {
-        const path = thumbnailUrls[v.id]
-        const url = await createImageStorage(supabase).getUrl(path)
-        return url ? ([v.id, url] as const) : null
-      }),
-    ).then((entries) => {
-      const resolved: Record<string, string> = {}
-      for (const entry of entries) {
-        if (entry) resolved[entry[0]] = entry[1]
+  // Auto-extract middle-frame thumbnail for any completed video that doesn't
+  // have one yet. Runs on mount and whenever the video list changes (e.g. a
+  // new gen completes via realtime). Extraction is server-side via FAL ffmpeg
+  // and cheap (~$0.001 per 5s video). In-flight guard prevents duplicate
+  // calls on re-renders. Videos with generation_metadata.thumbnail_cleared
+  // are skipped -- those are ones the user explicitly removed.
+  const extractingRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (!accessToken) return
+    const candidates = videos.filter(
+      (v) =>
+        v.status === 'completed' &&
+        !v.thumbnail_path &&
+        !(v.generation_metadata as { thumbnail_cleared?: boolean } | null)
+          ?.thumbnail_cleared &&
+        typeof v.generation_metadata?.fal_url === 'string' &&
+        !extractingRef.current.has(v.id),
+    )
+    if (candidates.length === 0) return
+
+    for (const v of candidates) {
+      extractingRef.current.add(v.id)
+      extractVideoThumbnail({
+        data: { accessToken, videoId: v.id },
+      })
+        .catch(() => {
+          // silent -- gallery falls back to source frame
+        })
+        .finally(() => {
+          extractingRef.current.delete(v.id)
+        })
+    }
+  }, [videos, accessToken])
+
+  const captureFrame = useCallback(
+    async (v: SavedAiVideo, imageBase64: string) => {
+      if (!accessToken) return
+      try {
+        await uploadVideoThumbnail({
+          data: { accessToken, videoId: v.id, imageBase64 },
+        })
+      } catch (err) {
+        console.error('[use-videos] capture frame failed', err)
       }
-      if (Object.keys(resolved).length > 0) {
-        setThumbnailUrls((prev) => ({ ...prev, ...resolved }))
-      }
-    })
-  }, [videos, thumbnailUrls])
+    },
+    [accessToken],
+  )
+
+  const removeThumbnail = useCallback(async (v: SavedAiVideo) => {
+    // Null the thumbnail path and set the "cleared" flag so the auto-
+    // extractor won't immediately put a new one back. The card falls back
+    // to the source start/first frame.
+    try {
+      const existing = (v.generation_metadata ?? {}) as Record<string, unknown>
+      const nextMeta = { ...existing, thumbnail_cleared: true }
+      await supabase
+        .from('user_images')
+        .update({
+          thumbnail_path: null,
+          generation_metadata: nextMeta as never,
+        })
+        .eq('id', v.id)
+    } catch {
+      // silent
+    }
+  }, [])
 
   const deleteVideo = useCallback(
     async (v: SavedAiVideo) => {
@@ -320,6 +382,8 @@ export function useVideos({
     thumbnailUrls,
     loadingGallery,
     deleteVideo,
+    captureFrame,
+    removeThumbnail,
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,

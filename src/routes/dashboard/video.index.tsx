@@ -130,6 +130,8 @@ function VideoPage() {
           showInfo
           onOpen={handleOpenVideo}
           onDelete={handleDeleteVideo}
+          onCaptureFrame={gallery.captureFrame}
+          onRemoveThumb={gallery.removeThumbnail}
           selectionActive={selection.count > 0}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}
