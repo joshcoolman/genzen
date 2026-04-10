@@ -34,6 +34,7 @@ Unifying AI Video and Multi-Shot UX with AI Images conventions. This is a 4-phas
 ## Phase 2 (NEXT -- Video Gallery Grid)
 
 Replace horizontal `GenerationRow` list with thumbnail grid matching AI Images' `ImageGallery`:
+
 - New `src/features/ai-video/components/VideoGallery.tsx` -- grid using `ImageGrid` with video-specific cards
 - New `src/features/ai-video/components/VideoCard.tsx` -- wraps `Thumbnail` with play button overlay, status badge, model label
 - Gallery toolbar: thumb size toggle (lg/md/sm), sort toggle, info toggle, localStorage prefs `genzen:video-prefs`

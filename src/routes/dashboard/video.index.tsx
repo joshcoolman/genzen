@@ -1,6 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Pin, PinOff, Plus, X } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Info,
+  LayoutGrid,
+  Pin,
+  PinOff,
+  Plus,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,20 +21,22 @@ import {
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
 import {
-  GenerationRow,
-  SelectionBar,
   VideoGeneratorPanel,
   WorkspaceHeader,
   WorkspaceStrip,
   useActiveWorkspace,
   useVideoWorkspacePage,
 } from '@/features/ai-video'
+import { VideoGallery } from '@/features/ai-video/components/VideoGallery'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { SelectionDrawer } from '@/components/SelectionDrawer'
+import { useSelection } from '@/lib/use-selection'
 import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 import { useADOpen } from '@/lib/use-ad-open'
 import { useModelSelector } from '@/components/ModelSelector'
 import { cn } from '@/lib/utils'
+import { deleteGeneration as deleteGenerationServer } from '@/features/ai-video/server/delete-generation.server'
 
 export const Route = createFileRoute('/dashboard/video/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -36,6 +47,37 @@ export const Route = createFileRoute('/dashboard/video/')({
   }),
   component: VideoPage,
 })
+
+// -- Gallery prefs --
+
+const PREFS_KEY = 'genzen:video-prefs'
+const THUMB_LABELS: Record<string, string> = { lg: 'Lg', md: 'Md', sm: 'Sm' }
+const THUMB_CYCLE: Record<string, 'lg' | 'md' | 'sm'> = {
+  lg: 'md',
+  md: 'sm',
+  sm: 'lg',
+}
+
+interface VideoPrefs {
+  thumbSize: 'lg' | 'md' | 'sm'
+  sortAsc: boolean
+  showInfo: boolean
+}
+
+function getStoredPrefs(): VideoPrefs {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY)
+    if (raw) return JSON.parse(raw) as VideoPrefs
+  } catch {}
+  return { thumbSize: 'lg', sortAsc: false, showInfo: true }
+}
+
+function storePrefs(partial: Partial<VideoPrefs>) {
+  try {
+    const current = getStoredPrefs()
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...partial }))
+  } catch {}
+}
 
 function VideoPage() {
   const { session } = useAuth()
@@ -118,7 +160,7 @@ function VideoCreationView({
     isLoading: page.userImages.isLoading,
   }
 
-  // Panel open/pinned state — matches AI Images pattern
+  // Panel open/pinned state
   const [panelOpen, setPanelOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return localStorage.getItem('genzen:video-panel-open') !== 'false'
@@ -136,6 +178,112 @@ function VideoCreationView({
   useEffect(() => {
     localStorage.setItem('genzen:video-panel-pinned', String(panelPinned))
   }, [panelPinned])
+
+  // Gallery prefs
+  const [storedPrefs] = useState(getStoredPrefs)
+  const [thumbSize, setThumbSize] = useState(storedPrefs.thumbSize)
+  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+
+  const handleToggleThumbSize = useCallback(() => {
+    setThumbSize((v) => {
+      const next = THUMB_CYCLE[v]
+      storePrefs({ thumbSize: next })
+      return next
+    })
+  }, [])
+
+  const handleToggleSort = useCallback(() => {
+    setSortAsc((v) => {
+      storePrefs({ sortAsc: !v })
+      return !v
+    })
+  }, [])
+
+  const handleToggleInfo = useCallback(() => {
+    setShowInfo((v) => {
+      storePrefs({ showInfo: !v })
+      return !v
+    })
+  }, [])
+
+  // Active first frame (clicked card) -- loads into sidebar
+  const [activeFirstFrameId, setActiveFirstFrameId] = useState<string | null>(
+    null,
+  )
+
+  const handleActivateFirstFrame = useCallback(
+    (firstFrameId: string) => {
+      setActiveFirstFrameId(firstFrameId)
+      // Load the first frame into the sidebar
+      const group = page.gens.firstFrameGroups.find(
+        (g) => g.firstFrameId === firstFrameId,
+      )
+      if (group?.firstFrameUrl) {
+        page.firstFrameGen.setSourceFromUrl(group.firstFrameUrl, 'first-frame')
+      }
+      // Open panel if closed
+      if (!panelOpen) setPanelOpen(true)
+    },
+    [page.gens.firstFrameGroups, page.firstFrameGen, panelOpen],
+  )
+
+  const handleDeactivateFirstFrame = useCallback(() => {
+    setActiveFirstFrameId(null)
+  }, [])
+
+  // Sort groups
+  const sortedGroups = useMemo(() => {
+    const groups = [...page.gens.firstFrameGroups]
+    groups.sort((a, b) =>
+      sortAsc
+        ? a.latestDate.localeCompare(b.latestDate)
+        : b.latestDate.localeCompare(a.latestDate),
+    )
+    return groups
+  }, [page.gens.firstFrameGroups, sortAsc])
+
+  // Selection on first frame IDs
+  const selectionItems = useMemo(
+    () => sortedGroups.map((g) => g.firstFrameId),
+    [sortedGroups],
+  )
+  const selection = useSelection({ items: selectionItems })
+
+  // Delete a single generation
+  const handleDeleteGeneration = useCallback(
+    async (id: string) => {
+      if (!page.accessToken) return
+      try {
+        await deleteGenerationServer({
+          data: { generationId: id, accessToken: page.accessToken },
+        })
+        page.gens.deleteGeneration(id)
+      } catch (err) {
+        console.error('Failed to delete generation:', err)
+      }
+    },
+    [page.accessToken, page.gens],
+  )
+
+  // Delete all generations in a group
+  const handleDeleteGroup = useCallback(
+    async (generationIds: Array<string>) => {
+      if (!page.accessToken) return
+      for (const id of generationIds) {
+        try {
+          await deleteGenerationServer({
+            data: { generationId: id, accessToken: page.accessToken },
+          })
+          page.gens.deleteGeneration(id)
+        } catch (err) {
+          console.error('Failed to delete generation:', err)
+        }
+      }
+      setActiveFirstFrameId(null)
+    },
+    [page.accessToken, page.gens],
+  )
 
   return (
     <div
@@ -194,7 +342,7 @@ function VideoCreationView({
           loading={page.wsDelete.deleting}
         />
 
-        {aws.workspaceCount >= 2 && (
+        {aws.workspaceCount >= 2 && !activeFirstFrameId && (
           <WorkspaceStrip
             workspaces={aws.workspaces}
             activeWorkspaceId={aws.activeWorkspaceId}
@@ -203,53 +351,96 @@ function VideoCreationView({
           />
         )}
 
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium">Generations</h2>
-          {page.gens.generations.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-6 flex items-center justify-center">
-              <p className="text-xs text-muted-foreground">
-                Generated videos will appear here
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {page.gens.generations.map((gen) => (
-                <GenerationRow
-                  key={gen.id}
-                  generation={gen}
-                  selected={page.selection.selectedIds.has(gen.id)}
-                  onToggleSelect={page.selection.toggleSelect}
-                  onLoad={page.handleLoadGeneration}
-                  onContinue={page.handleContinueGeneration}
-                  onUpdate={page.gens.updateGeneration}
-                  onDelete={page.handleDeleteGeneration}
-                  onGenerateVideo={page.videoGen.handleGenerateVideoFromRow}
-                  onLastFrameCompleted={page.handleLastFrameCompleted}
-                  accessToken={page.accessToken}
-                />
-              ))}
-            </div>
+        {/* Gallery toolbar -- hidden in detail view */}
+        <div
+          className={cn(
+            'flex items-center justify-between',
+            activeFirstFrameId && 'hidden',
           )}
+        >
+          <h2 className="text-sm font-medium">Generations</h2>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleToggleThumbSize}
+              className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="text-[10px] font-medium">
+                {THUMB_LABELS[thumbSize]}
+              </span>
+            </button>
+            <button
+              onClick={handleToggleSort}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label={sortAsc ? 'Sort oldest first' : 'Sort newest first'}
+            >
+              {sortAsc ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
+            </button>
+            <button
+              onClick={handleToggleInfo}
+              className={`rounded-md p-1.5 transition-colors ${
+                showInfo
+                  ? 'text-foreground bg-muted'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+              aria-label={showInfo ? 'Hide info' : 'Show info'}
+            >
+              <Info className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <SelectionBar
-          selectedCount={page.selection.selectedIds.size}
-          isMoving={page.selection.isMoving}
-          onNewWorkspace={page.selection.openCreateDialog}
-          onMoveToWorkspace={page.selection.openMoveDialog}
-          onCancel={page.selection.clearSelection}
-          createDialogOpen={page.selection.createDialogOpen}
-          onCreateDialogChange={page.selection.setCreateDialogOpen}
-          newWorkspaceName={page.selection.newWorkspaceName}
-          onNewWorkspaceNameChange={page.selection.setNewWorkspaceName}
-          onCreateConfirm={page.selection.handleCreateAndMove}
-          moveDialogOpen={page.selection.moveDialogOpen}
-          onMoveDialogChange={page.selection.setMoveDialogOpen}
-          targetWorkspaceId={page.selection.targetWorkspaceId}
-          onTargetChange={page.selection.setTargetWorkspaceId}
-          availableWorkspaces={page.selection.availableWorkspaces}
-          onMoveConfirm={page.selection.handleMoveToWorkspace}
+        {/* Video gallery grid */}
+        <VideoGallery
+          groups={sortedGroups}
+          thumbSize={thumbSize}
+          showInfo={showInfo}
+          activeFirstFrameId={activeFirstFrameId}
+          onActivate={handleActivateFirstFrame}
+          onDeactivate={handleDeactivateFirstFrame}
+          selectionActive={selection.count > 0}
+          isSelected={selection.isSelected}
+          onSelect={selection.toggle}
+          onLoad={page.handleLoadGeneration}
+          onContinue={page.handleContinueGeneration}
+          onDelete={handleDeleteGeneration}
+          onDeleteGroup={handleDeleteGroup}
+          onGenerateVideo={page.videoGen.handleGenerateVideoFromRow}
+          accessToken={page.accessToken}
         />
+
+        {/* Selection drawer */}
+        <SelectionDrawer
+          count={selection.count}
+          onClear={selection.clearSelection}
+        >
+          <Button
+            size="sm"
+            onClick={() => {
+              // Collect all generation IDs from selected groups
+              const ids = new Set<string>()
+              for (const group of sortedGroups) {
+                if (selection.isSelected(group.firstFrameId)) {
+                  for (const gen of group.generations) {
+                    ids.add(gen.id)
+                  }
+                }
+              }
+              if (ids.size > 0) {
+                handleDeleteGroup([...ids])
+                selection.clearSelection()
+              }
+            }}
+            variant="destructive"
+          >
+            Delete selected
+          </Button>
+        </SelectionDrawer>
       </div>
 
       {/* Generator panel — full-screen dialog on mobile, right sidebar on desktop */}
@@ -286,7 +477,6 @@ function VideoCreationView({
         </Dialog>
       ) : (
         <>
-          {/* Dismiss overlay when unpinned */}
           {panelOpen && !panelPinned && (
             <div
               className="fixed inset-0 z-20"
@@ -294,7 +484,6 @@ function VideoCreationView({
             />
           )}
 
-          {/* Right sidebar panel */}
           {panelOpen && (
             <div
               className={cn(
