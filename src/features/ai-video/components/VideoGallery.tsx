@@ -24,6 +24,10 @@ interface VideoGalleryProps {
   allowDelete?: boolean
   onOpen?: (video: SavedAiVideo) => void
   onDelete?: (video: SavedAiVideo) => void
+  onStartAdopt?: (video: SavedAiVideo) => void
+  onUnlink?: (video: SavedAiVideo) => void
+  onUngroup?: (video: SavedAiVideo) => void
+  onDownload?: (video: SavedAiVideo) => void
   onCaptureFrame?: (video: SavedAiVideo, imageBase64: string) => Promise<void>
   onRemoveThumb?: (video: SavedAiVideo) => void
   selectionActive?: boolean
@@ -42,6 +46,10 @@ export function VideoGallery({
   allowDelete = true,
   onOpen,
   onDelete,
+  onStartAdopt,
+  onUnlink,
+  onUngroup,
+  onDownload,
   onCaptureFrame,
   onRemoveThumb,
   selectionActive,
@@ -169,6 +177,10 @@ export function VideoGallery({
             onOpen={onOpen}
             onSelect={onSelect}
             onDelete={allowDelete ? onDelete : undefined}
+            onStartAdopt={onStartAdopt}
+            onUnlink={onUnlink}
+            onUngroup={onUngroup}
+            onDownload={onDownload}
             onCaptureFrame={onCaptureFrame}
             onRemoveThumb={onRemoveThumb}
           />

@@ -1,5 +1,16 @@
 import { useState } from 'react'
-import { ImageIcon, ImageOff, MoreHorizontal, Play, Trash2 } from 'lucide-react'
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  Circle,
+  Download,
+  ImageIcon,
+  ImageOff,
+  MoreHorizontal,
+  Play,
+  Trash2,
+  Unlink,
+} from 'lucide-react'
 import { VideoFramePickerDialog } from './VideoFramePickerDialog'
 import type { SavedAiVideo } from '../video-types'
 import { Thumbnail } from '@/components/Thumbnail'
@@ -25,11 +36,10 @@ interface VideoCardProps {
   onOpen?: (video: SavedAiVideo) => void
   onSelect?: (id: string, shiftKey: boolean) => void
   onDelete?: (video: SavedAiVideo) => void
-  /**
-   * Called after the user picks a frame in the thumbnail picker dialog.
-   * Receives the capturing video and a JPEG data URL. Expected to upload
-   * it and update the row's thumbnail_path.
-   */
+  onStartAdopt?: (video: SavedAiVideo) => void
+  onUnlink?: (video: SavedAiVideo) => void
+  onUngroup?: (video: SavedAiVideo) => void
+  onDownload?: (video: SavedAiVideo) => void
   onCaptureFrame?: (video: SavedAiVideo, imageBase64: string) => Promise<void>
   onRemoveThumb?: (video: SavedAiVideo) => void
 }
@@ -41,7 +51,6 @@ function getVideoUrl(video: SavedAiVideo): string | null {
 function getPromptText(video: SavedAiVideo): string | null {
   const meta = video.generation_metadata
   if (!meta) return null
-  // FLF: transition prompt. Multishot: concatenate shot prompts.
   const flfPrompt =
     (meta as { transition_prompt?: string }).transition_prompt ??
     (meta as { prompt?: string }).prompt
@@ -67,6 +76,10 @@ export function VideoCard({
   onOpen,
   onSelect,
   onDelete,
+  onStartAdopt,
+  onUnlink,
+  onUngroup,
+  onDownload,
   onCaptureFrame,
   onRemoveThumb,
 }: VideoCardProps) {
@@ -75,6 +88,8 @@ export function VideoCard({
   const [framePickerOpen, setFramePickerOpen] = useState(false)
 
   const childCount = children?.length ?? 0
+  const hasChildren = childCount > 0
+  const hasParent = typeof video.generation_metadata?.parent_id === 'string'
   const videoUrl = getVideoUrl(video)
   const isPending = video.status === 'pending' || video.status === 'processing'
   const thumbnailStatus = isPending
@@ -85,12 +100,9 @@ export function VideoCard({
 
   const promptText = getPromptText(video)
 
-  const handleClick = (e?: React.MouseEvent) => {
-    if (selectionActive && onSelect) {
-      onSelect(video.id, e?.shiftKey ?? false)
-    } else {
-      onOpen?.(video)
-    }
+  const handleClick = () => {
+    if (selectionActive && onSelect) return
+    onOpen?.(video)
   }
 
   const handlePlay = (url: string, e: React.MouseEvent) => {
@@ -98,6 +110,64 @@ export function VideoCard({
     setPlayingUrl(url)
     setPlayerOpen(true)
   }
+
+  const moreButton = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <ExpandableIconButton
+          icon={<MoreHorizontal className="h-3.5 w-3.5" />}
+          label="More actions"
+        />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+        {onCaptureFrame && videoUrl && !isPending && (
+          <DropdownMenuItem onClick={() => setFramePickerOpen(true)}>
+            <ImageIcon className="h-4 w-4" />
+            Generate Thumb
+          </DropdownMenuItem>
+        )}
+        {onRemoveThumb && video.thumbnail_path && (
+          <DropdownMenuItem onClick={() => onRemoveThumb(video)}>
+            <ImageOff className="h-4 w-4" />
+            Remove Thumb
+          </DropdownMenuItem>
+        )}
+        {onDownload && videoUrl && !isPending && (
+          <DropdownMenuItem onClick={() => onDownload(video)}>
+            <Download className="h-4 w-4" />
+            Download
+          </DropdownMenuItem>
+        )}
+        {onStartAdopt && (
+          <DropdownMenuItem onClick={() => onStartAdopt(video)}>
+            <ArrowUpRight className="h-4 w-4" />
+            Move
+          </DropdownMenuItem>
+        )}
+        {hasChildren && onUngroup && (
+          <DropdownMenuItem onClick={() => onUngroup(video)}>
+            <Unlink className="h-4 w-4" />
+            Ungroup
+          </DropdownMenuItem>
+        )}
+        {hasParent && onUnlink && (
+          <DropdownMenuItem onClick={() => onUnlink(video)}>
+            <Unlink className="h-4 w-4" />
+            Unlink
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  const deleteButton = onDelete ? (
+    <ExpandableIconButton
+      icon={<Trash2 className="h-3.5 w-3.5" />}
+      label="Delete"
+      variant="destructive"
+      onClick={() => onDelete(video)}
+    />
+  ) : undefined
 
   return (
     <>
@@ -107,11 +177,12 @@ export function VideoCard({
         status={thumbnailStatus}
         pendingLabel="Processing..."
         pendingBackgroundUrl={thumbnailUrl ?? undefined}
-        selected={selected || active}
+        alwaysShowOverlay
+        selected={selected || (active && !selectionActive)}
         selectedClassName={
-          active
-            ? 'border-accent-brand ring-1 ring-accent-brand'
-            : 'border-primary ring-1 ring-primary'
+          active && !selectionActive
+            ? 'border-primary ring-2 ring-primary shadow-lg shadow-primary/20'
+            : 'border-accent-brand ring-1 ring-accent-brand'
         }
         onClick={handleClick}
         topLeftBadge={
@@ -119,52 +190,30 @@ export function VideoCard({
             ? `${childCount + 1} ${childCount + 1 === 1 ? 'video' : 'videos'}`
             : undefined
         }
-        overlayActions={
-          onDelete || onCaptureFrame || onRemoveThumb ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <ExpandableIconButton
-                  icon={<MoreHorizontal className="h-3.5 w-3.5" />}
-                  label="More actions"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {onCaptureFrame && videoUrl && !isPending && (
-                  <DropdownMenuItem onClick={() => setFramePickerOpen(true)}>
-                    <ImageIcon className="h-4 w-4" />
-                    Generate Thumb
-                  </DropdownMenuItem>
-                )}
-                {onRemoveThumb && video.thumbnail_path && (
-                  <DropdownMenuItem onClick={() => onRemoveThumb(video)}>
-                    <ImageOff className="h-4 w-4" />
-                    Remove Thumb
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={() => onDelete(video)}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+        overlayActionsLeft={selectionActive ? undefined : moreButton}
+        overlayActions={selectionActive ? undefined : deleteButton}
+        overlayActionsBottomLeft={
+          onSelect ? (
+            <ExpandableIconButton
+              icon={
+                selected ? (
+                  <CheckCircle2 className="h-4 w-4 text-accent-brand" />
+                ) : (
+                  <Circle className="h-4 w-4" />
+                )
+              }
+              label={selected ? 'Deselect' : 'Select'}
+              onClick={(e) => onSelect(video.id, e.shiftKey)}
+            />
           ) : undefined
         }
         overlayActionsBottomRight={
-          videoUrl && !isPending ? (
-            <button
+          videoUrl && !isPending && !selectionActive ? (
+            <ExpandableIconButton
+              icon={<Play className="h-3.5 w-3.5" fill="currentColor" />}
+              label="Play"
               onClick={(e) => handlePlay(videoUrl, e)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-            >
-              <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
-            </button>
+            />
           ) : undefined
         }
         imageOverlay={

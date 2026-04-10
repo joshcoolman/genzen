@@ -1,14 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Pin, PinOff, Plus, X } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Group,
+  Pin,
+  PinOff,
+  Plus,
+  Trash2,
+  Ungroup,
+  X,
+} from 'lucide-react'
 import type { SavedAiVideo } from '@/features/ai-video/video-types'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth'
 import { VideoGeneratorPanel } from '@/features/ai-video/components/VideoGeneratorPanel'
 import { VideoGallery } from '@/features/ai-video/components/VideoGallery'
+import { VideoParentPickerDialog } from '@/features/ai-video/components/VideoParentPickerDialog'
 import { useVideos } from '@/features/ai-video/hooks/use-videos'
 import { useVideoSidebar } from '@/features/ai-video/hooks/use-video-sidebar'
+import { useReparentVideo } from '@/features/ai-video/hooks/use-reparent-video'
+import { groupVideos } from '@/features/ai-video/server/group-videos.server'
+import { ungroupVideos } from '@/features/ai-video/server/ungroup-videos.server'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -63,6 +76,15 @@ function VideoPage() {
   const selectionItems = gallery.videos.map((v) => v.id)
   const selection = useSelection({ items: selectionItems })
 
+  const reparent = useReparentVideo({
+    accessToken,
+    onComplete: () => {
+      void gallery.refresh()
+    },
+  })
+
+  const [isBulkBusy, setIsBulkBusy] = useState(false)
+
   const handleOpenVideo = useCallback(
     (video: SavedAiVideo) => {
       navigate({
@@ -78,6 +100,89 @@ function VideoPage() {
       await gallery.deleteVideo(video)
     },
     [gallery],
+  )
+
+  const handleUngroupVideo = useCallback(
+    async (video: SavedAiVideo) => {
+      if (!accessToken) return
+      try {
+        await ungroupVideos({ data: { accessToken, parentId: video.id } })
+        await gallery.refresh()
+      } catch (err) {
+        console.error('Ungroup failed', err)
+      }
+    },
+    [accessToken, gallery],
+  )
+
+  const handleDownloadVideo = useCallback((video: SavedAiVideo) => {
+    const url = video.generation_metadata?.fal_url
+    if (!url) return
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${video.title || 'video'}.mp4`
+    a.target = '_blank'
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }, [])
+
+  const handleBulkGroup = useCallback(async () => {
+    if (!accessToken) return
+    const selectedIds = gallery.videos
+      .filter((v) => selection.isSelected(v.id))
+      .map((v) => v.id)
+    if (selectedIds.length < 2) return
+    const [primaryId, ...childIds] = selectedIds
+    setIsBulkBusy(true)
+    try {
+      await groupVideos({ data: { accessToken, primaryId, childIds } })
+      selection.clearSelection()
+      await gallery.refresh()
+    } catch (err) {
+      console.error('Group failed', err)
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }, [accessToken, gallery, selection])
+
+  const handleBulkUngroup = useCallback(async () => {
+    if (!accessToken) return
+    const selectedParents = gallery.videos.filter((v) => {
+      if (!selection.isSelected(v.id)) return false
+      // Only parents (videos that have at least one child in the gallery)
+      return gallery.videos.some(
+        (c) => c.generation_metadata?.parent_id === v.id,
+      )
+    })
+    if (selectedParents.length === 0) return
+    setIsBulkBusy(true)
+    try {
+      await Promise.all(
+        selectedParents.map((p) =>
+          ungroupVideos({ data: { accessToken, parentId: p.id } }),
+        ),
+      )
+      selection.clearSelection()
+      await gallery.refresh()
+    } catch (err) {
+      console.error('Bulk ungroup failed', err)
+    } finally {
+      setIsBulkBusy(false)
+    }
+  }, [accessToken, gallery, selection])
+
+  const handleBulkMove = useCallback(() => {
+    const selected = gallery.videos.filter((v) => selection.isSelected(v.id))
+    if (selected.length === 0) return
+    reparent.startAdoptBatch(selected)
+  }, [gallery.videos, selection, reparent])
+
+  const hasSelectedParent = gallery.videos.some(
+    (v) =>
+      selection.isSelected(v.id) &&
+      gallery.videos.some((c) => c.generation_metadata?.parent_id === v.id),
   )
 
   const handleUploadToLibrary = useCallback(
@@ -130,6 +235,10 @@ function VideoPage() {
           showInfo
           onOpen={handleOpenVideo}
           onDelete={handleDeleteVideo}
+          onStartAdopt={reparent.startAdopt}
+          onUnlink={(v) => void reparent.detach(v.id)}
+          onUngroup={(v) => void handleUngroupVideo(v)}
+          onDownload={handleDownloadVideo}
           onCaptureFrame={gallery.captureFrame}
           onRemoveThumb={gallery.removeThumbnail}
           selectionActive={selection.count > 0}
@@ -141,9 +250,40 @@ function VideoPage() {
           count={selection.count}
           onClear={selection.clearSelection}
         >
+          {selection.count >= 2 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isBulkBusy}
+              onClick={() => void handleBulkGroup()}
+            >
+              <Group className="mr-1 h-3 w-3" />
+              {isBulkBusy ? 'Grouping...' : 'Group'}
+            </Button>
+          )}
+          {hasSelectedParent && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isBulkBusy}
+              onClick={() => void handleBulkUngroup()}
+            >
+              <Ungroup className="mr-1 h-3 w-3" />
+              {isBulkBusy ? 'Ungrouping...' : 'Ungroup'}
+            </Button>
+          )}
           <Button
+            variant="ghost"
             size="sm"
+            disabled={reparent.isReparenting}
+            onClick={handleBulkMove}
+          >
+            <ArrowUpRight className="mr-1 h-3 w-3" />
+            {reparent.isReparenting ? 'Moving...' : `Move (${selection.count})`}
+          </Button>
+          <Button
             variant="destructive"
+            size="sm"
             onClick={async () => {
               for (const v of gallery.videos) {
                 if (selection.isSelected(v.id)) {
@@ -153,9 +293,30 @@ function VideoPage() {
               selection.clearSelection()
             }}
           >
-            Delete selected
+            <Trash2 className="mr-1 h-3 w-3" />
+            Delete ({selection.count})
           </Button>
         </SelectionDrawer>
+
+        {reparent.adoptTarget && (
+          <VideoParentPickerDialog
+            open={!!reparent.adoptTarget}
+            onOpenChange={(open) => {
+              if (!open) reparent.cancelAdopt()
+            }}
+            movingVideo={reparent.adoptTarget}
+            movingVideoUrl={gallery.thumbnailUrls[reparent.adoptTarget.id]}
+            movingVideos={reparent.adoptBatch ?? undefined}
+            videos={gallery.videos}
+            thumbnailUrls={gallery.thumbnailUrls}
+            loading={reparent.isReparenting}
+            onConfirm={(newParentId) => {
+              void reparent.confirmAdopt(newParentId).then(() => {
+                selection.clearSelection()
+              })
+            }}
+          />
+        )}
       </div>
 
       {/* Generator sidebar -- mobile = fullscreen dialog, desktop = pinnable panel */}
