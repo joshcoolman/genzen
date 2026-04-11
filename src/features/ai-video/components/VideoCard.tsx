@@ -11,6 +11,7 @@ import {
   Trash2,
   Unlink,
 } from 'lucide-react'
+import { getVideoModelName } from '../video-models'
 import { VideoFramePickerDialog } from './VideoFramePickerDialog'
 import type { SavedAiVideo } from '../video-types'
 import { Thumbnail } from '@/components/Thumbnail'
@@ -99,6 +100,9 @@ export function VideoCard({
       : 'complete'
 
   const promptText = getPromptText(video)
+  const modelId = (video.generation_metadata as { model?: string } | null)
+    ?.model
+  const displayTitle = modelId ? getVideoModelName(modelId) : 'AI Video'
 
   const handleClick = () => {
     if (selectionActive && onSelect) return
@@ -230,9 +234,12 @@ export function VideoCard({
       >
         {showInfo && (
           <>
+            <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
+              {displayTitle}
+            </p>
             <ExpandableText
               text={promptText ?? video.title}
-              className="px-3 pt-2 pb-3"
+              className="px-3 pt-0.5 pb-3"
               textClassName="text-xs text-muted-foreground"
             />
             {childCount > 0 && children && (

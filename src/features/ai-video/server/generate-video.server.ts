@@ -8,7 +8,10 @@ import {
   checkAndDeductCredits,
   withCreditRefund,
 } from '@/features/credits/server/check-credits.server'
-import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
+import {
+  DEFAULT_VIDEO_MODEL,
+  getVideoModelName,
+} from '@/features/ai-video/video-models'
 import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-schema.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
@@ -233,7 +236,7 @@ async function generateFlf(
           request_id,
           status: 'pending',
           source: 'ai_video',
-          title: 'Generating video...',
+          title: getVideoModelName(videoModel),
           generation_metadata: {
             method: 'flf',
             parent_id: data.parentId ?? null,
@@ -331,7 +334,7 @@ async function generateMultishot(
           request_id,
           status: 'pending',
           source: 'ai_video',
-          title: 'Generating multi-shot video...',
+          title: getVideoModelName(MULTISHOT_FAL_MODEL),
           generation_metadata: {
             method: 'multishot',
             type: 'multishot', // backward-compat for any existing listeners
