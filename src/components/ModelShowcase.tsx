@@ -59,6 +59,7 @@ export function ModelShowcase() {
   const videoModels: Array<ModelEntry> = ALL_VIDEO_MODELS.map((m) => ({
     name: m.name,
     description: m.description,
+    isNew: m.isNew,
   }))
 
   const textModels: Array<ModelEntry> = ALL_TEXT_MODELS.map((m) => ({

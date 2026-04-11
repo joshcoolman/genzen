@@ -8,9 +8,21 @@ export interface VideoModel {
   supportsCfgScale: boolean
   supportsNegativePrompt: boolean
   locked?: boolean
+  isNew?: boolean
 }
 
 export const ALL_VIDEO_MODELS: Array<VideoModel> = [
+  {
+    id: 'fal-ai/bytedance/seedance-2.0/image-to-video',
+    name: 'Seedance 2.0',
+    description: 'ByteDance cinematic i2v with native audio',
+    supportsFlf: true,
+    supportsI2V: true,
+    durations: ['5', '8', '10'],
+    supportsCfgScale: false,
+    supportsNegativePrompt: false,
+    isNew: true,
+  },
   {
     id: 'fal-ai/kling-video/v3/pro/image-to-video',
     name: 'Kling 3.0 Pro',
