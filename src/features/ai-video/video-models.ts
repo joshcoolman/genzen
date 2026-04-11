@@ -13,7 +13,7 @@ export interface VideoModel {
 
 export const ALL_VIDEO_MODELS: Array<VideoModel> = [
   {
-    id: 'fal-ai/bytedance/seedance-2.0/image-to-video',
+    id: 'bytedance/seedance-2.0/image-to-video',
     name: 'Seedance 2.0',
     description: 'ByteDance cinematic i2v with native audio',
     supportsFlf: true,
