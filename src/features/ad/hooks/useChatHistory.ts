@@ -5,20 +5,18 @@ const STORAGE_KEY = 'ad-chat-history'
 const MAX_MESSAGES = 50
 const DEBOUNCE_MS = 500
 
-/** Strip image data from messages before persisting to avoid blowing up localStorage */
+/**
+ * Reshape messages for localStorage. Images are now URL refs (library rows),
+ * which are small and resolve long-term from R2 — we persist them as-is so
+ * attached image thumbnails survive panel close/reopen and page refresh.
+ */
 function stripImagesForStorage(messages: Array<ADMessage>): Array<ADMessage> {
   return messages.map((m) => ({
     id: m.id,
     role: m.role,
     content: m.content,
-    // Store a flag that images were attached but not the base64 data
-    images: m.images?.map((img) => ({
-      base64: '',
-      mediaType: img.mediaType,
-    })),
-    // Persist tool calls so PromptCards/ClarifyingCards survive panel close/reopen
+    images: m.images,
     toolCalls: m.toolCalls,
-    // Persist loaded skills so the chip survives panel close/reopen
     skillsLoaded: m.skillsLoaded,
   }))
 }
@@ -30,20 +28,17 @@ function loadMessages(): Array<ADMessage> {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    // Filter out empty-base64 image placeholders from storage
-    return parsed.slice(-MAX_MESSAGES).map((m: ADMessage) => {
+    return parsed.slice(-MAX_MESSAGES).map((m: ADMessage) => ({
+      ...m,
       // Ensure message has an id (for backward compatibility)
-      const message = {
-        ...m,
-        id:
-          m.id ||
-          `${m.role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      }
-      if (message.images?.every((img) => !img.base64)) {
-        return { ...message, images: undefined }
-      }
-      return message
-    })
+      id:
+        m.id ||
+        `${m.role}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      // Drop any pre-URL-era images that lack the new shape
+      images: m.images?.every((img) => typeof img.url === 'string')
+        ? m.images
+        : undefined,
+    }))
   } catch {
     return []
   }

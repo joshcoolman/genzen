@@ -233,23 +233,14 @@ function MessageBubble({
         <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
           {message.images && message.images.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5">
-              {message.images.map((img, i) =>
-                img.base64 ? (
-                  <img
-                    key={`img-${message.id}-${i}`}
-                    src={`data:${img.mediaType};base64,${img.base64}`}
-                    alt={`Attached ${i + 1}`}
-                    className="h-20 w-20 rounded border border-primary-foreground/20 object-cover"
-                  />
-                ) : (
-                  <div
-                    key={`img-placeholder-${message.id}-${i}`}
-                    className="flex h-20 w-20 items-center justify-center rounded border border-primary-foreground/20 bg-primary-foreground/10 text-xs text-primary-foreground/60"
-                  >
-                    Image
-                  </div>
-                ),
-              )}
+              {message.images.map((img, i) => (
+                <img
+                  key={`img-${message.id}-${i}`}
+                  src={img.url}
+                  alt={img.title ?? `Attached ${i + 1}`}
+                  className="h-20 w-20 rounded border border-primary-foreground/20 object-cover"
+                />
+              ))}
             </div>
           )}
           {message.content}
