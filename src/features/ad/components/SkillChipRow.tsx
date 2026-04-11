@@ -35,7 +35,7 @@ export function SkillChipRow({ onLaunch, disabled }: SkillLauncherProps) {
         <PopoverTrigger asChild>
           <button
             disabled={disabled}
-            className="flex w-full items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-[11px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+            className="flex w-full items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 py-1 pl-2 pr-1 text-[11px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
             title="Browse agent skills"
           >
             <Sparkles className="h-3 w-3 shrink-0" />
