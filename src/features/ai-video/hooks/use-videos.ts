@@ -236,11 +236,22 @@ export function useVideos({
       (v) => v.status === 'pending' || v.status === 'processing',
     )
 
+    // One-shot backfill: if any failed row lacks a structured FAL error blob,
+    // kick a single poll so check-pending-generations can re-query FAL and
+    // write the real message into generation_metadata.error.
+    const hasStaleFailed = videos.some(
+      (v) =>
+        v.status === 'failed' &&
+        !(v.generation_metadata as { error?: unknown } | null)?.error,
+    )
+
     if (hasPending && !pollingRef.current) {
       checkPendingGenerations({ data: { accessToken } }).catch(() => {})
       pollingRef.current = setInterval(() => {
         checkPendingGenerations({ data: { accessToken } }).catch(() => {})
       }, 5000)
+    } else if (!hasPending && hasStaleFailed) {
+      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
     } else if (!hasPending && pollingRef.current) {
       clearInterval(pollingRef.current)
       pollingRef.current = null

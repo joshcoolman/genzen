@@ -20,7 +20,7 @@
 
 When FAL rejects a gen, the real message (e.g. "Output audio has sensitive content", "Invalid aspect ratio for model X") is currently lost. Failed cards say `FAL job FAILED` because `check-pending-generations.server.ts:82–102` collapses status to a generic string, and `generate-video.server.ts` has no try/catch around the `fal.queue.submit` call — a submit-time rejection just throws through `withCreditRefund` and the user sees a toast but no persisted card.
 
-`markOptimisticFailed` (from Phase 2) already surfaces whatever `error.message` the submit threw on the client. Phase 3's job is to make that message *accurate* and to persist the same information on the row itself so the poll path and webhook path (which don't go through the client-side error handler) surface it too.
+`markOptimisticFailed` (from Phase 2) already surfaces whatever `error.message` the submit threw on the client. Phase 3's job is to make that message _accurate_ and to persist the same information on the row itself so the poll path and webhook path (which don't go through the client-side error handler) surface it too.
 
 ## Phase 3 scope
 
@@ -35,10 +35,10 @@ Return shape:
 ```ts
 export interface FalErrorBlob {
   status: 'failed'
-  code: string          // e.g. 'fal_submit', 'fal_queue', 'fal_webhook', 'unknown'
-  message: string       // human-readable
+  code: string // e.g. 'fal_submit', 'fal_queue', 'fal_webhook', 'unknown'
+  message: string // human-readable
   fal_request_id?: string
-  failed_at: string     // ISO
+  failed_at: string // ISO
   stage: 'submit' | 'queue' | 'webhook'
 }
 ```
@@ -93,11 +93,14 @@ Around line 82–102 there's a block that builds a lossy `` `FAL job ${statusStr
 Then update the row:
 
 ```ts
-await supabase.from('user_images').update({
-  status: 'failed',
-  generation_error: blob.message,
-  generation_metadata: { ...existing, error: blob },
-}).eq('id', video.id)
+await supabase
+  .from('user_images')
+  .update({
+    status: 'failed',
+    generation_error: blob.message,
+    generation_metadata: { ...existing, error: blob },
+  })
+  .eq('id', video.id)
 ```
 
 ### 5. Webhook route

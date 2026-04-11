@@ -8,10 +8,11 @@ import {
 import type { Tables } from '@/lib/types/supabase'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import {
-  markGenerationFailed,
+  markGenerationFailedWithBlob,
   processImageResult,
   processVideoResult,
 } from '@/lib/server/fal-completion.server'
+import { extractFalError } from '@/lib/server/fal-error.server'
 
 interface FalWebhookBody {
   request_id: string
@@ -190,10 +191,18 @@ export default defineEventHandler(async (event) => {
       }
       console.log(`[fal-webhook] Processed successfully: record=${record.id}`)
     } else if (status === 'FAILED' || status === 'ERROR') {
-      const errorMsg = typeof error === 'string' ? error : `FAL job ${status}`
-      await markGenerationFailed(supabase, record.id, errorMsg)
+      // FAL surfaces failure detail inconsistently — sometimes as a top-level
+      // error string, sometimes inside payload.detail[].msg. Hand both to the
+      // extractor and let it pick the most specific message.
+      const source =
+        payload ?? (typeof error === 'string' ? { message: error } : error)
+      const blob = extractFalError(source ?? null)
+      blob.stage = 'webhook'
+      if (blob.code === 'unknown') blob.code = 'fal_webhook'
+      blob.fal_request_id ??= request_id
+      await markGenerationFailedWithBlob(supabase, record.id, blob)
       console.log(
-        `[fal-webhook] Marked failed: record=${record.id} error=${errorMsg}`,
+        `[fal-webhook] Marked failed: record=${record.id} error=${blob.message}`,
       )
     }
   } catch (err) {

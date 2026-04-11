@@ -16,6 +16,7 @@ import { fetchVideoModelSchema } from '@/features/ai-video/server/fal-video-sche
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { MULTISHOT_FAL_MODEL } from '@/features/multi-shot/types'
+import { extractFalError } from '@/lib/server/fal-error.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -240,10 +241,46 @@ async function generateFlf(
       )
 
       const webhookUrl = getFalWebhookUrl()
-      const { request_id } = await fal.queue.submit(videoModel, {
-        input: falInput as Record<string, unknown> & { prompt: string },
-        ...(webhookUrl ? { webhookUrl } : {}),
-      })
+      let request_id: string
+      try {
+        const submitResult = await fal.queue.submit(videoModel, {
+          input: falInput as Record<string, unknown> & { prompt: string },
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
+        request_id = submitResult.request_id
+      } catch (err) {
+        const blob = extractFalError(err)
+        blob.stage = 'submit'
+        if (blob.code === 'unknown') blob.code = 'fal_submit'
+        console.error(
+          `[generate-video flf] submit failed model=${videoModel} message=${blob.message}`,
+        )
+        await supabase.from('user_images').insert({
+          ...(data.id ? { id: data.id } : {}),
+          user_id: userId,
+          status: 'failed',
+          source: 'ai_video',
+          title: getVideoModelName(videoModel),
+          generation_error: blob.message,
+          generation_metadata: {
+            method: 'flf',
+            parent_id: data.parentId ?? null,
+            model: videoModel,
+            prompt: data.prompt,
+            transition_prompt: data.prompt || null,
+            first_frame_id: data.firstFrameRecordId,
+            first_frame_url: data.firstFrameUrl ?? null,
+            last_frame_id: data.lastFrameRecordId ?? null,
+            last_frame_url: data.lastFrameUrl ?? null,
+            duration,
+            cfg_scale: data.cfgScale ?? null,
+            negative_prompt: data.negativePrompt ?? null,
+            submitted_at: new Date().toISOString(),
+            error: blob,
+          },
+        })
+        throw new Error(blob.message)
+      }
 
       const { data: record, error: insertError } = await supabase
         .from('user_images')
@@ -339,10 +376,48 @@ async function generateMultishot(
       )
 
       const webhookUrl = getFalWebhookUrl()
-      const { request_id } = await fal.queue.submit(MULTISHOT_FAL_MODEL, {
-        input: falInput as Record<string, unknown> & { multi_prompt: unknown },
-        ...(webhookUrl ? { webhookUrl } : {}),
-      })
+      let request_id: string
+      try {
+        const submitResult = await fal.queue.submit(MULTISHOT_FAL_MODEL, {
+          input: falInput as Record<string, unknown> & {
+            multi_prompt: unknown
+          },
+          ...(webhookUrl ? { webhookUrl } : {}),
+        })
+        request_id = submitResult.request_id
+      } catch (err) {
+        const blob = extractFalError(err)
+        blob.stage = 'submit'
+        if (blob.code === 'unknown') blob.code = 'fal_submit'
+        console.error(
+          `[generate-video multishot] submit failed message=${blob.message}`,
+        )
+        await supabase.from('user_images').insert({
+          ...(data.id ? { id: data.id } : {}),
+          user_id: userId,
+          status: 'failed',
+          source: 'ai_video',
+          title: getVideoModelName(MULTISHOT_FAL_MODEL),
+          generation_error: blob.message,
+          generation_metadata: {
+            method: 'multishot',
+            type: 'multishot',
+            parent_id: data.parentId ?? null,
+            model: MULTISHOT_FAL_MODEL,
+            shots: data.shots,
+            elements: data.elements,
+            start_image_url: data.startImageUrl,
+            aspect_ratio: data.aspectRatio,
+            shot_type: data.shotType,
+            generate_audio: data.generateAudio,
+            shot_count: data.shots.length,
+            total_duration: totalDuration,
+            submitted_at: new Date().toISOString(),
+            error: blob,
+          },
+        })
+        throw new Error(blob.message)
+      }
 
       const { data: record, error: insertError } = await supabase
         .from('user_images')
