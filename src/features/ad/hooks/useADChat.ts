@@ -5,10 +5,22 @@ import { useClaudeClient } from './useClaudeClient'
 import { useChatHistory } from './useChatHistory'
 import type Anthropic from '@anthropic-ai/sdk'
 
+/**
+ * User-attached image picked from the library via ImageSourceDialog.
+ * Sent to Anthropic via URL image source — no base64 plumbing.
+ */
 export interface ADImage {
-  /** Raw base64 data (no data: prefix) */
+  /** Library row id (user_images.id) */
+  id: string
+  /** R2 public URL — sent to Anthropic and rendered in chat */
+  url: string
+  /** Optional display title from the library row */
+  title?: string
+}
+
+/** Per-feature context image registered via useRegisterADImage — still base64. */
+interface ADContextImageBase64 {
   base64: string
-  /** MIME type e.g. image/png, image/jpeg */
   mediaType: string
 }
 
@@ -44,28 +56,48 @@ export interface ADMessage {
   skillsLoaded?: Array<LoadedSkillRef>
 }
 
+/**
+ * Shape the outgoing message content for Anthropic. User-attached images are
+ * URL-referenced (library rows); feature-registered context images stay
+ * base64. Both flow through the same message as image blocks.
+ */
 function buildMessageContent(
   text: string,
-  images?: Array<ADImage>,
+  attached: Array<ADImage> | undefined,
+  contextImages: Array<ADContextImageBase64>,
 ): string | Array<Anthropic.ImageBlockParam | Anthropic.TextBlockParam> {
-  if (!images || images.length === 0) return text
-  return [
-    ...images.map(
-      (img): Anthropic.ImageBlockParam => ({
+  const hasAttached = attached && attached.length > 0
+  const hasContext = contextImages.length > 0
+  if (!hasAttached && !hasContext) return text
+
+  const blocks: Array<Anthropic.ImageBlockParam | Anthropic.TextBlockParam> = []
+
+  for (const img of contextImages) {
+    blocks.push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: img.mediaType as
+          | 'image/jpeg'
+          | 'image/png'
+          | 'image/gif'
+          | 'image/webp',
+        data: img.base64,
+      },
+    })
+  }
+
+  if (hasAttached) {
+    for (const img of attached) {
+      blocks.push({
         type: 'image',
-        source: {
-          type: 'base64',
-          media_type: img.mediaType as
-            | 'image/jpeg'
-            | 'image/png'
-            | 'image/gif'
-            | 'image/webp',
-          data: img.base64,
-        },
-      }),
-    ),
-    { type: 'text' as const, text },
-  ]
+        source: { type: 'url', url: img.url },
+      })
+    }
+  }
+
+  blocks.push({ type: 'text' as const, text })
+  return blocks
 }
 
 const LOAD_SKILL_TOOL: Anthropic.Tool = {
@@ -151,23 +183,22 @@ export function useADChat() {
     async (text: string, images?: Array<ADImage>) => {
       if (!client || !text.trim() || isStreaming) return
 
-      // Merge user-attached images with context images from features
-      const allImages = [...(images ?? [])]
+      // Snapshot the context images for this turn. They are NOT stored on the
+      // persisted ADMessage — they are attached to the API request at
+      // build time so they only apply to the turn where they were active.
+      const currentContextImages: Array<ADContextImageBase64> = []
       for (const [, ctxImg] of contextImages) {
-        // Don't duplicate if user already attached the same image
-        if (!allImages.some((img) => img.base64 === ctxImg.base64)) {
-          allImages.push({
-            base64: ctxImg.base64,
-            mediaType: ctxImg.mediaType,
-          })
-        }
+        currentContextImages.push({
+          base64: ctxImg.base64,
+          mediaType: ctxImg.mediaType,
+        })
       }
 
       const userMsg: ADMessage = {
         id: `user-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         role: 'user',
         content: text.trim(),
-        images: allImages.length > 0 ? allImages : undefined,
+        images: images && images.length > 0 ? images : undefined,
       }
       const next = [...messages, userMsg]
       setMessages(next)
@@ -190,9 +221,17 @@ export function useADChat() {
       // when load_skill fires (we append assistant tool_use + user tool_result
       // and re-stream). Existing render-tools (create_prompt_card,
       // create_clarifying_card) stay terminal and break the loop.
-      const apiMessages: Array<Anthropic.MessageParam> = next.map((m) => ({
+      //
+      // Context images only attach to the LAST user message (the current
+      // turn) — historical turns keep whatever URL-attached images they
+      // originally had, but no longer carry stale base64 context.
+      const apiMessages: Array<Anthropic.MessageParam> = next.map((m, i) => ({
         role: m.role,
-        content: buildMessageContent(m.content, m.images),
+        content: buildMessageContent(
+          m.content,
+          m.images,
+          i === next.length - 1 ? currentContextImages : [],
+        ),
       }))
 
       const loadedSkills: Array<LoadedSkillRef> = []

@@ -5,14 +5,14 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 ## Key Files
 
 - `context/ad-context.tsx` -- ADContext provider: tracks route, feature context map, system prompt assembly, loaded note state
-- `hooks/useADChat.ts` -- Message streaming with rAF-throttled state updates, abort support, multimodal image handling (ADImage type), tool calling (create_prompt_card)
-- `hooks/useChatHistory.ts` -- localStorage persistence (50 msg cap, 500ms debounce, strips image base64 and tool call data)
+- `hooks/useADChat.ts` -- Message streaming with rAF-throttled state updates, abort support, URL-based image attachments (ADImage = { id, url, title? }), tool calling (create_prompt_card, create_clarifying_card, load_skill)
+- `hooks/useChatHistory.ts` -- localStorage persistence (50 msg cap, 500ms debounce). URLs are small so images now persist as-is and survive panel close/reopen and page refresh.
 - `hooks/useAnthropicKey.ts` -- API key management via external store pattern (localStorage, `sk-ant-` prefix)
 - `hooks/useClaudeClient.ts` -- Memoized Anthropic SDK client initialization (`dangerouslyAllowBrowser: true`)
 - `components/ADPanel.tsx` -- Fixed right-sidebar (w-80 / 320px on md+) with header, chat body, or setup form; copy/save/clear actions; prompt save/copy handlers
 - `components/ADSetup.tsx` -- API key entry form with `sk-ant-` validation
 - `components/ChatMessages.tsx` -- Message list with markdown rendering via `marked`, PromptCard tool rendering, copy buttons, auto-scroll
-- `components/ChatInput.tsx` -- Auto-growing textarea with image paste/drag-drop/upload button support, streaming abort button
+- `components/ChatInput.tsx` -- Auto-growing textarea. Image attachments open `ImageSourceDialog` (shared picker) showing the user's library with in-dialog upload and paste. No direct upload / paste-into-textarea / drag-drop — all image intake flows through the picker so uploaded images land in the persistent library rather than existing only for a single turn.
 
 ## Route
 
@@ -90,9 +90,17 @@ Tool calls are extracted from `stream.finalMessage()` by filtering content block
 
 The `render/` directory contains unused json-render code (catalog, registry, README, TESTING, TOOL-CALLING docs) from a previous approach. The codebase has fully migrated to native Anthropic tool calling. These files are not imported anywhere and can be safely deleted.
 
+## Image attachments
+
+User-attached images go through the shared `ImageSourceDialog` at `@/components/ImageSourceDialog/ImageSourceDialog`. Clicking the ImagePlus button in `ChatInput` opens the picker titled "Attach Image"; the user picks from their library (All / Uploads / AI Generated tabs) or uploads/pastes a new image inside the dialog. Uploaded images land in the persistent `user_images` library via the shared `useUserImages` hook, so every attachment is reusable and visible in the Assets page.
+
+`ADImage = { id, url, title? }` — URL-referenced (R2 public URL, no expiry). Sent to Anthropic via `{ type: 'image', source: { type: 'url', url } }`. No base64 plumbing on user attachments.
+
+Feature-registered context images (via `useRegisterADImage` from `ad-context.tsx`) remain base64 and are attached at API-build time to the _current_ turn only — they are not persisted in message history or threaded into historical turns. `buildMessageContent` in `useADChat.ts` accepts both shapes (URL attached + base64 context) and emits the right Anthropic image block for each.
+
+Known limitations: signed-out users see an empty picker with no upload ability (hook requires `user.id`). Multi-attach is achieved by opening the picker multiple times — single-select per open.
+
 ## Quirks / Notes
 
-- Users can attach images via paste, drag-drop, or upload button; images sent to Claude as base64 (vision-enabled model)
-- Image data and tool call data stripped from localStorage history (only metadata kept) to avoid bloat
 - `formatChatAsMarkdown()` converts messages to markdown for copying/saving (excludes tool data)
 - Tool calls stream via Anthropic SDK events; text content and tool results render separately in chat

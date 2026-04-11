@@ -1,6 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { ImagePlus, Send, Square, X } from 'lucide-react'
 import type { ADImage } from '../hooks/useADChat'
+import type { ImageSourceResult } from '@/components/ImageSourceDialog/ImageSourceDialog'
+import { useAuth } from '@/lib/auth'
+import { useUserImages } from '@/features/user-images/hooks/useUserImages'
+import { ImageSourceDialog } from '@/components/ImageSourceDialog/ImageSourceDialog'
 
 interface ChatInputProps {
   onSend: (text: string, images?: Array<ADImage>) => void
@@ -8,25 +12,29 @@ interface ChatInputProps {
   isStreaming: boolean
 }
 
-function readFileAsBase64(file: File): Promise<ADImage> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
-      // Strip the data:image/xxx;base64, prefix
-      const base64 = dataUrl.split(',')[1]
-      resolve({ base64, mediaType: file.type })
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
 export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [pendingImages, setPendingImages] = useState<Array<ADImage>>([])
+  const [pickerOpen, setPickerOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { user } = useAuth()
+  const userImages = useUserImages(user?.id)
+
+  const handleUploadToLibrary = useCallback(
+    async (file: File) => {
+      await userImages.create({ file, title: file.name })
+    },
+    [userImages],
+  )
+
+  const handleSelectImage = useCallback((result: ImageSourceResult) => {
+    setPendingImages((prev) => {
+      // Dedupe by library row id
+      if (prev.some((img) => img.id === result.id)) return prev
+      return [...prev, { id: result.id, url: result.url, title: result.title }]
+    })
+  }, [])
 
   const handleSubmit = useCallback(() => {
     if ((!value.trim() && pendingImages.length === 0) || isStreaming) return
@@ -53,74 +61,19 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
     el.style.height = Math.min(el.scrollHeight, 120) + 'px'
   }
 
-  async function addImageFile(file: File) {
-    if (!file.type.startsWith('image/')) return
-    try {
-      const img = await readFileAsBase64(file)
-      setPendingImages((prev) => [...prev, img])
-    } catch (err) {
-      console.error('Failed to read image:', err)
-    }
-  }
-
-  function handlePaste(e: React.ClipboardEvent) {
-    const items = e.clipboardData.items
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault()
-        const file = item.getAsFile()
-        if (file) addImageFile(file)
-        return
-      }
-    }
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    for (const file of e.dataTransfer.files) {
-      if (file.type.startsWith('image/')) {
-        addImageFile(file)
-      }
-    }
-  }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-  }
-
   function removeImage(index: number) {
     setPendingImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  function handleFileInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files
-    if (!files) return
-    for (const file of files) {
-      if (file.type.startsWith('image/')) {
-        addImageFile(file)
-      }
-    }
-    // Reset input so same file can be selected again
-    e.target.value = ''
-  }
-
-  function openFilePicker() {
-    fileInputRef.current?.click()
-  }
-
   return (
-    <div
-      className="border-t border-border p-3"
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-    >
+    <div className="border-t border-border p-3">
       {pendingImages.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
           {pendingImages.map((img, i) => (
-            <div key={i} className="group relative">
+            <div key={img.id} className="group relative">
               <img
-                src={`data:${img.mediaType};base64,${img.base64}`}
-                alt={`Attached ${i + 1}`}
+                src={img.url}
+                alt={img.title ?? `Attached ${i + 1}`}
                 className="h-16 w-16 rounded-md border border-border object-cover"
               />
               <button
@@ -135,21 +88,12 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
         </div>
       )}
       <div className="flex items-end gap-2">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFileInputChange}
-          className="hidden"
-          aria-label="Upload images"
-        />
         <button
-          onClick={openFilePicker}
+          onClick={() => setPickerOpen(true)}
           disabled={isStreaming}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-          aria-label="Upload images"
-          title="Upload images"
+          aria-label="Attach image from library"
+          title="Attach image from library"
         >
           <ImagePlus className="h-4 w-4" />
         </button>
@@ -158,7 +102,6 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
           value={value}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
           placeholder={
             pendingImages.length > 0
               ? 'Ask about these images...'
@@ -187,6 +130,18 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
           </button>
         )}
       </div>
+
+      <ImageSourceDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        title="Attach Image"
+        images={userImages.images}
+        imageUrls={userImages.imageUrls}
+        originalUrls={userImages.originalUrls}
+        isLoading={userImages.isLoading}
+        onSelect={handleSelectImage}
+        onUploadToLibrary={handleUploadToLibrary}
+      />
     </div>
   )
 }
