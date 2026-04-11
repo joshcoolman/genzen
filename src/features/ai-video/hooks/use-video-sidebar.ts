@@ -7,6 +7,7 @@ import type {
 } from '@/features/ai-video/video-types'
 import { generateVideo } from '@/features/ai-video/server/generate-video.server'
 import { DEFAULT_VIDEO_MODEL } from '@/features/ai-video/video-models'
+import { useOptimisticGeneration } from '@/lib/hooks/use-optimistic-generation'
 
 /**
  * Sidebar state holds only the ACTIVE mode's fields. Switching modes does NOT
@@ -58,6 +59,13 @@ interface UseVideoSidebarOptions {
   accessToken: string | undefined
   /** Sticky parent id for the current edit session. Null on main page. */
   sessionParentId?: string | null
+  /**
+   * Called synchronously the moment the user clicks generate, before any
+   * network activity. Push the pending card onto the gallery here.
+   */
+  onOptimistic: (id: string, state: VideoSidebarState) => void
+  /** Called if the server throws — flip the pending card to failed here. */
+  onError: (id: string, error: Error) => void
   /** Called after a successful gen. Useful for gallery refresh / highlight. */
   onGenerated?: (result: { recordId: string; requestId: string }) => void
 }
@@ -86,9 +94,12 @@ export interface UseVideoSidebarReturn extends VideoSidebarState {
   reset: () => void
   /** Rehydrate from a saved video's generation_metadata snapshot. */
   loadFromVideo: (video: SavedAiVideo) => void
-  /** Fire a generation with current state. */
-  generate: () => Promise<{ recordId: string; requestId: string } | null>
-  generating: boolean
+  /**
+   * Fire-and-forget generation. Mints a client id, pushes an optimistic card
+   * synchronously via onOptimistic, then submits to the server without
+   * awaiting. Returns the minted id (or null on sync validation failure).
+   */
+  generate: () => string | null
   error: string | null
 }
 
@@ -113,11 +124,59 @@ function clampShotDuration(
 export function useVideoSidebar({
   accessToken,
   sessionParentId,
+  onOptimistic,
+  onError,
   onGenerated,
 }: UseVideoSidebarOptions): UseVideoSidebarReturn {
   const [state, setState] = useState<VideoSidebarState>(DEFAULT_STATE)
-  const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const submitGeneration = useOptimisticGeneration<
+    VideoSidebarState,
+    { recordId: string; requestId: string }
+  >({
+    onOptimistic: (id, snapshot) => onOptimistic(id, snapshot),
+    onError: (id, err) => onError(id, err),
+    onSuccess: (_id, result) => onGenerated?.(result),
+    submit: async (id, snapshot) => {
+      if (!accessToken) {
+        throw new Error('Not authenticated')
+      }
+      if (snapshot.mode === 'flf') {
+        return generateVideo({
+          data: {
+            id,
+            accessToken,
+            parentId: sessionParentId ?? null,
+            method: 'flf',
+            firstFrameRecordId: snapshot.firstFrameRecordId!,
+            firstFrameUrl: snapshot.firstFrameUrl,
+            lastFrameRecordId: snapshot.lastFrameRecordId,
+            lastFrameUrl: snapshot.lastFrameUrl,
+            prompt: snapshot.prompt,
+            duration: snapshot.duration,
+            cfgScale: snapshot.cfgScale,
+            negativePrompt: snapshot.negativePrompt,
+            videoModel: snapshot.videoModel,
+          },
+        })
+      }
+      return generateVideo({
+        data: {
+          id,
+          accessToken,
+          parentId: sessionParentId ?? null,
+          method: 'multishot',
+          startImageUrl: snapshot.firstFrameUrl ?? '',
+          shots: snapshot.shots,
+          elements: snapshot.elements,
+          aspectRatio: snapshot.aspectRatio,
+          shotType: snapshot.shotType,
+          generateAudio: snapshot.generateAudio,
+        },
+      })
+    },
+  })
 
   const setMode = useCallback((mode: VideoMethod) => {
     setState((prev) => {
@@ -331,42 +390,15 @@ export function useVideoSidebar({
     setError(null)
   }, [])
 
-  const generate = useCallback(async () => {
-    if (!accessToken) return null
-    setError(null)
-
+  const generate = useCallback((): string | null => {
+    if (!accessToken) {
+      setError('Not authenticated')
+      return null
+    }
     if (state.mode === 'flf') {
       if (!state.firstFrameRecordId) {
         setError('Add a first frame before generating')
         return null
-      }
-      setGenerating(true)
-      try {
-        const result = await generateVideo({
-          data: {
-            accessToken,
-            parentId: sessionParentId ?? null,
-            method: 'flf',
-            firstFrameRecordId: state.firstFrameRecordId,
-            firstFrameUrl: state.firstFrameUrl,
-            lastFrameRecordId: state.lastFrameRecordId,
-            lastFrameUrl: state.lastFrameUrl,
-            prompt: state.prompt,
-            duration: state.duration,
-            cfgScale: state.cfgScale,
-            negativePrompt: state.negativePrompt,
-            videoModel: state.videoModel,
-          },
-        })
-        onGenerated?.(result)
-        return result
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to generate video',
-        )
-        return null
-      } finally {
-        setGenerating(false)
       }
     } else {
       if (!state.firstFrameUrl) {
@@ -377,33 +409,13 @@ export function useVideoSidebar({
         setError('At least one shot needs a prompt')
         return null
       }
-      setGenerating(true)
-      try {
-        const result = await generateVideo({
-          data: {
-            accessToken,
-            parentId: sessionParentId ?? null,
-            method: 'multishot',
-            startImageUrl: state.firstFrameUrl,
-            shots: state.shots,
-            elements: state.elements,
-            aspectRatio: state.aspectRatio,
-            shotType: state.shotType,
-            generateAudio: state.generateAudio,
-          },
-        })
-        onGenerated?.(result)
-        return result
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to generate multi-shot',
-        )
-        return null
-      } finally {
-        setGenerating(false)
-      }
     }
-  }, [accessToken, sessionParentId, state, onGenerated])
+    setError(null)
+    const handle = submitGeneration(state)
+    // Swallow the rejection -- onError already flipped the card to failed.
+    handle.promise.catch(() => {})
+    return handle.id
+  }, [accessToken, state, submitGeneration])
 
   return {
     ...state,
@@ -427,7 +439,6 @@ export function useVideoSidebar({
     reset,
     loadFromVideo,
     generate,
-    generating,
     error,
   }
 }

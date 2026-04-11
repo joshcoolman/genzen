@@ -59,7 +59,22 @@ interface MultishotSnapshot {
 type GenerateVideoInput = {
   accessToken: string
   parentId?: string | null
+  /**
+   * Optional client-minted UUID. When provided, the inserted user_images row
+   * uses this as its PK so an optimistic card pushed on the client collapses
+   * into the real row via realtime id-equality dedupe.
+   */
+  id?: string
 } & (FlfSnapshot | MultishotSnapshot)
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function validateClientId(id: string | undefined): string | undefined {
+  if (id === undefined) return undefined
+  if (!UUID_RE.test(id)) throw new Error('Invalid client-supplied id')
+  return id
+}
 
 // -- FAL upload helpers -------------------------------------------------------
 
@@ -107,6 +122,7 @@ export const generateVideo = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateVideoInput) => data)
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
+    validateClientId(data.id)
     await checkRateLimit(user.id, 'video')
 
     if (!process.env.FAL_KEY) {
@@ -232,6 +248,7 @@ async function generateFlf(
       const { data: record, error: insertError } = await supabase
         .from('user_images')
         .insert({
+          ...(data.id ? { id: data.id } : {}),
           user_id: userId,
           request_id,
           status: 'pending',
@@ -330,6 +347,7 @@ async function generateMultishot(
       const { data: record, error: insertError } = await supabase
         .from('user_images')
         .insert({
+          ...(data.id ? { id: data.id } : {}),
           user_id: userId,
           request_id,
           status: 'pending',

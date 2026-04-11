@@ -1,87 +1,124 @@
-# Continue: FAL MCP verification + genzen `fal-model-add` skill
+# Continue: Phase 3 — Detailed FAL failure messages (ai-video)
 
 ## Where we are
 
-- On `main`, clean. Seedance 2.0 work (PR #124) is **merged** — Seedance is the default video model, `VideoCard` renders model-name title + prompt description, and `generate-video.server.ts` writes the model name into `generation_metadata.model`.
-- FAL's official hosted MCP server is **installed at user scope**: `claude mcp add --scope user --transport http fal-ai https://mcp.fal.ai/mcp --header "Authorization: Bearer $FAL_KEY"` — verified with `claude mcp list` (status: ✓ Connected). Config lives in `~/.claude.json`.
-- The MCP **tools are not yet loaded in the current Claude session** — MCP tools only attach at Claude startup. **Restart Claude before doing anything in Step 1 below.**
-- `FAL_KEY` is in `~/.zshrc` (len=69). A fresh Claude instance inherits it fine.
+- Branch: `feature/optimistic-generation` (pushed, tracks origin)
+- Tracking issue: **#126** — "Instantaneous generation UX + accurate FAL failure messaging"
+- Full plan: `~/.claude/plans/fancy-sauteeing-meteor.md`
+- Phase 1 **done** (commit `c028f5c`): generic `useOptimisticGeneration` primitive + `buildPendingVideo` helper.
+- Phase 2 **done** (latest commit on branch): fire-and-forget generate path. Click → pending card same frame → rapid-fire works → failures flip to `failed` in place. Verified with `pnpm check && pnpm build`.
 
-## The plan (3 steps)
+## Phase 2 recap — what changed, so Phase 3 knows the shape
 
-### Step 1 — Verify the FAL MCP is live and test it
+- `generate-video.server.ts` accepts an optional client-minted `id` (UUID validated) and uses it as `user_images.id` on both FLF and multishot inserts. Non-optimistic callers still work.
+- `use-videos.ts` dropped the `startsWith('optimistic-')` swap branch — the existing `prev.some((v) => v.id === newVideo.id)` dedupe at realtime INSERT time is enough now that client and server share the id. Added `markOptimisticFailed(id, error)` that flips a row's `status` to `'failed'` and stamps `generation_error`.
+- `use-video-sidebar.ts` `generate()` is now **synchronous**. Validates, mints an id via `useOptimisticGeneration`, fires the server call as `void`, returns the id. `generating` state is gone. `onOptimistic(id, state)` and `onError(id, err)` are required options.
+- `VideoGeneratorPanel.tsx` no longer gates the button or form inputs on `generating`. Rapid-fire is unblocked.
+- `video.index.tsx` + `video.edit.$videoId.tsx` wire `onOptimistic: (id, state) => gallery.addOptimisticCard(buildPendingVideo(id, state, sessionParentId))` and `onError: (id, err) => gallery.markOptimisticFailed(id, err)`. Edit route also sets `highlightedId = id` on the pending card so it's immediately selected.
 
-After restart, confirm the `fal-ai` MCP tools show up in your tool list. Expected tools (per FAL docs): something like `search_models`, a schema-fetch tool, an inference tool, a file-upload tool, and a docs browser — but **do not assume the exact names**. List them first, then pick.
+## Problem Phase 3 solves
 
-Smoke test (pick any real FAL model — Seedance 2.0 is a good target since we know the ground truth):
+When FAL rejects a gen, the real message (e.g. "Output audio has sensitive content", "Invalid aspect ratio for model X") is currently lost. Failed cards say `FAL job FAILED` because `check-pending-generations.server.ts:82–102` collapses status to a generic string, and `generate-video.server.ts` has no try/catch around the `fal.queue.submit` call — a submit-time rejection just throws through `withCreditRefund` and the user sees a toast but no persisted card.
 
-1. Use the MCP search tool with a fuzzy query like `"bytedance seedance 2 image to video"`. Confirm it returns `bytedance/seedance-2.0/image-to-video` (no `fal-ai/` prefix) as the top hit.
-2. Use the MCP schema tool to fetch that endpoint's OpenAPI input schema. Confirm it shows `image_url` (required), `end_image_url` (optional), `duration` enum with ~13 values, resolutions `480p/720p`, `generate_audio` default true, and no `cfg_scale` / no `negative_prompt`.
-3. If both work cleanly, the MCP is trustworthy and you can move to Step 2. If the search returns garbage or the schema tool 404s, stop and investigate before writing the skill — the skill depends on these tools being reliable.
+`markOptimisticFailed` (from Phase 2) already surfaces whatever `error.message` the submit threw on the client. Phase 3's job is to make that message *accurate* and to persist the same information on the row itself so the poll path and webhook path (which don't go through the client-side error handler) surface it too.
 
-**Record the exact MCP tool names you used** — the skill in Step 2 will reference them by name.
+## Phase 3 scope
 
-### Step 2 — Write `~/.claude/skills/fal-model-add/SKILL.md`
+Work in this order:
 
-This is a **user-scope skill** (lives in `~/.claude/skills/`, not the repo), because it's a workflow for Josh's local Claude, not something teammates need.
+### 1. `src/lib/server/fal-error.server.ts` — new file
 
-**Trigger phrases to bake into the skill description** (so it auto-fires):
-- "add X model" / "add the X model from FAL"
-- "can we use X on FAL"
-- "verify X model id"
-- any mention of FAL + a model name that isn't already in `ALL_VIDEO_MODELS` or `ALL_IMAGE_MODELS`
+Export `extractFalError(err: unknown)` → structured blob. The FAL SDK throws errors whose `body.detail` is an array of `{ loc, msg, type }` objects; walk it and join the `msg`s. Fallback chain: `body.detail[].msg` → `body.message` → `err.message` → `'FAL request failed'`.
 
-**Skill body — the workflow:**
+Return shape:
 
-1. **Resolve the id.** Call the MCP search tool with the user's fuzzy name. If there's one obvious match, proceed. If ambiguous (e.g. multiple Seedance variants), present the candidates and ask the user to pick. **Never guess the id from naming conventions** — this is a hard rule, see `feedback_fal_verify_model_ids.md`. Some ids are vendor-namespaced with no `fal-ai/` prefix.
-2. **Fetch the schema.** Call the MCP schema tool for the resolved id. Keep the raw schema in context — you'll need multiple fields.
-3. **Decide video vs image.** Video endpoints have `duration` / `resolution` / output is a video; image endpoints output images. Pick the matching registry:
-   - Video → `src/features/ai-video/video-models.ts` (`VideoModel` interface, `ALL_VIDEO_MODELS` array)
-   - Image → `src/features/ai-images/models.ts` (`ImageModel` interface, `ALL_IMAGE_MODELS` array)
-4. **Map the schema to the TS interface.** The non-obvious mappings:
-   - `supportsFlf` ← `end_image_url` present in input schema
-   - `supportsCfgScale` ← `cfg_scale` present
-   - `supportsNegativePrompt` ← `negative_prompt` present
-   - `durations` ← the `duration` enum values, **curated** to a sensible subset (Seedance had 13 raw values; we exposed 3). Pick short/medium/long representatives unless the user says otherwise.
-   - `resolutions` ← the `resolution` enum, passed through.
-   - `defaultResolution` ← the schema's default, or the highest if no default.
-   - Name / label / description: use the human name from FAL's model metadata (search result), not the raw id.
-5. **Emit a paste-ready TS entry** with a confidence verdict line: `// Verified via FAL MCP: <tool_name> returned schema on <ISO date>`.
-6. **Insert at the correct position.** If the user said "make it default" / "promote it", insert at index 0 (which makes `DEFAULT_VIDEO_MODEL` / `DEFAULT_IMAGE_MODEL` pick it up — see how Seedance was added). Otherwise insert below any existing locked/featured models.
-7. **Run `pnpm check` + `pnpm build`.** Fix any TS errors. Do not mark the task done until both pass.
-8. **Report what changed** with the file path and the new model's name + id.
+```ts
+export interface FalErrorBlob {
+  status: 'failed'
+  code: string          // e.g. 'fal_submit', 'fal_queue', 'fal_webhook', 'unknown'
+  message: string       // human-readable
+  fal_request_id?: string
+  failed_at: string     // ISO
+  stage: 'submit' | 'queue' | 'webhook'
+}
+```
 
-**Hard rules in the skill body:**
-- ❌ No `WebFetch` fallback. If the MCP can't resolve the model, ask the user directly.
-- ❌ No guessing ids from naming patterns.
-- ❌ Do not touch the generation pipeline — `fetchVideoModelSchema()` auto-detects schema at runtime, so a new registry entry is the only code change needed.
-- ✅ First pass is **video-only**. Image support is a trivial extension (same workflow, different interface + registry file); add it to the skill as a second code path once video is proven.
+Pure function, no logging — callers log. Unit-test against representative fixtures.
 
-**Genzen-specific context the skill should know** (include in the SKILL.md body):
-- Registry files: `src/features/ai-video/video-models.ts`, `src/features/ai-images/models.ts`
-- `DEFAULT_VIDEO_MODEL` / `DEFAULT_IMAGE_MODEL` are just `ALL_*_MODELS[0]` — order matters.
-- Homepage `ModelShowcase` reads from the same arrays; index 0 shows first with a `New` badge if `isNew: true`.
-- Commit convention: `feat: add <model name> as <video|image> model` for a new entry, `feat: promote <model> as default <video|image> model` if re-ordering.
+### 2. Widen `VideoGenerationMetadata.error`
 
-### Step 3 — Optional smoke test
+`src/features/ai-video/video-types.ts:54` currently has `error?: string`. Change to `error?: FalErrorBlob`. Keep the `generation_error` column as a `string` mirror of `error.message` — no Supabase schema change needed (`generation_metadata` is `jsonb`).
 
-Once the skill is written, test it by asking Claude "add the Kling 2.0 video model from FAL" (or any other model not currently in `ALL_VIDEO_MODELS`). Confirm the skill fires, the MCP resolves the id, and the generated entry type-checks and builds. If it works end-to-end without manual intervention, the skill is done.
+Grep for reads of `generation_metadata.error` before flipping the type. Current check: only written, never read — VideoCard reads `generation_error`. Safe.
 
-## Why this exists
+### 3. Wire `extractFalError` into `generate-video.server.ts`
 
-Seedance 2.0 onboarding had a painful guessing loop: I assumed the id was `fal-ai/bytedance/seedance-2.0/image-to-video`, user pushed back, I verified against FAL's OpenAPI schema endpoint and found the correct `bytedance/seedance-2.0/image-to-video`. That dance should never happen again. The MCP makes verification a single tool call; the skill makes sure I actually reach for it instead of guessing.
+Both `generateFlf` and `generateMultishot` do `const { request_id } = await fal.queue.submit(...)` with no try/catch. Wrap it:
+
+```ts
+let request_id: string
+try {
+  const result = await fal.queue.submit(videoModel, { ... })
+  request_id = result.request_id
+} catch (err) {
+  const blob = extractFalError(err)
+  blob.stage = 'submit'
+  // Insert a failed row using the client id so the optimistic card collapses
+  // into it via realtime. Rethrow so withCreditRefund refunds the credit.
+  await supabase.from('user_images').insert({
+    ...(data.id ? { id: data.id } : {}),
+    user_id: userId,
+    status: 'failed',
+    source: 'ai_video',
+    title: getVideoModelName(videoModel),
+    generation_error: blob.message,
+    generation_metadata: {
+      method: 'flf',  // or 'multishot' in the other branch
+      parent_id: data.parentId ?? null,
+      model: videoModel,
+      submitted_at: new Date().toISOString(),
+      error: blob,
+    },
+  })
+  throw new Error(blob.message)
+}
+```
+
+The rethrow is important — `withCreditRefund` depends on the throw to refund. The client's `onError` handler will also fire `markOptimisticFailed`; that's harmless double-marking because the realtime INSERT/UPDATE will overwrite with the server's blob.
+
+### 4. `src/lib/server/check-pending-generations.server.ts`
+
+Around line 82–102 there's a block that builds a lossy `` `FAL job ${statusStr}` `` string when a queued gen returns non-completed status. Replace with `extractFalError` on whatever the queue result exposes. Check `@fal-ai/client` types to see what's actually available — don't guess. Preferentially walk `response.logs[].message` or `response.error.detail`; last-resort fallback synthesizes `{ stage: 'queue', message: 'FAL queue reported error' }`.
+
+Then update the row:
+
+```ts
+await supabase.from('user_images').update({
+  status: 'failed',
+  generation_error: blob.message,
+  generation_metadata: { ...existing, error: blob },
+}).eq('id', video.id)
+```
+
+### 5. Webhook route
+
+FAL webhook handler lives in `server/api/` (check `project_fal_webhooks` memory for the exact path). On a non-OK webhook payload, extract the blob with `stage: 'webhook'` and persist the same way as step 4.
+
+## Exit criteria
+
+1. `pnpm check && pnpm build` clean.
+2. Force a real FAL failure (e.g. `generate_audio` + a prompt that trips the safety filter, or an invalid aspect ratio). Card shows the real FAL message, not "FAL job FAILED".
+3. Force a submit-time failure (easiest: temporarily break `FAL_KEY` in `.env.local`). Optimistic card flips to `failed` with the real message and credit is refunded.
+4. Commit: `feat(video): Phase 3 — structured FAL error capture end-to-end` (reference #126).
+5. Push, then close #126.
 
 ## Git state
 
-- Branch: `main`, up to date with `origin/main`
-- Last commit: `9f6c1f0` (merged PR #124 — Seedance 2.0)
-- Feature branch `feature/seedance-2.0` deleted locally and on remote
-- Uncommitted: the previous `continue.md` was deleted (tracked deletion pending); this new one is being written fresh
-- Nothing else dirty
+- Clean working tree on `feature/optimistic-generation` at the Phase 2 commit.
+- `main` untouched — all work on the feature branch per solo-dev workflow memory.
 
-## Sanity checks on resume
+## Notes / gotchas
 
-1. `git status` — should show just `continue.md` changes, nothing else
-2. Restart Claude if you haven't already (MCP tools won't be there otherwise)
-3. Check that `fal-ai` MCP tools appear in your tool list (look for names containing `search`, `schema`, `model`)
-4. If yes → Step 1 (smoke test). If no → `claude mcp list` to debug; server may need the auth header refreshed.
+- Phase 2's `markOptimisticFailed` only sets `generation_error`, not `generation_metadata.error`. Once the type is widened, leave that client path as-is — let the server be the source of truth for the structured blob; the realtime INSERT/UPDATE overwrites the client-side placeholder fast enough.
+- Don't skip the webhook path — it's what fires in production when webhooks are enabled. The poll path is the dev/fallback.
+- A Phase 4 "expand details on failed card" UI could read `generation_metadata.error` and show stage/code/request_id. Out of scope here but worth noting.

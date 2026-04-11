@@ -8,6 +8,7 @@ import { VideoGeneratorPanel } from '@/features/ai-video/components/VideoGenerat
 import { VideoGallery } from '@/features/ai-video/components/VideoGallery'
 import { useVideos } from '@/features/ai-video/hooks/use-videos'
 import { useVideoSidebar } from '@/features/ai-video/hooks/use-video-sidebar'
+import { buildPendingVideo } from '@/features/ai-video/lib/build-pending-video'
 import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { CREDIT_COSTS } from '@/features/credits'
@@ -51,8 +52,13 @@ function VideoEditPage() {
   const sidebar = useVideoSidebar({
     accessToken,
     sessionParentId,
+    onOptimistic: (id, state) => {
+      gallery.addOptimisticCard(buildPendingVideo(id, state, sessionParentId))
+      // Highlight the pending card the same frame it appears.
+      setHighlightedId(id)
+    },
+    onError: (id, err) => gallery.markOptimisticFailed(id, err),
     onGenerated: (result) => {
-      // Highlight the freshly generated placeholder
       setHighlightedId(result.recordId)
     },
   })

@@ -47,6 +47,7 @@ export interface VideoGalleryState {
   addOptimisticCard: (card: SavedAiVideo) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiVideo) => void
   removeOptimisticCard: (optimisticId: string) => void
+  markOptimisticFailed: (id: string, error: Error) => void
   ungroupChildren: (v: SavedAiVideo) => Promise<void>
   refresh: () => Promise<void>
 }
@@ -155,14 +156,6 @@ export function useVideos({
 
             setVideos((prev) => {
               if (prev.some((v) => v.id === newVideo.id)) return prev
-
-              // Check for optimistic placeholder
-              const optimisticIdx = prev.findIndex((v) =>
-                v.id.startsWith('optimistic-'),
-              )
-              if (optimisticIdx !== -1) {
-                return prev.map((v, i) => (i === optimisticIdx ? newVideo : v))
-              }
 
               // Bump parent's sort_order when a child is added
               const parentId = newVideo.generation_metadata?.parent_id
@@ -368,6 +361,21 @@ export function useVideos({
     setVideos((prev) => prev.filter((v) => v.id !== optimisticId))
   }, [])
 
+  const markOptimisticFailed = useCallback((id: string, error: Error) => {
+    setVideos((prev) =>
+      prev.map(
+        (v): SavedAiVideo =>
+          v.id === id
+            ? {
+                ...v,
+                status: 'failed' as const,
+                generation_error: error.message,
+              }
+            : v,
+      ),
+    )
+  }, [])
+
   const ungroupChildren = useCallback(
     async (v: SavedAiVideo) => {
       if (!accessToken) return
@@ -387,6 +395,7 @@ export function useVideos({
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,
+    markOptimisticFailed,
     ungroupChildren,
     refresh: loadVideos,
   }

@@ -72,15 +72,11 @@ export function VideoGeneratorPanel({
     ? 'completed'
     : 'idle'
 
-  const disabled =
-    sidebar.generating ||
-    (isFlf ? !sidebar.firstFrameRecordId : !sidebar.firstFrameUrl)
+  // Never gate the button on an in-flight submit -- rapid-fire should always
+  // be allowed. Only disable when the form itself isn't ready.
+  const disabled = isFlf ? !sidebar.firstFrameRecordId : !sidebar.firstFrameUrl
 
-  const generateLabel = sidebar.generating
-    ? 'Generating...'
-    : isFlf
-      ? 'Generate Video'
-      : 'Generate Multi-Shot'
+  const generateLabel = isFlf ? 'Generate Video' : 'Generate Multi-Shot'
 
   return (
     <div className="space-y-4">
@@ -244,7 +240,6 @@ export function VideoGeneratorPanel({
             placeholder="Describe how the scene transitions between frames..."
             value={sidebar.prompt}
             onChange={(e) => sidebar.setPrompt(e.target.value)}
-            disabled={sidebar.generating}
             rows={3}
           />
         </div>
@@ -259,7 +254,6 @@ export function VideoGeneratorPanel({
               <button
                 key={d}
                 onClick={() => sidebar.setDuration(d)}
-                disabled={sidebar.generating}
                 className={cn(
                   'px-3 py-1.5 text-xs rounded border transition-colors',
                   sidebar.duration === d
@@ -288,7 +282,6 @@ export function VideoGeneratorPanel({
             step="0.05"
             value={sidebar.cfgScale}
             onChange={(e) => sidebar.setCfgScale(parseFloat(e.target.value))}
-            disabled={sidebar.generating}
             className="w-full accent-accent-brand"
           />
         </div>
@@ -304,7 +297,6 @@ export function VideoGeneratorPanel({
             placeholder="Things to avoid in the video..."
             value={sidebar.negativePrompt}
             onChange={(e) => sidebar.setNegativePrompt(e.target.value)}
-            disabled={sidebar.generating}
             rows={2}
           />
         </div>
