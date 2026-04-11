@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { Check, Clipboard, KeyRound, Save, Trash2, X } from 'lucide-react'
+import {
+  AlertCircle,
+  Check,
+  Clipboard,
+  KeyRound,
+  Save,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { useAnthropicKey } from '../hooks/useAnthropicKey'
 import { useADChat } from '../hooks/useADChat'
 import { useADContext } from '../context/ad-context'
@@ -71,8 +79,15 @@ export function ADPanel() {
 }
 
 function ChatBody() {
-  const { messages, sendMessage, isStreaming, abort, clearHistory } =
-    useADChat()
+  const {
+    messages,
+    sendMessage,
+    isStreaming,
+    abort,
+    clearHistory,
+    error,
+    clearError,
+  } = useADChat()
   const { loadedNote, clearLoadedNote } = useADContext()
   const { session } = useAuth()
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
@@ -152,6 +167,21 @@ function ChatBody() {
         onSavePrompt={handleSavePrompt}
         onSelectOption={sendMessage}
       />
+      {error && (
+        <div className="flex items-start gap-2 border-t border-destructive/30 bg-destructive/10 px-4 py-2">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+          <p className="flex-1 text-xs leading-relaxed text-destructive">
+            {error}
+          </p>
+          <button
+            onClick={clearError}
+            className="shrink-0 rounded p-0.5 text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Dismiss error"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
       <SkillChipRow
         onLaunch={(text) => sendMessage(text)}
         disabled={isStreaming}

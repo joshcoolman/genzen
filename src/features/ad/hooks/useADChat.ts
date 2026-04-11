@@ -176,12 +176,23 @@ export function useADChat() {
   const { messages, setMessages, clearHistory } = useChatHistory()
   const { systemPrompt, contextImages } = useADContext()
   const [isStreaming, setIsStreaming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const rafRef = useRef<number | null>(null)
 
+  const clearError = useCallback(() => setError(null), [])
+
   const sendMessage = useCallback(
     async (text: string, images?: Array<ADImage>) => {
-      if (!client || !text.trim() || isStreaming) return
+      if (!text.trim() || isStreaming) return
+      if (!client) {
+        setError(
+          "AD isn't configured. Re-enter your Anthropic API key from the panel header to continue.",
+        )
+        return
+      }
+      // Clear any prior error once the user successfully kicks off a new send
+      setError(null)
 
       // Snapshot the context images for this turn. They are NOT stored on the
       // persisted ADMessage — they are attached to the API request at
@@ -388,6 +399,10 @@ export function useADChat() {
             }
             return prev
           })
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          setError(
+            `AD hit an error: ${message}. Try sending again — if it keeps happening, log out and back in, or check your Anthropic API key.`,
+          )
           console.error('AD chat error:', err)
         }
       } finally {
@@ -402,5 +417,13 @@ export function useADChat() {
     abortRef.current?.abort()
   }, [])
 
-  return { messages, sendMessage, isStreaming, abort, clearHistory }
+  return {
+    messages,
+    sendMessage,
+    isStreaming,
+    abort,
+    clearHistory,
+    error,
+    clearError,
+  }
 }
