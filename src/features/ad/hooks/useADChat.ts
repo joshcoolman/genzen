@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useADContext } from '../context/ad-context'
+import { getSkill } from '../skills/registry'
 import { useClaudeClient } from './useClaudeClient'
 import { useChatHistory } from './useChatHistory'
 import type Anthropic from '@anthropic-ai/sdk'
@@ -23,6 +24,13 @@ export interface ClarifyingCardTool {
   options: Array<string>
 }
 
+export interface LoadedSkillRef {
+  /** Tool-use id from the API call that loaded it */
+  id: string
+  name: string
+  body: string
+}
+
 export interface ADMessage {
   id: string
   role: 'user' | 'assistant'
@@ -32,6 +40,8 @@ export interface ADMessage {
     | { id: string; name: 'create_prompt_card'; input: PromptCardTool }
     | { id: string; name: 'create_clarifying_card'; input: ClarifyingCardTool }
   >
+  /** Skills loaded by AD during this assistant turn, rendered as chips above content */
+  skillsLoaded?: Array<LoadedSkillRef>
 }
 
 function buildMessageContent(
@@ -56,6 +66,23 @@ function buildMessageContent(
     ),
     { type: 'text' as const, text },
   ]
+}
+
+const LOAD_SKILL_TOOL: Anthropic.Tool = {
+  name: 'load_skill',
+  description:
+    'Load the full body of a skill from the library. Call this before composing a prompt card when a skill description matches the user intent. The returned body contains detailed guidance you should apply to your answer. You may load multiple skills in parallel if more than one applies.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      name: {
+        type: 'string',
+        description:
+          'Skill name exactly as listed in the Available Skills section of the system prompt',
+      },
+    },
+    required: ['name'],
+  },
 }
 
 const CLARIFYING_CARD_TOOL: Anthropic.Tool = {
@@ -159,74 +186,157 @@ export function useADChat() {
       // Add placeholder assistant message
       setMessages([...next, assistantMsg])
 
+      // Messages shaped for the Anthropic API. Mutated across agentic iterations
+      // when load_skill fires (we append assistant tool_use + user tool_result
+      // and re-stream). Existing render-tools (create_prompt_card,
+      // create_clarifying_card) stay terminal and break the loop.
+      const apiMessages: Array<Anthropic.MessageParam> = next.map((m) => ({
+        role: m.role,
+        content: buildMessageContent(m.content, m.images),
+      }))
+
+      const loadedSkills: Array<LoadedSkillRef> = []
+
       try {
-        const stream = client.messages.stream(
-          {
-            model: 'claude-sonnet-4-6',
-            max_tokens: 4096,
-            system: systemPrompt,
-            tools: [PROMPT_CARD_TOOL, CLARIFYING_CARD_TOOL],
-            messages: next.map((m) => ({
-              role: m.role,
-              content: buildMessageContent(m.content, m.images),
-            })),
-          },
-          { signal: controller.signal },
-        )
+        // Agentic loop: keeps re-streaming as long as the model calls load_skill.
+        // When a turn has zero load_skill calls, we commit and break.
+        // Hard cap to prevent runaway cycles from a misbehaving model.
+        const MAX_ITERATIONS = 6
+        let iteration = 0
+        let committed = false
 
-        stream.on('text', (delta) => {
-          accumulated += delta
-          // rAF-throttled state updates
-          if (rafRef.current === null) {
-            rafRef.current = requestAnimationFrame(() => {
-              rafRef.current = null
-              setMessages((prev: Array<ADMessage>) => {
-                const updated = [...prev]
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  content: accumulated,
-                }
-                return updated
+        while (iteration < MAX_ITERATIONS) {
+          iteration++
+          accumulated = ''
+
+          const stream = client.messages.stream(
+            {
+              model: 'claude-sonnet-4-6',
+              max_tokens: 4096,
+              system: systemPrompt,
+              tools: [LOAD_SKILL_TOOL, PROMPT_CARD_TOOL, CLARIFYING_CARD_TOOL],
+              messages: apiMessages,
+            },
+            { signal: controller.signal },
+          )
+
+          stream.on('text', (delta) => {
+            accumulated += delta
+            // rAF-throttled state updates
+            if (rafRef.current === null) {
+              rafRef.current = requestAnimationFrame(() => {
+                rafRef.current = null
+                setMessages((prev: Array<ADMessage>) => {
+                  const updated = [...prev]
+                  updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    content: accumulated,
+                    skillsLoaded:
+                      loadedSkills.length > 0 ? [...loadedSkills] : undefined,
+                  }
+                  return updated
+                })
               })
-            })
-          }
-        })
-
-        const finalMsg = await stream.finalMessage()
-
-        // Final flush
-        if (rafRef.current !== null) {
-          cancelAnimationFrame(rafRef.current)
-          rafRef.current = null
-        }
-
-        // Extract tool calls from final message
-        const toolCalls = finalMsg.content
-          .filter((block) => block.type === 'tool_use')
-          .map((block) => {
-            if (block.name === 'create_clarifying_card') {
-              return {
-                id: block.id,
-                name: 'create_clarifying_card' as const,
-                input: block.input as ClarifyingCardTool,
-              }
-            }
-            return {
-              id: block.id,
-              name: 'create_prompt_card' as const,
-              input: block.input as PromptCardTool,
             }
           })
 
-        setMessages((prev: Array<ADMessage>) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: accumulated,
-            toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          const finalMsg = await stream.finalMessage()
+
+          // Final flush
+          if (rafRef.current !== null) {
+            cancelAnimationFrame(rafRef.current)
+            rafRef.current = null
           }
-          return updated
-        })
+
+          const loadSkillUses = finalMsg.content.filter(
+            (block): block is Anthropic.ToolUseBlock =>
+              block.type === 'tool_use' && block.name === 'load_skill',
+          )
+
+          if (loadSkillUses.length === 0) {
+            // Terminal turn — extract render-tool calls and commit
+            const toolCalls = finalMsg.content
+              .filter(
+                (block): block is Anthropic.ToolUseBlock =>
+                  block.type === 'tool_use',
+              )
+              .map((block) => {
+                if (block.name === 'create_clarifying_card') {
+                  return {
+                    id: block.id,
+                    name: 'create_clarifying_card' as const,
+                    input: block.input as ClarifyingCardTool,
+                  }
+                }
+                return {
+                  id: block.id,
+                  name: 'create_prompt_card' as const,
+                  input: block.input as PromptCardTool,
+                }
+              })
+
+            setMessages((prev: Array<ADMessage>) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                content: accumulated,
+                toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+                skillsLoaded:
+                  loadedSkills.length > 0 ? [...loadedSkills] : undefined,
+              }
+              return updated
+            })
+            committed = true
+            break
+          }
+
+          // Agentic continuation: resolve skills, append tool_use + tool_result,
+          // track for UI, and let the loop re-stream.
+          apiMessages.push({ role: 'assistant', content: finalMsg.content })
+          apiMessages.push({
+            role: 'user',
+            content: loadSkillUses.map((use) => {
+              const skillName =
+                typeof use.input === 'object' &&
+                use.input !== null &&
+                'name' in use.input &&
+                typeof (use.input as { name: unknown }).name === 'string'
+                  ? (use.input as { name: string }).name
+                  : ''
+              const skill = skillName ? getSkill(skillName) : undefined
+              if (skill) {
+                loadedSkills.push({
+                  id: use.id,
+                  name: skill.name,
+                  body: skill.body,
+                })
+              }
+              return {
+                type: 'tool_result',
+                tool_use_id: use.id,
+                content: skill
+                  ? skill.body
+                  : `Skill "${skillName}" not found. Do not retry; compose your answer without it.`,
+              }
+            }),
+          })
+        }
+
+        if (!committed) {
+          // Hit iteration cap — commit whatever we have so the user isn't stranded
+          setMessages((prev: Array<ADMessage>) => {
+            const updated = [...prev]
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content:
+                accumulated ||
+                '(AD stopped after too many skill-loading iterations.)',
+              skillsLoaded:
+                loadedSkills.length > 0 ? [...loadedSkills] : undefined,
+            }
+            return updated
+          })
+        }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === 'AbortError') {
           // User aborted -- keep partial response

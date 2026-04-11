@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import { useLocation } from '@tanstack/react-router'
+import { buildSkillsIndex } from '../skills/registry'
 
 interface LoadedNote {
   id: string
@@ -152,12 +153,18 @@ const ROUTE_DESCRIPTIONS: Record<string, string> = {
     'The user is on the Prompt Studio page -- running prompts against multiple LLMs in parallel.',
 }
 
+const SKILLS_INDEX = buildSkillsIndex()
+
 function buildSystemPrompt(
   route: string,
   featureContexts: Map<string, string>,
   loadedNote: LoadedNote | null,
 ): string {
   const parts = [BASE_SYSTEM_PROMPT.trim()]
+
+  if (SKILLS_INDEX) {
+    parts.push(SKILLS_INDEX)
+  }
 
   // Add route description
   const routeDesc = ROUTE_DESCRIPTIONS[route]
