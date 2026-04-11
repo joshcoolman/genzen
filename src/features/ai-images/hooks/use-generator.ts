@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
+import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
 import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
@@ -81,6 +82,9 @@ export interface GeneratorState {
   removeRefImage: (id: string) => void
   maxRefImages: number
   setAutoRefImageIds: (ids: Array<string>) => void
+  /** Index of the prompt currently being enhanced, or null. */
+  enhancingPromptIndex: number | null
+  handleEnhancePrompt: (index: number) => Promise<void>
 }
 
 export function useGenerator({
@@ -138,6 +142,9 @@ export function useGenerator({
     name: string
   } | null>(null)
   const [describingImage, setDescribingImage] = useState(false)
+  const [enhancingPromptIndex, setEnhancingPromptIndex] = useState<
+    number | null
+  >(null)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
   const [autoRefImageIds, setAutoRefImageIds] = useState<Array<string>>(
@@ -436,6 +443,36 @@ export function useGenerator({
     }
   }, [accessToken, sourceImage, describingImage])
 
+  const handleEnhancePrompt = useCallback(
+    async (index: number) => {
+      if (!accessToken || enhancingPromptIndex !== null) return
+      const current = prompts[index]?.trim()
+      if (!current) {
+        setError('Enter a prompt before enhancing.')
+        return
+      }
+      setEnhancingPromptIndex(index)
+      try {
+        const { enhancedPrompt } = await enhancePrompt({
+          data: { accessToken, prompt: current },
+        })
+        setPromptsRaw((prev) => {
+          const next = [...prev]
+          next[index] = enhancedPrompt
+          persistPrompts(next)
+          return next
+        })
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to enhance prompt'
+        setError(message)
+      } finally {
+        setEnhancingPromptIndex(null)
+      }
+    },
+    [accessToken, enhancingPromptIndex, prompts, setError],
+  )
+
   const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
     setPromptsRaw((prev) => {
       const kept = prev.filter((p) => p.trim())
@@ -497,5 +534,7 @@ export function useGenerator({
     removeRefImage,
     maxRefImages,
     setAutoRefImageIds,
+    enhancingPromptIndex,
+    handleEnhancePrompt,
   }
 }

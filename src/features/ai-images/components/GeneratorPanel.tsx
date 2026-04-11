@@ -130,6 +130,8 @@ export function GeneratorPanel({
         generatePromptsConfig={generator.generatePromptsConfig ?? undefined}
         onClearPrompts={generator.clearPrompts}
         onPastePrompts={generator.pastePrompts}
+        onEnhancePrompt={generator.handleEnhancePrompt}
+        enhancingPromptIndex={generator.enhancingPromptIndex}
       />
 
       {/* Ref images -- show when model supports refs */}

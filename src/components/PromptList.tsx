@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { GeneratePromptsDialog } from '@/features/ai-images/components/GeneratePromptsDialog'
 import { PastePromptsDialog } from '@/features/ai-images/components/PastePromptsDialog'
@@ -22,6 +23,10 @@ interface PromptListProps {
   onClearPrompts?: () => void
   // Optional: paste multiple prompts at once
   onPastePrompts?: (prompts: Array<string>) => void
+  // Optional: enhance prompt via LLM (loosely coupled — only renders if provided)
+  onEnhancePrompt?: (index: number) => void | Promise<void>
+  // Index of the prompt currently being enhanced (shows spinner on that row)
+  enhancingPromptIndex?: number | null
 }
 
 export function PromptList({
@@ -39,6 +44,8 @@ export function PromptList({
   generatePromptsConfig,
   onClearPrompts,
   onPastePrompts,
+  onEnhancePrompt,
+  enhancingPromptIndex,
 }: PromptListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
@@ -56,42 +63,77 @@ export function PromptList({
           Clear prompts
         </button>
       )}
-      {prompts.map((promptText, index) => (
-        <div key={index} className="relative">
-          <Textarea
-            id={index === 0 ? 'prompt-textarea' : `prompt-textarea-${index}`}
-            placeholder={
-              index === 0 ? placeholders.first : placeholders.additional
-            }
-            value={promptText}
-            onChange={(e) => onUpdatePrompt(index, e.target.value)}
-            disabled={disabled}
-            rows={index === 0 ? 4 : 3}
-            className="text-xs pr-7"
-          />
-          {index === 0 ? (
-            canClear && (
+      {prompts.map((promptText, index) => {
+        const isEnhancing = enhancingPromptIndex === index
+        const anyEnhancing =
+          enhancingPromptIndex !== null && enhancingPromptIndex !== undefined
+        const canEnhance =
+          Boolean(onEnhancePrompt) &&
+          promptText.trim().length > 0 &&
+          !disabled &&
+          !anyEnhancing
+        return (
+          <div key={index} className="relative">
+            <Textarea
+              id={index === 0 ? 'prompt-textarea' : `prompt-textarea-${index}`}
+              placeholder={
+                index === 0 ? placeholders.first : placeholders.additional
+              }
+              value={promptText}
+              onChange={(e) => onUpdatePrompt(index, e.target.value)}
+              disabled={disabled || isEnhancing}
+              rows={index === 0 ? 4 : 3}
+              className="text-xs pr-7"
+            />
+            {index === 0 ? (
+              canClear && (
+                <button
+                  type="button"
+                  onClick={onClear}
+                  className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                  title="Clear all prompts, source image, and references"
+                >
+                  <XIcon />
+                </button>
+              )
+            ) : (
               <button
                 type="button"
-                onClick={onClear}
+                onClick={() => onRemovePrompt(index)}
                 className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
-                title="Clear all prompts, source image, and references"
+                title="Remove this prompt"
               >
                 <XIcon />
               </button>
-            )
-          ) : (
-            <button
-              type="button"
-              onClick={() => onRemovePrompt(index)}
-              className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
-              title="Remove this prompt"
-            >
-              <XIcon />
-            </button>
-          )}
-        </div>
-      ))}
+            )}
+            {onEnhancePrompt && (
+              <button
+                type="button"
+                onClick={() => void onEnhancePrompt(index)}
+                disabled={!canEnhance && !isEnhancing}
+                title={
+                  promptText.trim().length === 0
+                    ? 'Enter a prompt to enhance'
+                    : 'Enhance prompt with AI'
+                }
+                className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-md border border-border/60 bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+              >
+                {isEnhancing ? (
+                  <>
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    Enhancing…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-2.5 w-2.5" />
+                    Enhance
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )
+      })}
       <div
         className={
           generatePromptsConfig || onPastePrompts ? 'flex gap-2' : undefined
