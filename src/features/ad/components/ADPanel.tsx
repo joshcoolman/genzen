@@ -7,6 +7,7 @@ import { useADContext } from '../context/ad-context'
 import { ADSetup } from './ADSetup'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
+import { SkillChipRow } from './SkillChipRow'
 import type { ADMessage } from '../hooks/useADChat'
 import { useADOpen } from '@/lib/use-ad-open'
 import { useAuth } from '@/lib/auth'
@@ -150,6 +151,10 @@ function ChatBody() {
         onCopyPrompt={handleCopyPrompt}
         onSavePrompt={handleSavePrompt}
         onSelectOption={sendMessage}
+      />
+      <SkillChipRow
+        onLaunch={(text) => sendMessage(text)}
+        disabled={isStreaming}
       />
       <ChatInput
         onSend={sendMessage}

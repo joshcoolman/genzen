@@ -18,6 +18,8 @@ function stripImagesForStorage(messages: Array<ADMessage>): Array<ADMessage> {
     })),
     // Persist tool calls so PromptCards/ClarifyingCards survive panel close/reopen
     toolCalls: m.toolCalls,
+    // Persist loaded skills so the chip survives panel close/reopen
+    skillsLoaded: m.skillsLoaded,
   }))
 }
 

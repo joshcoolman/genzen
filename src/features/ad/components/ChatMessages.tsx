@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Check, Copy, Save } from 'lucide-react'
+import { SkillLoadedCard } from './SkillLoadedCard'
 import type {
   ADMessage,
   ClarifyingCardTool,
@@ -262,10 +263,23 @@ function MessageBubble({
   )
 
   const isEmpty =
-    !message.content && (!message.toolCalls || message.toolCalls.length === 0)
+    !message.content &&
+    (!message.toolCalls || message.toolCalls.length === 0) &&
+    (!message.skillsLoaded || message.skillsLoaded.length === 0)
 
   return (
     <div className="flex w-full flex-col gap-2">
+      {message.skillsLoaded && message.skillsLoaded.length > 0 && (
+        <div className="flex w-full flex-col gap-1">
+          {message.skillsLoaded.map((skill) => (
+            <SkillLoadedCard
+              key={skill.id}
+              name={skill.name}
+              body={skill.body}
+            />
+          ))}
+        </div>
+      )}
       {isEmpty && (
         <div className="flex items-center gap-1 px-1 py-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
