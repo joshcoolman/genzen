@@ -21,6 +21,7 @@ export interface ThumbnailProps {
   pendingBackgroundUrl?: string
 
   failedMessage?: string
+  failedBackgroundUrl?: string
 
   label?: string
   topLeftBadge?: string
@@ -59,6 +60,7 @@ export function Thumbnail({
   pendingLabel,
   pendingBackgroundUrl,
   failedMessage,
+  failedBackgroundUrl,
   label,
   topLeftBadge,
   onDelete,
@@ -182,13 +184,22 @@ export function Thumbnail({
               </div>
             </div>
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-card">
-              <span className="text-xs text-destructive">Failed</span>
-              {failedMessage && (
-                <span className="text-[10px] text-muted-foreground text-center px-4">
-                  {failedMessage}
-                </span>
-              )}
+            <div className="relative flex h-full w-full flex-col items-center justify-center gap-1 bg-card">
+              {failedBackgroundUrl ? (
+                <img
+                  src={failedBackgroundUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover grayscale opacity-20"
+                />
+              ) : null}
+              <div className="relative z-10 flex flex-col items-center gap-1 px-4">
+                <span className="text-xs text-destructive">Failed</span>
+                {failedMessage && (
+                  <span className="text-[10px] text-foreground/80 text-center">
+                    {failedMessage}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 

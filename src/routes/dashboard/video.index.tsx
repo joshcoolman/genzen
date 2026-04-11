@@ -19,6 +19,7 @@ import { VideoGallery } from '@/features/ai-video/components/VideoGallery'
 import { VideoParentPickerDialog } from '@/features/ai-video/components/VideoParentPickerDialog'
 import { useVideos } from '@/features/ai-video/hooks/use-videos'
 import { useVideoSidebar } from '@/features/ai-video/hooks/use-video-sidebar'
+import { buildPendingVideo } from '@/features/ai-video/lib/build-pending-video'
 import { useReparentVideo } from '@/features/ai-video/hooks/use-reparent-video'
 import { groupVideos } from '@/features/ai-video/server/group-videos.server'
 import { ungroupVideos } from '@/features/ai-video/server/ungroup-videos.server'
@@ -51,6 +52,10 @@ function VideoPage() {
   const sidebar = useVideoSidebar({
     accessToken,
     sessionParentId: null, // Main page has no session origin
+    onOptimistic: (id, state) => {
+      gallery.addOptimisticCard(buildPendingVideo(id, state, null))
+    },
+    onError: (id, err) => gallery.markOptimisticFailed(id, err),
     onGenerated: () => {
       // The realtime subscription will pick up the new row automatically.
     },

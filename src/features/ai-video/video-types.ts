@@ -1,6 +1,8 @@
 // Unified video types for the new gallery + edit architecture (Phase 5).
 // Distinct from the old ai-video/types.ts which is FLF-specific.
 
+import type { FalErrorBlob } from '@/lib/server/fal-error.server'
+
 export type VideoMethod = 'flf' | 'multishot'
 
 export interface VideoShot {
@@ -51,7 +53,7 @@ export type VideoGenerationMetadata = {
   fal_url?: string
   thumbnail_url?: string
   submitted_at?: string
-  error?: string
+  error?: FalErrorBlob
 } & (Partial<FlfSnapshot> | Partial<MultishotSnapshot>) & {
     // backward-compat
     type?: 'multishot'

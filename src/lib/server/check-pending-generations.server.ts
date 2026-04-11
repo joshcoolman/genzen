@@ -3,10 +3,11 @@ import { fal } from '@fal-ai/client'
 import { requireAuth } from './auth.server'
 import { getSupabaseAdmin } from './supabase-admin.server'
 import {
-  markGenerationFailed,
+  markGenerationFailedWithBlob,
   processImageResult,
   processVideoResult,
 } from './fal-completion.server'
+import { extractFalError } from './fal-error.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -75,29 +76,49 @@ export const checkPendingGenerations = createServerFn({ method: 'POST' })
               )
             }
             completed++
-          } else if (record.status === 'pending') {
-            // Only mark as failed if the record was pending (not already failed)
+          } else {
+            // Non-COMPLETED branch: either the row is still pending, or it's
+            // already marked failed but may be missing structured error detail.
+            // Re-query the queue so we can backfill the real FAL message.
             const statusStr = status.status as string
             if (statusStr !== 'IN_QUEUE' && statusStr !== 'IN_PROGRESS') {
-              await markGenerationFailed(
-                supabase,
-                record.id,
-                `FAL job ${statusStr}`,
+              // Queue reported a terminal non-completed state. Fetching the
+              // result typically surfaces the real FAL error in the thrown
+              // body; if it doesn't throw, synthesize a generic queue blob.
+              let blob
+              try {
+                await fal.queue.result(falModelId, {
+                  requestId: record.request_id,
+                })
+                blob = extractFalError(null)
+                blob.message = `FAL queue reported ${statusStr}`
+              } catch (resultErr) {
+                blob = extractFalError(resultErr)
+              }
+              blob.stage = 'queue'
+              if (blob.code === 'unknown') blob.code = 'fal_queue'
+              blob.fal_request_id ??= record.request_id
+              console.error(
+                `[check-pending] record=${record.id} queue=${statusStr} message=${blob.message}`,
               )
+              await markGenerationFailedWithBlob(supabase, record.id, blob)
               failed++
             }
             // IN_QUEUE / IN_PROGRESS — still waiting, skip
           }
         } catch (err) {
-          // Only mark as failed on FAL API errors (4xx), not transient errors
+          // For pending records, only mark failed if FAL explicitly rejected it
+          // (contains status code info), not on network/timeout errors
           const msg = err instanceof Error ? err.message : 'Unknown error'
           console.error(
             `[check-pending] Failed for record=${record.id}: ${msg}`,
           )
-          // For pending records, only mark failed if FAL explicitly rejected it
-          // (contains status code info), not on network/timeout errors
-          if (record.status === 'pending' && isFalRejection(err)) {
-            await markGenerationFailed(supabase, record.id, msg)
+          if (isFalRejection(err)) {
+            const blob = extractFalError(err)
+            blob.stage = 'queue'
+            if (blob.code === 'unknown') blob.code = 'fal_queue'
+            blob.fal_request_id ??= record.request_id
+            await markGenerationFailedWithBlob(supabase, record.id, blob)
             failed++
           }
           // Otherwise leave as pending to retry on next poll

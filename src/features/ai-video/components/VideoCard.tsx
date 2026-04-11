@@ -181,6 +181,8 @@ export function VideoCard({
         status={thumbnailStatus}
         pendingLabel="Processing..."
         pendingBackgroundUrl={thumbnailUrl ?? undefined}
+        failedMessage={video.generation_error ?? undefined}
+        failedBackgroundUrl={thumbnailUrl ?? undefined}
         alwaysShowOverlay
         selected={selected || (active && !selectionActive)}
         selectedClassName={
