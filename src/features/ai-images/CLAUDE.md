@@ -28,11 +28,12 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `group-images.server.ts` -- group selected images under a new or existing parent
 - `ungroup-images.server.ts` -- ungroup images by removing parent association
 - `update-image-order.server.ts` -- reorder images via sort_order
+- `enhance-prompt.server.ts` -- LLM-powered prompt enhancement via Claude Sonnet; loads the `enhance-prompt` AD skill as its system prompt, shared with the AD panel's skill chip
 
 ## Hooks
 
 - `use-ai-images-page.ts` -- master hook composing all sub-hooks for the main page
-- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission
+- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
@@ -41,6 +42,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 - `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker)
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
+- `useEditPageADContext.ts` -- registers edit page context with AD system
 
 ## Components
 

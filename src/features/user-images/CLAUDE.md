@@ -37,7 +37,7 @@ UserImagesDisplay is rendered within the dashboard layout; supports `?imageId=` 
 - `@/components/ImageGrid` -- Shared responsive grid
 - `@/components/ActionButton` -- Shared loading button
 - `@/components/video-player-dialog` -- AI video playback
-- `@/features/ai-video` -- getVideoUrl, getWorkspaces utilities
+- `@/features/ai-video` -- `useVideos` hook for fetching videos from the unified `user_images` table
 
 ## Quirks / Notes
 

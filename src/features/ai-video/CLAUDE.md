@@ -32,16 +32,17 @@ the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 
 ## Key Files
 
-- `video-types.ts` -- `SavedAiVideo`, `VideoMethod`, `VideoShot`, `VideoElement`, `FlfSnapshot`, `MultishotSnapshot`, `VideoGenerationMetadata`, `getVideoMethod()`
+- `video-types.ts` -- `SavedAiVideo`, `VideoMethod`, `VideoShot`, `VideoElement`, `FlfSnapshot`, `MultishotSnapshot`, `VideoGenerationMetadata`, `getVideoMethod()`. Metadata includes `error?: FalErrorBlob` (structured FAL error capture), `submitted_at`, `thumbnail_url`; snapshots include optional `model` field
 - `types.ts` -- residual FLF frame-picker types still used by `VideoGeneratorPanel` + `FrameImageArea`: `FrameStatus`, `FrameMode`, `FIRST_FRAME_MODELS`, `FLUX_KONTEXT_MODEL_ID`
-- `video-models.ts` -- `ALL_VIDEO_MODELS` (Kling 3.0/O3/2.6/2.5-Turbo/O1, LTX-2.3, Sora 2, WAN 2.5) with capability flags
+- `video-models.ts` -- `ALL_VIDEO_MODELS` (Seedance 2.0, Kling 3.0/O3/2.6/2.5-Turbo/O1, LTX-2.3, Sora 2, WAN 2.5) with capability flags; `DEFAULT_VIDEO_MODEL` is the first entry (Seedance 2.0)
 - `constants.ts` -- `FIRST_FRAME_MODEL_FOR_MODE` mapping (prompt vs image mode)
+- `lib/build-pending-video.ts` -- `buildPendingVideo(id, state, sessionParentId)` synthesizes a pending `SavedAiVideo` from sidebar state so the gallery renders an optimistic card instantly; discriminates on FLF vs multishot mode
 - `lib/crop-to-16x9.ts` -- client canvas crop + `fileToBase64`
 - `index.ts` -- barrel exports
 
 ## Server
 
-- `generate-video.server.ts` -- unified FLF + multishot entry. Takes a discriminated `method` union, handles credits + rate limiting, submits to FAL, persists the snapshot + optional `parent_id`
+- `generate-video.server.ts` -- unified FLF + multishot entry. Takes a discriminated `method` union, handles credits + rate limiting, submits to FAL, persists the snapshot + optional `parent_id`. Accepts optional client-minted `id` (UUID) for optimistic UX. On FAL submit error, inserts a `status='failed'` row with structured `FalErrorBlob` in metadata
 - `group-videos.server.ts` -- set `parent_id` on many children under a primary (mirror of `group-images.server.ts`)
 - `ungroup-videos.server.ts` -- clear `parent_id` on all children of a parent
 - `reparent-video.server.ts` -- adopt or detach a single video (`action: 'adopt' | 'detach'`)
@@ -52,8 +53,8 @@ the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 
 ## Hooks
 
-- `use-videos.ts` -- gallery fetch (direct Supabase), parent-bubble sort, realtime `user_images` subscription, polling for pending gens when webhooks are off, auto middle-frame extraction for completed videos without a thumbnail, `captureFrame` / `removeThumbnail` / `deleteVideo` / optimistic cards / `ungroupChildren` / `refresh`
-- `use-video-sidebar.ts` -- single-mode state machine (`mode: 'flf' | 'multishot'`), `loadFromVideo()` rehydrates from a snapshot, mode toggle with field mapping, `clearPrompts()`, `generate()` dispatches to `generate-video.server.ts` with optional `sessionParentId`
+- `use-videos.ts` -- gallery fetch (direct Supabase), parent-bubble sort, realtime `user_images` subscription, polling for pending gens when webhooks are off, auto middle-frame extraction for completed videos without a thumbnail, `captureFrame` / `removeThumbnail` / `deleteVideo` / optimistic cards / `markOptimisticFailed` / `ungroupChildren` / `refresh`
+- `use-video-sidebar.ts` -- single-mode state machine (`mode: 'flf' | 'multishot'`), `loadFromVideo()` rehydrates from a snapshot, mode toggle with field mapping, `clearPrompts()`, `generate()` is fire-and-forget via `useOptimisticGeneration` (client mints UUID, gallery gets instant card), dispatches to `generate-video.server.ts` with optional `sessionParentId`
 - `use-reparent-video.ts` -- thin video version of the ai-images reparent hook: `startAdopt` / `startAdoptBatch` / `cancelAdopt` / `confirmAdopt` / `detach`
 
 ## Components
@@ -78,6 +79,8 @@ the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 - `src/lib/server/check-pending-generations.server.ts` -- shared polling for FAL queue results when webhooks are off
 - `src/features/credits/` -- credit check + deduction (`video_gen` cost)
 - `src/features/user-images/` -- `useUserImages` for image picker in frame / start image flows
+- `src/lib/hooks/use-optimistic-generation.ts` -- generic fire-and-forget primitive: client mints UUID, calls `onOptimistic` synchronously, submits async, calls `onSuccess`/`onError`
+- `src/lib/server/fal-error.server.ts` -- `FalErrorBlob` interface + `extractFalError()` for structured FAL error capture
 
 ## Quirks / Notes
 
