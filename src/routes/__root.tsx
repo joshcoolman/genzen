@@ -5,6 +5,7 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router'
+import { Analytics } from '@vercel/analytics/react'
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/components/auth-provider'
 import { SpotlightNav } from '@/features/spotlight'
@@ -78,6 +79,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body suppressHydrationWarning>
         {children}
         <Scripts />
+        <Analytics />
       </body>
     </html>
   )
