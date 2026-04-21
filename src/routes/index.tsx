@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { GlobalNav } from '@/components/GlobalNav'
 import { ModelShowcase } from '@/components/ModelShowcase'
+import { FeaturedModels } from '@/components/FeaturedModels'
 
 export const Route = createFileRoute('/')({
   component: IndexPage,
@@ -53,6 +54,10 @@ function IndexPage() {
               </>
             )}
           </div>
+        </div>
+
+        <div className="w-full max-w-2xl">
+          <FeaturedModels />
         </div>
 
         <div className="w-full max-w-3xl">

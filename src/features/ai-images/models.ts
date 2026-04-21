@@ -10,6 +10,7 @@ export interface ImageModel {
   supportsImageInput?: boolean
   imageInputModelId?: string
   locked?: boolean
+  isNew?: boolean
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -72,6 +73,15 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/gpt-image-1.5/edit',
+  },
+  {
+    id: 'fal-ai/gpt-image-2',
+    name: 'GPT Image 2',
+    description: 'OpenAI, quality tiers + inpainting',
+    category: 'Specialized',
+    supportsImageInput: true,
+    imageInputModelId: 'fal-ai/gpt-image-2/edit',
+    isNew: true,
   },
   // ByteDance Seedream v4.5
   {
@@ -167,6 +177,12 @@ export const EDIT_MODELS: Array<EditModel> = [
     id: 'fal-ai/gpt-image-1.5/edit',
     name: 'GPT Image 1.5',
     description: 'OpenAI, high-quality edits',
+    maxRefImages: 4,
+  },
+  {
+    id: 'fal-ai/gpt-image-2/edit',
+    name: 'GPT Image 2',
+    description: 'OpenAI, latest image edits with inpainting',
     maxRefImages: 4,
   },
   {
