@@ -4,7 +4,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Key Files
 
-- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`; exports `KONTEXT_DEV_ID`, `KONTEXT_DEV_FALLBACK_ID`, `FLUX_KONTEXT_PRO_ID`, `LOCKED_IMAGE_MODEL_ID`; models have optional `locked` flag
+- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`; exports `KONTEXT_DEV_ID`, `KONTEXT_DEV_FALLBACK_ID`, `FLUX_KONTEXT_PRO_ID`, `LOCKED_IMAGE_MODEL_ID`; models have optional `locked` and `isNew` flags
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
@@ -84,7 +84,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `fal-params.server.ts` is the central param resolver used by many features (outpaint, describe, edit-image)
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
-- Some models (GPT Image 1.5) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
+- Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
 - Reparenting allows moving images between parent groups or detaching from a parent entirely
 - `set-generation-parent.server.ts` is used by multi-model and scenes features to group their outputs
