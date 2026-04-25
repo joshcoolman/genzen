@@ -4,6 +4,7 @@ import {
   Film,
   FlaskConical,
   Frame,
+  Logs,
   Settings,
   Sparkles,
   StickyNote,
@@ -65,6 +66,13 @@ export const navItems: Array<NavItem> = [
     label: 'History',
     href: '/dashboard/history',
     icon: Clock,
+    activeOnly: true,
+  },
+  {
+    id: 'activity',
+    label: 'Activity',
+    href: '/dashboard/activity',
+    icon: Logs,
     activeOnly: true,
   },
   {
