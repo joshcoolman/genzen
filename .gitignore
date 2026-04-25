@@ -14,5 +14,6 @@ count.txt
 todos.json
 .trigger
 .claude/worktrees/
+.claude/launch.json
 .vercel
 .firecrawl/

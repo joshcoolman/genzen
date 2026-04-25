@@ -4,6 +4,43 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '@/lib/image-storage'
 
+// Defensive extractor — FAL doesn't expose cost consistently across endpoints.
+// Probes known candidate paths; returns null if none match. Verify + expand as
+// real response shapes land.
+function extractFalCostCents(
+  data: Record<string, unknown> | null | undefined,
+): number | null {
+  if (!data || typeof data !== 'object') return null
+  const pickNumber = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) ? v : null
+
+  const direct = pickNumber(data.cost_cents) ?? pickNumber(data.price_cents)
+  if (direct != null) return Math.round(direct)
+
+  const dollarsLike = pickNumber(data.cost) ?? pickNumber(data.price)
+  if (dollarsLike != null) return Math.round(dollarsLike * 100)
+
+  const metering = (data as { metering?: Record<string, unknown> }).metering
+  if (metering && typeof metering === 'object') {
+    const m =
+      pickNumber(metering.cost_cents) ?? pickNumber(metering.price_cents)
+    if (m != null) return Math.round(m)
+    const d = pickNumber(metering.cost) ?? pickNumber(metering.price)
+    if (d != null) return Math.round(d * 100)
+  }
+
+  const billing = (data as { fal_billing?: Record<string, unknown> })
+    .fal_billing
+  if (billing && typeof billing === 'object') {
+    const b = pickNumber(billing.cost_cents) ?? pickNumber(billing.price_cents)
+    if (b != null) return Math.round(b)
+    const d = pickNumber(billing.cost) ?? pickNumber(billing.price)
+    if (d != null) return Math.round(d * 100)
+  }
+
+  return null
+}
+
 export async function processImageResult(
   supabase: SupabaseClient,
   recordId: string,
@@ -35,6 +72,8 @@ export async function processImageResult(
         ? meta.fal_model_id
         : ''
 
+  const providerCostCents = extractFalCostCents(falResultData)
+
   const { error: updateError } = await supabase
     .from('user_images')
     .update({
@@ -53,6 +92,9 @@ export async function processImageResult(
         seed: falResultData.seed,
         timings: falResultData.timings,
         completed_at: new Date().toISOString(),
+        ...(providerCostCents != null && {
+          provider_cost_cents: providerCostCents,
+        }),
       },
     })
     .eq('id', recordId)
@@ -82,6 +124,7 @@ export async function processVideoResult(
     .single()
 
   const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
+  const providerCostCents = extractFalCostCents(falResultData)
 
   const { error: updateError } = await supabase
     .from('user_images')
@@ -92,6 +135,9 @@ export async function processVideoResult(
         ...meta,
         fal_url: videoUrl,
         completed_at: new Date().toISOString(),
+        ...(providerCostCents != null && {
+          provider_cost_cents: providerCostCents,
+        }),
       },
     })
     .eq('id', recordId)
