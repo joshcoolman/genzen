@@ -1,127 +1,66 @@
-# Continue: Phase 3 — Detailed FAL failure messages (ai-video)
+# Continue: Activity page — chronological cost & time log
 
 ## Where we are
 
-- Branch: `feature/optimistic-generation` (pushed, tracks origin)
-- Tracking issue: **#126** — "Instantaneous generation UX + accurate FAL failure messaging"
-- Full plan: `~/.claude/plans/fancy-sauteeing-meteor.md`
-- Phase 1 **done** (commit `c028f5c`): generic `useOptimisticGeneration` primitive + `buildPendingVideo` helper.
-- Phase 2 **done** (latest commit on branch): fire-and-forget generate path. Click → pending card same frame → rapid-fire works → failures flip to `failed` in place. Verified with `pnpm check && pnpm build`.
+- **Branch:** `feat/activity-log-130` (local only, not yet pushed)
+- **Tracking issue:** #130 "feat: Activity page — chronological cost & time log for all generations"
+- **Full plan:** `~/.claude/plans/and-we-should-probably-zippy-wave.md`
+- **Phase 1 done** (uncommitted): route + nav + time-format util + empty page stub
 
-## Phase 2 recap — what changed, so Phase 3 knows the shape
+## What this feature is
 
-- `generate-video.server.ts` accepts an optional client-minted `id` (UUID validated) and uses it as `user_images.id` on both FLF and multishot inserts. Non-optimistic callers still work.
-- `use-videos.ts` dropped the `startsWith('optimistic-')` swap branch — the existing `prev.some((v) => v.id === newVideo.id)` dedupe at realtime INSERT time is enough now that client and server share the id. Added `markOptimisticFailed(id, error)` that flips a row's `status` to `'failed'` and stamps `generation_error`.
-- `use-video-sidebar.ts` `generate()` is now **synchronous**. Validates, mints an id via `useOptimisticGeneration`, fires the server call as `void`, returns the id. `generating` state is gone. `onOptimistic(id, state)` and `onError(id, err)` are required options.
-- `VideoGeneratorPanel.tsx` no longer gates the button or form inputs on `generating`. Rapid-fire is unblocked.
-- `video.index.tsx` + `video.edit.$videoId.tsx` wire `onOptimistic: (id, state) => gallery.addOptimisticCard(buildPendingVideo(id, state, sessionParentId))` and `onError: (id, err) => gallery.markOptimisticFailed(id, err)`. Edit route also sets `highlightedId = id` on the pending card so it's immediately selected.
+A new top-level route `/dashboard/activity` — chronological record of every generation run (image + video, success + failure, including soft-deleted rows). Framed as a cost/time tracking tool for pro teams whose accountants need to see where the spend went.
 
-## Problem Phase 3 solves
+**Columns:** thumbnail · model · prompt (truncated) · status · duration · **user cost** (credits × $) · **provider cost** (FAL/OpenAI raw $) · time
 
-When FAL rejects a gen, the real message (e.g. "Output audio has sensitive content", "Invalid aspect ratio for model X") is currently lost. Failed cards say `FAL job FAILED` because `check-pending-generations.server.ts:82–102` collapses status to a generic string, and `generate-video.server.ts` has no try/catch around the `fal.queue.submit` call — a submit-time rejection just throws through `withCreditRefund` and the user sees a toast but no persisted card.
+**Filters:** model multi-select, status pills, date range (today / 7d / 30d / custom)
+**Totals at top:** count · total duration · total user $ · total provider $
 
-`markOptimisticFailed` (from Phase 2) already surfaces whatever `error.message` the submit threw on the client. Phase 3's job is to make that message _accurate_ and to persist the same information on the row itself so the poll path and webhook path (which don't go through the client-side error handler) surface it too.
+Existing `/dashboard/history` is a visual thumbnail grid that filters out failures and soft-deleted rows — by design. This new page is the "log everything" counterpart.
 
-## Phase 3 scope
+## Phase 1 changes (uncommitted, on branch)
 
-Work in this order:
+- `src/lib/nav-items.ts` — added `activity` entry with `Logs` icon (lucide), `activeOnly: true`, inserted between `history` and `trash`
+- `src/lib/time-format.ts` — NEW: `formatRelativeOrDate` (today → `3h ago`, else → `Monday, April 20`), `formatAbsolute`, `formatDurationMs`
+- `src/routes/dashboard/activity.tsx` — NEW: minimal route wrapper, mirrors `history.tsx` pattern
+- `src/features/activity/components/ActivityPage.tsx` — NEW: stub with h1 only
 
-### 1. `src/lib/server/fal-error.server.ts` — new file
+`routeTree.gen.ts` regenerated (auto — do not edit manually per CLAUDE.md).
 
-Export `extractFalError(err: unknown)` → structured blob. The FAL SDK throws errors whose `body.detail` is an array of `{ loc, msg, type }` objects; walk it and join the `msg`s. Fallback chain: `body.detail[].msg` → `body.message` → `err.message` → `'FAL request failed'`.
+Verified: `pnpm tsc --noEmit` reports no errors in new files. Pre-existing errors elsewhere in codebase are unrelated.
 
-Return shape:
+## Key decisions locked in
 
-```ts
-export interface FalErrorBlob {
-  status: 'failed'
-  code: string // e.g. 'fal_submit', 'fal_queue', 'fal_webhook', 'unknown'
-  message: string // human-readable
-  fal_request_id?: string
-  failed_at: string // ISO
-  stage: 'submit' | 'queue' | 'webhook'
-}
-```
+1. **Name: "Activity"** (not "Logs" or "Usage"). Route `/dashboard/activity`, feature folder `src/features/activity/`, icon is lucide `Logs`.
+2. **No schema migration for timestamps.** Duration computed from existing `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings inside JSONB). See `src/lib/server/media.server.ts:101,178,206` and `src/lib/server/fal-completion.server.ts:55,94,125-146` for where these are stamped.
+3. **New JSONB field, not column:** `generation_metadata.provider_cost_cents` (integer, optional). Populated at FAL completion.
+4. **User cost derivation:** in-memory lookup — `generation_metadata.generation_type` → `CREDIT_COSTS` (`src/features/credits/types.ts`) × `DOLLARS_PER_CREDIT` (0.1). No join to credit_transactions needed.
+5. **Provider cost sources:** FAL only in v1. Google/OpenAI direct get `—` until a pricing table is built (that's #80 territory, explicitly deferred).
+6. **Unified query:** one query over `user_images` for both `source='ai_generated'` and `source='ai_video'`. NO status filter, NO `deleted_at` filter. Soft-deleted rows render with reduced opacity + "deleted" badge.
+7. **Account page:** replace inline Recent Activity widget (`src/routes/dashboard/account.tsx` lines ~291–336) with a 5-row Activity preview + "View all" link. Remove `transactions` state, `refreshTransactions`, `useEffect`. Keep credit balance widget.
+8. **Reuse, don't reinvent:** `getR2PublicUrl` (`src/lib/image-storage.ts:104-109`), `getModelName` (used in `src/features/history/hooks/use-history-page.ts:26`), `Badge`, `SectionCard`, `StatsRow`, `EmptyStateCard`. HistoryCardList (`src/features/history/components/HistoryCard.tsx:81-137`) is the row-shape reference but adapt for denser column set.
 
-Pure function, no logging — callers log. Unit-test against representative fixtures.
+## Outstanding work (phases 2–8)
 
-### 2. Widen `VideoGenerationMetadata.error`
+Tasks in TaskList:
 
-`src/features/ai-video/video-types.ts:54` currently has `error?: string`. Change to `error?: FalErrorBlob`. Keep the `generation_error` column as a `string` mirror of `error.message` — no Supabase schema change needed (`generation_metadata` is `jsonb`).
+- **Phase 2:** `src/features/activity/types.ts` + `src/features/activity/server/list-activity.server.ts` — paginated query over `user_images` for both source types, no status/deleted_at filter, optional filter params, returns entries + totals
+- **Phase 3:** `ActivityRow` + `ActivityPage` list rendering (no filters/totals yet), `hooks/use-activity-page.ts`
+- **Phase 4:** `ActivityFilters` — model multi-select, status pills, date range picker
+- **Phase 5:** `ActivityTotals` — summary stat row respecting active filters
+- **Phase 6:** `src/lib/server/fal-completion.server.ts` — in `processImageResult` and `processVideoResult`, capture FAL cost into `generation_metadata.provider_cost_cents`. **Verify FAL's response field name at implementation time** — don't hardcode, inspect the actual shape.
+- **Phase 7:** Replace Recent Activity widget on `/dashboard/account` with Activity preview
+- **Phase 8:** `src/features/activity/CLAUDE.md` + update root `CLAUDE.md` feature table + `pnpm check && pnpm build` clean
 
-Grep for reads of `generation_metadata.error` before flipping the type. Current check: only written, never read — VideoCard reads `generation_error`. Safe.
+## Notable context
 
-### 3. Wire `extractFalError` into `generate-video.server.ts`
-
-Both `generateFlf` and `generateMultishot` do `const { request_id } = await fal.queue.submit(...)` with no try/catch. Wrap it:
-
-```ts
-let request_id: string
-try {
-  const result = await fal.queue.submit(videoModel, { ... })
-  request_id = result.request_id
-} catch (err) {
-  const blob = extractFalError(err)
-  blob.stage = 'submit'
-  // Insert a failed row using the client id so the optimistic card collapses
-  // into it via realtime. Rethrow so withCreditRefund refunds the credit.
-  await supabase.from('user_images').insert({
-    ...(data.id ? { id: data.id } : {}),
-    user_id: userId,
-    status: 'failed',
-    source: 'ai_video',
-    title: getVideoModelName(videoModel),
-    generation_error: blob.message,
-    generation_metadata: {
-      method: 'flf',  // or 'multishot' in the other branch
-      parent_id: data.parentId ?? null,
-      model: videoModel,
-      submitted_at: new Date().toISOString(),
-      error: blob,
-    },
-  })
-  throw new Error(blob.message)
-}
-```
-
-The rethrow is important — `withCreditRefund` depends on the throw to refund. The client's `onError` handler will also fire `markOptimisticFailed`; that's harmless double-marking because the realtime INSERT/UPDATE will overwrite with the server's blob.
-
-### 4. `src/lib/server/check-pending-generations.server.ts`
-
-Around line 82–102 there's a block that builds a lossy `` `FAL job ${statusStr}` `` string when a queued gen returns non-completed status. Replace with `extractFalError` on whatever the queue result exposes. Check `@fal-ai/client` types to see what's actually available — don't guess. Preferentially walk `response.logs[].message` or `response.error.detail`; last-resort fallback synthesizes `{ stage: 'queue', message: 'FAL queue reported error' }`.
-
-Then update the row:
-
-```ts
-await supabase
-  .from('user_images')
-  .update({
-    status: 'failed',
-    generation_error: blob.message,
-    generation_metadata: { ...existing, error: blob },
-  })
-  .eq('id', video.id)
-```
-
-### 5. Webhook route
-
-FAL webhook handler lives in `server/api/` (check `project_fal_webhooks` memory for the exact path). On a non-OK webhook payload, extract the blob with `stage: 'webhook'` and persist the same way as step 4.
-
-## Exit criteria
-
-1. `pnpm check && pnpm build` clean.
-2. Force a real FAL failure (e.g. `generate_audio` + a prompt that trips the safety filter, or an invalid aspect ratio). Card shows the real FAL message, not "FAL job FAILED".
-3. Force a submit-time failure (easiest: temporarily break `FAL_KEY` in `.env.local`). Optimistic card flips to `failed` with the real message and credit is refunded.
-4. Commit: `feat(video): Phase 3 — structured FAL error capture end-to-end` (reference #126).
-5. Push, then close #126.
+- Related future work: #129 (direct OpenAI routing for GPT Image — experiment with direct Google/OpenAI vs FAL for speed on 3-5 image batches). User wants to validate direct-provider speed BEFORE revisiting Stripe/real-pricing (#26 currently In Progress, should likely move back to Up Next).
+- #80 "credits: real FAL-based pricing and spend tracking" is the natural follow-up for the provider_cost column — once FAL cost capture lands here, #80 becomes the per-model pricing table for direct providers.
+- User emphasized this is NOT a dev log — it's a tool pro teams will rely on for billing commissions. Take UI polish seriously. Filters and totals are table stakes, not nice-to-haves.
 
 ## Git state
 
-- Clean working tree on `feature/optimistic-generation` at the Phase 2 commit.
-- `main` untouched — all work on the feature branch per solo-dev workflow memory.
-
-## Notes / gotchas
-
-- Phase 2's `markOptimisticFailed` only sets `generation_error`, not `generation_metadata.error`. Once the type is widened, leave that client path as-is — let the server be the source of truth for the structured blob; the realtime INSERT/UPDATE overwrites the client-side placeholder fast enough.
-- Don't skip the webhook path — it's what fires in production when webhooks are enabled. The poll path is the dev/fallback.
-- A Phase 4 "expand details on failed card" UI could read `generation_metadata.error` and show stage/code/request_id. Out of scope here but worth noting.
+- Branch `feat/activity-log-130` checked out
+- Uncommitted: 2 modified (`nav-items.ts`, `routeTree.gen.ts`), 3 new (`time-format.ts`, `activity.tsx`, `features/activity/`)
+- Issue #130 exists on GitHub, added to project board "GenZen Roadmap"
+- Nothing pushed yet

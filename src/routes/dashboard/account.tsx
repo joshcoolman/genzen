@@ -1,22 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Gift,
-  Image,
-  Pencil,
-  Scissors,
-  Video,
-} from 'lucide-react'
-import type { CreditReason, CreditTransaction } from '@/features/credits'
 import { StatsRow } from '@/components/StatsRow'
 import { SectionCard } from '@/components/SectionCard'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
-import { getTransactions } from '@/features/credits/server/get-transactions.server'
 import { DOLLARS_PER_CREDIT } from '@/features/credits'
 import { CreditPackSelector } from '@/features/credits/components/CreditPackSelector'
+import { ActivityPreview } from '@/features/activity/components/ActivityPreview'
 import { supabase } from '@/lib/supabase'
 import { checkConnections } from '@/lib/server/check-connections'
 
@@ -25,41 +15,6 @@ export const Route = createFileRoute('/dashboard/account')({
 })
 
 // --- Credits helpers ---
-
-const REASON_LABELS: Record<CreditReason, string> = {
-  image_gen: 'Image generation',
-  variation: 'Image variation',
-  edit: 'Image edit',
-  first_frame: 'First frame',
-  last_frame: 'Last frame',
-  video_gen: 'Video generation',
-  multishot_gen: 'Multi-shot generation',
-  pack_purchase: 'Credit pack',
-  initial_grant: 'Welcome credits',
-}
-
-const REASON_ICONS: Record<CreditReason, React.ReactNode> = {
-  image_gen: <Image className="h-4 w-4" />,
-  variation: <Scissors className="h-4 w-4" />,
-  edit: <Pencil className="h-4 w-4" />,
-  first_frame: <Image className="h-4 w-4" />,
-  last_frame: <Image className="h-4 w-4" />,
-  video_gen: <Video className="h-4 w-4" />,
-  multishot_gen: <Video className="h-4 w-4" />,
-  pack_purchase: <Gift className="h-4 w-4" />,
-  initial_grant: <Gift className="h-4 w-4" />,
-}
-
-function relativeTime(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  return `${days}d ago`
-}
 
 function formatDollars(credits: number) {
   return `$${(credits * DOLLARS_PER_CREDIT).toFixed(2)}`
@@ -132,20 +87,6 @@ function StatusBadge({
 function AccountPage() {
   const { user, session } = useAuth()
   const credits = useCredits()
-
-  // Credits state
-  const [transactions, setTransactions] = useState<Array<CreditTransaction>>([])
-
-  const refreshTransactions = useCallback(() => {
-    if (!session?.access_token) return
-    void getTransactions({
-      data: { accessToken: session.access_token, limit: 20 },
-    }).then(setTransactions)
-  }, [session?.access_token])
-
-  useEffect(() => {
-    refreshTransactions()
-  }, [refreshTransactions])
 
   // Status state
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -284,56 +225,11 @@ function AccountPage() {
         />
         <SectionCard title="Add Credits">
           <div className="-mx-6 -my-6">
-            <CreditPackSelector onPurchaseComplete={refreshTransactions} />
+            <CreditPackSelector />
           </div>
         </SectionCard>
 
-        <SectionCard title="Recent Activity">
-          {transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No transactions yet.
-            </p>
-          ) : (
-            <div className="-mx-6 -my-6">
-              {transactions.map((tx, i) => (
-                <div
-                  key={tx.id}
-                  className={`flex items-center gap-3 px-6 py-3 text-sm ${
-                    i < transactions.length - 1 ? 'border-b border-border' : ''
-                  }`}
-                >
-                  <span className="text-muted-foreground">
-                    {REASON_ICONS[tx.reason]}
-                  </span>
-                  <span className="flex-1 font-medium">
-                    {REASON_LABELS[tx.reason]}
-                  </span>
-                  <span
-                    className={
-                      tx.amount > 0
-                        ? 'text-accent-brand font-medium'
-                        : 'text-muted-foreground'
-                    }
-                  >
-                    {tx.amount > 0 ? (
-                      <span className="flex items-center gap-1">
-                        <ArrowUpRight className="h-3 w-3" />+{tx.amount}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <ArrowDownLeft className="h-3 w-3" />
-                        {tx.amount}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-xs text-muted-foreground w-16 text-right tabular-nums">
-                    {relativeTime(tx.createdAt)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+        <ActivityPreview />
       </div>
 
       {/* Status */}

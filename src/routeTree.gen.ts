@@ -29,6 +29,7 @@ import { Route as DashboardHistoryRouteImport } from './routes/dashboard/history
 import { Route as DashboardDevWorkspaceRouteImport } from './routes/dashboard/dev-workspace'
 import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
+import { Route as DashboardActivityRouteImport } from './routes/dashboard/activity'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
 import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardDevWorkspaceIndexRouteImport } from './routes/dashboard/dev-workspace.index'
@@ -140,6 +141,11 @@ const DashboardAiImagesRoute = DashboardAiImagesRouteImport.update({
   path: '/ai-images',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardActivityRoute = DashboardActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAccountRoute = DashboardAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/history': typeof DashboardHistoryRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/dashboard/account': typeof DashboardAccountRoute
+  '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/dev-workspace': typeof DashboardDevWorkspaceRouteWithChildren
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/account'
+    | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/account'
+    | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/history'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/dashboard/account'
+    | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
     | '/dashboard/dev-workspace'
@@ -538,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAiImagesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/activity': {
+      id: '/dashboard/activity'
+      path: '/activity'
+      fullPath: '/dashboard/activity'
+      preLoaderRoute: typeof DashboardActivityRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/account': {
       id: '/dashboard/account'
       path: '/account'
@@ -652,6 +671,7 @@ const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
 
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
+  DashboardActivityRoute: typeof DashboardActivityRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardCanvasRoute: typeof DashboardCanvasRoute
   DashboardDevWorkspaceRoute: typeof DashboardDevWorkspaceRouteWithChildren
@@ -668,6 +688,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAccountRoute: DashboardAccountRoute,
+  DashboardActivityRoute: DashboardActivityRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardCanvasRoute: DashboardCanvasRoute,
   DashboardDevWorkspaceRoute: DashboardDevWorkspaceRouteWithChildren,
