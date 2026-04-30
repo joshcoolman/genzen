@@ -23,6 +23,7 @@ interface EditImageInput {
   referenceImageIds?: Array<string>
   numImages?: number
   idempotencyKey?: string
+  sourceClient?: string
 }
 
 export const editImage = createServerFn({ method: 'POST' })
@@ -160,6 +161,7 @@ export const editImage = createServerFn({ method: 'POST' })
             ...(referenceImageIds?.length
               ? { reference_image_ids: referenceImageIds }
               : {}),
+            ...(data.sourceClient ? { source_client: data.sourceClient } : {}),
           },
         })
 

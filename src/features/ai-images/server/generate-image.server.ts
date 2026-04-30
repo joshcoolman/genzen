@@ -29,6 +29,7 @@ interface GenerateImageInput {
   providerOverride?: 'fal' | 'google'
   parentImageId?: string
   idempotencyKey?: string
+  sourceClient?: string
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -238,6 +239,9 @@ export const generateImage = createServerFn({ method: 'POST' })
                     generation_type: 'variation',
                   }
                 : {}),
+              ...(data.sourceClient
+                ? { source_client: data.sourceClient }
+                : {}),
             },
           })
 
@@ -300,6 +304,9 @@ export const generateImage = createServerFn({ method: 'POST' })
                     parent_id: data.parentImageId, // Mutable: group parent (same initially)
                     generation_type: 'variation',
                   }
+                : {}),
+              ...(data.sourceClient
+                ? { source_client: data.sourceClient }
                 : {}),
             },
           })

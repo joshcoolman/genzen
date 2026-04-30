@@ -13,12 +13,22 @@ Genzen's Model Context Protocol server. Lets external Claude clients (Claude Cod
 
 ## Tools
 
-- `server/tools/list-image-models.ts` -- read-only catalog from `ALL_IMAGE_MODELS`
-- `server/tools/list-edit-models.ts` -- read-only catalog from `EDIT_MODELS` (with `maxRefImages`)
+Read-only inspection:
+- `server/tools/list-image-models.ts` -- catalog from `ALL_IMAGE_MODELS`
+- `server/tools/list-edit-models.ts` -- catalog from `EDIT_MODELS` (with `maxRefImages`)
 - `server/tools/get-credit-balance.ts` -- balance + dollar value via `getCreditRepository().getBalance(userId)`
 - `server/tools/list-recent-generations.ts` -- recent `user_images` rows, optional `kind` filter, R2 public URLs
 
+Generation (Phase 4):
+- `server/tools/upload-image.ts` -- decode base64 (≤10MB), call `uploadImage` server fn, insert `user_images` row, return `{ imageId, url }`. No credit cost.
+- `server/tools/generate-image.ts` -- call `generateImage` with `{ userId, sourceClient: 'mcp' }`, poll until completion, return `{ imageId, url, model, creditsCharged, creditsRemaining, providerCostCents }`. Costs 1 credit. `sourceImageId` resolves to an R2 public URL passed as `sourceImageUrl` into the existing fn.
+- `server/tools/edit-image.ts` -- same shape via `editImage`. Validates `referenceImageIds.length <= EDIT_MODELS[modelId].maxRefImages` before submitting.
+
+Polling helper at `server/wait-for-generation.ts` polls `user_images` by id+userId every 1.5s up to 90s. On `completed` returns the row, on `failed` throws with the FAL error message, on timeout throws with the recordId so the caller can surface a "check /dashboard/activity" hint.
+
 All tool handlers must close over `userId` from the route. They use the service-role admin client (`getSupabaseAdmin()` directly or via the credit repository) and **must filter `.eq('user_id', userId)`** on every read -- the service-role client bypasses RLS so the explicit filter is the only protection.
+
+Generations submitted via MCP get `generation_metadata.source_client = 'mcp'` so the activity log can mark "via MCP". Plumbed through an optional `sourceClient` field on `generateImage` / `editImage` server fns.
 
 ## Install UX
 
@@ -33,6 +43,3 @@ Claude Code persists the registered server (and the bearer token) in `~/.claude.
 
 `claude mcp list` shows it after; `claude mcp remove genzen` removes it.
 
-## Generation tools (Phase 4)
-
-Phase 4 adds `upload_image`, `generate_image`, `edit_image` -- they delegate to the existing server fns from Phase 2 via the `{ userId }` channel.
