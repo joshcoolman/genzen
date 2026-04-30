@@ -43,7 +43,7 @@ export function ActivityPage() {
       const nextIdx = e.key === 'ArrowRight' ? idx + 1 : idx - 1
       if (nextIdx < 0 || nextIdx >= entries.length) return
       e.preventDefault()
-      setSelectedId(entries[nextIdx]!.id)
+      setSelectedId(entries[nextIdx].id)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
