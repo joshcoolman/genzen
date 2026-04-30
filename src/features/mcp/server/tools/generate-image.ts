@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { buildPublicUrl, waitForGeneration } from '../wait-for-generation'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { generateImage } from '@/features/ai-images/server/generate-image.server'
+import { generateImageInternal } from '@/features/ai-images/server/generate-image-internal.server'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { DOLLARS_PER_CREDIT, getCreditRepository } from '@/features/credits'
 
@@ -79,16 +79,14 @@ export function registerGenerateImage(server: McpServer, userId: string): void {
         ? await resolveSourceImageUrl(userId, sourceImageId)
         : undefined
 
-      const submission = await generateImage({
-        data: {
-          userId,
-          sourceClient: 'mcp',
-          prompt,
-          model: modelId,
-          aspectRatio,
-          sourceImageUrl,
-          referenceImageIds,
-        },
+      const submission = await generateImageInternal({
+        userId,
+        sourceClient: 'mcp',
+        prompt,
+        model: modelId,
+        aspectRatio,
+        sourceImageUrl,
+        referenceImageIds,
       })
 
       const completed = await waitForGeneration(userId, submission.recordId)

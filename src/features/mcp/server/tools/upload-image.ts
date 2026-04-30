@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { z } from 'zod'
 import { buildPublicUrl } from '../wait-for-generation'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { uploadImage } from '@/features/user-images/server/upload-image.server'
+import { uploadImageInternal } from '@/features/user-images/server/upload-image-internal.server'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -62,14 +62,12 @@ export function registerUploadImage(server: McpServer, userId: string): void {
       const sanitized = fileName.replace(/[^a-zA-Z0-9.-]/g, '_').slice(0, 100)
       const storagePath = `${userId}/mcp_${timestamp}_${uuid}_${sanitized}.${ext}`
 
-      // uploadImage validates magic bytes + size and writes to R2
-      await uploadImage({
-        data: {
-          userId,
-          storagePath,
-          base64Data: cleaned,
-          contentType: detectedType,
-        },
+      // uploadImageInternal validates magic bytes + size and writes to R2
+      await uploadImageInternal({
+        userId,
+        storagePath,
+        base64Data: cleaned,
+        contentType: detectedType,
       })
 
       const fileHash = crypto.createHash('sha256').update(buffer).digest('hex')

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { buildPublicUrl, waitForGeneration } from '../wait-for-generation'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { editImage } from '@/features/ai-images/server/edit-image.server'
+import { editImageInternal } from '@/features/ai-images/server/edit-image-internal.server'
 import { DOLLARS_PER_CREDIT, getCreditRepository } from '@/features/credits'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 
@@ -68,16 +68,14 @@ export function registerEditImage(server: McpServer, userId: string): void {
         )
       }
 
-      const submission = await editImage({
-        data: {
-          userId,
-          sourceClient: 'mcp',
-          sourceImageId,
-          editPrompt,
-          editModelId: modelId,
-          referenceImageIds,
-          aspectRatio,
-        },
+      const submission = await editImageInternal({
+        userId,
+        sourceClient: 'mcp',
+        sourceImageId,
+        editPrompt,
+        editModelId: modelId,
+        referenceImageIds,
+        aspectRatio,
       })
 
       const completed = await waitForGeneration(userId, submission.recordId)

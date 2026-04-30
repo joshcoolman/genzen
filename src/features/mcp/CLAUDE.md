@@ -14,12 +14,14 @@ Genzen's Model Context Protocol server. Lets external Claude clients (Claude Cod
 ## Tools
 
 Read-only inspection:
+
 - `server/tools/list-image-models.ts` -- catalog from `ALL_IMAGE_MODELS`
 - `server/tools/list-edit-models.ts` -- catalog from `EDIT_MODELS` (with `maxRefImages`)
 - `server/tools/get-credit-balance.ts` -- balance + dollar value via `getCreditRepository().getBalance(userId)`
 - `server/tools/list-recent-generations.ts` -- recent `user_images` rows, optional `kind` filter, R2 public URLs
 
 Generation (Phase 4):
+
 - `server/tools/upload-image.ts` -- decode base64 (≤10MB), call `uploadImage` server fn, insert `user_images` row, return `{ imageId, url }`. No credit cost.
 - `server/tools/generate-image.ts` -- call `generateImage` with `{ userId, sourceClient: 'mcp' }`, poll until completion, return `{ imageId, url, model, creditsCharged, creditsRemaining, providerCostCents }`. Costs 1 credit. `sourceImageId` resolves to an R2 public URL passed as `sourceImageUrl` into the existing fn.
 - `server/tools/edit-image.ts` -- same shape via `editImage`. Validates `referenceImageIds.length <= EDIT_MODELS[modelId].maxRefImages` before submitting.
@@ -42,4 +44,3 @@ Both snippets source the URL from `window.location.origin`, so dev/prod auto-cor
 Claude Code persists the registered server (and the bearer token) in `~/.claude.json` under the directory where `claude mcp add` was run -- `--scope local` is the default. Token sits in plaintext on disk; no OS keychain integration in Claude Code yet.
 
 `claude mcp list` shows it after; `claude mcp remove genzen` removes it.
-

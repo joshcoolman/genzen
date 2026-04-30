@@ -1,3 +1,4 @@
+import { pollFalRecord } from './poll-fal-record'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 
 const DEFAULT_TIMEOUT_MS = 90_000
@@ -29,6 +30,11 @@ export async function waitForGeneration(
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
+    // Poll FAL ourselves and let it flip the DB row if the job is done.
+    // Nothing else polls FAL on the MCP path — the browser path relies on
+    // checkPendingGenerations being called by UI hooks.
+    await pollFalRecord(recordId)
+
     const { data, error } = await supabase
       .from('user_images')
       .select('id, status, storage_path, generation_metadata, title')
