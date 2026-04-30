@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
+import { verifyApiKey } from './api-keys.server'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 
@@ -59,4 +60,16 @@ export async function requireAuth(accessToken: string) {
   }
 
   return user
+}
+
+export async function requireAuthFromApiKey(rawKey: string) {
+  if (!rawKey) {
+    throw new Error('Unauthorized')
+  }
+  try {
+    const { userId } = await verifyApiKey({ rawKey })
+    return { id: userId, email: undefined as string | undefined }
+  } catch {
+    throw new Error('Unauthorized')
+  }
 }
