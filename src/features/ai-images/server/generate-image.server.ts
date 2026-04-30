@@ -1,8 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
-import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
-import { requireAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '@/lib/server/auth.server'
 import {
   checkAndDeductCredits,
   withCreditRefund,
@@ -20,7 +19,8 @@ fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 interface GenerateImageInput {
   prompt: string
   model: string
-  accessToken: string
+  accessToken?: string
+  userId?: string
   aspectRatio?: string
   sourceImageBase64?: string
   sourceImageUrl?: string
@@ -38,8 +38,11 @@ function buildRefinePrompt(userPrompt: string): string {
 export const generateImage = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateImageInput) => data)
   .handler(async ({ data }) => {
-    const user = await requireAuth(data.accessToken)
-    await checkRateLimit(user.id, 'image')
+    const { userId, supabase } = await resolveAuth({
+      accessToken: data.accessToken,
+      userId: data.userId,
+    })
+    await checkRateLimit(userId, 'image')
 
     const {
       prompt,
@@ -66,16 +69,11 @@ export const generateImage = createServerFn({ method: 'POST' })
 
     // Idempotency: if key provided and a non-failed record exists, return it
     if (data.idempotencyKey) {
-      const { data: existing } = await createClient(
-        process.env.VITE_SUPABASE_URL!,
-        process.env.VITE_SUPABASE_ANON_KEY!,
-        {
-          global: { headers: { Authorization: `Bearer ${data.accessToken}` } },
-        },
-      )
+      const { data: existing } = await supabase
         .from('user_images')
         .select('id, request_id, status')
         .eq('idempotency_key', data.idempotencyKey)
+        .eq('user_id', userId)
         .single()
       if (existing && existing.status !== 'failed') {
         return {
@@ -87,10 +85,7 @@ export const generateImage = createServerFn({ method: 'POST' })
       }
     }
 
-    const creditResult = await checkAndDeductCredits(
-      data.accessToken,
-      'image_gen',
-    )
+    const creditResult = await checkAndDeductCredits({ userId }, 'image_gen')
     if (!creditResult.allowed) {
       throw new Error('Insufficient credits')
     }
@@ -100,17 +95,6 @@ export const generateImage = createServerFn({ method: 'POST' })
       creditResult.cost,
       'image_gen',
       async () => {
-        // Create Supabase client authenticated as the user
-        const supabase = createClient(
-          process.env.VITE_SUPABASE_URL!,
-          process.env.VITE_SUPABASE_ANON_KEY!,
-          {
-            global: {
-              headers: { Authorization: `Bearer ${data.accessToken}` },
-            },
-          },
-        )
-
         const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
 
         let falModelId = model
@@ -183,7 +167,7 @@ export const generateImage = createServerFn({ method: 'POST' })
             .from('user_images')
             .select('id, storage_path')
             .in('id', data.referenceImageIds)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
 
           if (refImages.data?.length) {
             const storage = createImageStorage(supabase)
@@ -231,7 +215,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         if (useGoogle) {
           const result = await submitGeneration({
             accessToken: data.accessToken,
-            userId: user.id,
+            userId: userId,
             prompt: effectivePrompt,
             modelId: falModelId,
             aspectRatio,
@@ -290,7 +274,7 @@ export const generateImage = createServerFn({ method: 'POST' })
         const { data: record, error: insertError } = await supabase
           .from('user_images')
           .insert({
-            user_id: user.id,
+            user_id: userId,
             request_id: request_id,
             status: 'pending',
             source: 'ai_generated',

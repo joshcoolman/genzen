@@ -1,21 +1,32 @@
 import { z } from 'zod'
 import { addCreditsInternal } from './add-credits.server'
 import type { CreditReason, DeductionReason } from '@/features/credits'
-import { requireAuth } from '@/lib/server/auth.server'
+import type {AuthInput} from '@/lib/server/auth.server';
+import {  requireAuth } from '@/lib/server/auth.server'
 import {
   CREDIT_COSTS,
   CreditReasonSchema,
   getCreditRepository,
 } from '@/features/credits'
 
-const CheckAndDeductSchema = z.object({
-  accessToken: z.string().min(1),
-  reason: CreditReasonSchema,
-  quantity: z.number().int().positive().default(1),
-})
+const QuantitySchema = z.number().int().positive().default(1)
+const ReasonSchema = CreditReasonSchema
+
+export type CreditAuth = string | AuthInput
+
+async function resolveUserId(auth: CreditAuth): Promise<string> {
+  if (typeof auth === 'string') {
+    const user = await requireAuth(auth)
+    return user.id
+  }
+  if (auth.userId) return auth.userId
+  if (!auth.accessToken) throw new Error('Unauthorized')
+  const user = await requireAuth(auth.accessToken)
+  return user.id
+}
 
 export async function checkAndDeductCredits(
-  accessToken: string,
+  auth: CreditAuth,
   reason: DeductionReason,
   quantity: number = 1,
 ): Promise<{
@@ -24,20 +35,17 @@ export async function checkAndDeductCredits(
   cost: number
   userId: string
 }> {
-  const validated = CheckAndDeductSchema.parse({
-    accessToken,
-    reason,
-    quantity,
-  })
-  const user = await requireAuth(validated.accessToken)
+  ReasonSchema.parse(reason)
+  const validatedQuantity = QuantitySchema.parse(quantity)
+  const userId = await resolveUserId(auth)
   const repo = getCreditRepository()
   const unitCost = CREDIT_COSTS[reason]
-  const cost = unitCost * validated.quantity
-  const result = await repo.deductCredits(user.id, cost, reason)
+  const cost = unitCost * validatedQuantity
+  const result = await repo.deductCredits(userId, cost, reason)
   if (!result.success) {
-    return { allowed: false, balance: result.balance, cost, userId: user.id }
+    return { allowed: false, balance: result.balance, cost, userId }
   }
-  return { allowed: true, balance: result.balance, cost, userId: user.id }
+  return { allowed: true, balance: result.balance, cost, userId }
 }
 
 export async function refundCredits(

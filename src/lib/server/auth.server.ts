@@ -1,6 +1,9 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
-import { createClient } from '@supabase/supabase-js'
+import {  createClient } from '@supabase/supabase-js'
 import { verifyApiKey } from './api-keys.server'
+import { getSupabaseAdmin } from './supabase-admin.server'
+import type {SupabaseClient} from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/supabase'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL
 
@@ -72,4 +75,44 @@ export async function requireAuthFromApiKey(rawKey: string) {
   } catch {
     throw new Error('Unauthorized')
   }
+}
+
+export interface AuthInput {
+  accessToken?: string
+  userId?: string
+}
+
+export interface ResolvedAuth {
+  userId: string
+  supabase: SupabaseClient<Database>
+}
+
+/**
+ * Resolves either a Supabase access token (browser path, RLS-scoped client)
+ * or a pre-verified userId (MCP path, service-role client). Server fns that
+ * support both auth channels should call this once and use the returned
+ * client for all queries.
+ *
+ * IMPORTANT: when called with `userId`, the returned client bypasses RLS.
+ * Every read and write MUST include an explicit `.eq('user_id', userId)`
+ * filter (or equivalent path scoping) to prevent cross-user access.
+ */
+export async function resolveAuth(input: AuthInput): Promise<ResolvedAuth> {
+  if (input.userId) {
+    return { userId: input.userId, supabase: getSupabaseAdmin() }
+  }
+  if (!input.accessToken) {
+    throw new Error('Unauthorized')
+  }
+  const user = await requireAuth(input.accessToken)
+  const supabase = createClient<Database>(
+    process.env.VITE_SUPABASE_URL!,
+    process.env.VITE_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${input.accessToken}` },
+      },
+    },
+  )
+  return { userId: user.id, supabase }
 }

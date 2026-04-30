@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from './supabase-admin.server'
 
 interface CreatePendingGenerationOptions {
-  accessToken: string
+  accessToken?: string
   userId: string
   requestId: string
   generationType: string
@@ -25,15 +26,17 @@ export async function createPendingGeneration({
   title = 'Generating...',
   idempotencyKey,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
-    },
-  )
+  const supabase = accessToken
+    ? createClient(
+        process.env.VITE_SUPABASE_URL!,
+        process.env.VITE_SUPABASE_ANON_KEY!,
+        {
+          global: {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        },
+      )
+    : getSupabaseAdmin()
 
   const model = falModelId.replace(/\/edit$/, '')
 
