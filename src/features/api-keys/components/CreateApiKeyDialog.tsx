@@ -16,6 +16,14 @@ interface CreateApiKeyDialogProps {
   onCreate: (name: string) => Promise<string>
 }
 
+function buildInstallCommand(key: string): string {
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://localhost:3000'
+  return `claude mcp add --transport http genzen ${origin}/api/mcp --header "Authorization: Bearer ${key}"`
+}
+
 export function CreateApiKeyDialog({ onCreate }: CreateApiKeyDialogProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -64,13 +72,35 @@ export function CreateApiKeyDialog({ onCreate }: CreateApiKeyDialogProps) {
               <DialogHeader>
                 <DialogTitle>API key created</DialogTitle>
                 <DialogDescription>
-                  Copy your key now. For security reasons, it will not be shown
-                  again.
+                  Copy your key (or the install command below) now. For security
+                  reasons, neither will be shown again.
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3 font-mono text-xs break-all">
-                <span className="flex-1">{revealedKey}</span>
-                <CopyButton text={revealedKey} />
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    API key
+                  </p>
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3 font-mono text-xs break-all">
+                    <span className="flex-1">{revealedKey}</span>
+                    <CopyButton text={revealedKey} />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Install in Claude Code
+                  </p>
+                  <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3 font-mono text-xs break-all">
+                    <span className="flex-1">
+                      {buildInstallCommand(revealedKey)}
+                    </span>
+                    <CopyButton text={buildInstallCommand(revealedKey)} />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Run this in any project's terminal to register Genzen as an
+                    MCP server scoped to that directory.
+                  </p>
+                </div>
               </div>
               <DialogFooter>
                 <ActionButton onClick={() => handleOpenChange(false)}>

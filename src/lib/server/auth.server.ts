@@ -1,8 +1,8 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
-import {  createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { verifyApiKey } from './api-keys.server'
 import { getSupabaseAdmin } from './supabase-admin.server'
-import type {SupabaseClient} from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/supabase'
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL

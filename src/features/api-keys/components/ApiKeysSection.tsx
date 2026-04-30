@@ -4,6 +4,7 @@ import { useApiKeys } from '../hooks/use-api-keys'
 import { CreateApiKeyDialog } from './CreateApiKeyDialog'
 import type { ApiKey } from '../types'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { CopyButton } from '@/components/CopyButton'
 
 function formatDate(iso: string | null): string {
   if (!iso) return 'Never'
@@ -13,6 +14,14 @@ function formatDate(iso: string | null): string {
     month: 'short',
     day: 'numeric',
   })
+}
+
+function buildInstallTemplate(): string {
+  const origin =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://localhost:3000'
+  return `claude mcp add --transport http genzen ${origin}/api/mcp --header "Authorization: Bearer <YOUR_GENZEN_KEY>"`
 }
 
 export function ApiKeysSection() {
@@ -45,6 +54,21 @@ export function ApiKeysSection() {
           </p>
         </div>
         <CreateApiKeyDialog onCreate={createKey} />
+      </div>
+
+      <div className="space-y-1.5">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Install in Claude Code
+        </p>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 p-3 font-mono text-xs break-all">
+          <span className="flex-1">{buildInstallTemplate()}</span>
+          <CopyButton text={buildInstallTemplate()} />
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Replace <code className="font-mono">{'<YOUR_GENZEN_KEY>'}</code> with
+          a key you saved when you created it. Keys are only shown once — if you
+          lost it, revoke it and create a new one.
+        </p>
       </div>
 
       {loading && keys.length === 0 ? (
