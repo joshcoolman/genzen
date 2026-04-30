@@ -10,7 +10,7 @@ export function registerGetCreditBalance(
     {
       title: 'Get credit balance',
       description:
-        "Returns the user's current Genzen credit balance and its dollar value. One credit is currently $0.10. Use this before generation tools to check whether the user has enough credits.",
+        "Returns the user's current Genzen credit balance and its dollar value. One credit is currently $0.10.",
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     async () => {

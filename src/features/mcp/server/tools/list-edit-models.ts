@@ -7,7 +7,7 @@ export function registerListEditModels(server: McpServer): void {
     {
       title: 'List image edit models',
       description:
-        'Returns the catalog of image edit models, each with the maximum number of reference images it accepts. Use this before calling edit_image to pick a model that fits the number of references the user has.',
+        'Returns the catalog of image edit models the user has access to, each with the maximum number of reference images it accepts.',
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     () => {
