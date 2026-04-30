@@ -8,6 +8,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
+import { getSupabaseAdmin } from './supabase-admin.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
@@ -28,7 +29,7 @@ export function isGoogleProvider(modelId: string): boolean {
 }
 
 interface SubmitGenerationOptions {
-  accessToken: string
+  accessToken?: string
   userId: string
   prompt: string
   modelId: string
@@ -46,7 +47,8 @@ export interface SubmitGenerationResult {
   status: 'pending' | 'completed'
 }
 
-function createUserSupabase(accessToken: string) {
+function createUserSupabase(accessToken?: string) {
+  if (!accessToken) return getSupabaseAdmin()
   return createClient(
     process.env.VITE_SUPABASE_URL!,
     process.env.VITE_SUPABASE_ANON_KEY!,
@@ -181,6 +183,7 @@ async function submitGoogleGeneration(
         },
       })
       .eq('id', recordId)
+      .eq('user_id', options.userId)
 
     if (updateError) {
       await storage.remove([storagePath])
@@ -207,6 +210,7 @@ async function submitGoogleGeneration(
         },
       })
       .eq('id', recordId)
+      .eq('user_id', options.userId)
 
     throw error
   }

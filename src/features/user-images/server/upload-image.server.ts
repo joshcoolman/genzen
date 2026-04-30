@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { requireAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '@/lib/server/auth.server'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { createImageStorage } from '@/lib/image-storage'
 
@@ -27,7 +27,8 @@ function validateImageBuffer(buffer: Buffer): string {
 }
 
 interface UploadImageInput {
-  accessToken: string
+  accessToken?: string
+  userId?: string
   storagePath: string
   base64Data: string
   contentType: string
@@ -36,10 +37,13 @@ interface UploadImageInput {
 export const uploadImage = createServerFn({ method: 'POST' })
   .inputValidator((data: UploadImageInput) => data)
   .handler(async ({ data }) => {
-    const user = await requireAuth(data.accessToken)
+    const { userId } = await resolveAuth({
+      accessToken: data.accessToken,
+      userId: data.userId,
+    })
 
     // Verify the storage path belongs to this user
-    if (!data.storagePath.startsWith(`${user.id}/`)) {
+    if (!data.storagePath.startsWith(`${userId}/`)) {
       throw new Error('Storage path must be scoped to the authenticated user')
     }
 

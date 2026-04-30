@@ -1,8 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { fal } from '@fal-ai/client'
-import { createClient } from '@supabase/supabase-js'
 import { buildFalInput } from './fal-params.server'
-import { requireAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '@/lib/server/auth.server'
 import {
   checkAndDeductCredits,
   withCreditRefund,
@@ -14,7 +13,8 @@ import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { createImageStorage } from '@/lib/image-storage'
 
 interface EditImageInput {
-  accessToken: string
+  accessToken?: string
+  userId?: string
   sourceImageId: string
   parentId?: string // Optional organizational parent (defaults to sourceImageId)
   editPrompt: string
@@ -28,8 +28,11 @@ interface EditImageInput {
 export const editImage = createServerFn({ method: 'POST' })
   .inputValidator((data: EditImageInput) => data)
   .handler(async ({ data }) => {
-    const user = await requireAuth(data.accessToken)
-    await checkRateLimit(user.id, 'image')
+    const { userId, supabase } = await resolveAuth({
+      accessToken: data.accessToken,
+      userId: data.userId,
+    })
+    await checkRateLimit(userId, 'image')
 
     const {
       sourceImageId,
@@ -49,29 +52,20 @@ export const editImage = createServerFn({ method: 'POST' })
       throw new Error('FAL_KEY environment variable is not set')
     }
 
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: { Authorization: `Bearer ${data.accessToken}` },
-        },
-      },
-    )
-
     // Idempotency: if key provided and a non-failed record exists, return it
     if (data.idempotencyKey) {
       const { data: existing } = await supabase
         .from('user_images')
         .select('id, request_id, status')
         .eq('idempotency_key', data.idempotencyKey)
+        .eq('user_id', userId)
         .single()
       if (existing && existing.status !== 'failed') {
         return { recordId: existing.id, request_id: existing.request_id ?? '' }
       }
     }
 
-    const creditResult = await checkAndDeductCredits(data.accessToken, 'edit')
+    const creditResult = await checkAndDeductCredits({ userId }, 'edit')
     if (!creditResult.allowed) {
       throw new Error('Insufficient credits')
     }
@@ -86,7 +80,7 @@ export const editImage = createServerFn({ method: 'POST' })
           .from('user_images')
           .select('storage_path, created_at, generation_metadata')
           .eq('id', sourceImageId)
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
           .single()
 
         if (!sourceImage?.storage_path) {
@@ -114,7 +108,7 @@ export const editImage = createServerFn({ method: 'POST' })
             .from('user_images')
             .select('id, storage_path')
             .in('id', referenceImageIds)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
 
           if (refImages.data?.length) {
             const uploads = await Promise.all(
@@ -152,7 +146,7 @@ export const editImage = createServerFn({ method: 'POST' })
 
         const { recordId } = await createPendingGeneration({
           accessToken: data.accessToken,
-          userId: user.id,
+          userId,
           requestId: request_id,
           generationType: 'edit',
           falModelId: falEditModel,
