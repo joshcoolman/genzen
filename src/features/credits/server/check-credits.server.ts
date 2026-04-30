@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { addCreditsInternal } from './add-credits.server'
 import type { CreditReason, DeductionReason } from '@/features/credits'
-import type {AuthInput} from '@/lib/server/auth.server';
-import {  requireAuth } from '@/lib/server/auth.server'
+import type { AuthInput } from '@/lib/server/auth.server'
+import { requireAuth } from '@/lib/server/auth.server'
 import {
   CREDIT_COSTS,
   CreditReasonSchema,
