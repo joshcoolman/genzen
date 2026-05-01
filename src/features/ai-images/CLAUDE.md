@@ -12,8 +12,10 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Server
 
-- `generate-image.server.ts` -- text-to-image and image-to-image via FAL queue
-- `edit-image.server.ts` -- edit existing image with prompt + optional reference images
+- `generate-image.server.ts` -- TanStack server fn wrapper for generation
+- `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by MCP tools and other server fns to avoid TanStack RPC stub corruption
+- `edit-image.server.ts` -- TanStack server fn wrapper for editing
+- `edit-image-internal.server.ts` -- core async implementation for image editing with prompt + optional reference images; called directly by MCP tools
 - `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation

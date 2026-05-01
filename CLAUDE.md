@@ -34,11 +34,13 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 | ad            | AI chat assistant sidebar with vision + tool calling           | `src/features/ad/CLAUDE.md`            |
 | ai-images     | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`     |
 | ai-video      | Video generation (FLF + multishot) with parent/child grouping  | `src/features/ai-video/CLAUDE.md`      |
+| api-keys      | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`      |
 | canvas        | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`        |
 | credits       | Credit checking, deduction, and UI                             | `src/features/credits/CLAUDE.md`       |
 | dev-workspace | Developer workspace utilities                                  | `src/features/dev-workspace/CLAUDE.md` |
 | docs          | Internal docs route (password-gated)                           | `src/features/docs/CLAUDE.md`          |
 | history       | Generation history browsing                                    | `src/features/history/CLAUDE.md`       |
+| mcp           | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`           |
 | models        | Model registry and selection                                   | `src/features/models/CLAUDE.md`        |
 | multi-model   | Multi-model parallel image generation                          | `src/features/multi-model/CLAUDE.md`   |
 | multi-shot    | Residual multishot types + ShotCard for ai-video reuse         | `src/features/multi-shot/CLAUDE.md`    |

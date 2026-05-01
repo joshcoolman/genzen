@@ -14,7 +14,8 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `lib/palette-generator.ts` -- Extracts color palettes from images using Canvas + k-means clustering in LAB space
 - `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
-- `server/upload-image.server.ts` -- Server function for uploading images to R2 storage with magic-byte validation and user-scoped path enforcement
+- `server/upload-image.server.ts` -- TanStack server fn wrapper for image upload
+- `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement; called directly by MCP tools to avoid TanStack RPC stub corruption
 - `server/remove-images.server.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
 - `server/create-thumbnail.server.ts` -- Server function for async thumbnail generation post-upload
 - `components/UserImagesDisplay.tsx` -- Main orchestrator: grid, filters (uploads/AI images/videos), sort, upload, clipboard paste

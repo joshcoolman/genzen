@@ -8,7 +8,7 @@ Credit balance system for metering AI generation usage. Repository pattern with 
 - `index.ts` -- Factory function `getCreditRepository()`, re-exports types/constants
 - `supabase-repository.ts` -- Production implementation using Supabase RPCs (`get_credit_balance`, `deduct_credits`, `add_credits`); direct table queries for `credit_transactions`
 - `handle-credit-error.ts` -- Helper to detect "Insufficient credits" errors
-- `server/check-credits.server.ts` -- `checkAndDeductCredits(accessToken, reason, quantity?)` combines auth + cost lookup + deduction; also exports `refundCredits()` and `withCreditRefund<T>()` (wraps post-deduction work with automatic refund on failure)
+- `server/check-credits.server.ts` -- `checkAndDeductCredits(auth, reason, quantity?)` combines auth + cost lookup + deduction; `auth` accepts access token string or `{ userId }` / `{ accessToken }` object. Also exports `refundCredits()` and `withCreditRefund<T>()` (wraps post-deduction work with automatic refund on failure)
 - `server/add-credits.server.ts` -- TanStack server fn for adding credits
 - `server/purchase-credits.server.ts` -- TanStack server fn for purchasing credit packs (validates pack, calls addCreditsInternal)
 - `server/get-credits.server.ts` -- TanStack server fn returning balance + usage stats
