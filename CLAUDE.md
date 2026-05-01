@@ -24,7 +24,6 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 - **FAL AI** (`FAL_KEY`) — image and video generation via `@fal-ai/client`.
 - **Supabase** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_*`) — auth, Postgres, RLS. Anon key client-side, service role server-side only.
 - **Cloudflare R2** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry).
-- **Trigger.dev** (`TRIGGER_SECRET_KEY`) — background jobs.
 - **Docs password** (`DOCS_PASSWORD`) — gate for the internal `/docs` route.
 
 ## Features

@@ -5,7 +5,6 @@
 GenZen is currently a **learning project** focused on building AI-powered applications. The primary goal is hands-on experience with:
 
 - AI image generation (FAL AI)
-- Async workflows (Trigger.dev)
 - Real-time updates (Supabase Realtime)
 - Modern full-stack architecture (TanStack Start, React 19)
 
@@ -86,7 +85,6 @@ Enterprise:
 - **FAL AI:** ~$0.003-0.004 per image (Flux Schnell)
 - **Anthropic (if added):** ~$0.0005 per enhanced prompt (with caching)
 - **Supabase:** Free tier (adequate for now)
-- **Trigger.dev:** Free tier (adequate for now)
 
 ### Target Economics (Future Monetization)
 

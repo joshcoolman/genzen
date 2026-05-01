@@ -95,7 +95,7 @@ https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=fal-ai/flux/dev
 
 Two implementation options:
 
-### Option A: Sequential FAL calls in Trigger.dev (simpler)
+### Option A: Sequential FAL calls (simpler)
 
 1. `fal.subscribe("fal-ai/flux/dev")` -> first frame
 2. `fal.subscribe("fal-ai/flux/dev")` -> last frame

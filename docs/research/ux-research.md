@@ -15,7 +15,7 @@ Research from exploring Freepik's video generator UI alongside our FAL-based imp
 
 ### Multi-model generation
 
-Fire same prompt to 2-3 models in parallel, show results side-by-side. Trigger.dev parallel tasks make this straightforward. Freepik leads with this as their top option.
+Fire same prompt to 2-3 models in parallel, show results side-by-side. Freepik leads with this as their top option.
 
 ### Aspect Ratio selector
 
