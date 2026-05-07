@@ -7,16 +7,19 @@ Issue #80: real-dollar cost tracking for all FAL AI generations. Everything is n
 ## What shipped (committed: 3ba3d63)
 
 **New files:**
+
 - `supabase/migrations/20260506000000_fal_price_cache.sql` — `fal_price_cache(endpoint_id PK, unit_price, unit, currency, fetched_at)`. Migration applied to DB.
 - `src/lib/server/fal-pricing.server.ts` — `getFalModelPrice(endpointId)` with 24h cache. `warmFalPriceCache()` exists but isn't hooked in.
 - `src/lib/server/compute-cost.server.ts` — `computeFalCostCents(endpointId, params)` handles `images`/`units`, `megapixels`/`processed megapixels`, `seconds`.
 
 **Wired into generation paths:**
+
 - `generate-image-internal.server.ts` — calls `computeFalCostCents` before insert, stores as `estimated_cost_cents` in `generation_metadata`
 - `generate-video.server.ts` — same for FLF and multishot branches
 - `fal-completion.server.ts` — `processImageResult`/`processVideoResult` use `falCostCents ?? estimatedCostCents` as `provider_cost_cents`
 
 **Provider toggle removed:**
+
 - Removed FAL/Google provider toggle UI from `GeneratorPanel.tsx`
 - Removed `providerOverride` state from `use-ai-images-page.ts`, `use-generator.ts`, and `ai-images.tsx` route
 - Each model now uses its native provider automatically (no override)
