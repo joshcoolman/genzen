@@ -1,72 +1,49 @@
-# Continue: Genzen MCP Server v1 — Phase 1 (API key system)
+# Continue: Cost Tracking Layer — Issue #80
 
-## Where we are
+## What was being worked on
 
-- **Branch:** `main` (working tree clean apart from this file). **Per PR-workflow memory: do NOT execute on main — cut `feat/mcp-api-keys` first** and open a PR when done.
-- **Plan file:** `/Users/joshcoolman/.claude/plans/so-higgsfield-has-an-partitioned-mountain.md`
-- **Epic on GH:** [#135 Epic: Genzen MCP Server v1](https://github.com/joshcoolman-smc/genzen/issues/135) — labeled `epic`, on GenZen Roadmap project board
-- **Phases on GH (all on the board):** #131 (this phase), #132, #133, #134
+Issue #80: real-dollar cost tracking for all FAL AI generations. Everything is now committed and pushed on `main`. The cost layer is live and verified working via the Activity page ($1.60 provider cost observed after a multi-model run).
 
-## What this is
+## What shipped (committed: 3ba3d63)
 
-Building an MCP server that lets external Claude clients (Claude Code / Desktop / Cursor in any other repo) generate images via a user's Genzen account. v1 exposes 7 tools: `list_image_models`, `list_edit_models`, `upload_image`, `generate_image`, `edit_image`, `get_credit_balance`, `list_recent_generations`.
+**New files:**
+- `supabase/migrations/20260506000000_fal_price_cache.sql` — `fal_price_cache(endpoint_id PK, unit_price, unit, currency, fetched_at)`. Migration applied to DB.
+- `src/lib/server/fal-pricing.server.ts` — `getFalModelPrice(endpointId)` with 24h cache. `warmFalPriceCache()` exists but isn't hooked in.
+- `src/lib/server/compute-cost.server.ts` — `computeFalCostCents(endpointId, params)` handles `images`/`units`, `megapixels`/`processed megapixels`, `seconds`.
 
-**Locked-in design decisions (don't relitigate):**
+**Wired into generation paths:**
+- `generate-image-internal.server.ts` — calls `computeFalCostCents` before insert, stores as `estimated_cost_cents` in `generation_metadata`
+- `generate-video.server.ts` — same for FLF and multishot branches
+- `fal-completion.server.ts` — `processImageResult`/`processVideoResult` use `falCostCents ?? estimatedCostCents` as `provider_cost_cents`
 
-- Transport: remote HTTP MCP at `https://genzen.app/mcp` (Streamable HTTP)
-- Auth: personal API keys `gz_live_<random>`, sha256-hashed at rest, shown once
-- Async: `generate_image` blocks until FAL completes (≤90s timeout)
-- Image return: R2 public URL in tool response
+**Provider toggle removed:**
+- Removed FAL/Google provider toggle UI from `GeneratorPanel.tsx`
+- Removed `providerOverride` state from `use-ai-images-page.ts`, `use-generator.ts`, and `ai-images.tsx` route
+- Each model now uses its native provider automatically (no override)
 
-## This phase: API key foundation (#131)
+## Key decisions
 
-Pure foundation. No MCP code yet. Independently shippable.
+- FAL pricing API: `GET https://api.fal.ai/v1/models/pricing?endpoint_id=<id>` returns `{prices:[{unit_price, unit, currency}]}`. Confirmed working.
+- Pricing units: `megapixels` (FLUX), `processed megapixels` (FLUX-2-Pro), `images` (Seedream, Nano Banana), `seconds` (video — Kling $0.14/sec), `units` (GPT Image $1 flat).
+- Cost in `generation_metadata` JSONB as `estimated_cost_cents` — no new column on `user_images`.
+- `computeFalCostCents` wrapped in `.catch(() => null)` everywhere — never blocks generation.
+- Google Imagen models return `null` cost gracefully — deferred.
 
-### Files to create
+## Confirmed working
 
-- `supabase/migrations/<timestamp>_api_keys.sql`
-  - Table `api_keys`: `id, user_id, name, key_hash (sha256), key_prefix (first 12 chars for display), created_at, last_used_at, revoked_at`
-  - RLS: user can CRUD only their own rows; service role bypasses
-- `src/lib/server/api-keys.server.ts`
-  - `createApiKey(userId, name)` → returns one-time-visible `gz_live_*` raw key + db row
-  - `verifyApiKey(rawKey)` → `{ userId }` or throws (sha256 lookup, updates `last_used_at`, rejects revoked)
-  - `revokeApiKey(userId, id)`
-  - `listApiKeys(userId)` (no hashes / no raw values)
-- `src/features/api-keys/` — components + hook for the Settings UI section
-  - List rows: name, prefix (e.g. `gz_live_abcd…`), created, last used
-  - "Create key" dialog: name input → reveals key once with copy button
-  - Revoke action with confirm
-- Vitest covering: create→verify round-trip, hash mismatch rejection, revoked-key rejection
+Activity page shows correct costs: Seedream v4 $0.030, Seedream v4.5 $0.040, FLUX.2 Pro $0.060, Nano Banana 2 $0.080, FLUX Dev $0.050, FLUX Kontext Pro $0.040, GPT Image 2 $1.00. All match FAL published rates.
 
-### Files to edit
+## Outstanding work
 
-- `src/lib/server/auth.server.ts` — add `requireAuthFromApiKey(rawKey)` returning the same `{ id, email? }` shape as the existing `requireAuth(accessToken)`. Don't touch `requireAuth` itself.
-- `src/routes/dashboard/settings.tsx` — mount the new `<ApiKeysSection />`
+1. **Regenerate Supabase types** — `fal_price_cache` table exists in DB but isn't in generated types yet. `fal-pricing.server.ts` uses `supabase as any` cast. Run `supabase gen types typescript --project-id <id> > src/types/supabase.ts`, then remove the cast.
+2. **`warmFalPriceCache()`** exists but isn't called — optional: hook into a server startup route.
+3. **Not wired**: `edit-image-internal.server.ts`, `submit-variations.server.ts`, `retry-generation.server.ts` — variation/retry paths. Low priority.
+4. **Close #80** after types are regenerated.
 
-### Files NOT to touch this phase
+## Next issues (Gate 2 critical path)
 
-- Any `generate-image.server.ts` / `edit-image.server.ts` / `upload-image.server.ts` / `check-credits.server.ts` — that's Phase 2 (`{ userId }` channel refactor)
-- `server/api/mcp.ts` — Phase 3 doesn't exist yet
-- Any tool handler in `src/features/mcp/` — Phase 3+
-
-## Conventions to follow
-
-- Reuse shared components per memory `feedback_use_shared_components.md` (dialog, button — check `src/components/`)
-- Use `ActionButton` for primary CTAs (loading + icon props, no `asChild`)
-- Server-only files use `.server.ts` suffix (already implied by filenames above)
-- Migration filename: timestamp-prefixed, follow existing `supabase/migrations/` pattern (most recent is `20260406100000_prompt_studio_sets.sql` — pick a timestamp after that)
-
-## Verification before completing this phase
-
-1. `pnpm check` (prettier + eslint)
-2. `pnpm build` (must succeed)
-3. `pnpm test` for the new vitest file
-4. Manual: dev server → `/dashboard/settings` → API Keys section → create a key → it appears in list with the correct prefix → revoke removes it
-5. Open PR against `main`, link to #131, do not self-merge until reviewed
-6. After merge: run `/continue-prompt` again, then start Phase 2 (#132)
+`#147 ToS + Privacy Policy` and `#26 Stripe` run in parallel. #26 needs cost data to set margin/pricing — that's now available.
 
 ## Git state
 
-- On `main`, only `continue.md` modified
-- Cut `feat/mcp-api-keys` before any code changes
-- 5 issues open on the board: #131 (this), #132, #133, #134, #135 (epic)
+Branch: `main`. All changes committed (3ba3d63) and pushed. Build passes clean. No uncommitted work.
