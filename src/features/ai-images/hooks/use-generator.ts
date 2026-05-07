@@ -34,7 +34,6 @@ interface UseGeneratorOptions {
   gensPerModel: number
   credits: CreditsState
   setError: (error: string | null) => void
-  providerOverride?: 'fal' | 'google'
   storagePrefix?: string
   onAfterSubmit?: (results: Array<{ recordId: string }>) => void
   autoRefImageIds?: Array<string>
@@ -93,7 +92,6 @@ export function useGenerator({
   gensPerModel,
   credits,
   setError,
-  providerOverride,
   storagePrefix = 'genzen',
   onAfterSubmit,
   autoRefImageIds: autoRefImageIdsProp,
@@ -322,7 +320,6 @@ export function useGenerator({
                 : {}),
               ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
               ...(referenceImageIds ? { referenceImageIds } : {}),
-              ...(providerOverride ? { providerOverride } : {}),
             },
           }),
         )

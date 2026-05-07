@@ -72,7 +72,12 @@ export async function processImageResult(
         ? meta.fal_model_id
         : ''
 
-  const providerCostCents = extractFalCostCents(falResultData)
+  const falCostCents = extractFalCostCents(falResultData)
+  const estimatedCostCents =
+    typeof meta.estimated_cost_cents === 'number'
+      ? meta.estimated_cost_cents
+      : null
+  const providerCostCents = falCostCents ?? estimatedCostCents
 
   const { error: updateError } = await supabase
     .from('user_images')
@@ -124,7 +129,12 @@ export async function processVideoResult(
     .single()
 
   const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
-  const providerCostCents = extractFalCostCents(falResultData)
+  const falCostCents = extractFalCostCents(falResultData)
+  const estimatedCostCents =
+    typeof meta.estimated_cost_cents === 'number'
+      ? meta.estimated_cost_cents
+      : null
+  const providerCostCents = falCostCents ?? estimatedCostCents
 
   const { error: updateError } = await supabase
     .from('user_images')

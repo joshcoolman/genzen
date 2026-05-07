@@ -12,6 +12,7 @@ import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -280,6 +281,10 @@ export async function generateImageInternal(
         ...(webhookUrl ? { webhookUrl } : {}),
       })
 
+      const estimatedCostCents = await computeFalCostCents(falModelId, {
+        aspectRatio,
+      }).catch(() => null)
+
       // Create database record with pending status
       const { data: record, error: insertError } = await supabase
         .from('user_images')
@@ -298,6 +303,9 @@ export async function generateImageInternal(
             model,
             fal_model_id: falModelId,
             submitted_at: new Date().toISOString(),
+            ...(estimatedCostCents != null
+              ? { estimated_cost_cents: estimatedCostCents }
+              : {}),
             ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
             ...(sourceImageBase64 ? { has_source_image: true } : {}),
             ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),

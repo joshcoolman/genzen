@@ -32,8 +32,6 @@ interface GeneratorPanelProps {
   describe?: ReturnType<typeof useDescribeJson>
   mode?: 'generate' | 'edit'
   modelDisplay?: 'panel' | 'dropdown'
-  providerOverride?: 'fal' | 'google'
-  onProviderOverrideChange?: (value: 'fal' | 'google' | undefined) => void
   refImagesReadOnly?: boolean
   libraryFilterIds?: Set<string>
 }
@@ -47,8 +45,6 @@ export function GeneratorPanel({
   describe,
   mode = 'generate',
   modelDisplay = 'panel',
-  providerOverride,
-  onProviderOverrideChange,
   refImagesReadOnly = false,
   libraryFilterIds,
 }: GeneratorPanelProps) {
@@ -222,38 +218,6 @@ export function GeneratorPanel({
         visibleModels={modelSelector.models}
         onToggleSelected={modelSelector.toggleSelected}
       />
-
-      {/* Provider toggle (dev) */}
-      {onProviderOverrideChange && (
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            Provider
-          </span>
-          <div className="flex rounded-md border border-border text-[10px]">
-            {(['fal', 'google'] as const).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() =>
-                  onProviderOverrideChange(
-                    providerOverride === p ? undefined : p,
-                  )
-                }
-                className={`px-2 py-0.5 transition-colors ${
-                  providerOverride === p
-                    ? 'bg-foreground text-background'
-                    : 'text-muted-foreground hover:text-foreground'
-                } ${p === 'fal' ? 'rounded-l-[5px] border-r border-border' : 'rounded-r-[5px]'}`}
-              >
-                {p === 'fal' ? 'FAL' : 'Google'}
-              </button>
-            ))}
-          </div>
-          {providerOverride === undefined && (
-            <span className="text-[10px] text-muted-foreground">(auto)</span>
-          )}
-        </div>
-      )}
 
       {/* Describe / JSON -- only when source image present */}
       {generator.sourceImage && (

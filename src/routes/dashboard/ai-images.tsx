@@ -769,8 +769,6 @@ function AiImagesPage() {
                 error={page.error}
                 describe={page.describe}
                 modelDisplay="dropdown"
-                providerOverride={page.providerOverride}
-                onProviderOverrideChange={page.setProviderOverride}
               />
             </div>
           </DialogContent>
@@ -824,8 +822,6 @@ function AiImagesPage() {
                   userImages={page.userImages}
                   error={page.error}
                   describe={page.describe}
-                  providerOverride={page.providerOverride}
-                  onProviderOverrideChange={page.setProviderOverride}
                 />
               </div>
             </div>

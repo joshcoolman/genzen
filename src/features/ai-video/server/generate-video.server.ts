@@ -17,6 +17,7 @@ import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { MULTISHOT_FAL_MODEL } from '@/features/multi-shot/types'
 import { extractFalError } from '@/lib/server/fal-error.server'
+import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -282,6 +283,10 @@ async function generateFlf(
         throw new Error(blob.message)
       }
 
+      const estimatedCostCents = await computeFalCostCents(videoModel, {
+        durationSeconds: parseInt(duration, 10) || 5,
+      }).catch(() => null)
+
       const { data: record, error: insertError } = await supabase
         .from('user_images')
         .insert({
@@ -305,6 +310,9 @@ async function generateFlf(
             cfg_scale: data.cfgScale ?? null,
             negative_prompt: data.negativePrompt ?? null,
             submitted_at: new Date().toISOString(),
+            ...(estimatedCostCents != null
+              ? { estimated_cost_cents: estimatedCostCents }
+              : {}),
           },
         })
         .select()
@@ -419,6 +427,13 @@ async function generateMultishot(
         throw new Error(blob.message)
       }
 
+      const estimatedCostCents = await computeFalCostCents(
+        MULTISHOT_FAL_MODEL,
+        {
+          durationSeconds: totalDuration,
+        },
+      ).catch(() => null)
+
       const { data: record, error: insertError } = await supabase
         .from('user_images')
         .insert({
@@ -442,6 +457,9 @@ async function generateMultishot(
             shot_count: data.shots.length,
             total_duration: totalDuration,
             submitted_at: new Date().toISOString(),
+            ...(estimatedCostCents != null
+              ? { estimated_cost_cents: estimatedCostCents }
+              : {}),
           },
         })
         .select()
