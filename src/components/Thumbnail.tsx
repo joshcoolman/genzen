@@ -202,7 +202,7 @@ export function Thumbnail({
                   </span>
                 )}
                 {failedMessage && (
-                  <span className="text-xs text-muted-foreground border border-muted-foreground/30 rounded-full px-2.5 py-0.5">
+                  <span className="text-xs text-muted-foreground/50 border border-muted-foreground/25 rounded-full px-2.5 py-0.5">
                     {failedMessage}
                   </span>
                 )}
