@@ -133,7 +133,6 @@ export function ImageGallery({
                       ? imageUrls[img.generation_metadata.source_image_id]
                       : undefined
                   }
-                  createdAt={img.created_at}
                   onDelete={() => onDelete(img)}
                 />
               )

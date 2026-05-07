@@ -80,6 +80,20 @@ function resolveModelName(
   return getModelName(modelId)
 }
 
+function deriveProvider(m: ActivityGenerationMetadata): string | null {
+  if (m.provider === 'google') return 'Google Vertex AI'
+  if (m.provider === 'openai') return 'OpenAI'
+  if (m.fal_model_id ?? m.model?.startsWith('fal-ai/')) return 'FAL AI'
+  return null
+}
+
+function extractErrorMessage(m: ActivityGenerationMetadata): string | null {
+  const e = m.error
+  if (!e) return null
+  if (typeof e === 'string') return e
+  return e.message ?? null
+}
+
 function parseEntry(row: Row): ActivityEntry {
   const m = meta(row)
   const kind: ActivityEntry['kind'] =
@@ -91,6 +105,7 @@ function parseEntry(row: Row): ActivityEntry {
     prompt: m.prompt ?? '',
     model: m.model ?? null,
     modelName: resolveModelName(row.source, m.model),
+    provider: deriveProvider(m),
     status: row.status,
     createdAt: row.created_at,
     submittedAt: m.submitted_at ?? null,
@@ -100,7 +115,7 @@ function parseEntry(row: Row): ActivityEntry {
     userCostCents: computeUserCostCents(m),
     providerCostCents: m.provider_cost_cents ?? null,
     isDeleted: row.deleted_at != null,
-    errorMessage: m.error?.message ?? null,
+    errorMessage: extractErrorMessage(m),
   }
 }
 

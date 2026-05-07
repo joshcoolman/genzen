@@ -5,6 +5,8 @@ export type GenerationKind = 'image' | 'video'
 export interface ActivityGenerationMetadata {
   prompt?: string
   model?: string
+  provider?: string
+  fal_model_id?: string
   generation_type?: string
   submitted_at?: string
   completed_at?: string
@@ -12,7 +14,7 @@ export interface ActivityGenerationMetadata {
   provider_cost_cents?: number
   thumbnail_path?: string
   fal_url?: string
-  error?: { message?: string }
+  error?: { message?: string } | string
 }
 
 export interface ActivityEntry {
@@ -22,6 +24,7 @@ export interface ActivityEntry {
   prompt: string
   model: string | null
   modelName: string
+  provider: string | null
   status: GenerationStatus
   createdAt: string
   submittedAt: string | null

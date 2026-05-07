@@ -198,14 +198,16 @@ async function submitGoogleGeneration(
     )
   } catch (error) {
     // Mark the record as failed so the UI shows a failure card
+    const errorMsg =
+      error instanceof Error ? error.message : 'Google generation failed'
     await supabase
       .from('user_images')
       .update({
         status: 'failed',
+        generation_error: errorMsg,
         generation_metadata: {
           ...record.generation_metadata,
-          error:
-            error instanceof Error ? error.message : 'Google generation failed',
+          error: { message: errorMsg, code: 'google_error' },
           failed_at: new Date().toISOString(),
         },
       })

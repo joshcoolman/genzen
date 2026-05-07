@@ -20,6 +20,7 @@ export interface ThumbnailProps {
   pendingLabel?: string
   pendingBackgroundUrl?: string
 
+  failedLabel?: string
   failedMessage?: string
   failedBackgroundUrl?: string
 
@@ -59,6 +60,7 @@ export function Thumbnail({
   status = 'complete',
   pendingLabel,
   pendingBackgroundUrl,
+  failedLabel,
   failedMessage,
   failedBackgroundUrl,
   label,
@@ -194,6 +196,11 @@ export function Thumbnail({
               ) : null}
               <div className="relative z-10 flex flex-col items-center gap-1 px-4">
                 <span className="text-xs text-destructive">Failed</span>
+                {failedLabel && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {failedLabel}
+                  </span>
+                )}
                 {failedMessage && (
                   <span className="text-[10px] text-foreground/80 text-center">
                     {failedMessage}

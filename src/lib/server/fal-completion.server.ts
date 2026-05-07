@@ -3,6 +3,7 @@ import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { getModelName } from '@/features/ai-images/models'
 
 // Defensive extractor — FAL doesn't expose cost consistently across endpoints.
 // Probes known candidate paths; returns null if none match. Verify + expand as
@@ -89,7 +90,7 @@ export async function processImageResult(
       file_hash: fileHash,
       file_size: fileSize,
       mime_type: 'image/png',
-      title: model,
+      title: getModelName(model) || model,
       description:
         prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt,
       generation_metadata: {

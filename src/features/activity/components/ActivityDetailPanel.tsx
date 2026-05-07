@@ -325,14 +325,23 @@ export function ActivityDetailPanel({
 
                 {detail.errorMessage && (
                   <Section title="Error">
-                    <p className="whitespace-pre-wrap text-xs leading-relaxed text-destructive">
-                      {detail.errorMessage}
-                    </p>
+                    <div className="relative">
+                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all pr-7 font-mono text-[11px] leading-relaxed text-destructive">
+                        {detail.errorMessage}
+                      </pre>
+                      <CopyButton
+                        text={detail.errorMessage}
+                        label="Copy error"
+                      />
+                    </div>
                   </Section>
                 )}
 
                 <Section title="Details">
                   <DetailRow label="Kind">{detail.kind}</DetailRow>
+                  {detail.provider && (
+                    <DetailRow label="Provider">{detail.provider}</DetailRow>
+                  )}
                   <DetailRow label="Duration">
                     {detail.durationMs != null
                       ? formatDurationMs(detail.durationMs)

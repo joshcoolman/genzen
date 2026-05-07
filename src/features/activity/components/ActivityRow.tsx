@@ -101,11 +101,16 @@ export function ActivityRow({
         )}
       </div>
 
-      {/* Model + deleted badge */}
+      {/* Model + provider + deleted badge */}
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate text-sm font-medium text-foreground">
           {entry.modelName}
         </span>
+        {entry.provider && (
+          <span className="truncate text-[10px] text-muted-foreground/70">
+            {entry.provider}
+          </span>
+        )}
         {entry.isDeleted && (
           <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
             deleted

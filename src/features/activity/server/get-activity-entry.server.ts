@@ -27,6 +27,7 @@ interface DetailRow {
   height: number | null
   status: GenerationStatus
   generation_metadata: unknown
+  generation_error: string | null
   created_at: string
   deleted_at: string | null
 }
@@ -80,6 +81,24 @@ function resolveModelName(
   return getModelName(modelId)
 }
 
+function deriveProvider(m: ActivityGenerationMetadata): string | null {
+  if (m.provider === 'google') return 'Google Vertex AI'
+  if (m.provider === 'openai') return 'OpenAI'
+  if (m.fal_model_id ?? m.model?.startsWith('fal-ai/')) return 'FAL AI'
+  return null
+}
+
+function extractErrorMessage(
+  m: ActivityGenerationMetadata,
+  generationError: string | null,
+): string | null {
+  if (generationError) return generationError
+  const e = m.error
+  if (!e) return null
+  if (typeof e === 'string') return e
+  return e.message ?? null
+}
+
 export const getActivityEntry = createServerFn({ method: 'GET' })
   .inputValidator((data: GetActivityEntryInput) => data)
   .handler(async ({ data }): Promise<ActivityEntryDetail | null> => {
@@ -98,7 +117,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
     const { data: row, error } = await supabase
       .from('user_images')
       .select(
-        'id, source, storage_path, file_name, mime_type, file_size, width, height, status, generation_metadata, created_at, deleted_at',
+        'id, source, storage_path, file_name, mime_type, file_size, width, height, status, generation_metadata, generation_error, created_at, deleted_at',
       )
       .eq('id', data.id)
       .eq('user_id', user.id)
@@ -162,6 +181,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
       prompt: m.prompt ?? '',
       model: m.model ?? null,
       modelName: resolveModelName(r.source, m.model),
+      provider: deriveProvider(m),
       status: r.status,
       createdAt: r.created_at,
       submittedAt: m.submitted_at ?? null,
@@ -171,7 +191,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
       userCostCents: computeUserCostCents(m),
       providerCostCents: m.provider_cost_cents ?? null,
       isDeleted: r.deleted_at != null,
-      errorMessage: m.error?.message ?? null,
+      errorMessage: extractErrorMessage(m, r.generation_error),
       storagePath: r.storage_path,
       fileName: r.file_name,
       mimeType: r.mime_type,

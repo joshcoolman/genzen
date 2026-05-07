@@ -5,7 +5,6 @@ interface PendingImageCardProps {
   model: string
   isVariation?: boolean
   sourceImageUrl?: string
-  createdAt?: string
   onDelete?: () => void
 }
 
@@ -14,7 +13,6 @@ export function PendingImageCard({
   model,
   isVariation,
   sourceImageUrl,
-  createdAt,
   onDelete,
 }: PendingImageCardProps) {
   return (
@@ -27,18 +25,11 @@ export function PendingImageCard({
       alwaysShowOverlay={!!onDelete}
     >
       <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
+        {model}
+      </p>
+      <p className="px-3 pt-0.5 pb-3 text-xs text-muted-foreground line-clamp-2">
         {prompt}
       </p>
-      <div className="border-t border-border px-3 py-2 mt-2 text-xs text-muted-foreground">
-        <div className="flex justify-between items-center">
-          <span>-</span>
-          <span>
-            {createdAt
-              ? new Date(createdAt).toLocaleDateString()
-              : new Date().toLocaleDateString()}
-          </span>
-        </div>
-      </div>
     </Thumbnail>
   )
 }
