@@ -42,7 +42,7 @@ the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 
 ## Server
 
-- `generate-video.server.ts` -- unified FLF + multishot entry. Takes a discriminated `method` union, handles credits + rate limiting, submits to FAL, persists the snapshot + optional `parent_id`. Accepts optional client-minted `id` (UUID) for optimistic UX. On FAL submit error, inserts a `status='failed'` row with structured `FalErrorBlob` in metadata
+- `generate-video.server.ts` -- unified FLF + multishot entry. Takes a discriminated `method` union, handles credits + rate limiting, submits to FAL, persists the snapshot + optional `parent_id`. Accepts optional client-minted `id` (UUID) for optimistic UX. Computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit. On FAL submit error, inserts a `status='failed'` row with structured `FalErrorBlob` in metadata
 - `group-videos.server.ts` -- set `parent_id` on many children under a primary (mirror of `group-images.server.ts`)
 - `ungroup-videos.server.ts` -- clear `parent_id` on all children of a parent
 - `reparent-video.server.ts` -- adopt or detach a single video (`action: 'adopt' | 'detach'`)
@@ -81,6 +81,7 @@ the stored thumb and falls back to `start_image_url` / `first_frame_url`.
 - `src/features/user-images/` -- `useUserImages` for image picker in frame / start image flows
 - `src/lib/hooks/use-optimistic-generation.ts` -- generic fire-and-forget primitive: client mints UUID, calls `onOptimistic` synchronously, submits async, calls `onSuccess`/`onError`
 - `src/lib/server/fal-error.server.ts` -- `FalErrorBlob` interface + `extractFalError()` for structured FAL error capture
+- `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)
 
 ## Quirks / Notes
 

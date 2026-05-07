@@ -13,7 +13,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 ## Server
 
 - `generate-image.server.ts` -- TanStack server fn wrapper for generation
-- `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by MCP tools and other server fns to avoid TanStack RPC stub corruption
+- `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by MCP tools and other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
 - `edit-image.server.ts` -- TanStack server fn wrapper for editing
 - `edit-image-internal.server.ts` -- core async implementation for image editing with prompt + optional reference images; called directly by MCP tools
 - `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
@@ -78,6 +78,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/features/credits/` -- credit checking, deduction, and UI
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
+- `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)
 - `src/components/AspectRatioSelect.tsx` -- ratio constants re-exported via `constants.ts`
 
 ## Quirks / Notes
