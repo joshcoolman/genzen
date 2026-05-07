@@ -47,8 +47,7 @@ export async function getFalModelPrice(
     fetched_at: string
   }
 
-  const db = supabase as any
-  const { data: cached } = (await db
+  const { data: cached } = (await supabase
     .from('fal_price_cache')
     .select('unit_price, unit, currency, fetched_at')
     .eq('endpoint_id', endpointId)
@@ -80,7 +79,7 @@ export async function getFalModelPrice(
       : null
   }
 
-  await db.from('fal_price_cache').upsert({
+  await supabase.from('fal_price_cache').upsert({
     endpoint_id: endpointId,
     unit_price: fresh.unit_price,
     unit: fresh.unit,
