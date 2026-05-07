@@ -492,7 +492,6 @@ function EditPage() {
                 modelSelector={page.modelSelector}
                 credits={page.credits}
                 userImages={page.existingImages}
-                error={page.error}
                 describe={page.describe}
                 mode={selectionActive ? 'generate' : 'edit'}
                 refImagesReadOnly={selectionActive}
@@ -544,7 +543,6 @@ function EditPage() {
               modelSelector={page.modelSelector}
               credits={page.credits}
               userImages={page.existingImages}
-              error={page.error}
               describe={page.describe}
               mode={selectionActive ? 'generate' : 'edit'}
               refImagesReadOnly={selectionActive}

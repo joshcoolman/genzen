@@ -25,7 +25,7 @@ export function FailedImageCard({
   const [retrying, setRetrying] = useState(false)
   const [errorOpen, setErrorOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const { category, userMessage } = classifyError(img.generation_error)
+  const { category } = classifyError(img.generation_error)
   const isRetryable = category === 'retryable'
   const modelName = getModelName(img.generation_metadata?.model ?? '')
   const rawError = img.generation_error
@@ -52,7 +52,6 @@ export function FailedImageCard({
       <Thumbnail
         status="failed"
         failedLabel={modelName || undefined}
-        failedMessage={userMessage}
         onDelete={() => onDelete(img)}
         onClick={rawError ? () => setErrorOpen(true) : undefined}
         overlayActions={
@@ -77,15 +76,22 @@ export function FailedImageCard({
         <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
           {modelName || 'Unknown model'}
         </p>
-        <div className="px-3 pt-0.5 pb-3 space-y-1">
-          {!isRetryable && (
-            <p className="text-[10px] text-amber-500 font-medium">
-              Cannot retry
-            </p>
-          )}
+        <div className="px-3 pt-0.5 pb-3 space-y-1.5">
           <p className="text-xs text-muted-foreground line-clamp-2">
             {img.generation_metadata?.prompt ?? img.title}
           </p>
+          {rawError && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setErrorOpen(true)
+              }}
+              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+            >
+              Details
+            </button>
+          )}
         </div>
       </Thumbnail>
 

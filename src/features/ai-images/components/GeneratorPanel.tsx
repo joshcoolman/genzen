@@ -8,7 +8,6 @@ import { PromptList } from '@/components/PromptList'
 import { ActionButton } from '@/components/ActionButton'
 import { ImageSourceButtons } from '@/components/ImageSourceButtons'
 import { SourceImagePreview } from '@/components/SourceImagePreview'
-import { ErrorBanner } from '@/components/ErrorBanner'
 import { NumberStepper } from '@/components/NumberStepper'
 import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { RefImageStrip } from '@/components/RefImageStrip'
@@ -28,7 +27,6 @@ interface GeneratorPanelProps {
   modelSelector: ReturnType<typeof useModelSelector>
   credits: CreditsState
   userImages: UserImagesData
-  error: string | null
   describe?: ReturnType<typeof useDescribeJson>
   mode?: 'generate' | 'edit'
   modelDisplay?: 'panel' | 'dropdown'
@@ -41,7 +39,6 @@ export function GeneratorPanel({
   modelSelector,
   credits,
   userImages,
-  error,
   describe,
   mode = 'generate',
   modelDisplay = 'panel',
@@ -247,7 +244,6 @@ export function GeneratorPanel({
         </div>
       )}
 
-      {error && <ErrorBanner message={error} />}
     </div>
   )
 }

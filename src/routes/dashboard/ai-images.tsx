@@ -766,7 +766,6 @@ function AiImagesPage() {
                 modelSelector={page.modelSelector}
                 credits={page.credits}
                 userImages={page.userImages}
-                error={page.error}
                 describe={page.describe}
                 modelDisplay="dropdown"
               />
@@ -820,7 +819,6 @@ function AiImagesPage() {
                   modelSelector={page.modelSelector}
                   credits={page.credits}
                   userImages={page.userImages}
-                  error={page.error}
                   describe={page.describe}
                 />
               </div>
