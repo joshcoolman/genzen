@@ -52,6 +52,7 @@ export function FailedImageCard({
       <Thumbnail
         status="failed"
         failedLabel={modelName || undefined}
+        failedMessage={rawError ? 'See Details' : undefined}
         onDelete={() => onDelete(img)}
         onClick={rawError ? () => setErrorOpen(true) : undefined}
         overlayActions={
@@ -76,22 +77,10 @@ export function FailedImageCard({
         <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
           {modelName || 'Unknown model'}
         </p>
-        <div className="px-3 pt-0.5 pb-3 space-y-1.5">
+        <div className="px-3 pt-0.5 pb-3">
           <p className="text-xs text-muted-foreground line-clamp-2">
             {img.generation_metadata?.prompt ?? img.title}
           </p>
-          {rawError && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setErrorOpen(true)
-              }}
-              className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
-            >
-              Details
-            </button>
-          )}
         </div>
       </Thumbnail>
 
