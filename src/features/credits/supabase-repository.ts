@@ -41,9 +41,7 @@ export class SupabaseCreditRepository implements CreditRepository {
     reason: CreditReason,
     stripeEventId?: string,
   ): Promise<{ balance: number }> {
-    // Cast: `p_stripe_event_id` was added to the RPC in migration
-    // 20260508000000_stripe.sql; remove cast after `supabase gen types`.
-    const { data, error } = await (this.supabase as any).rpc('add_credits', {
+    const { data, error } = await this.supabase.rpc('add_credits', {
       p_user_id: userId,
       p_amount: amount,
       p_reason: reason,

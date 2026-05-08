@@ -54,6 +54,7 @@ export type Database = {
           created_at: string
           id: string
           reason: string
+          stripe_event_id: string | null
           user_id: string
         }
         Insert: {
@@ -62,6 +63,7 @@ export type Database = {
           created_at?: string
           id?: string
           reason: string
+          stripe_event_id?: string | null
           user_id: string
         }
         Update: {
@@ -70,6 +72,7 @@ export type Database = {
           created_at?: string
           id?: string
           reason?: string
+          stripe_event_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -452,6 +455,7 @@ export type Database = {
           id: string
           rate_window_count: number
           rate_window_start: string
+          stripe_customer_id: string | null
         }
         Insert: {
           account_status?: Database['public']['Enums']['account_status']
@@ -461,6 +465,7 @@ export type Database = {
           id: string
           rate_window_count?: number
           rate_window_start?: string
+          stripe_customer_id?: string | null
         }
         Update: {
           account_status?: Database['public']['Enums']['account_status']
@@ -470,6 +475,7 @@ export type Database = {
           id?: string
           rate_window_count?: number
           rate_window_start?: string
+          stripe_customer_id?: string | null
         }
         Relationships: []
       }
@@ -591,10 +597,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_credits: {
-        Args: { p_amount: number; p_reason: string; p_user_id: string }
-        Returns: number
-      }
+      add_credits:
+        | {
+            Args: { p_amount: number; p_reason: string; p_user_id: string }
+            Returns: number
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_reason: string
+              p_stripe_event_id?: string
+              p_user_id: string
+            }
+            Returns: number
+          }
       check_rate_limit: {
         Args: {
           p_max_requests: number

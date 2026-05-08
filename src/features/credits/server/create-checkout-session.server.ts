@@ -24,10 +24,7 @@ async function resolveStripeCustomerId(
 ): Promise<string> {
   const supabase = getSupabaseAdmin()
 
-  // Casts: `stripe_customer_id` was added in migration 20260508000000_stripe.sql
-  // but the generated Supabase types haven't been regenerated yet. Remove
-  // these casts after running `supabase gen types typescript`.
-  const { data: profile, error } = await (supabase as any)
+  const { data: profile, error } = await supabase
     .from('user_profiles')
     .select('stripe_customer_id')
     .eq('id', userId)
@@ -35,9 +32,7 @@ async function resolveStripeCustomerId(
 
   if (error) throw new Error(`Failed to load profile: ${error.message}`)
 
-  const existing = (profile as { stripe_customer_id: string | null } | null)
-    ?.stripe_customer_id
-  if (existing) return existing
+  if (profile?.stripe_customer_id) return profile.stripe_customer_id
 
   const stripe = getStripe()
   const customer = await stripe.customers.create({
@@ -45,7 +40,7 @@ async function resolveStripeCustomerId(
     metadata: { user_id: userId },
   })
 
-  const { error: updateError } = await (supabase as any)
+  const { error: updateError } = await supabase
     .from('user_profiles')
     .update({ stripe_customer_id: customer.id })
     .eq('id', userId)
