@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { BookOpen, LogOut } from 'lucide-react'
+import { BookOpen, LogOut, Shield } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -242,6 +242,20 @@ export function Sidebar({ className }: { className?: string }) {
           </AlertDialog>
         </nav>
       </TooltipProvider>
+
+      {!isCollapsed && (
+        <div className="hidden md:flex flex-col gap-1 px-4 pb-4">
+          <div className="border-t border-border pt-3 flex flex-col gap-1">
+            <Link
+              to="/terms"
+              className="flex items-center gap-2 text-[10px] text-sidebar-text/50 hover:text-sidebar-text transition-colors px-3 py-1"
+            >
+              <Shield className="h-3 w-3 shrink-0" />
+              Terms &amp; Privacy
+            </Link>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

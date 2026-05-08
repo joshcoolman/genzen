@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { GlobalNav } from '@/components/GlobalNav'
 import { ModelShowcase } from '@/components/ModelShowcase'
@@ -64,6 +64,13 @@ function IndexPage() {
           <ModelShowcase />
         </div>
       </div>
+
+      <footer className="border-t border-border py-6 px-4">
+        <div className="flex justify-center gap-6 text-xs text-muted-foreground">
+          <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+        </div>
+      </footer>
     </div>
   )
 }
