@@ -9,6 +9,8 @@ export interface VideoModel {
   supportsNegativePrompt: boolean
   locked?: boolean
   isNew?: boolean
+  displayPrice?: string
+  useCase?: string
 }
 
 export const ALL_VIDEO_MODELS: Array<VideoModel> = [
@@ -22,6 +24,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     supportsCfgScale: false,
     supportsNegativePrompt: false,
     isNew: true,
+    displayPrice: '~$0.18/sec',
+    useCase: 'Cinematic with native audio — premium hero clips',
   },
   {
     id: 'fal-ai/kling-video/v3/pro/image-to-video',
@@ -33,6 +37,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     supportsCfgScale: true,
     supportsNegativePrompt: true,
     locked: true,
+    displayPrice: '~$0.16/sec',
+    useCase: 'Top-of-the-line quality + audio',
   },
   {
     id: 'fal-ai/kling-video/o3/standard/image-to-video',
@@ -43,6 +49,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: true,
     supportsNegativePrompt: true,
+    displayPrice: '~$0.14/sec',
+    useCase: 'First/last frame transitions — controlled motion',
   },
   {
     id: 'fal-ai/kling-video/v2.6/pro/image-to-video',
@@ -53,6 +61,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: true,
     supportsNegativePrompt: true,
+    displayPrice: '~$0.14/sec',
+    useCase: 'Cinematic + native audio',
   },
   {
     id: 'fal-ai/kling-video/v2.5-turbo/pro/image-to-video',
@@ -63,6 +73,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: true,
     supportsNegativePrompt: true,
+    displayPrice: '~$0.10/sec',
+    useCase: 'Fast, fluid motion — workhorse for iteration',
   },
   {
     id: 'fal-ai/kling-video/o1/image-to-video',
@@ -73,6 +85,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: true,
     supportsNegativePrompt: true,
+    displayPrice: '~$0.10/sec',
+    useCase: 'Original Kling — proven and reliable',
   },
   {
     id: 'fal-ai/ltx-2.3/image-to-video',
@@ -83,6 +97,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['6', '8', '10'],
     supportsCfgScale: false,
     supportsNegativePrompt: false,
+    displayPrice: '~$0.06/sec',
+    useCase: 'Cheapest video — quick exploration',
   },
   {
     id: 'fal-ai/sora-2/image-to-video',
@@ -93,6 +109,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['4', '8', '12'],
     supportsCfgScale: false,
     supportsNegativePrompt: false,
+    displayPrice: '~$0.20/sec',
+    useCase: 'OpenAI premium — when you need that look',
   },
   {
     id: 'fal-ai/wan-25-preview/image-to-video',
@@ -103,6 +121,8 @@ export const ALL_VIDEO_MODELS: Array<VideoModel> = [
     durations: ['5', '10'],
     supportsCfgScale: false,
     supportsNegativePrompt: true,
+    displayPrice: '~$0.08/sec',
+    useCase: 'Affordable, natural motion — preview model',
   },
 ]
 

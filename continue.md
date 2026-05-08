@@ -58,25 +58,30 @@ Branch: `main`. All changes committed (3ba3d63) and pushed. Build passes clean. 
 ## What shipped this session (uncommitted)
 
 ### Image card improvements
+
 - `src/components/Thumbnail.tsx` — added `failedLabel` prop (model name shown in failed thumbnail center, parallel to `pendingLabel`)
 - `src/features/ai-images/components/PendingImageCard.tsx` — body now matches completed card layout (model name as title, prompt as description); removed date footer and `createdAt` prop
 - `src/features/ai-images/components/FailedImageCard.tsx` — shows model name in thumbnail + body title; clicking the thumbnail opens a Dialog with full raw error + copy button
 - `src/features/ai-images/components/ImageGallery.tsx` — removed unused `createdAt` prop from `PendingImageCard`
 
 ### Server fixes
+
 - `src/lib/server/fal-completion.server.ts` — `title: getModelName(model)` (was raw model ID like `fal-ai/gpt-image-2`)
 - `src/lib/server/media.server.ts` — Google failure path now writes `generation_error` column (was only writing to nested `generation_metadata.error`), fixing "Unknown error" display for Google failures
 
 ### Model routing
+
 - `src/lib/server/google-imagen.server.ts` — `GEMINI_MODEL_MAP` maps `fal-ai/nano-banana-2` to `gemini-2.5-flash-image` (direct to Google, ~50% cheaper than FAL). Attempted `gemini-3.1-flash-image-preview` but it's not enabled in project `gen-lang-client-0015600225` — revert back when enabled via Vertex AI Model Garden.
 
 ## Next: Activity Panel Provider + Error UX
 
 ### Goal
+
 1. Show **provider** (FAL AI / Google Vertex AI / OpenAI) in the activity detail panel and list rows
 2. Make the **error section** copyable with a `CopyButton` + render in monospace `pre` block
 
 ### Provider derivation logic
+
 ```typescript
 function deriveProvider(meta) {
   if (meta.provider === 'google') return 'Google Vertex AI'
@@ -85,9 +90,11 @@ function deriveProvider(meta) {
   return null
 }
 ```
+
 `generation_metadata.provider` is set to `'google'` by `media.server.ts` for Google generations. FAL generations don't set it but are identifiable via `fal_model_id` or `fal-ai/` prefix.
 
 ### Files to change
+
 1. `src/features/activity/types.ts` — add `provider: string | null` to `ActivityEntry` + `ActivityEntryDetail`; add `provider?` + `fal_model_id?` to `ActivityGenerationMetadata`
 2. `src/features/activity/server/list-activity.server.ts` — derive + pass provider
 3. `src/features/activity/server/get-activity-entry.server.ts` — derive + pass provider
@@ -95,6 +102,7 @@ function deriveProvider(meta) {
 5. `src/features/activity/components/ActivityRow.tsx` — optional provider badge in list
 
 ### Key file locations
+
 - Detail panel: `src/features/activity/components/ActivityDetailPanel.tsx` (418 lines) — `CopyButton` already exists in file, `Section`/`DetailRow` components already there
 - Types: `src/features/activity/types.ts` (77 lines)
 - `ActivityEntry` → `ActivityEntryDetail` extends it; both need `provider`

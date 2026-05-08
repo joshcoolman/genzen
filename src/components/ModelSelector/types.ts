@@ -8,4 +8,5 @@ export interface UnifiedModel {
   capability: ModelCapability
   editId?: string
   maxRefImages?: number
+  displayPrice?: string
 }

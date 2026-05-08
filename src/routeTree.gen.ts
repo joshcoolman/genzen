@@ -25,6 +25,7 @@ import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardScenesRouteImport } from './routes/dashboard/scenes'
+import { Route as DashboardPricingRouteImport } from './routes/dashboard/pricing'
 import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
 import { Route as DashboardNotesRouteImport } from './routes/dashboard/notes'
 import { Route as DashboardHistoryRouteImport } from './routes/dashboard/history'
@@ -121,6 +122,11 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
 const DashboardScenesRoute = DashboardScenesRouteImport.update({
   id: '/scenes',
   path: '/scenes',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPricingRoute = DashboardPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardPendingRoute = DashboardPendingRouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
+  '/dashboard/pricing': typeof DashboardPricingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
+  '/dashboard/pricing': typeof DashboardPricingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -301,6 +309,7 @@ export interface FileRoutesById {
   '/dashboard/history': typeof DashboardHistoryRoute
   '/dashboard/notes': typeof DashboardNotesRoute
   '/dashboard/pending': typeof DashboardPendingRoute
+  '/dashboard/pricing': typeof DashboardPricingRoute
   '/dashboard/scenes': typeof DashboardScenesRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/dashboard/history'
     | '/dashboard/notes'
     | '/dashboard/pending'
+    | '/dashboard/pricing'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -370,6 +380,7 @@ export interface FileRouteTypes {
     | '/dashboard/history'
     | '/dashboard/notes'
     | '/dashboard/pending'
+    | '/dashboard/pricing'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -404,6 +415,7 @@ export interface FileRouteTypes {
     | '/dashboard/history'
     | '/dashboard/notes'
     | '/dashboard/pending'
+    | '/dashboard/pricing'
     | '/dashboard/scenes'
     | '/dashboard/settings'
     | '/dashboard/trash'
@@ -546,6 +558,13 @@ declare module '@tanstack/react-router' {
       path: '/scenes'
       fullPath: '/dashboard/scenes'
       preLoaderRoute: typeof DashboardScenesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/pricing': {
+      id: '/dashboard/pricing'
+      path: '/pricing'
+      fullPath: '/dashboard/pricing'
+      preLoaderRoute: typeof DashboardPricingRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/pending': {
@@ -718,6 +737,7 @@ interface DashboardRouteChildren {
   DashboardHistoryRoute: typeof DashboardHistoryRoute
   DashboardNotesRoute: typeof DashboardNotesRoute
   DashboardPendingRoute: typeof DashboardPendingRoute
+  DashboardPricingRoute: typeof DashboardPricingRoute
   DashboardScenesRoute: typeof DashboardScenesRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
@@ -735,6 +755,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardHistoryRoute: DashboardHistoryRoute,
   DashboardNotesRoute: DashboardNotesRoute,
   DashboardPendingRoute: DashboardPendingRoute,
+  DashboardPricingRoute: DashboardPricingRoute,
   DashboardScenesRoute: DashboardScenesRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTrashRoute: DashboardTrashRoute,

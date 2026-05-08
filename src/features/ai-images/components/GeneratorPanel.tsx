@@ -243,7 +243,6 @@ export function GeneratorPanel({
           )}
         </div>
       )}
-
     </div>
   )
 }

@@ -11,6 +11,8 @@ export interface ImageModel {
   imageInputModelId?: string
   locked?: boolean
   isNew?: boolean
+  displayPrice?: string
+  useCase?: string
 }
 
 // ALL model IDs verified against https://fal.ai/models?category=text-to-image
@@ -22,18 +24,24 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     description: 'Fast img2img + text steering',
     category: 'FLUX',
     supportsImageInput: true,
+    displayPrice: '~$0.03/img',
+    useCase: 'Cheap img2img — fast iteration with a reference',
   },
   {
     id: 'fal-ai/flux/schnell',
     name: 'FLUX Schnell',
     description: 'Fast, reliable default',
     category: 'FLUX',
+    displayPrice: '~$0.003/img',
+    useCase: 'Cheapest, fastest — exploration mode, run dozens',
   },
   {
     id: 'fal-ai/flux/dev',
     name: 'FLUX Dev',
     description: 'High-quality 12B model',
     category: 'FLUX',
+    displayPrice: '~$0.05/img',
+    useCase: 'Quality 12B model — go-to for finished work',
   },
   {
     id: 'fal-ai/flux-2-pro',
@@ -42,6 +50,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'FLUX',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-pro/edit',
+    displayPrice: '~$0.06/img',
+    useCase: 'Best photorealism — hero shots',
   },
   // Kling - verified models
   {
@@ -49,12 +59,16 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     name: 'Kling v3',
     description: 'Latest Kling model',
     category: 'Kling',
+    displayPrice: '~$0.05/img',
+    useCase: 'Latest Kling — solid all-rounder',
   },
   {
     id: 'fal-ai/kling-image/o3/text-to-image',
     name: 'Kling Omni 3',
     description: 'Flawless consistency',
     category: 'Kling',
+    displayPrice: '~$0.05/img',
+    useCase: 'Premium Kling — flawless consistency',
   },
 
   // ByteDance Seedream - verified models
@@ -65,6 +79,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/bytedance/seedream/v4/edit',
+    displayPrice: '~$0.03/img',
+    useCase: 'Cheap, high-quality realism — great daily driver',
   },
   {
     id: 'fal-ai/gpt-image-1.5',
@@ -73,6 +89,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/gpt-image-1.5/edit',
+    displayPrice: '~$0.04/img',
+    useCase: 'OpenAI quality — works with references',
   },
   {
     id: 'fal-ai/gpt-image-2',
@@ -82,6 +100,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/gpt-image-2/edit',
     isNew: true,
+    displayPrice: '~$1.00/img',
+    useCase: 'Premium OpenAI — use when you know what you want',
   },
   // ByteDance Seedream v4.5
   {
@@ -91,6 +111,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/bytedance/seedream/v4.5/edit',
+    displayPrice: '~$0.04/img',
+    useCase: 'Multi-image reference, premium realism',
   },
   // Specialized - verified models
   {
@@ -102,6 +124,8 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
     locked: true,
+    displayPrice: '~$0.04/img',
+    useCase: 'Google reasoning-guided — direct route, half-price vs FAL',
   },
   {
     id: 'fal-ai/flux-pro/kontext/text-to-image',
@@ -109,18 +133,24 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     description: 'Pro img2img + text steering',
     category: 'FLUX',
     supportsImageInput: true,
+    displayPrice: '~$0.04/img',
+    useCase: 'Pro img2img — solid for refinement work',
   },
   {
     id: 'fal-ai/recraft/v3/text-to-image',
     name: 'Recraft V3',
     description: 'SOTA benchmarks, vector art',
     category: 'Specialized',
+    displayPrice: '~$0.04/img',
+    useCase: 'Vector art and clean illustration',
   },
   {
     id: 'xai/grok-imagine-image',
     name: 'Grok Imagine',
     description: 'xAI, highly aesthetic',
     category: 'Specialized',
+    displayPrice: '~$0.04/img',
+    useCase: 'xAI — highly aesthetic style',
   },
 ]
 

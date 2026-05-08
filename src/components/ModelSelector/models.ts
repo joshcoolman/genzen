@@ -12,6 +12,7 @@ export const UNIFIED_GENERATE_MODELS: Array<UnifiedModel> =
     name: m.name,
     description: m.description,
     capability: 'generate' as const,
+    displayPrice: m.displayPrice,
   }))
 
 export const UNIFIED_EDIT_MODELS: Array<UnifiedModel> = EDIT_MODELS.map(
@@ -21,6 +22,8 @@ export const UNIFIED_EDIT_MODELS: Array<UnifiedModel> = EDIT_MODELS.map(
     description: m.description,
     capability: 'edit' as const,
     maxRefImages: m.maxRefImages,
+    displayPrice: ALL_IMAGE_MODELS.find((im) => im.imageInputModelId === m.id)
+      ?.displayPrice,
   }),
 )
 
@@ -37,6 +40,7 @@ export const UNIFIED_SIDEBAR_MODELS: Array<UnifiedModel> =
       capability: 'sidebar' as const,
       editId: m.imageInputModelId,
       maxRefImages: editModel?.maxRefImages ?? 0,
+      displayPrice: m.displayPrice,
     }
   })
 
@@ -46,6 +50,7 @@ export const UNIFIED_VIDEO_MODELS: Array<UnifiedModel> = ALL_VIDEO_MODELS.map(
     name: m.name,
     description: m.description,
     capability: 'video' as const,
+    displayPrice: m.displayPrice,
   }),
 )
 

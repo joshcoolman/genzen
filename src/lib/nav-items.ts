@@ -8,6 +8,7 @@ import {
   Settings,
   Sparkles,
   StickyNote,
+  Tag,
   Trash2,
   User,
 } from 'lucide-react'
@@ -73,6 +74,13 @@ export const navItems: Array<NavItem> = [
     label: 'Activity',
     href: '/dashboard/activity',
     icon: Logs,
+    activeOnly: true,
+  },
+  {
+    id: 'pricing',
+    label: 'Model Pricing',
+    href: '/dashboard/pricing',
+    icon: Tag,
     activeOnly: true,
   },
   {

@@ -157,7 +157,14 @@ export function ModelSelector({
                   ) : (
                     <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
                   )}
-                  <span className="text-xs font-medium">{model.name}</span>
+                  <span className="text-xs font-medium flex-1">
+                    {model.name}
+                  </span>
+                  {model.displayPrice && (
+                    <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                      {model.displayPrice}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -202,7 +209,11 @@ export function ModelSelector({
               <button
                 key={model.id}
                 onClick={() => onToggleSelected(model.id)}
-                title={model.description}
+                title={
+                  model.displayPrice
+                    ? `${model.description} — ${model.displayPrice}`
+                    : model.description
+                }
                 className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-left transition-colors ${
                   isSelected
                     ? 'border-accent-brand bg-accent-brand/10'
@@ -215,6 +226,11 @@ export function ModelSelector({
                   <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                 )}
                 <span className="text-xs font-medium">{model.name}</span>
+                {model.displayPrice && (
+                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+                    {model.displayPrice}
+                  </span>
+                )}
               </button>
             )
           })}
@@ -290,7 +306,14 @@ function DropdownModels({
                   ) : (
                     <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
                   )}
-                  <span className="text-xs font-medium">{model.name}</span>
+                  <span className="text-xs font-medium flex-1">
+                    {model.name}
+                  </span>
+                  {model.displayPrice && (
+                    <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                      {model.displayPrice}
+                    </span>
+                  )}
                 </button>
               )
             })}
