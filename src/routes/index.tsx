@@ -67,8 +67,15 @@ function IndexPage() {
 
       <footer className="border-t border-border py-6 px-4">
         <div className="flex justify-center gap-6 text-xs text-muted-foreground">
-          <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
-          <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-foreground transition-colors">
+            Terms of Service
+          </Link>
+          <Link
+            to="/privacy"
+            className="hover:text-foreground transition-colors"
+          >
+            Privacy Policy
+          </Link>
         </div>
       </footer>
     </div>

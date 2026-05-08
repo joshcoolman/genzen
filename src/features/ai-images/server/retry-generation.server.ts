@@ -56,7 +56,7 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       fal_model_id?: string
       aspect_ratio?: string
       source_image_url?: string
-      reference_image_ids?: string[]
+      reference_image_ids?: Array<string>
     }
 
     if (!meta.prompt || !meta.model) {
@@ -80,7 +80,7 @@ export const retryGeneration = createServerFn({ method: 'POST' })
       creditResult.cost,
       'image_gen',
       async () => {
-        const referenceUrls: string[] = []
+        const referenceUrls: Array<string> = []
         if (meta.reference_image_ids?.length) {
           const { data: refImages } = await supabase
             .from('user_images')

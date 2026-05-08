@@ -39,14 +39,22 @@ export class SupabaseCreditRepository implements CreditRepository {
     userId: string,
     amount: number,
     reason: CreditReason,
+    stripeEventId?: string,
   ): Promise<{ balance: number }> {
-    const { data, error } = await this.supabase.rpc('add_credits', {
+    // Cast: `p_stripe_event_id` was added to the RPC in migration
+    // 20260508000000_stripe.sql; remove cast after `supabase gen types`.
+    const { data, error } = await (this.supabase as any).rpc('add_credits', {
       p_user_id: userId,
       p_amount: amount,
       p_reason: reason,
+      p_stripe_event_id: stripeEventId ?? null,
     })
 
-    if (error) throw new Error(`Failed to add credits: ${error.message}`)
+    if (error) {
+      // Rethrow PostgrestError directly so callers can detect unique-violation
+      // (code '23505') for stripe_event_id idempotency.
+      throw error
+    }
     return { balance: data as number }
   }
 

@@ -1,14 +1,10 @@
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Film, Image as ImageIcon, Lock, Sparkles } from 'lucide-react'
-import {
-  ALL_IMAGE_MODELS,
-  type ImageModel,
-} from '@/features/ai-images/models'
-import {
-  ALL_VIDEO_MODELS,
-  type VideoModel,
-} from '@/features/ai-video/video-models'
+import type { ImageModel } from '@/features/ai-images/models'
+import type { VideoModel } from '@/features/ai-video/video-models'
+import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/pricing')({

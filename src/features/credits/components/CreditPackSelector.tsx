@@ -2,26 +2,25 @@ import { useState } from 'react'
 import { ActionButton } from '@/components/ActionButton'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { CREDIT_PACKS } from '@/features/credits'
-import { useCredits } from '@/features/credits/hooks/use-credits'
-import { purchaseCredits } from '@/features/credits/server/purchase-credits.server'
+import { createCheckoutSession } from '@/features/credits/server/create-checkout-session.server'
 import { useAuth } from '@/lib/auth'
 
 interface CreditPackSelectorProps {
+  /**
+   * Kept for API compatibility; not invoked because the purchase completes
+   * after a Stripe redirect, not in this component's lifecycle.
+   */
   onPurchaseComplete?: (creditsAdded: number) => void
   compact?: boolean
 }
 
-export function CreditPackSelector({
-  onPurchaseComplete,
-  compact,
-}: CreditPackSelectorProps) {
-  const credits = useCredits()
+export function CreditPackSelector({ compact }: CreditPackSelectorProps) {
   const { session } = useAuth()
   const accessToken = session?.access_token
   const [selectedPack, setSelectedPack] = useState<string>(
     CREDIT_PACKS[1].credits.toString(),
   )
-  const [purchasing, setPurchasing] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const [purchaseError, setPurchaseError] = useState<string | null>(null)
 
   const activePack = CREDIT_PACKS.find(
@@ -29,21 +28,19 @@ export function CreditPackSelector({
   )
 
   async function handlePurchase() {
-    if (!activePack || purchasing || !accessToken) return
-    setPurchasing(true)
+    if (!activePack || redirecting || !accessToken) return
+    setRedirecting(true)
     setPurchaseError(null)
     try {
-      await purchaseCredits({
+      const { url } = await createCheckoutSession({
         data: { accessToken, packCredits: activePack.credits },
       })
-      await credits.refresh()
-      onPurchaseComplete?.(activePack.credits)
+      window.location.href = url
     } catch (err) {
       setPurchaseError(
-        err instanceof Error ? err.message : 'Purchase failed. Try again.',
+        err instanceof Error ? err.message : 'Could not start checkout.',
       )
-    } finally {
-      setPurchasing(false)
+      setRedirecting(false)
     }
   }
 
@@ -77,14 +74,18 @@ export function CreditPackSelector({
       <div className={compact ? 'pt-4' : 'px-6 py-4'}>
         <ActionButton
           onClick={handlePurchase}
-          loading={purchasing}
-          loadingText="Adding..."
+          loading={redirecting}
+          loadingText="Redirecting..."
         >
-          Quick Buy {activePack ? `$${activePack.price}.00` : ''}
+          Buy {activePack ? `$${activePack.price}.00` : ''}
         </ActionButton>
         {purchaseError && (
           <p className="mt-2 text-xs text-destructive">{purchaseError}</p>
         )}
+        <p className="mt-3 text-[11px] text-muted-foreground/70 leading-relaxed">
+          You'll be redirected to Stripe to complete payment. Credits are added
+          to your balance once payment succeeds.
+        </p>
       </div>
     </div>
   )

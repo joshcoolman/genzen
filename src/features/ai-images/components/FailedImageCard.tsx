@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Copy, Check, RotateCcw } from 'lucide-react'
+import { Check, Copy, RotateCcw } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { classifyError } from '@/features/ai-images/error-classification'
 import { getModelName } from '@/features/ai-images/models'

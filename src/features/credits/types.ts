@@ -53,6 +53,7 @@ export interface CreditRepository {
     userId: string,
     amount: number,
     reason: CreditReason,
+    stripeEventId?: string,
   ) => Promise<{ balance: number }>
   getTransactions: (
     userId: string,
@@ -74,8 +75,8 @@ export const CREDIT_COSTS: Record<DeductionReason, number> = {
 export const DOLLARS_PER_CREDIT = 0.1
 
 export const CREDIT_PACKS = [
-  { credits: 20, price: 2, description: 'Starter' },
-  { credits: 40, price: 4, description: 'Creator' },
-  { credits: 80, price: 8, description: 'Pro' },
-  { credits: 160, price: 16, description: 'Studio' },
+  { credits: 200, price: 20, description: 'Starter' },
+  { credits: 400, price: 40, description: 'Creator' },
+  { credits: 600, price: 60, description: 'Pro' },
+  { credits: 800, price: 80, description: 'Studio' },
 ]
