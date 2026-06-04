@@ -8,6 +8,7 @@ import {
   processVideoResult,
 } from './fal-completion.server'
 import { extractFalError } from './fal-error.server'
+import { dispatchGoogleQueue } from './google-queue.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -126,7 +127,14 @@ export const checkPendingGenerations = createServerFn({ method: 'POST' })
       }),
     )
 
-    return { checked: pending.length, completed, failed }
+    // Reset any Google records stuck in 'processing' (crashed Vercel functions)
+    // then dispatch queued Google jobs up to the concurrency cap.
+    await supabase.rpc('reset_stale_google_processing', {
+      p_timeout_minutes: 2,
+    })
+    const dispatched = await dispatchGoogleQueue(supabase)
+
+    return { checked: pending.length, completed, failed, dispatched }
   })
 
 /** Check if the error is a definitive FAL rejection (not a transient network error) */

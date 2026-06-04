@@ -3,13 +3,9 @@
  * Google models return completed records synchronously.
  * FAL models return pending records for async polling.
  */
-import crypto from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
-import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
-import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { getSupabaseAdmin } from './supabase-admin.server'
-import { createImageStorage } from '@/lib/image-storage'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
@@ -81,27 +77,27 @@ async function submitGoogleGeneration(
   options: SubmitGenerationOptions,
 ): Promise<SubmitGenerationResult> {
   const baseModelId = options.modelId.replace(/\/edit$/, '')
-  const prompt = options.prompt
-  const modelName =
-    ALL_IMAGE_MODELS.find((m) => m.id === baseModelId)?.name ?? baseModelId
 
-  // Phase 1: Create pending record immediately so the UI shows a pending card
-  // and navigation won't lose the generation (server continues to completion)
   const { data: record, error: insertError } = await supabase
     .from('user_images')
     .insert({
       user_id: options.userId,
-      status: 'pending',
+      status: 'queued',
       source: 'ai_generated',
       title: options.title ?? 'Generating...',
       sort_order: Date.now() / 1000,
       generation_metadata: {
-        prompt,
+        prompt: options.prompt,
         model: baseModelId,
         provider: 'google',
         generation_type: options.metadata?.generation_type ?? 'text_to_image',
         submitted_at: new Date().toISOString(),
         ...(options.aspectRatio ? { aspect_ratio: options.aspectRatio } : {}),
+        // Store images in metadata so the dispatcher can access them
+        ...(options.imageBase64 ? { image_base64: options.imageBase64 } : {}),
+        ...(options.referenceImagesBase64?.length
+          ? { reference_images_base64: options.referenceImagesBase64 }
+          : {}),
         ...options.metadata,
       },
     })
@@ -112,112 +108,7 @@ async function submitGoogleGeneration(
     throw new Error(`Failed to create image record: ${insertError.message}`)
   }
 
-  const recordId: string = record.id
-
-  // Phase 2: Call Google API (2-5s) and update the record on completion
-  try {
-    const hasImages =
-      !!options.imageBase64 || !!options.referenceImagesBase64?.length
-    const isEdit = options.modelId.endsWith('/edit') || hasImages
-
-    let result: { imageBase64: string; mimeType: string }
-
-    if (isEdit && hasImages) {
-      // Determine primary image and additional images
-      const primaryImage =
-        options.imageBase64 ?? options.referenceImagesBase64?.[0]
-      const additionalImages = options.imageBase64
-        ? options.referenceImagesBase64
-        : options.referenceImagesBase64?.slice(1)
-
-      result = await editWithGoogle({
-        prompt: options.prompt,
-        imageBase64: primaryImage!,
-        additionalImagesBase64: additionalImages,
-        aspectRatio: options.aspectRatio,
-      })
-    } else {
-      result = await generateWithGoogle({
-        prompt: options.prompt,
-        aspectRatio: options.aspectRatio,
-      })
-    }
-
-    // Store image in Supabase storage
-    const imageBytes = Buffer.from(result.imageBase64, 'base64')
-    const fileHash = crypto
-      .createHash('sha256')
-      .update(imageBytes)
-      .digest('hex')
-    const timestamp = Date.now()
-    const uuid = crypto.randomUUID()
-    const fileName = `ai_${timestamp}_${uuid}.png`
-    const storagePath = `${options.userId}/${fileName}`
-
-    const storage = createImageStorage(supabase)
-    await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
-
-    // Update record to completed
-    const { error: updateError } = await supabase
-      .from('user_images')
-      .update({
-        status: 'completed',
-        storage_path: storagePath,
-        thumbnail_path: null,
-        file_name: fileName,
-        file_hash: fileHash,
-        file_size: imageBytes.length,
-        mime_type: 'image/png',
-        title: modelName,
-        description:
-          prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt,
-        generation_metadata: {
-          prompt,
-          model: baseModelId,
-          provider: 'google',
-          generation_type: options.metadata?.generation_type ?? 'text_to_image',
-          submitted_at: record.generation_metadata?.submitted_at,
-          completed_at: new Date().toISOString(),
-          ...(options.aspectRatio ? { aspect_ratio: options.aspectRatio } : {}),
-          ...options.metadata,
-        },
-      })
-      .eq('id', recordId)
-      .eq('user_id', options.userId)
-
-    if (updateError) {
-      await storage.remove([storagePath])
-      throw new Error(`Update failed: ${updateError.message}`)
-    }
-
-    generateThumbnailInBackground(
-      supabase,
-      options.userId,
-      storagePath,
-      recordId,
-    )
-  } catch (error) {
-    // Mark the record as failed so the UI shows a failure card
-    const errorMsg =
-      error instanceof Error ? error.message : 'Google generation failed'
-    await supabase
-      .from('user_images')
-      .update({
-        status: 'failed',
-        generation_error: errorMsg,
-        generation_metadata: {
-          ...record.generation_metadata,
-          error: { message: errorMsg, code: 'google_error' },
-          failed_at: new Date().toISOString(),
-        },
-      })
-      .eq('id', recordId)
-      .eq('user_id', options.userId)
-
-    throw error
-  }
-
-  return { recordId, status: 'completed' }
+  return { recordId: record.id, status: 'pending' }
 }
 
 async function submitFalGeneration(
