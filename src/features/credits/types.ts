@@ -74,6 +74,16 @@ export const CREDIT_COSTS: Record<DeductionReason, number> = {
 
 export const DOLLARS_PER_CREDIT = 0.1
 
+export function computeGenerationCostCents(
+  generationType: string,
+): number | null {
+  const credits = (CREDIT_COSTS as Record<string, number | undefined>)[
+    generationType
+  ]
+  if (credits == null) return null
+  return Math.round(credits * DOLLARS_PER_CREDIT * 100)
+}
+
 export const CREDIT_PACKS = [
   { credits: 200, price: 20, description: 'Starter' },
   { credits: 400, price: 40, description: 'Creator' },

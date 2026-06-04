@@ -9,6 +9,7 @@ export {
   CREDIT_REASONS,
   CreditReasonSchema,
   DOLLARS_PER_CREDIT,
+  computeGenerationCostCents,
 } from './types'
 export type {
   CreditReason,

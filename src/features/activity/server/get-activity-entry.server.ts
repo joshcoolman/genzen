@@ -7,7 +7,7 @@ import type {
   GenerationStatus,
 } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
-import { CREDIT_COSTS, DOLLARS_PER_CREDIT } from '@/features/credits/types'
+import { computeGenerationCostCents } from '@/features/credits/types'
 import { getModelName } from '@/features/ai-images/models'
 import { getVideoModelName } from '@/features/ai-video/video-models'
 
@@ -32,8 +32,6 @@ interface DetailRow {
   deleted_at: string | null
 }
 
-const CENTS_PER_CREDIT = Math.round(DOLLARS_PER_CREDIT * 100)
-
 function meta(row: {
   generation_metadata: unknown
 }): ActivityGenerationMetadata {
@@ -57,11 +55,9 @@ function computeDurationMs(m: ActivityGenerationMetadata): number | null {
 }
 
 function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
-  const gt = m.generation_type
-  if (!gt) return null
-  const credits = (CREDIT_COSTS as Record<string, number | undefined>)[gt]
-  if (credits == null) return null
-  return credits * CENTS_PER_CREDIT
+  return m.generation_type
+    ? computeGenerationCostCents(m.generation_type)
+    : null
 }
 
 function resolveThumbnailPath(

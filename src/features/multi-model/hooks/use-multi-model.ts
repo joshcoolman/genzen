@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   DEFAULT_COMPARE_MODEL_IDS,
   KONTEXT_DEV,
@@ -7,37 +7,17 @@ import {
 } from '../constants'
 import type { ImageModel } from '@/features/ai-images/models'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import type { LibraryImage, ModelCellState, MultiModelState } from '../types'
-import { useAuth } from '@/lib/auth'
+import type { ModelCellState, MultiModelState } from '../types'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
-import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { setGenerationParent } from '@/features/ai-images/server/set-generation-parent.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { supabase } from '@/lib/supabase'
-import { createImageStorage } from '@/lib/image-storage'
 import { CREDIT_COSTS } from '@/features/credits'
-import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
-import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
+import { useGenerationGrid } from '@/lib/hooks/useGenerationGrid'
 
-// ─── localStorage helpers ────────────────────────────────────────────────────
-
-function ls(key: string, fallback: string): string {
-  if (typeof window === 'undefined') return fallback
-  return localStorage.getItem(`${MULTI_MODEL_STORAGE_KEY}:${key}`) ?? fallback
-}
-
-function lsSet(key: string, value: string) {
-  localStorage.setItem(`${MULTI_MODEL_STORAGE_KEY}:${key}`, value)
-}
-
-function lsDel(key: string) {
-  localStorage.removeItem(`${MULTI_MODEL_STORAGE_KEY}:${key}`)
-}
+// ─── Cell persistence ─────────────────────────────────────────────────────────
 
 const CELLS_KEY = 'cells'
-
-// ─── Cell state persistence ───────────────────────────────────────────────────
 
 interface PersistedCell {
   id: string
@@ -96,27 +76,46 @@ function persistCells(cells: Array<ModelCellState>) {
       generations: c.generations.filter((g) => g.status !== 'pending'),
       currentSlideIndex: c.currentSlideIndex,
     }))
-    lsSet(CELLS_KEY, JSON.stringify(data))
+    localStorage.setItem(
+      `${MULTI_MODEL_STORAGE_KEY}:${CELLS_KEY}`,
+      JSON.stringify(data),
+    )
   } catch {
     // ignore storage errors
   }
 }
 
-// ─── Signed URL helper ────────────────────────────────────────────────────────
-
-async function fetchSignedUrl(storagePath: string): Promise<string | null> {
-  return createImageStorage(supabase).getUrl(storagePath)
-}
-
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useMultiModel(): MultiModelState {
-  const { session } = useAuth()
-  const accessToken = session?.access_token ?? null
-  const userId = session?.user.id
   const credits = useCredits()
 
-  const [cells, setCells] = useState<Array<ModelCellState>>(loadPersistedCells)
+  const grid = useGenerationGrid<ModelCellState>({
+    storageKey: MULTI_MODEL_STORAGE_KEY,
+    loadCells: loadPersistedCells,
+    getLightboxTitle: (cell) => cell.model.name,
+  })
+
+  const {
+    cells,
+    setCells,
+    sourceImage,
+    accessToken,
+    clearGridState,
+    ls,
+    lsSet,
+    setError,
+    setIsGeneratingAll,
+  } = grid
+
+  // ─── Persist cells whenever they change ──────────────────────────────────
+
+  useEffect(() => {
+    persistCells(cells)
+  }, [cells])
+
+  // ─── Persisted settings ───────────────────────────────────────────────────
+
   const [systemPrompt, setSystemPromptRaw] = useState(() =>
     ls('system-prompt', ''),
   )
@@ -127,116 +126,41 @@ export function useMultiModel(): MultiModelState {
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     () => ls('orientation', 'landscape') as 'landscape' | 'portrait',
   )
-  const [sourceImage, setSourceImage] = useState<{
-    base64: string
-    name: string
-    id?: string
-  } | null>(null)
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
-  const [isGeneratingAll, setIsGeneratingAll] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  // Library images for the picker
-  const existingImages = useExistingImages(userId)
-  const userImages = {
-    images: existingImages.images as Array<LibraryImage>,
-    imageUrls: existingImages.imageUrls,
-    isLoading: existingImages.isLoading,
-    refresh: existingImages.refresh,
-  }
+  const setSystemPrompt = useCallback(
+    (v: string) => {
+      lsSet('system-prompt', v)
+      setSystemPromptRaw(v)
+    },
+    [lsSet],
+  )
 
-  // Lightbox
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const setUserPrompt = useCallback(
+    (v: string) => {
+      lsSet('user-prompt', v)
+      setUserPromptRaw(v)
+    },
+    [lsSet],
+  )
 
-  // ─── Persist cells whenever generations change ──────────────────────────────
-  useEffect(() => {
-    persistCells(cells)
-  }, [cells])
+  const setAspectRatio = useCallback(
+    (v: string) => {
+      lsSet('aspect-ratio', v)
+      setAspectRatioRaw(v)
+    },
+    [lsSet],
+  )
 
-  // ─── Hydrate signed URLs on mount for persisted generations ─────────────────
-  useEffect(() => {
-    const allGens = cells.flatMap((c) => c.generations)
-    const withPaths = allGens.filter(
-      (g) => g.status === 'completed' && g.storage_path,
-    )
-    if (withPaths.length === 0) return
+  const setOrientationPersisted = useCallback(
+    (v: 'landscape' | 'portrait') => {
+      lsSet('orientation', v)
+      setOrientation(v)
+    },
+    [lsSet],
+  )
 
-    void (async () => {
-      const entries = await Promise.all(
-        withPaths.map(async (g) => {
-          const url = await fetchSignedUrl(g.storage_path!)
-          return url ? ([g.id, url] as const) : null
-        }),
-      )
-      const urls: Record<string, string> = {}
-      for (const e of entries) {
-        if (e) urls[e[0]] = e[1]
-      }
-      setImageUrls(urls)
-    })()
-  }, []) // run once on mount to hydrate URLs for persisted generations
+  // ─── Prompt builder ───────────────────────────────────────────────────────
 
-  // ─── Restore library source image on mount ────────────────────────────────
-  useEffect(() => {
-    const storedId = ls('source-image-id', '')
-    const storedName = ls('source-image-name', '')
-    if (!storedId) return
-
-    void (async () => {
-      const { data } = await supabase
-        .from('user_images')
-        .select('storage_path')
-        .eq('id', storedId)
-        .single()
-
-      if (!data?.storage_path) return
-
-      const url = await fetchSignedUrl(data.storage_path)
-      if (!url) return
-
-      // Load via canvas to get base64 — pass id so it stays persisted
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-        ctx.drawImage(img, 0, 0)
-        setSourceImage({
-          base64: canvas.toDataURL('image/png'),
-          name: storedName || 'Source image',
-          id: storedId,
-        })
-      }
-      img.src = url
-    })()
-  }, []) // run once on mount
-
-  // ─── Setters with persistence ─────────────────────────────────────────────────
-  const setSystemPrompt = useCallback((v: string) => {
-    lsSet('system-prompt', v)
-    setSystemPromptRaw(v)
-  }, [])
-
-  const setUserPrompt = useCallback((v: string) => {
-    lsSet('user-prompt', v)
-    setUserPromptRaw(v)
-  }, [])
-
-  const setAspectRatio = useCallback((v: string) => {
-    lsSet('aspect-ratio', v)
-    setAspectRatioRaw(v)
-  }, [])
-
-  const setOrientationPersisted = useCallback((v: 'landscape' | 'portrait') => {
-    lsSet('orientation', v)
-    setOrientation(v)
-  }, [])
-
-  // ─── Build final prompt ───────────────────────────────────────────────────────
   function buildPrompt(): string {
     const sys = systemPrompt.trim()
     const usr = userPrompt.trim()
@@ -244,74 +168,30 @@ export function useMultiModel(): MultiModelState {
     return sys || usr
   }
 
-  // ─── Signed URL helper ────────────────────────────────────────────────────────
-  const addImageUrl = useCallback(
-    async (imageId: string, storagePath: string) => {
-      const url = await fetchSignedUrl(storagePath)
-      if (url) setImageUrls((prev) => ({ ...prev, [imageId]: url }))
+  // ─── Cell controls ────────────────────────────────────────────────────────
+
+  const toggleCell = useCallback(
+    (cellId: string) => {
+      setCells((prev) =>
+        prev.map((c) =>
+          c.id === cellId ? { ...c, isEnabled: !c.isEnabled } : c,
+        ),
+      )
     },
-    [],
+    [setCells],
   )
 
-  // ─── Source image ─────────────────────────────────────────────────────────────
-  const applySourceBase64 = useCallback(
-    (base64: string, name: string, id?: string) => {
-      setSourceImage({ base64, name, ...(id ? { id } : {}) })
-      if (id) {
-        lsSet('source-image-id', id)
-        lsSet('source-image-name', name)
-      }
+  const setCellModel = useCallback(
+    (cellId: string, model: ImageModel) => {
+      setCells((prev) =>
+        prev.map((c) => (c.id === cellId ? { ...c, model } : c)),
+      )
     },
-    [],
+    [setCells],
   )
 
-  const setSourceFile = useCallback(
-    (file: File) => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        applySourceBase64(ev.target?.result as string, file.name)
-      }
-      reader.readAsDataURL(file)
-    },
-    [applySourceBase64],
-  )
+  // ─── Run single cell ──────────────────────────────────────────────────────
 
-  const setSourceFromUrl = useCallback(
-    async (url: string, name: string, id?: string) => {
-      if (!accessToken) return
-      try {
-        const { base64 } = await fetchImageAsBase64({
-          data: { url, accessToken },
-        })
-        applySourceBase64(base64, name, id)
-      } catch (err) {
-        console.error('Failed to load image from library:', err)
-      }
-    },
-    [accessToken, applySourceBase64],
-  )
-
-  const clearSourceImage = useCallback(() => {
-    setSourceImage(null)
-    lsDel('source-image-id')
-    lsDel('source-image-name')
-  }, [])
-
-  // ─── Clear all generations ────────────────────────────────────────────────────
-  const clearAll = useCallback(() => {
-    setCells(buildInitialCells())
-    setImageUrls({})
-    setSourceImage(null)
-    setSystemPromptRaw('')
-    setUserPromptRaw('')
-    lsDel(CELLS_KEY)
-    lsDel('source-image-id')
-    lsDel('source-image-name')
-    lsDel('system-prompt')
-    lsDel('user-prompt')
-  }, [])
-
-  // ─── Run single cell ──────────────────────────────────────────────────────────
   const runCell = useCallback(
     async (cellId: string) => {
       if (!accessToken) return
@@ -387,12 +267,15 @@ export function useMultiModel(): MultiModelState {
       systemPrompt,
       userPrompt,
       credits,
+      setError,
+      setCells,
     ],
   )
 
-  // ─── Generate all enabled cells ───────────────────────────────────────────────
+  // ─── Generate all enabled cells ───────────────────────────────────────────
+
   const generateAll = useCallback(async () => {
-    if (!accessToken || isGeneratingAll) return
+    if (!accessToken || grid.isGeneratingAll) return
     const prompt = buildPrompt()
     if (!prompt && !sourceImage) return
 
@@ -465,7 +348,6 @@ export function useMultiModel(): MultiModelState {
       return next
     })
 
-    // For non-library-source generations, group under the first succeeded image
     if (!hasLibrarySource) {
       const succeeded = results
         .filter(
@@ -487,7 +369,7 @@ export function useMultiModel(): MultiModelState {
             data: { imageIds: rest, parentId, accessToken },
           })
         } catch {
-          // non-fatal — grouping is best-effort
+          // non-fatal
         }
       }
     }
@@ -517,182 +399,38 @@ export function useMultiModel(): MultiModelState {
     systemPrompt,
     userPrompt,
     credits,
-    isGeneratingAll,
+    grid.isGeneratingAll,
+    setCells,
+    setIsGeneratingAll,
+    setError,
   ])
 
-  // ─── Polling ──────────────────────────────────────────────────────────────────
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const hasPending = cells.some((c) => c.pendingId !== null)
+  // ─── Clear all ────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!hasPending || !accessToken) {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current)
-        pollingRef.current = null
-      }
-      return
-    }
-    if (pollingRef.current) return
-
-    pollingRef.current = setInterval(async () => {
-      try {
-        await checkPendingGenerations({ data: { accessToken } })
-      } catch {
-        // non-fatal
-      }
-    }, 5000)
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current)
-        pollingRef.current = null
-      }
-    }
-  }, [hasPending, accessToken])
-
-  // ─── Supabase realtime ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!userId) return
-
-    const channel = supabase
-      .channel('multi_model_user_images')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_images',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updated = payload.new as SavedAiImage & {
-            storage_path: string | null
-          }
-          if (updated.status !== 'completed' && updated.status !== 'failed')
-            return
-
-          setCells((prev) =>
-            prev.map((cell) => {
-              if (cell.pendingId !== updated.id) return cell
-
-              const updatedGens = cell.generations.map((g) =>
-                g.id === updated.id ? (updated as SavedAiImage) : g,
-              )
-
-              if (updated.status === 'completed' && updated.storage_path) {
-                void addImageUrl(updated.id, updated.storage_path)
-              }
-
-              return {
-                ...cell,
-                pendingId: null,
-                generations: updatedGens,
-                currentSlideIndex: updatedGens.length - 1,
-              }
-            }),
-          )
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [userId, addImageUrl])
-
-  // ─── Cell controls ────────────────────────────────────────────────────────────
-  const toggleCell = useCallback((cellId: string) => {
-    setCells((prev) =>
-      prev.map((c) =>
-        c.id === cellId ? { ...c, isEnabled: !c.isEnabled } : c,
-      ),
-    )
-  }, [])
-
-  const setCellModel = useCallback((cellId: string, model: ImageModel) => {
-    setCells((prev) => prev.map((c) => (c.id === cellId ? { ...c, model } : c)))
-  }, [])
-
-  const setCellSlide = useCallback((cellId: string, index: number) => {
-    setCells((prev) =>
-      prev.map((c) =>
-        c.id === cellId ? { ...c, currentSlideIndex: index } : c,
-      ),
-    )
-  }, [])
-
-  // ─── Lightbox ─────────────────────────────────────────────────────────────────
-  const lightboxImages = cells.flatMap((cell) =>
-    cell.generations
-      .filter((g) => g.status === 'completed' && imageUrls[g.id])
-      .map((g) => ({
-        id: g.id,
-        url: imageUrls[g.id] ?? '',
-        title: cell.model.name,
-      })),
-  )
-
-  const openLightbox = useCallback(
-    (cellId: string, slideIndex: number) => {
-      const cell = cells.find((c) => c.id === cellId)
-      if (!cell) return
-      const gen = cell.generations[slideIndex] as SavedAiImage | undefined
-      if (!gen || !imageUrls[gen.id]) return
-      const flatIndex = lightboxImages.findIndex((img) => img.id === gen.id)
-      if (flatIndex === -1) return
-      setLightboxIndex(flatIndex)
-      setLightboxOpen(true)
-    },
-    [cells, lightboxImages, imageUrls],
-  )
-
-  const closeLightbox = useCallback(() => setLightboxOpen(false), [])
-  const lightboxNext = useCallback(
-    () => setLightboxIndex((i) => (i + 1) % lightboxImages.length),
-    [lightboxImages.length],
-  )
-  const lightboxPrev = useCallback(
-    () =>
-      setLightboxIndex(
-        (i) => (i - 1 + lightboxImages.length) % lightboxImages.length,
-      ),
-    [lightboxImages.length],
-  )
+  const clearAll = useCallback(() => {
+    setCells(buildInitialCells())
+    clearGridState(['system-prompt', 'user-prompt'])
+    setSystemPromptRaw('')
+    setUserPromptRaw('')
+  }, [setCells, clearGridState])
 
   const enabledCount = cells.filter((c) => c.isEnabled).length
 
   return {
-    cells,
-    systemPrompt,
-    setSystemPrompt,
-    userPrompt,
-    setUserPrompt,
+    ...grid,
     aspectRatio,
     setAspectRatio,
     orientation,
     setOrientation: setOrientationPersisted,
-    sourceImage,
-    setSourceFile,
-    setSourceFromUrl,
-    clearSourceImage,
-    imageUrls,
-    isGeneratingAll,
+    systemPrompt,
+    setSystemPrompt,
+    userPrompt,
+    setUserPrompt,
     generateAll,
     runCell,
     toggleCell,
     setCellModel,
-    setCellSlide,
-    lightboxOpen,
-    lightboxIndex,
-    lightboxImages,
-    openLightbox,
-    closeLightbox,
-    lightboxNext,
-    lightboxPrev,
     enabledCount,
-    error,
     clearAll,
-    accessToken,
-    userImages,
   }
 }
