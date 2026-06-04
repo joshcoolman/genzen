@@ -1,4 +1,76 @@
-# Continue: Cost Tracking Layer — Issue #80
+# Continue: Google Generation Queue
+
+**Branch:** `feat/provider-retry-backoff`  
+**Date:** 2026-06-04  
+**Status:** Code complete, partially tested — remote DB migration not yet applied
+
+## What Was Built
+
+The synchronous Google/Vertex AI generation path was replaced with a Supabase-backed async queue that matches the FAL provider pattern. The root problem was Vertex AI's ~10 QPM default quota being hit when multiple cells fire simultaneously, causing 429 RESOURCE_EXHAUSTED errors.
+
+Full plan at: `/Users/joshcoolman/.claude/plans/so-i-m-using-vertex-stateless-quill.md`
+
+## Commits on Branch
+
+```
+3969707 fix: always run Google dispatch even when no FAL records are pending
+3eb85f1 fix: qualify all column refs in dispatch_google_queue to resolve ambiguity
+5c628fd feat: replace synchronous Google generation with Supabase-backed async queue
+a2bda2f feat: transparent provider retry with exponential backoff for Vertex AI 429s
+```
+
+## Architecture
+
+**Status lifecycle:**
+```
+FAL:    [pending] ──────────────────────► [completed / failed]
+Google: [queued] ──► [processing] ──────► [completed / failed]
+```
+
+**Dispatch flow:**
+1. `submitGoogleGeneration` inserts record as `queued`, returns immediately
+2. Browser polls `checkPendingGenerations` every 5s
+3. Poll loop calls `dispatchGoogleQueue()` unconditionally (after FAL block)
+4. `dispatch_google_queue` RPC atomically claims up to 3 records via `SELECT FOR UPDATE SKIP LOCKED`
+5. `executeGoogleRecord()` calls Vertex AI, uploads to storage, updates to `completed`/`failed`
+6. `withProviderRetry('google', ...)` handles residual 429s with exponential backoff + jitter
+7. Stale `processing` records reset to `queued` after 2 min via `reset_stale_google_processing` RPC
+
+**Key files:**
+- `supabase/migrations/20260605000000_google_queue.sql` — adds `queued` status + RPCs
+- `supabase/migrations/20260605000001_fix_dispatch_google_queue.sql` — fixes SQL ambiguity bug
+- `src/lib/server/google-queue.server.ts` — dispatcher + executor (new)
+- `src/lib/server/media.server.ts` — `submitGoogleGeneration` is now enqueue-only
+- `src/lib/server/check-pending-generations.server.ts` — dispatch runs unconditionally after FAL block
+- `src/lib/server/provider-retry.server.ts` — generic retry utility (new)
+- `vercel.json` — `maxDuration: 60` for `server/api/**` (new)
+
+## Current State
+
+- Local Supabase: both migrations applied ✓
+- Code committed ✓
+- **Not yet tested end-to-end** (two bugs fixed late in session)
+- Remote Supabase + Vercel: nothing applied yet ❌
+
+## Bugs Fixed During Session
+
+1. **SQL ambiguity** — `RETURNS TABLE (..., generation_metadata JSONB)` scoped `generation_metadata` as a PL/pgSQL variable, conflicting with the table column in the COUNT query. Fixed in `20260605000001`.
+2. **Early return skip** — `checkPendingGenerations` bailed before dispatch when no FAL records existed. Fixed in `3969707` by wrapping the FAL block in a conditional.
+
+## Next Session TODO
+
+1. Test locally — generate 1 Nano Banana, watch for `[google-queue] dispatching N record(s)` in server logs
+2. Generate 5+ images rapidly — should complete in waves of 3, no 429s
+3. Apply both migrations to remote Supabase (in order: `000000` then `000001`)
+4. Deploy branch to Vercel, repeat burst test in prod
+5. If issues persist: Google Cloud Console → project `gen-lang-client-0015600225` → Vertex AI API Metrics / Log Explorer
+
+## Suggested Skills
+
+- `/verify` — confirm end-to-end after deploying
+- `/diagnose` — if generations still stuck after migrations applied
+- `/vercel-cli-with-tokens` — inspect deployed function config
+
 
 ## What was being worked on
 

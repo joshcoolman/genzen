@@ -55,6 +55,10 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 | trash         | Soft-deleted item recovery                                     | `src/features/trash/CLAUDE.md`         |
 | user-images   | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md`   |
 
+## Handoffs
+
+When using the `/handoff` skill, save the document to `./continue.md` in the project root.
+
 ## Gotchas
 
 - `routeTree.gen.ts` is auto-generated -- never edit manually

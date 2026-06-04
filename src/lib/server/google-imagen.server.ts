@@ -4,6 +4,7 @@
  * falls back to Gemini API key (GOOGLE_GENERATIVE_AI_API_KEY).
  */
 import { GoogleGenAI } from '@google/genai'
+import { withProviderRetry } from './provider-retry.server'
 
 const GOOGLE_PROJECT = 'gen-lang-client-0015600225'
 const GOOGLE_LOCATION = 'us-central1'
@@ -105,16 +106,18 @@ async function callGemini(options: {
 
   parts.push({ text: options.prompt })
 
-  const response = await ai.models.generateContent({
-    model: resolveGeminiModel(options.modelId ?? 'fal-ai/nano-banana-2'),
-    contents: [{ role: 'user', parts }],
-    config: {
-      responseModalities: ['image', 'text'],
-      imageConfig: {
-        aspectRatio: resolveAspectRatio(options.aspectRatio),
+  const response = await withProviderRetry('google', () =>
+    ai.models.generateContent({
+      model: resolveGeminiModel(options.modelId ?? 'fal-ai/nano-banana-2'),
+      contents: [{ role: 'user', parts }],
+      config: {
+        responseModalities: ['image', 'text'],
+        imageConfig: {
+          aspectRatio: resolveAspectRatio(options.aspectRatio),
+        },
       },
-    },
-  })
+    }),
+  )
 
   // Check for content safety blocks
   if (response.promptFeedback?.blockReason) {
