@@ -3,6 +3,7 @@ import { editWithGoogle, generateWithGoogle } from './google-imagen.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { withProviderRetry } from './provider-retry.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { getModelName } from '@/features/ai-images/models'
 
 export const MAX_CONCURRENT_GOOGLE = 3
 
@@ -68,7 +69,7 @@ async function executeGoogleRecord(
         file_hash: fileHash,
         file_size: imageBytes.length,
         mime_type: 'image/png',
-        title: modelId,
+        title: getModelName(modelId),
         description:
           prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt,
         generation_metadata: {
