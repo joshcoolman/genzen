@@ -8,6 +8,11 @@ import { nitro } from 'nitro/vite'
 const config = defineConfig({
   nitro: {
     serverDir: './server',
+    vercel: {
+      functions: {
+        maxDuration: 60,
+      },
+    },
   },
   plugins: [
     nitro(),
