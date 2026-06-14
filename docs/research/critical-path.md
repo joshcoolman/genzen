@@ -1,5 +1,7 @@
 # Critical Path to Revenue
 
+> **Superseded (2026-06-13).** This revenue-first framing no longer reflects the project's direction. GenZen is a personal AI playground, not a product chasing paying customers. Kept as a historical record; the Stripe/credits work it drove still ships in the app, but "first paying customer" is no longer a goal.
+
 Updated 2026-03-29. The framing: this project is the only income source until paying customers validate it.
 
 ## Where we are

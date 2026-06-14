@@ -10,12 +10,6 @@ import {
 import { useLocation } from '@tanstack/react-router'
 import { buildSkillsIndex } from '../skills/registry'
 
-interface LoadedNote {
-  id: string
-  title: string
-  content: string
-}
-
 export interface ADContextImage {
   /** Raw base64 data (no data: prefix) */
   base64: string
@@ -34,12 +28,6 @@ interface ADContextValue {
   unregister: (key: string) => void
   /** Build the full system prompt from route + feature context */
   systemPrompt: string
-  /** Currently loaded note for AD context */
-  loadedNote: LoadedNote | null
-  /** Load a note into AD context */
-  setLoadedNote: (note: LoadedNote) => void
-  /** Clear loaded note from AD context */
-  clearLoadedNote: () => void
   /** Context images registered by features (auto-injected into AD messages) */
   contextImages: Map<string, ADContextImage>
   /** Register a context image (call from feature routes) */
@@ -128,29 +116,9 @@ Use this tool when:
 Do NOT use this tool for open-ended exploration or multiple questions. Ask exactly one question with 2–4 concrete options. The user's selection will be submitted as a message, then you should proceed directly to create_prompt_card.`
 
 const ROUTE_DESCRIPTIONS: Record<string, string> = {
-  '/dashboard/storyboard':
-    'The user is on the Storyboard page -- a linear pipeline for creating visual stories from a text prompt through scene breakdown, frame generation, and video output.',
   '/dashboard/ai-images':
     'The user is on the AI Images page -- multi-model image generation with prompt input, model selection, brainstorm, edit, and variation workflows.',
   '/dashboard/video': 'The user is on the Video page.',
-  '/dashboard/outpaint':
-    'The user is on the Outpaint page -- extending images beyond their borders.',
-  '/dashboard/prompt-studio': 'The user is on the Prompt Studio page.',
-  '/dashboard/brainstorm': 'The user is on the Brainstorm page.',
-  '/dashboard/characters': 'The user is on the Characters page.',
-  '/dashboard/shots': 'The user is on the Shots page.',
-  '/dashboard/style-trainer': 'The user is on the Style Trainer page.',
-  '/dashboard/models': 'The user is on the Models page.',
-  '/dashboard/assets': 'The user is on their assets library.',
-  '/dashboard/combine': 'The user is on the Combine page.',
-  '/dashboard/multi-shot':
-    'The user is on the Multi-Shot page -- multi-shot video generation using Kling 3.0.',
-  '/dashboard/notes':
-    'The user is on the Notes page -- browsing saved AD conversation snapshots.',
-  '/dashboard/history':
-    'The user is on the History page -- browsing completed AI generations with search and prompt reuse.',
-  '/dashboard/dev-workspace/prompt-studio':
-    'The user is on the Prompt Studio page -- running prompts against multiple LLMs in parallel.',
 }
 
 const SKILLS_INDEX = buildSkillsIndex()
@@ -158,7 +126,6 @@ const SKILLS_INDEX = buildSkillsIndex()
 function buildSystemPrompt(
   route: string,
   featureContexts: Map<string, string>,
-  loadedNote: LoadedNote | null,
 ): string {
   const parts = [BASE_SYSTEM_PROMPT.trim()]
 
@@ -181,13 +148,6 @@ function buildSystemPrompt(
     }
   }
 
-  // Add loaded note context
-  if (loadedNote) {
-    parts.push(
-      `The user has loaded a previous conversation note titled "${loadedNote.title}" as context:\n\n${loadedNote.content}`,
-    )
-  }
-
   return parts.join('\n\n')
 }
 
@@ -197,7 +157,6 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
   const [featureContexts, setFeatureContexts] = useState<Map<string, string>>(
     () => new Map(),
   )
-  const [loadedNote, setLoadedNoteState] = useState<LoadedNote | null>(null)
   const [contextImages, setContextImages] = useState<
     Map<string, ADContextImage>
   >(() => new Map())
@@ -217,14 +176,6 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
       next.delete(key)
       return next
     })
-  }, [])
-
-  const setLoadedNote = useCallback((note: LoadedNote) => {
-    setLoadedNoteState(note)
-  }, [])
-
-  const clearLoadedNote = useCallback(() => {
-    setLoadedNoteState(null)
   }, [])
 
   const registerImage = useCallback((key: string, image: ADContextImage) => {
@@ -250,8 +201,8 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const systemPrompt = useMemo(
-    () => buildSystemPrompt(route, featureContexts, loadedNote),
-    [route, featureContexts, loadedNote],
+    () => buildSystemPrompt(route, featureContexts),
+    [route, featureContexts],
   )
 
   const value = useMemo(
@@ -261,9 +212,6 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
       register,
       unregister,
       systemPrompt,
-      loadedNote,
-      setLoadedNote,
-      clearLoadedNote,
       contextImages,
       registerImage,
       unregisterImage,
@@ -274,9 +222,6 @@ export function ADContextProvider({ children }: { children: React.ReactNode }) {
       register,
       unregister,
       systemPrompt,
-      loadedNote,
-      setLoadedNote,
-      clearLoadedNote,
       contextImages,
       registerImage,
       unregisterImage,

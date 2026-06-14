@@ -2,6 +2,8 @@
 
 How we build, ship, and track work on GenZen.
 
+> **Partially superseded (2026-06-13).** The mechanics below (branch → PR → `pnpm check`/`build` → merge) still apply. The _revenue framing_ — "first paying customer" milestones, dogfooding-as-a-paying-customer, launch goals — does not: GenZen is a personal playground, not a product chasing customers. Ignore the monetization/launch milestones; the project-board flow is optional for solo work.
+
 ## Board
 
 All work is tracked on the <a href="https://github.com/users/joshcoolman-smc/projects/6" target="_blank">GenZen Roadmap</a> project board.

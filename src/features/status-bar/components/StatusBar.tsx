@@ -1,14 +1,9 @@
-import { BookText, MessageSquare } from 'lucide-react'
-import { ScenesProgress } from './items/ScenesProgress'
+import { MessageSquare } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 
-interface StatusBarProps {
-  onOpenPrompts: () => void
-}
-
-export function StatusBar({ onOpenPrompts }: StatusBarProps) {
+export function StatusBar() {
   const { user } = useAuth()
   const { isOpen: isADOpen, toggleOpen: toggleAD } = useADOpen()
 
@@ -23,14 +18,12 @@ export function StatusBar({ onOpenPrompts }: StatusBarProps) {
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
       }}
     >
-      <ScenesProgress />
       <ToolbarButton
         icon={MessageSquare}
         label="Chat"
         onClick={toggleAD}
         active={isADOpen}
       />
-      <ToolbarButton icon={BookText} label="Prompts" onClick={onOpenPrompts} />
     </div>
   )
 }
