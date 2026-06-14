@@ -22,12 +22,14 @@ a2bda2f feat: transparent provider retry with exponential backoff for Vertex AI 
 ## Architecture
 
 **Status lifecycle:**
+
 ```
 FAL:    [pending] ──────────────────────► [completed / failed]
 Google: [queued] ──► [processing] ──────► [completed / failed]
 ```
 
 **Dispatch flow:**
+
 1. `submitGoogleGeneration` inserts record as `queued`, returns immediately
 2. Browser polls `checkPendingGenerations` every 5s
 3. Poll loop calls `dispatchGoogleQueue()` unconditionally (after FAL block)
@@ -37,6 +39,7 @@ Google: [queued] ──► [processing] ──────► [completed / faile
 7. Stale `processing` records reset to `queued` after 2 min via `reset_stale_google_processing` RPC
 
 **Key files:**
+
 - `supabase/migrations/20260605000000_google_queue.sql` — adds `queued` status + RPCs
 - `supabase/migrations/20260605000001_fix_dispatch_google_queue.sql` — fixes SQL ambiguity bug
 - `src/lib/server/google-queue.server.ts` — dispatcher + executor (new)
@@ -70,7 +73,6 @@ Google: [queued] ──► [processing] ──────► [completed / faile
 - `/verify` — confirm end-to-end after deploying
 - `/diagnose` — if generations still stuck after migrations applied
 - `/vercel-cli-with-tokens` — inspect deployed function config
-
 
 ## What was being worked on
 

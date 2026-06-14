@@ -5,7 +5,7 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 ## Key Files
 
 - `index.ts` -- Re-exports `TrashDisplay` and `useTrash`
-- `hooks/useTrash.ts` -- Core hook: fetches trashed images, manages linked image detection, signs storage URLs, handles restore/delete/batch/empty
+- `hooks/useTrash.ts` -- Core hook: fetches trashed images, manages linked image detection, resolves public R2 URLs, handles restore/delete/batch/empty
 - `components/TrashDisplay.tsx` -- Full-page UI with image list, single/batch restore/delete, linked image badges, empty-trash confirmation
 - `components/TrashDownloadButton.tsx` -- Dialog for downloading all trash images as ZIP with custom filename (JSZip + file-saver, concurrency=4)
 

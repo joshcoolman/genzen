@@ -6,7 +6,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 - `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
 - `hooks/useUserImages.ts` -- CRUD hook: fetch, create, update, soft-delete images via Supabase client
-- `hooks/useExistingImages.ts` -- Fetch user's existing images + signed URLs (used by shots, combine, style-trainer)
+- `hooks/useExistingImages.ts` -- Fetch user's existing images + public R2 URLs (used by the shared image picker)
 - `hooks/useImageUpload.ts` -- Supabase storage upload + DB insert + triggers background thumbnail generation
 - `hooks/useClipboardPaste.ts` -- Global paste listener that uploads clipboard images
 - `hooks/useDownloadImages.ts` -- Batch download as ZIP (uses JSZip + file-saver, concurrency=4)
@@ -18,17 +18,16 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 - `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement; called directly by MCP tools to avoid TanStack RPC stub corruption
 - `server/remove-images.server.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
 - `server/create-thumbnail.server.ts` -- Server function for async thumbnail generation post-upload
-- `components/UserImagesDisplay.tsx` -- Main orchestrator: grid, filters (uploads/AI images/videos), sort, upload, clipboard paste
 - `components/ImageCard.tsx` -- Thumbnail card wrapping shared Thumbnail component
 - `components/ImageGrid.tsx` -- Re-exports shared ImageGrid, provides EmptyState
 - `components/ImageUploadButton.tsx` -- File picker button with multi-file support
 - `components/ImageDownloadButton.tsx` -- Dropdown for downloading all/uploads/AI-generated as ZIP
 - `components/ImageEditDialog.tsx` -- Full-screen lightbox for editing title/description
-- `components/ExistingImagePicker.tsx` -- Dialog with source filter tabs, checkbox select (used by combine)
+- `components/ExistingImagePicker.tsx` -- Dialog with source filter tabs, checkbox select
 
 ## Route
 
-UserImagesDisplay is rendered within the dashboard layout; supports `?imageId=` deep link to open lightbox
+No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useImageUpload`, `useExistingImages`), upload/remove/thumbnail server functions, and pickers are consumed by other features (ai-images, canvas, ai-video, the AD image picker).
 
 ## Shared Dependencies
 
@@ -37,16 +36,12 @@ UserImagesDisplay is rendered within the dashboard layout; supports `?imageId=` 
 - `@/components/Thumbnail` -- Shared composable thumbnail component
 - `@/components/ImageGrid` -- Shared responsive grid
 - `@/components/ActionButton` -- Shared loading button
-- `@/components/video-player-dialog` -- AI video playback
-- `@/features/ai-video` -- `useVideos` hook for fetching videos from the unified `user_images` table
 
 ## Quirks / Notes
 
 - Most CRUD runs client-side with Supabase RLS; upload, remove, and thumbnail generation are server functions
 - Delete is soft-delete (sets `deleted_at` timestamp)
 - Storage uses R2 public URLs (no signing/expiry), loaded incrementally per-image
-- View preferences (filter, sort, thumb size, info toggle) persist to localStorage (`assets-view-prefs`)
 - Palette generator runs entirely in-browser via Canvas API (no edge function)
 - Storage uses R2 via `createImageStorage()` from `@/lib/image-storage`
 - Max upload size: 50MB; allowed types: JPEG, PNG, WebP, GIF
-- Source filtering includes AI videos as a separate tab

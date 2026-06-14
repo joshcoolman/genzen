@@ -1,11 +1,8 @@
 import { useLocation } from '@tanstack/react-router'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
-import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { ADPanel } from '@/features/ad/components/ADPanel'
 import { ADContextProvider } from '@/features/ad/context/ad-context'
-import { PromptSheet } from '@/features/prompts/components/PromptSheet'
-import { usePromptSheet } from '@/features/prompts/hooks/use-prompt-sheet'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 import { StatusBar } from '@/features/status-bar'
@@ -13,7 +10,6 @@ import { StatusBar } from '@/features/status-bar'
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const { isOpen: isADOpen } = useADOpen()
-  const promptSheet = usePromptSheet()
 
   // Pages with fixed sidebars manage their own AD push-in margins
   const isEditPage = location.pathname.startsWith('/dashboard/edit/')
@@ -44,19 +40,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <ADPanel />
 
         {/* Universal toolbar */}
-        <StatusBar onOpenPrompts={promptSheet.open} />
-
-        {/* Prompt library bottom sheet */}
-        <PromptSheet
-          isOpen={promptSheet.isOpen}
-          onClose={promptSheet.close}
-          prompts={promptSheet.prompts}
-          loading={promptSheet.loading}
-          onAdd={promptSheet.addPrompt}
-          onDelete={promptSheet.removePrompt}
-          onRestore={promptSheet.restore}
-          hasAllDefaults={promptSheet.hasAllDefaults}
-        />
+        <StatusBar />
       </div>
     </ADContextProvider>
   )

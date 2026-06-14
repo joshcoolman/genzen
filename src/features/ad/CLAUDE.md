@@ -4,12 +4,12 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 
 ## Key Files
 
-- `context/ad-context.tsx` -- ADContext provider: tracks route, feature context map, system prompt assembly, loaded note state
+- `context/ad-context.tsx` -- ADContext provider: tracks route, feature context map, system prompt assembly
 - `hooks/useADChat.ts` -- Message streaming with rAF-throttled state updates, abort support, URL-based image attachments (ADImage = { id, url, title? }), tool calling (create_prompt_card, create_clarifying_card, load_skill)
 - `hooks/useChatHistory.ts` -- localStorage persistence (50 msg cap, 500ms debounce). URLs are small so images now persist as-is and survive panel close/reopen and page refresh.
 - `hooks/useAnthropicKey.ts` -- API key management via external store pattern (localStorage, `sk-ant-` prefix)
 - `hooks/useClaudeClient.ts` -- Memoized Anthropic SDK client initialization (`dangerouslyAllowBrowser: true`)
-- `components/ADPanel.tsx` -- Fixed right-sidebar (w-80 / 320px on md+) with header, chat body, or setup form; copy/save/clear actions; prompt save/copy handlers; dismissible error banner (AlertCircle) surfaces chat errors instead of silently failing; renders SkillChipRow above input
+- `components/ADPanel.tsx` -- Fixed right-sidebar (w-80 / 320px on md+) with header, chat body, or setup form; copy + clear actions (no save); prompt copy handler; dismissible error banner (AlertCircle) surfaces chat errors instead of silently failing; renders SkillChipRow above input
 - `components/ADSetup.tsx` -- API key entry form with `sk-ant-` validation
 - `components/ChatMessages.tsx` -- Message list with markdown rendering via `marked`, PromptCard tool rendering, SkillLoadedCard rendering for loaded skills, copy buttons, auto-scroll
 - `components/ChatInput.tsx` -- Auto-growing textarea. Image attachments open `ImageSourceDialog` (shared picker) showing the user's library with in-dialog upload and paste. No direct upload / paste-into-textarea / drag-drop — all image intake flows through the picker so uploaded images land in the persistent library rather than existing only for a single turn.
@@ -23,25 +23,21 @@ No dedicated route -- sidebar panel integrated in `src/components/DashboardLayou
 ## System Prompt Assembly
 
 1. Base prompt identifies AD as creative assistant for GenZen with vision capabilities
-2. Route descriptions map current pathname to context (hardcoded for 14+ dashboard routes)
+2. Route descriptions map current pathname to context (hardcoded for a few dashboard routes)
 3. Feature contexts injected dynamically by features calling `useRegisterADContext(key, summary)`
-4. Loaded note (from notes feature) optionally injected for continuity
 
 ## Shared Dependencies
 
 - `@anthropic-ai/sdk` -- Anthropic client for streaming with tool calling (claude-sonnet-4-6, max 4096 tokens)
 - `@tanstack/react-router` -- useLocation for route tracking
-- `@/lib/auth` -- useAuth for session gating (gates save functionality)
+- `@/lib/auth` -- useAuth for session gating (gates image upload in the picker)
 - `@/lib/use-ad-open` -- useADOpen for managing panel open/close state
-- `@/features/notes/server/save-note.server` -- Server action to persist chat as markdown note
-- `@/features/prompts/server/save-prompt.server` -- Server action to save prompts from PromptCard tool
 - `marked` -- Markdown parsing for assistant responses
 - `@/components/ActionButton` -- Action button component
 
 ## Integration Points
 
 - Features register context via `useRegisterADContext(key, summary)` -- auto-unregisters on unmount
-- Notes feature can save chat as markdown and load previous conversations back via `setLoadedNote()`
 - `ADContextProvider` wraps dashboard content in `DashboardLayout.tsx`
 - API key stored in browser localStorage only (never sent to server)
 
@@ -63,7 +59,7 @@ Claude can call tools to render interactive UI components:
 
 ### create_prompt_card
 
-Displays an image generation prompt with Copy and Save buttons.
+Displays an image generation prompt with a Copy button.
 
 **Input:**
 
@@ -84,13 +80,8 @@ Displays an image generation prompt with Copy and Save buttons.
 - Prompt in monospace box
 - Tags as colored badges
 - Copy button (copies to clipboard)
-- Save button (saves to prompts library, requires auth)
 
 Tool calls are extracted from `stream.finalMessage()` by filtering content blocks with `type: 'tool_use'`, then rendered inline in the chat via PromptCard components.
-
-## Legacy: render/ Directory
-
-The `render/` directory contains unused json-render code (catalog, registry, README, TESTING, TOOL-CALLING docs) from a previous approach. The codebase has fully migrated to native Anthropic tool calling. These files are not imported anywhere and can be safely deleted.
 
 ## Image attachments
 

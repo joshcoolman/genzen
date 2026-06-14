@@ -20,7 +20,6 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
 - `reparent-image.server.ts` -- move image under new parent or detach from parent
-- `set-generation-parent.server.ts` -- set parent image for grouping (used by multi-model, scenes)
 - `retry-generation.server.ts` -- resubmit failed image generation to FAL
 - `caption-image.server.ts` -- vision API image captioning
 - `generate-shot-list.server.ts` -- vision-based shot list prompt generation (Gemini Flash)
@@ -79,15 +78,14 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
 - `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)
-- `src/components/AspectRatioSelect.tsx` -- ratio constants re-exported via `constants.ts`
+- `src/components/AspectRatioSelect/` -- ratio selector (`AspectRatioSelect.tsx` + `aspect-ratio-constants.ts`, barrel `index.ts`); ratio constants re-exported via `constants.ts`
 
 ## Quirks / Notes
 
 - Variations use Claude Sonnet to rewrite prompts with "creative tension" -- always references the root image, not the immediate parent, to prevent quality drift
-- `fal-params.server.ts` is the central param resolver used by many features (outpaint, describe, edit-image)
+- `fal-params.server.ts` is the central param resolver used across the image server fns (generate, edit, variations, retry) and `media.server.ts`
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
 - Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
 - Reparenting allows moving images between parent groups or detaching from a parent entirely
-- `set-generation-parent.server.ts` is used by multi-model and scenes features to group their outputs

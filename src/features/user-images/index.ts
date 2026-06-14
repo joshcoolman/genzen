@@ -30,7 +30,6 @@ export { useExistingImages } from './hooks/useExistingImages'
 export { useImageUpload } from './hooks/useImageUpload'
 
 // Components
-export { UserImagesDisplay } from './components/UserImagesDisplay'
 export { ImageUploadButton } from './components/ImageUploadButton'
 export { ImageCard } from './components/ImageCard'
 export { ImageGrid, EmptyState } from './components/ImageGrid'

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
-import { Check, Copy, Save } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { SkillLoadedCard } from './SkillLoadedCard'
 import type {
   ADMessage,
@@ -12,24 +12,15 @@ import { cn } from '@/lib/utils'
 
 interface PromptCardProps extends PromptCardTool {
   onCopy: (prompt: string) => void
-  onSave: (title: string, content: string) => void
 }
 
-function PromptCard({ prompt, title, tags, onCopy, onSave }: PromptCardProps) {
+function PromptCard({ prompt, title, tags, onCopy }: PromptCardProps) {
   const [copied, setCopied] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   const handleCopy = () => {
     onCopy(prompt)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleSave = () => {
-    const saveTitle = title || 'Generated Prompt'
-    onSave(saveTitle, prompt)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
   }
 
   return (
@@ -71,22 +62,6 @@ function PromptCard({ prompt, title, tags, onCopy, onSave }: PromptCardProps) {
             <>
               <Copy className="h-3 w-3" />
               Copy
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-        >
-          {saved ? (
-            <>
-              <Check className="h-3 w-3" />
-              Saved
-            </>
-          ) : (
-            <>
-              <Save className="h-3 w-3" />
-              Save
             </>
           )}
         </button>
@@ -217,12 +192,10 @@ function CopyButton({ text }: { text: string }) {
 function MessageBubble({
   message,
   onCopyPrompt,
-  onSavePrompt,
   onSelectOption,
 }: {
   message: ADMessage
   onCopyPrompt: (prompt: string) => void
-  onSavePrompt: (title: string, content: string) => void
   onSelectOption: (option: string) => void
 }) {
   const isUser = message.role === 'user'
@@ -301,7 +274,6 @@ function MessageBubble({
                 key={toolCall.id}
                 {...toolCall.input}
                 onCopy={onCopyPrompt}
-                onSave={onSavePrompt}
               />
             ),
           )}
@@ -314,12 +286,10 @@ function MessageBubble({
 export function ChatMessages({
   messages,
   onCopyPrompt,
-  onSavePrompt,
   onSelectOption,
 }: {
   messages: Array<ADMessage>
   onCopyPrompt: (prompt: string) => void
-  onSavePrompt: (title: string, content: string) => void
   onSelectOption: (option: string) => void
 }) {
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -370,7 +340,6 @@ export function ChatMessages({
           key={msg.id}
           message={msg}
           onCopyPrompt={onCopyPrompt}
-          onSavePrompt={onSavePrompt}
           onSelectOption={onSelectOption}
         />
       ))}

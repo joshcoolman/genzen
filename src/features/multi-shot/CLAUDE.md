@@ -22,4 +22,4 @@ No dedicated route -- multishot generation is now a mode toggle inside the `ai-v
 - The original standalone multi-shot architecture (sequences table, list/detail pages, editor, hooks, server functions) was deleted in Phase 5 and merged into ai-video
 - Elements are referenced in shot prompts as @Element1, @Element2, etc.
 - Total duration budget: 15 seconds across all shots, minimum 3s per shot
-- Dual pricing: 0.168 credits/s with audio, 0.14 credits/s without
+- Pricing: flat `multishot_gen: 5` credits (`credits/types.ts`); `PRICE_PER_SEC_AUDIO = 0.168` is a per-second constant in `types.ts`

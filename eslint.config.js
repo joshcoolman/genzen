@@ -9,6 +9,7 @@ export default [
       'eslint.config.js',
       'prettier.config.js',
       'supabase/functions/**/*',
+      'src/lib/types/supabase.ts',
     ],
   },
   ...tanstackConfig,

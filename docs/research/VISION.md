@@ -1,5 +1,7 @@
 # GenZen Vision & Monetization Strategy
 
+> **Partially superseded (2026-06-13).** The "learning & experimentation" framing still holds — that's exactly what GenZen is now. The _monetization strategy_ below is no longer being pursued: this is a personal playground, not a business. Kept as a historical record.
+
 ## Current Phase: Learning & Experimentation
 
 GenZen is currently a **learning project** focused on building AI-powered applications. The primary goal is hands-on experience with:
