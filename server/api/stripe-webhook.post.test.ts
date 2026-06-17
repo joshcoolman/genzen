@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // Import after mocks
 import * as h3 from 'h3'
 import handler from './stripe-webhook.post'
+import type { H3Event } from 'h3'
 import * as addCreditsModule from '@/features/credits/server/add-credits.server'
 import * as stripeServer from '@/lib/server/stripe.server'
+
 
 // vi.mock is hoisted — all factories must use only vi.fn() inside, no outer refs
 vi.mock('h3', () => ({
@@ -21,8 +23,6 @@ vi.mock('@/features/credits/server/add-credits.server', () => ({
 vi.mock('@/lib/server/stripe.server', () => ({
   getStripe: vi.fn(),
 }))
-
-import type { H3Event } from 'h3'
 const fakeEvent = {} as H3Event
 
 function makeSession(overrides: Record<string, unknown> = {}) {
