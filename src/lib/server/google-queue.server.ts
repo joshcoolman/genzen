@@ -4,6 +4,8 @@ import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { withProviderRetry } from './provider-retry.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { getModelName } from '@/features/ai-images/models'
+import { refundCredits } from '@/features/credits/server/check-credits.server'
+import { CREDIT_COSTS } from '@/features/credits/types'
 
 export const MAX_CONCURRENT_GOOGLE = 3
 
@@ -97,6 +99,17 @@ async function executeGoogleRecord(
     const errorMsg =
       error instanceof Error ? error.message : 'Google generation failed'
     console.error(`[google-queue] record=${record.id} failed: ${errorMsg}`)
+
+    // Refund the credit that was deducted before this record was queued.
+    // Google queue only processes image generations (cost: 1 credit, reason: image_gen).
+    try {
+      await refundCredits(record.user_id, CREDIT_COSTS.image_gen, 'image_gen')
+    } catch (refundErr) {
+      console.error(
+        `[google-queue] record=${record.id} refund failed: ${refundErr instanceof Error ? refundErr.message : refundErr}`,
+      )
+    }
+
     await supabase
       .from('user_images')
       .update({
