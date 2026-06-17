@@ -109,6 +109,7 @@ export default defineEventHandler(async (event) => {
   const webhookSignature = getHeader(event, 'x-fal-webhook-signature') ?? ''
 
   // Verify signature if all headers are present
+  let signatureVerified = false
   if (webhookRequestId && webhookSignature) {
     try {
       const valid = await verifyFalWebhookSignature(
@@ -123,6 +124,7 @@ export default defineEventHandler(async (event) => {
         setResponseStatus(event, 401)
         return 'Unauthorized'
       }
+      signatureVerified = true
     } catch (err) {
       jwksConsecutiveFailures++
       console.warn(
@@ -130,13 +132,27 @@ export default defineEventHandler(async (event) => {
         err,
       )
       if (jwksConsecutiveFailures >= JWKS_MAX_CONSECUTIVE_FAILURES) {
+        // Invalidate cache so the next request forces a fresh JWKS fetch.
+        // Without this, a 24h warm cache means the counter never resets
+        // even after the FAL API recovers.
+        jwksCache = null
+        jwksCacheTime = 0
         console.warn(
-          '[fal-webhook] Rejecting webhook: JWKS failure threshold exceeded',
+          '[fal-webhook] Rejecting webhook: JWKS failure threshold exceeded; cache invalidated for retry',
         )
         setResponseStatus(event, 401)
         return 'Unauthorized'
       }
     }
+  }
+
+  // Reset consecutive-failure counter after a successful verification pass.
+  // This allows recovery after a transient FAL JWKS outage.
+  if (signatureVerified && jwksConsecutiveFailures > 0) {
+    console.log(
+      '[fal-webhook] JWKS verification recovered; resetting failure counter',
+    )
+    jwksConsecutiveFailures = 0
   }
 
   let body: FalWebhookBody
