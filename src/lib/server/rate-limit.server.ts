@@ -29,12 +29,18 @@ export async function checkRateLimit(
   })
 
   if (error) {
-    console.error('Rate limit check failed:', error.message)
-    // Fail open — don't block users if the check itself errors
-    return
+    console.error(
+      `[rate-limit] RPC check_rate_limit failed for user=${userId} type=${type}: ${error.message}`,
+    )
+    throw new Error(
+      'Rate limit check temporarily unavailable. Please try again in a moment.',
+    )
   }
 
   if (!allowed) {
+    console.warn(
+      `[rate-limit] user=${userId} type=${type} rate limited (>${maxRequests} requests in ${windowSeconds}s)`,
+    )
     throw new Error(
       `Rate limited: too many ${type} generation requests. Please wait a moment and try again.`,
     )
