@@ -83,6 +83,35 @@
   background: #222;
 }
 
+.generateBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #bbb;
+  font-size: 13px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    color 0.1s,
+    border-color 0.1s,
+    background 0.1s;
+  white-space: nowrap;
+}
+
+.generateBtn:hover {
+  color: #fff;
+  border-color: #555;
+  background: #222;
+}
+
 .zoom {
   display: flex;
   align-items: center;

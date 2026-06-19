@@ -44,6 +44,14 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 | trash       | Soft-deleted item recovery                                     | `src/features/trash/CLAUDE.md`       |
 | user-images | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md` |
 
+## Idea capture & execution
+
+Exploratory sessions capture ideas before any build. The user pokes around the app and says "capture this"; at the end (often a later session) says "let's execute".
+
+- One file per feature under `ideas/` (e.g. `ideas/canvas.md`), named by the sidebar label the user uses.
+- On "capture this": append an entry to the relevant `ideas/<feature>.md` with the recommendation/decision inline and a status -- `open` (undecided) / `decided` (agreed, not built) / `done` (shipped).
+- On "let's execute": read that feature's file, promote `decided` items into a concrete on-spec plan, confirm scope, build, then flip items to `done`. No scope drift beyond what's captured.
+
 ## Handoffs
 
 When using the `/handoff` skill, save the document to `./continue.md` in the project root.

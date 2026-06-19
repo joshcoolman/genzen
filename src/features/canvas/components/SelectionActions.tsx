@@ -79,13 +79,13 @@ export function SelectionActions({
       {/* Generate button -- single image selected */}
       {count === 1 && onGenerate && (
         <button
-          className={styles.iconBtn}
+          className={styles.generateBtn}
           onClick={onGenerate}
           title="Generate from image"
         >
           <svg
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -95,6 +95,7 @@ export function SelectionActions({
           >
             <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
           </svg>
+          <span>Generate</span>
         </button>
       )}
 

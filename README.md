@@ -15,14 +15,14 @@ Full feature catalog (each module with its own `CLAUDE.md`): see the table in [`
 
 ## Stack
 
-| Layer        | Tech                                                                            |
-| ------------ | ------------------------------------------------------------------------------- |
-| App          | TanStack Start (React 19 + Vite + Nitro SSR)                                    |
-| UI           | Tailwind v4 (CSS config in `src/styles.css`) + shadcn/ui                        |
-| Data / auth  | Supabase (Postgres + RLS)                                                       |
-| Storage      | Cloudflare R2 (persistent public URLs)                                          |
+| Layer        | Tech                                                                    |
+| ------------ | ----------------------------------------------------------------------- |
+| App          | TanStack Start (React 19 + Vite + Nitro SSR)                            |
+| UI           | Tailwind v4 (CSS config in `src/styles.css`) + shadcn/ui                |
+| Data / auth  | Supabase (Postgres + RLS)                                               |
+| Storage      | Cloudflare R2 (persistent public URLs)                                  |
 | AI providers | FAL (image), Anthropic, Google Gemini / Imagen, OpenAI, OpenRouter, xAI |
-| Hosting      | Vercel (auto-deploy from `main`)                                                |
+| Hosting      | Vercel (auto-deploy from `main`)                                        |
 
 ## Repo Map
 

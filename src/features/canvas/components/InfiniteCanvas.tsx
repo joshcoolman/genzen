@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
+import { toast } from '@/components/ui/toast'
 import {
   fetchDeadRecordIds,
   fetchOnCanvasRecords,
@@ -7,6 +8,7 @@ import {
   getSignedUrl,
   getUrlDimensions,
   loadPersistedState,
+  moveToTrash,
   resolveSignedUrls,
   savePersistedState,
   setOnCanvas,
@@ -1122,14 +1124,13 @@ export function InfiniteCanvas({
       if (sRef.current.size === 0) return
       pushUndo()
       const sel = sRef.current
+      const removedCount = sel.size
+      const removedRecordIds = iRef.current
+        .filter((img) => sel.has(img.id) && img.recordId)
+        .map((img) => img.recordId)
       // Eagerly clear membership for removed images so reconciliation on the next
       // load won't resurrect them (removal is canvas-only; the row is not deleted).
-      void setOnCanvas(
-        iRef.current
-          .filter((img) => sel.has(img.id) && img.recordId)
-          .map((img) => img.recordId),
-        false,
-      )
+      void setOnCanvas(removedRecordIds, false)
       setImages((prev) => prev.filter((img) => !sel.has(img.id)))
       // Clean up groups: remove deleted images, dissolve groups with <2 members
       setGroups((prev) =>
@@ -1142,6 +1143,26 @@ export function InfiniteCanvas({
       )
       setSelected(new Set())
       sRef.current = new Set()
+
+      // Removal is canvas-only (row stays in the library). Offer Undo, and an
+      // escalation to actually trash the underlying images.
+      toast(
+        removedCount === 1
+          ? 'Removed from canvas'
+          : `Removed ${removedCount} from canvas`,
+        {
+          duration: 6000,
+          action: { label: 'Undo', onClick: () => undo() },
+          cancel: {
+            label: 'Move to Trash',
+            onClick: () => {
+              void moveToTrash(removedRecordIds)
+                .then(() => toast.success('Moved to Trash'))
+                .catch(() => toast.error('Failed to move to Trash'))
+            },
+          },
+        },
+      )
     })
 
     hotkeys('command+a', (e) => {

@@ -194,6 +194,22 @@ export async function setOnCanvas(recordIds: Array<string>, value: boolean) {
   }
 }
 
+/**
+ * Soft-delete (move to Trash) the given user_images rows by setting `deleted_at`.
+ * Callers must already have removed the images from the canvas (`on_canvas = false`)
+ * so Trash's linked-image protection doesn't apply. Only affects rows not already
+ * trashed. Returns the ids that were trashed (for optimistic UI / undo messaging).
+ */
+export async function moveToTrash(recordIds: Array<string>): Promise<void> {
+  const ids = recordIds.filter(Boolean)
+  if (ids.length === 0) return
+  await supabase
+    .from('user_images')
+    .update({ deleted_at: new Date().toISOString() })
+    .in('id', ids)
+    .is('deleted_at', null)
+}
+
 export interface CanvasDbRecord {
   id: string
   storage_path: string | null
