@@ -2,7 +2,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock4,
-  Film,
   Image as ImageIcon,
   Loader2,
 } from 'lucide-react'
@@ -56,6 +55,7 @@ function StatusIndicator({ status }: { status: ActivityEntry['status'] }) {
 function formatCents(cents: number | null): string {
   if (cents == null) return '—'
   const dollars = cents / 100
+  if (dollars === 0) return '$0.00'
   if (dollars < 0.01) return `$${dollars.toFixed(4)}`
   if (dollars < 1) return `$${dollars.toFixed(3)}`
   return `$${dollars.toFixed(2)}`
@@ -68,7 +68,6 @@ export function ActivityRow({
 }: ActivityRowProps) {
   const duration =
     entry.durationMs != null ? formatDurationMs(entry.durationMs) : '—'
-  const KindIcon = entry.kind === 'video' ? Film : ImageIcon
 
   return (
     <button
@@ -91,12 +90,7 @@ export function ActivityRow({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-muted/50">
-            <KindIcon className="h-4 w-4 text-muted-foreground" />
-          </div>
-        )}
-        {entry.kind === 'video' && thumbnailUrl && (
-          <div className="absolute bottom-0.5 right-0.5 rounded bg-background/80 px-1 py-0.5">
-            <Film className="h-2.5 w-2.5 text-foreground" />
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
           </div>
         )}
       </div>

@@ -2,8 +2,8 @@ Chronological record of every AI generation (image, success + failure, including
 
 ## Key Files
 
-- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `GenerationKind`, `TOTALS_ROW_CAP` (5000)
-- `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses, dateFrom, dateTo). Runs page + totals queries in parallel. Derives user cost from `generation_metadata.generation_type` × `CREDIT_COSTS` × `DOLLARS_PER_CREDIT`. Provider cost from `generation_metadata.provider_cost_cents`.
+- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
+- `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses, dateFrom, dateTo). Runs page + totals queries in parallel. Derives user cost from `generation_metadata.generation_type` × `CREDIT_COSTS` × `DOLLARS_PER_CREDIT`; failed runs are forced to `$0` (never charged). Provider cost from `generation_metadata.provider_cost_cents`.
 - `server/get-activity-entry.server.ts` -- fetches a single `user_images` row by ID. Returns `ActivityEntryDetail` with full file metadata, reference images (resolved from `generation_metadata.reference_image_ids`), and raw JSON-stringified metadata.
 - `hooks/use-activity-page.ts` -- page state: filters, pagination, totals, `getThumbUrl`. Resets page on filter change. Subscribes to Supabase realtime channel for live updates (400ms debounce). Polls `checkPendingGenerations` every 5s while pending/processing rows exist.
 - `components/ActivityPage.tsx` -- full page: header + totals + filters + list + pagination + detail panel. Arrow keys (left/right) cycle selected entry while detail panel is open.

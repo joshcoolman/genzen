@@ -73,9 +73,9 @@ export function ActivityFilters({
   hasActiveFilters,
 }: ActivityFiltersProps) {
   const modelOptions = useMemo(() => {
-    const out: Array<{ id: string; label: string; kind: 'image' }> = []
+    const out: Array<{ id: string; label: string }> = []
     for (const m of ALL_IMAGE_MODELS) {
-      out.push({ id: m.id, label: m.name, kind: 'image' })
+      out.push({ id: m.id, label: m.name })
     }
     return out
   }, [])
@@ -152,9 +152,6 @@ export function ActivityFilters({
                     onCheckedChange={() => toggleModel(m.id)}
                   />
                   <span className="flex-1 truncate">{m.label}</span>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {m.kind}
-                  </span>
                 </label>
               )
             })}

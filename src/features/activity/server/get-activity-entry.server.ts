@@ -53,7 +53,12 @@ function computeDurationMs(m: ActivityGenerationMetadata): number | null {
   return Number.isFinite(delta) && delta >= 0 ? delta : null
 }
 
-function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
+function computeUserCostCents(
+  m: ActivityGenerationMetadata,
+  status: GenerationStatus,
+): number | null {
+  // Failed runs are never charged — show a real $0.00, not the would-be cost.
+  if (status === 'failed') return 0
   return m.generation_type
     ? computeGenerationCostCents(m.generation_type)
     : null
@@ -119,7 +124,6 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
 
     const r = row as DetailRow
     const m = meta(r)
-    const kind: ActivityEntryDetail['kind'] = 'image'
 
     const refIds = Array.isArray(
       (m as { reference_image_ids?: unknown }).reference_image_ids,
@@ -164,7 +168,6 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
 
     return {
       id: r.id,
-      kind,
       thumbnailPath: resolveThumbnailPath(r),
       prompt: m.prompt ?? '',
       model: m.model ?? null,
@@ -176,7 +179,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
       completedAt: m.completed_at ?? null,
       failedAt: m.failed_at ?? null,
       durationMs: computeDurationMs(m),
-      userCostCents: computeUserCostCents(m),
+      userCostCents: computeUserCostCents(m, r.status),
       providerCostCents: m.provider_cost_cents ?? null,
       isDeleted: r.deleted_at != null,
       errorMessage: extractErrorMessage(m, r.generation_error),
