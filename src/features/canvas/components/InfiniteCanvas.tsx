@@ -9,6 +9,7 @@ import {
   loadPersistedState,
   moveToTrash,
   resolveSignedUrls,
+  restoreFromTrash,
   savePersistedState,
   setOnCanvas,
   syncCanvasFlags,
@@ -1459,6 +1460,54 @@ export function InfiniteCanvas({
             }}
           >
             Generate
+          </button>
+          <button
+            className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`}
+            onClick={() => {
+              const img = images.find((i) => i.id === contextMenu.imageId)
+              setContextMenu(null)
+              if (!img) return
+              pushUndo()
+              // Remove from canvas first (on_canvas=false) so Trash's
+              // linked-image protection doesn't block the soft-delete.
+              setImages((prev) => prev.filter((i) => i.id !== img.id))
+              setGroups((prev) =>
+                prev
+                  .map((g) => ({
+                    ...g,
+                    imageIds: g.imageIds.filter((id) => id !== img.id),
+                  }))
+                  .filter((g) => g.imageIds.length >= 2),
+              )
+              setSelected((prev) => {
+                const next = new Set(prev)
+                next.delete(img.id)
+                sRef.current = next
+                return next
+              })
+              if (!img.recordId) return
+              void setOnCanvas([img.recordId], false)
+              void moveToTrash([img.recordId])
+                .then(() =>
+                  toast.success('Moved to Trash', {
+                    duration: 6000,
+                    action: {
+                      label: 'Undo',
+                      onClick: () => {
+                        setImages((prev) =>
+                          prev.some((i) => i.id === img.id)
+                            ? prev
+                            : [...prev, img],
+                        )
+                        void restoreFromTrash([img.recordId])
+                      },
+                    },
+                  }),
+                )
+                .catch(() => toast.error('Failed to move to Trash'))
+            }}
+          >
+            Move to Trash
           </button>
         </div>
       )}

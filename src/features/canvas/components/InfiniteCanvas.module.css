@@ -198,6 +198,15 @@
   background: #2a2a2a;
 }
 
+.contextMenuItemDanger {
+  color: #e06c6c;
+}
+
+.contextMenuItemDanger:hover {
+  color: #fff;
+  background: #5c2222;
+}
+
 /* Drop error notice */
 .dropNotice {
   position: fixed;

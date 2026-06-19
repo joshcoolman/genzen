@@ -210,6 +210,21 @@ export async function moveToTrash(recordIds: Array<string>): Promise<void> {
     .is('deleted_at', null)
 }
 
+/**
+ * Undo a `moveToTrash`: clear `deleted_at` and re-mark the rows on-canvas.
+ * Pairs with the "Move to Trash" Undo action so a deliberate trash is reversible.
+ */
+export async function restoreFromTrash(
+  recordIds: Array<string>,
+): Promise<void> {
+  const ids = recordIds.filter(Boolean)
+  if (ids.length === 0) return
+  await supabase
+    .from('user_images')
+    .update({ deleted_at: null, on_canvas: true })
+    .in('id', ids)
+}
+
 export interface CanvasDbRecord {
   id: string
   storage_path: string | null
