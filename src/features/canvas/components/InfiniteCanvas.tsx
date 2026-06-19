@@ -17,6 +17,7 @@ import {
 import { layoutMasonry } from '../lib/masonry'
 import { useCanvasGenerate } from '../hooks/use-canvas-generate'
 import { useCanvasCombine } from '../hooks/use-canvas-combine'
+import { CANVAS_GROUP_MAX_REFS } from '../canvas-models'
 import { SelectionActions } from './SelectionActions'
 import { CanvasGenerateDialog } from './CanvasGenerateDialog'
 import { CanvasCombineDialog } from './CanvasCombineDialog'
@@ -1338,14 +1339,23 @@ export function InfiniteCanvas({
           />
         )}
 
-        {/* On-image Generate: appears when exactly one (non-pending) image is
-            selected, anchored below it. Opens the Generate dialog. */}
-        {selected.size === 1 &&
+        {/* Generate affordance: appears below the selection when 1..GROUP_MAX
+            non-pending images are selected. One image -> single Generate dialog;
+            a group -> the multi-image Generate dialog (all images as references).
+            More than GROUP_MAX selected -> no pill (no model can hold the group). */}
+        {selected.size >= 1 &&
+          selected.size <= CANVAS_GROUP_MAX_REFS &&
           selectionBounds &&
           !canvasGen.isOpen &&
+          !canvasCombine.isOpen &&
           (() => {
-            const only = images.find((img) => selected.has(img.id))
-            if (!only || only.pending) return null
+            const selectedImgs = images.filter((img) => selected.has(img.id))
+            if (
+              selectedImgs.length !== selected.size ||
+              selectedImgs.some((img) => img.pending)
+            )
+              return null
+            const isGroup = selectedImgs.length > 1
             return (
               <button
                 className={styles.onImageGenerate}
@@ -1362,9 +1372,14 @@ export function InfiniteCanvas({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
-                  void canvasGen.open(only)
+                  if (isGroup) void canvasCombine.open(selectedImgs)
+                  else void canvasGen.open(selectedImgs[0])
                 }}
-                title="Generate from image"
+                title={
+                  isGroup
+                    ? `Generate from ${selectedImgs.length} images`
+                    : 'Generate from image'
+                }
               >
                 <svg
                   width="15"
@@ -1420,16 +1435,6 @@ export function InfiniteCanvas({
           zoomPct={zoomPct}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
-          onCombine={
-            selected.size >= 2 && selected.size <= 4
-              ? () => {
-                  const selectedImages = images.filter((img) =>
-                    selected.has(img.id),
-                  )
-                  void canvasCombine.open(selectedImages)
-                }
-              : undefined
-          }
         />
 
         <input

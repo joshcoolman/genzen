@@ -1,4 +1,3 @@
-import { COMBINE_MODELS } from '../hooks/use-canvas-combine'
 import type { useCanvasCombine } from '../hooks/use-canvas-combine'
 import {
   Dialog,
@@ -31,7 +30,7 @@ export function CanvasCombineDialog({
       >
         <DialogHeader>
           <DialogTitle className="text-sm font-medium text-zinc-300">
-            Combine Images
+            Generate from {cc.sourceImages.length} Images
           </DialogTitle>
         </DialogHeader>
 
@@ -49,11 +48,14 @@ export function CanvasCombineDialog({
                     />
                   )}
                 </div>
+                <span className="text-[10px] leading-none text-muted-foreground">
+                  Image {i + 1}
+                </span>
                 <input
                   type="text"
                   value={cc.labels[img.id] ?? ''}
                   onChange={(e) => cc.setLabel(img.id, e.target.value)}
-                  placeholder="label..."
+                  placeholder="rename…"
                   className="w-full rounded border border-input bg-transparent px-1.5 py-0.5 text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
               </div>
@@ -78,23 +80,36 @@ export function CanvasCombineDialog({
             className="text-xs"
           />
 
-          {/* Model toggles */}
-          <div className="flex gap-2">
-            {COMBINE_MODELS.map((model) => {
+          {/* Model toggles -- disabled when the group exceeds the model's cap */}
+          <div className="grid grid-cols-2 gap-2">
+            {cc.availableModels.map((model) => {
               const active = cc.selectedModels.includes(model.id)
+              const disabled = cc.isGenerating || !model.enabled
               return (
                 <button
                   key={model.id}
                   type="button"
-                  onClick={() => cc.toggleModel(model.id)}
-                  disabled={cc.isGenerating}
-                  className={`flex-1 rounded-md border px-3 py-1.5 text-xs transition-colors disabled:opacity-50 ${
-                    active
-                      ? 'border-foreground bg-foreground text-background'
-                      : 'border-input text-muted-foreground hover:border-foreground hover:text-foreground'
-                  }`}
+                  onClick={() => model.enabled && cc.toggleModel(model.id)}
+                  disabled={disabled}
+                  title={
+                    model.enabled
+                      ? undefined
+                      : `Supports up to ${model.maxRefImages} images`
+                  }
+                  className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                    !model.enabled
+                      ? 'cursor-not-allowed border-input/40 text-muted-foreground/40'
+                      : active
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-input text-muted-foreground hover:border-foreground hover:text-foreground'
+                  } ${cc.isGenerating && model.enabled ? 'opacity-50' : ''}`}
                 >
                   {model.name}
+                  {!model.enabled && (
+                    <span className="ml-1 text-[10px] opacity-70">
+                      ≤{model.maxRefImages}
+                    </span>
+                  )}
                 </button>
               )
             })}

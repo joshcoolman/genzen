@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
+import { CANVAS_EDIT_MODELS } from '../canvas-models'
 import type { CanvasImage } from '../types'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useAuth } from '@/lib/auth'
@@ -7,11 +8,6 @@ import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { CREDIT_COSTS } from '@/features/credits'
-
-export const COMBINE_MODELS = [
-  { id: 'fal-ai/flux-2-pro/edit', name: 'FLUX 2 Pro' },
-  { id: 'fal-ai/nano-banana-2/edit', name: 'Nano Banana 2' },
-]
 
 function getBounds(imgs: Array<CanvasImage>) {
   let x0 = Infinity,
@@ -52,8 +48,20 @@ export function useCanvasCombine(
   )
   const [runsCount, setRunsCount] = useState(1)
   const [selectedModels, setSelectedModels] = useState<Array<string>>([
-    'fal-ai/flux-2-pro/edit',
+    CANVAS_EDIT_MODELS[0]?.id ?? '',
   ])
+
+  // Each canvas edit model + whether it can handle the current selection size.
+  // A model is disabled when the group has more images than its reference cap.
+  const availableModels = useMemo(
+    () =>
+      CANVAS_EDIT_MODELS.map((m) => ({
+        ...m,
+        enabled:
+          sourceImages.length === 0 || m.maxRefImages >= sourceImages.length,
+      })),
+    [sourceImages.length],
+  )
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pendingPlaceholdersRef = useRef<Array<string>>([])
@@ -214,17 +222,14 @@ export function useCanvasCombine(
 
     const referenceImageIds = sourceImages.map((img) => img.recordId)
 
-    // Build prompt with labels prepended if any are set
-    const labeledParts = sourceImages
-      .map((img, i) => {
-        const label = labels[img.id]?.trim()
-        return label ? `Image ${i + 1}: ${label}` : null
-      })
-      .filter(Boolean)
-    const finalPrompt =
-      labeledParts.length > 0
-        ? `[${labeledParts.join(', ')}]\n\n${prompt.trim()}`
-        : prompt.trim()
+    // Every image gets a default identity ("Image N") so the model can always
+    // be told which is which and the user can reference them by number without
+    // labeling anything. A custom label augments the number ("Image N: trees").
+    const labeledParts = sourceImages.map((img, i) => {
+      const label = labels[img.id]?.trim()
+      return label ? `Image ${i + 1}: ${label}` : `Image ${i + 1}`
+    })
+    const finalPrompt = `[${labeledParts.join(', ')}]\n\n${prompt.trim()}`
 
     const totalRuns = selectedModels.length * runsCount
     const cost = CREDIT_COSTS.variation * totalRuns
@@ -349,6 +354,19 @@ export function useCanvasCombine(
     setLabels({})
     setPrompt('')
     setError(null)
+    // Keep any currently-selected models that still fit this group; otherwise
+    // default to the first model whose reference cap can hold the selection.
+    const enabledIds = new Set(
+      CANVAS_EDIT_MODELS.filter((m) => m.maxRefImages >= images.length).map(
+        (m) => m.id,
+      ),
+    )
+    setSelectedModels((prev) => {
+      const kept = prev.filter((id) => enabledIds.has(id))
+      if (kept.length > 0) return kept
+      const firstEnabled = CANVAS_EDIT_MODELS.find((m) => enabledIds.has(m.id))
+      return firstEnabled ? [firstEnabled.id] : []
+    })
     setIsOpen(true)
   }, [])
 
@@ -372,6 +390,7 @@ export function useCanvasCombine(
     runsCount,
     adjustRuns,
     selectedModels,
+    availableModels,
     toggleModel,
     credits,
     error,
