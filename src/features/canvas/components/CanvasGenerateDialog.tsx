@@ -44,6 +44,9 @@ export function CanvasGenerateDialog({ canvasGen }: CanvasGenerateDialogProps) {
           modelSelector={canvasGen.modelSelector}
           credits={canvasGen.credits}
           userImages={canvasGen.userImages}
+          hideSourceButtons
+          hidePastePrompts
+          hideGeneratePrompts
         />
       </DialogContent>
     </Dialog>
