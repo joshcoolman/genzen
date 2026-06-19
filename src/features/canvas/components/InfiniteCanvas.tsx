@@ -132,6 +132,10 @@ export function InfiniteCanvas({
   const sRef = useRef(selected)
   const gRef = useRef(groups)
   const spaceRef = useRef(false)
+  // Right-button drag pans the canvas. Track it so a right-drag suppresses the
+  // context menu while a plain right-click still opens it.
+  const rightPanRef = useRef(false)
+  const suppressContextRef = useRef(false)
   const pasteTargetRef = useRef<{ x: number; y: number } | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<{
@@ -1009,6 +1013,20 @@ export function InfiniteCanvas({
   /* -- Pointer events -- */
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // Right button: pan the canvas (drag) -- a plain right-click (no drag)
+    // falls through to the context menu via onContextMenu.
+    if (e.button === 2) {
+      rightPanRef.current = true
+      suppressContextRef.current = false
+      dragRef.current = {
+        mode: 'pan',
+        sx: e.clientX,
+        sy: e.clientY,
+        moved: false,
+      }
+      containerRef.current?.setPointerCapture(e.pointerId)
+      return
+    }
     if (e.button !== 0) return
 
     // Check for group background click
@@ -1144,6 +1162,12 @@ export function InfiniteCanvas({
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
       const d = dragRef.current
+      // A right-drag that actually moved = a pan; swallow the context menu that
+      // fires right after. A right-click that didn't move still opens the menu.
+      if (rightPanRef.current) {
+        suppressContextRef.current = d.moved
+        rightPanRef.current = false
+      }
       if (d.mode === 'marquee' && d.moved) {
         const c1 = screenToCanvas(d.sx, d.sy)
         const c2 = screenToCanvas(e.clientX, e.clientY)
@@ -1359,6 +1383,11 @@ export function InfiniteCanvas({
         onDrop={onDrop}
         onContextMenu={(e) => {
           e.preventDefault()
+          // A right-drag pan just ended -- don't pop the menu.
+          if (suppressContextRef.current) {
+            suppressContextRef.current = false
+            return
+          }
           const target = (e.target as HTMLElement).closest('[data-image-id]')
           const imageId = target?.getAttribute('data-image-id')
           if (imageId) {
