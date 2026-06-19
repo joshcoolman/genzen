@@ -50,7 +50,12 @@ function computeDurationMs(m: ActivityGenerationMetadata): number | null {
   return Number.isFinite(delta) && delta >= 0 ? delta : null
 }
 
-function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
+function computeUserCostCents(
+  m: ActivityGenerationMetadata,
+  status: GenerationStatus,
+): number | null {
+  // Failed runs are never charged — show a real $0.00, not the would-be cost.
+  if (status === 'failed') return 0
   return m.generation_type
     ? computeGenerationCostCents(m.generation_type)
     : null
@@ -81,10 +86,8 @@ function extractErrorMessage(m: ActivityGenerationMetadata): string | null {
 
 function parseEntry(row: Row): ActivityEntry {
   const m = meta(row)
-  const kind: ActivityEntry['kind'] = 'image'
   return {
     id: row.id,
-    kind,
     thumbnailPath: resolveThumbnailPath(row),
     prompt: m.prompt ?? '',
     model: m.model ?? null,
@@ -96,7 +99,7 @@ function parseEntry(row: Row): ActivityEntry {
     completedAt: m.completed_at ?? null,
     failedAt: m.failed_at ?? null,
     durationMs: computeDurationMs(m),
-    userCostCents: computeUserCostCents(m),
+    userCostCents: computeUserCostCents(m, row.status),
     providerCostCents: m.provider_cost_cents ?? null,
     isDeleted: row.deleted_at != null,
     errorMessage: extractErrorMessage(m),
@@ -192,7 +195,7 @@ export const listActivity = createServerFn({ method: 'GET' })
       const m = meta(r)
       const dur = computeDurationMs(m)
       if (dur != null) totalDurationMs += dur
-      const user$ = computeUserCostCents(m)
+      const user$ = computeUserCostCents(m, r.status)
       if (user$ != null) totalUserCostCents += user$
       if (m.provider_cost_cents != null) {
         totalProviderCostCents += m.provider_cost_cents

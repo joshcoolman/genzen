@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, Film, Image as ImageIcon } from 'lucide-react'
+import { ArrowRight, Image as ImageIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry } from '../types'
@@ -83,7 +83,6 @@ export function ActivityPreview() {
         <ul className="divide-y divide-border">
           {entries.map((entry) => {
             const thumb = getThumbUrl(entry.thumbnailPath)
-            const KindIcon = entry.kind === 'video' ? Film : ImageIcon
             return (
               <li
                 key={entry.id}
@@ -103,7 +102,7 @@ export function ActivityPreview() {
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                      <KindIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
                     </div>
                   )}
                 </div>

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock4,
   Copy,
-  Film,
   Image as ImageIcon,
   Loader2,
 } from 'lucide-react'
@@ -68,6 +67,7 @@ function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
 function formatCents(cents: number | null): string {
   if (cents == null) return '—'
   const dollars = cents / 100
+  if (dollars === 0) return '$0.00'
   if (dollars < 0.01) return `$${dollars.toFixed(4)}`
   if (dollars < 1) return `$${dollars.toFixed(3)}`
   return `$${dollars.toFixed(2)}`
@@ -248,7 +248,6 @@ export function ActivityDetailPanel({
   }, [entryId, accessToken])
 
   const thumbUrl = detail ? getThumbUrl(detail.thumbnailPath) : null
-  const KindIcon = detail?.kind === 'video' ? Film : ImageIcon
 
   return (
     <>
@@ -278,7 +277,7 @@ export function ActivityDetailPanel({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                      <KindIcon className="h-5 w-5 text-muted-foreground" />
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -338,7 +337,6 @@ export function ActivityDetailPanel({
                 )}
 
                 <Section title="Details">
-                  <DetailRow label="Kind">{detail.kind}</DetailRow>
                   {detail.provider && (
                     <DetailRow label="Provider">{detail.provider}</DetailRow>
                   )}

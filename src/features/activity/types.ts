@@ -1,7 +1,5 @@
 export type GenerationStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
-export type GenerationKind = 'image' | 'video'
-
 export interface ActivityGenerationMetadata {
   prompt?: string
   model?: string
@@ -19,7 +17,6 @@ export interface ActivityGenerationMetadata {
 
 export interface ActivityEntry {
   id: string
-  kind: GenerationKind
   thumbnailPath: string | null
   prompt: string
   model: string | null
