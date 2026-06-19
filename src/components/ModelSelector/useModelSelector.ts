@@ -6,10 +6,25 @@ import { useEnabledModels } from '@/lib/use-enabled-models'
 interface UseModelSelectorOptions {
   capability: ModelCapability
   mode: SelectionMode
+  /**
+   * Optional curated allowlist of model ids. When provided, only these models
+   * are surfaced (preserving the given order) and the default selection is the
+   * first allowed model. Used by Canvas to restrict to image-input models.
+   */
+  allowedIds?: Array<string>
+  /**
+   * Optional storage namespace so callers sharing a `capability` (e.g. Canvas
+   * and AI Images both use 'generate') keep independent persisted selections.
+   */
+  storageScope?: string
 }
 
-function storageKey(capability: ModelCapability, suffix: string) {
-  return `genzen:model-selector:${capability}:${suffix}`
+function storageKey(
+  capability: ModelCapability,
+  suffix: string,
+  scope?: string,
+) {
+  return `genzen:model-selector:${capability}${scope ? `:${scope}` : ''}:${suffix}`
 }
 
 function readStorage<T>(key: string, fallback: T, validate?: (v: T) => T): T {
@@ -27,25 +42,36 @@ function readStorage<T>(key: string, fallback: T, validate?: (v: T) => T): T {
 export function useModelSelector({
   capability,
   mode,
+  allowedIds,
+  storageScope,
 }: UseModelSelectorOptions) {
   const { isModelEnabled } = useEnabledModels()
-  const allModels = useMemo(
-    () => getModelsByCapability(capability),
-    [capability],
-  )
+  const allModels = useMemo(() => {
+    const base = getModelsByCapability(capability)
+    if (!allowedIds) return base
+    // Restrict to the curated allowlist, preserving allowlist order.
+    return allowedIds
+      .map((id) => base.find((m) => m.id === id))
+      .filter((m): m is (typeof base)[number] => !!m)
+  }, [capability, allowedIds])
   const models = useMemo(
     () => allModels.filter((m) => isModelEnabled(m.id)),
     [allModels, isModelEnabled],
   )
   const modelIds = useMemo(() => models.map((m) => m.id), [models])
 
+  const defaultId =
+    allowedIds && allModels[0]
+      ? allModels[0].id
+      : getDefaultSelectedId(capability)
+
   const [selectedIds, setSelectedIds] = useState<Array<string>>(() => {
     return readStorage(
-      storageKey(capability, 'selected'),
-      [getDefaultSelectedId(capability)],
+      storageKey(capability, 'selected', storageScope),
+      [defaultId],
       (ids: Array<string>) => {
         const valid = ids.filter((id) => modelIds.includes(id))
-        return valid.length > 0 ? valid : [getDefaultSelectedId(capability)]
+        return valid.length > 0 ? valid : [defaultId]
       },
     )
   })
@@ -57,18 +83,18 @@ export function useModelSelector({
   // Persist selected models
   useEffect(() => {
     localStorage.setItem(
-      storageKey(capability, 'selected'),
+      storageKey(capability, 'selected', storageScope),
       JSON.stringify(selectedIds),
     )
-  }, [capability, selectedIds])
+  }, [capability, storageScope, selectedIds])
 
   // Persist gens per model
   useEffect(() => {
     localStorage.setItem(
-      storageKey(capability, 'gens'),
+      storageKey(capability, 'gens', storageScope),
       JSON.stringify(gensPerModel),
     )
-  }, [capability, gensPerModel])
+  }, [capability, storageScope, gensPerModel])
 
   const toggleSelected = useCallback(
     (modelId: string) => {

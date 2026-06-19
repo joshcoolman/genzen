@@ -96,8 +96,8 @@ function PrivacyPage() {
             </h2>
             <p>
               Your data is stored in the United States using Supabase
-              (PostgreSQL database) and Cloudflare R2 (image files).
-              We use industry-standard security practices including encrypted
+              (PostgreSQL database) and Cloudflare R2 (image files). We use
+              industry-standard security practices including encrypted
               connections (TLS), hashed passwords, and access controls. No
               system is perfectly secure; we cannot guarantee absolute security
               of your data.
@@ -109,11 +109,10 @@ function PrivacyPage() {
               5. Data Retention
             </h2>
             <p>
-              Your generated images are retained until you delete them
-              or your account is closed. Soft-deleted items are held for 30 days
-              before permanent deletion. Account and billing records are
-              retained for legal and tax compliance purposes after account
-              closure.
+              Your generated images are retained until you delete them or your
+              account is closed. Soft-deleted items are held for 30 days before
+              permanent deletion. Account and billing records are retained for
+              legal and tax compliance purposes after account closure.
             </p>
           </section>
 

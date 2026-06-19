@@ -56,9 +56,7 @@ function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
     : null
 }
 
-function resolveThumbnailPath(
-  row: Pick<Row, 'storage_path'>,
-): string | null {
+function resolveThumbnailPath(row: Pick<Row, 'storage_path'>): string | null {
   return row.storage_path ?? null
 }
 

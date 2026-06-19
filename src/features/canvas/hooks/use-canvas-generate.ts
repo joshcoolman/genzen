@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
+import { CANVAS_MODEL_ALLOWED_IDS } from '../canvas-models'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
@@ -51,6 +52,8 @@ export function useCanvasGenerate(
   const modelSelector = useModelSelector({
     capability: 'generate',
     mode: 'multi',
+    allowedIds: CANVAS_MODEL_ALLOWED_IDS,
+    storageScope: 'canvas',
   })
 
   // Poll user_images until every tracked record resolves, swapping each

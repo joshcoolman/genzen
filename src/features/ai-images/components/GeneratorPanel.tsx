@@ -32,6 +32,14 @@ interface GeneratorPanelProps {
   modelDisplay?: 'panel' | 'dropdown'
   refImagesReadOnly?: boolean
   libraryFilterIds?: Set<string>
+  /**
+   * Canvas simplifications (default off = AI Images behavior unchanged). On
+   * canvas the input is the selected image, so the library/upload source
+   * buttons and the bulk-prompt controls are removed.
+   */
+  hideSourceButtons?: boolean
+  hidePastePrompts?: boolean
+  hideGeneratePrompts?: boolean
 }
 
 export function GeneratorPanel({
@@ -44,6 +52,9 @@ export function GeneratorPanel({
   modelDisplay = 'panel',
   refImagesReadOnly = false,
   libraryFilterIds,
+  hideSourceButtons = false,
+  hidePastePrompts = false,
+  hideGeneratePrompts = false,
 }: GeneratorPanelProps) {
   const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -67,31 +78,33 @@ export function GeneratorPanel({
 
       {/* Image source buttons + aspect ratio */}
       <div className="flex gap-2 items-center">
-        <ImageSourceButtons
-          onFileSelected={generator.setSourceFile}
-          showPaste={false}
-          multiple={isEdit}
-          library={{
-            images: filteredLibraryImages,
-            imageUrls: userImages.imageUrls,
-            isLoading: userImages.isLoading,
-            onSelect: (image) =>
-              generator.setSourceFromUrl(image.url, image.title),
-            onSelectMultiple:
-              isEdit && generator.setSourceFromUrls
-                ? (images) => generator.setSourceFromUrls?.(images)
-                : undefined,
-            onOpen: userImages.refresh,
-          }}
-          className="contents"
-        />
+        {!hideSourceButtons && (
+          <ImageSourceButtons
+            onFileSelected={generator.setSourceFile}
+            showPaste={false}
+            multiple={isEdit}
+            library={{
+              images: filteredLibraryImages,
+              imageUrls: userImages.imageUrls,
+              isLoading: userImages.isLoading,
+              onSelect: (image) =>
+                generator.setSourceFromUrl(image.url, image.title),
+              onSelectMultiple:
+                isEdit && generator.setSourceFromUrls
+                  ? (images) => generator.setSourceFromUrls?.(images)
+                  : undefined,
+              onOpen: userImages.refresh,
+            }}
+            className="contents"
+          />
+        )}
         <AspectRatioSelect
           orientation={generator.orientation}
           aspectRatio={generator.aspectRatio}
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
           disabled={generator.loading}
-          className={isEdit ? 'flex-1' : undefined}
+          className={isEdit || hideSourceButtons ? 'flex-1' : undefined}
         />
       </div>
 
@@ -120,9 +133,13 @@ export function GeneratorPanel({
                 : 'Describe your image...',
           additional: 'Additional prompt...',
         }}
-        generatePromptsConfig={generator.generatePromptsConfig ?? undefined}
+        generatePromptsConfig={
+          hideGeneratePrompts
+            ? undefined
+            : (generator.generatePromptsConfig ?? undefined)
+        }
         onClearPrompts={generator.clearPrompts}
-        onPastePrompts={generator.pastePrompts}
+        onPastePrompts={hidePastePrompts ? undefined : generator.pastePrompts}
         onEnhancePrompt={generator.handleEnhancePrompt}
         enhancingPromptIndex={generator.enhancingPromptIndex}
       />

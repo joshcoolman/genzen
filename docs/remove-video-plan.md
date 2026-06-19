@@ -19,6 +19,7 @@ Dedicated video tables (`video_workspaces`, `video_generations`, `multishot_sequ
 ## The one real decision
 
 Existing video **rows** in `user_images` (and their mp4s in R2) will become orphaned — no UI will surface them. Options:
+
 - **(A) Leave dormant** — zero risk, a few dead rows. Recommended; do nothing.
 - **(B) Purge** — `DELETE FROM user_images WHERE <is-video>` + R2 cleanup. Only if a clean DB matters to you. Reversible only from backup.
 
@@ -27,7 +28,7 @@ Default to (A) unless you say otherwise.
 ## Execution strategy: let the compiler be the checklist
 
 1. Do **Phase A** (delete whole units) first.
-2. Run `pnpm build`. TypeScript will now error on **every** dangling video import — that error list *is* Phase B's worklist. No need to hunt tendrils by hand; fix until the build is green.
+2. Run `pnpm build`. TypeScript will now error on **every** dangling video import — that error list _is_ Phase B's worklist. No need to hunt tendrils by hand; fix until the build is green.
 
 ## Phase A — Delete whole units (no surgery)
 
@@ -37,7 +38,7 @@ Default to (A) unless you say otherwise.
 - `src/routes/dashboard/video.index.tsx`
 - `src/routes/dashboard/video.edit.$videoId.tsx`
 - `server/api/video-proxy.get.ts`
-- `src/components/video-player-dialog.tsx` *(confirm no image path imports it — grep first)*
+- `src/components/video-player-dialog.tsx` _(confirm no image path imports it — grep first)_
 
 ## Phase B — Snip tendrils in shared files (compiler-guided)
 

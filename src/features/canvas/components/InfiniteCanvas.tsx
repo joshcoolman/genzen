@@ -7,7 +7,9 @@ import {
   getSignedUrl,
   getUrlDimensions,
   loadPersistedState,
+  moveToTrash,
   resolveSignedUrls,
+  restoreFromTrash,
   savePersistedState,
   setOnCanvas,
   syncCanvasFlags,
@@ -21,6 +23,7 @@ import { CanvasCombineDialog } from './CanvasCombineDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
+import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/auth'
 import { ExistingImagePicker, useExistingImages } from '@/features/user-images'
 import { computeFileHash } from '@/features/user-images/lib/file-hash'
@@ -1122,14 +1125,13 @@ export function InfiniteCanvas({
       if (sRef.current.size === 0) return
       pushUndo()
       const sel = sRef.current
+      const removedCount = sel.size
+      const removedRecordIds = iRef.current
+        .filter((img) => sel.has(img.id) && img.recordId)
+        .map((img) => img.recordId)
       // Eagerly clear membership for removed images so reconciliation on the next
       // load won't resurrect them (removal is canvas-only; the row is not deleted).
-      void setOnCanvas(
-        iRef.current
-          .filter((img) => sel.has(img.id) && img.recordId)
-          .map((img) => img.recordId),
-        false,
-      )
+      void setOnCanvas(removedRecordIds, false)
       setImages((prev) => prev.filter((img) => !sel.has(img.id)))
       // Clean up groups: remove deleted images, dissolve groups with <2 members
       setGroups((prev) =>
@@ -1142,6 +1144,26 @@ export function InfiniteCanvas({
       )
       setSelected(new Set())
       sRef.current = new Set()
+
+      // Removal is canvas-only (row stays in the library). Offer Undo, and an
+      // escalation to actually trash the underlying images.
+      toast(
+        removedCount === 1
+          ? 'Removed from canvas'
+          : `Removed ${removedCount} from canvas`,
+        {
+          duration: 6000,
+          action: { label: 'Undo', onClick: () => undo() },
+          cancel: {
+            label: 'Move to Trash',
+            onClick: () => {
+              void moveToTrash(removedRecordIds)
+                .then(() => toast.success('Moved to Trash'))
+                .catch(() => toast.error('Failed to move to Trash'))
+            },
+          },
+        },
+      )
     })
 
     hotkeys('command+a', (e) => {
@@ -1316,6 +1338,51 @@ export function InfiniteCanvas({
           />
         )}
 
+        {/* On-image Generate: appears when exactly one (non-pending) image is
+            selected, anchored below it. Opens the Generate dialog. */}
+        {selected.size === 1 &&
+          selectionBounds &&
+          !canvasGen.isOpen &&
+          (() => {
+            const only = images.find((img) => selected.has(img.id))
+            if (!only || only.pending) return null
+            return (
+              <button
+                className={styles.onImageGenerate}
+                style={{
+                  left:
+                    transform.x +
+                    (selectionBounds.x + selectionBounds.w / 2) *
+                      transform.scale,
+                  top:
+                    transform.y +
+                    (selectionBounds.y + selectionBounds.h) * transform.scale +
+                    10,
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void canvasGen.open(only)
+                }}
+                title="Generate from image"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
+                </svg>
+                <span>Generate</span>
+              </button>
+            )
+          })()}
+
         {marquee &&
           (() => {
             const rect = containerRef.current?.getBoundingClientRect()
@@ -1353,15 +1420,6 @@ export function InfiniteCanvas({
           zoomPct={zoomPct}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
-          onGenerate={
-            selected.size === 1
-              ? () => {
-                  const id = [...selected][0]
-                  const sourceImage = images.find((img) => img.id === id)
-                  if (sourceImage) canvasGen.open(sourceImage)
-                }
-              : undefined
-          }
           onCombine={
             selected.size >= 2 && selected.size <= 4
               ? () => {
@@ -1402,6 +1460,54 @@ export function InfiniteCanvas({
             }}
           >
             Generate
+          </button>
+          <button
+            className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`}
+            onClick={() => {
+              const img = images.find((i) => i.id === contextMenu.imageId)
+              setContextMenu(null)
+              if (!img) return
+              pushUndo()
+              // Remove from canvas first (on_canvas=false) so Trash's
+              // linked-image protection doesn't block the soft-delete.
+              setImages((prev) => prev.filter((i) => i.id !== img.id))
+              setGroups((prev) =>
+                prev
+                  .map((g) => ({
+                    ...g,
+                    imageIds: g.imageIds.filter((id) => id !== img.id),
+                  }))
+                  .filter((g) => g.imageIds.length >= 2),
+              )
+              setSelected((prev) => {
+                const next = new Set(prev)
+                next.delete(img.id)
+                sRef.current = next
+                return next
+              })
+              if (!img.recordId) return
+              void setOnCanvas([img.recordId], false)
+              void moveToTrash([img.recordId])
+                .then(() =>
+                  toast.success('Moved to Trash', {
+                    duration: 6000,
+                    action: {
+                      label: 'Undo',
+                      onClick: () => {
+                        setImages((prev) =>
+                          prev.some((i) => i.id === img.id)
+                            ? prev
+                            : [...prev, img],
+                        )
+                        void restoreFromTrash([img.recordId])
+                      },
+                    },
+                  }),
+                )
+                .catch(() => toast.error('Failed to move to Trash'))
+            }}
+          >
+            Move to Trash
           </button>
         </div>
       )}

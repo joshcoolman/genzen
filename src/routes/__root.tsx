@@ -9,6 +9,7 @@ import { Analytics } from '@vercel/analytics/react'
 import appCss from '../styles.css?url'
 import { AuthProvider } from '@/components/auth-provider'
 import { SpotlightNav } from '@/features/spotlight'
+import { Toaster } from '@/components/ui/toast'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -78,6 +79,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body suppressHydrationWarning>
         {children}
+        <Toaster />
         <Scripts />
         <Analytics />
       </body>
