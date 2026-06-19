@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
-import { toast } from '@/components/ui/toast'
 import {
   fetchDeadRecordIds,
   fetchOnCanvasRecords,
@@ -23,6 +22,7 @@ import { CanvasCombineDialog } from './CanvasCombineDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
+import { toast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/auth'
 import { ExistingImagePicker, useExistingImages } from '@/features/user-images'
 import { computeFileHash } from '@/features/user-images/lib/file-hash'

@@ -20,7 +20,9 @@ interface ToastOptions {
   variant?: ToastVariant
 }
 
-interface ToastItem extends Required<Pick<ToastOptions, 'duration' | 'variant'>> {
+interface ToastItem extends Required<
+  Pick<ToastOptions, 'duration' | 'variant'>
+> {
   id: number
   message: string
   action?: ToastAction
