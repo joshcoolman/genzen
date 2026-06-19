@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 
 const LIMITS = {
   image: { maxRequests: 20, windowSeconds: 60 },
-  video: { maxRequests: 5, windowSeconds: 60 },
 } as const
 
 type LimitType = keyof typeof LIMITS

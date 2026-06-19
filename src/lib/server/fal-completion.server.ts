@@ -113,51 +113,6 @@ export async function processImageResult(
   generateThumbnailInBackground(supabase, userId, storagePath, recordId)
 }
 
-export async function processVideoResult(
-  supabase: SupabaseClient,
-  recordId: string,
-  falResultData: Record<string, unknown>,
-) {
-  const videoUrl = (falResultData as { video?: { url?: string } }).video?.url
-  if (!videoUrl) {
-    throw new Error('No video URL in FAL result')
-  }
-
-  const { data: record } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('id', recordId)
-    .single()
-
-  const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
-  const falCostCents = extractFalCostCents(falResultData)
-  const estimatedCostCents =
-    typeof meta.estimated_cost_cents === 'number'
-      ? meta.estimated_cost_cents
-      : null
-  const providerCostCents = falCostCents ?? estimatedCostCents
-
-  const { error: updateError } = await supabase
-    .from('user_images')
-    .update({
-      status: 'completed',
-      title: 'Generated video',
-      generation_metadata: {
-        ...meta,
-        fal_url: videoUrl,
-        completed_at: new Date().toISOString(),
-        ...(providerCostCents != null && {
-          provider_cost_cents: providerCostCents,
-        }),
-      },
-    })
-    .eq('id', recordId)
-
-  if (updateError) {
-    throw new Error(`Update failed: ${updateError.message}`)
-  }
-}
-
 export async function markGenerationFailed(
   supabase: SupabaseClient,
   recordId: string,

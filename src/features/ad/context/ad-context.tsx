@@ -118,7 +118,6 @@ Do NOT use this tool for open-ended exploration or multiple questions. Ask exact
 const ROUTE_DESCRIPTIONS: Record<string, string> = {
   '/dashboard/ai-images':
     'The user is on the AI Images page -- multi-model image generation with prompt input, model selection, brainstorm, edit, and variation workflows.',
-  '/dashboard/video': 'The user is on the Video page.',
 }
 
 const SKILLS_INDEX = buildSkillsIndex()

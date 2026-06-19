@@ -9,7 +9,6 @@ import type {
 import { requireAuth } from '@/lib/server/auth.server'
 import { computeGenerationCostCents } from '@/features/credits/types'
 import { getModelName } from '@/features/ai-images/models'
-import { getVideoModelName } from '@/features/ai-video/video-models'
 
 interface GetActivityEntryInput {
   accessToken: string
@@ -61,19 +60,13 @@ function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
 }
 
 function resolveThumbnailPath(
-  row: Pick<DetailRow, 'source' | 'storage_path'>,
-  m: ActivityGenerationMetadata,
+  row: Pick<DetailRow, 'storage_path'>,
 ): string | null {
-  if (row.source === 'ai_video') return m.thumbnail_path ?? null
   return row.storage_path ?? null
 }
 
-function resolveModelName(
-  source: string,
-  modelId: string | null | undefined,
-): string {
+function resolveModelName(modelId: string | null | undefined): string {
   if (!modelId) return 'Unknown'
-  if (source === 'ai_video') return getVideoModelName(modelId)
   return getModelName(modelId)
 }
 
@@ -126,8 +119,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
 
     const r = row as DetailRow
     const m = meta(r)
-    const kind: ActivityEntryDetail['kind'] =
-      r.source === 'ai_video' ? 'video' : 'image'
+    const kind: ActivityEntryDetail['kind'] = 'image'
 
     const refIds = Array.isArray(
       (m as { reference_image_ids?: unknown }).reference_image_ids,
@@ -173,10 +165,10 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
     return {
       id: r.id,
       kind,
-      thumbnailPath: resolveThumbnailPath(r, m),
+      thumbnailPath: resolveThumbnailPath(r),
       prompt: m.prompt ?? '',
       model: m.model ?? null,
-      modelName: resolveModelName(r.source, m.model),
+      modelName: resolveModelName(m.model),
       provider: deriveProvider(m),
       status: r.status,
       createdAt: r.created_at,

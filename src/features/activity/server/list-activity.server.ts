@@ -10,7 +10,6 @@ import type {
 import { requireAuth } from '@/lib/server/auth.server'
 import { computeGenerationCostCents } from '@/features/credits/types'
 import { getModelName } from '@/features/ai-images/models'
-import { getVideoModelName } from '@/features/ai-video/video-models'
 
 interface ListActivityInput {
   accessToken: string
@@ -58,21 +57,13 @@ function computeUserCostCents(m: ActivityGenerationMetadata): number | null {
 }
 
 function resolveThumbnailPath(
-  row: Pick<Row, 'source' | 'storage_path'>,
-  m: ActivityGenerationMetadata,
+  row: Pick<Row, 'storage_path'>,
 ): string | null {
-  if (row.source === 'ai_video') {
-    return m.thumbnail_path ?? null
-  }
   return row.storage_path ?? null
 }
 
-function resolveModelName(
-  source: string,
-  modelId: string | null | undefined,
-): string {
+function resolveModelName(modelId: string | null | undefined): string {
   if (!modelId) return 'Unknown'
-  if (source === 'ai_video') return getVideoModelName(modelId)
   return getModelName(modelId)
 }
 
@@ -92,15 +83,14 @@ function extractErrorMessage(m: ActivityGenerationMetadata): string | null {
 
 function parseEntry(row: Row): ActivityEntry {
   const m = meta(row)
-  const kind: ActivityEntry['kind'] =
-    row.source === 'ai_video' ? 'video' : 'image'
+  const kind: ActivityEntry['kind'] = 'image'
   return {
     id: row.id,
     kind,
-    thumbnailPath: resolveThumbnailPath(row, m),
+    thumbnailPath: resolveThumbnailPath(row),
     prompt: m.prompt ?? '',
     model: m.model ?? null,
-    modelName: resolveModelName(row.source, m.model),
+    modelName: resolveModelName(m.model),
     provider: deriveProvider(m),
     status: row.status,
     createdAt: row.created_at,
@@ -140,9 +130,7 @@ export const listActivity = createServerFn({ method: 'GET' })
     >(
       q: TQuery,
     ): TQuery => {
-      let out = q
-        .eq('user_id', user.id)
-        .in('source', ['ai_generated', 'ai_video'])
+      let out = q.eq('user_id', user.id).eq('source', 'ai_generated')
       if (data.models && data.models.length > 0) {
         out = out.in('generation_metadata->>model', data.models)
       }

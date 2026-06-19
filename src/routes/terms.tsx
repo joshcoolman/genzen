@@ -42,7 +42,7 @@ function TermsPage() {
             </h2>
             <p>
               GenZen is an AI-assisted creative platform for generating,
-              editing, and organizing images and video using third-party AI
+              editing, and organizing images using third-party AI
               models provided by vendors including FAL AI, OpenAI, and Google.
               The Service is provided on a credit-based prepayment model.
             </p>
@@ -103,8 +103,8 @@ function TermsPage() {
               complies with those policies and with applicable law.
             </p>
             <p>
-              We do not claim ownership of your prompts or generated images and
-              video. We store your content to operate the Service and may use
+              We do not claim ownership of your prompts or generated images. We
+              store your content to operate the Service and may use
               anonymized, aggregated usage data (not your content) to improve
               the platform.
             </p>
@@ -169,7 +169,7 @@ function TermsPage() {
               10. Data Retention
             </h2>
             <p>
-              Generated images and video are stored in your library until you
+              Generated images are stored in your library until you
               delete them or your account is terminated. Soft-deleted items
               (moved to Trash) are retained for 30 days before permanent
               deletion. Generation history and cost records are retained for

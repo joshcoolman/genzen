@@ -10,7 +10,6 @@ import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
-  processVideoResult,
 } from '@/lib/server/fal-completion.server'
 import { extractFalError } from '@/lib/server/fal-error.server'
 
@@ -199,12 +198,7 @@ export default defineEventHandler(async (event) => {
   try {
     // FAL webhooks send status "OK" for success (not "COMPLETED" like the queue API)
     if ((status === 'OK' || status === 'COMPLETED') && payload) {
-      const isVideo = record.source === 'ai_video'
-      if (isVideo) {
-        await processVideoResult(supabase, record.id, payload)
-      } else {
-        await processImageResult(supabase, record.id, record.user_id, payload)
-      }
+      await processImageResult(supabase, record.id, record.user_id, payload)
       console.log(`[fal-webhook] Processed successfully: record=${record.id}`)
     } else if (status === 'FAILED' || status === 'ERROR') {
       // FAL surfaces failure detail inconsistently — sometimes as a top-level

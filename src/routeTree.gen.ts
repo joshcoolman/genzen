@@ -21,7 +21,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as DashboardVideoRouteImport } from './routes/dashboard/video'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
@@ -29,9 +28,7 @@ import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardActivityRouteImport } from './routes/dashboard/activity'
 import { Route as DashboardAccountRouteImport } from './routes/dashboard/account'
-import { Route as DashboardVideoIndexRouteImport } from './routes/dashboard/video.index'
 import { Route as DashboardEditImageIdRouteImport } from './routes/dashboard/edit.$imageId'
-import { Route as DashboardVideoEditVideoIdRouteImport } from './routes/dashboard/video.edit.$videoId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -93,11 +90,6 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => DocsRoute,
 } as any)
-const DashboardVideoRoute = DashboardVideoRouteImport.update({
-  id: '/video',
-  path: '/video',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardTrashRoute = DashboardTrashRouteImport.update({
   id: '/trash',
   path: '/trash',
@@ -133,22 +125,11 @@ const DashboardAccountRoute = DashboardAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardVideoIndexRoute = DashboardVideoIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardVideoRoute,
-} as any)
 const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
   id: '/edit/$imageId',
   path: '/edit/$imageId',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardVideoEditVideoIdRoute =
-  DashboardVideoEditVideoIdRouteImport.update({
-    id: '/edit/$videoId',
-    path: '/edit/$videoId',
-    getParentRoute: () => DashboardVideoRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -167,13 +148,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
-  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/video/': typeof DashboardVideoIndexRoute
-  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -194,8 +172,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/video': typeof DashboardVideoIndexRoute
-  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -215,13 +191,10 @@ export interface FileRoutesById {
   '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
-  '/dashboard/video': typeof DashboardVideoRouteWithChildren
   '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
-  '/dashboard/video/': typeof DashboardVideoIndexRoute
-  '/dashboard/video/edit/$videoId': typeof DashboardVideoEditVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -242,13 +215,10 @@ export interface FileRouteTypes {
     | '/dashboard/pending'
     | '/dashboard/settings'
     | '/dashboard/trash'
-    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/video/'
-    | '/dashboard/video/edit/$videoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -269,8 +239,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/docs'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/video'
-    | '/dashboard/video/edit/$videoId'
   id:
     | '__root__'
     | '/'
@@ -289,13 +257,10 @@ export interface FileRouteTypes {
     | '/dashboard/pending'
     | '/dashboard/settings'
     | '/dashboard/trash'
-    | '/dashboard/video'
     | '/docs/$'
     | '/dashboard/'
     | '/docs/'
     | '/dashboard/edit/$imageId'
-    | '/dashboard/video/'
-    | '/dashboard/video/edit/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -396,13 +361,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof DocsRoute
     }
-    '/dashboard/video': {
-      id: '/dashboard/video'
-      path: '/video'
-      fullPath: '/dashboard/video'
-      preLoaderRoute: typeof DashboardVideoRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/trash': {
       id: '/dashboard/trash'
       path: '/trash'
@@ -452,13 +410,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAccountRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/video/': {
-      id: '/dashboard/video/'
-      path: '/'
-      fullPath: '/dashboard/video/'
-      preLoaderRoute: typeof DashboardVideoIndexRouteImport
-      parentRoute: typeof DashboardVideoRoute
-    }
     '/dashboard/edit/$imageId': {
       id: '/dashboard/edit/$imageId'
       path: '/edit/$imageId'
@@ -466,29 +417,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEditImageIdRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/video/edit/$videoId': {
-      id: '/dashboard/video/edit/$videoId'
-      path: '/edit/$videoId'
-      fullPath: '/dashboard/video/edit/$videoId'
-      preLoaderRoute: typeof DashboardVideoEditVideoIdRouteImport
-      parentRoute: typeof DashboardVideoRoute
-    }
   }
 }
-
-interface DashboardVideoRouteChildren {
-  DashboardVideoIndexRoute: typeof DashboardVideoIndexRoute
-  DashboardVideoEditVideoIdRoute: typeof DashboardVideoEditVideoIdRoute
-}
-
-const DashboardVideoRouteChildren: DashboardVideoRouteChildren = {
-  DashboardVideoIndexRoute: DashboardVideoIndexRoute,
-  DashboardVideoEditVideoIdRoute: DashboardVideoEditVideoIdRoute,
-}
-
-const DashboardVideoRouteWithChildren = DashboardVideoRoute._addFileChildren(
-  DashboardVideoRouteChildren,
-)
 
 interface DashboardRouteChildren {
   DashboardAccountRoute: typeof DashboardAccountRoute
@@ -498,7 +428,6 @@ interface DashboardRouteChildren {
   DashboardPendingRoute: typeof DashboardPendingRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
-  DashboardVideoRoute: typeof DashboardVideoRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardEditImageIdRoute: typeof DashboardEditImageIdRoute
 }
@@ -511,7 +440,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardPendingRoute: DashboardPendingRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTrashRoute: DashboardTrashRoute,
-  DashboardVideoRoute: DashboardVideoRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardEditImageIdRoute: DashboardEditImageIdRoute,
 }

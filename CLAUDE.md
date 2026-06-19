@@ -21,7 +21,7 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude. Server-side AND browser-stored BYOK for the AD panel (`useAnthropicKey`); either path is available.
 - **Google Gemini / Imagen** (`GOOGLE_AI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`) — image gen + vision.
 - **OpenAI** (`OPENAI_API_KEY`), **OpenRouter** (`OPENROUTER_API_KEY`), **xAI** (`XAI_API_KEY`) — available via `src/lib/text-models.ts` model registry / `@ai-sdk/*` providers.
-- **FAL AI** (`FAL_KEY`) — image and video generation via `@fal-ai/client`.
+- **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Stripe** (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`) — credit pack payments via Stripe Checkout (hosted). Webhook at `server/api/stripe-webhook.post.ts`. Idempotency via `credit_transactions.stripe_event_id`.
 - **Supabase** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_*`) — auth, Postgres, RLS. Anon key client-side, service role server-side only.
 - **Cloudflare R2** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry).
@@ -34,13 +34,11 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 | activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
 | ad          | AI chat assistant sidebar with vision + tool calling           | `src/features/ad/CLAUDE.md`          |
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
-| ai-video    | Video generation (FLF + multishot) with parent/child grouping  | `src/features/ai-video/CLAUDE.md`    |
 | api-keys    | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`    |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
 | credits     | Credit checking, deduction, and UI                             | `src/features/credits/CLAUDE.md`     |
 | docs        | Internal docs route (password-gated)                           | `src/features/docs/CLAUDE.md`        |
 | mcp         | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`         |
-| multi-shot  | Residual multishot types + ShotCard for ai-video reuse         | `src/features/multi-shot/CLAUDE.md`  |
 | spotlight   | Spotlight search / command palette                             | `src/features/spotlight/CLAUDE.md`   |
 | status-bar  | Bottom status bar with AD (chat) toggle                        | `src/features/status-bar/CLAUDE.md`  |
 | trash       | Soft-deleted item recovery                                     | `src/features/trash/CLAUDE.md`       |

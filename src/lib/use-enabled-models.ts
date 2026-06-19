@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'
 
 const STORAGE_KEY = 'genzen:disabled-models'
@@ -19,7 +18,6 @@ function readDisabledSet(): Set<string> {
 export function isModelLocked(id: string): boolean {
   return (
     ALL_IMAGE_MODELS.some((m) => m.id === id && m.locked) ||
-    ALL_VIDEO_MODELS.some((m) => m.id === id && m.locked) ||
     ALL_TEXT_MODELS.some((m) => m.id === id && m.locked)
   )
 }
@@ -41,11 +39,6 @@ export function useEnabledModels() {
 
   const enabledImageModels = useMemo(
     () => ALL_IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
-    [disabledIds],
-  )
-
-  const enabledVideoModels = useMemo(
-    () => ALL_VIDEO_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
     [disabledIds],
   )
 
@@ -82,19 +75,16 @@ export function useEnabledModels() {
   )
 
   const enabledImageCount = enabledImageModels.length
-  const enabledVideoCount = enabledVideoModels.length
   const enabledTextCount = enabledTextModels.length
 
   return {
     enabledImageModels,
     enabledImageInputModels,
-    enabledVideoModels,
     enabledTextModels,
     isModelEnabled,
     toggleModel,
     resetToDefaults,
     enabledImageCount,
-    enabledVideoCount,
     enabledTextCount,
   }
 }

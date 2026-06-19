@@ -8,28 +8,12 @@ const FEATURED = [
     shine: 'from-white/20 to-transparent',
   },
   {
-    name: 'Kling 3.0 Pro',
-    category: 'Video',
-    badge: 'Pro',
-    blurb: 'Cinematic quality with native audio — best-in-class video',
-    gradient: 'from-fuchsia-600 via-purple-600 to-indigo-700',
-    shine: 'from-white/15 to-transparent',
-  },
-  {
     name: 'Nano Banana 2',
     category: 'Image',
     badge: 'Google',
     blurb: 'Reasoning-guided imagery with unmatched reference fidelity',
     gradient: 'from-emerald-400 via-teal-500 to-cyan-600',
     shine: 'from-white/20 to-transparent',
-  },
-  {
-    name: 'Seedance 2.0',
-    category: 'Video',
-    badge: 'New',
-    blurb: 'ByteDance cinematic i2v with native audio and FLF control',
-    gradient: 'from-orange-500 via-rose-500 to-pink-600',
-    shine: 'from-white/15 to-transparent',
   },
 ] as const
 

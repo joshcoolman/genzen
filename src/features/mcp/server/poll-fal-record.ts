@@ -3,7 +3,6 @@ import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
-  processVideoResult,
 } from '@/lib/server/fal-completion.server'
 import { extractFalError } from '@/lib/server/fal-error.server'
 
@@ -58,17 +57,7 @@ export async function pollFalRecord(recordId: string): Promise<boolean> {
       const result = (await fal.queue.result(falModelId, {
         requestId: record.request_id,
       })) as { data: Record<string, unknown> }
-      const isVideo = record.source === 'ai_video'
-      if (isVideo) {
-        await processVideoResult(supabase, record.id, result.data)
-      } else {
-        await processImageResult(
-          supabase,
-          record.id,
-          record.user_id,
-          result.data,
-        )
-      }
+      await processImageResult(supabase, record.id, record.user_id, result.data)
       return true
     }
 

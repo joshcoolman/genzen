@@ -1,18 +1,17 @@
 # GenZen
 
-A unified workspace for working with AI image and video models. Fan prompts across providers and compare side-by-side, run non-destructive edit / variation / outpaint / scene-composition flows that track parent→child genealogy, generate video (first-last-frame and multishot), iterate in a prompt studio, and ask an in-app AI assistant about your library. Includes an MCP server so Claude Code can drive a user's account from outside the UI.
+A unified workspace for working with AI image models. Fan prompts across providers and compare side-by-side, run non-destructive edit / variation / outpaint / scene-composition flows that track parent→child genealogy, iterate in a prompt studio, and ask an in-app AI assistant about your library. Includes an MCP server so Claude Code can drive a user's account from outside the UI.
 
 ## Highlights
 
 - **Multi-model image gen** — submit one prompt to multiple providers in parallel and compare results.
 - **Edit / variation / outpaint / scenes** — non-destructive workflows; every generation records its parent so you can branch and back-track.
-- **Video** — first-last-frame and multishot pipelines via FAL, with parent-child grouping for sequences.
 - **AD assistant** — in-app chat sidebar with vision, tool calling, and per-feature personas (each feature registers its own context).
 - **Prompt Studio + History** — author and test prompts; history keeps every generation including failures, with cost and timing.
 - **Credits & Activity log** — every generation is metered; the activity log surfaces a chronological per-generation cost/time view.
 - **MCP for Claude Code** — list models, check credits, list recent generations, upload, generate, and edit from a Claude Code session against your own account.
 
-Full feature catalog (22 modules, each with its own `CLAUDE.md`): see the table in [`CLAUDE.md`](./CLAUDE.md).
+Full feature catalog (each module with its own `CLAUDE.md`): see the table in [`CLAUDE.md`](./CLAUDE.md).
 
 ## Stack
 
@@ -22,7 +21,7 @@ Full feature catalog (22 modules, each with its own `CLAUDE.md`): see the table 
 | UI           | Tailwind v4 (CSS config in `src/styles.css`) + shadcn/ui                        |
 | Data / auth  | Supabase (Postgres + RLS)                                                       |
 | Storage      | Cloudflare R2 (persistent public URLs)                                          |
-| AI providers | FAL (image + video), Anthropic, Google Gemini / Imagen, OpenAI, OpenRouter, xAI |
+| AI providers | FAL (image), Anthropic, Google Gemini / Imagen, OpenAI, OpenRouter, xAI |
 | Hosting      | Vercel (auto-deploy from `main`)                                                |
 
 ## Repo Map

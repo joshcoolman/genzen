@@ -28,7 +28,6 @@ vi.mock('@/lib/server/supabase-admin.server', () => ({
 vi.mock('@/lib/server/fal-completion.server', () => ({
   markGenerationFailedWithBlob: vi.fn(),
   processImageResult: vi.fn(),
-  processVideoResult: vi.fn(),
 }))
 
 vi.mock('@/lib/server/fal-error.server', () => ({

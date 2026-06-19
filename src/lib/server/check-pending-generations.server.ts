@@ -5,7 +5,6 @@ import { getSupabaseAdmin } from './supabase-admin.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
-  processVideoResult,
 } from './fal-completion.server'
 import { extractFalError } from './fal-error.server'
 import { dispatchGoogleQueue } from './google-queue.server'
@@ -62,17 +61,12 @@ export const checkPendingGenerations = createServerFn({ method: 'POST' })
                 requestId: record.request_id,
               })) as { data: Record<string, unknown> }
 
-              const isVideo = record.source === 'ai_video'
-              if (isVideo) {
-                await processVideoResult(supabase, record.id, result.data)
-              } else {
-                await processImageResult(
-                  supabase,
-                  record.id,
-                  user.id,
-                  result.data,
-                )
-              }
+              await processImageResult(
+                supabase,
+                record.id,
+                user.id,
+                result.data,
+              )
               completed++
             } else {
               // Non-COMPLETED branch: either the row is still pending, or it's

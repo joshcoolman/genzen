@@ -3,10 +3,6 @@ import { useMemo } from 'react'
 import type { ActivityFilters as Filters, GenerationStatus } from '../types'
 import { ALL_IMAGE_MODELS, getModelName } from '@/features/ai-images/models'
 import {
-  ALL_VIDEO_MODELS,
-  getVideoModelName,
-} from '@/features/ai-video/video-models'
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -77,13 +73,9 @@ export function ActivityFilters({
   hasActiveFilters,
 }: ActivityFiltersProps) {
   const modelOptions = useMemo(() => {
-    const out: Array<{ id: string; label: string; kind: 'image' | 'video' }> =
-      []
+    const out: Array<{ id: string; label: string; kind: 'image' }> = []
     for (const m of ALL_IMAGE_MODELS) {
       out.push({ id: m.id, label: m.name, kind: 'image' })
-    }
-    for (const m of ALL_VIDEO_MODELS) {
-      out.push({ id: m.id, label: m.name, kind: 'video' })
     }
     return out
   }, [])
@@ -92,7 +84,7 @@ export function ActivityFilters({
     .map((id) => {
       const fromList = modelOptions.find((m) => m.id === id)
       if (fromList) return fromList.label
-      return getModelName(id) || getVideoModelName(id) || id
+      return getModelName(id) || id
     })
     .filter(Boolean)
 

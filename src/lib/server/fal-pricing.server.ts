@@ -1,6 +1,5 @@
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
-import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 
@@ -94,7 +93,6 @@ export async function warmFalPriceCache(): Promise<void> {
   const allIds = [
     ...ALL_IMAGE_MODELS.map((m) => m.id),
     ...EDIT_MODELS.map((m) => m.id),
-    ...ALL_VIDEO_MODELS.map((m) => m.id),
   ]
   await Promise.allSettled(allIds.map((id) => getFalModelPrice(id)))
 }

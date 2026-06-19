@@ -1,6 +1,5 @@
 import { Badge } from '@/components/ui/badge'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { ALL_VIDEO_MODELS } from '@/features/ai-video/video-models'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'
 
 interface ModelEntry {
@@ -57,12 +56,6 @@ export function ModelShowcase() {
     isNew: m.isNew,
   }))
 
-  const videoModels: Array<ModelEntry> = ALL_VIDEO_MODELS.map((m) => ({
-    name: m.name,
-    description: m.description,
-    isNew: m.isNew,
-  }))
-
   const textModels: Array<ModelEntry> = ALL_TEXT_MODELS.map((m) => ({
     name: m.name,
     description: m.description,
@@ -79,11 +72,6 @@ export function ModelShowcase() {
           title="Text to Image"
           count={imageModels.length}
           models={imageModels}
-        />
-        <ModelSection
-          title="Video"
-          count={videoModels.length}
-          models={videoModels}
         />
         <ModelSection
           title="Text"
