@@ -23,6 +23,15 @@ import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
 import { toast } from '@/components/ui/toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth'
 import { ExistingImagePicker, useExistingImages } from '@/features/user-images'
 import { computeFileHash } from '@/features/user-images/lib/file-hash'
@@ -102,6 +111,10 @@ export function InfiniteCanvas({
     y: number
     imageId: string
   } | null>(null)
+  // Pending delete awaiting the confirm modal's choice.
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    ids: Array<string>
+  } | null>(null)
   const dialogOpenRef = useRef(false)
 
   const { user, session } = useAuth()
@@ -119,6 +132,10 @@ export function InfiniteCanvas({
   const sRef = useRef(selected)
   const gRef = useRef(groups)
   const spaceRef = useRef(false)
+  // Right-button drag pans the canvas. Track it so a right-drag suppresses the
+  // context menu while a plain right-click still opens it.
+  const rightPanRef = useRef(false)
+  const suppressContextRef = useRef(false)
   const pasteTargetRef = useRef<{ x: number; y: number } | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<{
@@ -148,7 +165,45 @@ export function InfiniteCanvas({
     redoStack.current = []
   }, [])
 
-  const canvasGen = useCanvasGenerate(setImages, pushUndo)
+  // Bridge: fitBounds is defined later in the component, but useCanvasGenerate
+  // needs to reveal newly-placed previews. Route through a ref set below.
+  const fitBoundsRef = useRef<
+    ((b: { x: number; y: number; w: number; h: number }) => void) | null
+  >(null)
+  const revealBounds = useCallback(
+    (b: { x: number; y: number; w: number; h: number }) =>
+      fitBoundsRef.current?.(b),
+    [],
+  )
+  const getImages = useCallback(() => iRef.current, [])
+
+  // Wrap already-positioned images in a group without re-arranging them (unlike
+  // groupSelected, which masonry-arranges). Used to auto-group a generation's
+  // origin with its previews.
+  const groupImages = useCallback(
+    (imageIds: Array<string>, columns: number) => {
+      if (imageIds.length < 2) return
+      const idSet = new Set(imageIds)
+      setGroups((prev) => [
+        ...prev
+          .map((g) => ({
+            ...g,
+            imageIds: g.imageIds.filter((id) => !idSet.has(id)),
+          }))
+          .filter((g) => g.imageIds.length >= 2),
+        { id: crypto.randomUUID(), imageIds, columns, padding: 24 },
+      ])
+    },
+    [],
+  )
+
+  const canvasGen = useCanvasGenerate(
+    setImages,
+    pushUndo,
+    getImages,
+    revealBounds,
+    groupImages,
+  )
 
   const undo = useCallback(() => {
     const entry = undoStack.current.pop()
@@ -169,6 +224,86 @@ export function InfiniteCanvas({
     iRef.current = entry.images
     gRef.current = entry.groups
   }, [])
+
+  // Strip images off the canvas locally (images, groups, selection). Does not
+  // touch the DB or undo stack -- callers handle on_canvas / deleted_at + undo.
+  const stripFromCanvas = useCallback((idSet: Set<string>) => {
+    setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
+    setGroups((prev) =>
+      prev
+        .map((g) => ({
+          ...g,
+          imageIds: g.imageIds.filter((id) => !idSet.has(id)),
+        }))
+        .filter((g) => g.imageIds.length >= 2),
+    )
+    setSelected((prev) => {
+      const next = new Set(prev)
+      for (const id of idSet) next.delete(id)
+      sRef.current = next
+      return next
+    })
+  }, [])
+
+  // "Remove from Canvas": canvas-only removal (row kept in the library).
+  const removeFromCanvas = useCallback(
+    (ids: Array<string>) => {
+      if (ids.length === 0) return
+      const idSet = new Set(ids)
+      const recordIds = iRef.current
+        .filter((img) => idSet.has(img.id) && img.recordId)
+        .map((img) => img.recordId)
+      pushUndo()
+      void setOnCanvas(recordIds, false)
+      stripFromCanvas(idSet)
+      toast(
+        ids.length === 1
+          ? 'Removed from canvas'
+          : `Removed ${ids.length} from canvas`,
+        { duration: 6000, action: { label: 'Undo', onClick: () => undo() } },
+      )
+    },
+    [pushUndo, undo, stripFromCanvas],
+  )
+
+  // "Move to Trash": remove from canvas, then soft-delete (recoverable). Undo
+  // un-trashes and re-adds the images to the canvas.
+  const moveSelectionToTrash = useCallback(
+    (ids: Array<string>) => {
+      if (ids.length === 0) return
+      const idSet = new Set(ids)
+      const removed = iRef.current.filter((img) => idSet.has(img.id))
+      const recordIds = removed
+        .filter((img) => img.recordId)
+        .map((img) => img.recordId)
+      pushUndo()
+      void setOnCanvas(recordIds, false)
+      stripFromCanvas(idSet)
+      void moveToTrash(recordIds)
+        .then(() =>
+          toast.success(
+            ids.length === 1
+              ? 'Moved to Trash'
+              : `Moved ${ids.length} to Trash`,
+            {
+              duration: 6000,
+              action: {
+                label: 'Undo',
+                onClick: () => {
+                  setImages((prev) => [
+                    ...prev,
+                    ...removed.filter((r) => !prev.some((p) => p.id === r.id)),
+                  ])
+                  void restoreFromTrash(recordIds)
+                },
+              },
+            },
+          ),
+        )
+        .catch(() => toast.error('Failed to move to Trash'))
+    },
+    [pushUndo, stripFromCanvas],
+  )
 
   useEffect(() => {
     tRef.current = transform
@@ -733,6 +868,8 @@ export function InfiniteCanvas({
     },
     [],
   )
+  // Let useCanvasGenerate reveal newly-placed previews (see revealBounds above).
+  fitBoundsRef.current = fitBounds
 
   /* -- Wheel zoom -- */
 
@@ -876,6 +1013,20 @@ export function InfiniteCanvas({
   /* -- Pointer events -- */
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // Right button: pan the canvas (drag) -- a plain right-click (no drag)
+    // falls through to the context menu via onContextMenu.
+    if (e.button === 2) {
+      rightPanRef.current = true
+      suppressContextRef.current = false
+      dragRef.current = {
+        mode: 'pan',
+        sx: e.clientX,
+        sy: e.clientY,
+        moved: false,
+      }
+      containerRef.current?.setPointerCapture(e.pointerId)
+      return
+    }
     if (e.button !== 0) return
 
     // Check for group background click
@@ -1011,6 +1162,12 @@ export function InfiniteCanvas({
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
       const d = dragRef.current
+      // A right-drag that actually moved = a pan; swallow the context menu that
+      // fires right after. A right-click that didn't move still opens the menu.
+      if (rightPanRef.current) {
+        suppressContextRef.current = d.moved
+        rightPanRef.current = false
+      }
       if (d.mode === 'marquee' && d.moved) {
         const c1 = screenToCanvas(d.sx, d.sy)
         const c2 = screenToCanvas(e.clientX, e.clientY)
@@ -1120,47 +1277,9 @@ export function InfiniteCanvas({
     hotkeys('backspace,delete', (e) => {
       e.preventDefault()
       if (sRef.current.size === 0) return
-      pushUndo()
-      const sel = sRef.current
-      const removedCount = sel.size
-      const removedRecordIds = iRef.current
-        .filter((img) => sel.has(img.id) && img.recordId)
-        .map((img) => img.recordId)
-      // Eagerly clear membership for removed images so reconciliation on the next
-      // load won't resurrect them (removal is canvas-only; the row is not deleted).
-      void setOnCanvas(removedRecordIds, false)
-      setImages((prev) => prev.filter((img) => !sel.has(img.id)))
-      // Clean up groups: remove deleted images, dissolve groups with <2 members
-      setGroups((prev) =>
-        prev
-          .map((g) => ({
-            ...g,
-            imageIds: g.imageIds.filter((id) => !sel.has(id)),
-          }))
-          .filter((g) => g.imageIds.length >= 2),
-      )
-      setSelected(new Set())
-      sRef.current = new Set()
-
-      // Removal is canvas-only (row stays in the library). Offer Undo, and an
-      // escalation to actually trash the underlying images.
-      toast(
-        removedCount === 1
-          ? 'Removed from canvas'
-          : `Removed ${removedCount} from canvas`,
-        {
-          duration: 6000,
-          action: { label: 'Undo', onClick: () => undo() },
-          cancel: {
-            label: 'Move to Trash',
-            onClick: () => {
-              void moveToTrash(removedRecordIds)
-                .then(() => toast.success('Moved to Trash'))
-                .catch(() => toast.error('Failed to move to Trash'))
-            },
-          },
-        },
-      )
+      // Surface an explicit choice instead of silently removing (the toast was
+      // too easy to miss). The modal offers remove-from-canvas vs move-to-trash.
+      setDeleteConfirm({ ids: [...sRef.current] })
     })
 
     hotkeys('command+a', (e) => {
@@ -1264,6 +1383,11 @@ export function InfiniteCanvas({
         onDrop={onDrop}
         onContextMenu={(e) => {
           e.preventDefault()
+          // A right-drag pan just ended -- don't pop the menu.
+          if (suppressContextRef.current) {
+            suppressContextRef.current = false
+            return
+          }
           const target = (e.target as HTMLElement).closest('[data-image-id]')
           const imageId = target?.getAttribute('data-image-id')
           if (imageId) {
@@ -1463,47 +1587,9 @@ export function InfiniteCanvas({
           <button
             className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`}
             onClick={() => {
-              const img = images.find((i) => i.id === contextMenu.imageId)
+              const id = contextMenu.imageId
               setContextMenu(null)
-              if (!img) return
-              pushUndo()
-              // Remove from canvas first (on_canvas=false) so Trash's
-              // linked-image protection doesn't block the soft-delete.
-              setImages((prev) => prev.filter((i) => i.id !== img.id))
-              setGroups((prev) =>
-                prev
-                  .map((g) => ({
-                    ...g,
-                    imageIds: g.imageIds.filter((id) => id !== img.id),
-                  }))
-                  .filter((g) => g.imageIds.length >= 2),
-              )
-              setSelected((prev) => {
-                const next = new Set(prev)
-                next.delete(img.id)
-                sRef.current = next
-                return next
-              })
-              if (!img.recordId) return
-              void setOnCanvas([img.recordId], false)
-              void moveToTrash([img.recordId])
-                .then(() =>
-                  toast.success('Moved to Trash', {
-                    duration: 6000,
-                    action: {
-                      label: 'Undo',
-                      onClick: () => {
-                        setImages((prev) =>
-                          prev.some((i) => i.id === img.id)
-                            ? prev
-                            : [...prev, img],
-                        )
-                        void restoreFromTrash([img.recordId])
-                      },
-                    },
-                  }),
-                )
-                .catch(() => toast.error('Failed to move to Trash'))
+              moveSelectionToTrash([id])
             }}
           >
             Move to Trash
@@ -1512,6 +1598,54 @@ export function InfiniteCanvas({
       )}
 
       <CanvasGenerateDialog canvasGen={canvasGen} />
+
+      <Dialog
+        open={!!deleteConfirm}
+        onOpenChange={(open) => !open && setDeleteConfirm(null)}
+      >
+        <DialogContent className="w-[360px] sm:max-w-[360px]">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium text-zinc-200">
+              {deleteConfirm && deleteConfirm.ids.length > 1
+                ? `Delete ${deleteConfirm.ids.length} images?`
+                : 'Delete this image?'}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Remove it from the canvas (it stays in your library), or move it
+              to Trash.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                if (deleteConfirm) removeFromCanvas(deleteConfirm.ids)
+                setDeleteConfirm(null)
+              }}
+            >
+              Remove from Canvas
+            </Button>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => {
+                if (deleteConfirm) moveSelectionToTrash(deleteConfirm.ids)
+                setDeleteConfirm(null)
+              }}
+            >
+              Move to Trash
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => setDeleteConfirm(null)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ExistingImagePicker
         open={libraryOpen}
