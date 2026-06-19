@@ -80,6 +80,17 @@ export function useModelSelector({
     return readStorage(storageKey(capability, 'gens'), 1)
   })
 
+  // Keep the selection within the currently-available models. When `allowedIds`
+  // narrows (e.g. canvas scopes models to those that fit the selected group),
+  // drop now-invalid ids and fall back to the default if none remain.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const valid = prev.filter((id) => modelIds.includes(id))
+      if (valid.length === prev.length) return prev
+      return valid.length > 0 ? valid : [defaultId]
+    })
+  }, [modelIds, defaultId])
+
   // Persist selected models
   useEffect(() => {
     localStorage.setItem(

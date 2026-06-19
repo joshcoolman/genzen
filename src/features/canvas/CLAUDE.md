@@ -41,14 +41,22 @@ interface CanvasImage {
 ## Components
 
 - `InfiniteCanvas.tsx` -- main canvas component (~1243 lines): pan/zoom, drag-move, marquee selection, grouping, undo/redo, paste/drop (upload to Supabase), context menu, library picker
-- `SelectionActions.tsx` -- fixed bottom toolbar: upload, library, arrange, group/ungroup, generate (1 image), combine (2-4 images), zoom display
-- `CanvasGenerateDialog.tsx` -- dialog wrapping `GeneratorPanel` from ai-images; overrides `handleGenerate` with optimistic placeholder flow
-- `CanvasCombineDialog.tsx` -- dialog for multi-image combination/remixing: thumbnail grid with labels, aspect ratio/orientation, prompt, model toggles (FLUX 2 Pro, Nano Banana 2), run counter
+- `SelectionActions.tsx` -- fixed bottom toolbar: upload, library, arrange, group/ungroup, zoom display
+- `CanvasGenerateDialog.tsx` -- dialog wrapping `GeneratorPanel` from ai-images; overrides `handleGenerate` with optimistic placeholder flow. Handles both single-image and multi-image (group) generation.
+
+## Generate flow (single + multi unified)
+
+Generation is one flow keyed off the selection (`useCanvasGenerate`). The on-image Generate pill appears below the selection for 1..`CANVAS_MAX_GROUP_SELECTION` non-pending images:
+
+- **1 image** → it's the source (Image 1), single-image generate as before.
+- **2..N images** → the first is the primary/source (Image 1, shown up top); the rest pre-fill the reference strip (Image 2..N) via `replaceRefImages`. Every image is auto-labeled `[Image 1, Image 2, ...]`, prepended to the prompt (`useGenerator`'s `promptPrefix`) so the model can be referenced by number with no UI labeling.
+- The model selector is **scoped to models whose edit endpoint can hold the references** (`canvasModelIdsForRefCount` → `useModelSelector({ allowedIds })`); too-small models drop out so references can't be silently truncated. Over `CANVAS_MAX_GROUP_SELECTION` selected → no pill.
+
+There is no separate "Combine" feature anymore (retired into this flow).
 
 ## Hooks
 
-- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. Creates optimistic placeholders, polls for completion, uses R2 public URLs for source images. Pre-fills prompt from `generation_metadata`.
-- `use-canvas-combine.ts` -- `useCanvasCombine()`: manages multi-image combination state (sourceImages, labels, prompt, aspectRatio, runsCount). Supports FLUX 2 Pro and Nano Banana 2 models. Cost: `CREDIT_COSTS.variation * (models.length * runsCount)`.
+- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
 ## Lib
 

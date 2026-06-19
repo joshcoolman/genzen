@@ -94,3 +94,21 @@ On "let's execute": promote `decided` items into an implementation plan, confirm
 3. This tightens the model curation: canvas should prefer/require models that accept **additional reference images** (edit endpoint with `maxRefImages > 0`), so the "add reference images" flow is meaningful. Connects to the "Curate the canvas model list" entry above. Degrades gracefully — `RefImageStrip` already self-hides when the model has no ref support.
 
 **Parity with AI Images — CONFIRMED tracked (no issue needed):** Reference images are persisted to `generation_metadata.reference_image_ids` inside the shared `generateImage` server fn (`generate-image-internal.server.ts:305-317`); retry/variations/edit all read+write it (`retry-generation.server.ts:84`). Canvas uses that same server fn. **To preserve parity:** ensure the canvas generate path — the `handleGenerate` override in `use-canvas-generate.ts` — forwards `referenceImageIds` into `generateImage` exactly like `use-generator.ts:327` does. Then identical requests record identical metadata, for free.
+
+---
+
+## Generate from a multi-image selection (retire "Combine") — `decided` (2026-06-19, round 2)
+
+**Idea:** Let the user grab N images and "just generate" — no separate concept, no primary-picking ceremony.
+
+**Key finding:** This is ~70% the existing **Combine** feature (2–4 selected → all sent as reference images, with per-image `Image N: label` prompt prepend). Combine is just invisible (icon-only bottom-toolbar button — same discoverability problem we fixed for single Generate). And at the FAL level there's **no semantic "primary"** image — all images merge into one ordered array; models blend the references. Caps are per-model (Nano 3, GPT 4, FLUX.2 Pro 9, Seedream 10).
+
+**Decision:**
+
+1. **Retire the "Combine" name** — it's "Generate" whether 1 or N images are selected.
+2. **Selection-anchored Generate pill** generalizes: under a single image (exists) or **centered under the group's bounding box** (new) for 2..max.
+3. **No primary step** (all equal references); **per-image labels** for referencing (reuse existing prepend). `@`-mention deferred.
+4. **Model-aware cap:** pill shows when selection ≤ the largest canvas-model cap (Seedream = 10). In the dialog, models whose `maxRefImages < count` are disabled with a hint; deselect to re-enable. Over 10 → no pill.
+5. Evolve the existing Combine path (placeholders/polling/labels/metadata parity all reused); swap its hardcoded 2-model list for the curated canvas edit models filtered by selection count.
+
+Full plan: `~/.claude/plans/this-is-an-idea-ethereal-rainbow.md`. Tracking: see round-2 issue.

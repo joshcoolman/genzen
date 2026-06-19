@@ -1,5 +1,5 @@
 import type { ImageModel } from '@/features/ai-images/models'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
 
 /**
  * Curated, code-based allowlist of models surfaced in Canvas generation.
@@ -42,3 +42,68 @@ export const CANVAS_MODEL_ALLOWED_IDS: Array<string> = CANVAS_MODELS.map(
 
 /** Default selected canvas model (first curated, gated entry). */
 export const CANVAS_DEFAULT_MODEL = CANVAS_MODELS[0]?.id ?? ''
+
+/**
+ * A curated canvas model's edit endpoint + how many reference images it accepts.
+ * Used by the multi-image ("generate from a group") flow, where every selected
+ * image is an equal reference and the model's `maxRefImages` is the hard cap.
+ */
+export interface CanvasEditModel {
+  /** Edit endpoint id (e.g. `fal-ai/flux-2-pro/edit`) — what gets submitted. */
+  id: string
+  /** Display name (the base model's name). */
+  name: string
+  /** Max reference images this endpoint accepts. */
+  maxRefImages: number
+}
+
+/**
+ * Curated canvas models that have an edit endpoint (i.e. accept additional
+ * reference images), paired with their per-model reference cap. Models without
+ * an edit endpoint (e.g. FLUX Kontext Pro — single-image img2img only) are
+ * excluded: they can't take a group. Order follows `CANVAS_MODELS`.
+ */
+export const CANVAS_EDIT_MODELS: Array<CanvasEditModel> = CANVAS_MODELS.flatMap(
+  (m) => {
+    if (!m.imageInputModelId) return []
+    const edit = EDIT_MODELS.find((e) => e.id === m.imageInputModelId)
+    return edit
+      ? [{ id: edit.id, name: m.name, maxRefImages: edit.maxRefImages }]
+      : []
+  },
+)
+
+/**
+ * Largest reference cap across curated canvas edit models (Seedream → 10).
+ */
+export const CANVAS_GROUP_MAX_REFS = CANVAS_EDIT_MODELS.reduce(
+  (max, m) => Math.max(max, m.maxRefImages),
+  0,
+)
+
+/**
+ * Largest multi-image selection canvas can generate from: one primary (Image 1,
+ * the source) plus the biggest reference cap. Gates the group Generate pill —
+ * beyond this, no model can hold the references so no pill shows.
+ */
+export const CANVAS_MAX_GROUP_SELECTION = CANVAS_GROUP_MAX_REFS + 1
+
+/** Reference capacity of a canvas base model (0 if it has no edit endpoint). */
+function canvasModelRefCap(m: ImageModel): number {
+  if (!m.imageInputModelId) return 0
+  return (
+    EDIT_MODELS.find((e) => e.id === m.imageInputModelId)?.maxRefImages ?? 0
+  )
+}
+
+/**
+ * Curated canvas base-model ids whose edit endpoint can hold `refCount`
+ * reference images. `refCount` 0 (a single image, no references) → every
+ * curated model qualifies. Used to scope the model selector to models that fit
+ * the current group, so a too-small model can't silently drop references.
+ */
+export function canvasModelIdsForRefCount(refCount: number): Array<string> {
+  return CANVAS_MODELS.filter((m) => canvasModelRefCap(m) >= refCount).map(
+    (m) => m.id,
+  )
+}
