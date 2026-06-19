@@ -318,8 +318,8 @@ export function useCanvasGenerate(
   // every image is auto-labeled so the user can reference it by number.
   const open = useCallback(
     async (selection: Array<CanvasImage>) => {
+      if (selection.length === 0) return
       const source = selection[0]
-      if (!source) return
       const extras = selection.slice(1)
       sourceRef.current = source
       setError(null)
