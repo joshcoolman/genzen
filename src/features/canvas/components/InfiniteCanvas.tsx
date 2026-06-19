@@ -1337,6 +1337,51 @@ export function InfiniteCanvas({
           />
         )}
 
+        {/* On-image Generate: appears when exactly one (non-pending) image is
+            selected, anchored below it. Opens the Generate dialog. */}
+        {selected.size === 1 &&
+          selectionBounds &&
+          !canvasGen.isOpen &&
+          (() => {
+            const only = images.find((img) => selected.has(img.id))
+            if (!only || only.pending) return null
+            return (
+              <button
+                className={styles.onImageGenerate}
+                style={{
+                  left:
+                    transform.x +
+                    (selectionBounds.x + selectionBounds.w / 2) *
+                      transform.scale,
+                  top:
+                    transform.y +
+                    (selectionBounds.y + selectionBounds.h) * transform.scale +
+                    10,
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void canvasGen.open(only)
+                }}
+                title="Generate from image"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
+                </svg>
+                <span>Generate</span>
+              </button>
+            )
+          })()}
+
         {marquee &&
           (() => {
             const rect = containerRef.current?.getBoundingClientRect()
@@ -1374,15 +1419,6 @@ export function InfiniteCanvas({
           zoomPct={zoomPct}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
-          onGenerate={
-            selected.size === 1
-              ? () => {
-                  const id = [...selected][0]
-                  const sourceImage = images.find((img) => img.id === id)
-                  if (sourceImage) canvasGen.open(sourceImage)
-                }
-              : undefined
-          }
           onCombine={
             selected.size >= 2 && selected.size <= 4
               ? () => {

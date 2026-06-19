@@ -9,7 +9,6 @@ interface SelectionActionsProps {
   zoomPct: number
   onUpload: () => void
   onLibrary: () => void
-  onGenerate?: () => void
   onCombine?: () => void
 }
 
@@ -24,7 +23,6 @@ export function SelectionActions({
   zoomPct,
   onUpload,
   onLibrary,
-  onGenerate,
   onCombine,
 }: SelectionActionsProps) {
   const hasSelection = count >= 2
@@ -75,29 +73,6 @@ export function SelectionActions({
           <rect x="14" y="14" width="7" height="7" />
         </svg>
       </button>
-
-      {/* Generate button -- single image selected */}
-      {count === 1 && onGenerate && (
-        <button
-          className={styles.generateBtn}
-          onClick={onGenerate}
-          title="Generate from image"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
-          </svg>
-          <span>Generate</span>
-        </button>
-      )}
 
       {/* Combine button -- 2-4 images selected */}
       {count >= 2 && count <= 4 && onCombine && (
