@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
-import { CANVAS_MODEL_ALLOWED_IDS } from '../canvas-models'
+import { canvasModelIdsForRefCount } from '../canvas-models'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
@@ -29,6 +29,11 @@ export function useCanvasGenerate(
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  // Number of reference images in the current selection (selection size - 1, the
+  // primary). Scopes the model list to models that can hold them.
+  const [groupRefCount, setGroupRefCount] = useState(0)
+  // Auto image labels prepended to the prompt at submit ("[Image 1, Image 2,...]").
+  const [labelPrefix, setLabelPrefix] = useState('')
 
   const sourceRef = useRef<CanvasImage | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -49,10 +54,17 @@ export function useCanvasGenerate(
     gap: number
   } | null>(null)
 
+  // Only models whose edit endpoint can hold the current reference count are
+  // offered; a single image (groupRefCount 0) exposes every curated model.
+  const allowedIds = useMemo(
+    () => canvasModelIdsForRefCount(groupRefCount),
+    [groupRefCount],
+  )
+
   const modelSelector = useModelSelector({
     capability: 'generate',
     mode: 'multi',
-    allowedIds: CANVAS_MODEL_ALLOWED_IDS,
+    allowedIds,
     storageScope: 'canvas',
   })
 
@@ -245,6 +257,7 @@ export function useCanvasGenerate(
     onAfterSubmit: handleAfterSubmit,
     onCanvas: true,
     sourceClient: 'genzen-canvas',
+    promptPrefix: labelPrefix,
   })
 
   // Optimistic generation: create placeholders, then fire server call
@@ -299,30 +312,58 @@ export function useCanvasGenerate(
     })
   }, [generator, modelSelector, setImages, pushUndo])
 
+  // Open the Generate dialog for a selection. The first image is the primary
+  // (Image 1, the source, shown up top); the rest pre-fill the reference strip
+  // (Image 2..N). Models are scoped to those that can hold the references, and
+  // every image is auto-labeled so the user can reference it by number.
   const open = useCallback(
-    async (sourceImage: CanvasImage) => {
-      sourceRef.current = sourceImage
+    async (selection: Array<CanvasImage>) => {
+      const source = selection[0]
+      if (!source) return
+      const extras = selection.slice(1)
+      sourceRef.current = source
       setError(null)
 
-      // Source image has a Supabase record -- use its signed URL (CORS-safe)
-      const url =
-        sourceImage.signedUrl ?? (await getSignedUrl(sourceImage.storagePath))
-      if (url) {
-        generator.setSourceFromUrl(url, 'canvas-image')
+      setGroupRefCount(extras.length)
+      setLabelPrefix(
+        selection.length > 1
+          ? `[${selection.map((_, i) => `Image ${i + 1}`).join(', ')}]\n\n`
+          : '',
+      )
+
+      // Primary image (Image 1) -> source slot. Signed URL is CORS-safe.
+      const url = source.signedUrl ?? (await getSignedUrl(source.storagePath))
+      if (url) generator.setSourceFromUrl(url, 'canvas-image')
+
+      // Remaining images (Image 2..N) -> reference strip, by recordId so they
+      // flow through as referenceImageIds (metadata parity). replaceRefImages
+      // skips the per-model slice; the scoped model list guarantees they fit.
+      if (extras.length > 0) {
+        const refs = await Promise.all(
+          extras.map(async (img) => ({
+            id: img.recordId,
+            url: img.signedUrl ?? (await getSignedUrl(img.storagePath)) ?? '',
+            title: 'reference',
+          })),
+        )
+        generator.replaceRefImages(refs.filter((r) => r.id && r.url))
+      } else {
+        generator.replaceRefImages([])
       }
 
-      // Set orientation + aspect ratio from canvas image dimensions
-      const detected = detectAspectRatio(sourceImage.width, sourceImage.height)
-      const isLandscape = sourceImage.width >= sourceImage.height
-      generator.setOrientation(isLandscape ? 'landscape' : 'portrait')
+      // Orientation + aspect ratio from the primary image.
+      const detected = detectAspectRatio(source.width, source.height)
+      generator.setOrientation(
+        source.width >= source.height ? 'landscape' : 'portrait',
+      )
       generator.setAspectRatio(detected)
 
-      // Pre-fill prompt from generation_metadata
-      if (sourceImage.recordId) {
+      // Pre-fill prompt from the primary's metadata (single-image only).
+      if (selection.length === 1 && source.recordId) {
         const { data: record } = await supabase
           .from('user_images')
           .select('generation_metadata')
-          .eq('id', sourceImage.recordId)
+          .eq('id', source.recordId)
           .single()
 
         const metadata = record?.generation_metadata as Record<
@@ -330,9 +371,7 @@ export function useCanvasGenerate(
           unknown
         > | null
         const prompt = metadata?.prompt as string | undefined
-        if (prompt) {
-          generator.setPrompt(prompt)
-        }
+        if (prompt) generator.setPrompt(prompt)
       }
 
       setIsOpen(true)

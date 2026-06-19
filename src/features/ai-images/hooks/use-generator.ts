@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -40,6 +40,12 @@ interface UseGeneratorOptions {
   /** Tag generations as canvas-owned: sets on_canvas + source_client at insert */
   onCanvas?: boolean
   sourceClient?: string
+  /**
+   * Text prepended to every submitted prompt (not shown in the textarea). Used by
+   * canvas multi-image generate to auto-label images ("[Image 1, Image 2, ...]")
+   * so the model can be referenced by number without the user typing it.
+   */
+  promptPrefix?: string
 }
 
 export interface GeneratorState {
@@ -81,6 +87,7 @@ export interface GeneratorState {
   pastePrompts: (texts: Array<string>) => void
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
+  replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
   maxRefImages: number
   setAutoRefImageIds: (ids: Array<string>) => void
@@ -100,7 +107,11 @@ export function useGenerator({
   autoRefImageIds: autoRefImageIdsProp,
   onCanvas,
   sourceClient,
+  promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
+  // Read the latest prefix at submit time without re-creating handleGenerate.
+  const promptPrefixRef = useRef(promptPrefix ?? '')
+  promptPrefixRef.current = promptPrefix ?? ''
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
   const orientationKey = `${storagePrefix}:orientation`
@@ -239,6 +250,13 @@ export function useGenerator({
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
+  // Replace the whole ref set without capping. Caller guarantees the count fits
+  // the chosen model (canvas pre-fills a known-fitting group). addRefImages, by
+  // contrast, slices to maxRefImages for ad-hoc additions.
+  const replaceRefImages = useCallback((images: Array<RefImage>) => {
+    setRefImages(images)
+  }, [])
+
   const activePromptCount = prompts.filter((p) => p.trim()).length
   const totalImages =
     Math.max(activePromptCount, sourceImage ? 1 : 0) *
@@ -309,7 +327,7 @@ export function useGenerator({
       const referenceImageIds = mergedIds.length > 0 ? mergedIds : undefined
 
       const allCalls = promptsToRun.flatMap((promptText) => {
-        const finalPrompt = promptText.trim()
+        const finalPrompt = `${promptPrefixRef.current}${promptText.trim()}`
         return modelsToUse.map((modelId) =>
           generateImage({
             data: {
@@ -538,6 +556,7 @@ export function useGenerator({
     pastePrompts,
     refImages,
     addRefImages,
+    replaceRefImages,
     removeRefImage,
     maxRefImages,
     setAutoRefImageIds,

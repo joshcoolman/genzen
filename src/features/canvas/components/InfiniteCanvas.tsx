@@ -16,11 +16,9 @@ import {
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
 import { useCanvasGenerate } from '../hooks/use-canvas-generate'
-import { useCanvasCombine } from '../hooks/use-canvas-combine'
-import { CANVAS_GROUP_MAX_REFS } from '../canvas-models'
+import { CANVAS_MAX_GROUP_SELECTION } from '../canvas-models'
 import { SelectionActions } from './SelectionActions'
 import { CanvasGenerateDialog } from './CanvasGenerateDialog'
-import { CanvasCombineDialog } from './CanvasCombineDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
@@ -151,7 +149,6 @@ export function InfiniteCanvas({
   }, [])
 
   const canvasGen = useCanvasGenerate(setImages, pushUndo)
-  const canvasCombine = useCanvasCombine(setImages, pushUndo)
 
   const undo = useCallback(() => {
     const entry = undoStack.current.pop()
@@ -186,9 +183,8 @@ export function InfiniteCanvas({
     gRef.current = groups
   }, [groups])
   useEffect(() => {
-    dialogOpenRef.current =
-      canvasGen.isOpen || canvasCombine.isOpen || libraryOpen
-  }, [canvasGen.isOpen, canvasCombine.isOpen, libraryOpen])
+    dialogOpenRef.current = canvasGen.isOpen || libraryOpen
+  }, [canvasGen.isOpen, libraryOpen])
 
   /* -- Load persisted state -- */
 
@@ -1344,10 +1340,9 @@ export function InfiniteCanvas({
             a group -> the multi-image Generate dialog (all images as references).
             More than GROUP_MAX selected -> no pill (no model can hold the group). */}
         {selected.size >= 1 &&
-          selected.size <= CANVAS_GROUP_MAX_REFS &&
+          selected.size <= CANVAS_MAX_GROUP_SELECTION &&
           selectionBounds &&
           !canvasGen.isOpen &&
-          !canvasCombine.isOpen &&
           (() => {
             const selectedImgs = images.filter((img) => selected.has(img.id))
             if (
@@ -1372,8 +1367,7 @@ export function InfiniteCanvas({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (isGroup) void canvasCombine.open(selectedImgs)
-                  else void canvasGen.open(selectedImgs[0])
+                  void canvasGen.open(selectedImgs)
                 }}
                 title={
                   isGroup
@@ -1460,7 +1454,7 @@ export function InfiniteCanvas({
               const sourceImage = images.find(
                 (img) => img.id === contextMenu.imageId,
               )
-              if (sourceImage) canvasGen.open(sourceImage)
+              if (sourceImage) void canvasGen.open([sourceImage])
               setContextMenu(null)
             }}
           >
@@ -1518,7 +1512,6 @@ export function InfiniteCanvas({
       )}
 
       <CanvasGenerateDialog canvasGen={canvasGen} />
-      <CanvasCombineDialog canvasCombine={canvasCombine} />
 
       <ExistingImagePicker
         open={libraryOpen}
