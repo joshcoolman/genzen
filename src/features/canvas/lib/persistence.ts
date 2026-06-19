@@ -29,10 +29,11 @@ export async function loadPersistedState(
     })
     if (!raw) return null
 
-    // Migration: filter out old-format images (have src but no recordId/storagePath)
-    const validImages = raw.images.filter(
-      (img) => img.recordId && img.storagePath && !img.pending,
-    )
+    // Keep any image that has a recordId. Completed images carry a storagePath;
+    // in-flight generations are persisted as pending placeholders (recordId set,
+    // no storagePath yet) so they can be resumed after navigation/refresh.
+    // Old-format images (src data URL, no recordId) are dropped.
+    const validImages = raw.images.filter((img) => img.recordId)
 
     return {
       ...raw,
@@ -52,10 +53,13 @@ export async function savePersistedState(
     const db = await openDB(dbName)
     const tx = db.transaction(STORE_NAME, 'readwrite')
 
-    // Strip runtime-only fields and pending images before persisting
+    // Persist any image with a recordId. Pending placeholders (recordId set, no
+    // storagePath) are kept so in-flight generations survive navigation; the
+    // pending flag is retained so mount-time recovery knows to resume polling.
+    // Only the runtime-only signedUrl is stripped.
     const cleanImages = state.images
-      .filter((img) => img.recordId && img.storagePath && !img.pending)
-      .map(({ signedUrl: _, pending: __, ...rest }) => rest)
+      .filter((img) => img.recordId)
+      .map(({ signedUrl: _, ...rest }) => rest)
 
     tx.objectStore(STORE_NAME).put(
       { ...state, images: cleanImages },
@@ -147,4 +151,96 @@ export function getImageDimensions(
     }
     img.src = url
   })
+}
+
+/** Get natural dimensions of an already-hosted image URL (for DB reconciliation).
+ *  Falls back to a default after a timeout so a hung load can't stall the
+ *  reconcile's Promise.all indefinitely. */
+export function getUrlDimensions(
+  url: string,
+): Promise<{ w: number; h: number }> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (dims: { w: number; h: number }) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(dims)
+    }
+    const timer = setTimeout(() => finish({ w: 300, h: 300 }), 10000)
+    const img = new Image()
+    img.onload = () => finish({ w: img.naturalWidth, h: img.naturalHeight })
+    img.onerror = () => finish({ w: 300, h: 300 })
+    img.src = url
+  })
+}
+
+/**
+ * Eagerly flip the on_canvas membership flag for specific records. Used the moment
+ * an image joins (true) or leaves (false) the canvas so the DB is always an
+ * accurate basis for recovery -- not waiting on the debounced syncCanvasFlags.
+ * Fire-and-forget; never throws.
+ */
+export async function setOnCanvas(recordIds: Array<string>, value: boolean) {
+  const ids = recordIds.filter(Boolean)
+  if (ids.length === 0) return
+  try {
+    await supabase
+      .from('user_images')
+      .update({ on_canvas: value })
+      .in('id', ids)
+  } catch {
+    /* silent fail -- syncCanvasFlags will reconcile on the next save */
+  }
+}
+
+export interface CanvasDbRecord {
+  id: string
+  storage_path: string | null
+  status: string | null
+  generation_metadata: Record<string, unknown> | null
+}
+
+/** Fetch every image the DB considers on-canvas (source of truth for membership) */
+export async function fetchOnCanvasRecords(
+  userId: string,
+): Promise<Array<CanvasDbRecord>> {
+  try {
+    const { data } = await supabase
+      .from('user_images')
+      .select('id, storage_path, status, generation_metadata')
+      .eq('user_id', userId)
+      .eq('on_canvas', true)
+      .is('deleted_at', null)
+    return (data as Array<CanvasDbRecord> | null) ?? []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Of the given record ids, return those that are gone -- hard-deleted (row
+ * missing) or soft-deleted (deleted_at set). Used to prune dead images from the
+ * canvas without ever dropping a live one (e.g. an arrangement whose on_canvas
+ * flag was never written).
+ */
+export async function fetchDeadRecordIds(
+  ids: Array<string>,
+): Promise<Set<string>> {
+  const list = ids.filter(Boolean)
+  if (list.length === 0) return new Set()
+  try {
+    const { data } = await supabase
+      .from('user_images')
+      .select('id, deleted_at')
+      .in('id', list)
+    const alive = new Set(
+      ((data as Array<{ id: string; deleted_at: string | null }> | null) ?? [])
+        .filter((r) => !r.deleted_at)
+        .map((r) => r.id),
+    )
+    return new Set(list.filter((id) => !alive.has(id)))
+  } catch {
+    return new Set()
+  }
 }

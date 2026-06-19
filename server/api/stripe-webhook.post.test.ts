@@ -7,7 +7,6 @@ import type { H3Event } from 'h3'
 import * as addCreditsModule from '@/features/credits/server/add-credits.server'
 import * as stripeServer from '@/lib/server/stripe.server'
 
-
 // vi.mock is hoisted — all factories must use only vi.fn() inside, no outer refs
 vi.mock('h3', () => ({
   defineEventHandler: (fn: (event: unknown) => Promise<unknown>) => fn,

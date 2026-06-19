@@ -35,6 +35,8 @@ interface SubmitGenerationOptions {
   metadata?: Record<string, unknown>
   title?: string
   providerOverride?: 'fal' | 'google'
+  /** Mark the created row as living on the canvas (reclaimable on canvas load) */
+  onCanvas?: boolean
 }
 
 export interface SubmitGenerationResult {
@@ -86,6 +88,7 @@ async function submitGoogleGeneration(
       source: 'ai_generated',
       title: options.title ?? 'Generating...',
       sort_order: Date.now() / 1000,
+      ...(options.onCanvas ? { on_canvas: true } : {}),
       generation_metadata: {
         prompt: options.prompt,
         model: baseModelId,
@@ -143,6 +146,7 @@ async function submitFalGeneration(
       source: 'ai_generated',
       title: options.title ?? 'Generating...',
       sort_order: Date.now() / 1000,
+      ...(options.onCanvas ? { on_canvas: true } : {}),
       generation_metadata: {
         prompt: options.prompt,
         model: baseModelId,

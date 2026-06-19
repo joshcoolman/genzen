@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { getSignedUrl } from '../lib/persistence'
+import { getSignedUrl, setOnCanvas } from '../lib/persistence'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
@@ -32,36 +32,53 @@ export function useCanvasGenerate(
   const sourceRef = useRef<CanvasImage | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pendingPlaceholdersRef = useRef<Array<string>>([])
+  // Shared tracking for the single poll loop. Multiple batches (a fresh submit
+  // plus a mount-time resume, or two back-to-back generations) accumulate into
+  // these refs rather than each replacing the interval, so no batch loses its
+  // tracking when another starts.
+  const recordToPlaceholderRef = useRef<Map<string, string>>(new Map())
+  const pendingRecordIdsRef = useRef<Set<string>>(new Set())
+  // Geometry of the current placeholder row, so handleAfterSubmit can append
+  // extra placeholders if the server returns more results than we predicted.
+  const placeholderLayoutRef = useRef<{
+    startX: number
+    y: number
+    placeholderW: number
+    placeholderH: number
+    gap: number
+  } | null>(null)
 
   const modelSelector = useModelSelector({
     capability: 'generate',
     mode: 'multi',
   })
 
-  // When server returns record IDs, map them to placeholders and poll for completion
-  const handleAfterSubmit = useCallback(
-    (results: Array<{ recordId: string }>) => {
-      const placeholderIds = pendingPlaceholdersRef.current
-      if (placeholderIds.length === 0) return
-
-      const recordToPlaceholder = new Map<string, string>()
-      results.forEach((r, i) => {
-        if (i < placeholderIds.length) {
-          recordToPlaceholder.set(r.recordId, placeholderIds[i])
-        }
-      })
-
-      // Remove extra placeholders if server returned fewer results
-      if (results.length < placeholderIds.length) {
-        const extraIds = placeholderIds.slice(results.length)
-        setImages((prev) => prev.filter((ci) => !extraIds.includes(ci.id)))
+  // Poll user_images until every tracked record resolves, swapping each
+  // placeholder for the finished image (or removing it on failure). Shared by
+  // fresh submissions and by mount-time recovery of persisted placeholders.
+  // New batches merge into the shared refs and a single interval drains them all,
+  // so starting one batch never abandons another that's still in flight.
+  const startPolling = useCallback(
+    (recordToPlaceholder: Map<string, string>) => {
+      for (const [recordId, placeholderId] of recordToPlaceholder) {
+        recordToPlaceholderRef.current.set(recordId, placeholderId)
+        pendingRecordIdsRef.current.add(recordId)
+      }
+      if (pendingRecordIdsRef.current.size === 0) {
+        setIsGenerating(false)
+        return
       }
 
-      const pendingRecordIds = new Set(results.map((r) => r.recordId))
+      setIsGenerating(true)
 
       const poll = async () => {
-        if (pendingRecordIds.size === 0) {
-          if (pollRef.current) clearInterval(pollRef.current)
+        const pending = pendingRecordIdsRef.current
+        const map = recordToPlaceholderRef.current
+        if (pending.size === 0) {
+          if (pollRef.current) {
+            clearInterval(pollRef.current)
+            pollRef.current = null
+          }
           setIsGenerating(false)
           return
         }
@@ -70,7 +87,7 @@ export function useCanvasGenerate(
           data: { accessToken: accessToken! },
         }).catch(() => {})
 
-        for (const recordId of [...pendingRecordIds]) {
+        for (const recordId of [...pending]) {
           const { data: record } = await supabase
             .from('user_images')
             .select('id, status, storage_path')
@@ -80,8 +97,9 @@ export function useCanvasGenerate(
           if (!record) continue
 
           if (record.status === 'completed' && record.storage_path) {
-            pendingRecordIds.delete(recordId)
-            const placeholderId = recordToPlaceholder.get(recordId)
+            pending.delete(recordId)
+            const placeholderId = map.get(recordId)
+            map.delete(recordId)
             if (!placeholderId) continue
 
             const storagePath = record.storage_path
@@ -105,24 +123,113 @@ export function useCanvasGenerate(
               setImages((prev) => prev.filter((ci) => ci.id !== placeholderId))
             }
           } else if (record.status === 'failed') {
-            pendingRecordIds.delete(recordId)
-            const placeholderId = recordToPlaceholder.get(recordId)
+            pending.delete(recordId)
+            const placeholderId = map.get(recordId)
+            map.delete(recordId)
             if (placeholderId) {
               setImages((prev) => prev.filter((ci) => ci.id !== placeholderId))
             }
           }
         }
 
-        if (pendingRecordIds.size === 0) {
-          if (pollRef.current) clearInterval(pollRef.current)
+        if (pending.size === 0) {
+          if (pollRef.current) {
+            clearInterval(pollRef.current)
+            pollRef.current = null
+          }
           setIsGenerating(false)
         }
       }
 
-      pollRef.current = setInterval(poll, 5000)
-      setTimeout(poll, 3000)
+      // Ensure exactly one interval is running; merged records are picked up by
+      // the existing loop (within one tick) without restarting it.
+      if (!pollRef.current) {
+        pollRef.current = setInterval(poll, 5000)
+        setTimeout(poll, 3000)
+      }
     },
     [accessToken, setImages],
+  )
+
+  // When server returns record IDs, map them to placeholders and poll for completion
+  const handleAfterSubmit = useCallback(
+    (results: Array<{ recordId: string }>) => {
+      let placeholderIds = pendingPlaceholdersRef.current
+      if (placeholderIds.length === 0) return
+
+      // Reconcile placeholder count to the actual number of results so no
+      // generated image is ever dropped (and none is left as an empty slot).
+      if (results.length < placeholderIds.length) {
+        const extraIds = placeholderIds.slice(results.length)
+        setImages((prev) => prev.filter((ci) => !extraIds.includes(ci.id)))
+        placeholderIds = placeholderIds.slice(0, results.length)
+      } else if (results.length > placeholderIds.length) {
+        const layout = placeholderLayoutRef.current
+        const added: Array<string> = []
+        const extra: Array<CanvasImage> = []
+        for (let i = placeholderIds.length; i < results.length; i++) {
+          const id = crypto.randomUUID()
+          added.push(id)
+          extra.push({
+            id,
+            recordId: '',
+            storagePath: '',
+            x: layout
+              ? layout.startX + i * (layout.placeholderW + layout.gap)
+              : 0,
+            y: layout ? layout.y : 0,
+            width: layout ? layout.placeholderW : 300,
+            height: layout ? layout.placeholderH : 300,
+            pending: true,
+          })
+        }
+        setImages((prev) => [...prev, ...extra])
+        placeholderIds = [...placeholderIds, ...added]
+      }
+      pendingPlaceholdersRef.current = placeholderIds
+
+      const recordToPlaceholder = new Map<string, string>()
+      results.forEach((r, i) => {
+        if (i < placeholderIds.length) {
+          recordToPlaceholder.set(r.recordId, placeholderIds[i])
+        }
+      })
+
+      // Stamp the recordId onto each placeholder immediately so it persists to
+      // IndexedDB and can be recovered if the user navigates away before the
+      // generation completes.
+      setImages((prev) =>
+        prev.map((ci) => {
+          const idx = placeholderIds.indexOf(ci.id)
+          if (idx >= 0 && idx < results.length) {
+            return { ...ci, recordId: results[idx].recordId }
+          }
+          return ci
+        }),
+      )
+
+      // Eagerly mark these rows on-canvas so they're reclaimable from the DB even
+      // if the user navigates/restarts before any local save.
+      void setOnCanvas(
+        results.map((r) => r.recordId),
+        true,
+      )
+
+      startPolling(recordToPlaceholder)
+    },
+    [setImages, startPolling],
+  )
+
+  // Resume polling for persisted pending placeholders after navigation/refresh.
+  // Called on canvas mount with images that have a recordId but no storagePath.
+  const resumePending = useCallback(
+    (pending: Array<{ id: string; recordId: string }>) => {
+      if (pending.length === 0) return
+      const recordToPlaceholder = new Map<string, string>()
+      for (const p of pending) recordToPlaceholder.set(p.recordId, p.id)
+      startPolling(recordToPlaceholder)
+    },
+    [startPolling],
   )
 
   const generator = useGenerator({
@@ -133,6 +240,8 @@ export function useCanvasGenerate(
     setError,
     storagePrefix: 'genzen-canvas',
     onAfterSubmit: handleAfterSubmit,
+    onCanvas: true,
+    sourceClient: 'genzen-canvas',
   })
 
   // Optimistic generation: create placeholders, then fire server call
@@ -144,10 +253,18 @@ export function useCanvasGenerate(
     const placeholderH = source.height
     const placeholderW = Math.round(placeholderH * ratio)
 
-    const totalCount =
-      modelSelector.selectedIds.length * modelSelector.gensPerModel
+    // generator.totalImages already accounts for prompts x models x gensPerModel;
+    // the previous local formula ignored the prompt dimension and under-counted.
+    const totalCount = generator.totalImages
     const gap = 40
     const startX = source.x + source.width + gap
+    placeholderLayoutRef.current = {
+      startX,
+      y: source.y,
+      placeholderW,
+      placeholderH,
+      gap,
+    }
 
     pushUndo()
 
@@ -236,5 +353,6 @@ export function useCanvasGenerate(
     error,
     isGenerating,
     handleGenerateOptimistic,
+    resumePending,
   }
 }

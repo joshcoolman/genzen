@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { getSignedUrl } from '../lib/persistence'
+import { getSignedUrl, setOnCanvas } from '../lib/persistence'
 import type { CanvasImage } from '../types'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useAuth } from '@/lib/auth'
@@ -57,11 +57,48 @@ export function useCanvasCombine(
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const pendingPlaceholdersRef = useRef<Array<string>>([])
+  const placeholderLayoutRef = useRef<{
+    startX: number
+    y: number
+    placeholderW: number
+    placeholderH: number
+    gap: number
+  } | null>(null)
 
   const handleAfterSubmit = useCallback(
     (results: Array<{ recordId: string }>) => {
-      const placeholderIds = pendingPlaceholdersRef.current
+      let placeholderIds = pendingPlaceholdersRef.current
       if (placeholderIds.length === 0) return
+
+      // Reconcile placeholder count to the actual result count so none is dropped.
+      if (results.length < placeholderIds.length) {
+        const extraIds = placeholderIds.slice(results.length)
+        setImages((prev) => prev.filter((ci) => !extraIds.includes(ci.id)))
+        placeholderIds = placeholderIds.slice(0, results.length)
+      } else if (results.length > placeholderIds.length) {
+        const layout = placeholderLayoutRef.current
+        const added: Array<string> = []
+        const extra: Array<CanvasImage> = []
+        for (let i = placeholderIds.length; i < results.length; i++) {
+          const id = crypto.randomUUID()
+          added.push(id)
+          extra.push({
+            id,
+            recordId: '',
+            storagePath: '',
+            x: layout
+              ? layout.startX + i * (layout.placeholderW + layout.gap)
+              : 0,
+            y: layout ? layout.y : 0,
+            width: layout ? layout.placeholderW : 300,
+            height: layout ? layout.placeholderH : 300,
+            pending: true,
+          })
+        }
+        setImages((prev) => [...prev, ...extra])
+        placeholderIds = [...placeholderIds, ...added]
+      }
+      pendingPlaceholdersRef.current = placeholderIds
 
       const recordToPlaceholder = new Map<string, string>()
       results.forEach((r, i) => {
@@ -69,10 +106,25 @@ export function useCanvasCombine(
           recordToPlaceholder.set(r.recordId, placeholderIds[i])
       })
 
-      if (results.length < placeholderIds.length) {
-        const extraIds = placeholderIds.slice(results.length)
-        setImages((prev) => prev.filter((ci) => !extraIds.includes(ci.id)))
-      }
+      // Stamp the recordId onto each placeholder immediately so it persists to
+      // IndexedDB and can be recovered on remount if the user navigates away
+      // before the generation completes (recovery handled by useCanvasGenerate's
+      // resumePending, which shares the same poll logic).
+      setImages((prev) =>
+        prev.map((ci) => {
+          const idx = placeholderIds.indexOf(ci.id)
+          if (idx >= 0 && idx < results.length) {
+            return { ...ci, recordId: results[idx].recordId }
+          }
+          return ci
+        }),
+      )
+
+      // Eagerly mark these rows on-canvas for DB-backed recovery.
+      void setOnCanvas(
+        results.map((r) => r.recordId),
+        true,
+      )
 
       const pendingRecordIds = new Set(results.map((r) => r.recordId))
 
@@ -186,6 +238,13 @@ export function useCanvasCombine(
     const placeholderH = bounds.h
     const placeholderW = Math.round(placeholderH * ratio)
     const gap = 40
+    placeholderLayoutRef.current = {
+      startX: bounds.x + bounds.w + gap,
+      y: bounds.y,
+      placeholderW,
+      placeholderH,
+      gap,
+    }
 
     pushUndo()
 
@@ -211,6 +270,7 @@ export function useCanvasCombine(
     setIsOpen(false)
     setError(null)
 
+    let fulfilledCount = 0
     try {
       const results = await Promise.allSettled(
         selectedModels.flatMap((modelId) =>
@@ -222,6 +282,8 @@ export function useCanvasCombine(
                 accessToken: accessToken,
                 aspectRatio,
                 referenceImageIds,
+                onCanvas: true,
+                sourceClient: 'genzen-canvas',
               },
             }),
           ),
@@ -235,17 +297,25 @@ export function useCanvasCombine(
             .recordId,
         }))
 
+      // Process successful submits BEFORE surfacing a partial failure, so the
+      // generations that went through still get stamped, persisted, and polled.
+      fulfilledCount = fulfilled.length
+      if (fulfilled.length > 0) handleAfterSubmit(fulfilled)
+
       const firstError = results.find(
         (r): r is PromiseRejectedResult => r.status === 'rejected',
       )
       if (firstError) throw firstError.reason
 
-      if (fulfilled.length > 0) handleAfterSubmit(fulfilled)
       await credits.refresh()
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      setImages((prev) => prev.filter((ci) => !placeholderIds.includes(ci.id)))
-      setIsGenerating(false)
+      // Remove only placeholders that never got a record (true failures); the
+      // stamped ones from a partial success are being polled to completion.
+      setImages((prev) =>
+        prev.filter((ci) => !(placeholderIds.includes(ci.id) && !ci.recordId)),
+      )
+      if (fulfilledCount === 0) setIsGenerating(false)
       if (message.includes('Insufficient credits')) {
         credits.showInsufficientCredits(cost)
       } else {

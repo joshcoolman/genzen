@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
 import {
+  fetchDeadRecordIds,
+  fetchOnCanvasRecords,
   getImageDimensions,
   getSignedUrl,
+  getUrlDimensions,
   loadPersistedState,
   resolveSignedUrls,
   savePersistedState,
+  setOnCanvas,
   syncCanvasFlags,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
@@ -98,7 +102,7 @@ export function InfiniteCanvas({
   } | null>(null)
   const dialogOpenRef = useRef(false)
 
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const {
     images: libraryImages,
     imageUrls: libraryImageUrls,
@@ -205,7 +209,153 @@ export function InfiniteCanvas({
     })
   }, [storageKey])
 
+  /* -- Reconcile against the DB (source of truth for canvas membership) --
+     Runs once after load, when authenticated. The DB's on_canvas flag is
+     authoritative for *which* images belong on the canvas; IndexedDB only caches
+     *where* they sit. So: reclaim any on_canvas image the local cache lost (a
+     missed write, a generation that finished while away, a wiped cache), drop any
+     cached image the DB no longer considers a member, and resume polling for every
+     pending placeholder. Mirrors how AI Images survives restarts -- because canvas
+     images *are* the same user_images rows. */
+
+  const reconciledRef = useRef(false)
+  useEffect(() => {
+    if (!loaded || reconciledRef.current) return
+    if (!session?.access_token || !user?.id) return
+    reconciledRef.current = true
+    const userId = user.id
+
+    void (async () => {
+      const dbRecords = await fetchOnCanvasRecords(userId)
+
+      const snapshot = iRef.current
+      const cachedRecordIds = new Set(
+        snapshot.filter((i) => i.recordId).map((i) => i.recordId),
+      )
+      const toReclaim = dbRecords.filter((r) => !cachedRecordIds.has(r.id))
+
+      // Prune only cached images whose row is genuinely gone (deleted in the
+      // library/trash) -- never an image merely missing its on_canvas flag, so an
+      // existing arrangement is never wrongly emptied. syncCanvasFlags back-fills
+      // on_canvas for surviving cached images on the next save.
+      const deadIds = await fetchDeadRecordIds([...cachedRecordIds])
+
+      // Position reclaimed images beside existing content (approximate is fine).
+      let originX = 0
+      let originY = 0
+      if (snapshot.length > 0) {
+        originX = Math.max(...snapshot.map((i) => i.x + i.width)) + 400
+        originY = Math.min(...snapshot.map((i) => i.y))
+      }
+
+      const reclaimed: Array<CanvasImage> = []
+      const newPending: Array<{ id: string; recordId: string }> = []
+
+      // Completed reclaims: resolve URL + natural dimensions, then masonry-place.
+      const completed = toReclaim.filter(
+        (r) => r.status === 'completed' && r.storage_path,
+      )
+      const resolved = (
+        await Promise.all(
+          completed.map(async (r) => {
+            const url = await getSignedUrl(r.storage_path!)
+            if (!url) return null
+            const dims = await getUrlDimensions(url)
+            return { rec: r, url, dims }
+          }),
+        )
+      ).filter((x): x is NonNullable<typeof x> => x !== null)
+
+      const placed = layoutMasonry(
+        resolved.map((c) => ({
+          id: c.rec.id,
+          width: c.dims.w,
+          height: c.dims.h,
+        })),
+        6,
+        originX,
+        originY,
+        300,
+      )
+      const placedById = new Map(placed.map((p) => [p.id, p]))
+      for (const c of resolved) {
+        const p = placedById.get(c.rec.id)
+        if (!p) continue
+        reclaimed.push({
+          id: crypto.randomUUID(),
+          recordId: c.rec.id,
+          storagePath: c.rec.storage_path!,
+          signedUrl: c.url,
+          x: p.x,
+          y: p.y,
+          width: p.width,
+          height: p.height,
+        })
+      }
+
+      // Pending reclaims: add placeholders (sized from aspect_ratio) + resume.
+      let px = originX
+      const py = originY + 600
+      for (const r of toReclaim) {
+        if (r.status === 'completed' || r.status === 'failed') continue
+        const id = crypto.randomUUID()
+        const ar =
+          (r.generation_metadata?.aspect_ratio as string | undefined) ?? '1:1'
+        const [w, h] = ar.split(':').map(Number)
+        const ratio = w && h ? w / h : 1
+        const height = 300
+        const width = Math.round(height * ratio)
+        reclaimed.push({
+          id,
+          recordId: r.id,
+          storagePath: '',
+          x: px,
+          y: py,
+          width,
+          height,
+          pending: true,
+        })
+        newPending.push({ id, recordId: r.id })
+        px += width + 40
+      }
+
+      // Merge against the latest state (not the snapshot) to avoid clobbering any
+      // images added during the awaits. Drop only deleted rows; append reclaimed
+      // images deduped by recordId.
+      setImages((prev) => {
+        const prevRecordIds = new Set(
+          prev.filter((i) => i.recordId).map((i) => i.recordId),
+        )
+        const pruned = prev.filter(
+          (img) => !img.recordId || !deadIds.has(img.recordId),
+        )
+        const additions = reclaimed.filter(
+          (ri) => !ri.recordId || !prevRecordIds.has(ri.recordId),
+        )
+        return [...pruned, ...additions]
+      })
+
+      // Resume polling for every pending placeholder (cache + reclaimed).
+      const cachePending = snapshot
+        .filter((img) => img.pending && img.recordId && !img.storagePath)
+        .map((img) => ({ id: img.id, recordId: img.recordId }))
+      const allPending = [...cachePending, ...newPending]
+      if (allPending.length > 0) canvasGen.resumePending(allPending)
+    })()
+  }, [loaded, session?.access_token, user?.id, canvasGen])
+
   /* -- Save state (debounced) -- */
+
+  const flushSave = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    savePersistedState(
+      { images: iRef.current, transform: tRef.current, groups: gRef.current },
+      storageKey,
+    )
+  }, [storageKey])
 
   useEffect(() => {
     if (!loaded) return
@@ -215,6 +365,23 @@ export function InfiniteCanvas({
       syncCanvasFlags(images)
     }, 500)
   }, [images, transform, groups, loaded, storageKey])
+
+  // Flush the pending save on navigation (unmount) and page unload (reload, tab
+  // close, app switch) so a debounce window never loses the latest layout.
+  useEffect(() => {
+    if (!loaded) return
+    const onHide = () => flushSave()
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') flushSave()
+    }
+    window.addEventListener('pagehide', onHide)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      document.removeEventListener('visibilitychange', onVis)
+      flushSave()
+    }
+  }, [loaded, flushSave])
 
   /* -- Coordinates -- */
 
@@ -432,6 +599,9 @@ export function InfiniteCanvas({
                   : ci,
               ),
             )
+            // Eagerly mark on-canvas so an upload is reclaimable from the DB even
+            // if the page reloads before the debounced save runs.
+            void setOnCanvas([record.id], true)
           } catch {
             setImages((prev) => prev.filter((ci) => ci.id !== placeholder.id))
           }
@@ -513,6 +683,10 @@ export function InfiniteCanvas({
       setImages((prev) => [...prev, ...newImages])
       setSelected(newIds)
       sRef.current = newIds
+      void setOnCanvas(
+        newImages.map((img) => img.recordId),
+        true,
+      )
     },
     [pushUndo, getPasteTarget, libraryImages],
   )
@@ -948,6 +1122,14 @@ export function InfiniteCanvas({
       if (sRef.current.size === 0) return
       pushUndo()
       const sel = sRef.current
+      // Eagerly clear membership for removed images so reconciliation on the next
+      // load won't resurrect them (removal is canvas-only; the row is not deleted).
+      void setOnCanvas(
+        iRef.current
+          .filter((img) => sel.has(img.id) && img.recordId)
+          .map((img) => img.recordId),
+        false,
+      )
       setImages((prev) => prev.filter((img) => !sel.has(img.id)))
       // Clean up groups: remove deleted images, dissolve groups with <2 members
       setGroups((prev) =>

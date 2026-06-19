@@ -30,6 +30,8 @@ export interface GenerateImageInput {
   parentImageId?: string
   idempotencyKey?: string
   sourceClient?: string
+  /** Mark the created row as living on the canvas, so it's reclaimable on load */
+  onCanvas?: boolean
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -235,6 +237,7 @@ export async function generateImageInternal(
               ? referenceImagesBase64
               : undefined,
           providerOverride,
+          onCanvas: data.onCanvas,
           metadata: {
             ...(sourceImageBase64 ? { has_source_image: true } : {}),
             ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
@@ -295,6 +298,7 @@ export async function generateImageInternal(
           source: 'ai_generated',
           title: 'Generating...',
           sort_order: Date.now() / 1000,
+          ...(data.onCanvas ? { on_canvas: true } : {}),
           ...(data.idempotencyKey
             ? { idempotency_key: data.idempotencyKey }
             : {}),

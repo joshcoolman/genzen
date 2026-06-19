@@ -2,17 +2,20 @@
 
 Spatial moodboard with infinite pan-and-zoom canvas for organizing images. Supports grouping, masonry layout, AI generation, image combination/remixing, and IndexedDB persistence for layout state.
 
-## Architecture: Supabase-Backed Images
+## Architecture: DB is source of truth for membership, IndexedDB caches layout
 
-All canvas images are stored in R2 (`user_images` table + R2 storage via `createImageStorage()`). Canvas state in IndexedDB only stores layout data (positions, groups, transform) plus `recordId` and `storagePath` per image -- never image data.
+All canvas images are `user_images` rows (R2 storage via `createImageStorage()`). The DB is authoritative for **which** images are on the canvas via the `on_canvas` flag; IndexedDB is a best-effort cache for **where** they sit (positions, groups, transform) plus `recordId`/`storagePath` per image -- never image data. This mirrors why AI Images survives restarts: a canvas image _is_ the same `user_images` row.
+
+On every canvas mount, a reconcile pass (`InfiniteCanvas.tsx`) queries `on_canvas = true` rows and: reclaims any the local cache lost (a missed write, a generation that finished while away, a wiped cache -- completed ones placed via masonry, pending/queued ones resumed), and prunes cached images whose row is genuinely deleted. So anything the DB says is on the canvas always comes back, even if IndexedDB is stale.
 
 **Image lifecycle:**
 
-1. Paste/drop/upload -> file uploaded to Supabase via `useUserImages.create()` -> `recordId` + `storagePath` stored in canvas state
-2. Library pick -> existing `recordId` + `storagePath` from `user_images` record
-3. AI generation -> pending placeholder -> poll for completion -> `recordId` + `storagePath` on success
-4. Image combination -> multiple source images + prompt -> pending placeholders -> poll -> `recordId` + `storagePath` on success
+1. Paste/drop/upload -> file uploaded to Supabase via `useUserImages.create()` -> `recordId` + `storagePath` stored in canvas state; `setOnCanvas(true)` fired eagerly
+2. Library pick -> existing `recordId` + `storagePath`; `setOnCanvas(true)` eagerly
+3. AI generation -> pending placeholder (persisted with `recordId`) -> poll for completion. Rows are tagged `on_canvas = true` + `source_client: 'genzen-canvas'` **at the server insert** (`onCanvas` flag through `generateImage`/`submitGeneration`), so a generation is reclaimable even if the client navigates/refreshes before it finishes
+4. Image combination -> same as generation, multiple source images + prompt
 5. Display -> R2 public URL fetched on canvas load (no expiry, not persisted)
+6. Remove-from-canvas -> `setOnCanvas(false)` eagerly (the row is _not_ deleted; it stays in the library)
 
 **Key type:**
 
@@ -50,7 +53,7 @@ interface CanvasImage {
 ## Lib
 
 - `masonry.ts` -- `layoutMasonry()`: column-based masonry algorithm using median input width as default column width
-- `persistence.ts` -- IndexedDB read/write, `getSignedUrl()` (now R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `syncCanvasFlags()`. Strips `signedUrl`/`pending` before save, filters old-format images on load.
+- `persistence.ts` -- IndexedDB read/write + DB-reconciliation helpers: `getSignedUrl()` (R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `getUrlDimensions()` (URL-based, for reclaimed images), `syncCanvasFlags()`, `setOnCanvas(ids, value)` (eager membership write), `fetchOnCanvasRecords(userId)` (membership source of truth), `fetchDeadRecordIds(ids)` (deleted-row detection for safe pruning). Save/load keep any image with a `recordId` (including in-flight pending placeholders); only `signedUrl` is stripped.
 
 ## Shared Dependencies
 
@@ -64,13 +67,14 @@ interface CanvasImage {
 
 ## Quirks / Notes
 
-- All layout state persists to IndexedDB, debounced at 500ms. Image data lives in Supabase only.
-- Pending images (empty `recordId`) and `signedUrl` fields are stripped before IndexedDB save
-- Old-format images (with `src` data URLs, no `recordId`) are filtered out on load (migration)
+- All layout state persists to IndexedDB, debounced at 500ms, and flushed on unmount + `pagehide`/`visibilitychange`. Image data lives in Supabase only.
+- IndexedDB save/load keep any image with a `recordId` -- including pending generation placeholders (recordId set, no `storagePath` yet) so in-flight work survives navigation/refresh. Only `signedUrl` (runtime) is stripped; the `pending` flag is retained so mount-time recovery knows to resume polling. Images without a `recordId` (old `src`-data-URL format, or a placeholder before its record returns) are dropped.
+- IndexedDB persistence on `pagehide` is best-effort (async writes may not commit on unload); the mount reconcile against `on_canvas` rows is the real durability backstop.
+- Generation polling uses one shared interval per hook that drains accumulated record refs, so concurrent batches (or a fresh submit during a mount-time resume) don't drop each other's tracking.
 - Image URLs are R2 public URLs (no expiry); re-fetched on canvas load via `resolveSignedUrls()` (legacy name)
 - High-frequency events (drag, wheel) update refs directly to avoid React re-renders
 - Undo/redo stack capped at 50 entries
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
 - Paste/drop uploads files to Supabase immediately, shows pending placeholders with correct dimensions
 - Combine feature requires 2-4 selected images; supports 1-2 run iterations per model
-- `syncCanvasFlags()` updates `on_canvas` boolean on `user_images` table asynchronously
+- `syncCanvasFlags()` reconciles the `on_canvas` boolean on `user_images` on each debounced save (diff-based); `setOnCanvas()` writes it eagerly the moment an image joins/leaves the canvas so the DB is accurate for recovery before the next save

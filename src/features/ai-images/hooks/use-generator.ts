@@ -37,6 +37,9 @@ interface UseGeneratorOptions {
   storagePrefix?: string
   onAfterSubmit?: (results: Array<{ recordId: string }>) => void
   autoRefImageIds?: Array<string>
+  /** Tag generations as canvas-owned: sets on_canvas + source_client at insert */
+  onCanvas?: boolean
+  sourceClient?: string
 }
 
 export interface GeneratorState {
@@ -95,6 +98,8 @@ export function useGenerator({
   storagePrefix = 'genzen',
   onAfterSubmit,
   autoRefImageIds: autoRefImageIdsProp,
+  onCanvas,
+  sourceClient,
 }: UseGeneratorOptions): GeneratorState {
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
@@ -320,6 +325,8 @@ export function useGenerator({
                 : {}),
               ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
               ...(referenceImageIds ? { referenceImageIds } : {}),
+              ...(onCanvas ? { onCanvas: true } : {}),
+              ...(sourceClient ? { sourceClient } : {}),
             },
           }),
         )
@@ -332,14 +339,17 @@ export function useGenerator({
           recordId: (r as PromiseFulfilledResult<{ recordId: string }>).value
             .recordId,
         }))
+      // Report successful submits BEFORE surfacing a partial failure, so the
+      // caller (e.g. the canvas optimistic flow) stamps/persists/polls the
+      // generations that did go through even if a sibling model errored.
+      if (onAfterSubmit && fulfilled.length > 0) {
+        onAfterSubmit(fulfilled)
+      }
       const firstError = results.find(
         (r): r is PromiseRejectedResult => r.status === 'rejected',
       )
       if (firstError) {
         throw firstError.reason
-      }
-      if (onAfterSubmit && fulfilled.length > 0) {
-        onAfterSubmit(fulfilled)
       }
       // Refresh balance after server-side deduction
       await credits.refresh()
