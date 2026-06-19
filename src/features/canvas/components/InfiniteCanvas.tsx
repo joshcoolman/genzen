@@ -173,11 +173,32 @@ export function InfiniteCanvas({
   )
   const getImages = useCallback(() => iRef.current, [])
 
+  // Wrap already-positioned images in a group without re-arranging them (unlike
+  // groupSelected, which masonry-arranges). Used to auto-group a generation's
+  // origin with its previews.
+  const groupImages = useCallback(
+    (imageIds: Array<string>, columns: number) => {
+      if (imageIds.length < 2) return
+      const idSet = new Set(imageIds)
+      setGroups((prev) => [
+        ...prev
+          .map((g) => ({
+            ...g,
+            imageIds: g.imageIds.filter((id) => !idSet.has(id)),
+          }))
+          .filter((g) => g.imageIds.length >= 2),
+        { id: crypto.randomUUID(), imageIds, columns, padding: 24 },
+      ])
+    },
+    [],
+  )
+
   const canvasGen = useCanvasGenerate(
     setImages,
     pushUndo,
     getImages,
     revealBounds,
+    groupImages,
   )
 
   const undo = useCallback(() => {

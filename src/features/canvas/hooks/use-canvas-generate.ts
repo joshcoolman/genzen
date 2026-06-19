@@ -50,6 +50,7 @@ export function useCanvasGenerate(
   pushUndo: () => void,
   getImages: () => Array<CanvasImage>,
   revealBounds: (b: Rect) => void,
+  groupImages: (imageIds: Array<string>, columns: number) => void,
 ) {
   const { session, user } = useAuth()
   const accessToken = session?.access_token
@@ -381,6 +382,11 @@ export function useCanvasGenerate(
     pendingPlaceholdersRef.current = placeholderIds
 
     setImages((prev) => [...prev, ...placeholders])
+    // Single-image generate: auto-group the origin with its generations so they
+    // stay together as a unit. (Group generate leaves the scattered inputs.)
+    if (isSingle) {
+      groupImages([source.id, ...placeholderIds], totalCount + 1)
+    }
     setIsGenerating(true)
     setIsOpen(false)
 
@@ -399,7 +405,7 @@ export function useCanvasGenerate(
       setImages((prev) => prev.filter((ci) => !placeholderIds.includes(ci.id)))
       setIsGenerating(false)
     })
-  }, [generator, setImages, pushUndo, getImages, revealBounds])
+  }, [generator, setImages, pushUndo, getImages, revealBounds, groupImages])
 
   // Open the Generate dialog for a selection. The first image is the primary
   // (Image 1, the source, shown up top); the rest pre-fill the reference strip

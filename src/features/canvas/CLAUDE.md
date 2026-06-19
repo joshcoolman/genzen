@@ -54,6 +54,10 @@ Generation is one flow keyed off the selection (`useCanvasGenerate`). The on-ima
 
 There is no separate "Combine" feature anymore (retired into this flow).
 
+**Placement:** previews lay out to the right of the source; if that would overlap existing images they relocate to clear space below everything (single-image: the source moves with them; group: inputs stay put). The view `fitBounds`-zooms to the new previews. For a single-image generate the origin + its previews are auto-grouped (`groupImages`).
+
+**Delete:** Delete/Backspace opens a confirm modal (Remove from Canvas / Move to Trash / Cancel); each shows an Undo toast. Right-click context menu offers the same Generate + Move to Trash.
+
 ## Hooks
 
 - `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).

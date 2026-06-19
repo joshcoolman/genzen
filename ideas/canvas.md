@@ -112,3 +112,21 @@ On "let's execute": promote `decided` items into an implementation plan, confirm
 5. Evolve the existing Combine path (placeholders/polling/labels/metadata parity all reused); swap its hardcoded 2-model list for the curated canvas edit models filtered by selection count.
 
 Full plan: `~/.claude/plans/this-is-an-idea-ethereal-rainbow.md`. Tracking: see round-2 issue.
+
+---
+
+## Auto-group origin + generations — `decided` (2026-06-19, round 3)
+
+**Idea:** After generating from the canvas, auto-group the origin image with its generations. Came from real use ("would be way better if they were already grouped").
+
+**Decision:** On generate, group the origin (Image 1) with its resulting previews into a `CanvasGroup`. Complements the collision-free block placement (#160 / PR #161) — the block is already spatially together; this makes it an actual group.
+
+**Notes:** Groups already exist (`CanvasGroup`, `groupSelected`). Group the origin id + placeholder ids at submit (placeholder ids persist through resolve, so the group survives). Single-image case is clear (origin + its generations). Multi-input (group generate) is fuzzier — defer that nuance; do single-image first.
+
+---
+
+## Right-click drag to pan — `open` (2026-06-19, round 3)
+
+**Idea:** Pan the canvas by right-click-dragging, in addition to the current space+drag (hold space, drag). The user keeps reaching for right-click to move around.
+
+**Open question:** Right-click currently opens the image context menu (Generate / Move to Trash). Need to reconcile: likely right-click-**drag** on empty canvas = pan; right-click (no drag) on an image = context menu. Decide the exact gesture split at build (e.g., distinguish drag vs click by movement threshold; suppress the context menu when a drag occurred).
