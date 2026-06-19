@@ -2,6 +2,8 @@
 
 Promoted from the `decided` items in [canvas.md](./canvas.md). That file is the decision log + rationale; this file is the sequenced build spec (the execution membrane). On "let's execute": create a feature branch + tracking issue (per PR/phased workflow), build phases in order, flip items to `done` in `canvas.md`.
 
+**STATUS (2026-06-19): all 5 phases SHIPPED** on `feature/canvas-generate-overhaul` (local commits, not pushed). Tracking: [genzen#156](https://github.com/joshcoolman/genzen/issues/156). Kling pre-flight resolved (image-to-image variant exists on FAL but deferred — needs shared registry change).
+
 ## Theme
 
 Make the canvas Generate flow match the canvas mental model: **select image(s) on canvas → add a prompt → optionally add reference images → generate**, on a curated set of ref-capable models. Plus discoverability (surface Generate) and correct delete semantics.

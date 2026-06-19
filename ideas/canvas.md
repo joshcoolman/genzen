@@ -7,6 +7,8 @@ On "let's execute": promote `decided` items into an implementation plan, confirm
 
 **Execution plan:** [canvas-plan.md](./canvas-plan.md) — sequenced phases for the `decided` items below.
 
+**Status (2026-06-19):** All items below `done` — shipped on branch `feature/canvas-generate-overhaul` (local commits, not pushed). Tracking: [genzen#156](https://github.com/joshcoolman/genzen/issues/156).
+
 ---
 
 ## Delete behavior — `decided` (2026-06-19)
