@@ -17,9 +17,39 @@ function parseRatio(r: string): number {
   return w && h ? w / h : 1
 }
 
+interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+function rectsOverlap(a: Rect, b: Rect): boolean {
+  return (
+    a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+  )
+}
+
+/** Bounding box of a set of canvas images. */
+function boundsOf(imgs: Array<CanvasImage>): Rect {
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity
+  for (const img of imgs) {
+    x0 = Math.min(x0, img.x)
+    y0 = Math.min(y0, img.y)
+    x1 = Math.max(x1, img.x + img.width)
+    y1 = Math.max(y1, img.y + img.height)
+  }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
+}
+
 export function useCanvasGenerate(
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>,
   pushUndo: () => void,
+  getImages: () => Array<CanvasImage>,
+  revealBounds: (b: Rect) => void,
 ) {
   const { session, user } = useAuth()
   const accessToken = session?.access_token
@@ -260,7 +290,11 @@ export function useCanvasGenerate(
     promptPrefix: labelPrefix,
   })
 
-  // Optimistic generation: create placeholders, then fire server call
+  // Optimistic generation: create placeholders, then fire server call.
+  // Placeholders go to the right of the source; if that would overlap existing
+  // images, the block is relocated to clear space below everything so previews
+  // never land on top of other images. For a single image the source moves with
+  // its previews (keeping them together); for a group the inputs stay put.
   const handleGenerateOptimistic = useCallback(() => {
     const source = sourceRef.current
     if (!source || !generator.canGenerate) return
@@ -268,21 +302,65 @@ export function useCanvasGenerate(
     const ratio = parseRatio(generator.aspectRatio)
     const placeholderH = source.height
     const placeholderW = Math.round(placeholderH * ratio)
-
-    // generator.totalImages already accounts for prompts x models x gensPerModel;
-    // the previous local formula ignored the prompt dimension and under-counted.
+    // generator.totalImages already accounts for prompts x models x gensPerModel.
     const totalCount = generator.totalImages
     const gap = 40
-    const startX = source.x + source.width + gap
+
+    const isSingle = generator.refImages.length === 0
+    // Images the previews must not overlap. For single, exclude the source (it
+    // may move with the block); for a group the inputs stay where they are.
+    const obstacles = getImages().filter(
+      (img) => !img.pending && (isSingle ? img.id !== source.id : true),
+    )
+
+    let originX = source.x
+    let originY = source.y
+    let startX = source.x + source.width + gap
+
+    const childRow = (sx: number, y: number): Array<Rect> =>
+      Array.from({ length: totalCount }, (_, i) => ({
+        x: sx + i * (placeholderW + gap),
+        y,
+        w: placeholderW,
+        h: placeholderH,
+      }))
+
+    const hits = (rects: Array<Rect>) =>
+      rects.some((r) =>
+        obstacles.some((o) =>
+          rectsOverlap(r, { x: o.x, y: o.y, w: o.width, h: o.height }),
+        ),
+      )
+
+    if (hits(childRow(startX, originY))) {
+      const bounds = boundsOf(obstacles.length ? obstacles : [source])
+      originY = bounds.y + bounds.h + gap * 2
+      if (isSingle) {
+        originX = bounds.x
+        startX = originX + source.width + gap
+      } else {
+        startX = bounds.x
+      }
+    }
+
     placeholderLayoutRef.current = {
       startX,
-      y: source.y,
+      y: originY,
       placeholderW,
       placeholderH,
       gap,
     }
 
     pushUndo()
+
+    // If the single-image block moved, carry the source image with it.
+    if (isSingle && (originX !== source.x || originY !== source.y)) {
+      setImages((prev) =>
+        prev.map((ci) =>
+          ci.id === source.id ? { ...ci, x: originX, y: originY } : ci,
+        ),
+      )
+    }
 
     const placeholderIds: Array<string> = []
     const placeholders: Array<CanvasImage> = []
@@ -294,7 +372,7 @@ export function useCanvasGenerate(
         recordId: '',
         storagePath: '',
         x: startX + i * (placeholderW + gap),
-        y: source.y,
+        y: originY,
         width: placeholderW,
         height: placeholderH,
         pending: true,
@@ -306,11 +384,22 @@ export function useCanvasGenerate(
     setIsGenerating(true)
     setIsOpen(false)
 
+    // Reveal the previews (plus the source, for a single) so it's clear they
+    // appeared even if the block moved off-screen.
+    const revealX = isSingle ? Math.min(originX, startX) : startX
+    const rowEnd = startX + totalCount * (placeholderW + gap) - gap
+    revealBounds({
+      x: revealX,
+      y: originY,
+      w: rowEnd - revealX,
+      h: Math.max(isSingle ? source.height : 0, placeholderH),
+    })
+
     generator.handleGenerate().catch(() => {
       setImages((prev) => prev.filter((ci) => !placeholderIds.includes(ci.id)))
       setIsGenerating(false)
     })
-  }, [generator, modelSelector, setImages, pushUndo])
+  }, [generator, setImages, pushUndo, getImages, revealBounds])
 
   // Open the Generate dialog for a selection. The first image is the primary
   // (Image 1, the source, shown up top); the rest pre-fill the reference strip
