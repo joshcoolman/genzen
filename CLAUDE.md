@@ -52,6 +52,17 @@ Exploratory sessions capture ideas before any build. The user pokes around the a
 - On "capture this": append an entry to the relevant `ideas/<feature>.md` with the recommendation/decision inline and a status -- `open` (undecided) / `decided` (agreed, not built) / `done` (shipped).
 - On "let's execute": read that feature's file, promote `decided` items into a concrete on-spec plan, confirm scope, build, then flip items to `done`. No scope drift beyond what's captured.
 
+## Git workflow
+
+This is a solo project. **Commit directly to main by default.** Feature branches are only justified for genuinely risky or experimental work where an escape hatch is needed.
+
+If a branch is used, merge it and delete it before the session's final commit — never leave branches open at end of session. The goal is that main always reflects the current working state of the app, so switching computers means pulling main and continuing seamlessly.
+
+At the end of any session, main should be:
+- Up to date with all completed work
+- Pushed to remote
+- Free of stale local branches
+
 ## Handoffs
 
 When using the `/handoff` skill, save the document to `continue/<github-login>.md`
