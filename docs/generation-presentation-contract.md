@@ -115,17 +115,54 @@ into bespoke markup is how divergence starts.
 
 ## Convergence backlog (the work this contract names)
 
-- **Canvas in-progress state** historically showed a gray pulse with no model.
-  Now fixed to the contract, but reconcile the implementation: extract the
-  state-rendering pieces (spinner+label, failed block) so Canvas and `Thumbnail`
-  share them, or adapt `Thumbnail` to a substrate-agnostic core. Until then,
-  Canvas is a divergence risk — the next canvas state change must be mirrored by
-  hand.
-- **`GenerationView` normalizer** is not yet a single shared function; each view
-  reads `generation_metadata` and `status` directly. Extracting one
-  `normalizeGeneration(record): GenerationView` (functional core, unit-testable)
-  is the highest-leverage step — it makes invariants 1–5 enforceable in one
-  place.
+From the Canvas drift audit (read-only pass against this contract +
+ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
+
+### Tier 1 — invariant violations / silent paths
+
+- [ ] **Canvas in-progress tile is a gray square** — no spinner, no model, for
+      the whole generation. Violates invariant #1; the original "why is Canvas a
+      gray square?" complaint, still open (failed/completed were fixed, pending was
+      not). → [#164](https://github.com/joshcoolman/genzen/issues/164)
+- [ ] **Completed-but-no-signedURL silently drops the tile** —
+      `use-canvas-generate.ts` completed branch `filter`s instead of failing.
+      Violates invariant #3. → [#165](https://github.com/joshcoolman/genzen/issues/165)
+- [ ] **Failed-tile Dismiss is UI-only** — leaves a stale `on_canvas=true`
+      failed row in the DB. → [#166](https://github.com/joshcoolman/genzen/issues/166)
+
+### Tier 2 — structural drift
+
+- [ ] **No shared `normalizeGeneration(record): GenerationView`** — Canvas / AI
+      Images / Activity each re-derive model/status/retryable. _Highest-leverage
+      structural fix:_ it makes invariants 1–5 enforceable in one place, and #164 /
+      the nomenclature drift mostly fall out of it. (Functional core, unit-testable.)
+- [ ] **Canvas renders states via bespoke markup/CSS, not `Thumbnail`** — a
+      second implementation of the contract. Extract shared state-rendering pieces
+      (spinner+label, failed block) or make `Thumbnail` substrate-agnostic so Canvas
+      consumes it. Until then the next canvas state change must be mirrored by hand.
+- [ ] **Nomenclature drift:** `CanvasImage` uses `pending`/`failed` booleans
+      instead of the `status` vocabulary. Resolved by the normalizer above.
+- [ ] **Duplicated completion-polling loops** — `use-images.ts` vs
+      `use-canvas-generate.ts` are two implementations of "poll until done" (Canvas
+      also runs a redundant per-record query). Divergence risk: a fix to one may not
+      reach the other.
+
+### Tier 3 — cleanups
+
+- [ ] **`boundsOf` (use-canvas-generate) duplicates `getBounds`
+      (InfiniteCanvas)** — same function twice.
+- [ ] **Extract inline pure logic:** `spatialSort` and the placeholder collision
+      geometry (`rectsOverlap` + relocate-below decision) — same move as the already
+      extracted `mapOutcomesToPlaceholders` / `layoutMasonry`.
+- [ ] **Deletion semantics differ** — AI Images delete is genealogy-aware;
+      Canvas trash is a plain `deleted_at`. Decide consciously rather than by accident.
+
+### Explicitly NOT drift (don't "fix" these)
+
+Correct sibling-view separations, recorded so they aren't mistaken for debt:
+reorder (`sort_order`) vs spatial position; grouping (genealogical `parent_id`
+tree) vs canvas spatial groups; model label hover-only on canvas (substrate
+difference, contract still met); upload already shares `useUserImages`.
 
 ---
 
