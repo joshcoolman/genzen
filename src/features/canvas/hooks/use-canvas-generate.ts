@@ -13,6 +13,7 @@ import { checkPendingGenerations } from '@/lib/server/check-pending-generations.
 import { detectAspectRatio } from '@/features/ai-images/constants'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+import { normalizeGeneration } from '@/features/ai-images/normalize-generation'
 
 /**
  * Whether a model id (base or resolved edit endpoint) belongs to the Google
@@ -169,17 +170,17 @@ export function useCanvasGenerate(
           const recordModel = (
             record.generation_metadata as { model?: string } | null
           )?.model
+          const storagePath = record.storage_path
+          const signedUrl = storagePath ? await getSignedUrl(storagePath) : null
+          const view = normalizeGeneration(record, signedUrl ?? undefined)
 
-          if (record.status === 'completed' && record.storage_path) {
+          if (view.status === 'completed' || view.status === 'failed') {
             pending.delete(recordId)
             const placeholderId = map.get(recordId)
             map.delete(recordId)
             if (!placeholderId) continue
 
-            const storagePath = record.storage_path
-            const signedUrl = await getSignedUrl(storagePath)
-
-            if (signedUrl) {
+            if (view.status === 'completed' && signedUrl && storagePath) {
               setImages((prev) =>
                 prev.map((ci) =>
                   ci.id === placeholderId
@@ -195,15 +196,12 @@ export function useCanvasGenerate(
                 ),
               )
             } else {
-              setImages((prev) => prev.filter((ci) => ci.id !== placeholderId))
-            }
-          } else if (record.status === 'failed') {
-            pending.delete(recordId)
-            const placeholderId = map.get(recordId)
-            map.delete(recordId)
-            if (placeholderId) {
-              // Keep the tile -- mark it failed so it shows the model + error
-              // instead of silently vanishing.
+              // failed, or completed-but-no-signedUrl: persist as failed tile
+              // instead of silently dropping it (invariant #3).
+              const errorMessage =
+                view.status === 'failed'
+                  ? (view.errorMessage ?? 'Generation failed')
+                  : 'Image could not be loaded'
               setImages((prev) =>
                 prev.map((ci) =>
                   ci.id === placeholderId
@@ -211,8 +209,7 @@ export function useCanvasGenerate(
                         ...ci,
                         pending: false,
                         failed: true,
-                        errorMessage:
-                          record.generation_error ?? 'Generation failed',
+                        errorMessage,
                         ...(recordModel ? { model: recordModel } : {}),
                       }
                     : ci,
@@ -400,6 +397,11 @@ export function useCanvasGenerate(
     const gap = 40
 
     const isSingle = generator.refImages.length === 0
+    // Models expanded by gensPerModel — placeholder[i] maps to
+    // modelsExpanded[i % len] matching the submit order from useGenerator.
+    const modelsExpanded = modelSelector.selectedIds.flatMap((id) =>
+      Array.from({ length: modelSelector.gensPerModel }, () => id),
+    )
     // Images the previews must not overlap. For single, exclude the source (it
     // may move with the block); for a group the inputs stay where they are.
     const obstacles = getImages().filter(
@@ -469,6 +471,7 @@ export function useCanvasGenerate(
         width: placeholderW,
         height: placeholderH,
         pending: true,
+        model: modelsExpanded[i % modelsExpanded.length],
       })
     }
     pendingPlaceholdersRef.current = placeholderIds
@@ -509,7 +512,15 @@ export function useCanvasGenerate(
       )
       setIsGenerating(false)
     })
-  }, [generator, setImages, pushUndo, getImages, revealBounds, groupImages])
+  }, [
+    generator,
+    modelSelector,
+    setImages,
+    pushUndo,
+    getImages,
+    revealBounds,
+    groupImages,
+  ])
 
   // Open the Generate dialog for a selection. The first image is the primary
   // (Image 1, the source, shown up top); the rest pre-fill the reference strip

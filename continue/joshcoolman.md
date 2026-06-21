@@ -8,24 +8,46 @@ history holds the past. See `continue/README.md` for the convention.
 
 ## ⏯ Where I left off
 
-**Shipped (2026-06-20) — PR #163** (branch `fix/canvas-model-labels-failures`):
-FLUX Kontext Pro ref-image fix, persistent failed tiles + on-canvas model labels,
-Activity `queued` status, and tests (registry invariants / masonry / persistence
-contract / extracted `mapOutcomesToPlaceholders`). Also landed `ARCHITECTURE.md`
-and `docs/generation-presentation-contract.md`.
+**Session (2026-06-21) — canvas convergence Tier 2 + Tier 1 + label polish:**
 
-## ▶ Next up — canvas convergence backlog
+Landed `normalizeGeneration(record): GenerationView` as the shared functional
+core for all view surfaces. Closed all three Tier 1 issues:
 
-Full checklist lives in `docs/generation-presentation-contract.md`.
+- **#164** — pending tile now shows spinner + model name, counter-scaled
+  (`Math.min(3, 1/zoom)`) so it stays visible at low zoom.
+- **#165** — completed-but-no-signedURL transitions to failed tile instead of
+  silent drop.
+- **#166** — Dismiss calls `setOnCanvas([img.recordId], false)` — durable, not
+  UI-only.
 
-**Tier 1 issues:**
+**Model label redesign:** moved labels out of the canvas transform (where they
+got tiny at low zoom) into a screen-space overlay — same coordinate system as the
+Generate pill. Fixed 11px, always visible, positioned 22px above the tile's
+top-left corner. Hidden below 20% zoom. Both pending and failed tile content
+counter-scaled for readability.
 
-- **#164** — in-progress tile is a gray square with no spinner/model (the original
-  complaint, only half-fixed)
-- **#165** — completed-but-no-signedURL silently drops the tile
-- **#166** — failed-tile Dismiss is UI-only (leaves stale `on_canvas=true` row)
+**Commit enforcement wired up:**
+- `.githooks/pre-commit` — blocks git commit if `continue/<login>.md` not staged
+- `package.json` `prepare` script — auto-configures hooks path on `pnpm install`
+- `CLAUDE.md` — documents the requirement
+- `.claude/settings.json` PreToolUse hook — pending user approval (write was
+  blocked by auto-mode; user needs to approve or paste manually)
 
-**Sequencing:** do the Tier 2 `normalizeGeneration(record): GenerationView`
-extraction **first** (functional core, single enforcement point for the
-presentation-contract invariants) — #164 and the `pending`/`failed` boolean
-nomenclature drift fall out of it — then #165, then #166.
+**Not yet committed** — all changes are in the working tree.
+
+## ▶ Next up
+
+1. **Get `.claude/settings.json` PreToolUse hook approved** — user needs to
+   approve the write or paste it manually. Content is in the conversation.
+
+2. **Commit this session's work** — suggested branch:
+   `fix/canvas-convergence-normalizer-labels`
+
+3. **Remaining Tier 2 structural drift** (see
+   `docs/generation-presentation-contract.md`):
+   - Canvas renders via bespoke markup/CSS, not `Thumbnail`
+   - Duplicated completion-polling loops (`use-images.ts` vs `use-canvas-generate.ts`)
+
+4. **Tier 3 cleanups** (low priority):
+   - `boundsOf` in use-canvas-generate duplicates `getBounds` in InfiniteCanvas
+   - `spatialSort` and collision geometry could be extracted as pure functions

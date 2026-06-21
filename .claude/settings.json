@@ -13,6 +13,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'input=$(cat); echo \"$input\" | grep -qF \"git commit\" || exit 0; login=$(gh api user --jq .login 2>/dev/null) || true; [ -z \"$login\" ] && exit 0; file=\"continue/${login}.md\"; git diff --cached --name-only 2>/dev/null | grep -q \"^${file}$\" && exit 0; echo \"Stage continue/${login}.md before committing -- it is the cross-machine resume pointer.\"; exit 1'"
+          }
+        ]
+      }
     ]
   }
 }

@@ -1443,9 +1443,25 @@ export function InfiniteCanvas({
               }}
             >
               {img.pending ? (
-                <div className={styles.pendingInner} />
+                <div className={styles.pendingInner}>
+                  <div
+                    className={styles.pendingContent}
+                    style={{ transform: `scale(${Math.min(3, 1 / transform.scale)})` }}
+                  >
+                    <div className="size-5 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
+                    {img.model && (
+                      <span className={styles.pendingModel}>
+                        {getModelName(img.model)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               ) : img.failed ? (
                 <div className={styles.failedInner}>
+                  <div
+                    className={styles.failedContent}
+                    style={{ transform: `scale(${Math.min(3, 1 / transform.scale)})` }}
+                  >
                   <span className={styles.failedModel}>
                     {getModelName(img.model ?? '')}
                   </span>
@@ -1472,6 +1488,8 @@ export function InfiniteCanvas({
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation()
+                        if (img.recordId)
+                          void setOnCanvas([img.recordId], false)
                         setImages((prev) =>
                           prev.filter((ci) => ci.id !== img.id),
                         )
@@ -1480,20 +1498,34 @@ export function InfiniteCanvas({
                       Dismiss
                     </button>
                   </div>
+                  </div>
                 </div>
               ) : (
-                <>
-                  <img src={img.signedUrl} alt="" draggable={false} />
-                  {img.model && (
-                    <span className={styles.modelLabel}>
-                      {getModelName(img.model)}
-                    </span>
-                  )}
-                </>
+                <img src={img.signedUrl} alt="" draggable={false} />
               )}
             </div>
           ))}
         </div>
+
+        {/* Model labels — screen-space overlay, same coordinate system as the
+            Generate pill. Fixed screen size so they stay readable at any zoom. */}
+        {images
+          .filter(
+            (img) =>
+              transform.scale >= 0.2 && !img.pending && !img.failed && img.model,
+          )
+          .map((img) => (
+            <span
+              key={`label-${img.id}`}
+              className={styles.imageLabelOverlay}
+              style={{
+                left: transform.x + img.x * transform.scale,
+                top: transform.y + img.y * transform.scale - 22,
+              }}
+            >
+              {getModelName(img.model!)}
+            </span>
+          ))}
 
         {selectionBounds && (
           <div

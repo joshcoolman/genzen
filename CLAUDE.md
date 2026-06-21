@@ -59,6 +59,11 @@ When using the `/handoff` skill, save the document to `continue/<github-login>.m
 pointers — one per developer, read at session start by the hook in
 `.claude/settings.json`. See `continue/README.md` for the convention.
 
+**Before every commit:** update and stage `continue/<login>.md`. This is enforced
+by `.githooks/pre-commit` (blocks with a message if not staged) and a `PreToolUse`
+hook in `.claude/settings.json` (blocks Claude-driven commits). The `prepare` npm
+script (`pnpm install`) configures the git hooks path automatically.
+
 ## Gotchas
 
 - `routeTree.gen.ts` is auto-generated -- never edit manually

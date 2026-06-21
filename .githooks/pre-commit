@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Remind (and block) if the current user's continue/<login>.md isn't staged.
+# This file is the cross-machine resume pointer — always update it before committing.
+# Skip with: git commit --no-verify
+
+login=$(gh api user --jq .login 2>/dev/null) || true
+[ -z "$login" ] && exit 0
+
+file="continue/${login}.md"
+if ! git diff --cached --name-only | grep -q "^${file}$"; then
+  echo ""
+  echo "  ⚠️  ${file} is not staged."
+  echo "     Update it before committing — it is your cross-machine resume pointer."
+  echo "     Skip: git commit --no-verify"
+  echo ""
+  exit 1
+fi
