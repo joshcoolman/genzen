@@ -1,7 +1,92 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fetchDeadRecordIds, setOnCanvas } from './persistence'
+import {
+  cleanImagesForSave,
+  fetchDeadRecordIds,
+  filterLoadedImages,
+  setOnCanvas,
+} from './persistence'
+import type { CanvasImage } from '../types'
 import { supabase } from '@/lib/supabase'
+
+const completed: CanvasImage = {
+  id: 'c1',
+  recordId: 'rec-c1',
+  storagePath: 'path/c1.png',
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  signedUrl: 'https://example.com/c1.png',
+  model: 'fal-ai/flux-2-pro/edit',
+}
+
+const pending: CanvasImage = {
+  id: 'p1',
+  recordId: 'rec-p1',
+  storagePath: '',
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  pending: true,
+}
+
+const failed: CanvasImage = {
+  id: 'f1',
+  recordId: 'rec-f1',
+  storagePath: '',
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  failed: true,
+  errorMessage: 'NSFW content blocked',
+  model: 'fal-ai/nano-banana-2',
+  signedUrl: 'https://example.com/stale.png',
+}
+
+// Legacy / not-yet-submitted: no recordId -> not durable, must be dropped.
+const noRecord: CanvasImage = {
+  id: 'n1',
+  recordId: '',
+  storagePath: '',
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+}
+
+describe('persistence durability contract', () => {
+  it('filterLoadedImages keeps anything with a recordId, drops the rest', () => {
+    const kept = filterLoadedImages([completed, pending, failed, noRecord])
+    expect(kept.map((i) => i.id)).toEqual(['c1', 'p1', 'f1'])
+  })
+
+  it('cleanImagesForSave drops no-recordId images and strips signedUrl', () => {
+    const saved = cleanImagesForSave([completed, pending, failed, noRecord])
+    expect(saved.map((i) => i.id)).toEqual(['c1', 'p1', 'f1'])
+    for (const img of saved) {
+      expect('signedUrl' in img).toBe(false)
+    }
+  })
+
+  it('cleanImagesForSave preserves pending placeholders so in-flight work resumes', () => {
+    const saved = cleanImagesForSave([pending])
+    expect(saved[0]).toMatchObject({ recordId: 'rec-p1', pending: true })
+  })
+
+  it('cleanImagesForSave preserves failed tiles with model + error (no silent loss on reload)', () => {
+    const saved = cleanImagesForSave([failed])
+    expect(saved[0]).toMatchObject({
+      recordId: 'rec-f1',
+      failed: true,
+      errorMessage: 'NSFW content blocked',
+      model: 'fal-ai/nano-banana-2',
+    })
+    expect('signedUrl' in saved[0]).toBe(false)
+  })
+})
 
 // vi.mock is hoisted — keep factories self-contained
 vi.mock('@/lib/supabase', () => ({

@@ -1,4 +1,9 @@
-export type GenerationStatus = 'pending' | 'processing' | 'completed' | 'failed'
+export type GenerationStatus =
+  | 'queued'
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
 
 export interface ActivityGenerationMetadata {
   prompt?: string

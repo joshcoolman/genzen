@@ -121,10 +121,14 @@ export function useActivityPage() {
     }
   }, [userId, refetch])
 
-  // Poll FAL for pending/processing rows so this page progresses even when
-  // the user isn't on AI Images. Runs only while pending work exists.
+  // Poll for queued/pending/processing rows so this page progresses even when
+  // the user isn't on AI Images (checkPendingGenerations also dispatches the
+  // Google queue, where rows start as 'queued'). Runs only while work is live.
   const hasPendingWork = entries.some(
-    (e) => e.status === 'pending' || e.status === 'processing',
+    (e) =>
+      e.status === 'queued' ||
+      e.status === 'pending' ||
+      e.status === 'processing',
   )
   useEffect(() => {
     if (!accessToken || !hasPendingWork) return

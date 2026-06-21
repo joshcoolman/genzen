@@ -35,7 +35,17 @@ interface UseGeneratorOptions {
   credits: CreditsState
   setError: (error: string | null) => void
   storagePrefix?: string
-  onAfterSubmit?: (results: Array<{ recordId: string }>) => void
+  // Ordered per-call outcomes (one per submitted generation, in submit order),
+  // so callers can map each result to its placeholder and attribute failures.
+  // `model` is the user-facing base id; `recordId` is null when the submit
+  // itself failed (no DB record), with `error` carrying the reason.
+  onAfterSubmit?: (
+    results: Array<{
+      model: string
+      recordId: string | null
+      error: string | null
+    }>,
+  ) => void
   autoRefImageIds?: Array<string>
   /** Tag generations as canvas-owned: sets on_canvas + source_client at insert */
   onCanvas?: boolean
@@ -276,25 +286,24 @@ export function useGenerator({
   async function handleGenerate() {
     if (loading || !accessToken || !canGenerate) return
 
+    // Each entry keeps the user-facing `base` id (for labelling) alongside the
+    // `resolved` endpoint we actually submit to (edit/img2img variant).
     const modelsToUse = selectedModels.flatMap((modelId) => {
-      // Kontext Dev needs a source image -- fall back to FLUX Dev for text-only
+      let resolved = modelId
       if (modelId === KONTEXT_DEV && !sourceImage) {
-        return Array.from(
-          { length: gensPerModel },
-          () => DRAFT_TEXT_ONLY_FALLBACK,
-        )
-      }
-      // If source image is present and model has an edit endpoint, use it
-      if (sourceImage) {
+        // Kontext Dev needs a source image -- fall back to FLUX Dev for text-only
+        resolved = DRAFT_TEXT_ONLY_FALLBACK
+      } else if (sourceImage) {
+        // If source image is present and model has an edit endpoint, use it
         const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === modelId)
         if (modelDef?.imageInputModelId && modelId !== KONTEXT_DEV) {
-          return Array.from(
-            { length: gensPerModel },
-            () => modelDef.imageInputModelId!,
-          )
+          resolved = modelDef.imageInputModelId
         }
       }
-      return Array.from({ length: gensPerModel }, () => modelId)
+      return Array.from({ length: gensPerModel }, () => ({
+        base: modelId,
+        resolved,
+      }))
     })
 
     // Collect non-empty prompts; if none but sourceImage exists, use ['']
@@ -326,13 +335,17 @@ export function useGenerator({
       )
       const referenceImageIds = mergedIds.length > 0 ? mergedIds : undefined
 
+      // Submit order mirrors allCalls so callModels[i] labels outcomes[i].
+      const callModels = promptsToRun.flatMap(() =>
+        modelsToUse.map((m) => m.base),
+      )
       const allCalls = promptsToRun.flatMap((promptText) => {
         const finalPrompt = `${promptPrefixRef.current}${promptText.trim()}`
-        return modelsToUse.map((modelId) =>
+        return modelsToUse.map((m) =>
           generateImage({
             data: {
               prompt: finalPrompt,
-              model: modelId,
+              model: m.resolved,
               accessToken: accessToken,
               aspectRatio,
               idempotencyKey: crypto.randomUUID(),
@@ -351,17 +364,25 @@ export function useGenerator({
       })
 
       const results = await Promise.allSettled(allCalls)
-      const fulfilled = results
-        .filter((r) => r.status === 'fulfilled')
-        .map((r) => ({
-          recordId: (r as PromiseFulfilledResult<{ recordId: string }>).value
-            .recordId,
-        }))
-      // Report successful submits BEFORE surfacing a partial failure, so the
-      // caller (e.g. the canvas optimistic flow) stamps/persists/polls the
-      // generations that did go through even if a sibling model errored.
-      if (onAfterSubmit && fulfilled.length > 0) {
-        onAfterSubmit(fulfilled)
+      // Ordered outcomes (one per call) so the caller can map each to its
+      // placeholder and mark per-model failures instead of dropping slots.
+      const outcomes = results.map((r, i) => ({
+        model: callModels[i],
+        recordId:
+          r.status === 'fulfilled'
+            ? (r.value as { recordId: string }).recordId
+            : null,
+        error:
+          r.status === 'rejected'
+            ? r.reason instanceof Error
+              ? r.reason.message
+              : String(r.reason)
+            : null,
+      }))
+      // Report outcomes (successes AND failures) so the caller stamps/persists/
+      // polls what went through and surfaces what didn't -- no silent drops.
+      if (onAfterSubmit && outcomes.length > 0) {
+        onAfterSubmit(outcomes)
       }
       const firstError = results.find(
         (r): r is PromiseRejectedResult => r.status === 'rejected',

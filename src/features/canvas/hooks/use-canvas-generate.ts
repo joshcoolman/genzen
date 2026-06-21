@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
 import { canvasModelIdsForRefCount } from '../canvas-models'
+import { mapOutcomesToPlaceholders } from '../lib/generation-mapping'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
@@ -10,6 +11,27 @@ import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { detectAspectRatio } from '@/features/ai-images/constants'
+import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
+import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
+
+/**
+ * Whether a model id (base or resolved edit endpoint) belongs to the Google
+ * provider. retryGeneration only resubmits FAL records, so Google failures
+ * (e.g. Nano Banana) are dismiss-only.
+ */
+function isGoogleModel(modelId?: string): boolean {
+  if (!modelId) return false
+  return ALL_IMAGE_MODELS.some(
+    (m) =>
+      m.provider === 'google' &&
+      (m.id === modelId || m.imageInputModelId === modelId),
+  )
+}
+
+/** A failed tile can be retried only if it has a DB record and is a FAL model. */
+export function canRetryFailure(img: CanvasImage): boolean {
+  return !!img.recordId && !isGoogleModel(img.model)
+}
 
 /** Parse "w:h" string into numeric ratio */
 function parseRatio(r: string): number {
@@ -136,11 +158,17 @@ export function useCanvasGenerate(
         for (const recordId of [...pending]) {
           const { data: record } = await supabase
             .from('user_images')
-            .select('id, status, storage_path')
+            .select(
+              'id, status, storage_path, generation_metadata, generation_error',
+            )
             .eq('id', recordId)
             .single()
 
           if (!record) continue
+
+          const recordModel = (
+            record.generation_metadata as { model?: string } | null
+          )?.model
 
           if (record.status === 'completed' && record.storage_path) {
             pending.delete(recordId)
@@ -161,6 +189,7 @@ export function useCanvasGenerate(
                         storagePath,
                         signedUrl,
                         pending: false,
+                        ...(recordModel ? { model: recordModel } : {}),
                       }
                     : ci,
                 ),
@@ -173,7 +202,22 @@ export function useCanvasGenerate(
             const placeholderId = map.get(recordId)
             map.delete(recordId)
             if (placeholderId) {
-              setImages((prev) => prev.filter((ci) => ci.id !== placeholderId))
+              // Keep the tile -- mark it failed so it shows the model + error
+              // instead of silently vanishing.
+              setImages((prev) =>
+                prev.map((ci) =>
+                  ci.id === placeholderId
+                    ? {
+                        ...ci,
+                        pending: false,
+                        failed: true,
+                        errorMessage:
+                          record.generation_error ?? 'Generation failed',
+                        ...(recordModel ? { model: recordModel } : {}),
+                      }
+                    : ci,
+                ),
+              )
             }
           }
         }
@@ -197,23 +241,27 @@ export function useCanvasGenerate(
     [accessToken, setImages],
   )
 
-  // When server returns record IDs, map them to placeholders and poll for completion
+  // Map each ordered submit outcome (outcomes[i] ↔ placeholderIds[i]) to its
+  // placeholder: stamp recordId + model on successes (then poll), mark failures
+  // failed in place (model + error) so nothing silently vanishes.
   const handleAfterSubmit = useCallback(
-    (results: Array<{ recordId: string }>) => {
+    (
+      outcomes: Array<{
+        model: string
+        recordId: string | null
+        error: string | null
+      }>,
+    ) => {
       let placeholderIds = pendingPlaceholdersRef.current
       if (placeholderIds.length === 0) return
 
-      // Reconcile placeholder count to the actual number of results so no
-      // generated image is ever dropped (and none is left as an empty slot).
-      if (results.length < placeholderIds.length) {
-        const extraIds = placeholderIds.slice(results.length)
-        setImages((prev) => prev.filter((ci) => !extraIds.includes(ci.id)))
-        placeholderIds = placeholderIds.slice(0, results.length)
-      } else if (results.length > placeholderIds.length) {
+      // Defensive: if the server somehow returned more outcomes than predicted,
+      // append placeholders so none is dropped. (Counts normally match exactly.)
+      if (outcomes.length > placeholderIds.length) {
         const layout = placeholderLayoutRef.current
         const added: Array<string> = []
         const extra: Array<CanvasImage> = []
-        for (let i = placeholderIds.length; i < results.length; i++) {
+        for (let i = placeholderIds.length; i < outcomes.length; i++) {
           const id = crypto.randomUUID()
           added.push(id)
           extra.push({
@@ -234,32 +282,33 @@ export function useCanvasGenerate(
       }
       pendingPlaceholdersRef.current = placeholderIds
 
-      const recordToPlaceholder = new Map<string, string>()
-      results.forEach((r, i) => {
-        if (i < placeholderIds.length) {
-          recordToPlaceholder.set(r.recordId, placeholderIds[i])
-        }
-      })
+      const { recordToPlaceholder, onCanvasRecordIds, updates } =
+        mapOutcomesToPlaceholders(outcomes, placeholderIds)
+      const updateById = new Map(updates.map((u) => [u.placeholderId, u]))
 
-      // Stamp the recordId onto each placeholder immediately so it persists to
-      // IndexedDB and can be recovered if the user navigates away before the
-      // generation completes.
+      // Apply per-placeholder updates in one pass: successes get recordId+model
+      // (persisted to IndexedDB so in-flight work survives navigation); failures
+      // (submit rejected, no DB record) become failed tiles with model + error.
       setImages((prev) =>
         prev.map((ci) => {
-          const idx = placeholderIds.indexOf(ci.id)
-          if (idx >= 0 && idx < results.length) {
-            return { ...ci, recordId: results[idx].recordId }
+          const u = updateById.get(ci.id)
+          if (!u) return ci
+          if (u.recordId) {
+            return { ...ci, recordId: u.recordId, model: u.model }
           }
-          return ci
+          return {
+            ...ci,
+            pending: false,
+            failed: true,
+            errorMessage: u.errorMessage,
+            model: u.model,
+          }
         }),
       )
 
-      // Eagerly mark these rows on-canvas so they're reclaimable from the DB even
-      // if the user navigates/restarts before any local save.
-      void setOnCanvas(
-        results.map((r) => r.recordId),
-        true,
-      )
+      // Eagerly mark successful rows on-canvas so they're reclaimable from the DB
+      // even if the user navigates/restarts before any local save.
+      void setOnCanvas(onCanvasRecordIds, true)
 
       startPolling(recordToPlaceholder)
     },
@@ -276,6 +325,49 @@ export function useCanvasGenerate(
       startPolling(recordToPlaceholder)
     },
     [startPolling],
+  )
+
+  // Retry a failed FAL tile: resubmit via retryGeneration (creates a fresh
+  // record), repoint the tile to it, mark it on-canvas, and resume polling.
+  const retryFailed = useCallback(
+    async (canvasImageId: string) => {
+      const img = getImages().find((ci) => ci.id === canvasImageId)
+      if (!img || !accessToken || !canRetryFailure(img)) return
+      const oldRecordId = img.recordId
+
+      setImages((prev) =>
+        prev.map((ci) =>
+          ci.id === canvasImageId
+            ? { ...ci, pending: true, failed: false, errorMessage: undefined }
+            : ci,
+        ),
+      )
+
+      try {
+        const { recordId } = await retryGeneration({
+          data: { accessToken, recordId: oldRecordId },
+        })
+        setImages((prev) =>
+          prev.map((ci) =>
+            ci.id === canvasImageId ? { ...ci, recordId } : ci,
+          ),
+        )
+        void setOnCanvas([recordId], true)
+        const map = new Map<string, string>()
+        map.set(recordId, canvasImageId)
+        startPolling(map)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Retry failed'
+        setImages((prev) =>
+          prev.map((ci) =>
+            ci.id === canvasImageId
+              ? { ...ci, pending: false, failed: true, errorMessage: message }
+              : ci,
+          ),
+        )
+      }
+    },
+    [accessToken, getImages, setImages, startPolling],
   )
 
   const generator = useGenerator({
@@ -401,8 +493,20 @@ export function useCanvasGenerate(
       h: Math.max(isSingle ? source.height : 0, placeholderH),
     })
 
-    generator.handleGenerate().catch(() => {
-      setImages((prev) => prev.filter((ci) => !placeholderIds.includes(ci.id)))
+    generator.handleGenerate().catch((err: unknown) => {
+      // handleGenerate normally surfaces partial failures via onAfterSubmit (per
+      // tile) and its own setError; this guards a hard rejection before any
+      // outcome lands -- mark the still-pending placeholders failed rather than
+      // delete them, so the failure stays visible.
+      const message = err instanceof Error ? err.message : 'Generation failed'
+      setError(message)
+      setImages((prev) =>
+        prev.map((ci) =>
+          placeholderIds.includes(ci.id) && ci.pending && !ci.recordId
+            ? { ...ci, pending: false, failed: true, errorMessage: message }
+            : ci,
+        ),
+      )
       setIsGenerating(false)
     })
   }, [generator, setImages, pushUndo, getImages, revealBounds, groupImages])
@@ -491,5 +595,6 @@ export function useCanvasGenerate(
     isGenerating,
     handleGenerateOptimistic,
     resumePending,
+    retryFailed,
   }
 }

@@ -9,6 +9,12 @@ export interface CanvasImage {
   width: number
   height: number
   pending?: boolean
+  /** Generation failed -- the tile persists (model + error) instead of vanishing. */
+  failed?: boolean
+  /** Failure reason shown on the failed tile. */
+  errorMessage?: string
+  /** generation_metadata.model id -- drives the on-canvas model label. */
+  model?: string
   /** Runtime only -- not persisted. Cached signed URL for display. */
   signedUrl?: string
 }

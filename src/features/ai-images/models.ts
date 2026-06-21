@@ -133,6 +133,11 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     description: 'Pro img2img + text steering',
     category: 'FLUX',
     supportsImageInput: true,
+    // Base id is the text-only endpoint; with a source/reference image we switch
+    // to the single-image Kontext editor (which exposes `image_url`). Without
+    // this the source image was silently dropped and it generated from the
+    // prompt alone.
+    imageInputModelId: 'fal-ai/flux-pro/kontext',
     displayPrice: '~$0.04/img',
     useCase: 'Pro img2img — solid for refinement work',
   },
@@ -187,10 +192,18 @@ export const REFINE_CAPABLE_MODELS = ALL_IMAGE_MODELS.filter(
   (m) => m.supportsImageInput && m.imageInputModelId,
 )
 
+// Resolved image-input endpoints that aren't first-class registry/EDIT_MODELS
+// entries but should still render a friendly name (e.g. FLUX Kontext Pro's
+// single-image img2img endpoint, which we submit to but don't list separately).
+const ENDPOINT_NAME_ALIASES = new Map<string, string>([
+  ['fal-ai/flux-pro/kontext', 'FLUX Kontext Pro'],
+])
+
 export function getModelName(modelId: string): string {
   return (
     ALL_IMAGE_MODELS.find((m) => m.id === modelId)?.name ??
     EDIT_MODELS.find((m) => m.id === modelId)?.name ??
+    ENDPOINT_NAME_ALIASES.get(modelId) ??
     modelId
   )
 }
