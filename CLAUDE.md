@@ -54,7 +54,10 @@ Exploratory sessions capture ideas before any build. The user pokes around the a
 
 ## Handoffs
 
-When using the `/handoff` skill, save the document to `./continue.md` in the project root.
+When using the `/handoff` skill, save the document to `continue/<github-login>.md`
+(resolve via `gh api user --jq .login`). These are identity-keyed, live resume
+pointers — one per developer, read at session start by the hook in
+`.claude/settings.json`. See `continue/README.md` for the convention.
 
 ## Gotchas
 
