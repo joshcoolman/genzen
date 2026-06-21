@@ -1,5 +1,9 @@
 # Batch Processing for Discounted Generation
 
+> **Status: research / not implemented.** This is a design exploration, not live
+> architecture — nothing here is wired into the app. It also assumed the (now
+> retired) monetization direction; treat as background reading, not a roadmap.
+
 Research on using OpenAI + Anthropic batch APIs (and optionally Cloudflare Queues) to offer a cheaper "patient tier" of generation in genzen.
 
 ## TL;DR
