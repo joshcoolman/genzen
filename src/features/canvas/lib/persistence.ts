@@ -6,6 +6,33 @@ const DEFAULT_DB = 'moodboard'
 const STORE_NAME = 'state'
 const DEFAULT_KEY = 'canvas'
 
+/**
+ * Images worth loading back: anything with a `recordId`. Completed images carry
+ * a storagePath; in-flight generations are pending placeholders (recordId set,
+ * no storagePath); failed tiles carry failed/errorMessage/model. Old-format
+ * images (src data URL, no recordId) are dropped. Pure -- unit-tested.
+ */
+export function filterLoadedImages(
+  images: Array<CanvasImage>,
+): Array<CanvasImage> {
+  return images.filter((img) => img.recordId)
+}
+
+/**
+ * Images worth persisting + their persisted shape. Same membership rule as
+ * {@link filterLoadedImages}; only the runtime-only `signedUrl` is stripped, so
+ * pending placeholders and failed tiles (with model + error) survive reload.
+ * Pure -- unit-tested. This is the durability contract: changing what's kept
+ * here can silently lose in-flight or failed generations on navigation.
+ */
+export function cleanImagesForSave(
+  images: Array<CanvasImage>,
+): Array<CanvasImage> {
+  return filterLoadedImages(images).map(
+    ({ signedUrl: _signedUrl, ...rest }) => rest,
+  )
+}
+
 function openDB(dbName: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(dbName, 1)
@@ -29,15 +56,9 @@ export async function loadPersistedState(
     })
     if (!raw) return null
 
-    // Keep any image that has a recordId. Completed images carry a storagePath;
-    // in-flight generations are persisted as pending placeholders (recordId set,
-    // no storagePath yet) so they can be resumed after navigation/refresh.
-    // Old-format images (src data URL, no recordId) are dropped.
-    const validImages = raw.images.filter((img) => img.recordId)
-
     return {
       ...raw,
-      images: validImages,
+      images: filterLoadedImages(raw.images),
     }
   } catch {
     return null
@@ -53,16 +74,8 @@ export async function savePersistedState(
     const db = await openDB(dbName)
     const tx = db.transaction(STORE_NAME, 'readwrite')
 
-    // Persist any image with a recordId. Pending placeholders (recordId set, no
-    // storagePath) are kept so in-flight generations survive navigation; the
-    // pending flag is retained so mount-time recovery knows to resume polling.
-    // Only the runtime-only signedUrl is stripped.
-    const cleanImages = state.images
-      .filter((img) => img.recordId)
-      .map(({ signedUrl: _, ...rest }) => rest)
-
     tx.objectStore(STORE_NAME).put(
-      { ...state, images: cleanImages },
+      { ...state, images: cleanImagesForSave(state.images) },
       storageKey,
     )
   } catch {

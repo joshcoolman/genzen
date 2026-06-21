@@ -15,13 +15,17 @@ import {
   syncCanvasFlags,
 } from '../lib/persistence'
 import { layoutMasonry } from '../lib/masonry'
-import { useCanvasGenerate } from '../hooks/use-canvas-generate'
+import {
+  canRetryFailure,
+  useCanvasGenerate,
+} from '../hooks/use-canvas-generate'
 import { CANVAS_MAX_GROUP_SELECTION } from '../canvas-models'
 import { SelectionActions } from './SelectionActions'
 import { CanvasGenerateDialog } from './CanvasGenerateDialog'
 import styles from './InfiniteCanvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
 import type { CollectedImage } from '@/features/user-images'
+import { getModelName } from '@/features/ai-images/models'
 import { toast } from '@/components/ui/toast'
 import {
   Dialog,
@@ -1430,7 +1434,7 @@ export function InfiniteCanvas({
             <div
               key={img.id}
               data-image-id={img.id}
-              className={`${styles.image}${selected.size >= 2 && selectionBounds && !selected.has(img.id) && img.x + img.width >= selectionBounds.x && img.x <= selectionBounds.x + selectionBounds.w && img.y + img.height >= selectionBounds.y && img.y <= selectionBounds.y + selectionBounds.h ? ` ${styles.dimmed}` : ''}${img.pending ? ` ${styles.pending}` : ''}`}
+              className={`${styles.image}${selected.size >= 2 && selectionBounds && !selected.has(img.id) && img.x + img.width >= selectionBounds.x && img.x <= selectionBounds.x + selectionBounds.w && img.y + img.height >= selectionBounds.y && img.y <= selectionBounds.y + selectionBounds.h ? ` ${styles.dimmed}` : ''}${img.pending ? ` ${styles.pending}` : ''}${img.failed ? ` ${styles.failed}` : ''}${selected.has(img.id) ? ` ${styles.selected}` : ''}`}
               style={{
                 left: img.x,
                 top: img.y,
@@ -1440,8 +1444,52 @@ export function InfiniteCanvas({
             >
               {img.pending ? (
                 <div className={styles.pendingInner} />
+              ) : img.failed ? (
+                <div className={styles.failedInner}>
+                  <span className={styles.failedModel}>
+                    {getModelName(img.model ?? '')}
+                  </span>
+                  <span className={styles.failedMsg}>
+                    {img.errorMessage ?? 'Generation failed'}
+                  </span>
+                  <div className={styles.failedActions}>
+                    {canRetryFailure(img) && (
+                      <button
+                        type="button"
+                        className={styles.failedBtn}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void canvasGen.retryFailed(img.id)
+                        }}
+                      >
+                        Retry
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.failedBtnGhost}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setImages((prev) =>
+                          prev.filter((ci) => ci.id !== img.id),
+                        )
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <img src={img.signedUrl} alt="" draggable={false} />
+                <>
+                  <img src={img.signedUrl} alt="" draggable={false} />
+                  {img.model && (
+                    <span className={styles.modelLabel}>
+                      {getModelName(img.model)}
+                    </span>
+                  )}
+                </>
               )}
             </div>
           ))}

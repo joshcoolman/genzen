@@ -47,7 +47,9 @@ function StatusIndicator({ status }: { status: ActivityEntry['status'] }) {
   return (
     <span className="inline-flex items-center gap-1 text-muted-foreground">
       <Clock4 className="h-3.5 w-3.5" />
-      <span className="text-[11px]">Pending</span>
+      <span className="text-[11px]">
+        {status === 'queued' ? 'Queued' : 'Pending'}
+      </span>
     </span>
   )
 }
