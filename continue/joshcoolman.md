@@ -8,21 +8,37 @@ history holds the past. See `continue/README.md` for the convention.
 
 ## ⏯ Where I left off
 
-**Session (2026-06-21) — branch cleanup + git workflow:**
+**Session (2026-06-21) — canvas in-progress presentation polish (on main):**
 
-Cleaned up stale local branches (`fix/fal-jwks-cache-recovery`,
-`fix/rate-limiter-fail-closed`, `test/credit-and-payment-coverage`,
-`fix/dependency-vulnerabilities`) — all content was already cherry-picked into main.
-Pruned a stale Claude agent worktree. Pushed main to remote.
+Refined the canvas loading/label presentation on top of `6f925ab`'s screen-space
+labels:
 
-Codified the solo-dev git workflow in `CLAUDE.md`: commit to main by default,
-no stale branches at end of session, main = current working state at all times.
+- **Loading state is now a screen-space overlay** (centered spinner + model name),
+  fixed readable size at any zoom, sized to match the Generate pill — replaced the
+  in-plane counter-scale (capped at 3×) that read tiny inside big gray tiles. The
+  gray placeholder stays in-plane and scales with the tile.
+- **Model-label visibility floor at 10%** (`transform.scale >= 0.1`).
+- **Loading model name hidden at ≤10% zoom** (spinner only); shows above 10%.
+
+Closed the Tier 1 canvas issues **#164 / #165 / #166** (fixed in `6f925ab` + this
+polish).
+
+Note: earlier this session I rebuilt the same Tier 1 work on a branch off a stale
+main before realizing `6f925ab` (from the other machine) already had it + better.
+Discarded the duplicate, took main. Git workflow is now **commit to main by
+default** (see `CLAUDE.md`).
 
 ## ▶ Next up
 
-No active work items. Main is clean and up to date.
+No active canvas work items. Small optional follow-ups:
 
-Previous canvas convergence Tier 2 items (lower priority, parked):
-- Canvas renders via bespoke markup/CSS, not shared `Thumbnail`
-- Duplicated completion-polling loops (`use-images.ts` vs `use-canvas-generate.ts`)
-- `boundsOf` / `getBounds` duplication in canvas hooks
+- **Failed tile** still counter-scales in-plane (not screen-space like loading) —
+  minor consistency gap at low zoom.
+- **`normalizeGeneration` has no unit tests** on main.
+
+Parked Tier 2/3 structural (lower priority, await input):
+
+- Canvas renders via bespoke markup vs shared `Thumbnail`
+- Duplicated completion-polling loops (`use-images` vs `use-canvas-generate`)
+- `boundsOf` / `getBounds` duplication; extract `spatialSort` + placeholder-collision geometry
+- Deletion semantics differ (genealogy-aware vs plain `deleted_at`)

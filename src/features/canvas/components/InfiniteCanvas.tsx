@@ -1443,61 +1443,51 @@ export function InfiniteCanvas({
               }}
             >
               {img.pending ? (
-                <div className={styles.pendingInner}>
-                  <div
-                    className={styles.pendingContent}
-                    style={{ transform: `scale(${Math.min(3, 1 / transform.scale)})` }}
-                  >
-                    <div className="size-5 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
-                    {img.model && (
-                      <span className={styles.pendingModel}>
-                        {getModelName(img.model)}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <div className={styles.pendingInner} />
               ) : img.failed ? (
                 <div className={styles.failedInner}>
                   <div
                     className={styles.failedContent}
-                    style={{ transform: `scale(${Math.min(3, 1 / transform.scale)})` }}
+                    style={{
+                      transform: `scale(${Math.min(3, 1 / transform.scale)})`,
+                    }}
                   >
-                  <span className={styles.failedModel}>
-                    {getModelName(img.model ?? '')}
-                  </span>
-                  <span className={styles.failedMsg}>
-                    {img.errorMessage ?? 'Generation failed'}
-                  </span>
-                  <div className={styles.failedActions}>
-                    {canRetryFailure(img) && (
+                    <span className={styles.failedModel}>
+                      {getModelName(img.model ?? '')}
+                    </span>
+                    <span className={styles.failedMsg}>
+                      {img.errorMessage ?? 'Generation failed'}
+                    </span>
+                    <div className={styles.failedActions}>
+                      {canRetryFailure(img) && (
+                        <button
+                          type="button"
+                          className={styles.failedBtn}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void canvasGen.retryFailed(img.id)
+                          }}
+                        >
+                          Retry
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className={styles.failedBtn}
+                        className={styles.failedBtnGhost}
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation()
-                          void canvasGen.retryFailed(img.id)
+                          if (img.recordId)
+                            void setOnCanvas([img.recordId], false)
+                          setImages((prev) =>
+                            prev.filter((ci) => ci.id !== img.id),
+                          )
                         }}
                       >
-                        Retry
+                        Dismiss
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className={styles.failedBtnGhost}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (img.recordId)
-                          void setOnCanvas([img.recordId], false)
-                        setImages((prev) =>
-                          prev.filter((ci) => ci.id !== img.id),
-                        )
-                      }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1512,7 +1502,10 @@ export function InfiniteCanvas({
         {images
           .filter(
             (img) =>
-              transform.scale >= 0.2 && !img.pending && !img.failed && img.model,
+              transform.scale >= 0.1 &&
+              !img.pending &&
+              !img.failed &&
+              img.model,
           )
           .map((img) => (
             <span
@@ -1525,6 +1518,29 @@ export function InfiniteCanvas({
             >
               {getModelName(img.model!)}
             </span>
+          ))}
+
+        {/* Loading indicator — screen-space overlay centered on each pending
+            tile. Fixed readable size at any zoom (matches the labels + Generate
+            pill); the gray placeholder stays in-plane and scales with the tile. */}
+        {images
+          .filter((img) => img.pending)
+          .map((img) => (
+            <div
+              key={`loading-${img.id}`}
+              className={styles.pendingOverlay}
+              style={{
+                left: transform.x + (img.x + img.width / 2) * transform.scale,
+                top: transform.y + (img.y + img.height / 2) * transform.scale,
+              }}
+            >
+              <div className="size-6 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
+              {img.model && transform.scale > 0.1 && (
+                <span className={styles.pendingModel}>
+                  {getModelName(img.model)}
+                </span>
+              )}
+            </div>
           ))}
 
         {selectionBounds && (

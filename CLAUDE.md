@@ -59,6 +59,7 @@ This is a solo project. **Commit directly to main by default.** Feature branches
 If a branch is used, merge it and delete it before the session's final commit — never leave branches open at end of session. The goal is that main always reflects the current working state of the app, so switching computers means pulling main and continuing seamlessly.
 
 At the end of any session, main should be:
+
 - Up to date with all completed work
 - Pushed to remote
 - Free of stale local branches
