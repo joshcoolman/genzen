@@ -8,37 +8,33 @@ history holds the past. See `continue/README.md` for the convention.
 
 ## ⏯ Where I left off
 
-**Session (2026-06-21) — canvas in-progress presentation polish (on main):**
+**Session (2026-06-26) — the pivot got concrete: freeze genzen public + extract a lean new repo.**
 
-Refined the canvas loading/label presentation on top of `6f925ab`'s screen-space
-labels:
+Epiphany this session: genzen is the tool *I* want, not a SaaS for the world. So
+two tracks (full plan: `~/.claude/plans/hey-i-have-sort-purrfect-hearth.md`):
 
-- **Loading state is now a screen-space overlay** (centered spinner + model name),
-  fixed readable size at any zoom, sized to match the Generate pill — replaced the
-  in-plane counter-scale (capped at 3×) that read tiny inside big gray tiles. The
-  gray placeholder stays in-plane and scales with the tile.
-- **Model-label visibility floor at 10%** (`transform.scale >= 0.1`).
-- **Loading model name hidden at ≤10% zoom** (spinner only); shows above 10%.
-
-Closed the Tier 1 canvas issues **#164 / #165 / #166** (fixed in `6f925ab` + this
-polish).
-
-Note: earlier this session I rebuilt the same Tier 1 work on a branch off a stale
-main before realizing `6f925ab` (from the other machine) already had it + better.
-Discarded the duplicate, took main. Git workflow is now **commit to main by
-default** (see `CLAUDE.md`).
+- **Track A — freeze genzen, make it public** (portfolio piece + open-source gift,
+  "yet another abandoned SaaS, fully working, have at it"). **In progress on main:**
+  - gitleaks scanned all 546 commits — only finding is the Supabase **anon key**
+    (public-by-design, `VITE_`, in a now-deleted stale `fly.toml`). No service-role
+    / provider secret in history. Decision: **proceed as-is.**
+  - `LICENSE` added (MIT). `README.md` reframed with the abandoned-SaaS status story.
+  - **Visibility still PRIVATE — holding the flip for my README review.** Next:
+    review README, then `gh repo edit --visibility public` (+ optional
+    `gh repo archive`).
+- **Track B — extract a NEW lean repo** (the real build, not started yet). Copy
+  genzen, fresh git init. **Stack = Supabase + Vercel only.** Supabase = DB + ONE
+  hand-made account (signups off, no OAuth) + Storage (revert R2→Supabase Storage,
+  drop Cloudflare). Rip out credits + Stripe. See plan B0–B7.
 
 ## ▶ Next up
 
-No active canvas work items. Small optional follow-ups:
+- **Review the reframed `README.md`**, then tell Claude to flip genzen public
+  (and whether to archive it).
+- Then kick off **Track B B0**: copy genzen to a new repo, fresh git init, stand up
+  a cloud Supabase project, get a green build.
 
-- **Failed tile** still counter-scales in-plane (not screen-space like loading) —
-  minor consistency gap at low zoom.
-- **`normalizeGeneration` has no unit tests** on main.
+Parked from before (canvas Tier 2/3 structural — lower priority, genzen is freezing):
 
-Parked Tier 2/3 structural (lower priority, await input):
-
-- Canvas renders via bespoke markup vs shared `Thumbnail`
-- Duplicated completion-polling loops (`use-images` vs `use-canvas-generate`)
-- `boundsOf` / `getBounds` duplication; extract `spatialSort` + placeholder-collision geometry
-- Deletion semantics differ (genealogy-aware vs plain `deleted_at`)
+- Canvas renders via bespoke markup vs shared `Thumbnail`; duplicated completion-polling
+  loops; `boundsOf`/`getBounds` duplication; `normalizeGeneration` has no unit tests.

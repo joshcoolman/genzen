@@ -2,6 +2,17 @@
 
 A unified workspace for working with AI image models. Fan prompts across providers and compare side-by-side, run non-destructive edit / variation / outpaint / scene-composition flows that track parent→child genealogy, iterate in a prompt studio, and ask an in-app AI assistant about your library. Includes an MCP server so Claude Code can drive a user's account from outside the UI.
 
+## Status — yet another abandoned SaaS, fully working, have at it
+
+I built this solo and took it all the way to a production-grade, fully working app: auth, credits, Stripe billing, multi-provider AI image generation, an in-app assistant, an MCP server. Then I decided not to ship it as a public SaaS. The signup / billing / "app for the world" direction stopped being what I wanted to build — I just wanted the tool for myself.
+
+So rather than let the engineering sit in a private repo forever, I'm opening it up. Everything described below works. Treat it as:
+
+- a serious reference for a **TanStack Start + Supabase + multi-provider AI image** app, or
+- a base to **fork and make your own**.
+
+**Not maintained.** No support, no roadmap, no warranty — MIT licensed, do what you like with it. A leaner single-user successor (no signup, no billing, just the tool) is in the works; link to follow.
+
 ## Highlights
 
 - **Multi-model image gen** — submit one prompt to multiple providers in parallel and compare results.
