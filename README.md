@@ -124,3 +124,28 @@ bypasses RLS).
 - Every generate path reserves its `user_images` row _before_ any fallible work,
   so a click always leaves a card behind — pending, completed, or failed with a
   reason and a Retry.
+
+## Status
+
+Orientation lives here and in open issues — there is no continuation or plan file.
+Conventions follow `~/repos/project-standard`.
+
+**Last shipped** (2026-07-25)
+
+- Failures are visible: `MissingKeyDialog` + `useReportError()` surface a missing
+  provider key instead of a dead click; Enhance now exists on the edit page.
+- `pnpm typecheck` added (`tsc --noEmit`) — `pnpm build` is Vite and does not
+  typecheck, so errors had been accumulating unseen. Run it with check/test/build.
+- `pnpm local:up` prompts for the keys still missing, preflights the Supabase CLI,
+  and finishes by opening a running app.
+- No marketing homepage: `/` redirects to `/dashboard` or `/login`.
+- Retired the `continue/` resume-pointer system, its git/PreToolUse hooks, the
+  `ideas/` capture folder, `docs/plans/`, and the unused `.agents/` skills.
+
+**Up next**
+
+- **#168 — leave Supabase for Postgres + S3 + Node, on Next.** The only open issue.
+  Rescoped against `main`, ready to start; `~/repos/bootsy` is the reference
+  implementation. Suggested entry point: schema + auth together.
+- Then a second pass to conform to `project-standard`'s `app/` conventions —
+  route folders, one-folder-per-component, CSS Modules over Tailwind.

@@ -50,14 +50,6 @@ than assume it's there.
 | trash       | Soft-deleted item recovery                                     | `src/features/trash/CLAUDE.md`       |
 | user-images | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md` |
 
-## Idea capture & execution
-
-Exploratory sessions capture ideas before any build. The user pokes around the app and says "capture this"; at the end (often a later session) says "let's execute".
-
-- One file per feature under `ideas/` (e.g. `ideas/canvas.md`), named by the sidebar label the user uses.
-- On "capture this": append an entry to the relevant `ideas/<feature>.md` with the recommendation/decision inline and a status -- `open` (undecided) / `decided` (agreed, not built) / `done` (shipped).
-- On "let's execute": read that feature's file, promote `decided` items into a concrete on-spec plan, confirm scope, build, then flip items to `done`. No scope drift beyond what's captured.
-
 ## Git workflow
 
 This is a solo project. **Commit directly to main by default.** Feature branches are only justified for genuinely risky or experimental work where an escape hatch is needed.
@@ -70,17 +62,37 @@ At the end of any session, main should be:
 - Pushed to remote
 - Free of stale local branches
 
-## Handoffs
+## Orientation and capture
 
-When using the `/handoff` skill, save the document to `continue/<github-login>.md`
-(resolve via `gh api user --jq .login`). These are identity-keyed, live resume
-pointers — one per developer, read at session start by the hook in
-`.claude/settings.json`. See `continue/README.md` for the convention.
+Two durable surfaces, no continuation file: the README `## Status` block (last
+shipped / up next) and open GitHub issues. Read both at session start.
 
-**Before every commit:** update and stage `continue/<login>.md`. This is enforced
-by `.githooks/pre-commit` (blocks with a message if not staged) and a `PreToolUse`
-hook in `.claude/settings.json` (blocks Claude-driven commits). The `prepare` npm
-script (`pnpm install`) configures the git hooks path automatically.
+**Capture to GitHub issues, not the filesystem.** Anything worth carrying past
+this session — a plan, a task, a bug, an idea from a poke-around session ("capture
+this") — becomes an issue. Do not create plan files, handoff docs, an `ideas/`
+folder, or a `continue/` directory; all of those existed and were removed
+deliberately. Update the README `## Status` block at natural beats so the front
+door always reflects the current state.
+
+`docs/` holds only what the project is and why (`reference/`, contracts). Never a
+plan.
+
+## Project standard
+
+`~/repos/project-standard/README.md` is the house standard for this project's
+conventions — folder layout, component organization, styling, docs shape, naming.
+
+**The plan is: move to Next (#168) first, then conform to the standard as closely
+as we can.** It is written for Next.js, so the `app/` router half — route folders,
+`_actions/ _queries/ _components/`, one-folder-per-component, CSS Modules over
+Tailwind — lands in that second pass, not before. The parts that are already
+framework-independent (docs shape, issues-not-plan-files, README `## Status`,
+`CLAUDE.md` as a boundary contract, naming) apply now.
+
+Where the standard applies, prefer it over an older pattern found in the codebase —
+an existing file is not evidence of the current convention. Two deliberate local
+exceptions: commit to `main` (see Git workflow above), and resume/continuation
+files stay gone rather than being replaced.
 
 ## Gotchas
 
