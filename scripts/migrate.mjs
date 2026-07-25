@@ -21,7 +21,10 @@ if (!databaseUrl) {
   process.exit(1)
 }
 
-const sql = postgres(databaseUrl)
+// `create table if not exists` emits a NOTICE that the driver would otherwise
+// print as a raw object on every run -- noise in front of the one line that
+// matters ("applied N" / "up to date").
+const sql = postgres(databaseUrl, { onnotice: () => {} })
 const MIGRATIONS_DIR = new URL('../migrations/', import.meta.url)
 
 await sql`

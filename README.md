@@ -21,7 +21,7 @@ pnpm dev                       # http://localhost:3000
 ```
 
 That is the whole setup. There is no env file to copy or edit: `local:up` starts
-MinIO (S3-compatible storage) from `docker-compose.yml` and the Supabase CLI
+Postgres and MinIO (S3-compatible storage) from `docker-compose.yml`, the Supabase CLI
 stack, writes `.env.local` for you, applies migrations and the seed on a fresh
 database, and prompts for the FAL key. Re-run it any time; it is idempotent, it
 keeps your key, and it will not reset a database you have been working in (use
@@ -33,6 +33,7 @@ keeps your key, and it will not reset a database you have been working in (use
 | Sign in as      | `testuser@gmail.com` / `supa!1QAwsEDrf`             |
 | MinIO console   | http://localhost:9011 (`genzenlocal`/`genzenlocal`) |
 | Supabase Studio | http://localhost:54323                              |
+| Postgres        | `postgres://genzen:genzen@localhost:5434/genzen`    |
 
 FAL is not mocked — generation calls fal.ai for real and costs real money. The
 app boots and everything else works without a key. Every generation's cost lands
@@ -46,16 +47,19 @@ about it — that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                             | Purpose                                     |
-| ----------------------------------- | ------------------------------------------- |
-| `pnpm local:up`                     | Start the local stack, write `.env.local`   |
-| `pnpm local:down`                   | Stop it (data kept)                         |
-| `pnpm local:reset`                  | Stop it and delete the volumes              |
-| `pnpm dev`                          | Vite dev server on :3000                    |
-| `pnpm build`                        | Production build                            |
-| `pnpm test`                         | Vitest                                      |
-| `pnpm check`                        | Prettier + ESLint --fix (run before commit) |
-| `npx shadcn@latest add <component>` | Add a shadcn component                      |
+| Command                             | Purpose                                        |
+| ----------------------------------- | ---------------------------------------------- |
+| `pnpm local:up`                     | Start the local stack, write `.env.local`      |
+| `pnpm local:down`                   | Stop it (data kept)                            |
+| `pnpm local:reset`                  | Stop it and delete the volumes                 |
+| `pnpm dev`                          | Vite dev server on :3000                       |
+| `pnpm build`                        | Production build                               |
+| `pnpm test`                         | Vitest                                         |
+| `pnpm check`                        | Prettier + ESLint --fix (run before commit)    |
+| `pnpm typecheck`                    | `tsc --noEmit` (Vite build does not typecheck) |
+| `pnpm db:migrate`                   | Apply pending `migrations/*.sql`               |
+| `pnpm auth:create-user`             | Create a user, or reset one's password         |
+| `npx shadcn@latest add <component>` | Add a shadcn component                         |
 
 ## Stack
 
