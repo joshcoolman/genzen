@@ -119,6 +119,9 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-25)
 
+- **Next App Router scaffolded** alongside TanStack Start — `next build` and
+  `vite build` both pass, app still runs on TanStack. The cutover is the last
+  step, not the first.
 - **Plain Postgres, scrypt auth, and a one-command local stack** landed for #168
   — `migrations/0001_init.sql`, a signed session cookie, `pnpm auth:create-user`,
   and a `local:up` that brings up both databases. Additive: Supabase still serves
