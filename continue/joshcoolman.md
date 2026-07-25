@@ -8,6 +8,36 @@ history holds the past. See `continue/README.md` for the convention.
 
 ## ⏯ Where I left off
 
+**Session (2026-07-25b) — executing #169 "No Stripe, no credits".** Decisions
+confirmed up front: no Stripe, no credits, FAL is the only image provider, and
+both "undecided" items get the same answer as credits — **`account_status`/waitlist
+and `check_rate_limit` are both being removed.**
+
+Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` first):
+
+1. ✅ Delete the dead Google/Vertex stack
+2. ⬜ Stripe removal
+3. ⬜ Credits removal
+4. ⬜ Finish reserve-then-fail on the last 3 generate paths
+5. ⬜ Activity: collapse YOU PAID + PROVIDER COST into one real-FAL-dollars column
+6. ⬜ Drop `DOCS_PASSWORD` + 4 dead env vars
+7. ⬜ Pare the README to "how to run this locally"
+
+**Step 1 done.** The Google/Vertex path went unreachable in 3c085f0 when
+`provider: 'google'` came off Nano Banana 2 (its only carrier). Deleted
+`google-imagen.server.ts`, `google-queue.server.ts` (+test), every `useGoogle`
+branch in `media.server.ts` / `generate-image-internal` / `generate-variation` /
+`submit-variations`, `isGoogleProvider`/`isGoogleModel`, the `providerOverride`
+option, the `provider`/`ModelProvider` field on the model registry, and the
+`@google/genai` dependency. `canRetryFailure()` on canvas is now just "has a
+recordId". Forward migration `20260725000000_drop_google_queue.sql` drops
+`dispatch_google_queue` + `reset_stale_google_processing` and narrows the
+`user_images` status constraint to `pending | completed | failed` (the
+Google-only `queued`/`processing` rows are failed on the way through, since
+nothing can ever dispatch them again). Vision is untouched — Describe/Caption run
+on `@ai-sdk/google` + `GOOGLE_GENERATIVE_AI_API_KEY`, which was never the Vertex
+credential.
+
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 
 Track B ("extract a new lean repo") is off. genzen migrates **in place** instead,

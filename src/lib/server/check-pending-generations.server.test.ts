@@ -57,9 +57,6 @@ vi.mock('./fal-error.server', () => ({
   }),
 }))
 
-vi.mock('./google-queue.server', () => ({
-  dispatchGoogleQueue: vi.fn().mockResolvedValue(0),
-}))
 await import('./check-pending-generations.server')
 
 function makeMockSupabase(rows: Array<Record<string, unknown>> = []) {

@@ -12,26 +12,11 @@ import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { detectAspectRatio } from '@/features/ai-images/constants'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { normalizeGeneration } from '@/features/ai-images/normalize-generation'
 
-/**
- * Whether a model id (base or resolved edit endpoint) belongs to the Google
- * provider. retryGeneration only resubmits FAL records, so Google failures
- * (e.g. Nano Banana) are dismiss-only.
- */
-function isGoogleModel(modelId?: string): boolean {
-  if (!modelId) return false
-  return ALL_IMAGE_MODELS.some(
-    (m) =>
-      m.provider === 'google' &&
-      (m.id === modelId || m.imageInputModelId === modelId),
-  )
-}
-
-/** A failed tile can be retried only if it has a DB record and is a FAL model. */
+/** A failed tile can be retried once it has a DB record to resubmit. */
 export function canRetryFailure(img: CanvasImage): boolean {
-  return !!img.recordId && !isGoogleModel(img.model)
+  return !!img.recordId
 }
 
 /** Parse "w:h" string into numeric ratio */

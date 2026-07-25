@@ -1,12 +1,10 @@
 export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
-export type ModelProvider = 'fal' | 'google'
 
 export interface ImageModel {
   id: string
   name: string
   description: string
   category: ModelCategory
-  provider?: ModelProvider
   supportsImageInput?: boolean
   imageInputModelId?: string
   locked?: boolean
@@ -114,11 +112,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
     locked: true,
     displayPrice: '~$0.04/img',
-    // Previously carried `provider: 'google'` to reach Vertex/Gemini directly
-    // at roughly half FAL's price. That was the only thing keeping the entire
-    // Google credential path alive, and it failed outright without Google
-    // credentials. Everything goes through FAL now, using the FAL model id
-    // this entry already had.
     useCase: 'Reasoning-guided generation',
   },
   {

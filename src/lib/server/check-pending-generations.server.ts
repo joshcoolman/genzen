@@ -7,7 +7,6 @@ import {
   processImageResult,
 } from './fal-completion.server'
 import { extractFalError } from './fal-error.server'
-import { dispatchGoogleQueue } from './google-queue.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -119,13 +118,7 @@ export const checkPendingGenerations = createServerFn({ method: 'POST' })
       )
     } // end FAL processing block
 
-    // Always run Google dispatch regardless of whether FAL records exist.
-    await supabase.rpc('reset_stale_google_processing', {
-      p_timeout_minutes: 2,
-    })
-    const dispatched = await dispatchGoogleQueue(supabase)
-
-    return { checked: pending?.length ?? 0, completed, failed, dispatched }
+    return { checked: pending?.length ?? 0, completed, failed }
   })
 
 /** Check if the error is a definitive FAL rejection (not a transient network error) */

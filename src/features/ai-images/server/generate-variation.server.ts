@@ -14,7 +14,6 @@ import {
   variationUserContent,
 } from '@/lib/prompts/image-variation'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
-import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { createImageStorage } from '@/lib/image-storage'
 
@@ -42,9 +41,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
       throw new Error('Prompt is required')
     }
 
-    const useGoogle = isGoogleProvider('fal-ai/nano-banana-2/edit')
-
-    if (!useGoogle && !process.env.FAL_KEY) {
+    if (!process.env.FAL_KEY) {
       throw new Error('FAL_KEY environment variable is not set')
     }
 
@@ -166,12 +163,9 @@ export const generateVariation = createServerFn({ method: 'POST' })
               data: Buffer.from(buffer).toString('base64'),
               mediaType,
             }
-            // Upload to FAL storage only if not using Google
-            if (!useGoogle) {
-              falImageUrl = await fal.storage.upload(
-                new Blob([buffer], { type: mediaType }),
-              )
-            }
+            falImageUrl = await fal.storage.upload(
+              new Blob([buffer], { type: mediaType }),
+            )
           } catch {
             // proceed without vision grounding if fetch or upload fails
           }
@@ -230,80 +224,55 @@ export const generateVariation = createServerFn({ method: 'POST' })
 
           const variationSortOrder = Date.now() / 1000 - 0.001 * (i + 1)
 
-          if (useGoogle) {
-            // Google path: synchronous generation via submitGeneration
-            const result = await submitGeneration({
-              accessToken: data.accessToken,
-              userId: user.id,
-              prompt: variedPrompt,
-              modelId: 'fal-ai/nano-banana-2/edit',
-              aspectRatio,
-              imageBase64: imageBase64?.data,
-              metadata: {
+          const editInput = await buildFalInput({
+            modelId: 'fal-ai/nano-banana-2/edit',
+            prompt: variedPrompt,
+            aspectRatio,
+            imageUrls: [falImageUrl ?? ''],
+            safetyLevel: 'permissive',
+          })
+          const webhookUrl = getFalWebhookUrl()
+
+          const { request_id } = await (fal.queue.submit as any)(
+            'fal-ai/nano-banana-2/edit',
+            {
+              input: editInput,
+              ...(webhookUrl ? { webhookUrl } : {}),
+            },
+          )
+
+          const { data: record, error: insertError } = await supabase
+            .from('user_images')
+            .insert({
+              user_id: user.id,
+              request_id,
+              status: 'pending',
+              source: 'ai_generated',
+              title: 'Generating variation...',
+              sort_order: variationSortOrder,
+              generation_metadata: {
+                prompt: variedPrompt,
                 original_prompt: rootPrompt,
+                model,
+                fal_model_id: 'fal-ai/nano-banana-2/edit',
                 generation_type: 'variation',
                 source_image_id: sourceImageId, // Immutable: actual generation source
                 parent_id: rootImageId, // Mutable: group parent (variations group under root)
                 root_image_id: rootImageId,
+                submitted_at: new Date().toISOString(),
+                ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
               },
             })
+            .select()
+            .single()
 
-            results.push({
-              recordId: result.recordId,
-              request_id: result.request_id,
-            })
-          } else {
-            // FAL path: async queue submission
-            const editInput = await buildFalInput({
-              modelId: 'fal-ai/nano-banana-2/edit',
-              prompt: variedPrompt,
-              aspectRatio,
-              imageUrls: [falImageUrl ?? ''],
-              safetyLevel: 'permissive',
-            })
-            const webhookUrl = getFalWebhookUrl()
-
-            const { request_id } = await (fal.queue.submit as any)(
-              'fal-ai/nano-banana-2/edit',
-              {
-                input: editInput,
-                ...(webhookUrl ? { webhookUrl } : {}),
-              },
+          if (insertError) {
+            throw new Error(
+              `Failed to create image record: ${insertError.message}`,
             )
-
-            const { data: record, error: insertError } = await supabase
-              .from('user_images')
-              .insert({
-                user_id: user.id,
-                request_id,
-                status: 'pending',
-                source: 'ai_generated',
-                title: 'Generating variation...',
-                sort_order: variationSortOrder,
-                generation_metadata: {
-                  prompt: variedPrompt,
-                  original_prompt: rootPrompt,
-                  model,
-                  fal_model_id: 'fal-ai/nano-banana-2/edit',
-                  generation_type: 'variation',
-                  source_image_id: sourceImageId, // Immutable: actual generation source
-                  parent_id: rootImageId, // Mutable: group parent (variations group under root)
-                  root_image_id: rootImageId,
-                  submitted_at: new Date().toISOString(),
-                  ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-                },
-              })
-              .select()
-              .single()
-
-            if (insertError) {
-              throw new Error(
-                `Failed to create image record: ${insertError.message}`,
-              )
-            }
-
-            results.push({ recordId: record.id, request_id })
           }
+
+          results.push({ recordId: record.id, request_id })
         }
 
         return results

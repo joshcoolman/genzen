@@ -29,7 +29,7 @@ runs fine without them, so a feature that needs one should fail loudly rather
 than assume it's there.
 
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude. Server-side AND browser-stored BYOK for the AD panel (`useAnthropicKey`); either path is available.
-- **Google Gemini / Imagen** (`GOOGLE_AI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`) — image gen + vision.
+- **Google Gemini** (`GOOGLE_GENERATIVE_AI_API_KEY`) — vision only (Describe/Caption/shot lists) via `@ai-sdk/google`. There is no Google image-generation path; FAL is the only image provider.
 - **OpenAI** (`OPENAI_API_KEY`), **OpenRouter** (`OPENROUTER_API_KEY`), **xAI** (`XAI_API_KEY`) — available via `src/lib/text-models.ts` model registry / `@ai-sdk/*` providers.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Stripe** (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`) — credit pack payments via Stripe Checkout (hosted). Webhook at `server/api/stripe-webhook.post.ts`. Idempotency via `credit_transactions.stripe_event_id`.

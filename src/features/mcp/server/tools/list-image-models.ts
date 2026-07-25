@@ -16,7 +16,7 @@ export function registerListImageModels(server: McpServer): void {
         name: m.name,
         description: m.description,
         category: m.category,
-        provider: m.provider ?? 'fal',
+        provider: 'fal',
         supportsImageInput: m.supportsImageInput ?? false,
         imageInputModelId: m.imageInputModelId,
       }))

@@ -9,7 +9,6 @@ import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
-import { isGoogleProvider, submitGeneration } from '@/lib/server/media.server'
 import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { computeFalCostCents } from '@/lib/server/compute-cost.server'
@@ -26,7 +25,6 @@ export interface GenerateImageInput {
   sourceImageUrl?: string
   isRefine?: boolean
   referenceImageIds?: Array<string>
-  providerOverride?: 'fal' | 'google'
   parentImageId?: string
   idempotencyKey?: string
   sourceClient?: string
@@ -66,19 +64,13 @@ export async function generateImageInternal(
     sourceImageBase64,
     sourceImageUrl,
     isRefine,
-    providerOverride,
   } = data
-
-  // Resolve provider: override wins, else check model registry
-  const useGoogle = providerOverride
-    ? providerOverride === 'google'
-    : isGoogleProvider(model)
 
   if (!sourceImageBase64 && !sourceImageUrl && !prompt.trim()) {
     throw new Error('Prompt is required')
   }
 
-  if (!useGoogle && !process.env.FAL_KEY) {
+  if (!process.env.FAL_KEY) {
     throw new Error('FAL_KEY environment variable is not set')
   }
 
@@ -115,7 +107,6 @@ export async function generateImageInternal(
       let falModelId = model
       let effectivePrompt = prompt.trim()
       let imageUrl: string | null = null
-      let sourceBase64Data: string | null = null
 
       if (sourceImageUrl) {
         imageUrl = sourceImageUrl
@@ -149,15 +140,9 @@ export async function generateImageInternal(
           }
         }
 
-        // Store raw base64 for Google path
-        sourceBase64Data = base64Data
-
-        // Upload to FAL storage (only needed for FAL path)
-        if (!useGoogle) {
-          imageUrl = await fal.storage.upload(
-            new Blob([buffer], { type: mimeType }),
-          )
-        }
+        imageUrl = await fal.storage.upload(
+          new Blob([buffer], { type: mimeType }),
+        )
 
         // Use image-mode endpoint if specified
         falModelId = modelDef?.imageInputModelId ?? model
@@ -171,9 +156,8 @@ export async function generateImageInternal(
         effectivePrompt = buildRefinePrompt(effectivePrompt)
       }
 
-      // Fetch reference images -- as base64 for Google, as FAL URLs for FAL
+      // Fetch reference images and upload them to FAL storage
       let referenceUrls: Array<string> = []
-      let referenceImagesBase64: Array<string> = []
       if (data.referenceImageIds?.length) {
         const refImages = await supabase
           .from('user_images')
@@ -183,87 +167,25 @@ export async function generateImageInternal(
 
         if (refImages.data?.length) {
           const storage = createImageStorage()
-          if (useGoogle) {
-            // Google path: fetch as base64
-            const base64Results = await Promise.all(
-              refImages.data.map(async (ref) => {
-                if (!ref.storage_path) return null
-                const signedUrl = await storage.getUrl(ref.storage_path)
-                if (!signedUrl) return null
-                const res = await fetch(signedUrl)
-                const buf = await res.arrayBuffer()
-                return Buffer.from(buf).toString('base64')
-              }),
-            )
-            referenceImagesBase64 = base64Results.filter(
-              (b): b is string => b !== null,
-            )
-          } else {
-            // FAL path: upload to FAL storage
-            const uploads = await Promise.all(
-              refImages.data.map(async (ref) => {
-                if (!ref.storage_path) return null
-                const signedUrl = await storage.getUrl(ref.storage_path)
-                if (!signedUrl) return null
-                const res = await fetch(signedUrl)
-                const buf = await res.arrayBuffer()
-                return uploadBufferToFal(buf)
-              }),
-            )
-            referenceUrls = uploads.filter((u): u is string => u !== null)
-          }
+          const uploads = await Promise.all(
+            refImages.data.map(async (ref) => {
+              if (!ref.storage_path) return null
+              const signedUrl = await storage.getUrl(ref.storage_path)
+              if (!signedUrl) return null
+              const res = await fetch(signedUrl)
+              const buf = await res.arrayBuffer()
+              return uploadBufferToFal(buf)
+            }),
+          )
+          referenceUrls = uploads.filter((u): u is string => u !== null)
         }
 
         // Reference images require image-input model variant
-        if (
-          (referenceUrls.length > 0 || referenceImagesBase64.length > 0) &&
-          !imageUrl
-        ) {
+        if (referenceUrls.length > 0 && !imageUrl) {
           falModelId = modelDef?.imageInputModelId ?? model
         }
       }
 
-      // --- Google provider: route through submitGeneration ---
-      if (useGoogle) {
-        const result = await submitGeneration({
-          accessToken: data.accessToken,
-          userId: userId,
-          prompt: effectivePrompt,
-          modelId: falModelId,
-          aspectRatio,
-          imageBase64: sourceBase64Data ?? undefined,
-          referenceImagesBase64:
-            referenceImagesBase64.length > 0
-              ? referenceImagesBase64
-              : undefined,
-          providerOverride,
-          onCanvas: data.onCanvas,
-          metadata: {
-            ...(sourceImageBase64 ? { has_source_image: true } : {}),
-            ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
-            ...(data.referenceImageIds?.length
-              ? { reference_image_ids: data.referenceImageIds }
-              : {}),
-            ...(data.parentImageId
-              ? {
-                  source_image_id: data.parentImageId, // Immutable: actual generation source
-                  parent_id: data.parentImageId, // Mutable: group parent (same initially)
-                  generation_type: 'variation',
-                }
-              : {}),
-            ...(data.sourceClient ? { source_client: data.sourceClient } : {}),
-          },
-        })
-
-        return {
-          recordId: result.recordId,
-          request_id: result.request_id,
-          prompt,
-          model,
-        }
-      }
-
-      // --- FAL provider: existing queue-based path ---
       // Combine source image + ref images + style refs into imageUrls
       const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...referenceUrls]
 

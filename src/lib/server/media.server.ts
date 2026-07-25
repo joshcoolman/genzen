@@ -1,28 +1,14 @@
 /**
- * Provider-aware submission router.
- * Google models return completed records synchronously.
- * FAL models return pending records for async polling.
+ * Submission router. FAL is the only image provider; submissions return
+ * pending records for async polling.
  */
 import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from './supabase-admin.server'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { buildFalInput } from '@/features/ai-images/server/fal-params.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
-
-function isGoogleModel(modelId: string): boolean {
-  const model = ALL_IMAGE_MODELS.find((m) => m.id === modelId)
-  return model?.provider === 'google'
-}
-
-/** Check if a model ID (including edit variants) routes to Google */
-export function isGoogleProvider(modelId: string): boolean {
-  if (isGoogleModel(modelId)) return true
-  const baseId = modelId.replace(/\/edit$/, '')
-  return isGoogleModel(baseId)
-}
 
 interface SubmitGenerationOptions {
   accessToken?: string
@@ -30,11 +16,8 @@ interface SubmitGenerationOptions {
   prompt: string
   modelId: string
   aspectRatio?: string
-  imageBase64?: string
-  referenceImagesBase64?: Array<string>
   metadata?: Record<string, unknown>
   title?: string
-  providerOverride?: 'fal' | 'google'
   /** Mark the created row as living on the canvas (reclaimable on canvas load) */
   onCanvas?: boolean
 }
@@ -42,7 +25,7 @@ interface SubmitGenerationOptions {
 export interface SubmitGenerationResult {
   recordId: string
   request_id?: string
-  status: 'pending' | 'completed'
+  status: 'pending'
 }
 
 function createUserSupabase(accessToken?: string) {
@@ -58,60 +41,11 @@ function createUserSupabase(accessToken?: string) {
   )
 }
 
-/** Submit a generation through the appropriate provider */
+/** Submit a generation to FAL */
 export async function submitGeneration(
   options: SubmitGenerationOptions,
 ): Promise<SubmitGenerationResult> {
-  const supabase = createUserSupabase(options.accessToken)
-
-  const useGoogle = options.providerOverride
-    ? options.providerOverride === 'google'
-    : isGoogleProvider(options.modelId)
-
-  if (useGoogle) {
-    return submitGoogleGeneration(supabase, options)
-  }
-  return submitFalGeneration(supabase, options)
-}
-
-async function submitGoogleGeneration(
-  supabase: any,
-  options: SubmitGenerationOptions,
-): Promise<SubmitGenerationResult> {
-  const baseModelId = options.modelId.replace(/\/edit$/, '')
-
-  const { data: record, error: insertError } = await supabase
-    .from('user_images')
-    .insert({
-      user_id: options.userId,
-      status: 'queued',
-      source: 'ai_generated',
-      title: options.title ?? 'Generating...',
-      sort_order: Date.now() / 1000,
-      ...(options.onCanvas ? { on_canvas: true } : {}),
-      generation_metadata: {
-        prompt: options.prompt,
-        model: baseModelId,
-        provider: 'google',
-        generation_type: options.metadata?.generation_type ?? 'text_to_image',
-        submitted_at: new Date().toISOString(),
-        ...(options.aspectRatio ? { aspect_ratio: options.aspectRatio } : {}),
-        // Store images in metadata so the dispatcher can access them
-        ...(options.imageBase64 ? { image_base64: options.imageBase64 } : {}),
-        ...(options.referenceImagesBase64?.length
-          ? { reference_images_base64: options.referenceImagesBase64 }
-          : {}),
-        ...options.metadata,
-      },
-    })
-    .select()
-    .single()
-
-  if (insertError) {
-    throw new Error(`Failed to create image record: ${insertError.message}`)
-  }
-
-  return { recordId: record.id, status: 'pending' }
+  return submitFalGeneration(createUserSupabase(options.accessToken), options)
 }
 
 async function submitFalGeneration(
