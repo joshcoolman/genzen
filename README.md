@@ -115,6 +115,9 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-25)
 
+- **45 migrations collapsed into one baseline** (`20260725100000_baseline.sql`),
+  generated from the live database and verified structurally against it. Three
+  tables: `user_images`, `user_profiles`, `fal_price_cache`.
 - **Stripped the app back to its core before the Next migration.** Removed the MCP
   server and the API-keys feature it existed for (the app's only API-key auth path
   — cookie sessions are now the single auth model), the docs viewer, the legal

@@ -4,49 +4,36 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Array<Json>
+  | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '13.0.4'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
-      api_keys: {
-        Row: {
-          created_at: string
-          id: string
-          key_hash: string
-          key_prefix: string
-          last_used_at: string | null
-          name: string
-          revoked_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          key_hash: string
-          key_prefix: string
-          last_used_at?: string | null
-          name: string
-          revoked_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          key_hash?: string
-          key_prefix?: string
-          last_used_at?: string | null
-          name?: string
-          revoked_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       fal_price_cache: {
         Row: {
           currency: string
@@ -70,240 +57,6 @@ export type Database = {
           unit_price?: number
         }
         Relationships: []
-      }
-      multishot_sequences: {
-        Row: {
-          created_at: string | null
-          elements: Json
-          estimated_cost: number | null
-          id: string
-          name: string
-          settings: Json
-          shots: Json
-          status: string
-          updated_at: string | null
-          user_id: string
-          video_record_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          elements?: Json
-          estimated_cost?: number | null
-          id?: string
-          name?: string
-          settings?: Json
-          shots?: Json
-          status?: string
-          updated_at?: string | null
-          user_id: string
-          video_record_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          elements?: Json
-          estimated_cost?: number | null
-          id?: string
-          name?: string
-          settings?: Json
-          shots?: Json
-          status?: string
-          updated_at?: string | null
-          user_id?: string
-          video_record_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'multishot_sequences_video_record_id_fkey'
-            columns: ['video_record_id']
-            isOneToOne: false
-            referencedRelation: 'user_images'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      notes: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      prompt_studio_sets: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          negative_prompt: string
-          prompt: string
-          selected_model_ids: Array<string> | null
-          system_prompt: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          negative_prompt?: string
-          prompt?: string
-          selected_model_ids?: Array<string> | null
-          system_prompt?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          negative_prompt?: string
-          prompt?: string
-          selected_model_ids?: Array<string> | null
-          system_prompt?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      storyboards: {
-        Row: {
-          characters: Json
-          created_at: string
-          id: string
-          refined_story: string | null
-          scenes: Json
-          status: string
-          story_prompt: string
-          title: string
-          updated_at: string
-          user_id: string
-          video_record_id: string | null
-        }
-        Insert: {
-          characters?: Json
-          created_at?: string
-          id?: string
-          refined_story?: string | null
-          scenes?: Json
-          status?: string
-          story_prompt: string
-          title?: string
-          updated_at?: string
-          user_id: string
-          video_record_id?: string | null
-        }
-        Update: {
-          characters?: Json
-          created_at?: string
-          id?: string
-          refined_story?: string | null
-          scenes?: Json
-          status?: string
-          story_prompt?: string
-          title?: string
-          updated_at?: string
-          user_id?: string
-          video_record_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'storyboards_video_record_id_fkey'
-            columns: ['video_record_id']
-            isOneToOne: false
-            referencedRelation: 'user_images'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      style_collections: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_count: number | null
-          name: string
-          thumbnail_path: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_count?: number | null
-          name: string
-          thumbnail_path?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_count?: number | null
-          name?: string
-          thumbnail_path?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      style_images: {
-        Row: {
-          created_at: string | null
-          height: number | null
-          id: string
-          sort_order: number | null
-          source: string
-          storage_path: string
-          style_id: string
-          width: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          height?: number | null
-          id?: string
-          sort_order?: number | null
-          source: string
-          storage_path: string
-          style_id: string
-          width?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          height?: number | null
-          id?: string
-          sort_order?: number | null
-          source?: string
-          storage_path?: string
-          style_id?: string
-          width?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'style_images_style_id_fkey'
-            columns: ['style_id']
-            isOneToOne: false
-            referencedRelation: 'style_collections'
-            referencedColumns: ['id']
-          },
-        ]
       }
       user_images: {
         Row: {
@@ -389,33 +142,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_preferences: {
-        Row: {
-          created_at: string
-          id: string
-          key: string
-          updated_at: string
-          user_id: string
-          value: Json
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          key: string
-          updated_at?: string
-          user_id: string
-          value: Json
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          key?: string
-          updated_at?: string
-          user_id?: string
-          value?: Json
-        }
-        Relationships: []
-      }
       user_profiles: {
         Row: {
           created_at: string
@@ -434,136 +160,14 @@ export type Database = {
         }
         Relationships: []
       }
-      user_prompts: {
-        Row: {
-          content: string
-          created_at: string
-          default_key: string | null
-          id: string
-          is_default: boolean
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          default_key?: string | null
-          id?: string
-          is_default?: boolean
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          default_key?: string | null
-          id?: string
-          is_default?: boolean
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      video_generations: {
-        Row: {
-          created_at: string | null
-          first_frame_id: string | null
-          id: string
-          last_frame_id: string | null
-          user_id: string
-          video_id: string | null
-          workspace_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          first_frame_id?: string | null
-          id?: string
-          last_frame_id?: string | null
-          user_id: string
-          video_id?: string | null
-          workspace_id: string
-        }
-        Update: {
-          created_at?: string | null
-          first_frame_id?: string | null
-          id?: string
-          last_frame_id?: string | null
-          user_id?: string
-          video_id?: string | null
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'video_generations_first_frame_id_fkey'
-            columns: ['first_frame_id']
-            isOneToOne: false
-            referencedRelation: 'user_images'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'video_generations_last_frame_id_fkey'
-            columns: ['last_frame_id']
-            isOneToOne: false
-            referencedRelation: 'user_images'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'video_generations_video_id_fkey'
-            columns: ['video_id']
-            isOneToOne: false
-            referencedRelation: 'user_images'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'video_generations_workspace_id_fkey'
-            columns: ['workspace_id']
-            isOneToOne: false
-            referencedRelation: 'video_workspaces'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      video_workspaces: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       cleanup_stale_generations: { Args: never; Returns: undefined }
-      get_duplicate_images: {
-        Args: { p_user_id: string }
-        Returns: Array<{
-          file_hash: string
-          image_count: number
-          image_ids: Array<string>
-          total_size: number
-        }>
-      }
       show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { '': string }; Returns: Array<string> }
+      show_trgm: { Args: { '': string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
@@ -692,6 +296,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
