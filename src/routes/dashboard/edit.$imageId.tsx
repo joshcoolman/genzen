@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   ArrowDown,
   ArrowLeft,
@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Trash2,
   Unlink,
-  Upload,
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
@@ -28,19 +27,13 @@ import { ActionButton } from '@/components/ActionButton'
 import { SelectionDrawer } from '@/components/SelectionDrawer'
 import { Lightbox } from '@/components/Lightbox'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 import { CircularIconButton } from '@/components/CircularIconButton'
 import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { useSelection } from '@/lib/use-selection'
 import { useEditPage } from '@/features/ai-images/hooks/use-edit-page'
 import { createImageStorage, getR2PublicUrl } from '@/lib/image-storage'
-import { supabase } from '@/lib/supabase'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 import { useEditPageADContext } from '@/features/ai-images/hooks/useEditPageADContext'
@@ -187,7 +180,6 @@ function EditPage() {
 
   // Pre-select child when navigating from main page thumb click
   const didApplyInitialSource = useRef(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (!initialSourceId || didApplyInitialSource.current || page.pageLoading)
       return

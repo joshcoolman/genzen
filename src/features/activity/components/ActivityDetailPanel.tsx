@@ -6,7 +6,6 @@ import {
   Clock4,
   Copy,
   Image as ImageIcon,
-  Loader2,
 } from 'lucide-react'
 import { getActivityEntry } from '../server/get-activity-entry.server'
 import type { ActivityEntryDetail } from '../types'

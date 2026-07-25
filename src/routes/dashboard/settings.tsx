@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle2, Circle, Lock } from 'lucide-react'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'

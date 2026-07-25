@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from './supabase-admin.server'
+import type { Json } from '@/lib/types/supabase'
 
 interface CreatePendingGenerationOptions {
   accessToken?: string
@@ -101,7 +102,9 @@ export async function markGenerationSubmitted(
 ): Promise<void> {
   const supabase = getSupabaseAdmin()
 
-  let metadata: Record<string, unknown> | undefined
+  // `Json`-typed column: the generated Supabase types won't accept a bare
+  // Record here, and the value is JSONB either way.
+  let metadata: Json | undefined
   if (metadataPatch && Object.keys(metadataPatch).length > 0) {
     const { data: existing } = await supabase
       .from('user_images')
@@ -111,7 +114,7 @@ export async function markGenerationSubmitted(
     metadata = {
       ...((existing?.generation_metadata ?? {}) as Record<string, unknown>),
       ...metadataPatch,
-    }
+    } as Json
   }
 
   await supabase

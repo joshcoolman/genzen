@@ -1,4 +1,4 @@
-import { Clock4, DollarSign, Receipt, Zap } from 'lucide-react'
+import { Clock4, DollarSign, Receipt } from 'lucide-react'
 import type { ActivityTotals as Totals } from '../types'
 import { formatDurationMs } from '@/lib/time-format'
 

@@ -36,7 +36,9 @@ export const captionImage = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (!row?.storage_path) throw new Error('Image not found')
-      image = await createImageStorage().getUrl(row.storage_path)
+      const url = await createImageStorage().getUrl(row.storage_path)
+      if (!url) throw new Error('Could not resolve a URL for that image')
+      image = url
     }
 
     const result = await describeImage(image, data.mode ?? 'anchor')

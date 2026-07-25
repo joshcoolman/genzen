@@ -3,7 +3,6 @@ import {
   CheckCircle2,
   Clock4,
   Image as ImageIcon,
-  Loader2,
 } from 'lucide-react'
 import type { ActivityEntry } from '../types'
 import {
