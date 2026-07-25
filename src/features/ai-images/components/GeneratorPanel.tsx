@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
-import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import type { UserImage } from '@/features/user-images/types'
 import type { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import type { useModelSelector } from '@/components/ModelSelector'
@@ -13,7 +12,6 @@ import { AspectRatioSelect } from '@/components/AspectRatioSelect'
 import { RefImageStrip } from '@/components/RefImageStrip'
 import { ExistingImagePicker } from '@/features/user-images/components/ExistingImagePicker'
 import { ModelSelector } from '@/components/ModelSelector'
-import { CREDIT_COSTS } from '@/features/credits'
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -25,7 +23,6 @@ interface UserImagesData {
 interface GeneratorPanelProps {
   generator: GeneratorState
   modelSelector: ReturnType<typeof useModelSelector>
-  credits: CreditsState
   userImages: UserImagesData
   describe?: ReturnType<typeof useDescribeJson>
   mode?: 'generate' | 'edit'
@@ -45,7 +42,6 @@ interface GeneratorPanelProps {
 export function GeneratorPanel({
   generator,
   modelSelector,
-  credits,
   userImages,
   describe,
   mode = 'generate',
@@ -185,14 +181,7 @@ export function GeneratorPanel({
       {/* Generate button + gens stepper */}
       <div className="flex gap-2 items-center">
         <ActionButton
-          onClick={() => {
-            const cost = CREDIT_COSTS.image_gen * (generator.totalImages || 1)
-            if ((credits.balance ?? 0) < cost) {
-              credits.showInsufficientCredits(cost)
-              return
-            }
-            generator.handleGenerate()
-          }}
+          onClick={() => generator.handleGenerate()}
           loading={generator.loading}
           loadingText={
             generator.totalImages > 1
@@ -201,18 +190,16 @@ export function GeneratorPanel({
                 ? 'Generating edit...'
                 : 'Generating...'
           }
-          disabled={!generator.canGenerate && !credits.isEmpty}
+          disabled={!generator.canGenerate}
           className="flex-1"
         >
-          {credits.isEmpty
-            ? 'Out of credits'
-            : isEdit
-              ? generator.totalImages > 1
-                ? `Generate ${generator.totalImages} edits`
-                : 'Generate Edit'
-              : generator.totalImages > 1
-                ? `Generate ${generator.totalImages} images`
-                : 'Generate'}
+          {isEdit
+            ? generator.totalImages > 1
+              ? `Generate ${generator.totalImages} edits`
+              : 'Generate Edit'
+            : generator.totalImages > 1
+              ? `Generate ${generator.totalImages} images`
+              : 'Generate'}
         </ActionButton>
         <NumberStepper
           value={modelSelector.gensPerModel}

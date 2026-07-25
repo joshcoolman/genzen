@@ -45,7 +45,6 @@ than assume it's there.
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | api-keys    | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`    |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
-| credits     | Credit checking, deduction, and UI                             | `src/features/credits/CLAUDE.md`     |
 | docs        | Internal docs route (password-gated)                           | `src/features/docs/CLAUDE.md`        |
 | mcp         | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`         |
 | spotlight   | Spotlight search / command palette                             | `src/features/spotlight/CLAUDE.md`   |

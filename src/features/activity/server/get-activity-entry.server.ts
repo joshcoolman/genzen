@@ -7,7 +7,6 @@ import type {
   GenerationStatus,
 } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
-import { computeGenerationCostCents } from '@/features/credits/types'
 import { getModelName } from '@/features/ai-images/models'
 
 interface GetActivityEntryInput {
@@ -51,17 +50,6 @@ function computeDurationMs(m: ActivityGenerationMetadata): number | null {
   if (!end) return null
   const delta = new Date(end).getTime() - new Date(m.submitted_at).getTime()
   return Number.isFinite(delta) && delta >= 0 ? delta : null
-}
-
-function computeUserCostCents(
-  m: ActivityGenerationMetadata,
-  status: GenerationStatus,
-): number | null {
-  // Failed runs are never charged — show a real $0.00, not the would-be cost.
-  if (status === 'failed') return 0
-  return m.generation_type
-    ? computeGenerationCostCents(m.generation_type)
-    : null
 }
 
 function resolveThumbnailPath(
@@ -179,7 +167,6 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
       completedAt: m.completed_at ?? null,
       failedAt: m.failed_at ?? null,
       durationMs: computeDurationMs(m),
-      userCostCents: computeUserCostCents(m, r.status),
       providerCostCents: m.provider_cost_cents ?? null,
       isDeleted: r.deleted_at != null,
       errorMessage: extractErrorMessage(m, r.generation_error),

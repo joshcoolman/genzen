@@ -41,8 +41,8 @@ function PrivacyPage() {
               </li>
               <li>
                 <strong>Usage data:</strong> Generation history, model usage,
-                credit consumption, timestamps, and error logs. This is used for
-                billing, service improvement, and debugging.
+                timestamps, and error logs. This is used for service improvement
+                and debugging.
               </li>
             </ul>
           </section>
@@ -53,7 +53,6 @@ function PrivacyPage() {
             </h2>
             <ul className="list-disc pl-5 space-y-1 text-foreground/80">
               <li>To operate, maintain, and improve the Service</li>
-              <li>To process payments and manage your credit balance</li>
               <li>
                 To send transactional emails (account confirmation, password
                 reset)

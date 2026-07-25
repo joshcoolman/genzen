@@ -47,33 +47,6 @@ export type Database = {
         }
         Relationships: []
       }
-      credit_transactions: {
-        Row: {
-          amount: number
-          balance_after: number
-          created_at: string
-          id: string
-          reason: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          balance_after: number
-          created_at?: string
-          id?: string
-          reason: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          balance_after?: number
-          created_at?: string
-          id?: string
-          reason?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       fal_price_cache: {
         Row: {
           currency: string
@@ -447,7 +420,6 @@ export type Database = {
         Row: {
           account_status: Database['public']['Enums']['account_status']
           created_at: string
-          credit_balance: number
           display_name: string | null
           id: string
           rate_window_count: number
@@ -456,7 +428,6 @@ export type Database = {
         Insert: {
           account_status?: Database['public']['Enums']['account_status']
           created_at?: string
-          credit_balance?: number
           display_name?: string | null
           id: string
           rate_window_count?: number
@@ -465,7 +436,6 @@ export type Database = {
         Update: {
           account_status?: Database['public']['Enums']['account_status']
           created_at?: string
-          credit_balance?: number
           display_name?: string | null
           id?: string
           rate_window_count?: number
@@ -591,10 +561,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_credits: {
-        Args: { p_amount: number; p_reason: string; p_user_id: string }
-        Returns: number
-      }
       check_rate_limit: {
         Args: {
           p_max_requests: number
@@ -604,14 +570,6 @@ export type Database = {
         Returns: boolean
       }
       cleanup_stale_generations: { Args: never; Returns: undefined }
-      deduct_credits: {
-        Args: { p_amount: number; p_reason: string; p_user_id: string }
-        Returns: Array<{
-          new_balance: number
-          success: boolean
-        }>
-      }
-      get_credit_balance: { Args: { p_user_id: string }; Returns: number }
       get_duplicate_images: {
         Args: { p_user_id: string }
         Returns: Array<{

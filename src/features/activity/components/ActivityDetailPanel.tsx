@@ -345,10 +345,7 @@ export function ActivityDetailPanel({
                       ? formatDurationMs(detail.durationMs)
                       : '—'}
                   </DetailRow>
-                  <DetailRow label="You paid">
-                    {formatCents(detail.userCostCents)}
-                  </DetailRow>
-                  <DetailRow label="Provider cost">
+                  <DetailRow label="Cost">
                     {formatCents(detail.providerCostCents)}
                   </DetailRow>
                   <DetailRow label="Created">

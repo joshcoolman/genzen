@@ -8,7 +8,6 @@ import type {
   ListActivityResult,
 } from '../types'
 import { requireAuth } from '@/lib/server/auth.server'
-import { computeGenerationCostCents } from '@/features/credits/types'
 import { getModelName } from '@/features/ai-images/models'
 
 interface ListActivityInput {
@@ -50,17 +49,6 @@ function computeDurationMs(m: ActivityGenerationMetadata): number | null {
   return Number.isFinite(delta) && delta >= 0 ? delta : null
 }
 
-function computeUserCostCents(
-  m: ActivityGenerationMetadata,
-  status: GenerationStatus,
-): number | null {
-  // Failed runs are never charged — show a real $0.00, not the would-be cost.
-  if (status === 'failed') return 0
-  return m.generation_type
-    ? computeGenerationCostCents(m.generation_type)
-    : null
-}
-
 function resolveThumbnailPath(row: Pick<Row, 'storage_path'>): string | null {
   return row.storage_path ?? null
 }
@@ -99,7 +87,6 @@ function parseEntry(row: Row): ActivityEntry {
     completedAt: m.completed_at ?? null,
     failedAt: m.failed_at ?? null,
     durationMs: computeDurationMs(m),
-    userCostCents: computeUserCostCents(m, row.status),
     providerCostCents: m.provider_cost_cents ?? null,
     isDeleted: row.deleted_at != null,
     errorMessage: extractErrorMessage(m),
@@ -189,14 +176,11 @@ export const listActivity = createServerFn({ method: 'GET' })
     const entries = (pageRows ?? []).map(parseEntry)
 
     let totalDurationMs = 0
-    let totalUserCostCents = 0
     let totalProviderCostCents = 0
     for (const r of totalsRows ?? []) {
       const m = meta(r)
       const dur = computeDurationMs(m)
       if (dur != null) totalDurationMs += dur
-      const user$ = computeUserCostCents(m, r.status)
-      if (user$ != null) totalUserCostCents += user$
       if (m.provider_cost_cents != null) {
         totalProviderCostCents += m.provider_cost_cents
       }
@@ -209,7 +193,6 @@ export const listActivity = createServerFn({ method: 'GET' })
       totals: {
         count: totalsRows?.length ?? 0,
         totalDurationMs,
-        totalUserCostCents,
         totalProviderCostCents,
         exceedsCap: (totalsRows?.length ?? 0) >= TOTALS_ROW_CAP,
       },

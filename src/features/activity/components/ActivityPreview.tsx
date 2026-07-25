@@ -120,7 +120,7 @@ export function ActivityPreview() {
                     : '—'}
                 </span>
                 <span className="shrink-0 text-[11px] tabular-nums text-foreground">
-                  {formatCents(entry.userCostCents)}
+                  {formatCents(entry.providerCostCents)}
                 </span>
                 <span className="shrink-0 text-right text-[11px] text-muted-foreground">
                   {formatRelativeOrDate(entry.createdAt)}

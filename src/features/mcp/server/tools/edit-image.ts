@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { buildPublicUrl, waitForGeneration } from '../wait-for-generation'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { editImageInternal } from '@/features/ai-images/server/edit-image-internal.server'
-import { DOLLARS_PER_CREDIT, getCreditRepository } from '@/features/credits'
 import { EDIT_MODELS } from '@/features/ai-images/models'
 
 const inputSchema = {
@@ -44,7 +43,7 @@ export function registerEditImage(server: McpServer, userId: string): void {
     {
       title: 'Edit an image',
       description:
-        "Edits an existing image in the user's Genzen library, optionally fusing in reference images for multi-ref edits like 'put person A and person B together in a group photo'. Costs 1 credit. Blocks until the FAL job completes (up to 90s timeout). Returns the new imageId, URL, credit cost, and remaining balance.",
+        "Edits an existing image in the user's Genzen library, optionally fusing in reference images for multi-ref edits like 'put person A and person B together in a group photo'. Blocks until the FAL job completes (up to 90s timeout). Returns the new imageId and URL.",
       inputSchema,
     },
     async ({
@@ -84,16 +83,11 @@ export function registerEditImage(server: McpServer, userId: string): void {
         typeof meta.provider_cost_cents === 'number'
           ? meta.provider_cost_cents
           : null
-      const creditsRemaining = await getCreditRepository().getBalance(userId)
-
       const result = {
         imageId: completed.id,
         url: buildPublicUrl(completed.storage_path),
         model: modelId,
         title: completed.title,
-        creditsCharged: 1,
-        creditsRemaining,
-        dollarsCharged: Number((1 * DOLLARS_PER_CREDIT).toFixed(2)),
         providerCostCents,
       }
       return {

@@ -17,7 +17,6 @@ const EMPTY_FILTERS: ActivityFilters = {
 const EMPTY_TOTALS: ActivityTotals = {
   count: 0,
   totalDurationMs: 0,
-  totalUserCostCents: 0,
   totalProviderCostCents: 0,
   exceedsCap: false,
 }
@@ -123,7 +122,7 @@ export function useActivityPage() {
 
   // Poll for queued/pending/processing rows so this page progresses even when
   // the user isn't on AI Images (checkPendingGenerations also dispatches the
-  // Google queue, where rows start as 'queued'). Runs only while work is live.
+  // Runs only while work is live.
   const hasPendingWork = entries.some(
     (e) =>
       e.status === 'queued' ||

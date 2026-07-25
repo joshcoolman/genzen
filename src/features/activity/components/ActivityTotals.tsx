@@ -73,19 +73,13 @@ export function ActivityTotals({
         />
         <Stat
           icon={<DollarSign className="h-4 w-4" />}
-          label="You paid"
-          value={formatDollarsFromCents(totals.totalUserCostCents)}
-        />
-        <Stat
-          icon={<Zap className="h-4 w-4" />}
-          label="Provider cost"
+          label="Cost"
           value={
             totals.totalProviderCostCents > 0
               ? formatDollarsFromCents(totals.totalProviderCostCents)
               : '—'
           }
-          muted
-          title="Raw provider cost where available (FAL). Direct Google/OpenAI shows blank until pricing tables are added."
+          title="What FAL actually charged, where the figure is recorded."
         />
       </div>
       {totals.exceedsCap && (

@@ -1,9 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import type { SavedAiImage } from '@/features/ai-images/types'
-import { CREDIT_COSTS } from '@/features/credits'
 import { useAuth } from '@/lib/auth'
-import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useImages } from '@/features/ai-images/hooks/use-images'
 import { useModelSelector } from '@/components/ModelSelector'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
@@ -16,7 +14,6 @@ import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 
 export function useAiImagesPage() {
   const { user, session } = useAuth()
-  const credits = useRequireCredits(CREDIT_COSTS.image_gen)
   const accessToken = session?.access_token
 
   const gallery = useImages({
@@ -37,7 +34,6 @@ export function useAiImagesPage() {
     accessToken,
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
-    credits,
     setError,
   })
 
@@ -69,7 +65,6 @@ export function useAiImagesPage() {
 
   const variations = useVariations({
     accessToken,
-    credits,
     setError,
   })
 
@@ -102,7 +97,6 @@ export function useAiImagesPage() {
   return {
     userId: user?.id,
     accessToken,
-    credits,
     gallery,
     userImages,
     modelSelector,

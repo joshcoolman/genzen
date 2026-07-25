@@ -68,14 +68,13 @@ export function ActivityPage() {
       />
 
       {/* Column headers */}
-      <div className="grid grid-cols-[48px_minmax(0,1.2fr)_minmax(0,2fr)_110px_80px_80px_90px_minmax(130px,_auto)] items-center gap-3 px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="grid grid-cols-[48px_minmax(0,1.2fr)_minmax(0,2fr)_110px_80px_90px_minmax(130px,_auto)] items-center gap-3 px-3 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         <div />
         <div>Model</div>
         <div>Prompt</div>
         <div>Status</div>
         <div>Duration</div>
-        <div>You paid</div>
-        <div>Provider</div>
+        <div>Cost</div>
         <div className="text-right">Time</div>
       </div>
 

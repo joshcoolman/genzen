@@ -6,7 +6,6 @@ import { getModelName } from '@/features/ai-images/models'
 interface AiImagesADContextInput {
   generator: GeneratorState
   modelSelector: { selectedIds: Array<string> }
-  credits: { balance: number | null }
   completedImages: Array<unknown>
   error: string | null
 }
@@ -41,10 +40,6 @@ export function useAiImagesADContext(page: AiImagesADContextInput) {
       parts.push('- Currently generating images')
     }
 
-    if (page.credits.balance !== null) {
-      parts.push(`- Credits remaining: ${page.credits.balance}`)
-    }
-
     parts.push(`- ${page.completedImages.length} images in gallery`)
 
     if (page.error) {
@@ -59,7 +54,6 @@ export function useAiImagesADContext(page: AiImagesADContextInput) {
     page.generator.orientation,
     page.generator.sourceImage,
     page.generator.loading,
-    page.credits.balance,
     page.completedImages.length,
     page.error,
   ])

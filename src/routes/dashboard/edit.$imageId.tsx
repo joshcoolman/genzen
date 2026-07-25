@@ -435,11 +435,6 @@ function EditPage() {
                   Detach
                 </button>
               )}
-              {page.credits.balance !== null && (
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {page.credits.balance} credits
-                </span>
-              )}
               {!panelOpen && (
                 <button
                   onClick={() => setPanelOpen(true)}
@@ -491,7 +486,6 @@ function EditPage() {
               <GeneratorPanel
                 generator={page.generator}
                 modelSelector={page.modelSelector}
-                credits={page.credits}
                 userImages={page.existingImages}
                 describe={page.describe}
                 mode={selectionActive ? 'generate' : 'edit'}
@@ -542,7 +536,6 @@ function EditPage() {
             <GeneratorPanel
               generator={page.generator}
               modelSelector={page.modelSelector}
-              credits={page.credits}
               userImages={page.existingImages}
               describe={page.describe}
               mode={selectionActive ? 'generate' : 'edit'}

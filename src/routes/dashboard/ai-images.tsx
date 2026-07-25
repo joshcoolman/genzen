@@ -603,12 +603,6 @@ function AiImagesPage() {
         <div className="flex items-center justify-end xs:justify-between">
           <span className="hidden text-sm text-muted-foreground tabular-nums xs:inline">
             AI Images
-            {page.credits.balance !== null && (
-              <>
-                <span className="mx-2 opacity-40">|</span>
-                {page.credits.balance} credits
-              </>
-            )}
           </span>
           <div className="flex items-center gap-1.5">
             {/* Thumb size toggle */}
@@ -764,7 +758,6 @@ function AiImagesPage() {
               <GeneratorPanel
                 generator={page.generator}
                 modelSelector={page.modelSelector}
-                credits={page.credits}
                 userImages={page.userImages}
                 describe={page.describe}
                 modelDisplay="dropdown"
@@ -817,7 +810,6 @@ function AiImagesPage() {
                 <GeneratorPanel
                   generator={page.generator}
                   modelSelector={page.modelSelector}
-                  credits={page.credits}
                   userImages={page.userImages}
                   describe={page.describe}
                 />

@@ -17,13 +17,12 @@ Read-only inspection:
 
 - `server/tools/list-image-models.ts` -- catalog from `ALL_IMAGE_MODELS`
 - `server/tools/list-edit-models.ts` -- catalog from `EDIT_MODELS` (with `maxRefImages`)
-- `server/tools/get-credit-balance.ts` -- balance + dollar value via `getCreditRepository().getBalance(userId)`
 - `server/tools/list-recent-generations.ts` -- recent `user_images` rows, optional `kind` filter, R2 public URLs
 
 Generation (Phase 4):
 
-- `server/tools/upload-image.ts` -- decode base64 (≤10MB), call `uploadImageInternal`, insert `user_images` row, return `{ imageId, url }`. No credit cost.
-- `server/tools/generate-image.ts` -- call `generateImageInternal` with `{ userId, sourceClient: 'mcp' }`, poll until completion, return `{ imageId, url, model, creditsCharged, creditsRemaining, dollarsCharged, providerCostCents }`. Costs 1 credit. `sourceImageId` resolves to an R2 public URL via DB lookup filtered by user_id.
+- `server/tools/upload-image.ts` -- decode base64 (≤10MB), call `uploadImageInternal`, insert `user_images` row, return `{ imageId, url }`.
+- `server/tools/generate-image.ts` -- call `generateImageInternal` with `{ userId, sourceClient: 'mcp' }`, poll until completion, return `{ imageId, url, model, providerCostCents }`. `sourceImageId` resolves to an R2 public URL via DB lookup filtered by user_id.
 - `server/tools/edit-image.ts` -- same shape via `editImageInternal`. Validates `referenceImageIds.length <= EDIT_MODELS[modelId].maxRefImages` before submitting.
 
 Generation tools call the `*Internal` server functions directly (not the TanStack `createServerFn` wrappers) to avoid RPC stub corruption of the response shape.
@@ -33,7 +32,7 @@ Polling:
 - `server/wait-for-generation.ts` -- `waitForGeneration(userId, recordId)` polls every 1.5s up to 90s. Calls `pollFalRecord` first to update the DB row from FAL, then reads `user_images`. On `completed` returns `{ id, storage_path, generation_metadata, title }`, on `failed` throws with FAL error, on timeout throws with recordId for a "check /dashboard/activity" hint.
 - `server/poll-fal-record.ts` -- `pollFalRecord(recordId)` queries the `user_images` row for its FAL `request_id`, checks FAL queue status, and processes completed results via `processImageResult`/`processVideoResult`. Returns true if row status was updated, false if still pending.
 
-All tool handlers must close over `userId` from the route. They use the service-role admin client (`getSupabaseAdmin()` directly or via the credit repository) and **must filter `.eq('user_id', userId)`** on every read -- the service-role client bypasses RLS so the explicit filter is the only protection.
+All tool handlers must close over `userId` from the route. They use the service-role admin client (`getSupabaseAdmin()`) and **must filter `.eq('user_id', userId)`** on every read -- the service-role client bypasses RLS so the explicit filter is the only protection.
 
 Generations submitted via MCP get `generation_metadata.source_client = 'mcp'` so the activity log can mark "via MCP". Plumbed through an optional `sourceClient` field on `generateImage` / `editImage` server fns.
 

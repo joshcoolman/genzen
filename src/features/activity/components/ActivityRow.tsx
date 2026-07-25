@@ -76,7 +76,7 @@ export function ActivityRow({
       type="button"
       onClick={() => onSelect?.(entry.id)}
       className={cn(
-        'grid w-full grid-cols-[48px_minmax(0,1.2fr)_minmax(0,2fr)_110px_80px_80px_90px_minmax(130px,_auto)] items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+        'grid w-full grid-cols-[48px_minmax(0,1.2fr)_minmax(0,2fr)_110px_80px_90px_minmax(130px,_auto)] items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
         entry.isDeleted && 'opacity-60',
       )}
     >
@@ -142,18 +142,10 @@ export function ActivityRow({
         {duration}
       </div>
 
-      {/* User cost */}
+      {/* Cost */}
       <div
         className="text-xs tabular-nums text-foreground"
-        title="What you paid (credits × $/credit)"
-      >
-        {formatCents(entry.userCostCents)}
-      </div>
-
-      {/* Provider cost */}
-      <div
-        className="text-xs tabular-nums text-muted-foreground"
-        title="Raw provider cost"
+        title="What FAL charged"
       >
         {formatCents(entry.providerCostCents)}
       </div>

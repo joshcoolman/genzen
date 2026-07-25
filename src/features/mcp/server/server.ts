@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerListImageModels } from './tools/list-image-models'
 import { registerListEditModels } from './tools/list-edit-models'
-import { registerGetCreditBalance } from './tools/get-credit-balance'
 import { registerListRecentGenerations } from './tools/list-recent-generations'
 import { registerUploadImage } from './tools/upload-image'
 import { registerGenerateImage } from './tools/generate-image'
@@ -13,7 +12,6 @@ export function createMcpServer(userId: string): McpServer {
   const server = new McpServer(SERVER_INFO)
   registerListImageModels(server)
   registerListEditModels(server)
-  registerGetCreditBalance(server, userId)
   registerListRecentGenerations(server, userId)
   registerUploadImage(server, userId)
   registerGenerateImage(server, userId)

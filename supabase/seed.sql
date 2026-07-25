@@ -64,10 +64,6 @@ SELECT
 FROM auth.users
 WHERE email = 'testuser@gmail.com';
 
--- Give seed user active status + credits (trigger creates waitlist row; this overrides)
-UPDATE user_profiles SET account_status = 'active', credit_balance = 50
+-- Give seed user active status (the trigger creates a waitlist row; this overrides)
+UPDATE user_profiles SET account_status = 'active'
 WHERE id = (SELECT id FROM auth.users WHERE email = 'testuser@gmail.com');
-
--- No credit_transactions insert here on purpose: handle_new_user() already
--- writes the 'initial_grant' row when the auth.users insert above fires. A
--- second one made the ledger sum to 100 while credit_balance read 50.

@@ -5,7 +5,6 @@ import { mapOutcomesToPlaceholders } from '../lib/generation-mapping'
 import type { CanvasImage } from '../types'
 import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
-import { useCredits } from '@/features/credits/hooks/use-credits'
 import { useUserImages } from '@/features/user-images'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -62,7 +61,6 @@ export function useCanvasGenerate(
 ) {
   const { session, user } = useAuth()
   const accessToken = session?.access_token
-  const credits = useCredits()
   const userImages = useUserImages(user?.id)
 
   const [isOpen, setIsOpen] = useState(false)
@@ -356,7 +354,6 @@ export function useCanvasGenerate(
     accessToken,
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
-    credits,
     setError,
     storagePrefix: 'genzen-canvas',
     onAfterSubmit: handleAfterSubmit,
@@ -585,7 +582,6 @@ export function useCanvasGenerate(
     close,
     generator,
     modelSelector,
-    credits,
     userImages,
     error,
     isGenerating,

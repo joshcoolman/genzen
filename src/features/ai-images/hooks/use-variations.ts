@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 
 interface UseVariationsOptions {
   accessToken: string | undefined
-  credits: CreditsState
   setError: (error: string | null) => void
 }
 

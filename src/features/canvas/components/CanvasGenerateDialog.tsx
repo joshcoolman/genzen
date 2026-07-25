@@ -42,7 +42,6 @@ export function CanvasGenerateDialog({ canvasGen }: CanvasGenerateDialogProps) {
         <GeneratorPanel
           generator={generatorOverride}
           modelSelector={canvasGen.modelSelector}
-          credits={canvasGen.credits}
           userImages={canvasGen.userImages}
           hideSourceButtons
           hidePastePrompts

@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CreditsState } from '@/features/credits/hooks/use-credits'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
 import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
-import { CREDIT_COSTS } from '@/features/credits'
 import {
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,
@@ -32,7 +30,6 @@ interface UseGeneratorOptions {
   accessToken: string | undefined
   selectedModels: Array<string>
   gensPerModel: number
-  credits: CreditsState
   setError: (error: string | null) => void
   storagePrefix?: string
   // Ordered per-call outcomes (one per submitted generation, in submit order),
@@ -110,7 +107,6 @@ export function useGenerator({
   accessToken,
   selectedModels,
   gensPerModel,
-  credits,
   setError,
   storagePrefix = 'genzen',
   onAfterSubmit,
@@ -310,16 +306,6 @@ export function useGenerator({
     const activePrompts = prompts.filter((p) => p.trim())
     const promptsToRun = activePrompts.length > 0 ? activePrompts : ['']
 
-    const totalCalls = promptsToRun.length * modelsToUse.length
-    const reason = sourceImage ? 'variation' : 'image_gen'
-    const cost = CREDIT_COSTS[reason] * totalCalls
-
-    // Pre-flight credit check
-    if (credits.balance !== null && credits.balance < cost) {
-      credits.showInsufficientCredits(cost)
-      return
-    }
-
     setLoading(true)
     setError(null)
 
@@ -390,20 +376,14 @@ export function useGenerator({
       if (firstError) {
         throw firstError.reason
       }
-      // Refresh balance after server-side deduction
-      await credits.refresh()
     } catch (err) {
-      const message =
+      setError(
         err instanceof Error
           ? err.message
           : typeof err === 'string'
             ? err
-            : String(err)
-      if (message.includes('Insufficient credits')) {
-        credits.showInsufficientCredits(cost)
-      } else {
-        setError(message)
-      }
+            : String(err),
+      )
     } finally {
       setLoading(false)
     }

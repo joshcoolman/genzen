@@ -33,7 +33,6 @@ export interface ActivityEntry {
   completedAt: string | null
   failedAt: string | null
   durationMs: number | null
-  userCostCents: number | null
   providerCostCents: number | null
   isDeleted: boolean
   errorMessage: string | null
@@ -49,7 +48,6 @@ export interface ActivityFilters {
 export interface ActivityTotals {
   count: number
   totalDurationMs: number
-  totalUserCostCents: number
   totalProviderCostCents: number
   exceedsCap: boolean
 }

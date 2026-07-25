@@ -17,9 +17,10 @@ Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` firs
 
 1. ✅ Delete the dead Google/Vertex stack
 2. ✅ Stripe removal
-3. ⬜ Credits removal
+3. ✅ Credits removal
 4. ⬜ Finish reserve-then-fail on the last 3 generate paths
-5. ⬜ Activity: collapse YOU PAID + PROVIDER COST into one real-FAL-dollars column
+5. ⬜ Activity: make the FAL cost actually get written on all 5 paths
+   (the column collapse itself landed early, forced by step 3)
 6. ⬜ Drop `DOCS_PASSWORD` + 4 dead env vars
 7. ⬜ Pare the README to "how to run this locally"
 
@@ -47,6 +48,34 @@ and `credit_transactions.stripe_event_id`, and recreates `add_credits` without
 `p_stripe_event_id` — that parameter was purely the webhook's idempotency
 guard, so with no webhook there's nothing left to deduplicate. Credits still
 exist at this point; step 3 takes them.
+
+**Step 3 done — credits are gone.** The whole `src/features/credits/` tree (17
+files), the 5 server guards (`checkAndDeductCredits` / `withCreditRefund` on
+generate / edit / variation / submit-variations / retry), every client consumer
+(`use-generator`, `use-variations`, `use-edit-page`, `use-ai-images-page`,
+`use-canvas-generate`, `GeneratorPanel`, the dashboard header balance, the AD
+context line, the account page's Credits section), the MCP `get_credit_balance`
+tool plus the credit fields on `generate_image` / `edit_image`, and the
+credits language in Terms + Privacy. Migration
+`20260725000002_drop_credits.sql` drops `credit_transactions`,
+`user_profiles.credit_balance`, `deduct_credits` / `add_credits` /
+`get_credit_balance`, and takes the 50-credit grant out of `handle_new_user()`.
+
+**Activity's column collapse came along for the ride.** "YOU PAID" was
+`generation_type × CREDIT_COSTS × DOLLARS_PER_CREDIT` — pure credits math, so it
+could not outlive them. Activity now shows a single **Cost** column reading
+`provider_cost_cents`.
+
+**What that trace turned up (matters for step 5).** `provider_cost_cents` is
+written in exactly one place, `processImageResult` at completion, as
+`falCostCents ?? estimatedCostCents`. `extractFalCostCents` probes FAL's result
+payload for a cost field and — per its own comment — has never been verified
+against a real response, so in practice it returns null and the value falls back
+to `estimated_cost_cents`. And `estimated_cost_cents` is written by **only**
+`generate-image-internal`. Net: edits, variations, submit-variations and retries
+record **no cost at all** and show `—`. Activity is now the only spend guard, so
+step 5's real job is writing `computeFalCostCents` at submit on the other four
+paths.
 
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 

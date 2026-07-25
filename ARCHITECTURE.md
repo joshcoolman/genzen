@@ -13,11 +13,10 @@ detail. This is the "what shape is this and where does X live" document.
 
 ## One-liner
 
-An authenticated app where users spend **credits** to generate **AI image
-assets** via external providers, then organize those assets in two views — a
-gallery (**AI Images**) and a spatial board (**Canvas**). Under the costume,
-it's a **saga engine**: each generation is a long-running, compensatable
-process across an external provider.
+A single-user app that generates **AI image assets** via FAL, then organizes
+those assets in two views — a gallery (**AI Images**) and a spatial board
+(**Canvas**). Under the costume, it's a **saga engine**: each generation is a
+long-running process across an external provider.
 
 ---
 
@@ -33,7 +32,7 @@ process across an external provider.
 | Realtime              | Supabase channels                           | live updates (Activity subscribes today)                                              |
 | Object storage        | Cloudflare R2                               | persistent public URLs (no expiry)                                                    |
 | Client cache          | IndexedDB                                   | **canvas layout only** — never image data                                             |
-| Providers             | FAL, Google, OpenAI, xAI                    | behind an anti-corruption layer                                                       |
+| Providers             | FAL (images), Google Gemini (vision)        | behind an anti-corruption layer                                                       |
 
 ---
 
@@ -45,12 +44,10 @@ process across an external provider.
 2. **Generation** _(core domain)_ — turning a prompt (+ optional source /
    reference images) into an asset via a provider. Where the real logic and
    the money live.
-3. **Billing / Wallet** _(supporting, cleanest model)_ — credits, deduction,
-   refunds. Append-only ledger.
-4. **Asset Library / Workspace** — owning, organizing, viewing, trashing
+3. **Asset Library / Workspace** — owning, organizing, viewing, trashing
    assets. **AI Images** and **Canvas** are two sibling presentations over
    the _same_ assets (see "Shared core, sibling views").
-5. **Activity** _(read model, not a context)_ — a CQRS-style projection over
+4. **Activity** _(read model, not a context)_ — a CQRS-style projection over
    generation rows. Query-only; never written to directly.
 
 ---
@@ -105,16 +102,16 @@ providers speak many. The ACL normalizes them:
   endpoint a source image must route to).
 - `fal-params.server.ts` + `fal-schema.server.ts` — resolve each model's wire
   params from its live OpenAPI schema.
-- One lifecycle is presented over FAL / Google / OpenAI differences.
+- One lifecycle is presented over each FAL endpoint's differences.
 
 > The ACL leaks when the glossary lies. A model registered against the wrong
 > endpoint (e.g. a text-to-image id where img2img was meant) silently drops
 > the source image. Guarded by `src/features/canvas/canvas-models.test.ts`.
 
-### The Generation Saga (with compensation)
+### The Generation Saga
 
-A generation is **not a transaction** — it's a long-running process with a
-compensating action (credit refund) on failure. See the diagram below.
+A generation is **not a transaction** — it's a long-running process whose
+outcome arrives later, out of band. See the diagram below.
 
 ### CQRS read model
 
@@ -138,15 +135,14 @@ including failures and soft-deleted rows.
 
 Generation lifecycle "events" travel via FAL webhooks **and** a polling
 reconciler (`check-pending-generations.server.ts`) that catches anything a
-missed webhook left behind. Google generations are driven by a queue
-dispatcher (`google-queue.server.ts`).
+missed webhook left behind.
 
-### Credits ledger
+### Reserve-then-fail: a click always leaves something behind
 
-`credit_transactions` is append-only; balance is a fold over it.
-Deduction/refund live in
-`check-credits.server.ts` (`checkAndDeductCredits`, `refundCredits`,
-`withCreditRefund`).
+The `user_images` row is written **before** any fallible work, not after FAL
+accepts the job. Every outcome is therefore visible as a card: pending, then
+completed, or failed with its reason and a working Retry. See
+`create-pending-generation.server.ts` and `docs/plans/visible-failures.md`.
 
 ### Functional core, imperative shell (the testing seam)
 
@@ -164,88 +160,22 @@ feature slices instead of replacing them.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> CreditsDeducted: Generate (checkAndDeductCredits, withCreditRefund scope)
+    [*] --> Reserved: Generate (row written before any fallible work)
 
-    CreditsDeducted --> Pending: FAL submit (request_id, status=pending)
-    CreditsDeducted --> Queued: Google submit (status=queued)
-    CreditsDeducted --> Refunded: submit throws (synchronous compensation)
-
-    Queued --> Processing: dispatchGoogleQueue claims (status=processing)
+    Reserved --> Pending: FAL submit accepted (request_id, status=pending)
+    Reserved --> Failed: submit throws (reason recorded on the reserved row)
 
     Pending --> Completed: FAL webhook / poll = COMPLETED
-    Processing --> Completed: Google success
-
     Pending --> Failed: FAL webhook / poll = terminal error
-    Processing --> FailedRefunded: Google error (refundCredits)
 
     Completed --> [*]: asset in R2 (+ on_canvas if from canvas)
-    Failed --> [*]: status=failed, error recorded
-    FailedRefunded --> [*]: status=failed, credits returned
-    Refunded --> [*]: no record created
+    Failed --> [*]: status=failed, reason recorded, Retry offered
 ```
 
-**Compensation is asymmetric — a known gap, documented honestly:**
-
-| Failure point                        | Refunded?                | Path                                                                            |
-| ------------------------------------ | ------------------------ | ------------------------------------------------------------------------------- |
-| Synchronous submit throws            | ✅ yes                   | `withCreditRefund` wraps the submit scope                                       |
-| Google async failure (in queue)      | ✅ yes                   | `google-queue.server.ts` → `refundCredits`                                      |
-| **FAL async failure** (webhook/poll) | ⚠️ **no visible refund** | `markGenerationFailedWithBlob` marks `failed` but does not call `refundCredits` |
-
-Activity _displays_ `$0` for any failed run (`computeUserCostCents` forces it),
-which can **mask** the FAL-async case where the credit was deducted and not
-returned. Reconciling that — make every terminal `failed` transition the single
-place that also compensates — is the highest-value cleanup in this context.
-
----
-
-## Shared core, sibling views (the "parity" principle)
-
-AI Images and Canvas are **not** "primary + variant." They're two
-presentations over a shared set of operations. The healthy mental model:
-
-> The **operations** are primary. AI Images and Canvas are sibling shells.
-
-- **Already shared (parity is ~free here):** generation. Canvas reuses
-  `useGenerator`, `GeneratorPanel`, and the `generateImage` server fn — so
-  generation behaviour stays in lockstep by construction, not by discipline.
-- **Not yet shared (parity is manual here):** asset operations
-  (upload, delete/trash, reorder, group) and the optimistic/polling flows are
-  implemented per-view (`use-images` for AI Images; `use-canvas-generate` +
-  `persistence` for Canvas). Keeping them in parity is a maintenance burden,
-  not a structural guarantee — this is the friction you feel when mirroring a
-  change across both.
-
-**Direction that makes parity structural:** factor the asset operations into a
-thin shared application layer (use-cases) that both shells call; let each shell
-own only its view-local state (gallery sort / selection vs canvas layout /
-groups). Then a _third_ view (or re-adding **video**) is "new shell + new
-provider," not a reimplementation. The data model is already largely
-media-agnostic (assets + lifecycle), so a new media type is mostly a provider
-in the ACL plus a presentation — not a core reshape.
-
-**Presentation parity** has its own contract:
-[`docs/generation-presentation-contract.md`](docs/generation-presentation-contract.md)
-— the single source of truth for how a generation looks in each state
-(in-progress / completed / failed) across every view, the normalized
-`GenerationView` shape, and the `<Thumbnail>` reference implementation. Conform
-to it when building a view instead of re-deciding "what should loading look
-like here."
-
----
-
-## Where to put things
-
-- New domain logic → a `src/features/<feature>/` slice; read/refresh its
-  `CLAUDE.md`.
-- Server-only logic → `*.server.ts` (public) or `*-internal.server.ts` (shared
-  impl); secrets/service-role stay server-side.
-- Inbound webhooks → `server/api/*` (Nitro h3).
-- Schema changes → timestamp-prefixed `supabase/migrations/`.
-- Decision logic you'll want to test → extract a pure function (functional
-  core) and unit-test it.
-- A new provider → extend `models.ts` + the FAL/provider ACL; keep the lifecycle
-  uniform.
+There is no compensation step, because there is nothing to compensate: FAL
+bills the account directly and Activity reports what it charged. The invariant
+that replaced it is simpler and stronger — **a click always leaves something on
+the board.**
 
 ---
 
@@ -255,14 +185,12 @@ like here."
   first-class **aggregate** (id + members/roles), moves layout _server-side_
   (the `on_canvas` boolean becomes a `canvas_items(canvas_id, image_id, x, y…)`
   join), demands a concurrency model (LWW/CRDT + presence), and splits
-  **ownership** from **access** on assets — plus a credit-attribution decision
-  ("who pays on a shared canvas"). This is the trigger that justifies promoting
+  **ownership** from **access** on assets. This is the trigger that justifies promoting
   Canvas and splitting the `user_images` god-table.
 - **More media types (video, etc.)** → mostly a new provider in the ACL + a new
   presentation; the asset/lifecycle core is already broadly media-agnostic.
 - **God-table pressure** → split `user_images` only when the four roles start
   conflicting in shared code paths.
-- **FAL async refund gap** → see the Generation Saga table above.
 
 ```
 

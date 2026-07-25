@@ -40,7 +40,7 @@ export function registerUploadImage(server: McpServer, userId: string): void {
     {
       title: 'Upload an image',
       description:
-        "Uploads a base64-encoded image into the user's Genzen library. Use this when you have a local image (e.g. from the user's filesystem) that you want to reference as a source or reference image in `generate_image` or `edit_image`. Returns the imageId you can pass to those tools and a public URL. Free — no credit cost.",
+        "Uploads a base64-encoded image into the user's Genzen library. Use this when you have a local image (e.g. from the user's filesystem) that you want to reference as a source or reference image in `generate_image` or `edit_image`. Returns the imageId you can pass to those tools and a public URL.",
       inputSchema,
     },
     async ({ base64Data, fileName, contentType }) => {

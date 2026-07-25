@@ -3,7 +3,6 @@ import type { GeneratorState, RefImage } from './use-generator'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { useAuth } from '@/lib/auth'
-import { useRequireCredits } from '@/features/credits/hooks/use-require-credits'
 import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { useModelSelector } from '@/components/ModelSelector'
 import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
@@ -16,7 +15,6 @@ import { reparentImage } from '@/features/ai-images/server/reparent-image.server
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
-import { CREDIT_COSTS } from '@/features/credits'
 import {
   detectAspectRatio,
   getRatioOptions,
@@ -30,7 +28,6 @@ import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const { user, session } = useAuth()
   const accessToken = session?.access_token
-  const credits = useRequireCredits(CREDIT_COSTS.edit)
 
   const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
 
@@ -263,17 +260,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     setError(null)
 
     const activePrompts = prompts.filter((p) => p.trim())
-    const totalEdits =
-      activePrompts.length *
-      modelSelector.selectedIds.length *
-      modelSelector.gensPerModel
-    const cost = CREDIT_COSTS.edit * totalEdits
-
-    if (credits.balance !== null && credits.balance < cost) {
-      credits.showInsufficientCredits(cost)
-      setEditLoading(false)
-      return
-    }
 
     try {
       // Multi-select mode: use selected images as references
@@ -352,7 +338,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
       // Pull the new rows in either way: on failure they are the failed cards.
       editChildren.refresh()
-      await credits.refresh()
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to edit image'
@@ -371,7 +356,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     modelSelector.selectedIds,
     modelSelector.gensPerModel,
     modelSelector.models,
-    credits,
     results,
     refImages,
     isMultiSelectMode,
@@ -407,7 +391,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
           data: { accessToken, recordId: img.id },
         })
         results.replaceTempId(tempId, recordId)
-        await credits.refresh()
       } catch (err) {
         const reason =
           err instanceof Error && err.message ? err.message : 'Retry failed'
@@ -415,7 +398,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         toast(reason, { variant: 'error', duration: 8000 })
       }
     },
-    [accessToken, results, credits],
+    [accessToken, results],
   )
 
   // Shot list prompt generation - dialog owns API call, hook just merges results
@@ -911,7 +894,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   return {
     generator,
     modelSelector,
-    credits,
     error,
     setError,
     describe,

@@ -43,8 +43,7 @@ function TermsPage() {
             <p>
               GenZen is an AI-assisted creative platform for generating,
               editing, and organizing images using third-party AI models
-              provided by vendors including FAL AI, OpenAI, and Google. The
-              Service is provided on a credit-based prepayment model.
+              provided by FAL AI.
             </p>
           </section>
 
@@ -74,25 +73,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              5. Credits and Purchases
-            </h2>
-            <p>
-              GenZen operates on a credit system. Credits are prepaid and
-              consumed when you use AI generation features. Credits have no cash
-              value and are non-refundable except where required by applicable
-              law. Unused credits do not expire but may be forfeited if your
-              account is terminated for a material breach of these Terms.
-            </p>
-            <p>
-              All purchases are final. We do not offer refunds for credits that
-              were properly consumed by a generation, even if the result is not
-              to your satisfaction.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-base font-medium text-foreground">
-              6. AI-Generated Content
+              5. AI-Generated Content
             </h2>
             <p>
               Subject to your compliance with these Terms, you own the outputs
@@ -111,7 +92,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              7. Acceptable Use
+              6. Acceptable Use
             </h2>
             <p>You agree not to use the Service to:</p>
             <ul className="list-disc pl-5 space-y-1 text-foreground/80">
@@ -138,7 +119,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              8. Service Availability
+              7. Service Availability
             </h2>
             <p>
               The Service is provided on a best-effort basis. We do not
@@ -152,20 +133,20 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              9. Account Termination
+              8. Account Termination
             </h2>
             <p>
               We may suspend or terminate your account at our discretion if you
               violate these Terms, engage in fraudulent activity, or for any
               other reason with reasonable notice. You may delete your account
               at any time through the account settings. Upon termination, your
-              access to the Service ceases and your credit balance is forfeited.
+              access to the Service ceases.
             </p>
           </section>
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              10. Data Retention
+              9. Data Retention
             </h2>
             <p>
               Generated images are stored in your library until you delete them
@@ -178,7 +159,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              11. Limitation of Liability
+              10. Limitation of Liability
             </h2>
             <p>
               To the maximum extent permitted by applicable law, GenZen and its
@@ -194,7 +175,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              12. Changes to Terms
+              11. Changes to Terms
             </h2>
             <p>
               We may update these Terms from time to time. We will notify you of
@@ -206,7 +187,7 @@ function TermsPage() {
 
           <section className="space-y-3">
             <h2 className="text-base font-medium text-foreground">
-              13. Contact
+              12. Contact
             </h2>
             <p>
               For questions about these Terms, contact us at{' '}

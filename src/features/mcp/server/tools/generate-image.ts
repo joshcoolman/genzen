@@ -3,7 +3,6 @@ import { buildPublicUrl, waitForGeneration } from '../wait-for-generation'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { generateImageInternal } from '@/features/ai-images/server/generate-image-internal.server'
 import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
-import { DOLLARS_PER_CREDIT, getCreditRepository } from '@/features/credits'
 
 const inputSchema = {
   prompt: z
@@ -65,7 +64,7 @@ export function registerGenerateImage(server: McpServer, userId: string): void {
     {
       title: 'Generate an image',
       description:
-        "Generates a new image and saves it to the user's Genzen library. Costs 1 credit. Blocks until the FAL job completes (typically 5–15s, up to 90s timeout). Returns the imageId, public URL, the model that ran, the credit cost, the user's remaining balance, and the provider cost in cents when available.",
+        "Generates a new image and saves it to the user's Genzen library. Blocks until the FAL job completes (typically 5–15s, up to 90s timeout). Returns the imageId, public URL, the model that ran, and the provider cost in cents when available.",
       inputSchema,
     },
     async ({
@@ -95,16 +94,11 @@ export function registerGenerateImage(server: McpServer, userId: string): void {
         typeof meta.provider_cost_cents === 'number'
           ? meta.provider_cost_cents
           : null
-      const creditsRemaining = await getCreditRepository().getBalance(userId)
-
       const result = {
         imageId: completed.id,
         url: buildPublicUrl(completed.storage_path),
         model: modelId,
         title: completed.title,
-        creditsCharged: 1,
-        creditsRemaining,
-        dollarsCharged: Number((1 * DOLLARS_PER_CREDIT).toFixed(2)),
         providerCostCents,
       }
       return {

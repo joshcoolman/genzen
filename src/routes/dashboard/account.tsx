@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { StatsRow } from '@/components/StatsRow'
 import { useAuth } from '@/lib/auth'
-import { useCredits } from '@/features/credits/hooks/use-credits'
-import { DOLLARS_PER_CREDIT } from '@/features/credits'
-import { TransactionHistory } from '@/features/credits/components/TransactionHistory'
 import { ActivityPreview } from '@/features/activity/components/ActivityPreview'
 import { supabase } from '@/lib/supabase'
 import { checkConnections } from '@/lib/server/check-connections'
@@ -12,12 +8,6 @@ import { checkConnections } from '@/lib/server/check-connections'
 export const Route = createFileRoute('/dashboard/account')({
   component: AccountPage,
 })
-
-// --- Credits helpers ---
-
-function formatDollars(credits: number) {
-  return `$${(credits * DOLLARS_PER_CREDIT).toFixed(2)}`
-}
 
 // --- Status helpers ---
 
@@ -85,7 +75,6 @@ function StatusBadge({
 
 function AccountPage() {
   const { user, session } = useAuth()
-  const credits = useCredits()
 
   // Status state
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -175,57 +164,7 @@ function AccountPage() {
         </div>
       </div>
 
-      {/* Credits */}
-      <div className="space-y-6">
-        <h2 className="text-lg font-medium">Credits</h2>
-
-        <StatsRow
-          stats={[
-            {
-              label: 'Current balance',
-              labelClassName: 'text-warm-gold',
-              value: credits.dollarBalance ?? '--',
-              detail:
-                credits.balance !== null
-                  ? `${credits.balance} credits available`
-                  : 'Loading...',
-            },
-            {
-              label: 'Spent today',
-              labelClassName: 'text-warm-gold',
-              value: credits.usageStats
-                ? formatDollars(credits.usageStats.today)
-                : '--',
-              detail: credits.usageStats
-                ? `${credits.usageStats.today} credits`
-                : undefined,
-            },
-            {
-              label: 'Usage this month',
-              labelClassName: 'text-warm-gold',
-              value: credits.usageStats
-                ? formatDollars(credits.usageStats.thisMonth)
-                : '--',
-              detail: credits.usageStats
-                ? `${credits.usageStats.thisMonth} credits used`
-                : undefined,
-            },
-            {
-              label: 'Daily average',
-              labelClassName: 'text-warm-gold',
-              value: credits.usageStats
-                ? formatDollars(credits.usageStats.dailyAverage)
-                : '--',
-              detail: credits.usageStats
-                ? `${credits.usageStats.dailyAverage} credits / day`
-                : undefined,
-            },
-          ]}
-        />
-        <TransactionHistory />
-
-        <ActivityPreview />
-      </div>
+      <ActivityPreview />
 
       {/* Status */}
       <div className="space-y-4">
