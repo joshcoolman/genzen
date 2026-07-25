@@ -17,3 +17,6 @@ todos.json
 .claude/launch.json
 .vercel
 .firecrawl/
+
+# Next build output (#168 port)
+.next/
