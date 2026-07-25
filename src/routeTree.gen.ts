@@ -15,12 +15,9 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
@@ -59,11 +56,6 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -74,20 +66,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DocsIndexRoute = DocsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DocsRoute,
-} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => DocsRoute,
 } as any)
 const DashboardTrashRoute = DashboardTrashRouteImport.update({
   id: '/trash',
@@ -128,7 +110,6 @@ const DashboardEditImageIdRoute = DashboardEditImageIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/docs': typeof DocsRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -141,9 +122,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
-  '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/docs/': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
 }
 export interface FileRoutesByTo {
@@ -160,16 +139,13 @@ export interface FileRoutesByTo {
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
-  '/docs/$': typeof DocsSplatRoute
   '/dashboard': typeof DashboardIndexRoute
-  '/docs': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/docs': typeof DocsRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -182,9 +158,7 @@ export interface FileRoutesById {
   '/dashboard/canvas': typeof DashboardCanvasRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
-  '/docs/$': typeof DocsSplatRoute
   '/dashboard/': typeof DashboardIndexRoute
-  '/docs/': typeof DocsIndexRoute
   '/dashboard/edit/$imageId': typeof DashboardEditImageIdRoute
 }
 export interface FileRouteTypes {
@@ -192,7 +166,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
-    | '/docs'
     | '/forgot-password'
     | '/login'
     | '/privacy'
@@ -205,9 +178,7 @@ export interface FileRouteTypes {
     | '/dashboard/canvas'
     | '/dashboard/settings'
     | '/dashboard/trash'
-    | '/docs/$'
     | '/dashboard/'
-    | '/docs/'
     | '/dashboard/edit/$imageId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -224,15 +195,12 @@ export interface FileRouteTypes {
     | '/dashboard/canvas'
     | '/dashboard/settings'
     | '/dashboard/trash'
-    | '/docs/$'
     | '/dashboard'
-    | '/docs'
     | '/dashboard/edit/$imageId'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
-    | '/docs'
     | '/forgot-password'
     | '/login'
     | '/privacy'
@@ -245,16 +213,13 @@ export interface FileRouteTypes {
     | '/dashboard/canvas'
     | '/dashboard/settings'
     | '/dashboard/trash'
-    | '/docs/$'
     | '/dashboard/'
-    | '/docs/'
     | '/dashboard/edit/$imageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
-  DocsRoute: typeof DocsRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -307,13 +272,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -328,26 +286,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/': {
-      id: '/docs/'
-      path: '/'
-      fullPath: '/docs/'
-      preLoaderRoute: typeof DocsIndexRouteImport
-      parentRoute: typeof DocsRoute
-    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
-    }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof DocsRoute
     }
     '/dashboard/trash': {
       id: '/dashboard/trash'
@@ -427,22 +371,9 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
-interface DocsRouteChildren {
-  DocsSplatRoute: typeof DocsSplatRoute
-  DocsIndexRoute: typeof DocsIndexRoute
-}
-
-const DocsRouteChildren: DocsRouteChildren = {
-  DocsSplatRoute: DocsSplatRoute,
-  DocsIndexRoute: DocsIndexRoute,
-}
-
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
-  DocsRoute: DocsRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,

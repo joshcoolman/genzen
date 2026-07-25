@@ -43,7 +43,6 @@ than assume it's there.
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | api-keys    | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`    |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
-| docs        | Internal docs route                                            | `src/features/docs/CLAUDE.md`        |
 | mcp         | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`         |
 | spotlight   | Spotlight search / command palette                             | `src/features/spotlight/CLAUDE.md`   |
 | status-bar  | Bottom status bar with AD (chat) toggle                        | `src/features/status-bar/CLAUDE.md`  |
@@ -74,8 +73,10 @@ folder, or a `continue/` directory; all of those existed and were removed
 deliberately. Update the README `## Status` block at natural beats so the front
 door always reflects the current state.
 
-`docs/` holds only what the project is and why (`reference/`, contracts). Never a
-plan.
+`docs/` is small on purpose: `SPEC.md` (what the app does and must do) and
+`reference/` (prompt-craft material, the generation presentation contract,
+framework notes). Never a plan. There is no in-app docs viewer — that route and
+`src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled content.
 
 ## Project standard
 
