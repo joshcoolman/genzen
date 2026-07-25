@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { BookOpen, LogOut, Shield } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -159,36 +159,6 @@ export function Sidebar({ className }: { className?: string }) {
               </TooltipContent>
             </Tooltip>
           ))}
-          <div className="my-2 border-t border-border" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <a
-                href="/docs"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
-                  'gap-3',
-                  isCollapsed
-                    ? 'justify-center'
-                    : 'justify-center md:justify-start',
-                  'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
-                )}
-              >
-                <BookOpen className="h-4 w-4 shrink-0" />
-                {!isCollapsed && (
-                  <span className="hidden flex-1 md:inline">Docs</span>
-                )}
-              </a>
-            </TooltipTrigger>
-            <TooltipContent
-              side="right"
-              className={cn('text-xs', !isCollapsed && 'md:hidden')}
-              sideOffset={8}
-            >
-              Docs
-            </TooltipContent>
-          </Tooltip>
           <AlertDialog>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -233,20 +203,6 @@ export function Sidebar({ className }: { className?: string }) {
           </AlertDialog>
         </nav>
       </TooltipProvider>
-
-      {!isCollapsed && (
-        <div className="hidden md:flex flex-col gap-1 px-4 pb-4">
-          <div className="border-t border-border pt-3 flex flex-col gap-1">
-            <Link
-              to="/terms"
-              className="flex items-center gap-2 text-[10px] text-sidebar-text/50 hover:text-sidebar-text transition-colors px-3 py-1"
-            >
-              <Shield className="h-3 w-3 shrink-0" />
-              Terms &amp; Privacy
-            </Link>
-          </div>
-        </div>
-      )}
     </aside>
   )
 }

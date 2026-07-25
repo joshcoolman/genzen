@@ -3,8 +3,7 @@
 A personal workspace for working with AI image models. Fan one prompt across
 several models and compare side by side, run non-destructive edit / variation
 flows that track parent→child genealogy, arrange results on an infinite canvas,
-and ask an in-app assistant about your library. There's an MCP server so Claude
-Code can drive it from outside the UI.
+and ask an in-app assistant about your library.
 
 This is a tool I built for myself and use. It is public because there's no reason
 for it not to be — not because it's a product. There's no signup, no billing, no
@@ -76,10 +75,10 @@ about it — that's the usual reason generation 401s.
 | `src/features/<name>/` | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.** |
 | `src/lib/server/`      | Server-only helpers (files use `.server.ts` suffix).                                   |
 | `src/components/`      | Shared components, plus `ui/` for shadcn primitives.                                   |
-| `server/api/`          | Nitro h3 routes (e.g. `server/api/mcp.post.ts`).                                       |
+| `server/api/`          | Nitro h3 routes (e.g. `server/api/fal-webhook.post.ts`).                               |
 | `supabase/migrations/` | Timestamp-prefixed Postgres migrations.                                                |
 | `CLAUDE.md`            | Feature catalog + service / convention notes.                                          |
-| `ARCHITECTURE.md`      | How the whole thing is shaped, and why.                                                |
+| `docs/SPEC.md`         | What the app does and the rules that must hold.                                        |
 
 ## Env
 
@@ -96,22 +95,6 @@ Cloudflare R2's endpoint.
 
 Service-role and provider keys are server-only. Anything prefixed `VITE_` ships
 to the browser.
-
-## MCP
-
-An MCP server lives at `POST /api/mcp` (Nitro h3, stateless JSON-RPC), built for
-Claude Code: the API Keys settings page generates a `gz_live_*` personal key plus
-a paste-ready `claude mcp add` command. Other MCP clients aren't part of the
-supported flow.
-
-- Route: `server/api/mcp.post.ts`
-- Server factory + tool registry: `src/features/mcp/server/server.ts` (`createMcpServer(userId)`)
-- Notes: `src/features/mcp/CLAUDE.md`
-
-Tools: `list-image-models`, `list-edit-models`, `list-recent-generations`,
-`upload-image`, `generate-image`, `edit-image`. Every tool closes over the
-authenticated `userId` and filters by it explicitly (the service-role client
-bypasses RLS).
 
 ## Conventions / gotchas
 
@@ -132,6 +115,10 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-25)
 
+- **Stripped the app back to its core before the Next migration.** Removed the MCP
+  server and the API-keys feature it existed for (the app's only API-key auth path
+  — cookie sessions are now the single auth model), the docs viewer, the legal
+  pages, and ~18 files of confirmed-dead code.
 - Failures are visible: `MissingKeyDialog` + `useReportError()` surface a missing
   provider key instead of a dead click; Enhance now exists on the edit page.
 - `pnpm typecheck` added (`tsc --noEmit`) — `pnpm build` is Vite and does not
@@ -149,3 +136,7 @@ Conventions follow `~/repos/project-standard`.
   implementation. Suggested entry point: schema + auth together.
 - Then a second pass to conform to `project-standard`'s `app/` conventions —
   route folders, one-folder-per-component, CSS Modules over Tailwind.
+
+The app is now six surfaces and nothing else: AI Images, Canvas, Activity, Trash,
+Settings, Account — plus the AD assistant panel. If something does not serve
+generating and keeping images, it was cut on purpose.

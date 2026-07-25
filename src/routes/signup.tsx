@@ -174,18 +174,6 @@ function SignupPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground leading-relaxed">
-          By signing up you agree to our{' '}
-          <Link to="/terms" className="text-accent-brand hover:underline">
-            Terms of Service
-          </Link>{' '}
-          and{' '}
-          <Link to="/privacy" className="text-accent-brand hover:underline">
-            Privacy Policy
-          </Link>
-          .
-        </p>
-
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link to="/login" className="text-accent-brand hover:underline">

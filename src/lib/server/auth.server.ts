@@ -1,6 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { createClient } from '@supabase/supabase-js'
-import { verifyApiKey } from './api-keys.server'
 import { getSupabaseAdmin } from './supabase-admin.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/supabase'
@@ -63,18 +62,6 @@ export async function requireAuth(accessToken: string) {
   }
 
   return user
-}
-
-export async function requireAuthFromApiKey(rawKey: string) {
-  if (!rawKey) {
-    throw new Error('Unauthorized')
-  }
-  try {
-    const { userId } = await verifyApiKey({ rawKey })
-    return { id: userId, email: undefined as string | undefined }
-  } catch {
-    throw new Error('Unauthorized')
-  }
 }
 
 export interface AuthInput {

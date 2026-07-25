@@ -5,9 +5,10 @@ recurring patterns, and the deliberate seams. Read this to orient before
 diving into a feature; each feature also has its own `CLAUDE.md` with local
 detail. This is the "what shape is this and where does X live" document.
 
-> Status: living doc. It describes the system as it is today (single-user,
-> learning phase) and flags the seams where it will bend under known future
-> pressure (collaboration, more media types).
+> Status: describes the **TanStack Start / Supabase** shape, which #168 replaces
+> with Next + Postgres + S3 + Node. The topology and naming below go stale with
+> that migration; the domain model and the saga framing survive it. Rewrite this
+> once #168 lands rather than trusting it verbatim.
 
 ---
 
@@ -22,17 +23,17 @@ long-running process across an external provider.
 
 ## Runtime topology (where code runs)
 
-| Layer                 | Where                                       | Notes                                                                                 |
-| --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------- |
-| UI                    | React 19 (TanStack Start, Vite)             | feature-sliced under `src/features/*`                                                 |
-| Server functions      | `*.server.ts` via TanStack `createServerFn` | the app's "application layer"                                                         |
-| Internal server impls | `*-internal.server.ts`                      | called directly by MCP tools / other server fns to avoid TanStack RPC stub corruption |
-| HTTP routes           | `server/api/*` (Nitro h3)                   | the FAL webhook — Supabase edge functions are **not** used                            |
-| Data                  | Supabase Postgres + RLS                     | per-user row security                                                                 |
-| Realtime              | Supabase channels                           | live updates (Activity subscribes today)                                              |
-| Object storage        | Cloudflare R2                               | persistent public URLs (no expiry)                                                    |
-| Client cache          | IndexedDB                                   | **canvas layout only** — never image data                                             |
-| Providers             | FAL (images), Google Gemini (vision)        | behind an anti-corruption layer                                                       |
+| Layer                 | Where                                       | Notes                                                                     |
+| --------------------- | ------------------------------------------- | ------------------------------------------------------------------------- |
+| UI                    | React 19 (TanStack Start, Vite)             | feature-sliced under `src/features/*`                                     |
+| Server functions      | `*.server.ts` via TanStack `createServerFn` | the app's "application layer"                                             |
+| Internal server impls | `*-internal.server.ts`                      | called directly by other server fns to avoid TanStack RPC stub corruption |
+| HTTP routes           | `server/api/*` (Nitro h3)                   | the FAL webhook — Supabase edge functions are **not** used                |
+| Data                  | Supabase Postgres + RLS                     | per-user row security                                                     |
+| Realtime              | Supabase channels                           | live updates (Activity subscribes today)                                  |
+| Object storage        | Cloudflare R2                               | persistent public URLs (no expiry)                                        |
+| Client cache          | IndexedDB                                   | **canvas layout only** — never image data                                 |
+| Providers             | FAL (images), Google Gemini (vision)        | behind an anti-corruption layer                                           |
 
 ---
 
@@ -87,7 +88,7 @@ likely trigger (see "Known seams").
 ### Server functions vs internal impls vs HTTP routes
 
 - `createServerFn` wrappers are the public application API for the client.
-- `*-internal.server.ts` holds the real logic, callable directly (MCP tools,
+- `*-internal.server.ts` holds the real logic, callable directly (other server fns,
   other server fns) without going through the RPC stub.
 - `server/api/*` Nitro routes handle inbound webhooks. (No Supabase edge
   functions — that path doesn't work for us.)

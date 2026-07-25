@@ -74,7 +74,6 @@ There is no separate "Combine" feature anymore (retired into this flow).
 - `@/features/ai-images/server/generate-image.server` -- server action for multi-image combination
 - `@/features/user-images/` -- `useUserImages` for upload, `ExistingImagePicker` for library
 - `@/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
-- `@/features/credits/` -- credit checking and deduction
 - `@/lib/server/check-pending-generations.server` -- triggers FAL status checks
 
 ## Quirks / Notes

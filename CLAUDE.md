@@ -41,9 +41,7 @@ than assume it's there.
 | activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
 | ad          | AI chat assistant sidebar with vision + tool calling           | `src/features/ad/CLAUDE.md`          |
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
-| api-keys    | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`    |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
-| mcp         | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`         |
 | spotlight   | Spotlight search / command palette                             | `src/features/spotlight/CLAUDE.md`   |
 | status-bar  | Bottom status bar with AD (chat) toggle                        | `src/features/status-bar/CLAUDE.md`  |
 | trash       | Soft-deleted item recovery                                     | `src/features/trash/CLAUDE.md`       |

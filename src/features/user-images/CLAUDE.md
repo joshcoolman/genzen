@@ -15,7 +15,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 - `lib/palette-generator.ts` -- Extracts color palettes from images using Canvas + k-means clustering in LAB space
 - `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
 - `server/upload-image.server.ts` -- TanStack server fn wrapper for image upload
-- `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement; called directly by MCP tools to avoid TanStack RPC stub corruption
+- `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement
 - `server/remove-images.server.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
 - `server/create-thumbnail.server.ts` -- Server function for async thumbnail generation post-upload
 - `components/ImageCard.tsx` -- Thumbnail card wrapping shared Thumbnail component
@@ -27,7 +27,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 ## Route
 
-No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useImageUpload`, `useExistingImages`), upload/remove/thumbnail server functions, and pickers are consumed by other features (ai-images, canvas, ai-video, the AD image picker).
+No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useImageUpload`, `useExistingImages`), upload/remove/thumbnail server functions, and pickers are consumed by other features (ai-images, canvas, the AD image picker).
 
 ## Shared Dependencies
 

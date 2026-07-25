@@ -13,9 +13,9 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 ## Server
 
 - `generate-image.server.ts` -- TanStack server fn wrapper for generation
-- `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by MCP tools and other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
+- `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
 - `edit-image.server.ts` -- TanStack server fn wrapper for editing
-- `edit-image-internal.server.ts` -- core async implementation for image editing with prompt + optional reference images; called directly by MCP tools
+- `edit-image-internal.server.ts` -- core async implementation for image editing with prompt + optional reference images
 - `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
@@ -74,7 +74,6 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/lib/prompts/image-variation.ts` -- system prompt + user content builder for variations
 - `src/lib/prompts/shot-list.ts` -- system prompt for shot list generation
 - `src/components/PromptList.tsx` -- reusable prompt list with optional AI generation
-- `src/features/credits/` -- credit checking, deduction, and UI
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
 - `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)
