@@ -84,7 +84,7 @@ export const generateVariationPrompts = createServerFn({ method: 'POST' })
     }
 
     const signedUrl = imageStoragePath
-      ? await createImageStorage(supabase).getUrl(imageStoragePath)
+      ? await createImageStorage().getUrl(imageStoragePath)
       : undefined
 
     // Fetch image bytes for Claude vision + FAL upload

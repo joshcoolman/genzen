@@ -1,6 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
 import { requireAuth } from '@/lib/server/auth.server'
-import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { createImageStorage } from '@/lib/image-storage'
 
 interface RemoveImagesInput {
@@ -23,8 +22,6 @@ export const removeImages = createServerFn({ method: 'POST' })
     }
 
     if (data.storagePaths.length === 0) return
-
-    const supabase = getSupabaseAdmin()
-    const storage = createImageStorage(supabase)
+    const storage = createImageStorage()
     await storage.remove(data.storagePaths)
   })

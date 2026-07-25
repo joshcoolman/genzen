@@ -10,6 +10,11 @@ import {
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { createImageStorage } from '@/lib/image-storage'
+import {
+  describeGenerationError,
+  markGenerationFailed,
+  markGenerationSubmitted,
+} from '@/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -23,9 +28,9 @@ export const retryGeneration = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireAuth(data.accessToken)
 
-    if (!process.env.FAL_KEY) {
-      throw new Error('FAL_KEY environment variable is not set')
-    }
+    // Checked inside the reserved-row block below (see the note in
+    // edit-image-internal.server.ts): a missing key must produce a visible
+    // failed card, not a silent throw.
 
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
@@ -123,17 +128,13 @@ export const retryGeneration = createServerFn({ method: 'POST' })
           safetyLevel: 'permissive',
         })
 
-        const webhookUrl = getFalWebhookUrl()
-        const { request_id } = await (fal.queue.submit as any)(falModelId, {
-          input: falInput,
-          ...(webhookUrl ? { webhookUrl } : {}),
-        })
-
+        // A retry is a generation, so it obeys the same rule: reserve the row
+        // first, then submit. A retry that fails again leaves its own failed
+        // card rather than disappearing.
         const { data: newRecord, error: insertError } = await supabase
           .from('user_images')
           .insert({
             user_id: user.id,
-            request_id,
             status: 'pending',
             source: 'ai_generated',
             title: 'Generating...',
@@ -151,6 +152,27 @@ export const retryGeneration = createServerFn({ method: 'POST' })
           throw new Error(
             `Failed to create retry record: ${insertError.message}`,
           )
+        }
+
+        try {
+          if (!process.env.FAL_KEY) {
+            throw new Error(
+              'FAL_KEY is not set — add it to .env.local and restart the dev server',
+            )
+          }
+          const webhookUrl = getFalWebhookUrl()
+          const { request_id } = await (fal.queue.submit as any)(falModelId, {
+            input: falInput,
+            ...(webhookUrl ? { webhookUrl } : {}),
+          })
+          await markGenerationSubmitted(newRecord.id, request_id)
+        } catch (err) {
+          console.error('[retry] generation failed', newRecord.id, err)
+          await markGenerationFailed(
+            newRecord.id,
+            describeGenerationError(err, 'Retry failed'),
+          )
+          throw err
         }
 
         return { recordId: newRecord.id }

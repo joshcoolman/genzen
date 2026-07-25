@@ -16,7 +16,17 @@ TanStack Start (React 19 + Vite + Nitro SSR), Supabase, FAL AI (image gen), Tail
 
 ## Services
 
-All keys present in `.env.local` — assume server-side access unless a feature explicitly says otherwise. Don't propose new auth/env plumbing for these.
+Local dev is one command: **`pnpm local:up`** (MinIO + the Supabase CLI stack +
+schema + a populated `.env.local`), then `pnpm dev`. It is idempotent and never
+resets a database you have been working in. The only key a human supplies is
+`FAL_KEY`; everything else is a container or a fixed local value. See the
+README's Local Dev section.
+
+Assume server-side access to the services below unless a feature explicitly says
+otherwise. Don't propose new auth/env plumbing for these. Note that locally the
+optional keys (Anthropic, Google, OpenAI, Stripe) are usually **empty** — the app
+runs fine without them, so a feature that needs one should fail loudly rather
+than assume it's there.
 
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude. Server-side AND browser-stored BYOK for the AD panel (`useAnthropicKey`); either path is available.
 - **Google Gemini / Imagen** (`GOOGLE_AI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `GOOGLE_APPLICATION_CREDENTIALS`) — image gen + vision.
@@ -24,7 +34,7 @@ All keys present in `.env.local` — assume server-side access unless a feature 
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Stripe** (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`) — credit pack payments via Stripe Checkout (hosted). Webhook at `server/api/stripe-webhook.post.ts`. Idempotency via `credit_transactions.stripe_event_id`.
 - **Supabase** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_*`) — auth, Postgres, RLS. Anon key client-side, service role server-side only.
-- **Cloudflare R2** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry).
+- **S3 storage** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry). The `R2_` prefix is historical: `src/lib/image-storage.ts` is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, Cloudflare R2 in prod (derived from `R2_ACCOUNT_ID` when `R2_ENDPOINT` is unset).
 - **Docs password** (`DOCS_PASSWORD`) — gate for the internal `/docs` route.
 
 ## Features

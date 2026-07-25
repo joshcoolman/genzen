@@ -182,7 +182,7 @@ export async function generateImageInternal(
           .eq('user_id', userId)
 
         if (refImages.data?.length) {
-          const storage = createImageStorage(supabase)
+          const storage = createImageStorage()
           if (useGoogle) {
             // Google path: fetch as base64
             const base64Results = await Promise.all(

@@ -111,7 +111,7 @@ export function useEditChildren(
           const urls = await Promise.all(
             children.map(async (child) => {
               const path = child.thumbnailPath ?? child.path
-              const url = await createImageStorage(supabase).getUrl(path)
+              const url = await createImageStorage().getUrl(path)
               if (!url) return null
               return {
                 id: child.id,
@@ -179,7 +179,7 @@ export function useEditChildren(
 
           const thumbPath = (updated as { thumbnail_path?: string | null })
             .thumbnail_path
-          createImageStorage(supabase)
+          createImageStorage()
             .getUrl(thumbPath ?? updated.storage_path)
             .then((url) => {
               if (!url) return

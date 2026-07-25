@@ -58,7 +58,7 @@ async function executeGoogleRecord(
     const fileName = `ai_${timestamp}_${uuid}.png`
     const storagePath = `${record.user_id}/${fileName}`
 
-    const storage = createImageStorage(supabase)
+    const storage = createImageStorage()
     await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
 
     const { error: updateError } = await supabase

@@ -55,7 +55,7 @@ export async function processImageResult(
   }
 
   const { storagePath, fileName, fileHash, fileSize } =
-    await downloadAndStoreImage(supabase, userId, imageUrl)
+    await downloadAndStoreImage(userId, imageUrl)
 
   // Fetch current metadata to merge
   const { data: record } = await supabase
@@ -106,7 +106,7 @@ export async function processImageResult(
     .eq('id', recordId)
 
   if (updateError) {
-    await createImageStorage(supabase).remove([storagePath])
+    await createImageStorage().remove([storagePath])
     throw new Error(`Update failed: ${updateError.message}`)
   }
 

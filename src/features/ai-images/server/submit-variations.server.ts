@@ -75,7 +75,7 @@ export const submitVariations = createServerFn({ method: 'POST' })
         // For FAL path, we need a FAL URL
         let imageUrl = falImageUrl
 
-        const storage = createImageStorage(supabase)
+        const storage = createImageStorage()
 
         if (useGoogle) {
           // Fetch root image as base64 for Google API

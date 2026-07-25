@@ -100,8 +100,7 @@ export function useImageUpload(
           },
         }).catch(() => {})
 
-        const url =
-          await createImageStorage(supabase).getUrl(persistedStoragePath)
+        const url = await createImageStorage().getUrl(persistedStoragePath)
 
         return {
           id: newImage.id,

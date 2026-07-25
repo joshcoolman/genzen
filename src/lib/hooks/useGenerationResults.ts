@@ -117,7 +117,7 @@ export function useGenerationResults({
           .filter((r) => r.status === 'completed' && r.storage_path)
           .map(async (r) => {
             const path = r.thumbnail_path ?? r.storage_path!
-            const url = await createImageStorage(supabase).getUrl(path)
+            const url = await createImageStorage().getUrl(path)
             if (url) urlMap[r.id] = url
           }),
       )
@@ -215,7 +215,7 @@ export function useGenerationResults({
               const meta = getMetadata(updated.generation_metadata) ?? {}
               const modelId = inferModelId(meta)
               const thumbPath = updated.thumbnail_path
-              createImageStorage(supabase)
+              createImageStorage()
                 .getUrl(thumbPath ?? updated.storage_path)
                 .then((url) => {
                   if (url) {
@@ -342,6 +342,29 @@ export function useGenerationResults({
     setResults((prev) =>
       prev.map((r) => (r.id === tempId ? { ...r, id: realId } : r)),
     )
+    // savedImages is keyed by the same id and drives the cards; leaving the
+    // temp id here meant the row the pollers later update never matched.
+    setSavedImages((prev) =>
+      prev.map((r) => (r.id === tempId ? { ...r, id: realId } : r)),
+    )
+  }, [])
+
+  /**
+   * Flip an optimistic tile to failed with a reason. Used when the submit
+   * itself throws, so a click always leaves something on the board rather than
+   * a tile that spins forever or silently disappears.
+   */
+  const failResult = useCallback((id: string, message: string) => {
+    setResults((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: 'failed' as const } : r)),
+    )
+    setSavedImages((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? { ...r, status: 'failed' as const, generation_error: message }
+          : r,
+      ),
+    )
   }, [])
 
   const deleteResult = useCallback(async (id: string) => {
@@ -373,6 +396,7 @@ export function useGenerationResults({
     setError,
     addPendingResult,
     replaceTempId,
+    failResult,
     deleteResult,
     dismissResult,
   }

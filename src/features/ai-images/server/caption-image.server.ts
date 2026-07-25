@@ -36,7 +36,7 @@ export const captionImage = createServerFn({ method: 'POST' })
         .eq('user_id', user.id)
         .single()
       if (!row?.storage_path) throw new Error('Image not found')
-      image = await createImageStorage(supabase).getUrl(row.storage_path)
+      image = await createImageStorage().getUrl(row.storage_path)
     }
 
     const result = await describeImage(image, data.mode ?? 'anchor')

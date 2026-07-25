@@ -1,5 +1,4 @@
 import { resolveAuth } from '@/lib/server/auth.server'
-import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { createImageStorage } from '@/lib/image-storage'
 
 function validateImageBuffer(buffer: Buffer): string {
@@ -52,8 +51,7 @@ export async function uploadImageInternal(
 
   const buffer = Buffer.from(data.base64Data, 'base64')
   const detectedType = validateImageBuffer(buffer)
-  const supabase = getSupabaseAdmin()
-  const storage = createImageStorage(supabase)
+  const storage = createImageStorage()
 
   await storage.upload(data.storagePath, buffer, {
     contentType: detectedType,

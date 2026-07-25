@@ -95,7 +95,7 @@ export function useImages({
       const urlEntries = await Promise.all(
         completedWithPath.map(async (img) => {
           const path = img.thumbnail_path ?? img.storage_path!
-          const url = await createImageStorage(supabase).getUrl(path)
+          const url = await createImageStorage().getUrl(path)
           return url ? ([img.id, url] as const) : null
         }),
       )
@@ -129,7 +129,7 @@ export function useImages({
               const storagePath = r.storage_path
               if (!storagePath) return null
               const path = r.thumbnail_path ?? storagePath
-              const url = await createImageStorage(supabase).getUrl(path)
+              const url = await createImageStorage().getUrl(path)
               return url ? ([r.id, url] as const) : null
             }),
           )
@@ -275,7 +275,7 @@ export function useImages({
             ) {
               const path =
                 updatedImage.thumbnail_path ?? updatedImage.storage_path
-              createImageStorage(supabase)
+              createImageStorage()
                 .getUrl(path)
                 .then((url) => {
                   if (url) {
@@ -361,10 +361,9 @@ export function useImages({
   }
 
   async function deleteImage(img: SavedAiImage) {
-    if (img.storage_path)
-      createImageStorage(supabase).invalidateUrl(img.storage_path)
+    if (img.storage_path) createImageStorage().invalidateUrl(img.storage_path)
     if (img.thumbnail_path)
-      createImageStorage(supabase).invalidateUrl(img.thumbnail_path)
+      createImageStorage().invalidateUrl(img.thumbnail_path)
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
 
     try {

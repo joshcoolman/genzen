@@ -8,11 +8,13 @@ import { useGenerationResults } from '@/lib/hooks/useGenerationResults'
 import { useModelSelector } from '@/components/ModelSelector'
 import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 import { useEditChildren } from '@/features/ai-images/hooks/use-edit-children'
+import { toast } from '@/components/ui/toast'
 import { useExistingImages } from '@/features/user-images/hooks/useExistingImages'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
 import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
+import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import { CREDIT_COSTS } from '@/features/credits'
 import {
@@ -172,9 +174,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         return
       }
 
-      const signedUrl = await createImageStorage(supabase).getUrl(
-        data.storage_path,
-      )
+      const signedUrl = await createImageStorage().getUrl(data.storage_path)
 
       if (!signedUrl) {
         setError('Failed to load image')
@@ -288,41 +288,76 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       // Single-select mode: use active source
       const sourceId = isMultiSelectMode ? imageId : activeSourceId
 
+      // Each submission is isolated: one model failing must not cancel the
+      // rest of the batch. Every attempt now leaves a row server-side, so a
+      // failure still surfaces as a failed card with a reason and a Retry.
+      const failures: Array<string> = []
+
       for (const promptText of activePrompts) {
         const finalPrompt = promptText.trim()
         for (const editModelId of modelSelector.selectedIds) {
-          for (let g = 0; g < modelSelector.gensPerModel; g++) {
-            const { recordId } = await editImage({
-              data: {
-                accessToken,
-                sourceImageId: sourceId, // Actual image being edited (immutable history)
-                parentId: imageId, // Group parent (mutable, can be reparented)
-                editPrompt: finalPrompt,
-                aspectRatio,
-                editModelId,
-                idempotencyKey: crypto.randomUUID(),
-                ...(referenceImageIds ? { referenceImageIds } : {}),
-              },
-            })
+          const modelLabel =
+            EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
+            modelSelector.models.find((m) => m.id === editModelId)?.name ??
+            editModelId
 
+          for (let g = 0; g < modelSelector.gensPerModel; g++) {
+            // Put the tile on the board BEFORE the request, so the click always
+            // produces something visible even if the submit throws immediately.
+            const tempId = crypto.randomUUID()
             results.addPendingResult({
-              id: recordId,
+              id: tempId,
               status: 'pending',
-              label:
-                EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
-                modelSelector.models.find((m) => m.id === editModelId)?.name ??
-                editModelId,
+              label: modelLabel,
               prompt: finalPrompt,
               title: finalPrompt,
               createdAt: new Date().toISOString(),
             })
+
+            try {
+              const { recordId } = await editImage({
+                data: {
+                  accessToken,
+                  sourceImageId: sourceId, // Actual image being edited (immutable history)
+                  parentId: imageId, // Group parent (mutable, can be reparented)
+                  editPrompt: finalPrompt,
+                  aspectRatio,
+                  editModelId,
+                  idempotencyKey: crypto.randomUUID(),
+                  ...(referenceImageIds ? { referenceImageIds } : {}),
+                },
+              })
+              results.replaceTempId(tempId, recordId)
+            } catch (err) {
+              const reason =
+                err instanceof Error && err.message ? err.message : 'failed'
+              results.failResult(tempId, reason)
+              failures.push(`${modelLabel}: ${reason}`)
+            }
           }
         }
       }
-      setPromptsRaw([''])
+
+      if (failures.length) {
+        setError(failures.join('\n'))
+        toast(
+          failures.length === 1
+            ? failures[0]
+            : `${failures.length} edits failed — see the cards for details`,
+          { variant: 'error', duration: 8000 },
+        )
+      } else {
+        setPromptsRaw([''])
+      }
+
+      // Pull the new rows in either way: on failure they are the failed cards.
+      editChildren.refresh()
       await credits.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to edit image')
+      const message =
+        err instanceof Error ? err.message : 'Failed to edit image'
+      setError(message)
+      toast(message, { variant: 'error', duration: 8000 })
     } finally {
       setEditLoading(false)
     }
@@ -342,7 +377,46 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     isMultiSelectMode,
     multiSelectIds,
     imageId,
+    editChildren,
   ])
+
+  /**
+   * Re-run a failed generation. `retryGeneration` submits a fresh job with the
+   * same metadata and returns a NEW record id -- the failed card stays as
+   * history. The optimistic tile goes up first so a retry, like any other
+   * generate, always leaves something on the board.
+   */
+  const retryImage = useCallback(
+    async (img: SavedAiImage) => {
+      if (!accessToken) return
+
+      const tempId = crypto.randomUUID()
+      const label = String(img.generation_metadata?.model ?? 'Retrying')
+      const promptText = String(img.generation_metadata?.prompt ?? img.title)
+      results.addPendingResult({
+        id: tempId,
+        status: 'pending',
+        label,
+        prompt: promptText,
+        title: promptText,
+        createdAt: new Date().toISOString(),
+      })
+
+      try {
+        const { recordId } = await retryGeneration({
+          data: { accessToken, recordId: img.id },
+        })
+        results.replaceTempId(tempId, recordId)
+        await credits.refresh()
+      } catch (err) {
+        const reason =
+          err instanceof Error && err.message ? err.message : 'Retry failed'
+        results.failResult(tempId, reason)
+        toast(reason, { variant: 'error', duration: 8000 })
+      }
+    },
+    [accessToken, results, credits],
+  )
 
   // Shot list prompt generation - dialog owns API call, hook just merges results
   const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
@@ -423,7 +497,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
       if (!data?.storage_path) return
 
-      const url = await createImageStorage(supabase).getUrl(data.storage_path)
+      const url = await createImageStorage().getUrl(data.storage_path)
 
       if (!url) return
 
@@ -627,7 +701,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
           meta[r.id] = { hidden: !!r.hidden }
           if (!r.storage_path) return
           const path = r.thumbnail_path ?? r.storage_path
-          const url = await createImageStorage(supabase).getUrl(path)
+          const url = await createImageStorage().getUrl(path)
           if (url) urls[r.id] = url
         }),
       )
@@ -871,6 +945,10 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       })
       results.dismissResult(resultId)
     },
+    // Retry a failed card. This submits a NEW generation with the same
+    // parameters (the failed row is kept as history), which is why the edit
+    // page needs its own handler rather than reusing the gallery's.
+    retryImage,
     // Variations
     variationDialogOpen,
     setVariationDialogOpen,

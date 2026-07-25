@@ -13,12 +13,11 @@ const THUMBNAIL_QUALITY = 80
  * Failures are silent — callers should fall back to the original image.
  */
 export async function generateAndStoreThumbnail(
-  supabase: SupabaseClient,
   userId: string,
   storagePath: string,
 ): Promise<string | null> {
   try {
-    const storage = createImageStorage(supabase)
+    const storage = createImageStorage()
 
     const fileData = await storage.download(storagePath)
     const buffer = Buffer.from(await fileData.arrayBuffer())
@@ -56,7 +55,7 @@ export function generateThumbnailInBackground(
   storagePath: string,
   recordId: string,
 ): void {
-  generateAndStoreThumbnail(supabase, userId, storagePath)
+  generateAndStoreThumbnail(userId, storagePath)
     .then(async (thumbnailPath) => {
       if (thumbnailPath) {
         await supabase

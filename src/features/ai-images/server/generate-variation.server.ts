@@ -123,7 +123,7 @@ export const generateVariation = createServerFn({ method: 'POST' })
           // If root is gone, fall back to sourceImage's storage_path (already set)
         }
 
-        const storage = createImageStorage(supabase)
+        const storage = createImageStorage()
         const signedUrl = imageStoragePath
           ? await storage.getUrl(imageStoragePath)
           : undefined

@@ -26,7 +26,7 @@ export function useExistingImages(
         const path =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const url = await createImageStorage(supabase).getUrl(path)
+        const url = await createImageStorage().getUrl(path)
         if (url) {
           setImageUrls((prev) => ({ ...prev, [image.id]: url }))
         }

@@ -1,9 +1,7 @@
 import crypto from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createImageStorage } from '@/lib/image-storage'
 
 export async function downloadAndStoreImage(
-  supabase: SupabaseClient,
   userId: string,
   imageUrl: string,
 ): Promise<{
@@ -27,7 +25,7 @@ export async function downloadAndStoreImage(
   const fileName = `ai_${timestamp}_${uuid}.png`
   const storagePath = `${userId}/${fileName}`
 
-  const storage = createImageStorage(supabase)
+  const storage = createImageStorage()
   await storage.upload(storagePath, imageBytes, { contentType: 'image/png' })
 
   return {

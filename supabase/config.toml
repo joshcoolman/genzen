@@ -107,10 +107,11 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-[storage.buckets.user-images]
-public = false
-file_size_limit = "50MiB"
-allowed_mime_types = ["image/png", "image/jpeg", "image/webp", "image/gif"]
+# No buckets declared: the app moved off Supabase Storage to S3 (R2 in prod,
+# MinIO locally) long ago and no bucket name is referenced anywhere in src/.
+# The `user-images` bucket that used to be declared here made `supabase db
+# reset` stop on an interactive "overwrite its properties? [Y/n]" prompt,
+# which a one-command boot script cannot answer.
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]

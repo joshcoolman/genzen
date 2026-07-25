@@ -107,7 +107,7 @@ export function useUserImages(
         const thumbnailPath =
           (image as { thumbnail_path?: string | null }).thumbnail_path ??
           image.storage_path
-        const storage = createImageStorage(supabase)
+        const storage = createImageStorage()
         const url = await storage.getUrl(thumbnailPath)
         const originalUrl = await storage.getUrl(image.storage_path)
         if (url) {
@@ -255,9 +255,7 @@ export function useUserImages(
           throw new Error('Created image is missing a storage path')
         }
 
-        const newUrl = await createImageStorage(supabase).getUrl(
-          newImage.storage_path,
-        )
+        const newUrl = await createImageStorage().getUrl(newImage.storage_path)
 
         // Update state
         setState((prev) => ({

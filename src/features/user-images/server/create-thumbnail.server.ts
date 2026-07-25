@@ -17,7 +17,6 @@ export const createThumbnail = createServerFn({ method: 'POST' })
     const supabase = getSupabaseAdmin()
 
     const thumbnailPath = await generateAndStoreThumbnail(
-      supabase,
       user.id,
       data.storagePath,
     )

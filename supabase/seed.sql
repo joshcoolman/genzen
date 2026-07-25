@@ -1,4 +1,4 @@
--- Seed a confirmed test user: testuser@gmail.com / supa!1QAwsEDr
+-- Seed a confirmed test user: testuser@gmail.com / supa!1QAwsEDrf
 -- Key: confirmation_token, recovery_token, email_change_token_new, and email_change
 -- must be set to '' (empty string), NOT omitted/NULL, or login will fail with
 -- "Database error querying schema" (GoTruth can't scan NULL into Go string).
@@ -68,7 +68,6 @@ WHERE email = 'testuser@gmail.com';
 UPDATE user_profiles SET account_status = 'active', credit_balance = 50
 WHERE id = (SELECT id FROM auth.users WHERE email = 'testuser@gmail.com');
 
--- Seed initial credit grant transaction for test user
-INSERT INTO credit_transactions (user_id, amount, reason, balance_after)
-SELECT id, 50, 'initial_grant', 50
-FROM auth.users WHERE email = 'testuser@gmail.com';
+-- No credit_transactions insert here on purpose: handle_new_user() already
+-- writes the 'initial_grant' row when the auth.users insert above fires. A
+-- second one made the ledger sum to 100 while credit_balance read 50.

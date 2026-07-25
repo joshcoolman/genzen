@@ -49,17 +49,42 @@ Full feature catalog (each module with its own `CLAUDE.md`): see the table in [`
 
 ## Local Dev
 
+You need Docker, pnpm, and **one real API key: `FAL_KEY`**. No cloud account is
+required anywhere — Postgres, auth and storage all run as local containers.
+
 ```bash
 pnpm install
-supabase start                 # Docker required; prints local Supabase keys
-cp .env.example .env.local     # then fill in keys (see Env)
+pnpm local:up                  # asks for your FAL key, sets up everything else
 pnpm dev                       # http://localhost:3000
 ```
+
+That is the whole setup. There is no env file to copy or edit: `local:up` starts
+MinIO (S3-compatible storage) from `docker-compose.yml` and the Supabase CLI
+stack, writes `.env.local` for you, applies migrations and the seed on a fresh
+database, and prompts for the FAL key. Re-run it any time; it is idempotent, it
+keeps your key, and it will not reset a database you have been working in (use
+`pnpm local:up --reset` for that).
+
+| Thing           | Where                                               |
+| --------------- | --------------------------------------------------- |
+| App             | http://localhost:3000                               |
+| Sign in as      | `testuser@gmail.com` / `supa!1QAwsEDrf`             |
+| MinIO console   | http://localhost:9011 (`genzenlocal`/`genzenlocal`) |
+| Supabase Studio | http://localhost:54323                              |
+
+FAL is not mocked — generation calls fal.ai for real and costs real money. The
+app boots and everything else works without a key.
+
+Ports: MinIO is on 9010/9011 rather than its default 9000/9001, so this stack
+can run alongside `~/repos/bootsy`.
 
 ## Scripts
 
 | Command                             | Purpose                                     |
 | ----------------------------------- | ------------------------------------------- |
+| `pnpm local:up`                     | Start the local stack, write `.env.local`   |
+| `pnpm local:down`                   | Stop it (data kept)                         |
+| `pnpm local:reset`                  | Stop it and delete the volumes              |
 | `pnpm dev`                          | Vite dev server on :3000                    |
 | `pnpm build`                        | Production build                            |
 | `pnpm test`                         | Vitest                                      |
@@ -68,13 +93,18 @@ pnpm dev                       # http://localhost:3000
 
 ## Env
 
-Full list in `.env.example`. Minimum to boot the app:
+**Locally there is nothing to configure.** `pnpm local:up` writes `.env.local`
+itself and prompts you for the one value that is actually yours, the FAL key.
+There is no local env template to copy or fill in.
 
-- Supabase: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- FAL: `FAL_KEY`
-- Anthropic (used by the AD assistant): `ANTHROPIC_API_KEY`
+`.env.example` is the reference for **deploying** genzen, split into Required
+(Supabase, FAL, an S3 bucket) and Optional (other model providers, Stripe,
+webhooks, the `/docs` password).
 
-Optional / feature-gated: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `XAI_API_KEY`, `GOOGLE_AI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` / `GOOGLE_APPLICATION_CREDENTIALS`, `R2_*` + `VITE_R2_PUBLIC_URL`, `ENABLE_FAL_WEBHOOKS` + `VITE_APP_URL` + `VITE_ENABLE_FAL_WEBHOOKS`, `DOCS_PASSWORD`.
+One note if you deploy: the `R2_*` names are historical. The storage layer is
+plain S3 and points wherever `R2_ENDPOINT` says — MinIO locally, any provider
+in production. Leave `R2_ENDPOINT` unset and set `R2_ACCOUNT_ID` to derive
+Cloudflare R2's endpoint.
 
 Service-role and provider keys are server-only. Anything prefixed `VITE_` ships to the browser.
 

@@ -132,7 +132,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
       refreshLinked(data)
 
       // Sign URLs in background
-      const storage = createImageStorage(supabase)
+      const storage = createImageStorage()
       for (const image of data) {
         if (!image.storage_path) continue
         storage
@@ -189,7 +189,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 refreshLinked(next)
                 return next
               })
-              createImageStorage(supabase)
+              createImageStorage()
                 .getUrl(updated.storage_path ?? '')
                 .then((url) => {
                   if (url) {
@@ -460,7 +460,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
       const urls: Record<string, string> = {}
-      const storage = createImageStorage(supabase)
+      const storage = createImageStorage()
       const BATCH = 10
       for (let i = 0; i < imgs.length; i += BATCH) {
         const batch = imgs.slice(i, i + BATCH)

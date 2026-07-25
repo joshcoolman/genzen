@@ -249,7 +249,7 @@ function EditPage() {
   const handleDownload = useCallback(async (img: SavedAiImage) => {
     const path = img.storage_path
     if (!path) return
-    const url = await createImageStorage(supabase).getUrl(path)
+    const url = await createImageStorage().getUrl(path)
     if (!url) return
     saveAs(url, `${img.title}.png`)
   }, [])
@@ -268,7 +268,7 @@ function EditPage() {
     const zip = new JSZip()
     await Promise.all(
       selected.map(async (img) => {
-        const url = await createImageStorage(supabase).getUrl(img.storage_path!)
+        const url = await createImageStorage().getUrl(img.storage_path!)
         if (!url) return
         const resp = await fetch(url)
         const blob = await resp.blob()
@@ -463,6 +463,7 @@ function EditPage() {
           thumbSize={thumbSize}
           showInfo={showInfo}
           onDelete={handleDelete}
+          onRetry={page.retryImage}
           onRestoreRoot={() => {}}
           onDownload={handleDownload}
           onUnlink={handleUnlink}
