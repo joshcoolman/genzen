@@ -47,7 +47,7 @@ Verified by driving the real app (agent-browser): login as the seed user →
 hand; that is the one gap.
 
 **Visible failures (same session).** Clicking Generate used to be able to produce
-nothing at all: the `user_images` row was written *after* FAL accepted the job,
+nothing at all: the `user_images` row was written _after_ FAL accepted the job,
 so any earlier failure left no card, no Activity entry, nothing to retry. Now the
 row is **reserved before any fallible work**, and marked failed with a reason on
 error. On the edit page a click now always yields cards (optimistic, up before
@@ -71,11 +71,30 @@ and **prompts interactively for the FAL key**. `.env.example` is trimmed to
 Required/Optional and is now purely a deploy reference. Setup is: `pnpm install`,
 `pnpm local:up`, answer one question, `pnpm dev`.
 
+**Generation confirmed working end to end** with a real key — #167 has no gaps
+left. All 8 models generate. Two follow-ups landed:
+
+- **Nano Banana 2 no longer goes direct to Google.** Its registry entry carried
+  `provider: 'google'` (to reach Vertex at ~half FAL's price) despite already
+  having a FAL model id, and it was the **only** model with that flag — the sole
+  thing keeping the whole Google/Vertex path alive. Removed; it now completes via
+  FAL. `isGoogleProvider()` is now false everywhere, so `google-imagen.server.ts`,
+  `google-queue.server.ts`, `dispatch_google_queue` and the `useGoogle` branches
+  are **dead code** — delete in #169. Bonus: canvas `canRetryFailure()` now allows
+  retrying Nano Banana failures, previously dismiss-only.
+- **Safety params were an either/or bug.** `fal-schema.server.ts` picked
+  `safety_tolerance` *or* `enable_safety_checker`; FLUX.2 Pro exposes **both**, so
+  the boolean checker stayed at its default `true`. Now detected and applied
+  independently.
+
+**Not a bug:** FLUX.2 Pro rejecting "cat in a hat" is Black Forest Labs' IP filter
+(Dr. Seuss). Proved it — same model, same settings, "a tabby cat wearing a striped
+top hat" completes. The failed card was telling the truth.
+
 ## ▶ Next up
 
-- **Replace the dead key in `~/.secrets.zsh`**, new terminal, restart dev. Then
-  hit Retry on the failed cards — they should succeed. That also closes the last
-  unverified path in #167 (a real generation end to end).
+- Replace the dead key in `~/.secrets.zsh` (it still shadows `.env.local` in every
+  shell, though `.env.local` now holds a working one and `local:up` warns).
 - Apply reserve-then-fail to the remaining paths: `generate-image-internal`
   (the main AI Images Generate button, has a Google branch), `generate-variation`,
   `submit-variations`. Until then the rule only holds on the edit + retry paths.

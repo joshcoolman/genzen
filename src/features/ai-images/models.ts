@@ -118,14 +118,18 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   {
     id: 'fal-ai/nano-banana-2',
     name: 'Nano Banana 2',
-    description: 'Google, reasoning-guided generation',
+    description: 'Reasoning-guided generation',
     category: 'Specialized',
-    provider: 'google',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
     locked: true,
     displayPrice: '~$0.04/img',
-    useCase: 'Google reasoning-guided — direct route, half-price vs FAL',
+    // Previously carried `provider: 'google'` to reach Vertex/Gemini directly
+    // at roughly half FAL's price. That was the only thing keeping the entire
+    // Google credential path alive, and it failed outright without Google
+    // credentials. Everything goes through FAL now, using the FAL model id
+    // this entry already had.
+    useCase: 'Reasoning-guided generation',
   },
   {
     id: 'fal-ai/flux-pro/kontext/text-to-image',

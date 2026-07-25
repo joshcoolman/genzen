@@ -9,8 +9,14 @@ export interface FalModelSchema {
   imageSizeAcceptsObject: boolean
   imageSizeEnumValues?: Array<string>
   aspectRatioEnumValues?: Array<string>
-  safetyParam: 'safety_tolerance' | 'enable_safety_checker' | null
+  /**
+   * These two are INDEPENDENT, not alternatives. FLUX.2 Pro exposes both: a
+   * `safety_tolerance` scale *and* a separate boolean content checker that is
+   * on by default. Treating them as either/or left the checker enabled and
+   * rejected prompts as innocuous as "cat in a hat".
+   */
   safetyToleranceMax: string | null
+  hasSafetyChecker: boolean
   imageInputParam: 'image_url' | 'image_urls' | null
 }
 
@@ -19,8 +25,8 @@ const DEFAULT_SCHEMA: FalModelSchema = {
   imageSizeAcceptsObject: true,
   imageSizeEnumValues: undefined,
   aspectRatioEnumValues: undefined,
-  safetyParam: 'enable_safety_checker',
   safetyToleranceMax: null,
+  hasSafetyChecker: true,
   imageInputParam: null,
 }
 
@@ -160,22 +166,19 @@ function parseSchemaProperties(
     }
   }
 
-  // Safety param detection — prefer safety_tolerance over enable_safety_checker
-  let safetyParam: FalModelSchema['safetyParam'] = null
+  // Safety param detection. Detected independently -- a model may expose both,
+  // and setting only one leaves the other at its (restrictive) default.
   let safetyToleranceMax: string | null = null
+  const hasSafetyChecker = Boolean(props['enable_safety_checker'])
 
   if (props['safety_tolerance']) {
-    safetyParam = 'safety_tolerance'
-    const toleranceProp = props['safety_tolerance']
-    const enumVals = toleranceProp.enum
+    const enumVals = props['safety_tolerance'].enum
     if (enumVals?.length) {
       // Get highest numeric value from enum (they come as strings like "1"-"6")
       safetyToleranceMax = enumVals.reduce((max, val) =>
         Number(val) > Number(max) ? val : max,
       )
     }
-  } else if (props['enable_safety_checker']) {
-    safetyParam = 'enable_safety_checker'
   }
 
   // Image input param detection
@@ -191,8 +194,8 @@ function parseSchemaProperties(
     imageSizeAcceptsObject,
     imageSizeEnumValues,
     aspectRatioEnumValues,
-    safetyParam,
     safetyToleranceMax,
+    hasSafetyChecker,
     imageInputParam,
   }
 }

@@ -64,14 +64,15 @@ export async function buildFalInput(
     }
   }
 
-  // Safety params
-  if (schema.safetyParam === 'safety_tolerance') {
-    if (opts.safetyLevel === 'permissive' && schema.safetyToleranceMax) {
+  // Safety params. Both are applied when present: a model exposing a tolerance
+  // scale may ALSO run a separate boolean content checker, and leaving that at
+  // its default `true` blocks benign prompts regardless of the tolerance set.
+  // 'default' → omit both, let FAL decide.
+  if (opts.safetyLevel === 'permissive') {
+    if (schema.safetyToleranceMax) {
       input.safety_tolerance = schema.safetyToleranceMax
     }
-    // 'default' → omit, let FAL use its default
-  } else if (schema.safetyParam === 'enable_safety_checker') {
-    if (opts.safetyLevel === 'permissive') {
+    if (schema.hasSafetyChecker) {
       input.enable_safety_checker = false
     }
   }
