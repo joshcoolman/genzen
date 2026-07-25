@@ -28,7 +28,7 @@ process across an external provider.
 | UI                    | React 19 (TanStack Start, Vite)             | feature-sliced under `src/features/*`                                                 |
 | Server functions      | `*.server.ts` via TanStack `createServerFn` | the app's "application layer"                                                         |
 | Internal server impls | `*-internal.server.ts`                      | called directly by MCP tools / other server fns to avoid TanStack RPC stub corruption |
-| HTTP routes           | `server/api/*` (Nitro h3)                   | webhooks (Stripe, FAL) — Supabase edge functions are **not** used                     |
+| HTTP routes           | `server/api/*` (Nitro h3)                   | the FAL webhook — Supabase edge functions are **not** used                            |
 | Data                  | Supabase Postgres + RLS                     | per-user row security                                                                 |
 | Realtime              | Supabase channels                           | live updates (Activity subscribes today)                                              |
 | Object storage        | Cloudflare R2                               | persistent public URLs (no expiry)                                                    |
@@ -45,8 +45,8 @@ process across an external provider.
 2. **Generation** _(core domain)_ — turning a prompt (+ optional source /
    reference images) into an asset via a provider. Where the real logic and
    the money live.
-3. **Billing / Wallet** _(supporting, cleanest model)_ — credits, top-ups
-   (Stripe), deduction, refunds. Append-only ledger with idempotency.
+3. **Billing / Wallet** _(supporting, cleanest model)_ — credits, deduction,
+   refunds. Append-only ledger.
 4. **Asset Library / Workspace** — owning, organizing, viewing, trashing
    assets. **AI Images** and **Canvas** are two sibling presentations over
    the _same_ assets (see "Shared core, sibling views").
@@ -141,10 +141,10 @@ reconciler (`check-pending-generations.server.ts`) that catches anything a
 missed webhook left behind. Google generations are driven by a queue
 dispatcher (`google-queue.server.ts`).
 
-### Credits ledger + idempotency
+### Credits ledger
 
-`credit_transactions` is append-only; balance is a fold over it. Stripe grants
-are idempotent via `stripe_event_id`. Deduction/refund live in
+`credit_transactions` is append-only; balance is a fold over it.
+Deduction/refund live in
 `check-credits.server.ts` (`checkAndDeductCredits`, `refundCredits`,
 `withCreditRefund`).
 

@@ -44,12 +44,6 @@ function PrivacyPage() {
                 credit consumption, timestamps, and error logs. This is used for
                 billing, service improvement, and debugging.
               </li>
-              <li>
-                <strong>Payment information:</strong> When you purchase credits,
-                payment is processed by Stripe. We do not store your card number
-                or full payment details — only a Stripe customer ID and
-                transaction records.
-              </li>
             </ul>
           </section>
 

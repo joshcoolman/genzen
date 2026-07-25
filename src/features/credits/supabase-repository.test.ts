@@ -61,24 +61,7 @@ describe('SupabaseCreditRepository.addCredits', () => {
     expect(result).toEqual({ balance: 11 })
   })
 
-  it('passes stripeEventId to RPC when provided', async () => {
-    const { client, rpcFn } = makeMockSupabase({
-      data: 211,
-      error: null,
-    })
-    const repo = new SupabaseCreditRepository(client)
-
-    await repo.addCredits('user-abc', 200, 'pack_purchase', 'evt_123')
-
-    expect(rpcFn).toHaveBeenCalledWith('add_credits', {
-      p_user_id: 'user-abc',
-      p_amount: 200,
-      p_reason: 'pack_purchase',
-      p_stripe_event_id: 'evt_123',
-    })
-  })
-
-  it('passes null for p_stripe_event_id when not provided', async () => {
+  it('passes the credit grant straight through to the RPC', async () => {
     const { client, rpcFn } = makeMockSupabase({
       data: 11,
       error: null,
@@ -91,11 +74,10 @@ describe('SupabaseCreditRepository.addCredits', () => {
       p_user_id: 'user-123',
       p_amount: 1,
       p_reason: 'initial_grant',
-      p_stripe_event_id: null,
     })
   })
 
-  it('throws the raw error (not wrapped) for idempotency code detection', async () => {
+  it('throws the raw PostgrestError so callers can read its code', async () => {
     const pgError = { code: '23505', message: 'duplicate key' }
     const { client } = makeMockSupabase({
       data: null,
@@ -105,7 +87,7 @@ describe('SupabaseCreditRepository.addCredits', () => {
 
     let thrown: unknown
     try {
-      await repo.addCredits('user-123', 200, 'pack_purchase', 'evt_dup')
+      await repo.addCredits('user-123', 200, 'pack_purchase')
     } catch (err) {
       thrown = err
     }

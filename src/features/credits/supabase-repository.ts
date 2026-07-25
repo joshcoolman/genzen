@@ -39,20 +39,14 @@ export class SupabaseCreditRepository implements CreditRepository {
     userId: string,
     amount: number,
     reason: CreditReason,
-    stripeEventId?: string,
   ): Promise<{ balance: number }> {
     const { data, error } = await this.supabase.rpc('add_credits', {
       p_user_id: userId,
       p_amount: amount,
       p_reason: reason,
-      p_stripe_event_id: stripeEventId ?? null,
     })
 
-    if (error) {
-      // Rethrow PostgrestError directly so callers can detect unique-violation
-      // (code '23505') for stripe_event_id idempotency.
-      throw error
-    }
+    if (error) throw error
     return { balance: data as number }
   }
 

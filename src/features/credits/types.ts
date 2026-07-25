@@ -53,7 +53,6 @@ export interface CreditRepository {
     userId: string,
     amount: number,
     reason: CreditReason,
-    stripeEventId?: string,
   ) => Promise<{ balance: number }>
   getTransactions: (
     userId: string,
@@ -83,10 +82,3 @@ export function computeGenerationCostCents(
   if (credits == null) return null
   return Math.round(credits * DOLLARS_PER_CREDIT * 100)
 }
-
-export const CREDIT_PACKS = [
-  { credits: 200, price: 20, description: 'Starter' },
-  { credits: 400, price: 40, description: 'Creator' },
-  { credits: 600, price: 60, description: 'Pro' },
-  { credits: 800, price: 80, description: 'Studio' },
-]

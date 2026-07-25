@@ -5,7 +5,6 @@ import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 export type { CreditRepository } from './types'
 export {
   CREDIT_COSTS,
-  CREDIT_PACKS,
   CREDIT_REASONS,
   CreditReasonSchema,
   DOLLARS_PER_CREDIT,

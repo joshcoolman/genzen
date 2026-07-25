@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, X, XCircle } from 'lucide-react'
 import { createFileRoute } from '@tanstack/react-router'
 import { StatsRow } from '@/components/StatsRow'
-import { SectionCard } from '@/components/SectionCard'
 import { useAuth } from '@/lib/auth'
 import { useCredits } from '@/features/credits/hooks/use-credits'
 import { DOLLARS_PER_CREDIT } from '@/features/credits'
-import { CreditPackSelector } from '@/features/credits/components/CreditPackSelector'
 import { TransactionHistory } from '@/features/credits/components/TransactionHistory'
 import { ActivityPreview } from '@/features/activity/components/ActivityPreview'
 import { supabase } from '@/lib/supabase'
@@ -86,48 +83,6 @@ function StatusBadge({
 
 // --- Main page ---
 
-function CheckoutResultBanner({
-  result,
-  onDismiss,
-}: {
-  result: 'success' | 'cancelled'
-  onDismiss: () => void
-}) {
-  const isSuccess = result === 'success'
-  return (
-    <div
-      className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
-        isSuccess
-          ? 'border-accent-sage/30 bg-accent-sage/10'
-          : 'border-border bg-muted/30'
-      }`}
-    >
-      {isSuccess ? (
-        <CheckCircle2 className="h-5 w-5 shrink-0 text-accent-sage" />
-      ) : (
-        <XCircle className="h-5 w-5 shrink-0 text-muted-foreground" />
-      )}
-      <div className="flex-1 text-sm">
-        <p className="font-medium text-foreground">
-          {isSuccess ? 'Payment successful' : 'Checkout cancelled'}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {isSuccess
-            ? "Your credits have been added. They'll appear in your balance below within a moment."
-            : 'No charge was made. You can try again any time.'}
-        </p>
-      </div>
-      <button
-        onClick={onDismiss}
-        aria-label="Dismiss"
-        className="text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-4 w-4" />
-      </button>
-    </div>
-  )
-}
-
 function AccountPage() {
   const { user, session } = useAuth()
   const credits = useCredits()
@@ -137,26 +92,6 @@ function AccountPage() {
     supabase: 'checking',
     fal: 'checking',
   })
-
-  // Checkout result banner (read from ?checkout=success|cancelled on mount)
-  const [checkoutResult, setCheckoutResult] = useState<
-    'success' | 'cancelled' | null
-  >(null)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const result = params.get('checkout')
-    if (result === 'success' || result === 'cancelled') {
-      setCheckoutResult(result)
-      window.history.replaceState({}, '', '/dashboard/account')
-      if (result === 'success') {
-        // Webhook may take a beat to land. Refresh now and again shortly.
-        void credits.refresh()
-        const t = setTimeout(() => void credits.refresh(), 2000)
-        return () => clearTimeout(t)
-      }
-    }
-  }, [credits])
 
   useEffect(() => {
     async function runChecks() {
@@ -214,13 +149,6 @@ function AccountPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Account</h1>
-
-      {checkoutResult && (
-        <CheckoutResultBanner
-          result={checkoutResult}
-          onDismiss={() => setCheckoutResult(null)}
-        />
-      )}
 
       {/* Profile */}
       <div className="bg-card rounded-lg p-6 space-y-4">
@@ -294,12 +222,6 @@ function AccountPage() {
             },
           ]}
         />
-        <SectionCard title="Add Credits">
-          <div className="-mx-6 -my-6">
-            <CreditPackSelector />
-          </div>
-        </SectionCard>
-
         <TransactionHistory />
 
         <ActivityPreview />

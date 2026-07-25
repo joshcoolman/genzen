@@ -16,7 +16,7 @@ and `check_rate_limit` are both being removed.**
 Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` first):
 
 1. ✅ Delete the dead Google/Vertex stack
-2. ⬜ Stripe removal
+2. ✅ Stripe removal
 3. ⬜ Credits removal
 4. ⬜ Finish reserve-then-fail on the last 3 generate paths
 5. ⬜ Activity: collapse YOU PAID + PROVIDER COST into one real-FAL-dollars column
@@ -37,6 +37,16 @@ Google-only `queued`/`processing` rows are failed on the way through, since
 nothing can ever dispatch them again). Vision is untouched — Describe/Caption run
 on `@ai-sdk/google` + `GOOGLE_GENERATIVE_AI_API_KEY`, which was never the Vertex
 credential.
+
+**Step 2 done — Stripe is gone.** `stripe.server.ts`,
+`create-checkout-session.server.ts`, `CreditPackSelector.tsx`, the
+`/api/stripe-webhook` route (+test), `CREDIT_PACKS`, the checkout
+success/cancel banner on the account page, and the `stripe` dependency. Forward
+migration `20260725000001_drop_stripe.sql` drops `user_profiles.stripe_customer_id`
+and `credit_transactions.stripe_event_id`, and recreates `add_credits` without
+`p_stripe_event_id` — that parameter was purely the webhook's idempotency
+guard, so with no webhook there's nothing left to deduplicate. Credits still
+exist at this point; step 3 takes them.
 
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 

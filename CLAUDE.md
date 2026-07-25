@@ -24,7 +24,7 @@ README's Local Dev section.
 
 Assume server-side access to the services below unless a feature explicitly says
 otherwise. Don't propose new auth/env plumbing for these. Note that locally the
-optional keys (Anthropic, Google, OpenAI, Stripe) are usually **empty** — the app
+optional keys (Anthropic, Google) are usually **empty** — the app
 runs fine without them, so a feature that needs one should fail loudly rather
 than assume it's there.
 
@@ -32,7 +32,6 @@ than assume it's there.
 - **Google Gemini** (`GOOGLE_GENERATIVE_AI_API_KEY`) — vision only (Describe/Caption/shot lists) via `@ai-sdk/google`. There is no Google image-generation path; FAL is the only image provider.
 - **OpenAI** (`OPENAI_API_KEY`), **OpenRouter** (`OPENROUTER_API_KEY`), **xAI** (`XAI_API_KEY`) — available via `src/lib/text-models.ts` model registry / `@ai-sdk/*` providers.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
-- **Stripe** (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`) — credit pack payments via Stripe Checkout (hosted). Webhook at `server/api/stripe-webhook.post.ts`. Idempotency via `credit_transactions.stripe_event_id`.
 - **Supabase** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_*`) — auth, Postgres, RLS. Anon key client-side, service role server-side only.
 - **S3 storage** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry). The `R2_` prefix is historical: `src/lib/image-storage.ts` is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, Cloudflare R2 in prod (derived from `R2_ACCOUNT_ID` when `R2_ENDPOINT` is unset).
 - **Docs password** (`DOCS_PASSWORD`) — gate for the internal `/docs` route.

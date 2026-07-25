@@ -1,4 +1,3 @@
-import { CreditPackSelector } from './CreditPackSelector'
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,6 @@ export function InsufficientCreditsDialog({
             {balance} credit{balance !== 1 ? 's' : ''} remaining.
           </DialogDescription>
         </DialogHeader>
-        <CreditPackSelector compact />
         <div className="flex justify-end">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
