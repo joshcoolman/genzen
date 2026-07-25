@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/server/auth.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 import {
   describeGenerationError,
   markGenerationFailed,
@@ -144,7 +145,16 @@ export const retryGeneration = createServerFn({ method: 'POST' })
         input: falInput,
         ...(webhookUrl ? { webhookUrl } : {}),
       })
-      await markGenerationSubmitted(newRecord.id, request_id)
+      const estimatedCostCents = await computeFalCostCents(falModelId, {
+        aspectRatio: meta.aspect_ratio,
+      }).catch(() => null)
+      await markGenerationSubmitted(
+        newRecord.id,
+        request_id,
+        estimatedCostCents != null
+          ? { estimated_cost_cents: estimatedCostCents }
+          : undefined,
+      )
     } catch (err) {
       console.error('[retry] generation failed', newRecord.id, err)
       await markGenerationFailed(

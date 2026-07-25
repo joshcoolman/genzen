@@ -34,19 +34,16 @@ function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
   const styles = {
     completed: 'bg-emerald-500/10 text-emerald-500',
     failed: 'bg-destructive/10 text-destructive',
-    processing: 'bg-amber-500/10 text-amber-500',
     pending: 'bg-muted text-muted-foreground',
   } as const
   const labels = {
     completed: 'Completed',
     failed: 'Failed',
-    processing: 'Processing',
     pending: 'Pending',
   } as const
   const Icon = {
     completed: CheckCircle2,
     failed: AlertCircle,
-    processing: Loader2,
     pending: Clock4,
   }[status]
   return (
@@ -56,21 +53,20 @@ function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
         styles[status],
       )}
     >
-      <Icon
-        className={cn('h-3 w-3', status === 'processing' && 'animate-spin')}
-      />
+      <Icon className="h-3 w-3" />
       {labels[status]}
     </span>
   )
 }
 
-function formatCents(cents: number | null): string {
+function formatCents(cents: number | null, isEstimate = false): string {
   if (cents == null) return '—'
+  const prefix = isEstimate ? '~' : ''
   const dollars = cents / 100
-  if (dollars === 0) return '$0.00'
-  if (dollars < 0.01) return `$${dollars.toFixed(4)}`
-  if (dollars < 1) return `$${dollars.toFixed(3)}`
-  return `$${dollars.toFixed(2)}`
+  if (dollars === 0) return `${prefix}$0.00`
+  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
+  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
+  return `${prefix}$${dollars.toFixed(2)}`
 }
 
 function formatBytes(bytes: number | null): string {
@@ -346,7 +342,16 @@ export function ActivityDetailPanel({
                       : '—'}
                   </DetailRow>
                   <DetailRow label="Cost">
-                    {formatCents(detail.providerCostCents)}
+                    {formatCents(
+                      detail.providerCostCents,
+                      detail.costIsEstimate,
+                    )}
+                    {detail.costIsEstimate &&
+                      detail.providerCostCents != null && (
+                        <span className="ml-1.5 text-[11px] text-muted-foreground">
+                          estimated
+                        </span>
+                      )}
                   </DetailRow>
                   <DetailRow label="Created">
                     <span title={formatAbsolute(detail.createdAt)}>

@@ -5,7 +5,7 @@ export interface SavedAiImage {
   thumbnail_path?: string | null
   created_at: string
   sort_order?: number | null
-  status: 'pending' | 'processing' | 'completed' | 'failed'
+  status: 'pending' | 'completed' | 'failed'
   deleted_at?: string | null
   description?: string | null
   generation_error: string | null

@@ -9,7 +9,7 @@ export interface GenerationRecord {
 }
 
 export interface GenerationView {
-  status: 'queued' | 'pending' | 'processing' | 'completed' | 'failed'
+  status: 'pending' | 'completed' | 'failed'
   modelName: string
   prompt?: string
   imageUrl?: string
@@ -17,13 +17,7 @@ export interface GenerationView {
   isRetryable?: boolean
 }
 
-const VALID_STATUSES = new Set([
-  'queued',
-  'pending',
-  'processing',
-  'completed',
-  'failed',
-])
+const VALID_STATUSES = new Set(['pending', 'completed', 'failed'])
 
 function coerceStatus(raw: string | null): GenerationView['status'] {
   if (raw && VALID_STATUSES.has(raw)) return raw as GenerationView['status']

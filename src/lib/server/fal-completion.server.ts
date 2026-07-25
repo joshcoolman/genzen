@@ -5,9 +5,10 @@ import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { getModelName } from '@/features/ai-images/models'
 
-// Defensive extractor — FAL doesn't expose cost consistently across endpoints.
-// Probes known candidate paths; returns null if none match. Verify + expand as
-// real response shapes land.
+// Defensive extractor — FAL doesn't expose cost consistently across endpoints,
+// and in practice its image queue results carry no cost field at all, so this
+// usually returns null and the caller falls back to the submit-time estimate.
+// Probes known candidate paths; expand if a real response ever carries one.
 function extractFalCostCents(
   data: Record<string, unknown> | null | undefined,
 ): number | null {
@@ -79,6 +80,9 @@ export async function processImageResult(
       ? meta.estimated_cost_cents
       : null
   const providerCostCents = falCostCents ?? estimatedCostCents
+  // Activity is the only spend guard now, so it must not present a figure
+  // derived from the pricing table as something FAL reported.
+  const providerCostIsEstimate = falCostCents == null
 
   const { error: updateError } = await supabase
     .from('user_images')
@@ -100,6 +104,7 @@ export async function processImageResult(
         completed_at: new Date().toISOString(),
         ...(providerCostCents != null && {
           provider_cost_cents: providerCostCents,
+          provider_cost_is_estimate: providerCostIsEstimate,
         }),
       },
     })

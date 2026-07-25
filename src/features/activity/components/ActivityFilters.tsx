@@ -22,9 +22,7 @@ const DATE_PRESETS: Array<{ value: DatePreset; label: string }> = [
 const STATUS_OPTIONS: Array<{ value: GenerationStatus; label: string }> = [
   { value: 'completed', label: 'Completed' },
   { value: 'failed', label: 'Failed' },
-  { value: 'processing', label: 'Processing' },
   { value: 'pending', label: 'Pending' },
-  { value: 'queued', label: 'Queued' },
 ]
 
 function computeDatePreset(filters: Filters): DatePreset {

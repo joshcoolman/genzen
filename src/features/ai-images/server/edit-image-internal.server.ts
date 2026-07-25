@@ -10,6 +10,7 @@ import {
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 
 export interface EditImageInput {
   accessToken?: string
@@ -183,7 +184,18 @@ export async function editImageInternal(
       ...(webhookUrl ? { webhookUrl } : {}),
     })
 
-    await markGenerationSubmitted(reservedId, request_id)
+    const estimatedCostCents = await computeFalCostCents(falEditModel, {
+      aspectRatio,
+      quantity: numImagesToGenerate,
+    }).catch(() => null)
+
+    await markGenerationSubmitted(
+      reservedId,
+      request_id,
+      estimatedCostCents != null
+        ? { estimated_cost_cents: estimatedCostCents }
+        : undefined,
+    )
 
     return { recordId: reservedId, request_id }
   }

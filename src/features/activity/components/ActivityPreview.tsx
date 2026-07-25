@@ -9,12 +9,13 @@ import { cn } from '@/lib/utils'
 
 const PREVIEW_SIZE = 5
 
-function formatCents(cents: number | null): string {
+function formatCents(cents: number | null, isEstimate = false): string {
   if (cents == null) return '—'
+  const prefix = isEstimate ? '~' : ''
   const dollars = cents / 100
-  if (dollars < 0.01) return `$${dollars.toFixed(4)}`
-  if (dollars < 1) return `$${dollars.toFixed(3)}`
-  return `$${dollars.toFixed(2)}`
+  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
+  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
+  return `${prefix}$${dollars.toFixed(2)}`
 }
 
 export function ActivityPreview() {
@@ -120,7 +121,7 @@ export function ActivityPreview() {
                     : '—'}
                 </span>
                 <span className="shrink-0 text-[11px] tabular-nums text-foreground">
-                  {formatCents(entry.providerCostCents)}
+                  {formatCents(entry.providerCostCents, entry.costIsEstimate)}
                 </span>
                 <span className="shrink-0 text-right text-[11px] text-muted-foreground">
                   {formatRelativeOrDate(entry.createdAt)}

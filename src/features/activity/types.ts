@@ -1,9 +1,4 @@
-export type GenerationStatus =
-  | 'queued'
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'failed'
+export type GenerationStatus = 'pending' | 'completed' | 'failed'
 
 export interface ActivityGenerationMetadata {
   prompt?: string
@@ -15,6 +10,8 @@ export interface ActivityGenerationMetadata {
   completed_at?: string
   failed_at?: string
   provider_cost_cents?: number
+  /** True when the figure came from the pricing table, not from FAL itself. */
+  provider_cost_is_estimate?: boolean
   thumbnail_path?: string
   fal_url?: string
   error?: { message?: string } | string
@@ -34,6 +31,7 @@ export interface ActivityEntry {
   failedAt: string | null
   durationMs: number | null
   providerCostCents: number | null
+  costIsEstimate: boolean
   isDeleted: boolean
   errorMessage: string | null
 }
@@ -49,6 +47,8 @@ export interface ActivityTotals {
   count: number
   totalDurationMs: number
   totalProviderCostCents: number
+  /** True when any run in the totals contributed an estimated figure. */
+  totalsIncludeEstimates: boolean
   exceedsCap: boolean
 }
 

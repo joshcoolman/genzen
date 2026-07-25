@@ -18,6 +18,7 @@ const EMPTY_TOTALS: ActivityTotals = {
   count: 0,
   totalDurationMs: 0,
   totalProviderCostCents: 0,
+  totalsIncludeEstimates: false,
   exceedsCap: false,
 }
 
@@ -120,15 +121,9 @@ export function useActivityPage() {
     }
   }, [userId, refetch])
 
-  // Poll for queued/pending/processing rows so this page progresses even when
-  // the user isn't on AI Images (checkPendingGenerations also dispatches the
-  // Runs only while work is live.
-  const hasPendingWork = entries.some(
-    (e) =>
-      e.status === 'queued' ||
-      e.status === 'pending' ||
-      e.status === 'processing',
-  )
+  // Poll for pending rows so this page progresses even when the user isn't on
+  // AI Images. Runs only while work is live.
+  const hasPendingWork = entries.some((e) => e.status === 'pending')
   useEffect(() => {
     if (!accessToken || !hasPendingWork) return
     checkPendingGenerations({ data: { accessToken } }).catch(() => {})

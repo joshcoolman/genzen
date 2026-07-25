@@ -168,6 +168,7 @@ export const getActivityEntry = createServerFn({ method: 'GET' })
       failedAt: m.failed_at ?? null,
       durationMs: computeDurationMs(m),
       providerCostCents: m.provider_cost_cents ?? null,
+      costIsEstimate: m.provider_cost_is_estimate === true,
       isDeleted: r.deleted_at != null,
       errorMessage: extractErrorMessage(m, r.generation_error),
       storagePath: r.storage_path,

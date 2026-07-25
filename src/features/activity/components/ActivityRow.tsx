@@ -36,31 +36,22 @@ function StatusIndicator({ status }: { status: ActivityEntry['status'] }) {
       </span>
     )
   }
-  if (status === 'processing') {
-    return (
-      <span className="inline-flex items-center gap-1 text-amber-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        <span className="text-[11px]">Processing</span>
-      </span>
-    )
-  }
   return (
     <span className="inline-flex items-center gap-1 text-muted-foreground">
       <Clock4 className="h-3.5 w-3.5" />
-      <span className="text-[11px]">
-        {status === 'queued' ? 'Queued' : 'Pending'}
-      </span>
+      <span className="text-[11px]">Pending</span>
     </span>
   )
 }
 
-function formatCents(cents: number | null): string {
+function formatCents(cents: number | null, isEstimate = false): string {
   if (cents == null) return '—'
+  const prefix = isEstimate ? '~' : ''
   const dollars = cents / 100
-  if (dollars === 0) return '$0.00'
-  if (dollars < 0.01) return `$${dollars.toFixed(4)}`
-  if (dollars < 1) return `$${dollars.toFixed(3)}`
-  return `$${dollars.toFixed(2)}`
+  if (dollars === 0) return `${prefix}$0.00`
+  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
+  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
+  return `${prefix}$${dollars.toFixed(2)}`
 }
 
 export function ActivityRow({
@@ -145,9 +136,13 @@ export function ActivityRow({
       {/* Cost */}
       <div
         className="text-xs tabular-nums text-foreground"
-        title="What FAL charged"
+        title={
+          entry.costIsEstimate
+            ? "Estimated from FAL's pricing table — FAL's result carried no cost field"
+            : 'What FAL charged'
+        }
       >
-        {formatCents(entry.providerCostCents)}
+        {formatCents(entry.providerCostCents, entry.costIsEstimate)}
       </div>
 
       {/* Time */}

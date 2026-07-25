@@ -314,9 +314,7 @@ export function useImages({
     if (import.meta.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
     if (!accessToken) return
 
-    const hasPending = savedImages.some(
-      (img) => img.status === 'pending' || img.status === 'queued',
-    )
+    const hasPending = savedImages.some((img) => img.status === 'pending')
 
     if (hasPending && !pollingRef.current) {
       // Initial check immediately
@@ -335,12 +333,7 @@ export function useImages({
         pollingRef.current = null
       }
     }
-  }, [
-    accessToken,
-    savedImages.some(
-      (img) => img.status === 'pending' || img.status === 'queued',
-    ),
-  ])
+  }, [accessToken, savedImages.some((img) => img.status === 'pending')])
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => [card, ...prev])

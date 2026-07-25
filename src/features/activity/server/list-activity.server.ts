@@ -59,8 +59,6 @@ function resolveModelName(modelId: string | null | undefined): string {
 }
 
 function deriveProvider(m: ActivityGenerationMetadata): string | null {
-  if (m.provider === 'google') return 'Google Vertex AI'
-  if (m.provider === 'openai') return 'OpenAI'
   if (m.fal_model_id ?? m.model?.startsWith('fal-ai/')) return 'FAL AI'
   return null
 }
@@ -88,6 +86,7 @@ function parseEntry(row: Row): ActivityEntry {
     failedAt: m.failed_at ?? null,
     durationMs: computeDurationMs(m),
     providerCostCents: m.provider_cost_cents ?? null,
+    costIsEstimate: m.provider_cost_is_estimate === true,
     isDeleted: row.deleted_at != null,
     errorMessage: extractErrorMessage(m),
   }
@@ -177,12 +176,14 @@ export const listActivity = createServerFn({ method: 'GET' })
 
     let totalDurationMs = 0
     let totalProviderCostCents = 0
+    let totalsIncludeEstimates = false
     for (const r of totalsRows ?? []) {
       const m = meta(r)
       const dur = computeDurationMs(m)
       if (dur != null) totalDurationMs += dur
       if (m.provider_cost_cents != null) {
         totalProviderCostCents += m.provider_cost_cents
+        if (m.provider_cost_is_estimate === true) totalsIncludeEstimates = true
       }
     }
 
@@ -194,6 +195,7 @@ export const listActivity = createServerFn({ method: 'GET' })
         count: totalsRows?.length ?? 0,
         totalDurationMs,
         totalProviderCostCents,
+        totalsIncludeEstimates,
         exceedsCap: (totalsRows?.length ?? 0) >= TOTALS_ROW_CAP,
       },
     }

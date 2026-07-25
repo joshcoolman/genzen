@@ -76,10 +76,14 @@ export function ActivityTotals({
           label="Cost"
           value={
             totals.totalProviderCostCents > 0
-              ? formatDollarsFromCents(totals.totalProviderCostCents)
+              ? `${totals.totalsIncludeEstimates ? '~' : ''}${formatDollarsFromCents(totals.totalProviderCostCents)}`
               : '—'
           }
-          title="What FAL actually charged, where the figure is recorded."
+          title={
+            totals.totalsIncludeEstimates
+              ? "What FAL charged. A ~ means some runs are estimated from FAL's pricing table, because FAL's result carried no cost field."
+              : 'What FAL actually charged.'
+          }
         />
       </div>
       {totals.exceedsCap && (

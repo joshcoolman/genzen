@@ -19,7 +19,7 @@ Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` firs
 2. ✅ Stripe removal
 3. ✅ Credits removal
 4. ✅ Finish reserve-then-fail on the last 3 generate paths
-5. ⬜ Activity: make the FAL cost actually get written on all 5 paths
+5. ✅ Activity: make the FAL cost actually get written on all 5 paths
    (the column collapse itself landed early, forced by step 3)
 6. ⬜ Drop `DOCS_PASSWORD` + 4 dead env vars
 7. ⬜ Pare the README to "how to run this locally"
@@ -95,7 +95,7 @@ board.**
 
 Two things made these harder than the edit path:
 
-- `generate-image-internal` wrote its row with an inline insert *after* FAL
+- `generate-image-internal` wrote its row with an inline insert _after_ FAL
   accepted the job, and several facts in that insert are only knowable after the
   fallible work (the resolved `imageInputModelId`, a prompt derived from the
   source image via Haiku, the cost estimate). So it needed reserve-then-**update**:
@@ -111,6 +111,26 @@ iteration catches, marks its own row failed, and pushes `{ recordId }` with no
 
 `createPendingGeneration` gained `onCanvas`, `sortOrder`, and an optional
 `generationType` (plain text-to-image has never carried one).
+
+**Step 5 done — Activity is now a real spend guard.** The trace in step 3 found
+that only `generate-image-internal` ever wrote `estimated_cost_cents`, and that
+`extractFalCostCents` has never actually matched a live FAL image-queue
+response. So four of five paths recorded no cost at all and Activity showed `—`.
+All five now call `computeFalCostCents` at submit (edit passes
+`quantity: numImagesToGenerate`).
+
+**And it no longer presents an estimate as a measurement.**
+`provider_cost_cents` is `falCostCents ?? estimatedCostCents`, and in practice
+it's always the estimate. `processImageResult` now also writes
+`provider_cost_is_estimate`, and the row, detail panel, preview and totals
+prefix estimated figures with `~` (the detail panel spells out "estimated").
+
+Also swept out the now-impossible `queued` / `processing` statuses left over
+from the Google queue: the `GenerationStatus` union, the Activity status filter
+pills, the status badges, `normalize-generation`'s `VALID_STATUSES`, and the
+polling predicates in `use-images` / `use-activity-page`. Narrowing the union
+made ESLint flag the dead branches for me. `deriveProvider` lost its
+Google/OpenAI cases — FAL is the only thing that can appear.
 
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 
