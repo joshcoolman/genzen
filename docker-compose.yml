@@ -1,10 +1,13 @@
-# Local runtime for genzen: MinIO (S3-compatible storage) plus a one-shot
-# bucket create. The Supabase CLI owns its own containers (Postgres, auth,
-# Studio on 54321-54324), so this file deliberately holds only MinIO.
+# Local runtime for genzen: Postgres + MinIO (S3-compatible storage) plus a
+# one-shot bucket create.
 #
-#   pnpm local:up     start containers, Supabase, and write .env.local
+#   pnpm local:up     start containers, migrate, and write .env.local
 #   pnpm local:down   stop (data kept)
 #   pnpm local:reset  stop and delete the volumes
+#
+# The Supabase CLI stack (Postgres, auth, Studio on 54321-54324) still runs
+# alongside this during the #168 migration and is torn down at the end of it.
+# The two databases do not share a port and do not talk to each other.
 #
 # FAL is not mocked: image generation still calls fal.ai, so FAL_KEY is
 # required even here.
@@ -12,6 +15,26 @@
 name: genzen
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: genzen
+      POSTGRES_PASSWORD: genzen
+      POSTGRES_DB: genzen
+    # 5434 on the host: 5432 is usually a system Postgres and 5433 is bootsy's.
+    # A silent connection to the wrong database is the worst failure here, so
+    # every stack gets its own port rather than sharing the default.
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U genzen -d genzen']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   minio:
     image: minio/minio:latest
     restart: unless-stopped
@@ -53,3 +76,4 @@ services:
 
 volumes:
   minio-data:
+  postgres-data:
