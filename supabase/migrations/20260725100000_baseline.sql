@@ -237,6 +237,34 @@ create policy fal_price_cache_select on public.fal_price_cache
   for select using (true);
 
 -- ---------------------------------------------------------------------------
+-- Grants
+-- ---------------------------------------------------------------------------
+
+-- Load-bearing, and easy to lose: this baseline was generated with
+-- `pg_dump --no-privileges`, which strips every GRANT. Without these, PostgREST
+-- connects as `authenticator`, switches to `anon`/`authenticated`, and every
+-- query fails with `permission denied for table user_images` -- RLS policies do
+-- not grant access, they only narrow access already granted.
+--
+-- The old migration chain spent ~500 lines on this, most of it granting pg_trgm
+-- operator functions to four roles. Only the tables actually need it.
+
+grant usage on schema public to anon, authenticated, service_role;
+
+-- Explicit, because ALTER DEFAULT PRIVILEGES below only applies to tables
+-- created *after* it runs -- the three above already exist by this point.
+grant all on table public.user_images to anon, authenticated, service_role;
+grant all on table public.user_profiles to anon, authenticated, service_role;
+grant all on table public.fal_price_cache to anon, authenticated, service_role;
+
+alter default privileges for role postgres in schema public
+  grant all on tables to anon, authenticated, service_role;
+alter default privileges for role postgres in schema public
+  grant all on sequences to anon, authenticated, service_role;
+alter default privileges for role postgres in schema public
+  grant all on functions to anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- auth trigger
 -- ---------------------------------------------------------------------------
 
