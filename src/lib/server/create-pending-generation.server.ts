@@ -11,13 +11,18 @@ interface CreatePendingGenerationOptions {
    * with `markGenerationSubmitted`.
    */
   requestId?: string
-  generationType: string
+  /** Omitted for plain text-to-image, which has never carried one. */
+  generationType?: string
   falModelId: string
   prompt: string
   aspectRatio?: string
   extraMetadata?: Record<string, unknown>
   title?: string
   idempotencyKey?: string
+  /** Mark the row as living on the canvas, so it's reclaimable on canvas load */
+  onCanvas?: boolean
+  /** Overrides the default `Date.now() / 1000`, for ordering a batch */
+  sortOrder?: number
 }
 
 export async function createPendingGeneration({
@@ -31,6 +36,8 @@ export async function createPendingGeneration({
   extraMetadata,
   title = 'Generating...',
   idempotencyKey,
+  onCanvas,
+  sortOrder,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
   const supabase = accessToken
     ? createClient(
@@ -54,13 +61,14 @@ export async function createPendingGeneration({
       status: 'pending',
       source: 'ai_generated',
       title,
-      sort_order: Date.now() / 1000,
+      sort_order: sortOrder ?? Date.now() / 1000,
+      ...(onCanvas ? { on_canvas: true } : {}),
       ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
       generation_metadata: {
         prompt,
         model,
         fal_model_id: falModelId,
-        generation_type: generationType,
+        ...(generationType ? { generation_type: generationType } : {}),
         submitted_at: new Date().toISOString(),
         ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
         ...extraMetadata,
@@ -80,15 +88,38 @@ export async function createPendingGeneration({
  * Attach the provider's request id once the job is actually queued. Until this
  * runs the row is a reservation: visible in the gallery as pending, but not yet
  * something the completion pollers can look up.
+ *
+ * `metadataPatch` merges into `generation_metadata` for the facts that are only
+ * knowable after the fallible work has run — the resolved endpoint id, a prompt
+ * that had to be derived from the source image, the cost estimate. Reserving
+ * first means those cannot be part of the initial insert.
  */
 export async function markGenerationSubmitted(
   recordId: string,
   requestId: string,
+  metadataPatch?: Record<string, unknown>,
 ): Promise<void> {
   const supabase = getSupabaseAdmin()
+
+  let metadata: Record<string, unknown> | undefined
+  if (metadataPatch && Object.keys(metadataPatch).length > 0) {
+    const { data: existing } = await supabase
+      .from('user_images')
+      .select('generation_metadata')
+      .eq('id', recordId)
+      .single()
+    metadata = {
+      ...((existing?.generation_metadata ?? {}) as Record<string, unknown>),
+      ...metadataPatch,
+    }
+  }
+
   await supabase
     .from('user_images')
-    .update({ request_id: requestId })
+    .update({
+      request_id: requestId,
+      ...(metadata ? { generation_metadata: metadata } : {}),
+    })
     .eq('id', recordId)
 }
 

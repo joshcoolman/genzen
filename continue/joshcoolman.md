@@ -18,7 +18,7 @@ Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` firs
 1. ✅ Delete the dead Google/Vertex stack
 2. ✅ Stripe removal
 3. ✅ Credits removal
-4. ⬜ Finish reserve-then-fail on the last 3 generate paths
+4. ✅ Finish reserve-then-fail on the last 3 generate paths
 5. ⬜ Activity: make the FAL cost actually get written on all 5 paths
    (the column collapse itself landed early, forced by step 3)
 6. ⬜ Drop `DOCS_PASSWORD` + 4 dead env vars
@@ -87,6 +87,30 @@ ever protected me from myself — `rate-limit.server.ts` (+test) and its three
 call sites are gone. Migration
 `20260725000003_drop_waitlist_and_rate_limit.sql` drops the function, the
 `rate_window_*` columns, `account_status`, and the enum type.
+
+**Step 4 done — reserve-then-fail now holds on all five generate paths.**
+`generate-image-internal`, `generate-variation` and `submit-variations` joined
+edit and retry. The rule: **clicking Generate always leaves something on the
+board.**
+
+Two things made these harder than the edit path:
+
+- `generate-image-internal` wrote its row with an inline insert *after* FAL
+  accepted the job, and several facts in that insert are only knowable after the
+  fallible work (the resolved `imageInputModelId`, a prompt derived from the
+  source image via Haiku, the cost estimate). So it needed reserve-then-**update**:
+  `markGenerationSubmitted` now takes an optional `metadataPatch` that merges
+  into `generation_metadata` alongside `request_id`.
+- In `generate-variation` the prompt is itself the output of a **Claude call**
+  inside the loop. That's fallible, so the reservation has to happen before it,
+  seeded with `rootPrompt` and patched with the varied prompt at submit.
+
+Both variation paths also stopped letting one failure kill the batch: each
+iteration catches, marks its own row failed, and pushes `{ recordId }` with no
+`request_id`, so the client still gets a card per prompt.
+
+`createPendingGeneration` gained `onCanvas`, `sortOrder`, and an optional
+`generationType` (plain text-to-image has never carried one).
 
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 

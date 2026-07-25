@@ -11,8 +11,17 @@ import {
 } from '@/lib/prompts/image-variation'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { createImageStorage } from '@/lib/image-storage'
+import { computeFalCostCents } from '@/lib/server/compute-cost.server'
+import {
+  createPendingGeneration,
+  describeGenerationError,
+  markGenerationFailed,
+  markGenerationSubmitted,
+} from '@/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
+
+const VARIATION_EDIT_MODEL = 'fal-ai/nano-banana-2/edit'
 
 interface GenerateVariationInput {
   accessToken: string
@@ -34,9 +43,8 @@ export const generateVariation = createServerFn({ method: 'POST' })
       throw new Error('Prompt is required')
     }
 
-    if (!process.env.FAL_KEY) {
-      throw new Error('FAL_KEY environment variable is not set')
-    }
+    // NOTE: the FAL_KEY check deliberately does NOT live here — see the note in
+    // edit-image-internal.server.ts. It runs inside the reserved-row try block.
 
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
@@ -174,78 +182,102 @@ export const generateVariation = createServerFn({ method: 'POST' })
     const results: Array<{ recordId: string; request_id?: string }> = []
 
     for (let i = 0; i < count; i++) {
-      // usedPrompts grows each iteration — each new prompt is appended after generation
-      const avoidSection =
-        usedPrompts.length > 0
-          ? `\n\nALREADY GENERATED (avoid similar shots):\n${usedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
-          : ''
-
-      const userContent = variationUserContent({
-        avoidSection,
-        hasImage: !!imageBase64,
-        imageBase64,
-        rootPrompt,
-      })
-
-      const response = await generateText({
-        model: ai.reasoning,
-        maxOutputTokens: 300,
-        system: IMAGE_VARIATION_SYSTEM,
-        messages: [{ role: 'user', content: userContent }],
-      })
-
-      const variedPrompt = response.text.trim()
-      usedPrompts.push(variedPrompt)
-
-      const variationSortOrder = Date.now() / 1000 - 0.001 * (i + 1)
-
-      const editInput = await buildFalInput({
-        modelId: 'fal-ai/nano-banana-2/edit',
-        prompt: variedPrompt,
+      // Reserve BEFORE the Claude call. The varied prompt is itself the output
+      // of a fallible LLM request, so a failure there used to leave nothing at
+      // all — the row was written only after FAL had accepted the job.
+      const { recordId } = await createPendingGeneration({
+        accessToken: data.accessToken,
+        userId: user.id,
+        generationType: 'variation',
+        falModelId: VARIATION_EDIT_MODEL,
+        prompt: rootPrompt,
         aspectRatio,
-        imageUrls: [falImageUrl ?? ''],
-        safetyLevel: 'permissive',
-      })
-      const webhookUrl = getFalWebhookUrl()
-
-      const { request_id } = await (fal.queue.submit as any)(
-        'fal-ai/nano-banana-2/edit',
-        {
-          input: editInput,
-          ...(webhookUrl ? { webhookUrl } : {}),
+        title: 'Generating variation...',
+        sortOrder: Date.now() / 1000 - 0.001 * (i + 1),
+        extraMetadata: {
+          model,
+          original_prompt: rootPrompt,
+          source_image_id: sourceImageId, // Immutable: actual generation source
+          parent_id: rootImageId, // Mutable: group parent (variations group under root)
+          root_image_id: rootImageId,
         },
-      )
+      })
 
-      const { data: record, error: insertError } = await supabase
-        .from('user_images')
-        .insert({
-          user_id: user.id,
-          request_id,
-          status: 'pending',
-          source: 'ai_generated',
-          title: 'Generating variation...',
-          sort_order: variationSortOrder,
-          generation_metadata: {
-            prompt: variedPrompt,
-            original_prompt: rootPrompt,
-            model,
-            fal_model_id: 'fal-ai/nano-banana-2/edit',
-            generation_type: 'variation',
-            source_image_id: sourceImageId, // Immutable: actual generation source
-            parent_id: rootImageId, // Mutable: group parent (variations group under root)
-            root_image_id: rootImageId,
-            submitted_at: new Date().toISOString(),
-            ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-          },
-        })
-        .select()
-        .single()
-
-      if (insertError) {
-        throw new Error(`Failed to create image record: ${insertError.message}`)
+      try {
+        const { request_id, variedPrompt } = await runVariation()
+        // usedPrompts grows each iteration so the next prompt avoids this one
+        usedPrompts.push(variedPrompt)
+        results.push({ recordId, request_id })
+      } catch (err) {
+        // One variation failing must not cancel the rest of the batch; each
+        // gets its own failed card with a reason and a Retry.
+        console.error('[variation] generation failed', recordId, err)
+        await markGenerationFailed(
+          recordId,
+          describeGenerationError(err, 'Variation failed'),
+        )
+        results.push({ recordId })
       }
 
-      results.push({ recordId: record.id, request_id })
+      async function runVariation() {
+        if (!process.env.FAL_KEY) {
+          throw new Error(
+            'FAL_KEY is not set — add it to .env.local and restart the dev server',
+          )
+        }
+
+        const avoidSection =
+          usedPrompts.length > 0
+            ? `\n\nALREADY GENERATED (avoid similar shots):\n${usedPrompts.map((p, idx) => `${idx + 1}. ${p}`).join('\n')}`
+            : ''
+
+        const userContent = variationUserContent({
+          avoidSection,
+          hasImage: !!imageBase64,
+          imageBase64,
+          rootPrompt,
+        })
+
+        const response = await generateText({
+          model: ai.reasoning,
+          maxOutputTokens: 300,
+          system: IMAGE_VARIATION_SYSTEM,
+          messages: [{ role: 'user', content: userContent }],
+        })
+
+        const variedPrompt = response.text.trim()
+
+        const editInput = await buildFalInput({
+          modelId: VARIATION_EDIT_MODEL,
+          prompt: variedPrompt,
+          aspectRatio,
+          imageUrls: [falImageUrl ?? ''],
+          safetyLevel: 'permissive',
+        })
+        const webhookUrl = getFalWebhookUrl()
+
+        const { request_id } = await (fal.queue.submit as any)(
+          VARIATION_EDIT_MODEL,
+          {
+            input: editInput,
+            ...(webhookUrl ? { webhookUrl } : {}),
+          },
+        )
+
+        const estimatedCostCents = await computeFalCostCents(
+          VARIATION_EDIT_MODEL,
+          { aspectRatio },
+        ).catch(() => null)
+
+        await markGenerationSubmitted(recordId, request_id, {
+          prompt: variedPrompt,
+          ...(estimatedCostCents != null
+            ? { estimated_cost_cents: estimatedCostCents }
+            : {}),
+        })
+
+        return { request_id, variedPrompt }
+      }
     }
 
     return results
