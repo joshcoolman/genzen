@@ -11,6 +11,8 @@
     "lint": "eslint",
     "format": "prettier",
     "check": "prettier --write . && eslint --fix",
+    "db:migrate": "node scripts/migrate.mjs",
+    "auth:create-user": "node scripts/create-user.mjs",
     "local:up": "node scripts/local-up.mjs",
     "local:down": "docker compose down && supabase stop",
     "local:reset": "docker compose down -v && supabase stop --no-backup"
@@ -47,6 +49,7 @@
     "lucide-react": "^0.563.0",
     "marked": "^17.0.1",
     "nitro": "latest",
+    "postgres": "^3.4.9",
     "radix-ui": "^1.4.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -12,6 +12,7 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
+    setupFiles: ['./vitest.setup.ts'],
     // `.output/` is the Nitro build directory, and the build emits compiled
     // copies of the `server/api/*.test.ts` files into it. Without this,
     // `pnpm build && pnpm test` fails: vitest collects those bundled copies,
