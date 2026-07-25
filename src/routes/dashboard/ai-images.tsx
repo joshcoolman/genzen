@@ -61,11 +61,6 @@ import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/ai-images')({
-  beforeLoad: ({ context }) => {
-    if ((context as { accountStatus: string }).accountStatus !== 'active') {
-      throw redirect({ to: '/dashboard/pending' })
-    }
-  },
   component: AiImagesPage,
 })
 

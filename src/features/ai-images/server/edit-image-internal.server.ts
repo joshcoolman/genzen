@@ -7,7 +7,6 @@ import {
   markGenerationFailed,
   markGenerationSubmitted,
 } from '@/lib/server/create-pending-generation.server'
-import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { createImageStorage } from '@/lib/image-storage'
@@ -42,7 +41,6 @@ export async function editImageInternal(
     accessToken: data.accessToken,
     userId: data.userId,
   })
-  await checkRateLimit(userId, 'image')
 
   const {
     sourceImageId,

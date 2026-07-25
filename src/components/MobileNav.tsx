@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { NavMore } from '@/components/NavMore'
-import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { navItems } from '@/lib/nav-items'
 import { useNavVisibility } from '@/lib/use-nav-visibility'
@@ -26,7 +25,6 @@ export function MobileNav({ className }: { className?: string }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut } = useAuth()
-  const accountStatus = useAccountStatus()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
@@ -36,16 +34,9 @@ export function MobileNav({ className }: { className?: string }) {
     (item) => item.id !== 'account' && item.id !== 'settings',
   )
 
-  const visibleItems = mainItems.filter(
-    (item) =>
-      (!item.activeOnly || accountStatus === 'active') &&
-      !isItemHidden(item.id),
-  )
+  const visibleItems = mainItems.filter((item) => !isItemHidden(item.id))
 
-  const hiddenItems = mainItems.filter(
-    (item) =>
-      (!item.activeOnly || accountStatus === 'active') && isItemHidden(item.id),
-  )
+  const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
   const handleSignOut = async () => {
     await signOut()

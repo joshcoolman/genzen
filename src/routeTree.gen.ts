@@ -23,7 +23,6 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardTrashRouteImport } from './routes/dashboard/trash'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
-import { Route as DashboardPendingRouteImport } from './routes/dashboard/pending'
 import { Route as DashboardCanvasRouteImport } from './routes/dashboard/canvas'
 import { Route as DashboardAiImagesRouteImport } from './routes/dashboard/ai-images'
 import { Route as DashboardActivityRouteImport } from './routes/dashboard/activity'
@@ -100,11 +99,6 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardPendingRoute = DashboardPendingRouteImport.update({
-  id: '/pending',
-  path: '/pending',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardCanvasRoute = DashboardCanvasRouteImport.update({
   id: '/canvas',
   path: '/canvas',
@@ -145,7 +139,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
-  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
@@ -165,7 +158,6 @@ export interface FileRoutesByTo {
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
-  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
@@ -188,7 +180,6 @@ export interface FileRoutesById {
   '/dashboard/activity': typeof DashboardActivityRoute
   '/dashboard/ai-images': typeof DashboardAiImagesRoute
   '/dashboard/canvas': typeof DashboardCanvasRoute
-  '/dashboard/pending': typeof DashboardPendingRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/trash': typeof DashboardTrashRoute
   '/docs/$': typeof DocsSplatRoute
@@ -212,7 +203,6 @@ export interface FileRouteTypes {
     | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
-    | '/dashboard/pending'
     | '/dashboard/settings'
     | '/dashboard/trash'
     | '/docs/$'
@@ -232,7 +222,6 @@ export interface FileRouteTypes {
     | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
-    | '/dashboard/pending'
     | '/dashboard/settings'
     | '/dashboard/trash'
     | '/docs/$'
@@ -254,7 +243,6 @@ export interface FileRouteTypes {
     | '/dashboard/activity'
     | '/dashboard/ai-images'
     | '/dashboard/canvas'
-    | '/dashboard/pending'
     | '/dashboard/settings'
     | '/dashboard/trash'
     | '/docs/$'
@@ -375,13 +363,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/pending': {
-      id: '/dashboard/pending'
-      path: '/pending'
-      fullPath: '/dashboard/pending'
-      preLoaderRoute: typeof DashboardPendingRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/canvas': {
       id: '/dashboard/canvas'
       path: '/canvas'
@@ -425,7 +406,6 @@ interface DashboardRouteChildren {
   DashboardActivityRoute: typeof DashboardActivityRoute
   DashboardAiImagesRoute: typeof DashboardAiImagesRoute
   DashboardCanvasRoute: typeof DashboardCanvasRoute
-  DashboardPendingRoute: typeof DashboardPendingRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardTrashRoute: typeof DashboardTrashRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -437,7 +417,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardActivityRoute: DashboardActivityRoute,
   DashboardAiImagesRoute: DashboardAiImagesRoute,
   DashboardCanvasRoute: DashboardCanvasRoute,
-  DashboardPendingRoute: DashboardPendingRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardIndexRoute: DashboardIndexRoute,

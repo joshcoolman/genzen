@@ -9,11 +9,6 @@ import { useNavVisibility } from '@/lib/use-nav-visibility'
 import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/dashboard/settings')({
-  beforeLoad: ({ context }) => {
-    if ((context as { accountStatus: string }).accountStatus !== 'active') {
-      throw redirect({ to: '/dashboard' })
-    }
-  },
   component: SettingsPage,
 })
 

@@ -1,6 +1,5 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/DashboardLayout'
-import { AccountStatusProvider } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useDashboardRouteMemory } from '@/lib/use-dashboard-route-memory'
@@ -10,9 +9,7 @@ export const Route = createFileRoute('/dashboard')({
     // Skip auth check on server -- Supabase client uses localStorage
     // which isn't available during SSR. The component handles the
     // loading/redirect dance client-side via AuthProvider.
-    if (typeof window === 'undefined') {
-      return { accountStatus: 'active' as const }
-    }
+    if (typeof window === 'undefined') return
 
     const {
       data: { session },
@@ -20,30 +17,12 @@ export const Route = createFileRoute('/dashboard')({
     if (!session) {
       throw redirect({ to: '/login' })
     }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('account_status')
-      .eq('id', session.user.id)
-      .maybeSingle()
-
-    if (profileError) {
-      throw profileError
-    }
-
-    return {
-      accountStatus:
-        profile?.account_status === 'active'
-          ? ('active' as const)
-          : ('waitlist' as const),
-    }
   },
   component: DashboardLayoutRoute,
 })
 
 function DashboardLayoutRoute() {
-  const { user, session, loading } = useAuth()
-  const { accountStatus } = Route.useRouteContext()
+  const { user, loading } = useAuth()
 
   // Remember the last visited dashboard route
   useDashboardRouteMemory()
@@ -61,10 +40,8 @@ function DashboardLayoutRoute() {
   }
 
   return (
-    <AccountStatusProvider status={accountStatus}>
-      <DashboardLayout>
-        <Outlet />
-      </DashboardLayout>
-    </AccountStatusProvider>
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
   )
 }

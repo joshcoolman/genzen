@@ -77,6 +77,17 @@ record **no cost at all** and show `—`. Activity is now the only spend guard, 
 step 5's real job is writing `computeFalCostCents` at submit on the other four
 paths.
 
+**Step 3b — waitlist + rate limit, the two "undecided" items.** Both removed, as
+confirmed. `account_status` gated signups for an app with no signups; its only
+observable effect was `seed.sql` having to override a `waitlist` default to make
+my own user usable. Gone with it: `src/lib/account-status.tsx`, the
+`/dashboard/pending` route, the `activeOnly` nav flag, and the `beforeLoad`
+guards on ai-images + settings. `check_rate_limit` (20 image requests/60s) only
+ever protected me from myself — `rate-limit.server.ts` (+test) and its three
+call sites are gone. Migration
+`20260725000003_drop_waitlist_and_rate_limit.sql` drops the function, the
+`rate_window_*` columns, `account_status`, and the enum type.
+
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 
 Track B ("extract a new lean repo") is off. genzen migrates **in place** instead,

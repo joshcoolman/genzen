@@ -418,28 +418,19 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          account_status: Database['public']['Enums']['account_status']
           created_at: string
           display_name: string | null
           id: string
-          rate_window_count: number
-          rate_window_start: string
         }
         Insert: {
-          account_status?: Database['public']['Enums']['account_status']
           created_at?: string
           display_name?: string | null
           id: string
-          rate_window_count?: number
-          rate_window_start?: string
         }
         Update: {
-          account_status?: Database['public']['Enums']['account_status']
           created_at?: string
           display_name?: string | null
           id?: string
-          rate_window_count?: number
-          rate_window_start?: string
         }
         Relationships: []
       }
@@ -561,14 +552,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_rate_limit: {
-        Args: {
-          p_max_requests: number
-          p_user_id: string
-          p_window_seconds: number
-        }
-        Returns: boolean
-      }
       cleanup_stale_generations: { Args: never; Returns: undefined }
       get_duplicate_images: {
         Args: { p_user_id: string }
@@ -583,7 +566,7 @@ export type Database = {
       show_trgm: { Args: { '': string }; Returns: Array<string> }
     }
     Enums: {
-      account_status: 'waitlist' | 'active'
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -710,8 +693,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      account_status: ['waitlist', 'active'],
-    },
+    Enums: {},
   },
 } as const

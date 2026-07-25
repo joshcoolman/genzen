@@ -5,7 +5,6 @@ import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
-import { checkRateLimit } from '@/lib/server/rate-limit.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 
@@ -51,7 +50,6 @@ export async function generateImageInternal(
     accessToken: data.accessToken,
     userId: data.userId,
   })
-  await checkRateLimit(userId, 'image')
 
   const {
     prompt,

@@ -17,7 +17,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useAccountStatus } from '@/lib/account-status'
 import { useAuth } from '@/lib/auth'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 
@@ -30,7 +29,6 @@ export function Sidebar({ className }: { className?: string }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut } = useAuth()
-  const accountStatus = useAccountStatus()
   const { isCollapsed } = useSidebarCollapsed()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
@@ -41,16 +39,9 @@ export function Sidebar({ className }: { className?: string }) {
     (item) => item.id !== 'account' && item.id !== 'settings',
   )
 
-  const visibleItems = mainItems.filter(
-    (item) =>
-      (!item.activeOnly || accountStatus === 'active') &&
-      !isItemHidden(item.id),
-  )
+  const visibleItems = mainItems.filter((item) => !isItemHidden(item.id))
 
-  const hiddenItems = mainItems.filter(
-    (item) =>
-      (!item.activeOnly || accountStatus === 'active') && isItemHidden(item.id),
-  )
+  const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
   const handleSignOut = async () => {
     await signOut()
