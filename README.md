@@ -119,6 +119,10 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-25)
 
+- **Plain Postgres, scrypt auth, and a one-command local stack** landed for #168
+  — `migrations/0001_init.sql`, a signed session cookie, `pnpm auth:create-user`,
+  and a `local:up` that brings up both databases. Additive: Supabase still serves
+  the app.
 - **45 migrations collapsed into one baseline** (`20260725100000_baseline.sql`),
   generated from the live database and verified structurally against it. Three
   tables: `user_images`, `user_profiles`, `fal_price_cache`.
@@ -138,9 +142,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- **#168 — leave Supabase for Postgres + S3 + Node, on Next.** The only open issue.
-  Rescoped against `main`, ready to start; `~/repos/bootsy` is the reference
-  implementation. Suggested entry point: schema + auth together.
+- **#168 — leave Supabase for Postgres + S3 + Node, on Next.** The only open
+  issue. Schema and the framework-independent half of auth are done; the next
+  unit is the **Next port**, because the remaining auth work (5 flows,
+  deny-by-default middleware, cookie read/write) and the 57 browser queries all
+  target Next APIs — doing them on TanStack first is the double work the issue
+  decided the framework up front to avoid.
 - Then a second pass to conform to `project-standard`'s `app/` conventions —
   route folders, one-folder-per-component, CSS Modules over Tailwind.
 

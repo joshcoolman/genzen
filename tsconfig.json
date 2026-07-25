@@ -6,7 +6,6 @@
     "prettier.config.js",
     "vite.config.js"
   ],
-  "exclude": ["supabase/functions/**/*"],
 
   "compilerOptions": {
     "target": "ES2022",

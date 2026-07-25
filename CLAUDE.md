@@ -39,6 +39,7 @@ than assume it's there.
 | Feature     | Description                                                    | CLAUDE.md                            |
 | ----------- | -------------------------------------------------------------- | ------------------------------------ |
 | activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
+| auth        | Password verification + signed session cookie (#168 target)    | `src/features/auth/CLAUDE.md`        |
 | ad          | AI chat assistant sidebar with vision + tool calling           | `src/features/ad/CLAUDE.md`          |
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
