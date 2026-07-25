@@ -69,18 +69,39 @@ mid-session, Enhance expanded a prompt for real; `/` redirects both ways.
 
 ## ▶ Next up
 
-- **#167 close + #168 rescope are still pending your call** (I laid out what the
-  rescope leaves — Workstream 1 shrinks to near-nothing, Workstream 3 is
-  untouched). Note #168 also removes the Supabase-CLI prerequisite from local
-  setup, since plain Postgres in docker needs no global tool.
+**#168 (leave Supabase → Postgres + S3 + Node, on Next) is the next push, and it
+is rescoped and ready to start.** #167 is closed.
+
+Read the issue — it was rewritten against `main` post-#169 with measured numbers,
+so trust it over anything remembered. The three things that changed:
+
+1. **Workstream 1 has no business logic left.** Every function it said to keep
+   verbatim is deleted; `.rpc()` sites went 6 → 0. Schema is now ~4 tables, no
+   enums, one trigger function.
+2. **`user_profiles` has zero query sites** — trigger-written, read by nothing.
+   Put `display_name` on `users` and drop it. The old `FOR UPDATE` lock-contention
+   warning is moot.
+3. **Workstream 3 is untouched and is the bulk**: 111 `.from()` sites, 57 of them
+   browser-side including 6 hard `DELETE`s guarded only by RLS.
+
+Suggested start: **schema + auth together** (schema alone is no longer enough work
+to stand alone, and auth needs the `users` table anyway). `~/repos/bootsy` is the
+reference implementation for every piece.
+
+Also worth knowing before starting:
+
 - **There is no create-user script.** The only user is the one `supabase/seed.sql`
-  inserts (`testuser@gmail.com`). Provisioning arrives with **#168 Workstream 2**,
-  which ports bootsy's `scripts/create-user.mjs` + `hash-lib.mjs` as part of
-  replacing Supabase auth with scrypt + a signed cookie. Nothing to add before then.
+  inserts (`testuser@gmail.com`). Provisioning arrives with Workstream 2, via
+  bootsy's `scripts/create-user.mjs` + `hash-lib.mjs`.
+- **#168 removes the Supabase CLI prerequisite.** It's a global tool, not an npm
+  dependency; plain Postgres in the existing docker-compose needs no CLI.
+- Run **`pnpm typecheck`** alongside check/test/build. Nothing typechecked before
+  this session and 16 errors had accumulated; `pnpm build` is Vite and won't catch
+  them.
 - Replace the dead key in `~/.secrets.zsh` (still shadows `.env.local`; `local:up`
-  warns).
-- Note: two dev servers in this repo fight over `routeTree.gen.ts` and cause a
-  reload loop that looks like a hang on "Loading...". Use a prod preview
+  warns about it).
+- Two dev servers in this repo fight over `routeTree.gen.ts` and cause a reload
+  loop that looks like a hang on "Loading...". Use a prod preview
   (`node .output/server/index.mjs`) or stop the other one.
 
 Parked (canvas Tier 2/3 structural — lower priority):
