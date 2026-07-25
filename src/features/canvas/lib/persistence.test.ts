@@ -18,7 +18,7 @@ const completed: CanvasImage = {
   width: 100,
   height: 100,
   signedUrl: 'https://example.com/c1.png',
-  model: 'fal-ai/flux-2-pro/edit',
+  model: 'fal-ai/nano-banana-2/edit',
 }
 
 const pending: CanvasImage = {

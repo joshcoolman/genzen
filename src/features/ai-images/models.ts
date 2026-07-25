@@ -43,16 +43,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     displayPrice: '~$0.05/img',
     useCase: 'Quality 12B model — go-to for finished work',
   },
-  {
-    id: 'fal-ai/flux-2-pro',
-    name: 'FLUX.2 Pro',
-    description: 'Best photorealism',
-    category: 'FLUX',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/flux-2-pro/edit',
-    displayPrice: '~$0.06/img',
-    useCase: 'Best photorealism — hero shots',
-  },
   // Kling - verified models
   {
     id: 'fal-ai/kling-image/v3/text-to-image',
@@ -237,12 +227,6 @@ export const EDIT_MODELS: Array<EditModel> = [
     name: 'Nano Banana 2',
     description: 'Reasoning-guided edits',
     maxRefImages: 3,
-  },
-  {
-    id: 'fal-ai/flux-2-pro/edit',
-    name: 'FLUX.2 Pro Edit',
-    description: 'Best photorealism edits',
-    maxRefImages: 9,
   },
   {
     id: 'fal-ai/bytedance/seedream/v4/edit',

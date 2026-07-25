@@ -10,10 +10,10 @@ export interface FalModelSchema {
   imageSizeEnumValues?: Array<string>
   aspectRatioEnumValues?: Array<string>
   /**
-   * These two are INDEPENDENT, not alternatives. FLUX.2 Pro exposes both: a
+   * These two are INDEPENDENT, not alternatives. Some FAL models expose both a
    * `safety_tolerance` scale *and* a separate boolean content checker that is
-   * on by default. Treating them as either/or left the checker enabled and
-   * rejected prompts as innocuous as "cat in a hat".
+   * on by default. Treating them as either/or left the checker enabled even
+   * when asking for permissive, silently blocking benign prompts.
    */
   safetyToleranceMax: string | null
   hasSafetyChecker: boolean

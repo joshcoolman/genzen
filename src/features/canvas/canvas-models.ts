@@ -22,10 +22,9 @@ import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
  * so it's deferred to a deliberate follow-up.
  */
 const CURATED_CANVAS_MODEL_IDS: Array<string> = [
-  'fal-ai/nano-banana-2', // trusted; reasoning-guided, direct Google route
+  'fal-ai/nano-banana-2', // trusted; reasoning-guided
   'fal-ai/gpt-image-2', // trusted; premium OpenAI
   'fal-ai/gpt-image-1.5', // trusted; OpenAI quality
-  'fal-ai/flux-2-pro', // best photorealism, supports reference images
   'fal-ai/bytedance/seedream/v4.5/text-to-image', // multi-image reference realism
   'fal-ai/flux-pro/kontext/text-to-image', // trusted; pro img2img refinement
 ]
@@ -49,7 +48,7 @@ export const CANVAS_DEFAULT_MODEL = CANVAS_MODELS[0]?.id ?? ''
  * image is an equal reference and the model's `maxRefImages` is the hard cap.
  */
 export interface CanvasEditModel {
-  /** Edit endpoint id (e.g. `fal-ai/flux-2-pro/edit`) — what gets submitted. */
+  /** Edit endpoint id (e.g. `fal-ai/nano-banana-2/edit`) — what gets submitted. */
   id: string
   /** Display name (the base model's name). */
   name: string

@@ -72,7 +72,7 @@ Required/Optional and is now purely a deploy reference. Setup is: `pnpm install`
 `pnpm local:up`, answer one question, `pnpm dev`.
 
 **Generation confirmed working end to end** with a real key — #167 has no gaps
-left. All 8 models generate. Two follow-ups landed:
+left. Removed FLUX.2 Pro from the registry entirely (Josh doesn't want it). Two follow-ups landed:
 
 - **Nano Banana 2 no longer goes direct to Google.** Its registry entry carried
   `provider: 'google'` (to reach Vertex at ~half FAL's price) despite already
@@ -83,7 +83,7 @@ left. All 8 models generate. Two follow-ups landed:
   are **dead code** — delete in #169. Bonus: canvas `canRetryFailure()` now allows
   retrying Nano Banana failures, previously dismiss-only.
 - **Safety params were an either/or bug.** `fal-schema.server.ts` picked
-  `safety_tolerance` *or* `enable_safety_checker`; FLUX.2 Pro exposes **both**, so
+  `safety_tolerance` _or_ `enable_safety_checker`; FLUX.2 Pro exposes **both**, so
   the boolean checker stayed at its default `true`. Now detected and applied
   independently.
 
