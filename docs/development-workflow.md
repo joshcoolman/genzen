@@ -27,7 +27,7 @@ All work is tracked on the <a href="https://github.com/users/joshcoolman-smc/pro
 
 ## Branch naming
 
-- Features: `feat/<issue>-description` (e.g. `feat/38-harden-credits`)
+- Features: `feat/<issue>-description` (e.g. `feat/169-drop-stripe`)
 - Fixes: `fix/<issue>-description`
 - Chores: `chore/<description>`
 
@@ -50,7 +50,6 @@ Large initiatives get an `epic` label and a checklist of sub-issues. The epic is
 
 ## Milestones
 
-- **Milestone 1 (dogfooding):** Be able to sign up, buy credits via Stripe, and use the app as a paying customer
-- **Milestone 2 (launch):** A stranger can find, trust, and pay for the product
-
-See `docs/research/critical-path.md` for strategic context.
+Retired. genzen is a personal tool, not a product — there is nothing to launch
+and no one to sell to. `docs/research/` keeps the earlier SaaS thinking as a
+record of what was considered, not as a plan.

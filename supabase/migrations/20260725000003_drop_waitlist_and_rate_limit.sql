@@ -10,6 +10,18 @@ DROP FUNCTION IF EXISTS check_rate_limit(uuid, integer, integer);
 
 ALTER TABLE user_profiles DROP COLUMN IF EXISTS rate_window_start;
 ALTER TABLE user_profiles DROP COLUMN IF EXISTS rate_window_count;
+
+-- The update policy's WITH CHECK existed for exactly one reason: stop a user
+-- promoting themselves off the waitlist by writing their own `account_status`.
+-- Dropping the column would take the policy with it under CASCADE, so replace
+-- the clause first with the guard that still means something — you may only
+-- write a row that stays yours.
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+CREATE POLICY "Users can update own profile" ON user_profiles
+  FOR UPDATE
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+
 ALTER TABLE user_profiles DROP COLUMN IF EXISTS account_status;
 
 DROP TYPE IF EXISTS account_status;
