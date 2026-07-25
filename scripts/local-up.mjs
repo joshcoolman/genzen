@@ -2,8 +2,9 @@
 // Supabase CLI stack, a populated `.env.local`, and a seeded user to log in
 // as. Idempotent -- run it as often as you like.
 //
-//   pnpm local:up            start everything, leave existing data alone
+//   pnpm local:up            start everything, then run the dev server
 //   pnpm local:up --reset    additionally re-run `supabase db reset`
+//   pnpm local:up --no-dev   set up only; don't start the dev server
 //
 // The only values you have to supply are your provider keys (FAL, then
 // Anthropic), and this script asks you for each one it does not already have --
@@ -16,10 +17,15 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
+import { connect } from 'node:net'
 
 const ROOT = new URL('../', import.meta.url)
 const ENV_LOCAL = new URL('.env.local', ROOT)
 const FORCE_RESET = process.argv.includes('--reset')
+const SKIP_DEV = process.argv.includes('--no-dev')
+/** Mirrors the `dev` script in package.json. */
+const DEV_PORT = 3000
+const DEV_URL = `http://localhost:${DEV_PORT}/`
 
 /**
  * The local stack, in full. MinIO is on 9010/9011 rather than its defaults so
@@ -69,6 +75,44 @@ function upsert(text, key, value) {
 
 function read(key, text) {
   return (text.match(new RegExp(`^${key}=(.*)$`, 'm')) ?? [])[1]?.trim()
+}
+
+/** Is anything listening on this host:port? A plain TCP probe -- no HTTP. */
+function hostPortInUse(host, port) {
+  return new Promise((resolve) => {
+    const socket = connect({ port, host })
+    const settle = (result) => {
+      socket.destroy()
+      resolve(result)
+    }
+    socket.setTimeout(500)
+    socket.once('connect', () => settle(true))
+    socket.once('timeout', () => settle(false))
+    socket.once('error', () => settle(false))
+  })
+}
+
+/**
+ * Vite binds `localhost`, which resolves to ::1 before 127.0.0.1 on macOS -- so
+ * probing only IPv4 can miss a server that is very much running, and we'd start
+ * a second one. Check both.
+ */
+async function portInUse(port) {
+  const results = await Promise.all([
+    hostPortInUse('127.0.0.1', port),
+    hostPortInUse('::1', port),
+  ])
+  return results.some(Boolean)
+}
+
+function openBrowser(url) {
+  const opener =
+    process.platform === 'darwin'
+      ? ['open', [url]]
+      : process.platform === 'win32'
+        ? ['cmd', ['/c', 'start', '', url]]
+        : ['xdg-open', [url]]
+  spawnSync(opener[0], opener[1], { stdio: 'ignore' })
 }
 
 // 1. Docker preflight, so a stopped daemon reads as a sentence rather than an
@@ -234,8 +278,29 @@ Get one at ${key.where} (leave blank to skip -- you can re-run
 
 console.log(`
 Ready.
-  pnpm dev                 http://localhost:3000
+  app                      ${DEV_URL}
   sign in as               testuser@gmail.com / supa!1QAwsEDrf
   MinIO console            http://localhost:9011 (genzenlocal / genzenlocal)
   Supabase Studio          http://localhost:54323
 `)
+
+// 8. Hand back a running app rather than an instruction to start one. If a dev
+//    server is already up on the port, don't start a second one -- just open it.
+if (SKIP_DEV) {
+  console.log('--no-dev: skipping the dev server. Start it with `pnpm dev`.')
+} else if (await portInUse(DEV_PORT)) {
+  // A TCP probe can't tell genzen's dev server from anything else on :3000, so
+  // say which port is being reused rather than claiming it's ours.
+  console.log(`Something is already serving :${DEV_PORT} -- opening it.`)
+  openBrowser(DEV_URL)
+} else {
+  console.log('> starting dev server (ctrl-c to stop)\n')
+  // `--open` is Vite's own once-it's-listening browser launch, which beats
+  // polling the port ourselves and racing the first successful response.
+  const dev = spawnSync('pnpm', ['dev', '--open'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+  })
+  // Ctrl-C arrives as a signal, not a failure -- exiting 1 on it would be a lie.
+  process.exit(dev.signal ? 0 : (dev.status ?? 0))
+}

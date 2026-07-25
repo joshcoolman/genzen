@@ -17,7 +17,7 @@ history holds the past. See `continue/README.md` for the convention.
 2. **The error was invisible.** `use-generator` called `setError(message)` — and
    the AI Images page never rendered `error` anywhere. The click did nothing at
    all, silently. (Generate-submit failures were equally invisible; only the
-   reserved failed *card* made those visible.)
+   reserved failed _card_ made those visible.)
 
 Fixes:
 
@@ -50,6 +50,14 @@ entry is flagged "strongly recommended" with what it unlocks. Added a **Supabase
 CLI preflight**: it's a global tool, not an npm dependency, so a fresh machine
 previously failed with the unhelpful `Failed: supabase start`.
 
+**`local:up` now hands back a running app.** It finishes by checking whether
+anything is already serving :3000 — if so it just opens the browser there, and
+if not it starts `pnpm dev --open` in the foreground (Ctrl-C stops it; a signal
+exit is reported as 0, not a failure). `--no-dev` skips that. The port probe
+checks **both** 127.0.0.1 and ::1: Vite binds `localhost`, which resolves to ::1
+first on macOS, so an IPv4-only probe misses a running server and starts a
+second one. Verified against a stub bound to `[::1]:3000`.
+
 **No marketing homepage.** `/` now redirects — signed in → `/dashboard`, else →
 `/login`. Done in the component, not `beforeLoad`: auth lives in localStorage, and
 a route's `beforeLoad` does not re-run after the server already matched it, so a
@@ -65,6 +73,10 @@ mid-session, Enhance expanded a prompt for real; `/` redirects both ways.
   rescope leaves — Workstream 1 shrinks to near-nothing, Workstream 3 is
   untouched). Note #168 also removes the Supabase-CLI prerequisite from local
   setup, since plain Postgres in docker needs no global tool.
+- **There is no create-user script.** The only user is the one `supabase/seed.sql`
+  inserts (`testuser@gmail.com`). Provisioning arrives with **#168 Workstream 2**,
+  which ports bootsy's `scripts/create-user.mjs` + `hash-lib.mjs` as part of
+  replacing Supabase auth with scrypt + a signed cookie. Nothing to add before then.
 - Replace the dead key in `~/.secrets.zsh` (still shadows `.env.local`; `local:up`
   warns).
 - Note: two dev servers in this repo fight over `routeTree.gen.ts` and cause a
