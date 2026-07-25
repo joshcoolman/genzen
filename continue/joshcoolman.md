@@ -21,7 +21,7 @@ Order of work (each its own commit, `pnpm check && pnpm test && pnpm build` firs
 4. ✅ Finish reserve-then-fail on the last 3 generate paths
 5. ✅ Activity: make the FAL cost actually get written on all 5 paths
    (the column collapse itself landed early, forced by step 3)
-6. ⬜ Drop `DOCS_PASSWORD` + 4 dead env vars
+6. ✅ Drop `DOCS_PASSWORD` + 4 dead env vars
 7. ⬜ Pare the README to "how to run this locally"
 
 **Step 1 done.** The Google/Vertex path went unreachable in 3c085f0 when
@@ -131,6 +131,18 @@ pills, the status badges, `normalize-generation`'s `VALID_STATUSES`, and the
 polling predicates in `use-images` / `use-activity-page`. Narrowing the union
 made ESLint flag the dead branches for me. `deriveProvider` lost its
 Google/OpenAI cases — FAL is the only thing that can appear.
+
+**Step 6 done.** `/docs` is open — `verifyDocsPassword`, the password form, the
+`docs-password` localStorage round-trip and `DOCS_PASSWORD` are gone (the gate
+already failed open when unset, so it protected nothing anyone couldn't get past
+by not setting it). Dropped `OPENAI_API_KEY` and `GOOGLE_APPLICATION_CREDENTIALS`
+(zero references), and `OPENROUTER_API_KEY` + `XAI_API_KEY` along with
+`fastTextModels`, which had no consumer in `src/`. That left `@ai-sdk/xai` and
+`@ai-sdk/openai-compatible` unimported, so they went too. `ai.server.ts` is now
+three models and three roles.
+
+Required env is down to **`FAL_KEY`** plus Supabase/S3 wiring, with
+`ANTHROPIC_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY` optional.
 
 **Session (2026-07-25) — direction changed: local-first, in place. #167 is DONE.**
 

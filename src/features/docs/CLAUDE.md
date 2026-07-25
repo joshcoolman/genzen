@@ -22,7 +22,6 @@ Presentation components for the documentation section. Content loading and types
 
 ## Quirks / Notes
 
-- Docs route is password-protected via `verifyDocsPassword()` with localStorage persistence
 - Mobile-responsive: sidebar and content toggle via menu/read mode on small screens
 - This feature only contains display components; doc loading and parsing is in `@/lib/docs/`
 - HTML content is injected raw -- docs are trusted (markdown pre-rendered server-side)

@@ -30,11 +30,9 @@ than assume it's there.
 
 - **Anthropic** (`ANTHROPIC_API_KEY`) — Claude. Server-side AND browser-stored BYOK for the AD panel (`useAnthropicKey`); either path is available.
 - **Google Gemini** (`GOOGLE_GENERATIVE_AI_API_KEY`) — vision only (Describe/Caption/shot lists) via `@ai-sdk/google`. There is no Google image-generation path; FAL is the only image provider.
-- **OpenAI** (`OPENAI_API_KEY`), **OpenRouter** (`OPENROUTER_API_KEY`), **xAI** (`XAI_API_KEY`) — available via `src/lib/text-models.ts` model registry / `@ai-sdk/*` providers.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Supabase** (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_*`) — auth, Postgres, RLS. Anon key client-side, service role server-side only.
 - **S3 storage** (`R2_*`, `VITE_R2_PUBLIC_URL`) — image/asset storage. Public URLs are persistent (no expiry). The `R2_` prefix is historical: `src/lib/image-storage.ts` is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, Cloudflare R2 in prod (derived from `R2_ACCOUNT_ID` when `R2_ENDPOINT` is unset).
-- **Docs password** (`DOCS_PASSWORD`) — gate for the internal `/docs` route.
 
 ## Features
 
@@ -45,7 +43,7 @@ than assume it's there.
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | api-keys    | Personal API key management for MCP access                     | `src/features/api-keys/CLAUDE.md`    |
 | canvas      | Image canvas editor                                            | `src/features/canvas/CLAUDE.md`      |
-| docs        | Internal docs route (password-gated)                           | `src/features/docs/CLAUDE.md`        |
+| docs        | Internal docs route                                            | `src/features/docs/CLAUDE.md`        |
 | mcp         | MCP server for external Claude clients via API keys            | `src/features/mcp/CLAUDE.md`         |
 | spotlight   | Spotlight search / command palette                             | `src/features/spotlight/CLAUDE.md`   |
 | status-bar  | Bottom status bar with AD (chat) toggle                        | `src/features/status-bar/CLAUDE.md`  |
