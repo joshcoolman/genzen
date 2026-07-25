@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { requireAuth } from '@/lib/server/auth.server'
-import { ai } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '@/lib/server/ai.server'
 
 interface DescribeImageJsonInput {
   accessToken: string
@@ -31,6 +31,7 @@ const imageSchema = z.object({
 export const describeImageJson = createServerFn({ method: 'POST' })
   .inputValidator((data: DescribeImageJsonInput) => data)
   .handler(async ({ data }) => {
+    requireAiRole('vision')
     await requireAuth(data.accessToken)
 
     const imageRes = await fetch(data.imageUrl)

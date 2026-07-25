@@ -1,5 +1,5 @@
 import { generateText } from 'ai'
-import { ai } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '@/lib/server/ai.server'
 
 const ANCHOR_PROMPT = `You are an image description engine for an image-to-image generation pipeline. The generative model will receive both your description and the source image. Your job is to anchor the generation, not reconstruct the image from text.
 
@@ -39,6 +39,12 @@ export async function describeImage(
   image: string,
   mode: 'anchor' | 'reconstruct',
 ): Promise<string> {
+  // Guarding here rather than at each caller is deliberate: `caption-image`
+  // is user-initiated and should surface the missing key, while
+  // `generate-image-internal` already wraps this in a try/catch and falls back
+  // to a placeholder prompt — exactly the right behaviour in each case.
+  requireAiRole('fast')
+
   // Normalize input to base64 + mime
   let base64: string
   let mime = 'image/jpeg'

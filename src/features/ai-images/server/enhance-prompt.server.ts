@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { generateText } from 'ai'
-import { ai } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '@/lib/server/ai.server'
 import { requireAuth } from '@/lib/server/auth.server'
 import { getSkill } from '@/features/ad/skills/registry'
 
@@ -13,6 +13,7 @@ export const enhancePrompt = createServerFn({ method: 'POST' })
   .inputValidator((data: EnhancePromptInput) => data)
   .handler(async ({ data }) => {
     await requireAuth(data.accessToken)
+    requireAiRole('reasoning')
 
     const trimmed = data.prompt.trim()
     if (!trimmed) {

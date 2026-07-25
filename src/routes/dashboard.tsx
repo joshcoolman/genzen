@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { MissingKeyProvider } from '@/components/MissingKeyDialog'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { useDashboardRouteMemory } from '@/lib/use-dashboard-route-memory'
@@ -40,8 +41,10 @@ function DashboardLayoutRoute() {
   }
 
   return (
-    <DashboardLayout>
-      <Outlet />
-    </DashboardLayout>
+    <MissingKeyProvider>
+      <DashboardLayout>
+        <Outlet />
+      </DashboardLayout>
+    </MissingKeyProvider>
   )
 }

@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
-import { models } from '@/lib/server/ai.server'
+import { models, requireAiKey } from '@/lib/server/ai.server'
 import { SHOT_LIST_SYSTEM, shotListUserContent } from '@/lib/prompts/shot-list'
 
 interface GenerateShotListInput {
@@ -14,6 +14,7 @@ interface GenerateShotListInput {
 export const generateShotList = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateShotListInput) => data)
   .handler(async ({ data }) => {
+    requireAiKey('anthropic')
     await requireAuth(data.accessToken)
 
     const count = Math.min(data.count ?? 6, 12)

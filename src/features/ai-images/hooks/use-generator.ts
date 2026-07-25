@@ -3,6 +3,7 @@ import { generateImage } from '@/features/ai-images/server/generate-image.server
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
 import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
+import { useReportError } from '@/components/MissingKeyDialog'
 import {
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,
@@ -115,6 +116,11 @@ export function useGenerator({
   sourceClient,
   promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
+  // Surfaces failures the user can act on: a missing provider key opens the
+  // key dialog, anything else toasts. `setError` alone was not enough — the AI
+  // Images page never rendered it, so enhance failures vanished entirely.
+  const reportError = useReportError()
+
   // Read the latest prefix at submit time without re-creating handleGenerate.
   const promptPrefixRef = useRef(promptPrefix ?? '')
   promptPrefixRef.current = promptPrefix ?? ''
@@ -377,13 +383,16 @@ export function useGenerator({
         throw firstError.reason
       }
     } catch (err) {
-      setError(
+      const message =
         err instanceof Error
           ? err.message
           : typeof err === 'string'
             ? err
-            : String(err),
-      )
+            : String(err)
+      // Keep page-level state (the AD context reads it) but also make sure the
+      // user actually sees it.
+      setError(message)
+      reportError(err, message)
     } finally {
       setLoading(false)
     }
@@ -474,7 +483,7 @@ export function useGenerator({
       if (!accessToken || enhancingPromptIndex !== null) return
       const current = prompts[index]?.trim()
       if (!current) {
-        setError('Enter a prompt before enhancing.')
+        reportError('Enter a prompt before enhancing.')
         return
       }
       setEnhancingPromptIndex(index)
@@ -489,14 +498,12 @@ export function useGenerator({
           return next
         })
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Failed to enhance prompt'
-        setError(message)
+        reportError(err, 'Failed to enhance prompt')
       } finally {
         setEnhancingPromptIndex(null)
       }
     },
-    [accessToken, enhancingPromptIndex, prompts, setError],
+    [accessToken, enhancingPromptIndex, prompts, reportError],
   )
 
   const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {

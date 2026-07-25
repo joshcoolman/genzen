@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { buildFalInput } from './fal-params.server'
 import { requireAuth } from '@/lib/server/auth.server'
-import { ai } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '@/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
@@ -42,6 +42,11 @@ export const generateVariation = createServerFn({ method: 'POST' })
     if (!prompt.trim()) {
       throw new Error('Prompt is required')
     }
+
+    // Checked up front, unlike FAL_KEY: without it the Claude call that writes
+    // every varied prompt cannot run, so there is no work to reserve a row for.
+    // Failing here shows one dialog instead of N identical failed cards.
+    requireAiRole('reasoning')
 
     // NOTE: the FAL_KEY check deliberately does NOT live here — see the note in
     // edit-image-internal.server.ts. It runs inside the reserved-row try block.

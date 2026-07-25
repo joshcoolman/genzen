@@ -14,6 +14,8 @@ import { editImage } from '@/features/ai-images/server/edit-image.server'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
+import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
+import { useReportError } from '@/components/MissingKeyDialog'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 import {
   detectAspectRatio,
@@ -30,6 +32,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const accessToken = session?.access_token
 
   const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
+  const reportError = useReportError()
 
   const [error, setError] = useState<string | null>(null)
   const [_adoptingImage, setAdoptingImage] = useState(false)
@@ -237,6 +240,10 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     },
     [maxRefImages],
   )
+
+  const replaceRefImages = useCallback((images: Array<RefImage>) => {
+    setRefImages(images)
+  }, [])
 
   const removeRefImage = useCallback((id: string) => {
     setRefImages((prev) => prev.filter((img) => img.id !== id))
@@ -764,6 +771,36 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     chainImages,
   ])
 
+  // Prompt enhancement. This page previously supplied no handler at all, so
+  // GeneratorPanel hid the Enhance button entirely — the feature was simply
+  // absent here rather than broken.
+  const [enhancingPromptIndex, setEnhancingPromptIndex] = useState<
+    number | null
+  >(null)
+
+  const handleEnhancePrompt = useCallback(
+    async (index: number) => {
+      if (!accessToken || enhancingPromptIndex !== null) return
+      const current = prompts[index]?.trim()
+      if (!current) {
+        reportError('Enter a prompt before enhancing.')
+        return
+      }
+      setEnhancingPromptIndex(index)
+      try {
+        const { enhancedPrompt } = await enhancePrompt({
+          data: { accessToken, prompt: current },
+        })
+        setPromptAtIndex(index, enhancedPrompt)
+      } catch (err) {
+        reportError(err, 'Failed to enhance prompt')
+      } finally {
+        setEnhancingPromptIndex(null)
+      }
+    },
+    [accessToken, enhancingPromptIndex, prompts, setPromptAtIndex, reportError],
+  )
+
   // GeneratorState adapter - makes this hook's state compatible with GeneratorPanel
   const generator: GeneratorState = {
     prompt,
@@ -886,9 +923,12 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     },
     refImages: effectiveRefImages,
     addRefImages,
+    replaceRefImages,
     removeRefImage,
     maxRefImages,
     setAutoRefImageIds: () => {},
+    enhancingPromptIndex,
+    handleEnhancePrompt,
   }
 
   return {

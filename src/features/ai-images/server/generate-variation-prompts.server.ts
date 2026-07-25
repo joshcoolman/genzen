@@ -3,7 +3,7 @@ import { fal } from '@fal-ai/client'
 import { createClient } from '@supabase/supabase-js'
 import { generateText } from 'ai'
 import { requireAuth } from '@/lib/server/auth.server'
-import { ai } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '@/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
@@ -24,6 +24,7 @@ interface GenerateVariationPromptsInput {
 export const generateVariationPrompts = createServerFn({ method: 'POST' })
   .inputValidator((data: GenerateVariationPromptsInput) => data)
   .handler(async ({ data }) => {
+    requireAiRole('reasoning')
     const user = await requireAuth(data.accessToken)
     const { prompt, sourceImageId } = data
     const count = Math.min(data.count, 4)
