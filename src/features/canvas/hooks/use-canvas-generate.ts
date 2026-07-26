@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
 import { canvasModelIdsForRefCount } from '../canvas-models'
@@ -59,9 +61,8 @@ export function useCanvasGenerate(
   revealBounds: (b: Rect) => void,
   groupImages: (imageIds: Array<string>, columns: number) => void,
 ) {
-  const { session, user } = useAuth()
-  const accessToken = session?.access_token
-  const userImages = useUserImages(user?.id)
+  const { user } = useAuth()
+  const userImages = useUserImages(user.id)
 
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -135,9 +136,7 @@ export function useCanvasGenerate(
           return
         }
 
-        await checkPendingGenerations({
-          data: { accessToken: accessToken! },
-        }).catch(() => {})
+        await checkPendingGenerations().catch(() => {})
 
         for (const recordId of [...pending]) {
           const { data: record } = await supabase
@@ -218,7 +217,7 @@ export function useCanvasGenerate(
         setTimeout(poll, 3000)
       }
     },
-    [accessToken, setImages],
+    [setImages],
   )
 
   // Map each ordered submit outcome (outcomes[i] ↔ placeholderIds[i]) to its
@@ -312,7 +311,7 @@ export function useCanvasGenerate(
   const retryFailed = useCallback(
     async (canvasImageId: string) => {
       const img = getImages().find((ci) => ci.id === canvasImageId)
-      if (!img || !accessToken || !canRetryFailure(img)) return
+      if (!img || !canRetryFailure(img)) return
       const oldRecordId = img.recordId
 
       setImages((prev) =>
@@ -324,9 +323,7 @@ export function useCanvasGenerate(
       )
 
       try {
-        const { recordId } = await retryGeneration({
-          data: { accessToken, recordId: oldRecordId },
-        })
+        const { recordId } = await retryGeneration({ recordId: oldRecordId })
         setImages((prev) =>
           prev.map((ci) =>
             ci.id === canvasImageId ? { ...ci, recordId } : ci,
@@ -347,11 +344,10 @@ export function useCanvasGenerate(
         )
       }
     },
-    [accessToken, getImages, setImages, startPolling],
+    [getImages, setImages, startPolling],
   )
 
   const generator = useGenerator({
-    accessToken,
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     setError,

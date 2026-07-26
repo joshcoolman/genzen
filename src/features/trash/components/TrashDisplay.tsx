@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import {
   CheckCircle2,
@@ -64,7 +66,7 @@ export function TrashDisplay() {
     restoreMany,
     emptyTrash,
     signFullResUrls,
-  } = useTrash(user?.id)
+  } = useTrash(user.id)
   const [actionId, setActionId] = useState<string | null>(null)
   const [isEmptying, setIsEmptying] = useState(false)
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)

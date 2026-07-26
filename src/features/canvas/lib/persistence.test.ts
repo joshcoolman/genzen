@@ -120,6 +120,7 @@ describe('fetchDeadRecordIds', () => {
           { id: 'a1', deleted_at: null },
           { id: 'a2', deleted_at: '2026-01-01T00:00:00Z' },
         ],
+        error: null,
       }) as unknown as ReturnType<typeof supabase.from>,
     )
 

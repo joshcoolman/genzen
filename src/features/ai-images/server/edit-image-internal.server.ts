@@ -38,10 +38,7 @@ export interface EditImageResult {
 export async function editImageInternal(
   data: EditImageInput,
 ): Promise<EditImageResult> {
-  const { userId, supabase } = await resolveAuth({
-    accessToken: data.accessToken,
-    userId: data.userId,
-  })
+  const { userId, supabase } = await resolveAuth()
 
   const {
     sourceImageId,

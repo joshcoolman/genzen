@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getDefaultSelectedId, getModelsByCapability } from './models'
 import type { ModelCapability, SelectionMode } from './types'

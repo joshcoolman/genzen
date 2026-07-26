@@ -1,4 +1,6 @@
-import { Link } from '@tanstack/react-router'
+'use client'
+
+import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,7 +36,7 @@ export function CircularIconButton({
 
   if (to) {
     return (
-      <Link to={to} className={combinedClasses} title={title}>
+      <Link href={to} className={combinedClasses} title={title}>
         <Icon className="h-4 w-4" />
       </Link>
     )

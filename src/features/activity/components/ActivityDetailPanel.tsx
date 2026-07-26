@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -15,7 +17,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { useAuth } from '@/lib/auth'
 import {
   formatAbsolute,
   formatDurationMs,
@@ -209,22 +210,20 @@ export function ActivityDetailPanel({
   onClose,
   getThumbUrl,
 }: ActivityDetailPanelProps) {
-  const { session } = useAuth()
-  const accessToken = session?.access_token
   const [detail, setDetail] = useState<ActivityEntryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const open = entryId != null
 
   useEffect(() => {
-    if (!entryId || !accessToken) {
+    if (!entryId) {
       setDetail(null)
       return
     }
     let cancelled = false
     setIsLoading(true)
     setError(null)
-    getActivityEntry({ data: { accessToken, id: entryId } })
+    getActivityEntry({ id: entryId })
       .then((result) => {
         if (cancelled) return
         setDetail(result)
@@ -240,7 +239,7 @@ export function ActivityDetailPanel({
     return () => {
       cancelled = true
     }
-  }, [entryId, accessToken])
+  }, [entryId])
 
   const thumbUrl = detail ? getThumbUrl(detail.thumbnailPath) : null
 

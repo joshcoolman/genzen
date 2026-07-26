@@ -1,5 +1,9 @@
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { logout } from '@/features/auth/logout.action'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +21,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { useAuth } from '@/lib/auth'
 import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
 
 import { NavMore } from '@/components/NavMore'
@@ -26,9 +29,7 @@ import { useNavVisibility } from '@/lib/use-nav-visibility'
 import { cn } from '@/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { signOut } = useAuth()
+  const pathname = usePathname()
   const { isCollapsed } = useSidebarCollapsed()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
@@ -43,19 +44,16 @@ export function Sidebar({ className }: { className?: string }) {
 
   const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
-  const handleSignOut = async () => {
-    await signOut()
-    navigate({ to: '/' })
+  const handleSignOut = () => {
+    void logout()
   }
 
   const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
     if (item.href === '/dashboard') {
-      return location.pathname === '/dashboard'
+      return pathname === '/dashboard'
     }
-    if (location.pathname.startsWith(item.href)) return true
-    return (
-      item.matchPaths?.some((p) => location.pathname.startsWith(p)) ?? false
-    )
+    if (pathname.startsWith(item.href)) return true
+    return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
 
   return (
@@ -79,7 +77,7 @@ export function Sidebar({ className }: { className?: string }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link
-                      to={item.href}
+                      href={item.href}
                       className={cn(
                         'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
                         'gap-3',
@@ -126,7 +124,7 @@ export function Sidebar({ className }: { className?: string }) {
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
                 <Link
-                  to={item.href}
+                  href={item.href}
                   className={cn(
                     'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
                     'gap-3',

@@ -1,3 +1,5 @@
+'use client'
+
 import {
   createContext,
   useCallback,
@@ -7,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useLocation } from '@tanstack/react-router'
+import { usePathname } from 'next/navigation'
 import { buildSkillsIndex } from '../skills/registry'
 
 export interface ADContextImage {
@@ -151,8 +153,8 @@ function buildSystemPrompt(
 }
 
 export function ADContextProvider({ children }: { children: React.ReactNode }) {
-  const location = useLocation()
-  const route = location.pathname
+  const pathname = usePathname()
+  const route = pathname
   const [featureContexts, setFeatureContexts] = useState<Map<string, string>>(
     () => new Map(),
   )

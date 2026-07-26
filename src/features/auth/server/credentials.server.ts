@@ -49,6 +49,7 @@ export async function verifyCredentials(
     select id, password_hash from users where email = ${email}
   `
 
-  const isMatch = await matchesHash(password, user?.passwordHash ?? DUMMY_HASH)
-  return isMatch && user ? user.id : null
+  const row = user as { id: string; passwordHash: string } | undefined
+  const isMatch = await matchesHash(password, row?.passwordHash ?? DUMMY_HASH)
+  return isMatch && row ? row.id : null
 }

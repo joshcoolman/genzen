@@ -1,3 +1,5 @@
+'use client'
+
 import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'

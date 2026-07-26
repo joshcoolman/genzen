@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,7 +17,6 @@ interface PromptListProps {
   placeholders?: { first: string; additional: string }
   // Optional: generate prompts capability (loosely coupled)
   generatePromptsConfig?: {
-    accessToken: string
     imageBase64: string
     onApply: (prompts: Array<string>) => void
   }
@@ -173,7 +174,6 @@ export function PromptList({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           onApply={generatePromptsConfig.onApply}
-          accessToken={generatePromptsConfig.accessToken}
           imageBase64={generatePromptsConfig.imageBase64}
         />
       )}

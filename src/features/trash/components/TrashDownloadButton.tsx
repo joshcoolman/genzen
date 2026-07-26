@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import JSZip from 'jszip'

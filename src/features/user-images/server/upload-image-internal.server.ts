@@ -39,10 +39,7 @@ export interface UploadImageInput {
 export async function uploadImageInternal(
   data: UploadImageInput,
 ): Promise<{ storagePath: string }> {
-  const { userId } = await resolveAuth({
-    accessToken: data.accessToken,
-    userId: data.userId,
-  })
+  const { userId } = await resolveAuth()
 
   // Verify the storage path belongs to this user
   if (!data.storagePath.startsWith(`${userId}/`)) {

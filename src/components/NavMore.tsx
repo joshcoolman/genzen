@@ -1,5 +1,7 @@
+'use client'
+
 import { useCallback, useRef, useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import Link from 'next/link'
 import { ChevronRight, SquareLibrary } from 'lucide-react'
 import type { NavItem } from '@/lib/nav-items'
 import {
@@ -98,7 +100,7 @@ export function NavMore({
           {hiddenItems.map((item) => (
             <Link
               key={item.id}
-              to={item.href}
+              href={item.href}
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <item.icon className="h-3.5 w-3.5" />

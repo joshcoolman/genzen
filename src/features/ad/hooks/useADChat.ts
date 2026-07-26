@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useRef, useState } from 'react'
 import { useADContext } from '../context/ad-context'
 import { getSkill } from '../skills/registry'

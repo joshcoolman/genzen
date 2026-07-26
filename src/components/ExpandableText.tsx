@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { CirclePlus } from 'lucide-react'
 import { CopyButton } from './CopyButton'

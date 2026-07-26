@@ -63,8 +63,8 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Routes
 
-- `src/routes/dashboard/ai-images.tsx` -- main gallery + generation page
-- `src/routes/dashboard/edit.$imageId.tsx` -- dedicated edit page for a single image
+- `app/dashboard/ai-images/page.tsx` -- main gallery + generation page
+- `app/dashboard/edit.$imageId.tsx` -- dedicated edit page for a single image
 
 ## Shared Dependencies
 

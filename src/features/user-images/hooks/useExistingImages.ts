@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '../types'
 import { supabase } from '@/lib/supabase'

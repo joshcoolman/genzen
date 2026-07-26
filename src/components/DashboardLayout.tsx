@@ -1,4 +1,6 @@
-import { useLocation } from '@tanstack/react-router'
+'use client'
+
+import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { ADPanel } from '@/features/ad/components/ADPanel'
@@ -8,12 +10,12 @@ import { cn } from '@/lib/utils'
 import { StatusBar } from '@/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const location = useLocation()
+  const pathname = usePathname()
   const { isOpen: isADOpen } = useADOpen()
 
   // Pages with fixed sidebars manage their own AD push-in margins
-  const isEditPage = location.pathname.startsWith('/dashboard/edit/')
-  const isAiImagesPage = location.pathname === '/dashboard/ai-images'
+  const isEditPage = pathname.startsWith('/dashboard/edit/')
+  const isAiImagesPage = pathname === '/dashboard/ai-images'
   const hasOwnSidebar = isEditPage || isAiImagesPage
 
   return (

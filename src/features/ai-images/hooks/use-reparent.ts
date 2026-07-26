@@ -1,13 +1,14 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
 
 interface UseReparentOptions {
-  accessToken: string | undefined
   onComplete: () => void
 }
 
-export function useReparent({ accessToken, onComplete }: UseReparentOptions) {
+export function useReparent({ onComplete }: UseReparentOptions) {
   const [adoptTarget, setAdoptTarget] = useState<SavedAiImage | null>(null)
   const [isReparenting, setIsReparenting] = useState(false)
 
@@ -21,16 +22,13 @@ export function useReparent({ accessToken, onComplete }: UseReparentOptions) {
 
   const confirmAdopt = useCallback(
     async (newParentId: string) => {
-      if (!accessToken || !adoptTarget) return
+      if (!adoptTarget) return
       setIsReparenting(true)
       try {
         await reparentImage({
-          data: {
-            accessToken,
-            imageId: adoptTarget.id,
-            action: 'adopt',
-            newParentId,
-          },
+          imageId: adoptTarget.id,
+          action: 'adopt',
+          newParentId,
         })
         setAdoptTarget(null)
         onComplete()
@@ -40,21 +38,14 @@ export function useReparent({ accessToken, onComplete }: UseReparentOptions) {
         setIsReparenting(false)
       }
     },
-    [accessToken, adoptTarget, onComplete],
+    [adoptTarget, onComplete],
   )
 
   const detach = useCallback(
     async (imageId: string) => {
-      if (!accessToken) return
       setIsReparenting(true)
       try {
-        await reparentImage({
-          data: {
-            accessToken,
-            imageId,
-            action: 'detach',
-          },
-        })
+        await reparentImage({ imageId, action: 'detach' })
         onComplete()
       } catch (err) {
         console.error('Detach failed:', err)
@@ -62,7 +53,7 @@ export function useReparent({ accessToken, onComplete }: UseReparentOptions) {
         setIsReparenting(false)
       }
     },
-    [accessToken, onComplete],
+    [onComplete],
   )
 
   return {

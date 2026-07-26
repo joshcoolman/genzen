@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Key } from 'lucide-react'
 import { useAnthropicKey } from '../hooks/useAnthropicKey'

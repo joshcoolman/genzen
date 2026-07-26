@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Check, Copy, RotateCcw } from 'lucide-react'
 import type { SavedAiImage } from '@/features/ai-images/types'

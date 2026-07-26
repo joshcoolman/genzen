@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useMemo, useState } from 'react'
 
 import type { SavedAiImage } from '@/features/ai-images/types'
@@ -13,15 +15,13 @@ import { useUserImages } from '@/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '@/features/ai-images/hooks/use-describe-json'
 
 export function useAiImagesPage() {
-  const { user, session } = useAuth()
-  const accessToken = session?.access_token
+  const { user } = useAuth()
 
   const gallery = useImages({
-    userId: user?.id,
-    accessToken,
+    userId: user.id,
   })
 
-  const userImages = useUserImages(user?.id)
+  const userImages = useUserImages(user.id)
 
   const modelSelector = useModelSelector({
     capability: 'sidebar',
@@ -31,7 +31,6 @@ export function useAiImagesPage() {
   const [error, setError] = useState<string | null>(null)
 
   const generator = useGenerator({
-    accessToken,
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     setError,
@@ -46,11 +45,10 @@ export function useAiImagesPage() {
     [completedImages],
   )
 
-  const editChildren = useEditChildren(parentIds, user?.id)
+  const editChildren = useEditChildren(parentIds, user.id)
   const editChildrenMap = editChildren.map
 
   const reparent = useReparent({
-    accessToken,
     onComplete: async () => {
       await gallery.refresh()
       editChildren.refresh()
@@ -63,15 +61,11 @@ export function useAiImagesPage() {
     editChildrenMap,
   )
 
-  const variations = useVariations({
-    accessToken,
-    setError,
-  })
+  const variations = useVariations({ setError })
 
   // Describe JSON for the generator's source image -- appends to prompt
   const sourceImageUrl = generator.sourceImage?.base64
   const describe = useDescribeJson({
-    accessToken,
     imageUrl: sourceImageUrl,
     onResult: useCallback(
       (json: string) => {
@@ -95,8 +89,7 @@ export function useAiImagesPage() {
   }
 
   return {
-    userId: user?.id,
-    accessToken,
+    userId: user.id,
     gallery,
     userImages,
     modelSelector,

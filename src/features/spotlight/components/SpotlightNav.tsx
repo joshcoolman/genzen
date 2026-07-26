@@ -1,8 +1,9 @@
+'use client'
+
 import { useCallback, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useRouter } from 'next/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { getSpotlightItems } from '../lib/spotlight-items'
-import { useAuth } from '@/lib/auth'
 import {
   CommandDialog,
   CommandEmpty,
@@ -12,9 +13,8 @@ import {
 } from '@/components/ui/command'
 
 export function SpotlightNav() {
-  const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const toggle = useCallback(() => {
     setOpen((prev) => !prev)
@@ -26,10 +26,8 @@ export function SpotlightNav() {
       e.preventDefault()
       toggle()
     },
-    { enabled: !!user },
+    { enabled: true },
   )
-
-  if (!user) return null
 
   const items = getSpotlightItems()
 
@@ -49,7 +47,7 @@ export function SpotlightNav() {
             key={item.id}
             value={item.label}
             onSelect={() => {
-              navigate({ to: item.href })
+              router.push(item.href)
               setOpen(false)
             }}
           >

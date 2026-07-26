@@ -1,10 +1,11 @@
+'use client'
+
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Image as ImageIcon } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import Link from 'next/link'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry } from '../types'
 import { formatDurationMs, formatRelativeOrDate } from '@/lib/time-format'
-import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 const PREVIEW_SIZE = 5
@@ -19,18 +20,11 @@ function formatCents(cents: number | null, isEstimate = false): string {
 }
 
 export function ActivityPreview() {
-  const { session } = useAuth()
-  const accessToken = session?.access_token
-
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [isLoading, setIsLoading] = useState(true)
 
   const getThumbUrl = useMemo(() => {
-    const base =
-      (import.meta.env.VITE_R2_PUBLIC_URL as string | undefined)?.replace(
-        /\/$/,
-        '',
-      ) ?? ''
+    const base = process.env.VITE_R2_PUBLIC_URL?.replace(/\/$/, '') ?? ''
     return (path: string | null): string | null => {
       if (!base || !path) return null
       return `${base}/${path}`
@@ -38,10 +32,9 @@ export function ActivityPreview() {
   }, [])
 
   useEffect(() => {
-    if (!accessToken) return
     let cancelled = false
     setIsLoading(true)
-    listActivity({ data: { accessToken, page: 0, pageSize: PREVIEW_SIZE } })
+    listActivity({ page: 0, pageSize: PREVIEW_SIZE })
       .then((r) => {
         if (cancelled) return
         setEntries(r.entries)
@@ -57,14 +50,14 @@ export function ActivityPreview() {
     return () => {
       cancelled = true
     }
-  }, [accessToken])
+  }, [])
 
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="flex items-center justify-between border-b border-border px-6 py-4">
         <h3 className="font-medium">Recent activity</h3>
         <Link
-          to="/dashboard/activity"
+          href="/dashboard/activity"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           View all

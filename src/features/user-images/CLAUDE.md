@@ -27,7 +27,7 @@ Manage user-uploaded and AI-generated images with Supabase storage and RLS.
 
 ## Route
 
-No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useImageUpload`, `useExistingImages`), upload/remove/thumbnail server functions, and pickers are consumed by other features (ai-images, canvas, the AD image picker).
+No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useImageUpload`, `useExistingImages`), upload/remove/thumbnail server actions, and pickers are consumed by other features (ai-images, canvas, the AD image picker).
 
 ## Shared Dependencies
 
@@ -39,7 +39,7 @@ No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useI
 
 ## Quirks / Notes
 
-- Most CRUD runs client-side with Supabase RLS; upload, remove, and thumbnail generation are server functions
+- Most CRUD runs client-side with Supabase RLS; upload, remove, and thumbnail generation are server actions
 - Delete is soft-delete (sets `deleted_at` timestamp)
 - Storage uses R2 public URLs (no signing/expiry), loaded incrementally per-image
 - Palette generator runs entirely in-browser via Canvas API (no edge function)

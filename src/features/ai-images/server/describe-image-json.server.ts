@@ -1,11 +1,11 @@
-import { createServerFn } from '@tanstack/react-start'
+'use server'
+
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { requireAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '@/lib/server/auth.server'
 import { ai, requireAiRole } from '@/lib/server/ai.server'
 
 interface DescribeImageJsonInput {
-  accessToken: string
   imageUrl: string
   prompt: string
 }
@@ -28,58 +28,56 @@ const imageSchema = z.object({
   ),
 })
 
-export const describeImageJson = createServerFn({ method: 'POST' })
-  .inputValidator((data: DescribeImageJsonInput) => data)
-  .handler(async ({ data }) => {
-    requireAiRole('vision')
-    await requireAuth(data.accessToken)
+export async function describeImageJson(data: DescribeImageJsonInput) {
+  requireAiRole('vision')
+  await resolveAuth()
 
-    const imageRes = await fetch(data.imageUrl)
-    const buffer = await imageRes.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
+  const imageRes = await fetch(data.imageUrl)
+  const buffer = await imageRes.arrayBuffer()
+  const bytes = new Uint8Array(buffer)
 
-    let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
-      'image/jpeg'
-    if (
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47
-    ) {
-      mediaType = 'image/png'
-    } else if (
-      bytes[0] === 0x52 &&
-      bytes[1] === 0x49 &&
-      bytes[2] === 0x46 &&
-      bytes[3] === 0x46
-    ) {
-      mediaType = 'image/webp'
-    }
+  let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
+    'image/jpeg'
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    mediaType = 'image/png'
+  } else if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46
+  ) {
+    mediaType = 'image/webp'
+  }
 
-    const base64 = Buffer.from(buffer).toString('base64')
+  const base64 = Buffer.from(buffer).toString('base64')
 
-    const { object } = await generateObject({
-      model: ai.vision,
-      maxOutputTokens: 4096,
-      system:
-        'You are a precise visual analysis engine. Output coordinates and attributes for image editing.',
-      schema: imageSchema,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              image: `data:${mediaType};base64,${base64}`,
-            },
-            {
-              type: 'text',
-              text: data.prompt,
-            },
-          ],
-        },
-      ],
-    })
-
-    return { json: JSON.stringify(object, null, 2) }
+  const { object } = await generateObject({
+    model: ai.vision,
+    maxOutputTokens: 4096,
+    system:
+      'You are a precise visual analysis engine. Output coordinates and attributes for image editing.',
+    schema: imageSchema,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            image: `data:${mediaType};base64,${base64}`,
+          },
+          {
+            type: 'text',
+            text: data.prompt,
+          },
+        ],
+      },
+    ],
   })
+
+  return { json: JSON.stringify(object, null, 2) }
+}

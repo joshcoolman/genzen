@@ -52,10 +52,7 @@ export interface GenerateImageResult {
 export async function generateImageInternal(
   data: GenerateImageInput,
 ): Promise<GenerateImageResult> {
-  const { userId, supabase } = await resolveAuth({
-    accessToken: data.accessToken,
-    userId: data.userId,
-  })
+  const { userId, supabase } = await resolveAuth()
 
   const {
     prompt,

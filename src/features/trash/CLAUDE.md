@@ -11,7 +11,7 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 
 ## Route
 
-`src/routes/dashboard/trash.tsx`
+`app/dashboard/trash/page.tsx`
 
 ## Shared Dependencies
 

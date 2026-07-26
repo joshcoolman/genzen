@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'

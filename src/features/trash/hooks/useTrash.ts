@@ -1,16 +1,10 @@
+'use client'
+
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '@/features/user-images/types'
 import { removeImages } from '@/features/user-images/server/remove-images.server'
 import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
-
-async function getAccessToken(): Promise<string> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  if (!session?.access_token) throw new Error('No active session')
-  return session.access_token
-}
 
 interface UseTrashReturn {
   images: Array<UserImage>
@@ -263,15 +257,11 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         throw error
       }
 
-      const accessToken = await getAccessToken()
       await removeImages({
-        data: {
-          accessToken,
-          storagePaths: [
-            ...(image.storage_path ? [image.storage_path] : []),
-            ...(image.thumbnail_path ? [image.thumbnail_path] : []),
-          ],
-        },
+        storagePaths: [
+          ...(image.storage_path ? [image.storage_path] : []),
+          ...(image.thumbnail_path ? [image.thumbnail_path] : []),
+        ],
       })
 
       // Cascade cleanup for variations
@@ -307,15 +297,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
               await supabase.from('user_images').delete().eq('id', rootId)
               if (rootImage.storage_path) {
                 await removeImages({
-                  data: {
-                    accessToken,
-                    storagePaths: [
-                      rootImage.storage_path,
-                      ...(rootImage.thumbnail_path
-                        ? [rootImage.thumbnail_path]
-                        : []),
-                    ],
-                  },
+                  storagePaths: [
+                    rootImage.storage_path,
+                    ...(rootImage.thumbnail_path
+                      ? [rootImage.thumbnail_path]
+                      : []),
+                  ],
                 })
               }
             }
@@ -351,9 +338,8 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
         throw error
       }
 
-      const accessToken = await getAccessToken()
       if (storagePaths.length > 0) {
-        await removeImages({ data: { accessToken, storagePaths } })
+        await removeImages({ storagePaths })
       }
 
       // Cascade cleanup for variations
@@ -390,15 +376,12 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
                 await supabase.from('user_images').delete().eq('id', rootId)
                 if (rootImage.storage_path) {
                   await removeImages({
-                    data: {
-                      accessToken,
-                      storagePaths: [
-                        rootImage.storage_path,
-                        ...(rootImage.thumbnail_path
-                          ? [rootImage.thumbnail_path]
-                          : []),
-                      ],
-                    },
+                    storagePaths: [
+                      rootImage.storage_path,
+                      ...(rootImage.thumbnail_path
+                        ? [rootImage.thumbnail_path]
+                        : []),
+                    ],
                   })
                 }
               }
@@ -452,8 +435,7 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     }
 
     if (storagePaths.length > 0) {
-      const accessToken = await getAccessToken()
-      await removeImages({ data: { accessToken, storagePaths } })
+      await removeImages({ storagePaths })
     }
   }, [images, fetchTrashed, linkedImageIds])
 

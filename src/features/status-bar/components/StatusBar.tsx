@@ -1,13 +1,9 @@
 import { MessageSquare } from 'lucide-react'
-import { useAuth } from '@/lib/auth'
 import { useADOpen } from '@/lib/use-ad-open'
 import { cn } from '@/lib/utils'
 
 export function StatusBar() {
-  const { user } = useAuth()
   const { isOpen: isADOpen, toggleOpen: toggleAD } = useADOpen()
-
-  if (!user) return null
 
   return (
     <div

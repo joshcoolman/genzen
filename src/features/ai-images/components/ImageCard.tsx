@@ -1,4 +1,6 @@
-import { useNavigate } from '@tanstack/react-router'
+'use client'
+
+import { useRouter } from 'next/navigation'
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -76,7 +78,7 @@ export function ImageCard({
   onSelect,
   active,
 }: ImageCardProps) {
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const hasChildren = (editChildren?.length ?? 0) > 0
 
@@ -196,11 +198,7 @@ export function ImageCard({
           if (onOpen) {
             onOpen(img)
           } else {
-            navigate({
-              to: '/dashboard/edit/$imageId',
-              params: { imageId: img.id },
-              search: { sourceId: undefined },
-            })
+            router.push(`/dashboard/edit/${img.id}`)
           }
         }
       }}
@@ -254,11 +252,9 @@ export function ImageCard({
                       if (onChildOpen) {
                         onChildOpen(child.id, img)
                       } else {
-                        navigate({
-                          to: '/dashboard/edit/$imageId',
-                          params: { imageId: img.id },
-                          search: { sourceId: child.id },
-                        })
+                        router.push(
+                          `/dashboard/edit/${img.id}?sourceId=${child.id}`,
+                        )
                       }
                     }}
                     className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"

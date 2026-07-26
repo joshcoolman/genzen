@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import { createThumbnail } from '../server/create-thumbnail.server'
 import { uploadImage } from '../server/upload-image.server'
@@ -51,12 +53,9 @@ export function useImageUpload(
 
         const base64Data = await fileToBase64(input.file)
         await uploadImage({
-          data: {
-            accessToken: session.access_token,
-            storagePath,
-            base64Data,
-            contentType: input.file.type,
-          },
+          storagePath,
+          base64Data,
+          contentType: input.file.type,
         })
 
         const { data: newImage, error: insertError } = await supabase
@@ -75,12 +74,7 @@ export function useImageUpload(
           .single()
 
         if (insertError) {
-          await removeImages({
-            data: {
-              accessToken: session.access_token,
-              storagePaths: [storagePath],
-            },
-          }).catch(() => {})
+          await removeImages({ storagePaths: [storagePath] }).catch(() => {})
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
@@ -93,11 +87,8 @@ export function useImageUpload(
 
         // Generate thumbnail in background
         createThumbnail({
-          data: {
-            accessToken: session.access_token,
-            imageId: newImage.id,
-            storagePath: persistedStoragePath,
-          },
+          imageId: newImage.id,
+          storagePath: persistedStoragePath,
         }).catch(() => {})
 
         const url = await createImageStorage().getUrl(persistedStoragePath)

@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
 import {
@@ -121,12 +123,12 @@ export function InfiniteCanvas({
   } | null>(null)
   const dialogOpenRef = useRef(false)
 
-  const { user, session } = useAuth()
+  const { user } = useAuth()
   const {
     images: libraryImages,
     imageUrls: libraryImageUrls,
     isLoading: libraryLoading,
-  } = useExistingImages(user?.id)
+  } = useExistingImages(user.id)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -360,7 +362,7 @@ export function InfiniteCanvas({
   const reconciledRef = useRef(false)
   useEffect(() => {
     if (!loaded || reconciledRef.current) return
-    if (!session?.access_token || !user?.id) return
+    if (!user.id) return
     reconciledRef.current = true
     const userId = user.id
 
@@ -481,7 +483,7 @@ export function InfiniteCanvas({
       const allPending = [...cachePending, ...newPending]
       if (allPending.length > 0) canvasGen.resumePending(allPending)
     })()
-  }, [loaded, session?.access_token, user?.id, canvasGen])
+  }, [loaded, user.id, canvasGen])
 
   /* -- Save state (debounced) -- */
 

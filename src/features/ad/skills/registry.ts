@@ -1,3 +1,11 @@
+// Enumerated rather than globbed: Turbopack resolves imports statically, so a
+// new skill file means a line here. Four skills; the explicitness is cheap and
+// the failure mode (a skill silently missing from the index) is not.
+import characterReferenceSheet from '@/lib/prompts/skills/character-reference-sheet.md'
+import enhancePrompt from '@/lib/prompts/skills/enhance-prompt.md'
+import imagePrompting from '@/lib/prompts/skills/image-prompting.md'
+import videoSceneComposition from '@/lib/prompts/skills/video-scene-composition.md'
+
 export interface Skill {
   name: string
   description: string
@@ -15,11 +23,13 @@ function prettifyName(name: string): string {
     .join(' ')
 }
 
-const skillModules = import.meta.glob('/src/lib/prompts/skills/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-})
+const skillModules: Record<string, string> = {
+  '/src/lib/prompts/skills/character-reference-sheet.md':
+    characterReferenceSheet,
+  '/src/lib/prompts/skills/enhance-prompt.md': enhancePrompt,
+  '/src/lib/prompts/skills/image-prompting.md': imagePrompting,
+  '/src/lib/prompts/skills/video-scene-composition.md': videoSceneComposition,
+}
 
 // Minimal frontmatter parser — browser-safe (gray-matter needs Node's Buffer).
 // Skills only use simple `key: value` string fields, so full YAML is overkill.
@@ -64,9 +74,7 @@ function parseSkill(raw: string, filePath: string): Skill | null {
   return { name, description, body: content.trim(), label, launch }
 }
 
-const parsed: Array<Skill> = Object.entries(
-  skillModules as Record<string, string>,
-)
+const parsed: Array<Skill> = Object.entries(skillModules)
   .map(([path, raw]) => parseSkill(raw, path))
   .filter((s): s is Skill => s !== null)
   .sort((a, b) => a.name.localeCompare(b.name))

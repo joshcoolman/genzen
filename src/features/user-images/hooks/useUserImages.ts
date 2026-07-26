@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * useUserImages Hook
  *
@@ -213,12 +215,9 @@ export function useUserImages(
         // Upload file via server function
         const base64Data = await fileToBase64(input.file)
         await uploadImage({
-          data: {
-            accessToken: session.access_token,
-            storagePath,
-            base64Data,
-            contentType: input.file.type,
-          },
+          storagePath,
+          base64Data,
+          contentType: input.file.type,
         })
 
         // Create database record
@@ -239,12 +238,7 @@ export function useUserImages(
 
         if (insertError) {
           // Rollback: delete uploaded file via server
-          await removeImages({
-            data: {
-              accessToken: session.access_token,
-              storagePaths: [storagePath],
-            },
-          }).catch(() => {})
+          await removeImages({ storagePaths: [storagePath] }).catch(() => {})
           throw new Error(
             `Failed to create image record: ${insertError.message}`,
           )
@@ -456,14 +450,7 @@ export function useUserImages(
       // Run server upload and hash computation in parallel
       const base64Data = await fileToBase64(file)
       const [, hashResult] = await Promise.all([
-        uploadImage({
-          data: {
-            accessToken: session.access_token,
-            storagePath,
-            base64Data,
-            contentType: file.type,
-          },
-        }),
+        uploadImage({ storagePath, base64Data, contentType: file.type }),
         computeFileHash(file).catch(() => undefined),
       ])
 
@@ -484,12 +471,7 @@ export function useUserImages(
         .single()
 
       if (insertError) {
-        await removeImages({
-          data: {
-            accessToken: session.access_token,
-            storagePaths: [storagePath],
-          },
-        }).catch(() => {})
+        await removeImages({ storagePaths: [storagePath] }).catch(() => {})
         throw new Error(`Failed to create image record: ${insertError.message}`)
       }
 

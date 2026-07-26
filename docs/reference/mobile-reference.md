@@ -225,7 +225,7 @@ const isMobile = useIsMobile()
 **Mobile**: Full-screen toggle overlay
 
 ```tsx
-// Pattern from src/routes/docs.tsx
+// Pattern from app/docs.tsx
 <div
   className={cn(
     'md:block md:w-auto',
@@ -334,7 +334,7 @@ style={{
 }}
 ```
 
-**Mobile Override** (from `src/routes/dashboard/ai-images.tsx`):
+**Mobile Override** (from `app/dashboard/ai-images/page.tsx`):
 
 ```tsx
 const effectiveThumbSize = isMobile ? 'lg' : thumbSize
@@ -424,13 +424,13 @@ useEffect(() => {
 
 ### Routes with Mobile Logic
 
-| Route                                    | Mobile Pattern                                          |
-| ---------------------------------------- | ------------------------------------------------------- |
-| `src/routes/dashboard/ai-images.tsx`     | Full-screen dialog for generator, forced thumb size     |
-| `src/routes/dashboard/edit.$imageId.tsx` | Full-screen dialog, simplified header (back + generate) |
-| `src/routes/dashboard/video.index.tsx`   | Hidden sidebar on mobile                                |
-| `src/routes/docs.tsx`                    | Full-screen toggle sidebar                              |
-| `src/components/DashboardLayout.tsx`     | Mobile nav vs desktop sidebar                           |
+| Route                                | Mobile Pattern                                          |
+| ------------------------------------ | ------------------------------------------------------- |
+| `app/dashboard/ai-images/page.tsx`   | Full-screen dialog for generator, forced thumb size     |
+| `app/dashboard/edit.$imageId.tsx`    | Full-screen dialog, simplified header (back + generate) |
+| `app/dashboard/video.index.tsx`      | Hidden sidebar on mobile                                |
+| `app/docs.tsx`                       | Full-screen toggle sidebar                              |
+| `src/components/DashboardLayout.tsx` | Mobile nav vs desktop sidebar                           |
 
 ## Common Mobile Tasks
 

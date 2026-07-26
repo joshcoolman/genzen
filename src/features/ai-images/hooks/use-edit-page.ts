@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GeneratorState, RefImage } from './use-generator'
 import type { GenerationResult } from '@/lib/types/generation-result'
@@ -28,8 +30,7 @@ import { createImageStorage } from '@/lib/image-storage'
 import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 
 export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
-  const { user, session } = useAuth()
-  const accessToken = session?.access_token
+  const { user } = useAuth()
 
   const modelSelector = useModelSelector({ capability: 'edit', mode: 'multi' })
   const reportError = useReportError()
@@ -95,13 +96,13 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const [activeSourceId, setActiveSourceId] = useState(imageId)
   const [sourceChain, setSourceChain] = useState<Array<string>>([imageId])
 
-  const existingImages = useExistingImages(user?.id)
-  const imageUpload = useImageUpload(user?.id)
-  const editChildren = useEditChildren(sourceChain, user?.id)
+  const existingImages = useExistingImages(user.id)
+  const imageUpload = useImageUpload(user.id)
+  const editChildren = useEditChildren(sourceChain, user.id)
 
   // BFS descendant discovery - uses parent_id (mutable grouping)
   const discoverDescendants = useCallback(async () => {
-    if (!user?.id) return
+    if (!user.id) return
 
     const { data } = await supabase
       .from('user_images')
@@ -141,15 +142,14 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     if (chain.length > 1) {
       setSourceChain(chain)
     }
-  }, [user?.id, imageId])
+  }, [user.id, imageId])
 
   useEffect(() => {
     void discoverDescendants()
   }, [discoverDescendants])
 
   const results = useGenerationResults({
-    userId: user?.id,
-    accessToken: accessToken ?? '',
+    userId: user.id,
     generationType: ['edit', 'variation'],
     sourceImageIds: sourceChain,
     limit: 50,
@@ -157,7 +157,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   // Fetch source image + convert to base64
   useEffect(() => {
-    if (!user?.id || !imageId) return
+    if (!user.id || !imageId) return
 
     async function fetchSource() {
       setPageLoading(true)
@@ -165,7 +165,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         .from('user_images')
         .select('id, title, storage_path, generation_metadata')
         .eq('id', imageId)
-        .eq('user_id', user!.id)
+        .eq('user_id', user.id)
         .single()
 
       if (!data?.storage_path) {
@@ -200,11 +200,9 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       setHasParent(typeof meta?.source_image_id === 'string')
 
       // Fetch base64 server-side to avoid R2 CORS restrictions
-      if (accessToken) {
-        fetchImageAsBase64({ data: { url: signedUrl, accessToken } })
-          .then(({ base64 }) => setSourceBase64(base64))
-          .catch(() => {})
-      }
+      fetchImageAsBase64({ url: signedUrl })
+        .then(({ base64 }) => setSourceBase64(base64))
+        .catch(() => {})
 
       // Detect aspect ratio from image dimensions
       const img = new Image()
@@ -220,7 +218,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     }
 
     void fetchSource()
-  }, [user?.id, imageId])
+  }, [user.id, imageId])
 
   // maxRefImages from selected models
   const maxRefImages = useMemo(() => {
@@ -258,7 +256,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   const handleGenerate = useCallback(async () => {
     if (
       activePromptCount === 0 ||
-      !accessToken ||
       editLoading ||
       modelSelector.selectedIds.length === 0
     )
@@ -309,16 +306,13 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
             try {
               const { recordId } = await editImage({
-                data: {
-                  accessToken,
-                  sourceImageId: sourceId, // Actual image being edited (immutable history)
-                  parentId: imageId, // Group parent (mutable, can be reparented)
-                  editPrompt: finalPrompt,
-                  aspectRatio,
-                  editModelId,
-                  idempotencyKey: crypto.randomUUID(),
-                  ...(referenceImageIds ? { referenceImageIds } : {}),
-                },
+                sourceImageId: sourceId, // Actual image being edited (immutable history)
+                parentId: imageId, // Group parent (mutable, can be reparented)
+                editPrompt: finalPrompt,
+                aspectRatio,
+                editModelId,
+                idempotencyKey: crypto.randomUUID(),
+                ...(referenceImageIds ? { referenceImageIds } : {}),
               })
               results.replaceTempId(tempId, recordId)
             } catch (err) {
@@ -356,7 +350,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   }, [
     prompts,
     activePromptCount,
-    accessToken,
     editLoading,
     activeSourceId,
     aspectRatio,
@@ -379,8 +372,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
    */
   const retryImage = useCallback(
     async (img: SavedAiImage) => {
-      if (!accessToken) return
-
       const tempId = crypto.randomUUID()
       const label = String(img.generation_metadata?.model ?? 'Retrying')
       const promptText = String(img.generation_metadata?.prompt ?? img.title)
@@ -394,9 +385,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       })
 
       try {
-        const { recordId } = await retryGeneration({
-          data: { accessToken, recordId: img.id },
-        })
+        const { recordId } = await retryGeneration({ recordId: img.id })
         results.replaceTempId(tempId, recordId)
       } catch (err) {
         const reason =
@@ -405,7 +394,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         toast(reason, { variant: 'error', duration: 8000 })
       }
     },
-    [accessToken, results],
+    [results],
   )
 
   // Shot list prompt generation - dialog owns API call, hook just merges results
@@ -418,14 +407,10 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   const generatePromptsConfig = useMemo(
     () =>
-      accessToken && sourceBase64
-        ? {
-            accessToken,
-            imageBase64: sourceBase64,
-            onApply: applyGeneratedPrompts,
-          }
+      sourceBase64
+        ? { imageBase64: sourceBase64, onApply: applyGeneratedPrompts }
         : null,
-    [accessToken, sourceBase64, applyGeneratedPrompts],
+    [sourceBase64, applyGeneratedPrompts],
   )
 
   const clearPrompts = useCallback(() => {
@@ -434,23 +419,20 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   // Caption handler
   const handleCaption = useCallback(async () => {
-    if (!accessToken || !sourceBase64 || describingImage) return
+    if (!sourceBase64 || describingImage) return
     setDescribingImage(true)
     try {
-      const { caption } = await captionImage({
-        data: { imageBase64: sourceBase64, accessToken },
-      })
+      const { caption } = await captionImage({ imageBase64: sourceBase64 })
       setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption))
     } catch {
       // caption failed silently
     } finally {
       setDescribingImage(false)
     }
-  }, [accessToken, sourceBase64, describingImage])
+  }, [sourceBase64, describingImage])
 
   // Describe JSON
   const describe = useDescribeJson({
-    accessToken,
     imageUrl: sourceImageMeta?.url,
     onResult: useCallback((json: string) => {
       setPrompt((prev) => (prev ? `${prev}\n\n${json}` : json))
@@ -476,7 +458,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   // Select which image to edit - works with just an ID (fetches from DB)
   const selectImageById = useCallback(
     async (targetId: string) => {
-      if (!user?.id) return
+      if (!user.id) return
 
       const { data } = await supabase
         .from('user_images')
@@ -530,7 +512,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       )
       setPromptsRaw([''])
     },
-    [user?.id],
+    [user.id],
   )
 
   // Select which image to edit from a GenerationResult
@@ -583,7 +565,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   const handleGenerateVariations = useCallback(
     async (guidance: string, count: number) => {
-      if (!accessToken || !sourceImageMeta) return
+      if (!sourceImageMeta) return
       setError(null)
       setVariationPromptsLoading(true)
 
@@ -591,7 +573,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         let sourcePrompt = sourceImageMeta.prompt
         if (!sourcePrompt) {
           const { caption } = await captionImage({
-            data: { imageBase64: sourceImageMeta.url, accessToken },
+            imageBase64: sourceImageMeta.url,
           })
           sourcePrompt = caption
           setSourceImageMeta((prev) =>
@@ -600,13 +582,10 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         }
 
         const result = await generateVariationPrompts({
-          data: {
-            accessToken,
-            prompt: sourcePrompt,
-            sourceImageId: activeSourceId,
-            count,
-            ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
-          },
+          prompt: sourcePrompt,
+          sourceImageId: activeSourceId,
+          count,
+          ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
         })
         setVariationPrompts(result.prompts)
       } catch (err) {
@@ -620,7 +599,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         setVariationPromptsLoading(false)
       }
     },
-    [accessToken, sourceImageMeta, activeSourceId],
+    [sourceImageMeta, activeSourceId],
   )
 
   // Chain images: original parent pinned at position 0, followed by all edit results
@@ -780,7 +759,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   const handleEnhancePrompt = useCallback(
     async (index: number) => {
-      if (!accessToken || enhancingPromptIndex !== null) return
+      if (enhancingPromptIndex !== null) return
       const current = prompts[index]?.trim()
       if (!current) {
         reportError('Enter a prompt before enhancing.')
@@ -788,9 +767,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       }
       setEnhancingPromptIndex(index)
       try {
-        const { enhancedPrompt } = await enhancePrompt({
-          data: { accessToken, prompt: current },
-        })
+        const { enhancedPrompt } = await enhancePrompt({ prompt: current })
         setPromptAtIndex(index, enhancedPrompt)
       } catch (err) {
         reportError(err, 'Failed to enhance prompt')
@@ -798,7 +775,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         setEnhancingPromptIndex(null)
       }
     },
-    [accessToken, enhancingPromptIndex, prompts, setPromptAtIndex, reportError],
+    [enhancingPromptIndex, prompts, setPromptAtIndex, reportError],
   )
 
   // GeneratorState adapter - makes this hook's state compatible with GeneratorPanel
@@ -826,7 +803,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     handleGenerate,
     setSourceFile: async (file: File) => {
       // Upload and adopt into this chain
-      if (!accessToken) return
       setError(null)
       setAdoptingImage(true)
       try {
@@ -836,12 +812,9 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         })
         // Adopt the uploaded image under the original parent
         await reparentImage({
-          data: {
-            accessToken,
-            imageId: uploaded.id,
-            action: 'adopt',
-            newParentId: imageId,
-          },
+          imageId: uploaded.id,
+          action: 'adopt',
+          newParentId: imageId,
         })
         // Refresh to discover the new child and update the gallery
         await discoverDescendants()
@@ -853,7 +826,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     },
     setSourceFromUrl: async (url: string, _name: string) => {
       // Adopt existing library image into this chain
-      if (!accessToken) return
       setError(null)
       setAdoptingImage(true)
       try {
@@ -865,12 +837,9 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
         // Adopt it under the original parent
         await reparentImage({
-          data: {
-            accessToken,
-            imageId: libraryImage.id,
-            action: 'adopt',
-            newParentId: imageId,
-          },
+          imageId: libraryImage.id,
+          action: 'adopt',
+          newParentId: imageId,
         })
         // Refresh to discover the adopted child and update the gallery
         await discoverDescendants()
@@ -884,25 +853,21 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       images: Array<{ id: string; url: string; title: string }>,
     ) => {
       // Adopt multiple library images into this chain
-      if (!accessToken) return
       setError(null)
       setAdoptingImage(true)
       try {
         // Adopt all selected images under the original parent
-        await Promise.all(
+        ;(await Promise.all(
           images.map((img) =>
             reparentImage({
-              data: {
-                accessToken,
-                imageId: img.id,
-                action: 'adopt',
-                newParentId: imageId,
-              },
+              imageId: img.id,
+              action: 'adopt',
+              newParentId: imageId,
             }),
           ),
-        )
-        // Refresh to discover the adopted children and update the gallery
-        await discoverDescendants()
+        ),
+          // Refresh to discover the adopted children and update the gallery
+          await discoverDescendants())
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to add images')
       } finally {
@@ -942,7 +907,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     chainImageUrls,
     rootImageMeta,
     editChildrenMap: editChildren.map,
-    accessToken: accessToken ?? null,
     sourceImageMeta,
     originalImageMeta,
     activeSourceId,
@@ -954,17 +918,11 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     resetToOriginal,
     existingImages,
     detachFromParent: async () => {
-      if (!accessToken) return
-      await reparentImage({
-        data: { accessToken, imageId, action: 'detach' },
-      })
+      await reparentImage({ imageId, action: 'detach' })
       setHasParent(false)
     },
     detachResult: async (resultId: string) => {
-      if (!accessToken) return
-      await reparentImage({
-        data: { accessToken, imageId: resultId, action: 'detach' },
-      })
+      await reparentImage({ imageId: resultId, action: 'detach' })
       results.dismissResult(resultId)
     },
     // Retry a failed card. This submits a NEW generation with the same

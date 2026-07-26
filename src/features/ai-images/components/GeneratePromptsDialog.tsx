@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import {
   Dialog,
@@ -14,7 +16,6 @@ interface GeneratePromptsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onApply: (prompts: Array<string>) => void
-  accessToken: string
   imageBase64: string
 }
 
@@ -22,7 +23,6 @@ export function GeneratePromptsDialog({
   open,
   onOpenChange,
   onApply,
-  accessToken,
   imageBase64,
 }: GeneratePromptsDialogProps) {
   const [count, setCount] = useState(6)
@@ -47,12 +47,9 @@ export function GeneratePromptsDialog({
     setError(null)
     try {
       const { prompts } = await generateShotList({
-        data: {
-          accessToken,
-          imageBase64,
-          count,
-          guidance: guidance.trim() || undefined,
-        },
+        imageBase64,
+        count,
+        guidance: guidance.trim() || undefined,
       })
       setResults(prompts)
     } catch {
@@ -60,7 +57,7 @@ export function GeneratePromptsDialog({
     } finally {
       setLoading(false)
     }
-  }, [accessToken, imageBase64, count, guidance])
+  }, [imageBase64, count, guidance])
 
   function handleUpdatePrompt(index: number, value: string) {
     if (!results) return

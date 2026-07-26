@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry, ActivityFilters, ActivityTotals } from '../types'
@@ -23,9 +25,8 @@ const EMPTY_TOTALS: ActivityTotals = {
 }
 
 export function useActivityPage() {
-  const { user, session } = useAuth()
-  const accessToken = session?.access_token
-  const userId = user?.id
+  const { user } = useAuth()
+  const userId = user.id
 
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [total, setTotal] = useState(0)
@@ -35,11 +36,7 @@ export function useActivityPage() {
   const [filters, setFiltersState] = useState<ActivityFilters>(EMPTY_FILTERS)
 
   const getThumbUrl = useMemo(() => {
-    const base =
-      (import.meta.env.VITE_R2_PUBLIC_URL as string | undefined)?.replace(
-        /\/$/,
-        '',
-      ) ?? ''
+    const base = process.env.VITE_R2_PUBLIC_URL?.replace(/\/$/, '') ?? ''
     return (path: string | null): string | null => {
       if (!base || !path) return null
       return `${base}/${path}`
@@ -49,20 +46,16 @@ export function useActivityPage() {
   const fetchRef = useRef(0)
   const refetch = useCallback(
     (opts?: { silent?: boolean }) => {
-      if (!accessToken) return
       const id = ++fetchRef.current
       if (!opts?.silent) setIsLoading(true)
 
       listActivity({
-        data: {
-          accessToken,
-          page,
-          pageSize: PAGE_SIZE,
-          models: filters.models.length > 0 ? filters.models : undefined,
-          statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
-          dateFrom: filters.dateFrom,
-          dateTo: filters.dateTo,
-        },
+        page,
+        pageSize: PAGE_SIZE,
+        models: filters.models.length > 0 ? filters.models : undefined,
+        statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
       })
         .then((result) => {
           if (id !== fetchRef.current) return
@@ -81,7 +74,7 @@ export function useActivityPage() {
           setIsLoading(false)
         })
     },
-    [accessToken, page, filters],
+    [page, filters],
   )
 
   useEffect(() => {
@@ -125,13 +118,13 @@ export function useActivityPage() {
   // AI Images. Runs only while work is live.
   const hasPendingWork = entries.some((e) => e.status === 'pending')
   useEffect(() => {
-    if (!accessToken || !hasPendingWork) return
-    checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    if (!hasPendingWork) return
+    checkPendingGenerations().catch(() => {})
     const interval = setInterval(() => {
-      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      checkPendingGenerations().catch(() => {})
     }, 5000)
     return () => clearInterval(interval)
-  }, [accessToken, hasPendingWork])
+  }, [hasPendingWork])
 
   const setFilters = (next: ActivityFilters) => {
     setFiltersState(next)

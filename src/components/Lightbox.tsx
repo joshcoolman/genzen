@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'

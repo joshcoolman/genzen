@@ -1,5 +1,5 @@
-import { createServerFn } from '@tanstack/react-start'
-import { createClient } from '@supabase/supabase-js'
+'use server'
+
 import { TOTALS_ROW_CAP } from '../types'
 import type {
   ActivityEntry,
@@ -7,11 +7,10 @@ import type {
   GenerationStatus,
   ListActivityResult,
 } from '../types'
-import { requireAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '@/lib/server/auth.server'
 import { getModelName } from '@/features/ai-images/models'
 
 interface ListActivityInput {
-  accessToken: string
   page: number
   pageSize: number
   models?: Array<string>
@@ -92,111 +91,101 @@ function parseEntry(row: Row): ActivityEntry {
   }
 }
 
-export const listActivity = createServerFn({ method: 'GET' })
-  .inputValidator((data: ListActivityInput) => data)
-  .handler(async ({ data }): Promise<ListActivityResult> => {
-    const user = await requireAuth(data.accessToken)
+export async function listActivity(
+  data: ListActivityInput,
+): Promise<ListActivityResult> {
+  const { userId, supabase } = await resolveAuth()
 
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: { Authorization: `Bearer ${data.accessToken}` },
-        },
-      },
+  const applyFilters = <
+    TQuery extends {
+      eq: (...args: Array<unknown>) => TQuery
+      in: (...args: Array<unknown>) => TQuery
+      gte: (...args: Array<unknown>) => TQuery
+      lte: (...args: Array<unknown>) => TQuery
+    },
+  >(
+    q: TQuery,
+  ): TQuery => {
+    let out = q.eq('user_id', userId).eq('source', 'ai_generated')
+    if (data.models && data.models.length > 0) {
+      out = out.in('generation_metadata->>model', data.models)
+    }
+    if (data.statuses && data.statuses.length > 0) {
+      out = out.in('status', data.statuses)
+    }
+    if (data.dateFrom) out = out.gte('created_at', data.dateFrom)
+    if (data.dateTo) out = out.lte('created_at', data.dateTo)
+    return out
+  }
+
+  const offset = data.page * data.pageSize
+
+  const pageQueryBase = supabase
+    .from('user_images')
+    .select(
+      'id, source, storage_path, status, generation_metadata, created_at, deleted_at',
+      { count: 'exact' },
     )
+    .order('created_at', { ascending: false })
+    .range(offset, offset + data.pageSize - 1)
 
-    const applyFilters = <
-      TQuery extends {
-        eq: (...args: Array<unknown>) => TQuery
-        in: (...args: Array<unknown>) => TQuery
-        gte: (...args: Array<unknown>) => TQuery
-        lte: (...args: Array<unknown>) => TQuery
-      },
-    >(
-      q: TQuery,
-    ): TQuery => {
-      let out = q.eq('user_id', user.id).eq('source', 'ai_generated')
-      if (data.models && data.models.length > 0) {
-        out = out.in('generation_metadata->>model', data.models)
-      }
-      if (data.statuses && data.statuses.length > 0) {
-        out = out.in('status', data.statuses)
-      }
-      if (data.dateFrom) out = out.gte('created_at', data.dateFrom)
-      if (data.dateTo) out = out.lte('created_at', data.dateTo)
-      return out
+  const totalsQueryBase = supabase
+    .from('user_images')
+    .select('status, generation_metadata')
+    .order('created_at', { ascending: false })
+    .limit(TOTALS_ROW_CAP)
+
+  const [pageResult, totalsResult] = await Promise.all([
+    applyFilters(pageQueryBase as never),
+    applyFilters(totalsQueryBase as never),
+  ])
+
+  const {
+    data: pageRows,
+    count,
+    error: pageError,
+  } = pageResult as {
+    data: Array<Row> | null
+    count: number | null
+    error: { message: string } | null
+  }
+  if (pageError) {
+    throw new Error(`Failed to list activity: ${pageError.message}`)
+  }
+
+  const { data: totalsRows, error: totalsError } = totalsResult as {
+    data: Array<TotalsRow> | null
+    error: { message: string } | null
+  }
+  if (totalsError) {
+    throw new Error(`Failed to load activity totals: ${totalsError.message}`)
+  }
+
+  const entries = (pageRows ?? []).map(parseEntry)
+
+  let totalDurationMs = 0
+  let totalProviderCostCents = 0
+  let totalsIncludeEstimates = false
+  for (const r of totalsRows ?? []) {
+    const m = meta(r)
+    const dur = computeDurationMs(m)
+    if (dur != null) totalDurationMs += dur
+    if (m.provider_cost_cents != null) {
+      totalProviderCostCents += m.provider_cost_cents
+      if (m.provider_cost_is_estimate === true) totalsIncludeEstimates = true
     }
+  }
 
-    const offset = data.page * data.pageSize
-
-    const pageQueryBase = supabase
-      .from('user_images')
-      .select(
-        'id, source, storage_path, status, generation_metadata, created_at, deleted_at',
-        { count: 'exact' },
-      )
-      .order('created_at', { ascending: false })
-      .range(offset, offset + data.pageSize - 1)
-
-    const totalsQueryBase = supabase
-      .from('user_images')
-      .select('status, generation_metadata')
-      .order('created_at', { ascending: false })
-      .limit(TOTALS_ROW_CAP)
-
-    const [pageResult, totalsResult] = await Promise.all([
-      applyFilters(pageQueryBase as never),
-      applyFilters(totalsQueryBase as never),
-    ])
-
-    const {
-      data: pageRows,
-      count,
-      error: pageError,
-    } = pageResult as {
-      data: Array<Row> | null
-      count: number | null
-      error: { message: string } | null
-    }
-    if (pageError) {
-      throw new Error(`Failed to list activity: ${pageError.message}`)
-    }
-
-    const { data: totalsRows, error: totalsError } = totalsResult as {
-      data: Array<TotalsRow> | null
-      error: { message: string } | null
-    }
-    if (totalsError) {
-      throw new Error(`Failed to load activity totals: ${totalsError.message}`)
-    }
-
-    const entries = (pageRows ?? []).map(parseEntry)
-
-    let totalDurationMs = 0
-    let totalProviderCostCents = 0
-    let totalsIncludeEstimates = false
-    for (const r of totalsRows ?? []) {
-      const m = meta(r)
-      const dur = computeDurationMs(m)
-      if (dur != null) totalDurationMs += dur
-      if (m.provider_cost_cents != null) {
-        totalProviderCostCents += m.provider_cost_cents
-        if (m.provider_cost_is_estimate === true) totalsIncludeEstimates = true
-      }
-    }
-
-    const total = count ?? 0
-    return {
-      entries,
-      total,
-      totals: {
-        count: totalsRows?.length ?? 0,
-        totalDurationMs,
-        totalProviderCostCents,
-        totalsIncludeEstimates,
-        exceedsCap: (totalsRows?.length ?? 0) >= TOTALS_ROW_CAP,
-      },
-    }
-  })
+  const total = count ?? 0
+  return {
+    entries,
+    total,
+    totals: {
+      count: totalsRows?.length ?? 0,
+      totalDurationMs,
+      totalProviderCostCents,
+      totalsIncludeEstimates,
+      exceedsCap: (totalsRows?.length ?? 0) >= TOTALS_ROW_CAP,
+    },
+  }
+}

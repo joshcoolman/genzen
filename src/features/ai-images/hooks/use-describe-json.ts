@@ -1,14 +1,14 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
 
 interface UseDescribeJsonOptions {
-  accessToken: string | undefined
   imageUrl: string | undefined
   onResult?: (json: string) => void
 }
 
 export function useDescribeJson({
-  accessToken,
   imageUrl,
   onResult,
 }: UseDescribeJsonOptions) {
@@ -17,17 +17,14 @@ export function useDescribeJson({
   const [error, setError] = useState<string | null>(null)
 
   const handleDescribe = useCallback(async () => {
-    if (!accessToken || !imageUrl || jsonLoading) return
+    if (!imageUrl || jsonLoading) return
     setJsonLoading(true)
     setError(null)
     try {
       const { json } = await describeImageJson({
-        data: {
-          accessToken,
-          imageUrl,
-          prompt:
-            'Analyze this image for a reference DNA sheet. Focus on fixed architectural elements and furniture details.',
-        },
+        imageUrl,
+        prompt:
+          'Analyze this image for a reference DNA sheet. Focus on fixed architectural elements and furniture details.',
       })
       setJsonDescription(json)
       onResult?.(json)
@@ -36,7 +33,7 @@ export function useDescribeJson({
     } finally {
       setJsonLoading(false)
     }
-  }, [accessToken, imageUrl, jsonLoading, onResult])
+  }, [imageUrl, jsonLoading, onResult])
 
   const clearDescription = useCallback(() => {
     setJsonDescription(null)

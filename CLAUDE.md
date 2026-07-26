@@ -1,4 +1,4 @@
-TanStack Start (React 19 + Vite + Nitro SSR), Supabase, FAL AI (image gen), Tailwind v4, shadcn/ui
+Next.js App Router (React 19 + Turbopack), Supabase, FAL AI (image gen), Tailwind v4, shadcn/ui
 
 ## Commands
 
@@ -9,6 +9,7 @@ TanStack Start (React 19 + Vite + Nitro SSR), Supabase, FAL AI (image gen), Tail
 
 ## Structure
 
+- `app/` -- App Router routes (`_actions/ _components/` per route folder)
 - `src/features/` -- domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix
 - `src/components/` -- shared components + `ui/` (shadcn)
@@ -82,12 +83,10 @@ framework notes). Never a plan. There is no in-app docs viewer — that route an
 `~/repos/project-standard/README.md` is the house standard for this project's
 conventions — folder layout, component organization, styling, docs shape, naming.
 
-**The plan is: move to Next (#168) first, then conform to the standard as closely
-as we can.** It is written for Next.js, so the `app/` router half — route folders,
-`_actions/ _queries/ _components/`, one-folder-per-component, CSS Modules over
-Tailwind — lands in that second pass, not before. The parts that are already
-framework-independent (docs shape, issues-not-plan-files, README `## Status`,
-`CLAUDE.md` as a boundary contract, naming) apply now.
+**The Next port has landed (#175), so the standard now applies in full.** Route
+folders and `_actions/ _components/` are in place. Still outstanding from its
+`app/` half: one-folder-per-component and CSS Modules over Tailwind — those are
+the conformance pass, and the whole app is still on Tailwind classes.
 
 Where the standard applies, prefer it over an older pattern found in the codebase —
 an existing file is not evidence of the current convention. Two deliberate local
@@ -96,7 +95,8 @@ files stay gone rather than being replaced.
 
 ## Gotchas
 
-- `routeTree.gen.ts` is auto-generated -- never edit manually
+- Route protection is deny-by-default in `proxy.ts`; a new public path must be
+  added to its `PUBLIC_PATHS`, or it redirects to /login
 - Tailwind v4 config is CSS-based in `src/styles.css` -- there is no `tailwind.config` file
 - FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.server.ts`
-- Supabase edge functions don't work for us -- use Nitro h3 routes in `server/api/` instead
+- Supabase edge functions don't work for us -- use route handlers in `app/api/` instead

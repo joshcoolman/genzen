@@ -122,8 +122,7 @@ class S3ImageStorage implements ImageStorage {
 /** Synchronous URL builder for R2 public URLs -- no async needed */
 export function getR2PublicUrl(storagePath: string): string {
   const publicUrl =
-    (import.meta.env.VITE_R2_PUBLIC_URL as string | undefined) ??
-    process.env['R2_PUBLIC_URL']
+    process.env.VITE_R2_PUBLIC_URL ?? process.env['R2_PUBLIC_URL']
   if (!publicUrl) throw new Error('R2_PUBLIC_URL not configured')
   return `${publicUrl.replace(/\/$/, '')}/${storagePath}`
 }
@@ -144,8 +143,7 @@ export function resolveStorageEndpoint(
 
 export function createImageStorage(): ImageStorage {
   const publicUrl =
-    (import.meta.env.VITE_R2_PUBLIC_URL as string | undefined) ??
-    process.env['R2_PUBLIC_URL']
+    process.env.VITE_R2_PUBLIC_URL ?? process.env['R2_PUBLIC_URL']
 
   if (!publicUrl) {
     throw new Error(

@@ -1,71 +1,26 @@
-import { useEffect, useState } from 'react'
+'use client'
+
 import type { ReactNode } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import type { AuthUser } from '@/lib/auth'
 import { AuthContext } from '@/lib/auth'
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session: initialSession } }) => {
-        if (initialSession) {
-          // Verify the session is valid against the current Supabase instance.
-          // Catches stale sessions from a different instance (e.g. remote → local).
-          const {
-            data: { user: verifiedUser },
-          } = await supabase.auth.getUser(initialSession.access_token)
-          if (!verifiedUser) {
-            await supabase.auth.signOut()
-            setLoading(false)
-            return
-          }
-        }
-        setSession(initialSession)
-        setUser(initialSession?.user ?? null)
-        setLoading(false)
-      })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, updatedSession) => {
-      setSession(updatedSession)
-      setUser(updatedSession?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error: error as Error | null }
-  }
-
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { error: error as Error | null }
-  }
-
-  const signOut = async () => {
-    await supabase.auth.signOut()
-  }
-
+/**
+ * Carries the server-resolved user into client components.
+ *
+ * It holds no state and subscribes to nothing. The Supabase version had to:
+ * it read a session out of localStorage, re-verified it against the server,
+ * and listened for `onAuthStateChange`, which is why every page below it
+ * opened with a `loading` branch. A cookie the server already read needs none
+ * of that.
+ */
+export function AuthProvider({
+  user,
+  children,
+}: {
+  user: AuthUser
+  children: ReactNode
+}) {
   return (
-    <AuthContext.Provider
-      value={{ user, session, loading, signIn, signUp, signOut }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>
   )
 }

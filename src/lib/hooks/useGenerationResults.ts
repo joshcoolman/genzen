@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
 import type { Tables } from '@/lib/types/supabase'
@@ -11,7 +13,6 @@ const DEFAULT_LIMIT = 50
 
 interface UseGenerationResultsOptions {
   userId: string | undefined
-  accessToken: string
   generationType: string | Array<string>
   limit?: number
   sourceImageIds?: Array<string>
@@ -64,7 +65,6 @@ function matchesType(
 
 export function useGenerationResults({
   userId,
-  accessToken,
   generationType,
   limit = DEFAULT_LIMIT,
   sourceImageIds,
@@ -298,13 +298,13 @@ export function useGenerationResults({
   // Poll FAL for pending generations (skipped when webhooks are enabled)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (import.meta.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
+    if (process.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
     const hasPending = results.some((r) => r.status === 'pending')
 
-    if (hasPending && accessToken && !pollingRef.current) {
-      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+    if (hasPending && !pollingRef.current) {
+      checkPendingGenerations().catch(() => {})
       pollingRef.current = setInterval(() => {
-        checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+        checkPendingGenerations().catch(() => {})
       }, 5000)
     } else if (!hasPending && pollingRef.current) {
       clearInterval(pollingRef.current)
@@ -317,7 +317,7 @@ export function useGenerationResults({
         pollingRef.current = null
       }
     }
-  }, [accessToken, results.some((r) => r.status === 'pending')])
+  }, [results.some((r) => r.status === 'pending')])
 
   const addPendingResult = useCallback((result: GenerationResult) => {
     setResults((prev) => [result, ...prev])

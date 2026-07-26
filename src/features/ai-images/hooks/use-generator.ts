@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
@@ -28,7 +30,6 @@ export interface RefImage {
 }
 
 interface UseGeneratorOptions {
-  accessToken: string | undefined
   selectedModels: Array<string>
   gensPerModel: number
   setError: (error: string | null) => void
@@ -87,7 +88,6 @@ export interface GeneratorState {
   handleClear: () => void
   handleCaption: () => Promise<void>
   generatePromptsConfig: {
-    accessToken: string
     imageBase64: string
     onApply: (prompts: Array<string>) => void
   } | null
@@ -105,7 +105,6 @@ export interface GeneratorState {
 }
 
 export function useGenerator({
-  accessToken,
   selectedModels,
   gensPerModel,
   setError,
@@ -286,7 +285,7 @@ export function useGenerator({
   }
 
   async function handleGenerate() {
-    if (loading || !accessToken || !canGenerate) return
+    if (loading || !canGenerate) return
 
     // Each entry keeps the user-facing `base` id (for labelling) alongside the
     // `resolved` endpoint we actually submit to (edit/img2img variant).
@@ -335,22 +334,19 @@ export function useGenerator({
         const finalPrompt = `${promptPrefixRef.current}${promptText.trim()}`
         return modelsToUse.map((m) =>
           generateImage({
-            data: {
-              prompt: finalPrompt,
-              model: m.resolved,
-              accessToken: accessToken,
-              aspectRatio,
-              idempotencyKey: crypto.randomUUID(),
-              ...(sourceImage
-                ? sourceImage.base64.startsWith('data:')
-                  ? { sourceImageBase64: sourceImage.base64 }
-                  : { sourceImageUrl: sourceImage.base64 }
-                : {}),
-              ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
-              ...(referenceImageIds ? { referenceImageIds } : {}),
-              ...(onCanvas ? { onCanvas: true } : {}),
-              ...(sourceClient ? { sourceClient } : {}),
-            },
+            prompt: finalPrompt,
+            model: m.resolved,
+            aspectRatio,
+            idempotencyKey: crypto.randomUUID(),
+            ...(sourceImage
+              ? sourceImage.base64.startsWith('data:')
+                ? { sourceImageBase64: sourceImage.base64 }
+                : { sourceImageUrl: sourceImage.base64 }
+              : {}),
+            ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
+            ...(referenceImageIds ? { referenceImageIds } : {}),
+            ...(onCanvas ? { onCanvas: true } : {}),
+            ...(sourceClient ? { sourceClient } : {}),
           }),
         )
       })
@@ -425,31 +421,25 @@ export function useGenerator({
     img.src = base64
   }
 
-  const setSourceFile = useCallback(
-    (file: File) => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const base64 = ev.target?.result as string
-        applySourceBase64(base64, file.name)
-      }
-      reader.readAsDataURL(file)
-    },
-    [accessToken],
-  )
+  const setSourceFile = useCallback((file: File) => {
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string
+      applySourceBase64(base64, file.name)
+    }
+    reader.readAsDataURL(file)
+  }, [])
 
   const setSourceFromUrl = useCallback(
     async (url: string, name: string) => {
-      if (!accessToken) return
       try {
-        const { base64 } = await fetchImageAsBase64({
-          data: { url, accessToken },
-        })
+        const { base64 } = await fetchImageAsBase64({ url })
         applySourceBase64(base64, name)
       } catch (err) {
         console.error('Failed to load image from library:', err)
       }
     },
-    [accessToken, applySourceBase64],
+    [applySourceBase64],
   )
 
   function handleClearSourceImage() {
@@ -464,11 +454,11 @@ export function useGenerator({
   }
 
   const handleCaption = useCallback(async () => {
-    if (!accessToken || !sourceImage || describingImage) return
+    if (!sourceImage || describingImage) return
     setDescribingImage(true)
     try {
       const { caption } = await captionImage({
-        data: { imageBase64: sourceImage.base64, accessToken },
+        imageBase64: sourceImage.base64,
       })
       setPrompt((prev) => (prev ? `${caption}\n\n${prev}` : caption))
     } catch {
@@ -476,11 +466,11 @@ export function useGenerator({
     } finally {
       setDescribingImage(false)
     }
-  }, [accessToken, sourceImage, describingImage])
+  }, [sourceImage, describingImage])
 
   const handleEnhancePrompt = useCallback(
     async (index: number) => {
-      if (!accessToken || enhancingPromptIndex !== null) return
+      if (enhancingPromptIndex !== null) return
       const current = prompts[index]?.trim()
       if (!current) {
         reportError('Enter a prompt before enhancing.')
@@ -488,9 +478,7 @@ export function useGenerator({
       }
       setEnhancingPromptIndex(index)
       try {
-        const { enhancedPrompt } = await enhancePrompt({
-          data: { accessToken, prompt: current },
-        })
+        const { enhancedPrompt } = await enhancePrompt({ prompt: current })
         setPromptsRaw((prev) => {
           const next = [...prev]
           next[index] = enhancedPrompt
@@ -503,7 +491,7 @@ export function useGenerator({
         setEnhancingPromptIndex(null)
       }
     },
-    [accessToken, enhancingPromptIndex, prompts, reportError],
+    [enhancingPromptIndex, prompts, reportError],
   )
 
   const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
@@ -517,14 +505,10 @@ export function useGenerator({
 
   const generatePromptsConfig = useMemo(
     () =>
-      accessToken && sourceImage
-        ? {
-            accessToken,
-            imageBase64: sourceImage.base64,
-            onApply: applyGeneratedPrompts,
-          }
+      sourceImage
+        ? { imageBase64: sourceImage.base64, onApply: applyGeneratedPrompts }
         : null,
-    [accessToken, sourceImage, applyGeneratedPrompts],
+    [sourceImage, applyGeneratedPrompts],
   )
 
   const clearPrompts = useCallback(() => {

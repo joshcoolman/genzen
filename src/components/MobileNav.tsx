@@ -1,6 +1,10 @@
+'use client'
+
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
+import { logout } from '@/features/auth/logout.action'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,16 +19,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { NavMore } from '@/components/NavMore'
-import { useAuth } from '@/lib/auth'
 import { navItems } from '@/lib/nav-items'
 import { useNavVisibility } from '@/lib/use-nav-visibility'
 import { cn } from '@/lib/utils'
 
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { signOut } = useAuth()
+  const pathname = usePathname()
   const { isItemHidden, showMoreNav } = useNavVisibility()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
@@ -38,22 +39,19 @@ export function MobileNav({ className }: { className?: string }) {
 
   const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
-  const handleSignOut = async () => {
-    await signOut()
-    navigate({ to: '/' })
+  const handleSignOut = () => {
+    void logout()
   }
 
   // Close sheet on route change
   useEffect(() => {
     setOpen(false)
-  }, [location.pathname])
+  }, [pathname])
 
   const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
-    if (item.href === '/dashboard') return location.pathname === '/dashboard'
-    if (location.pathname.startsWith(item.href)) return true
-    return (
-      item.matchPaths?.some((p) => location.pathname.startsWith(p)) ?? false
-    )
+    if (item.href === '/dashboard') return pathname === '/dashboard'
+    if (pathname.startsWith(item.href)) return true
+    return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }
 
   return (
@@ -78,7 +76,7 @@ export function MobileNav({ className }: { className?: string }) {
                     <div className="my-2 border-t border-border" />
                   )}
                   <Link
-                    to={item.href}
+                    href={item.href}
                     className={cn(
                       'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                       active
@@ -99,7 +97,7 @@ export function MobileNav({ className }: { className?: string }) {
             {[settingsItem, accountItem].map((item) => (
               <Link
                 key={item.id}
-                to={item.href}
+                href={item.href}
                 className={cn(
                   'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                   isActive(item)

@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useMemo, useState } from 'react'
 import { Check, ImageIcon } from 'lucide-react'
 import type { SelectedImage } from './LibraryPickerButton'

@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import {
@@ -18,7 +20,6 @@ interface DescribeDialogProps {
   imageUrl: string | undefined
   imageId: string
   currentDescription?: string | null
-  accessToken: string | undefined
   onSave?: (imageId: string, description: string) => void
 }
 
@@ -28,7 +29,6 @@ export function DescribeDialog({
   imageUrl,
   imageId,
   currentDescription,
-  accessToken,
   onSave,
 }: DescribeDialogProps) {
   const [description, setDescription] = useState('')
@@ -37,7 +37,6 @@ export function DescribeDialog({
   const [error, setError] = useState<string | null>(null)
 
   const fetchDescription = useCallback(async () => {
-    if (!accessToken) return
     if (!imageUrl) {
       setError('No image URL available')
       return
@@ -45,9 +44,7 @@ export function DescribeDialog({
     setLoading(true)
     setError(null)
     try {
-      const result = await captionImage({
-        data: { imageId, accessToken, mode: 'reconstruct' },
-      })
+      const result = await captionImage({ imageId, mode: 'reconstruct' })
       setDescription(result.caption)
     } catch (err) {
       console.error('Describe failed:', err)
@@ -55,7 +52,7 @@ export function DescribeDialog({
     } finally {
       setLoading(false)
     }
-  }, [imageUrl, accessToken])
+  }, [imageUrl])
 
   // Always describe fresh when dialog opens
   useEffect(() => {

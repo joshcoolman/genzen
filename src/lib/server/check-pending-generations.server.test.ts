@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Import AFTER mocks — this executes the module and populates captured.handler
+// Import AFTER the mocks below are hoisted.
 import { fal } from '@fal-ai/client'
 import * as falCompletion from './fal-completion.server'
 import * as supabaseAdmin from './supabase-admin.server'
+
+import { checkPendingGenerations } from './check-pending-generations.server'
 
 // Use an object container so the vi.mock factory can assign to it
 // (avoids "cannot access before initialization" since we're not READING
@@ -36,7 +38,7 @@ vi.mock('@fal-ai/client', () => ({
 }))
 
 vi.mock('./auth.server', () => ({
-  requireAuth: vi.fn().mockResolvedValue({ id: 'user-test' }),
+  resolveAuth: vi.fn().mockResolvedValue({ userId: 'user-test' }),
 }))
 
 vi.mock('./supabase-admin.server', () => ({
@@ -56,8 +58,6 @@ vi.mock('./fal-error.server', () => ({
     fal_request_id: null,
   }),
 }))
-
-await import('./check-pending-generations.server')
 
 function makeMockSupabase(rows: Array<Record<string, unknown>> = []) {
   const rpcFn = vi.fn().mockResolvedValue({ data: null, error: null })
@@ -92,14 +92,6 @@ describe('checkPendingGenerations handler', () => {
     )
   })
 
-  function getHandler() {
-    if (!captured.handler)
-      throw new Error(
-        'Handler not captured — @tanstack/react-start mock not active',
-      )
-    return captured.handler
-  }
-
   it('processes COMPLETED record and returns completed:1, failed:0', async () => {
     const record = makePendingRecord()
     const mockSupabase = makeMockSupabase([record])
@@ -111,13 +103,11 @@ describe('checkPendingGenerations handler', () => {
     vi.mocked(fal.queue.status).mockResolvedValue({
       status: 'COMPLETED',
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
-    vi.mocked(fal.queue.result).mockResolvedValue({
-      data: {},
-    } as unknown as Awaited<ReturnType<typeof fal.queue.result>>)
+    vi.mocked(fal.queue.result).mockResolvedValue(
+      {} as unknown as Awaited<ReturnType<typeof fal.queue.result>>,
+    )
 
-    const result = (await getHandler()({
-      data: { accessToken: 'tok' },
-    })) as Record<string, number>
+    const result = (await checkPendingGenerations()) as Record<string, number>
 
     expect(result.completed).toBe(1)
     expect(result.failed).toBe(0)
@@ -137,9 +127,7 @@ describe('checkPendingGenerations handler', () => {
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
     vi.mocked(fal.queue.result).mockRejectedValue(new Error('fal failed'))
 
-    const result = (await getHandler()({
-      data: { accessToken: 'tok' },
-    })) as Record<string, number>
+    const result = (await checkPendingGenerations()) as Record<string, number>
 
     expect(result.completed).toBe(0)
     expect(result.failed).toBe(1)
@@ -159,9 +147,7 @@ describe('checkPendingGenerations handler', () => {
       status: 'IN_QUEUE',
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
 
-    const result = (await getHandler()({
-      data: { accessToken: 'tok' },
-    })) as Record<string, number>
+    const result = (await checkPendingGenerations()) as Record<string, number>
 
     expect(result.completed).toBe(0)
     expect(result.failed).toBe(0)
@@ -183,13 +169,11 @@ describe('checkPendingGenerations handler', () => {
       .mockResolvedValueOnce({
         status: 'COMPLETED',
       } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
-    vi.mocked(fal.queue.result).mockResolvedValue({
-      data: {},
-    } as unknown as Awaited<ReturnType<typeof fal.queue.result>>)
+    vi.mocked(fal.queue.result).mockResolvedValue(
+      {} as unknown as Awaited<ReturnType<typeof fal.queue.result>>,
+    )
 
-    const result = (await getHandler()({
-      data: { accessToken: 'tok' },
-    })) as Record<string, number>
+    const result = (await checkPendingGenerations()) as Record<string, number>
 
     expect(result.completed).toBe(1)
     expect(result.failed).toBe(0)

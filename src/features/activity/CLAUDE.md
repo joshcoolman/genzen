@@ -15,7 +15,7 @@ Chronological record of every AI generation (image, success + failure, including
 
 ## Route
 
-`src/routes/dashboard/activity.tsx`
+`app/dashboard/activity/page.tsx`
 
 ## Data Source
 

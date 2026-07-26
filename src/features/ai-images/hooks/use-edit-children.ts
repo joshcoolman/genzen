@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useState } from 'react'
 import type { Tables } from '@/lib/types/supabase'
 import { supabase } from '@/lib/supabase'

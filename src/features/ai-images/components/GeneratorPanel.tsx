@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import type { GeneratorState } from '@/features/ai-images/hooks/use-generator'
 import type { UserImage } from '@/features/user-images/types'

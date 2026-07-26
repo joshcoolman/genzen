@@ -1,73 +1,7 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose'
-import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from './supabase-admin.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/types/supabase'
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL
-
-// JWKS is fetched once and cached by jose for the process lifetime
-const getJWKS = (() => {
-  let jwks: ReturnType<typeof createRemoteJWKSet> | null = null
-  return () => {
-    if (!jwks && supabaseUrl) {
-      jwks = createRemoteJWKSet(
-        new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`),
-      )
-    }
-    return jwks
-  }
-})()
-
-// Supabase JWT issuer is <project-url>/auth/v1
-const expectedIssuer = supabaseUrl ? `${supabaseUrl}/auth/v1` : undefined
-
-export async function requireAuth(accessToken: string) {
-  if (!accessToken) {
-    throw new Error('Unauthorized')
-  }
-
-  const jwks = getJWKS()
-  if (jwks) {
-    try {
-      const { payload } = await jwtVerify(accessToken, jwks, {
-        audience: 'authenticated',
-        issuer: expectedIssuer,
-        clockTolerance: 60,
-      })
-      if (payload.sub) {
-        return { id: payload.sub, email: payload.email as string | undefined }
-      }
-    } catch (err) {
-      console.warn(
-        '[auth] Local JWT verification failed, falling back to remote:',
-        (err as Error).message,
-      )
-    }
-  }
-
-  // Fallback: remote verification
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-  )
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(accessToken)
-
-  if (error || !user) {
-    throw new Error('Unauthorized')
-  }
-
-  return user
-}
-
-export interface AuthInput {
-  accessToken?: string
-  userId?: string
-}
+import { requireUserId } from '@/features/auth/server/current-user.server'
 
 export interface ResolvedAuth {
   userId: string
@@ -75,31 +9,21 @@ export interface ResolvedAuth {
 }
 
 /**
- * Resolves either a Supabase access token (browser path, RLS-scoped client)
- * or a pre-verified userId (MCP path, service-role client). Server fns that
- * support both auth channels should call this once and use the returned
- * client for all queries.
+ * Identity for the current request, plus a database client.
  *
- * IMPORTANT: when called with `userId`, the returned client bypasses RLS.
- * Every read and write MUST include an explicit `.eq('user_id', userId)`
- * filter (or equivalent path scoping) to prevent cross-user access.
+ * Previously this took an `accessToken` off the request *body* and verified it
+ * against Supabase's remote JWKS. The caller no longer says who it is -- the
+ * signed session cookie does -- which is what retired `jose`, the JWKS fetch,
+ * and the `accessToken` field that rode along in 232 places.
+ *
+ * IMPORTANT: the returned client is service-role and bypasses RLS. Every read
+ * and write MUST carry an explicit `.eq('user_id', userId)` filter. That was
+ * already true on the old MCP path; it is now the only path. RLS is not a
+ * second line of defence here -- 0001_init.sql drops the policies outright, on
+ * the grounds that after this migration the browser cannot reach Postgres at
+ * all, so there is no untrusted caller left for a policy to guard against.
  */
-export async function resolveAuth(input: AuthInput): Promise<ResolvedAuth> {
-  if (input.userId) {
-    return { userId: input.userId, supabase: getSupabaseAdmin() }
-  }
-  if (!input.accessToken) {
-    throw new Error('Unauthorized')
-  }
-  const user = await requireAuth(input.accessToken)
-  const supabase = createClient<Database>(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.VITE_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: { Authorization: `Bearer ${input.accessToken}` },
-      },
-    },
-  )
-  return { userId: user.id, supabase }
+export async function resolveAuth(): Promise<ResolvedAuth> {
+  const userId = await requireUserId()
+  return { userId, supabase: getSupabaseAdmin() }
 }

@@ -17,7 +17,7 @@ src/features/<feature>/
   server/
     <action>.server.ts            # Server functions
 
-src/routes/dashboard/<feature>.tsx  # Thin shell — 1 hook + composed components
+app/dashboard/<feature>.tsx  # Thin shell — 1 hook + composed components
 ```
 
 ## Rules
@@ -85,7 +85,7 @@ Why: `ReturnType` is brittle (hook return changes silently break consumers), hid
 
 Components receive typed props and render UI. They do not:
 
-- Call server functions directly
+- Call server actions directly
 - Contain inline state mutation logic (use hook methods instead)
 - Import hooks (except UI-only hooks like `useSensors`)
 

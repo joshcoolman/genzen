@@ -1,9 +1,10 @@
+'use client'
+
 import { useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
 
 interface UseVariationsOptions {
-  accessToken: string | undefined
   setError: (error: string | null) => void
 }
 
@@ -24,7 +25,6 @@ export interface VariationsState {
 }
 
 export function useVariations({
-  accessToken,
   setError,
 }: UseVariationsOptions): VariationsState {
   const [variationDialogOpen, setVariationDialogOpen] = useState(false)
@@ -40,11 +40,7 @@ export function useVariations({
   }
 
   async function handlePreviewVariations(guidance: string, count: number) {
-    if (
-      !accessToken ||
-      !pendingSourceImage ||
-      !pendingSourceImage.generation_metadata?.prompt
-    )
+    if (!pendingSourceImage || !pendingSourceImage.generation_metadata?.prompt)
       return
 
     setError(null)
@@ -52,13 +48,10 @@ export function useVariations({
 
     try {
       const result = await generateVariationPrompts({
-        data: {
-          accessToken,
-          prompt: pendingSourceImage.generation_metadata.prompt,
-          sourceImageId: pendingSourceImage.id,
-          count,
-          ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
-        },
+        prompt: pendingSourceImage.generation_metadata.prompt,
+        sourceImageId: pendingSourceImage.id,
+        count,
+        ...(guidance.trim() ? { guidance: guidance.trim() } : {}),
       })
       setVariationPrompts(result.prompts)
     } catch (err) {

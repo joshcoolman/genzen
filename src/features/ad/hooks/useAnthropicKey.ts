@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useSyncExternalStore } from 'react'
 
 const STORAGE_KEY = 'ad-anthropic-key'

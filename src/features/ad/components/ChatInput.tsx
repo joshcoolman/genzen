@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useRef, useState } from 'react'
 import { ImagePlus, Send, Square, X } from 'lucide-react'
 import type { ADImage } from '../hooks/useADChat'
@@ -19,7 +21,7 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { user } = useAuth()
-  const userImages = useUserImages(user?.id)
+  const userImages = useUserImages(user.id)
 
   const handleUploadToLibrary = useCallback(
     async (file: File) => {

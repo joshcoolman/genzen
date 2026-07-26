@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'

@@ -5,9 +5,8 @@ imports back into it.
 ## The dependency direction that matters
 
 `session.ts` is **Web Crypto only — never import `node:*` into it, directly or
-transitively.** It is the module a Next Edge middleware will import once #168
-reaches the framework port, and a `node:crypto` import anywhere in its graph
-breaks that bundle. That is why `server/credentials.server.ts` imports `session`
+transitively.** It is imported by `proxy.ts`, which runs before every request, and a
+`node:crypto` import anywhere in its graph breaks that bundle. That is why `server/credentials.server.ts` imports `session`
 and never the reverse, and why there is no barrel here re-exporting both: a
 barrel is how the Node half gets pulled into the Edge half by accident.
 
@@ -19,10 +18,10 @@ barrel is how the Node half gets pulled into the Edge half by accident.
 
 ## Does NOT own
 
-- Setting or clearing the cookie on a response — the framework layer does that
-  (a Nitro h3 route today, a route handler after the port).
-- Route protection. Deny-by-default middleware arrives with the Next port; until
-  then the app is still on Supabase auth.
+- Setting or clearing the cookie on a response — the server actions in
+  `app/login/_actions/login.ts` and `logout.action.ts` do that.
+- Route protection. `proxy.ts` owns it: every path is private unless listed in
+  its `PUBLIC_PATHS`.
 - User provisioning as a product flow. `scripts/create-user.mjs` is the only way
   in, on purpose.
 
@@ -41,7 +40,7 @@ barrel is how the Node half gets pulled into the Edge half by accident.
 
 ## Decided, not worth relitigating
 
-A signed value rather than a JWT. This replaces a Supabase JWT that rode in the
+A signed value rather than a JWT. This replaced a Supabase JWT that rode in the
 request _body_ of every server function and was verified against a remote JWKS.
 There is no third party to interoperate with, so the token carries exactly who
 and when, and an HMAC over those is the entire requirement.

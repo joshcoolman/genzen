@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Upload } from 'lucide-react'
 import { processAndUploadFiles } from '../lib/process-files'

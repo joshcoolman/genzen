@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useState } from 'react'
 import { BookOpen } from 'lucide-react'
 import { LibraryPickerDialog } from './LibraryPickerDialog'

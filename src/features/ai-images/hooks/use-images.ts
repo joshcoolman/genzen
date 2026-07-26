@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { Tables } from '@/lib/types/supabase'
@@ -11,7 +13,6 @@ import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server
 
 interface UseImagesOptions {
   userId: string | undefined
-  accessToken: string | undefined
 }
 
 function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
@@ -55,10 +56,7 @@ export interface GalleryState {
   refresh: () => Promise<void>
 }
 
-export function useImages({
-  userId,
-  accessToken,
-}: UseImagesOptions): GalleryState {
+export function useImages({ userId }: UseImagesOptions): GalleryState {
   const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [rootImageMeta, setRootImageMeta] = useState<
@@ -311,16 +309,15 @@ export function useImages({
   // Poll FAL for pending generations (skipped when webhooks are enabled)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (import.meta.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
-    if (!accessToken) return
+    if (process.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
 
     const hasPending = savedImages.some((img) => img.status === 'pending')
 
     if (hasPending && !pollingRef.current) {
       // Initial check immediately
-      checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+      checkPendingGenerations().catch(() => {})
       pollingRef.current = setInterval(() => {
-        checkPendingGenerations({ data: { accessToken } }).catch(() => {})
+        checkPendingGenerations().catch(() => {})
       }, 5000)
     } else if (!hasPending && pollingRef.current) {
       clearInterval(pollingRef.current)
@@ -333,7 +330,7 @@ export function useImages({
         pollingRef.current = null
       }
     }
-  }, [accessToken, savedImages.some((img) => img.status === 'pending')])
+  }, [savedImages.some((img) => img.status === 'pending')])
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => [card, ...prev])
@@ -427,9 +424,7 @@ export function useImages({
           rootImage.storage_path,
           ...(rootImage.thumbnail_path ? [rootImage.thumbnail_path] : []),
         ]
-        await removeImages({
-          data: { accessToken: accessToken!, storagePaths: paths },
-        })
+        await removeImages({ storagePaths: paths })
       }
     }
   }
@@ -477,10 +472,8 @@ export function useImages({
       // Remove parent_id from children so they're independent in trash
       // Genealogy fields (source_image_id, root_image_id, generation_type) stay intact
       const childIds = Array.from(idsToDelete).filter((id) => id !== img.id)
-      if (childIds.length > 0 && accessToken) {
-        await ungroupImages({
-          data: { accessToken, imageIds: childIds },
-        })
+      if (childIds.length > 0) {
+        await ungroupImages({ imageIds: childIds })
       }
 
       // Soft-delete all
@@ -512,11 +505,7 @@ export function useImages({
 
     try {
       // Detach all children via server function
-      if (accessToken) {
-        await ungroupImages({
-          data: { accessToken, parentId: img.id },
-        })
-      }
+      await ungroupImages({ parentId: img.id })
 
       // Soft-delete the parent
       const { error: deleteError } = await supabase
@@ -544,11 +533,10 @@ export function useImages({
   }
 
   async function retryImage(img: SavedAiImage) {
-    if (!accessToken) return
     // Optimistically remove the failed card — the new pending record will appear via realtime
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
     try {
-      await retryGeneration({ data: { accessToken, recordId: img.id } })
+      await retryGeneration({ recordId: img.id })
     } catch {
       // If retry fails, restore the failed card
       setSavedImages((prev) => sortByOrder([...prev, img]))
@@ -556,8 +544,6 @@ export function useImages({
   }
 
   async function ungroupChildren(img: SavedAiImage) {
-    if (!accessToken) return
-
     // Optimistic: clear parent_id on children in local state
     setSavedImages((prev) =>
       prev.map((i) => {
@@ -573,14 +559,10 @@ export function useImages({
     )
 
     // Detach all children via server function
-    await ungroupImages({
-      data: { accessToken, parentId: img.id },
-    })
+    await ungroupImages({ parentId: img.id })
   }
 
   async function reorderImages(draggedId: string, newSortOrder: number) {
-    if (!accessToken) return
-
     const prev = savedImages
     setSavedImages((current) =>
       sortByOrder(
@@ -591,9 +573,7 @@ export function useImages({
     )
 
     try {
-      await updateImageOrder({
-        data: { accessToken, imageId: draggedId, sortOrder: newSortOrder },
-      })
+      await updateImageOrder({ imageId: draggedId, sortOrder: newSortOrder })
     } catch {
       setSavedImages(prev)
     }

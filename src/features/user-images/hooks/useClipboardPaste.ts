@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Clipboard paste-to-upload hook.
  *
