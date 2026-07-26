@@ -19,7 +19,7 @@
 // outright and it never appears in front of a human. There is deliberately no
 // `.env.local.example`: a template listing a dozen vars reads as "this needs
 // configuring" when it does not.
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline/promises'
@@ -114,9 +114,9 @@ function hostPortInUse(host, port) {
 }
 
 /**
- * Vite binds `localhost`, which resolves to ::1 before 127.0.0.1 on macOS -- so
- * probing only IPv4 can miss a server that is very much running, and we'd start
- * a second one. Check both.
+ * The dev server binds `localhost`, which resolves to ::1 before 127.0.0.1 on
+ * macOS -- so probing only IPv4 can miss a server that is very much running,
+ * and we'd start a second one. Check both.
  */
 async function portInUse(port) {
   const results = await Promise.all([
@@ -369,12 +369,26 @@ if (SKIP_DEV) {
   openBrowser(DEV_URL)
 } else {
   console.log('> starting dev server (ctrl-c to stop)\n')
-  // `--open` is Vite's own once-it's-listening browser launch, which beats
-  // polling the port ourselves and racing the first successful response.
-  const dev = spawnSync('pnpm', ['dev', '--open'], {
-    cwd: ROOT,
-    stdio: 'inherit',
+  // Vite had a `--open` flag that launched the browser once it was listening.
+  // Next does not, and passing it is a hard error, so poll the port instead --
+  // which is what the flag was saving us from doing.
+  const dev = spawn('pnpm', ['dev'], { cwd: ROOT, stdio: 'inherit' })
+
+  void (async () => {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      if (dev.exitCode !== null) return
+      if (await portInUse(DEV_PORT)) {
+        openBrowser(DEV_URL)
+        return
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    // 30s and still nothing listening: the server is having trouble and its own
+    // output is the useful signal, so say nothing rather than open a dead tab.
+  })()
+
+  dev.on('exit', (code, signal) => {
+    // Ctrl-C arrives as a signal, not a failure -- exiting 1 on it would be a lie.
+    process.exit(signal ? 0 : (code ?? 0))
   })
-  // Ctrl-C arrives as a signal, not a failure -- exiting 1 on it would be a lie.
-  process.exit(dev.signal ? 0 : (dev.status ?? 0))
 }
