@@ -11,12 +11,17 @@ import { useCallback, useEffect, useState } from 'react'
 import { computeFileHash } from '../lib/file-hash'
 import { uploadImage } from '../server/upload-image.server'
 import { removeImages } from '../server/remove-images.server'
+import {
+  createImageRecord,
+  listImages,
+  softDeleteImage,
+  updateImageMeta,
+} from '../server/images.actions'
 import type {
   CreateUserImageInput,
   UserImage,
   UserImageFilters,
 } from '../types'
-import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 
 async function fileToBase64(file: File): Promise<string> {
@@ -139,30 +144,10 @@ export function useUserImages(
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
-      let query = supabase
-        .from('user_images')
-        .select('*')
-        .eq('user_id', userId)
-        .in('source', ['upload', 'ai_generated'])
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-
-      if (filters?.search_term) {
-        const searchPattern = `%${filters.search_term}%`
-        query = query.or(
-          `title.ilike.${searchPattern},description.ilike.${searchPattern}`,
-        )
-      }
-
-      if (filters?.limit !== undefined) {
-        query = query.limit(filters.limit)
-      }
-
-      const { data: images, error } = await query
-
-      if (error) {
-        throw new Error(error.message)
-      }
+      const images = await listImages({
+        search_term: filters?.search_term,
+        limit: filters?.limit,
+      })
 
       setState((prev) => ({
         ...prev,
@@ -216,26 +201,22 @@ export function useUserImages(
         })
 
         // Create database record
-        const { data: newImage, error: insertError } = await supabase
-          .from('user_images')
-          .insert({
-            user_id: userId,
+        let newImage: UserImage
+        try {
+          newImage = await createImageRecord({
             title: input.title,
             description: input.description ?? null,
-            storage_path: storagePath,
-            file_name: input.file.name,
-            file_size: input.file.size,
-            mime_type: input.file.type,
-            file_hash: input.file_hash,
+            storagePath,
+            fileName: input.file.name,
+            fileSize: input.file.size,
+            mimeType: input.file.type,
+            fileHash: input.file_hash,
           })
-          .select()
-          .single()
-
-        if (insertError) {
-          // Rollback: delete uploaded file via server
+        } catch (insertError) {
+          // Rollback: delete the uploaded file, or it is orphaned in storage.
           await removeImages({ storagePaths: [storagePath] }).catch(() => {})
           throw new Error(
-            `Failed to create image record: ${insertError.message}`,
+            `Failed to create image record: ${(insertError as Error).message}`,
           )
         }
 
@@ -291,17 +272,7 @@ export function useUserImages(
           ),
         }))
 
-        const { data: updatedImage, error } = await supabase
-          .from('user_images')
-          .update({ title, description })
-          .eq('id', id)
-          .eq('user_id', userId)
-          .select()
-          .single()
-
-        if (error) {
-          throw new Error(error.message)
-        }
+        const updatedImage = await updateImageMeta(id, title, description)
 
         // Replace with server response
         setState((prev) => ({
@@ -350,15 +321,7 @@ export function useUserImages(
         }))
 
         // Soft delete — set deleted_at timestamp
-        const { error: deleteError } = await supabase
-          .from('user_images')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', id)
-          .eq('user_id', userId)
-
-        if (deleteError) {
-          throw new Error(deleteError.message)
-        }
+        await softDeleteImage(id)
 
         setState((prev) => ({ ...prev, isDeleting: null }))
       } catch (err) {
@@ -445,24 +408,22 @@ export function useUserImages(
       ])
 
       // Insert DB record (hash may be undefined if computation failed)
-      const { data: newImage, error: insertError } = await supabase
-        .from('user_images')
-        .insert({
-          user_id: userId,
+      let newImage: UserImage
+      try {
+        newImage = await createImageRecord({
           title,
           description: description ?? null,
-          storage_path: storagePath,
-          file_name: file.name,
-          file_size: file.size,
-          mime_type: file.type,
-          file_hash: hashResult,
+          storagePath,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          fileHash: hashResult,
         })
-        .select()
-        .single()
-
-      if (insertError) {
+      } catch (insertError) {
         await removeImages({ storagePaths: [storagePath] }).catch(() => {})
-        throw new Error(`Failed to create image record: ${insertError.message}`)
+        throw new Error(
+          `Failed to create image record: ${(insertError as Error).message}`,
+        )
       }
 
       // Atomically swap optimistic card for real image, keeping the object URL
