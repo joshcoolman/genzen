@@ -51,7 +51,14 @@ than assume it's there.
 
 ## Git workflow
 
-This is a solo project. **Commit directly to main by default.** Feature branches are only justified for genuinely risky or experimental work where an escape hatch is needed.
+**This repo, and this repo alone: commit and push straight to `main`, freely.**
+Be aggressive about it — do not stop to ask, do not open a PR, do not cut a
+branch for ordinary work. This is a deliberate exception to `project-standard`
+("never commit to `main` directly") and to the global `~/.claude/CLAUDE.md` rule
+about branching before non-trivial work. Both still hold everywhere else; here
+they are overridden. Nothing in this repo needs the exception re-argued.
+
+Feature branches are only justified for genuinely risky or experimental work where an escape hatch is needed.
 
 If a branch is used, merge it and delete it before the session's final commit — never leave branches open at end of session. The goal is that main always reflects the current working state of the app, so switching computers means pulling main and continuing seamlessly.
 
@@ -83,15 +90,23 @@ framework notes). Never a plan. There is no in-app docs viewer — that route an
 `~/repos/project-standard/README.md` is the house standard for this project's
 conventions — folder layout, component organization, styling, docs shape, naming.
 
-**The Next port has landed (#175), so the standard now applies in full.** Route
-folders and `_actions/ _components/` are in place. Still outstanding from its
-`app/` half: one-folder-per-component and CSS Modules over Tailwind — those are
-the conformance pass, and the whole app is still on Tailwind classes.
+The conformance pass is tracked as an epic (#187). Where the standard applies,
+prefer it over an older pattern found in the codebase — an existing file is not
+evidence of the current convention.
 
-Where the standard applies, prefer it over an older pattern found in the codebase —
-an existing file is not evidence of the current convention. Two deliberate local
-exceptions: commit to `main` (see Git workflow above), and resume/continuation
-files stay gone rather than being replaced.
+**Three deliberate exceptions, settled — do not re-litigate them or "fix" the
+code toward the standard:**
+
+- **Commit straight to `main`** (see Git workflow above).
+- **Server code lives in `src/features/<domain>/server/`**, not in each route's
+  `_queries/`/`_actions/`. The standard's route shape assumes reads and writes
+  belong to one route; here the same generation, image and trash code is reached
+  from AI Images, Canvas and the edit page alike, so splitting it per-route would
+  fight how the app actually works. Routes keep `page.tsx` + `_components/`.
+- **No resume/continuation files** — they existed, and were removed on purpose.
+
+The standard itself is not changed by any of this; these are genzen's deltas, and
+they belong in `docs/CODE-STANDARDS.md` (#180).
 
 ## Gotchas
 
