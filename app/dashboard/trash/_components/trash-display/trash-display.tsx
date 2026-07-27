@@ -10,8 +10,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useTrash } from '../hooks/useTrash'
-import { TrashDownloadButton } from './TrashDownloadButton'
+import { TrashDownloadButton } from '../trash-download-button/trash-download-button'
+import { useTrash } from './use-trash'
 import { useAuth } from '#/lib/auth'
 import { useSelection } from '#/lib/use-selection'
 import { ImageGrid } from '#/components/ImageGrid'

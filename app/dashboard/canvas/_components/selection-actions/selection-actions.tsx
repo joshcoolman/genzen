@@ -1,4 +1,4 @@
-import styles from './SelectionActions.module.css'
+import styles from './selection-actions.module.css'
 
 interface SelectionActionsProps {
   count: number

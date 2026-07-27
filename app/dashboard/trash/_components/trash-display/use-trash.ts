@@ -1,13 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import type { UserImage } from '#/features/user-images/types'
-import { createImageStorage } from '#/lib/image-storage'
 import {
   listTrashedImages,
   permanentlyDeleteImages,
   restoreImages,
-} from '#/features/trash/server/trash.actions'
+} from '../../_actions/trash'
+import type { UserImage } from '#/features/user-images/types'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface UseTrashReturn {
   images: Array<UserImage>

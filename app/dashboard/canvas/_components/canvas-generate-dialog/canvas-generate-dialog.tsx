@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { useCanvasGenerate } from '../hooks/use-canvas-generate'
+import type { useCanvasGenerate } from './use-canvas-generate'
 import {
   Dialog,
   DialogContent,

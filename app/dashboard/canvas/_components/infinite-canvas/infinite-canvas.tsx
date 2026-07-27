@@ -15,17 +15,22 @@ import {
   savePersistedState,
   setOnCanvas,
   syncCanvasFlags,
-} from '../lib/persistence'
-import { layoutMasonry } from '../lib/masonry'
+} from '../../_lib/persistence'
+import { layoutMasonry } from '../../_lib/masonry'
 import {
   canRetryFailure,
   useCanvasGenerate,
-} from '../hooks/use-canvas-generate'
-import { CANVAS_MAX_GROUP_SELECTION } from '../canvas-models'
-import { SelectionActions } from './SelectionActions'
-import { CanvasGenerateDialog } from './CanvasGenerateDialog'
-import styles from './InfiniteCanvas.module.css'
-import type { CanvasGroup, CanvasImage, DragMode, Transform } from '../types'
+} from '../canvas-generate-dialog/use-canvas-generate'
+import { CANVAS_MAX_GROUP_SELECTION } from '../../_lib/canvas-models'
+import { SelectionActions } from '../selection-actions/selection-actions'
+import { CanvasGenerateDialog } from '../canvas-generate-dialog/canvas-generate-dialog'
+import styles from './infinite-canvas.module.css'
+import type {
+  CanvasGroup,
+  CanvasImage,
+  DragMode,
+  Transform,
+} from '../../_lib/types'
 import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
 import { toast } from '#/components/ui/toast'

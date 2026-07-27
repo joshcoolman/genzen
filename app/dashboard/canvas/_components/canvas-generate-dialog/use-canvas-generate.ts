@@ -1,14 +1,14 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { getSignedUrl, setOnCanvas } from '../lib/persistence'
+import { getSignedUrl, setOnCanvas } from '../../_lib/persistence'
 import {
   getCanvasGenerationRecord,
   getImagePrompt,
-} from '../server/canvas.actions'
-import { canvasModelIdsForRefCount } from '../canvas-models'
-import { mapOutcomesToPlaceholders } from '../lib/generation-mapping'
-import type { CanvasImage } from '../types'
+} from '../../_actions/canvas'
+import { canvasModelIdsForRefCount } from '../../_lib/canvas-models'
+import { mapOutcomesToPlaceholders } from '../../_lib/generation-mapping'
+import type { CanvasImage } from '../../_lib/types'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '#/components/ModelSelector'
 import { useUserImages } from '#/features/user-images'

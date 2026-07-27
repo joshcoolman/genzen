@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { listDeadRecordIds, setImagesOnCanvas } from '../server/canvas.actions'
+import { listDeadRecordIds, setImagesOnCanvas } from '../_actions/canvas'
 import {
   cleanImagesForSave,
   fetchDeadRecordIds,
   filterLoadedImages,
   setOnCanvas,
 } from './persistence'
-import type { CanvasImage } from '../types'
+import type { CanvasImage } from './types'
 
 const completed: CanvasImage = {
   id: 'c1',
@@ -89,7 +89,7 @@ describe('persistence durability contract', () => {
 })
 
 // vi.mock is hoisted — keep factories self-contained
-vi.mock('../server/canvas.actions', () => ({
+vi.mock('../_actions/canvas', () => ({
   listDeadRecordIds: vi.fn(),
   listOnCanvasRecords: vi.fn(),
   restoreCanvasImages: vi.fn(),
