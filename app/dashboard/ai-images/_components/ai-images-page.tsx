@@ -20,6 +20,7 @@ import {
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import { usePersistedState } from '@/lib/use-persisted-state'
 import { useIsMobile } from '@/lib/hooks/use-is-mobile'
 import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 import {
@@ -77,20 +78,21 @@ interface AiImagesPrefs {
 
 const PREFS_KEY = 'genzen:ai-images-prefs'
 
+const DEFAULT_PREFS: AiImagesPrefs = {
+  thumbSize: 'lg',
+  sortAsc: false,
+  showInfo: true,
+}
+
+// Only ever called from an effect, never during render -- see usePersistedState.
 function getStoredPrefs(): AiImagesPrefs {
-  if (typeof window === 'undefined')
-    return { thumbSize: 'lg', sortAsc: false, showInfo: true }
   try {
     const raw = localStorage.getItem(PREFS_KEY)
-    if (raw)
-      return {
-        ...{ thumbSize: 'lg', sortAsc: false, showInfo: true },
-        ...JSON.parse(raw),
-      }
+    if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) }
   } catch {
     // ignore
   }
-  return { thumbSize: 'lg', sortAsc: false, showInfo: true }
+  return DEFAULT_PREFS
 }
 
 function storePrefs(partial: Partial<AiImagesPrefs>) {
@@ -110,12 +112,18 @@ export function AiImagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // View prefs
-  const [storedPrefs] = useState(getStoredPrefs)
-  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
-    storedPrefs.thumbSize,
+  const [thumbSize, setThumbSize] = usePersistedState<'lg' | 'md' | 'sm'>(
+    () => getStoredPrefs().thumbSize,
+    DEFAULT_PREFS.thumbSize,
   )
-  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
-  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
+  const [sortAsc, setSortAsc] = usePersistedState(
+    () => getStoredPrefs().sortAsc,
+    DEFAULT_PREFS.sortAsc,
+  )
+  const [showInfo, setShowInfo] = usePersistedState(
+    () => getStoredPrefs().showInfo,
+    DEFAULT_PREFS.showInfo,
+  )
 
   // Force lg thumb size on mobile (<400px)
   const isMobile = useIsMobile()
@@ -543,23 +551,26 @@ export function AiImagesPage() {
     setDescribeTarget(img)
   }, [])
 
-  const [generatorOpen, setGeneratorOpen] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('genzen:generator-panel-open') !== 'false'
-  })
+  const [generatorOpen, setGeneratorOpen, generatorOpenHydrated] =
+    usePersistedState(
+      () => localStorage.getItem('genzen:generator-panel-open') !== 'false',
+      true,
+    )
 
-  const [panelPinned, setPanelPinned] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('genzen:generator-panel-pinned') !== 'false'
-  })
+  const [panelPinned, setPanelPinned, panelPinnedHydrated] = usePersistedState(
+    () => localStorage.getItem('genzen:generator-panel-pinned') !== 'false',
+    true,
+  )
 
   useEffect(() => {
+    if (!generatorOpenHydrated) return
     localStorage.setItem('genzen:generator-panel-open', String(generatorOpen))
-  }, [generatorOpen])
+  }, [generatorOpen, generatorOpenHydrated])
 
   useEffect(() => {
+    if (!panelPinnedHydrated) return
     localStorage.setItem('genzen:generator-panel-pinned', String(panelPinned))
-  }, [panelPinned])
+  }, [panelPinned, panelPinnedHydrated])
 
   return (
     <div

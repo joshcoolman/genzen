@@ -260,13 +260,47 @@ run('node', ['scripts/migrate.mjs'])
   const devPassword =
     read('LOCAL_DEV_PASSWORD', env) ?? DEV_USER_DEFAULTS.LOCAL_DEV_PASSWORD
 
+  // For as long as both databases exist, the local user must carry the SAME id
+  // as its Supabase auth row. `user_images.user_id` still references
+  // `auth.users(id)`, and the app now derives identity from the local `users`
+  // table -- so a mismatch means your library reads empty and every upload dies
+  // on a foreign key after the file has already reached storage. Adopting the
+  // auth uuid keeps one identity across the transition. This whole block goes
+  // when Supabase does (#176).
+  const supabaseSql = postgres(
+    'postgres://postgres:postgres@localhost:54322/postgres',
+  )
+  let authUserId
+  try {
+    const [authUser] = await supabaseSql`
+      select id from auth.users where email = ${devEmail}
+    `
+    authUserId = authUser?.id
+  } catch {
+    // No auth schema (or Supabase already gone) -- fall back to a generated id.
+  } finally {
+    await supabaseSql.end()
+  }
+
   const sql = postgres(LOCAL_ENV.DATABASE_URL)
   try {
     const passwordHash = await hashPassword(devPassword)
     const [existing] = await sql`select id from users where email = ${devEmail}`
     if (existing) {
       await sql`update users set password_hash = ${passwordHash} where id = ${existing.id}`
+      if (authUserId && existing.id !== authUserId) {
+        await sql`update users set id = ${authUserId} where id = ${existing.id}`
+        console.log(
+          `postgres: ${devEmail} -- adopted the Supabase auth id (${authUserId}) so existing images stay yours`,
+        )
+      }
       console.log(`postgres: ${devEmail} -- password synced from .env.local`)
+    } else if (authUserId) {
+      await sql`
+        insert into users (id, email, password_hash)
+        values (${authUserId}, ${devEmail}, ${passwordHash})
+      `
+      console.log(`postgres: created ${devEmail} / ${devPassword}`)
     } else {
       await sql`insert into users (email, password_hash) values (${devEmail}, ${passwordHash})`
       console.log(`postgres: created ${devEmail} / ${devPassword}`)

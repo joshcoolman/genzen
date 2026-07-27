@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePersistedState } from '@/lib/use-persisted-state'
 import { generateImage } from '@/features/ai-images/server/generate-image.server'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
@@ -20,6 +21,8 @@ import {
 } from '@/features/ai-images/models'
 
 // Kontext Dev is image-input only -- fall back to FLUX Dev for text-only
+const EMPTY_PROMPTS: Array<string> = ['']
+
 const KONTEXT_DEV = KONTEXT_DEV_ID
 const DRAFT_TEXT_ONLY_FALLBACK = KONTEXT_DEV_FALLBACK_ID
 
@@ -133,8 +136,7 @@ export function useGenerator({
     localStorage.removeItem(legacyPromptKey)
   }
 
-  const [prompts, setPromptsRaw] = useState<Array<string>>(() => {
-    if (typeof window === 'undefined') return ['']
+  const [prompts, setPromptsRaw] = usePersistedState<Array<string>>(() => {
     const stored = localStorage.getItem(promptsKey)
     if (stored) {
       try {
@@ -147,20 +149,22 @@ export function useGenerator({
     const legacy = localStorage.getItem(legacyPromptKey)
     if (legacy) return [legacy]
     return ['']
-  })
+  }, EMPTY_PROMPTS)
 
   const prompt = prompts[0]
-  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
-    () => {
-      if (typeof window === 'undefined') return 'landscape'
-      const stored = localStorage.getItem(orientationKey)
-      return stored === 'portrait' ? 'portrait' : 'landscape'
-    },
+  const [orientation, setOrientation, orientationHydrated] = usePersistedState<
+    'landscape' | 'portrait'
+  >(
+    () =>
+      localStorage.getItem(orientationKey) === 'portrait'
+        ? 'portrait'
+        : 'landscape',
+    'landscape',
   )
-  const [aspectRatio, setAspectRatio] = useState(() => {
-    if (typeof window === 'undefined') return '16:9'
-    return localStorage.getItem(aspectRatioKey) ?? '16:9'
-  })
+  const [aspectRatio, setAspectRatio, aspectRatioHydrated] = usePersistedState(
+    () => localStorage.getItem(aspectRatioKey) ?? '16:9',
+    '16:9',
+  )
   const [loading, setLoading] = useState(false)
   const [sourceImage, setSourceImage] = useState<{
     base64: string
@@ -223,14 +227,18 @@ export function useGenerator({
     })
   }, [])
 
-  // Persist orientation + aspect ratio on change
+  // Persist orientation + aspect ratio on change. Gated on hydration: before it,
+  // these still hold the SSR fallback, and writing that back erases the stored
+  // value on every page load.
   useEffect(() => {
+    if (!orientationHydrated) return
     localStorage.setItem(orientationKey, orientation)
-  }, [orientation])
+  }, [orientation, orientationHydrated])
 
   useEffect(() => {
+    if (!aspectRatioHydrated) return
     localStorage.setItem(aspectRatioKey, aspectRatio)
-  }, [aspectRatio])
+  }, [aspectRatio, aspectRatioHydrated])
 
   // Compute maxRefImages from selected models' edit endpoints
   const maxRefImages = useMemo(() => {

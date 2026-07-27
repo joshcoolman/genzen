@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { getDefaultSelectedId, getModelsByCapability } from './models'
 import type { ModelCapability, SelectionMode } from './types'
+import { usePersistedState } from '@/lib/use-persisted-state'
 import { useEnabledModels } from '@/lib/use-enabled-models'
 
 interface UseModelSelectorOptions {
@@ -67,20 +68,26 @@ export function useModelSelector({
       ? allModels[0].id
       : getDefaultSelectedId(capability)
 
-  const [selectedIds, setSelectedIds] = useState<Array<string>>(() => {
-    return readStorage(
-      storageKey(capability, 'selected', storageScope),
-      [defaultId],
-      (ids: Array<string>) => {
-        const valid = ids.filter((id) => modelIds.includes(id))
-        return valid.length > 0 ? valid : [defaultId]
-      },
-    )
-  })
+  const [selectedIds, setSelectedIds, selectedHydrated] = usePersistedState<
+    Array<string>
+  >(
+    () =>
+      readStorage(
+        storageKey(capability, 'selected', storageScope),
+        [defaultId],
+        (ids: Array<string>) => {
+          const valid = ids.filter((id) => modelIds.includes(id))
+          return valid.length > 0 ? valid : [defaultId]
+        },
+      ),
+    [defaultId],
+  )
 
-  const [gensPerModel, setGensPerModel] = useState<number>(() => {
-    return readStorage(storageKey(capability, 'gens'), 1)
-  })
+  const [gensPerModel, setGensPerModel, gensHydrated] =
+    usePersistedState<number>(
+      () => readStorage(storageKey(capability, 'gens'), 1),
+      1,
+    )
 
   // Keep the selection within the currently-available models. When `allowedIds`
   // narrows (e.g. canvas scopes models to those that fit the selected group),
@@ -93,21 +100,23 @@ export function useModelSelector({
     })
   }, [modelIds, defaultId])
 
-  // Persist selected models
+  // Persist selected models. Gated on hydration -- see usePersistedState.
   useEffect(() => {
+    if (!selectedHydrated) return
     localStorage.setItem(
       storageKey(capability, 'selected', storageScope),
       JSON.stringify(selectedIds),
     )
-  }, [capability, storageScope, selectedIds])
+  }, [capability, storageScope, selectedIds, selectedHydrated])
 
   // Persist gens per model
   useEffect(() => {
+    if (!gensHydrated) return
     localStorage.setItem(
       storageKey(capability, 'gens', storageScope),
       JSON.stringify(gensPerModel),
     )
-  }, [capability, storageScope, gensPerModel])
+  }, [capability, storageScope, gensPerModel, gensHydrated])
 
   const toggleSelected = useCallback(
     (modelId: string) => {

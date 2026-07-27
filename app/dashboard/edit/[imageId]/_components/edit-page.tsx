@@ -20,6 +20,7 @@ import {
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
 import type { SavedAiImage } from '@/features/ai-images/types'
+import { usePersistedState } from '@/lib/use-persisted-state'
 import { ImageGallery } from '@/features/ai-images/components/ImageGallery'
 import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
 import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
@@ -55,18 +56,19 @@ interface EditPrefs {
 
 const PREFS_KEY = 'genzen:edit-page-prefs'
 
+const DEFAULT_PREFS: EditPrefs = {
+  thumbSize: 'lg',
+  showInfo: true,
+  sortAsc: false,
+}
+
+// Only ever called from an effect, never during render -- see usePersistedState.
 function getStoredPrefs(): EditPrefs {
-  if (typeof window === 'undefined')
-    return { thumbSize: 'lg', showInfo: true, sortAsc: false }
   try {
     const raw = localStorage.getItem(PREFS_KEY)
-    if (raw)
-      return {
-        ...{ thumbSize: 'lg', showInfo: true, sortAsc: false },
-        ...JSON.parse(raw),
-      }
+    if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) }
   } catch {}
-  return { thumbSize: 'lg', showInfo: true, sortAsc: false }
+  return DEFAULT_PREFS
 }
 
 function storePrefs(partial: Partial<EditPrefs>) {
@@ -84,31 +86,39 @@ export function EditPage() {
   const isMobile = useIsMobile()
   const { isOpen: isADOpen } = useADOpen()
 
-  const [panelPinned, setPanelPinned] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('genzen:edit-panel-pinned') !== 'false'
-  })
+  const [panelPinned, setPanelPinned, panelPinnedHydrated] = usePersistedState(
+    () => localStorage.getItem('genzen:edit-panel-pinned') !== 'false',
+    true,
+  )
 
   useEffect(() => {
+    if (!panelPinnedHydrated) return
     localStorage.setItem('genzen:edit-panel-pinned', String(panelPinned))
-  }, [panelPinned])
+  }, [panelPinned, panelPinnedHydrated])
 
-  const [panelOpen, setPanelOpen] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('genzen:edit-panel-open') !== 'false'
-  })
+  const [panelOpen, setPanelOpen, panelOpenHydrated] = usePersistedState(
+    () => localStorage.getItem('genzen:edit-panel-open') !== 'false',
+    true,
+  )
 
   useEffect(() => {
+    if (!panelOpenHydrated) return
     localStorage.setItem('genzen:edit-panel-open', String(panelOpen))
-  }, [panelOpen])
+  }, [panelOpen, panelOpenHydrated])
 
   // View prefs — same controls as main view
-  const [storedPrefs] = useState(getStoredPrefs)
-  const [thumbSize, setThumbSize] = useState<'lg' | 'md' | 'sm'>(
-    storedPrefs.thumbSize,
+  const [thumbSize, setThumbSize] = usePersistedState<'lg' | 'md' | 'sm'>(
+    () => getStoredPrefs().thumbSize,
+    DEFAULT_PREFS.thumbSize,
   )
-  const [showInfo, setShowInfo] = useState(storedPrefs.showInfo)
-  const [sortAsc, setSortAsc] = useState(storedPrefs.sortAsc)
+  const [showInfo, setShowInfo] = usePersistedState(
+    () => getStoredPrefs().showInfo,
+    DEFAULT_PREFS.showInfo,
+  )
+  const [sortAsc, setSortAsc] = usePersistedState(
+    () => getStoredPrefs().sortAsc,
+    DEFAULT_PREFS.sortAsc,
+  )
 
   // Selection state (initialized early so it can be passed to useEditPage)
   const [selectionItems, setSelectionItems] = useState<Array<string>>([])

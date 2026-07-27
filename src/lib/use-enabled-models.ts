@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
+import { usePersistedState } from '@/lib/use-persisted-state'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { ALL_TEXT_MODELS } from '@/lib/text-models'
 
@@ -32,12 +33,18 @@ export function resolveModel(preferredId: string, fallbackId: string): string {
   return fallbackId
 }
 
+const EMPTY_DISABLED: Set<string> = new Set()
+
 export function useEnabledModels() {
-  const [disabledIds, setDisabledIds] = useState<Set<string>>(readDisabledSet)
+  const [disabledIds, setDisabledIds, hydrated] = usePersistedState(
+    readDisabledSet,
+    EMPTY_DISABLED,
+  )
 
   useEffect(() => {
+    if (!hydrated) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...disabledIds]))
-  }, [disabledIds])
+  }, [disabledIds, hydrated])
 
   const enabledImageModels = useMemo(
     () => ALL_IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),

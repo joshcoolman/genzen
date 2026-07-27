@@ -1,10 +1,12 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import type { ADMessage } from './useADChat'
+import { usePersistedState } from '@/lib/use-persisted-state'
 
 const STORAGE_KEY = 'ad-chat-history'
 const MAX_MESSAGES = 50
+const EMPTY_MESSAGES: Array<ADMessage> = []
 const DEBOUNCE_MS = 500
 
 /**
@@ -47,7 +49,10 @@ function loadMessages(): Array<ADMessage> {
 }
 
 export function useChatHistory() {
-  const [messages, setMessagesState] = useState<Array<ADMessage>>(loadMessages)
+  const [messages, setMessagesState] = usePersistedState<Array<ADMessage>>(
+    loadMessages,
+    EMPTY_MESSAGES,
+  )
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const setMessages = useCallback(

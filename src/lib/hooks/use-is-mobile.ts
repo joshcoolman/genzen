@@ -10,9 +10,10 @@ const MOBILE_BREAKPOINT = 400 // matches --breakpoint-xs
  * @returns boolean indicating if viewport is below breakpoint
  */
 export function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < breakpoint,
-  )
+  // Always false for the first render, on both server and client -- reading
+  // window.innerWidth here made a narrow viewport a hydration mismatch. The
+  // effect below corrects it before paint.
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
