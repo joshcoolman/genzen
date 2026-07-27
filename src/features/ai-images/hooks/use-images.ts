@@ -64,11 +64,15 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
   >({})
   const [loadingGallery, setLoadingGallery] = useState(true)
 
+  // Set while a poll-driven refetch is in flight, so it doesn't flash the
+  // gallery skeleton over cards that are already on screen.
+  const silentReloadRef = useRef(false)
+
   const loadSavedImages = useCallback(async () => {
     if (!userId) return
 
     try {
-      setLoadingGallery(true)
+      if (!silentReloadRef.current) setLoadingGallery(true)
       const { data, error: queryError } = await supabase
         .from('user_images')
         .select(
@@ -306,18 +310,35 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     }
   }, [userId])
 
-  // Poll FAL for pending generations (skipped when webhooks are enabled)
+  // Poll FAL for pending generations (skipped when webhooks are enabled).
+  // The poll also drives the UI: `checkPendingGenerations` settles rows
+  // server-side, and any settled row means the gallery is stale. Realtime used
+  // to deliver those UPDATEs, but `user_images` is in no publication and the
+  // browser client has no Supabase session since #171, so nothing arrives (#174).
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     if (process.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
 
     const hasPending = savedImages.some((img) => img.status === 'pending')
 
+    const pollOnce = () =>
+      checkPendingGenerations()
+        .then(async (result) => {
+          if (result.completed === 0 && result.failed === 0) return
+          silentReloadRef.current = true
+          try {
+            await loadSavedImages()
+          } finally {
+            silentReloadRef.current = false
+          }
+        })
+        .catch(() => {})
+
     if (hasPending && !pollingRef.current) {
       // Initial check immediately
-      checkPendingGenerations().catch(() => {})
+      void pollOnce()
       pollingRef.current = setInterval(() => {
-        checkPendingGenerations().catch(() => {})
+        void pollOnce()
       }, 5000)
     } else if (!hasPending && pollingRef.current) {
       clearInterval(pollingRef.current)

@@ -119,12 +119,22 @@ export function useActivityPage() {
   const hasPendingWork = entries.some((e) => e.status === 'pending')
   useEffect(() => {
     if (!hasPendingWork) return
-    checkPendingGenerations().catch(() => {})
+    // A settled row means this page is stale. Realtime no longer delivers the
+    // UPDATE (#174), so the poll drives the refetch itself.
+    const pollOnce = () =>
+      checkPendingGenerations()
+        .then((result) => {
+          if (result.completed === 0 && result.failed === 0) return
+          return refetch({ silent: true })
+        })
+        .catch(() => {})
+
+    void pollOnce()
     const interval = setInterval(() => {
-      checkPendingGenerations().catch(() => {})
+      void pollOnce()
     }, 5000)
     return () => clearInterval(interval)
-  }, [hasPendingWork])
+  }, [hasPendingWork, refetch])
 
   const setFilters = (next: ActivityFilters) => {
     setFiltersState(next)
