@@ -1,6 +1,4 @@
-import { getSupabaseAdmin } from './supabase-admin.server'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Json } from '@/lib/types/supabase'
+import { first, jsonb, sql } from './db.server'
 import { getModelName } from '@/features/ai-images/models'
 
 /** Title a generation row carries between being reserved and settling. */
@@ -42,38 +40,35 @@ export async function createPendingGeneration({
   onCanvas,
   sortOrder,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
-  const supabase = getSupabaseAdmin()
-
   const model = falModelId.replace(/\/edit$/, '')
 
-  const { data: record, error: insertError } = await supabase
-    .from('user_images')
-    .insert({
-      user_id: userId,
-      ...(requestId ? { request_id: requestId } : {}),
-      status: 'pending',
-      source: 'ai_generated',
-      title,
-      sort_order: sortOrder ?? Date.now() / 1000,
-      ...(onCanvas ? { on_canvas: true } : {}),
-      ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
-      generation_metadata: {
-        prompt,
-        model,
-        fal_model_id: falModelId,
-        ...(generationType ? { generation_type: generationType } : {}),
-        submitted_at: new Date().toISOString(),
-        ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
-        ...extraMetadata,
-      },
-    })
-    .select()
-    .single()
-
-  if (insertError) {
-    throw new Error(`Failed to create image record: ${insertError.message}`)
+  const row = {
+    user_id: userId,
+    ...(requestId ? { request_id: requestId } : {}),
+    status: 'pending',
+    source: 'ai_generated',
+    title,
+    sort_order: sortOrder ?? Date.now() / 1000,
+    ...(onCanvas ? { on_canvas: true } : {}),
+    ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
+    generation_metadata: jsonb({
+      prompt,
+      model,
+      fal_model_id: falModelId,
+      ...(generationType ? { generation_type: generationType } : {}),
+      submitted_at: new Date().toISOString(),
+      ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
+      ...extraMetadata,
+    }),
   }
 
+  const record = first(
+    await sql<Array<{ id: string }>>`
+    insert into user_images ${sql(row)} returning id
+  `,
+  )
+
+  if (!record) throw new Error('Failed to create image record')
   return { recordId: record.id }
 }
 
@@ -92,30 +87,24 @@ export async function markGenerationSubmitted(
   requestId: string,
   metadataPatch?: Record<string, unknown>,
 ): Promise<void> {
-  const supabase = getSupabaseAdmin()
+  // The patch merges in the database rather than read-modify-write, so a
+  // concurrent writer to the same row cannot have its keys dropped.
+  const patch =
+    metadataPatch && Object.keys(metadataPatch).length > 0
+      ? metadataPatch
+      : null
 
-  // `Json`-typed column: the generated Supabase types won't accept a bare
-  // Record here, and the value is JSONB either way.
-  let metadata: Json | undefined
-  if (metadataPatch && Object.keys(metadataPatch).length > 0) {
-    const { data: existing } = await supabase
-      .from('user_images')
-      .select('generation_metadata')
-      .eq('id', recordId)
-      .single()
-    metadata = {
-      ...((existing?.generation_metadata ?? {}) as Record<string, unknown>),
-      ...metadataPatch,
-    } as Json
-  }
-
-  await supabase
-    .from('user_images')
-    .update({
-      request_id: requestId,
-      ...(metadata ? { generation_metadata: metadata } : {}),
-    })
-    .eq('id', recordId)
+  await sql`
+    update user_images
+    set request_id = ${requestId}
+        ${
+          patch
+            ? sql`, generation_metadata =
+                coalesce(generation_metadata, '{}'::jsonb) || ${jsonb(patch)}`
+            : sql``
+        }
+    where id = ${recordId}
+  `
 }
 
 /**
@@ -170,23 +159,21 @@ export function describeGenerationError(
  *
  * Deliberately swallows its own errors: this runs inside a catch block, and a
  * failure to *write* the failure must never replace the original error the
- * caller is about to rethrow. Uses the admin client because the user's token
- * may be the very thing that failed.
+ * caller is about to rethrow.
  */
 export async function markGenerationFailed(
   recordId: string,
   message: string,
 ): Promise<void> {
   try {
-    const supabase = getSupabaseAdmin()
-    await supabase
-      .from('user_images')
-      .update({
-        status: 'failed',
-        generation_error: message.slice(0, 1000),
-        ...(await failureTitle(supabase, recordId)),
-      })
-      .eq('id', recordId)
+    const title = await failureTitle(recordId)
+    await sql`
+      update user_images
+      set status = 'failed',
+          generation_error = ${message.slice(0, 1000)}
+          ${title ? sql`, title = ${title}` : sql``}
+      where id = ${recordId}
+    `
   } catch (err) {
     console.error(`[generation] could not mark ${recordId} failed:`, err)
   }
@@ -196,22 +183,25 @@ export async function markGenerationFailed(
  * A row is titled 'Generating...' from the moment it is reserved, and success
  * renames it to the model. Failure used to leave the placeholder in place, so a
  * failed card -- and every trashed one after it -- read "Generating..." forever.
- * Returns a `title` patch, or nothing when the row already has a real one.
+ * Returns a replacement title, or null when the row already has a real one.
  */
-export async function failureTitle(
-  supabase: SupabaseClient,
-  recordId: string,
-): Promise<{ title?: string }> {
-  const { data: record } = await supabase
-    .from('user_images')
-    .select('title, generation_metadata')
-    .eq('id', recordId)
-    .maybeSingle()
+export async function failureTitle(recordId: string): Promise<string | null> {
+  const record = first(
+    await sql<
+      Array<{
+        title: string
+        generation_metadata: Record<string, unknown> | null
+      }>
+    >`
+    select title, generation_metadata from user_images where id = ${recordId}
+  `,
+  )
 
-  if (record?.title && record.title !== PENDING_TITLE) return {}
+  if (!record) return null
+  if (record.title && record.title !== PENDING_TITLE) return null
 
-  const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
+  const meta = record.generation_metadata ?? {}
   const model = (meta.model ?? meta.fal_model_id) as string | undefined
-  if (!model) return {}
-  return { title: getModelName(model) || model }
+  if (!model) return null
+  return getModelName(model) || model
 }

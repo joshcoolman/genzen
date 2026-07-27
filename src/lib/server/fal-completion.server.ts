@@ -1,7 +1,7 @@
 import { downloadAndStoreImage } from './image-storage.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { failureTitle } from './create-pending-generation.server'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '@/lib/image-storage'
 import { getModelName } from '@/features/ai-images/models'
@@ -45,7 +45,6 @@ function extractFalCostCents(
 }
 
 export async function processImageResult(
-  supabase: SupabaseClient,
   recordId: string,
   userId: string,
   falResultData: Record<string, unknown>,
@@ -59,14 +58,16 @@ export async function processImageResult(
   const { storagePath, fileName, fileHash, fileSize } =
     await downloadAndStoreImage(userId, imageUrl)
 
-  // Fetch current metadata to merge
-  const { data: record } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('id', recordId)
-    .single()
+  // Read the metadata for the facts the title and description are derived
+  // from. The write below merges with `||` rather than replacing, so a key
+  // written between these two statements survives.
+  const record = first(
+    await sql<Array<{ generation_metadata: Record<string, unknown> | null }>>`
+    select generation_metadata from user_images where id = ${recordId}
+  `,
+  )
 
-  const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
+  const meta = record?.generation_metadata ?? {}
   const prompt = typeof meta.prompt === 'string' ? meta.prompt : ''
   const model =
     typeof meta.model === 'string'
@@ -85,52 +86,51 @@ export async function processImageResult(
   // derived from the pricing table as something FAL reported.
   const providerCostIsEstimate = falCostCents == null
 
-  const { error: updateError } = await supabase
-    .from('user_images')
-    .update({
-      status: 'completed',
-      storage_path: storagePath,
-      thumbnail_path: null,
-      file_name: fileName,
-      file_hash: fileHash,
-      file_size: fileSize,
-      mime_type: 'image/png',
-      title: getModelName(model) || model,
-      description:
-        prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt,
-      generation_metadata: {
-        ...meta,
-        seed: falResultData.seed,
-        timings: falResultData.timings,
-        completed_at: new Date().toISOString(),
-        ...(providerCostCents != null && {
-          provider_cost_cents: providerCostCents,
-          provider_cost_is_estimate: providerCostIsEstimate,
-        }),
-      },
-    })
-    .eq('id', recordId)
-
-  if (updateError) {
+  try {
+    await sql`
+      update user_images
+      set status = 'completed',
+          storage_path = ${storagePath},
+          thumbnail_path = null,
+          file_name = ${fileName},
+          file_hash = ${fileHash},
+          file_size = ${fileSize},
+          mime_type = 'image/png',
+          title = ${getModelName(model) || model},
+          description = ${
+            prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
+          },
+          generation_metadata =
+            coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({
+              seed: falResultData.seed,
+              timings: falResultData.timings,
+              completed_at: new Date().toISOString(),
+              ...(providerCostCents != null && {
+                provider_cost_cents: providerCostCents,
+                provider_cost_is_estimate: providerCostIsEstimate,
+              }),
+            })}
+      where id = ${recordId}
+    `
+  } catch (err) {
+    // The file landed in storage before the row could point at it. Without
+    // this the object is orphaned -- nothing references it and nothing will
+    // ever clean it up.
     await createImageStorage().remove([storagePath])
-    throw new Error(`Update failed: ${updateError.message}`)
+    throw new Error(
+      `Update failed: ${err instanceof Error ? err.message : String(err)}`,
+    )
   }
 
-  generateThumbnailInBackground(supabase, userId, storagePath, recordId)
+  generateThumbnailInBackground(userId, storagePath, recordId)
 }
 
-export async function markGenerationFailed(
-  supabase: SupabaseClient,
-  recordId: string,
-  errorMsg: string,
-) {
-  await supabase
-    .from('user_images')
-    .update({
-      status: 'failed',
-      generation_error: errorMsg,
-    })
-    .eq('id', recordId)
+export async function markGenerationFailed(recordId: string, errorMsg: string) {
+  await sql`
+    update user_images
+    set status = 'failed', generation_error = ${errorMsg}
+    where id = ${recordId}
+  `
 }
 
 /**
@@ -141,25 +141,18 @@ export async function markGenerationFailed(
  * panel (which reads generation_metadata.error) both get the truth.
  */
 export async function markGenerationFailedWithBlob(
-  supabase: SupabaseClient,
   recordId: string,
   blob: FalErrorBlob,
 ) {
-  const { data: record } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('id', recordId)
-    .single()
+  const title = await failureTitle(recordId)
 
-  const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
-
-  await supabase
-    .from('user_images')
-    .update({
-      status: 'failed',
-      generation_error: blob.message,
-      generation_metadata: { ...meta, error: blob },
-      ...(await failureTitle(supabase, recordId)),
-    })
-    .eq('id', recordId)
+  await sql`
+    update user_images
+    set status = 'failed',
+        generation_error = ${blob.message},
+        generation_metadata =
+          coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({ error: blob })}
+        ${title ? sql`, title = ${title}` : sql``}
+    where id = ${recordId}
+  `
 }

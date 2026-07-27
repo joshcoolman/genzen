@@ -1,6 +1,7 @@
 'use server'
 
 import { resolveAuth } from '@/lib/server/auth.server'
+import { sql } from '@/lib/server/db.server'
 
 interface UpdateImageOrderInput {
   imageId: string
@@ -8,13 +9,11 @@ interface UpdateImageOrderInput {
 }
 
 export async function updateImageOrder(data: UpdateImageOrderInput) {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ sort_order: data.sortOrder })
-    .eq('id', data.imageId)
-    .eq('user_id', userId)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images
+    set sort_order = ${data.sortOrder}
+    where id = ${data.imageId} and user_id = ${userId}
+  `
 }

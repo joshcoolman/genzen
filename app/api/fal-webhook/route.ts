@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { Tables } from '@/lib/types/supabase'
-import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
+import { first, sql } from '@/lib/server/db.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
@@ -166,22 +166,22 @@ export async function POST(request: Request) {
     return new NextResponse('Bad Request: missing request_id', { status: 400 })
   }
 
-  const supabase = getSupabaseAdmin()
-
-  const result = await supabase
-    .from('user_images')
-    .select('id, user_id, source')
-    .eq('request_id', request_id)
-    .maybeSingle()
-
-  if (result.error) {
+  let record: WebhookRecord | undefined
+  try {
+    record = first(
+      await sql<Array<WebhookRecord>>`
+        select id, user_id, source from user_images
+        where request_id = ${request_id}
+      `,
+    )
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
     console.error(
-      `[fal-webhook] DB query failed for request_id=${request_id}: ${result.error.message} (code=${result.error.code})`,
+      `[fal-webhook] DB query failed for request_id=${request_id}: ${msg}`,
     )
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 
-  const record = result.data as WebhookRecord | null
   if (!record) {
     console.warn(`[fal-webhook] No record found for request_id=${request_id}`)
     return new NextResponse('OK')
@@ -190,7 +190,7 @@ export async function POST(request: Request) {
   try {
     // FAL webhooks send status "OK" for success (not "COMPLETED" like the queue API)
     if ((status === 'OK' || status === 'COMPLETED') && payload) {
-      await processImageResult(supabase, record.id, record.user_id, payload)
+      await processImageResult(record.id, record.user_id, payload)
       console.log(`[fal-webhook] Processed successfully: record=${record.id}`)
     } else if (status === 'FAILED' || status === 'ERROR') {
       // FAL surfaces failure detail inconsistently — sometimes as a top-level
@@ -202,7 +202,7 @@ export async function POST(request: Request) {
       blob.stage = 'webhook'
       if (blob.code === 'unknown') blob.code = 'fal_webhook'
       blob.fal_request_id ??= request_id
-      await markGenerationFailedWithBlob(supabase, record.id, blob)
+      await markGenerationFailedWithBlob(record.id, blob)
       console.log(
         `[fal-webhook] Marked failed: record=${record.id} error=${blob.message}`,
       )

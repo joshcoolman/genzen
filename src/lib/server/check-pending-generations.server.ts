@@ -2,7 +2,7 @@
 
 import { fal } from '@fal-ai/client'
 import { resolveAuth } from './auth.server'
-import { getSupabaseAdmin } from './supabase-admin.server'
+import { sql } from './db.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
@@ -13,29 +13,28 @@ fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export async function checkPendingGenerations() {
   const { userId } = await resolveAuth()
-  const supabase = getSupabaseAdmin()
 
   // Fetch pending records + recently failed records that might have completed on FAL
-  const { data: pending, error: queryError } = (await supabase
-    .from('user_images')
-    .select('id, source, status, request_id, generation_metadata')
-    .eq('user_id', userId)
-    .in('status', ['pending', 'failed'])
-    .not('request_id', 'is', null)) as {
-    data: Array<{
+  const pending = await sql<
+    Array<{
       id: string
       source: string
       status: string
       request_id: string
       generation_metadata: Record<string, unknown> | null
-    }> | null
-    error: { message: string } | null
-  }
+    }>
+  >`
+    select id, source, status, request_id, generation_metadata
+    from user_images
+    where user_id = ${userId}
+      and status in ('pending', 'failed')
+      and request_id is not null
+  `
 
   let completed = 0
   let failed = 0
 
-  if (!queryError && pending && pending.length > 0) {
+  if (pending.length > 0) {
     await Promise.all(
       pending.map(async (record) => {
         const meta = record.generation_metadata ?? {}
@@ -55,7 +54,7 @@ export async function checkPendingGenerations() {
               requestId: record.request_id,
             })) as { data: Record<string, unknown> }
 
-            await processImageResult(supabase, record.id, userId, result.data)
+            await processImageResult(record.id, userId, result.data)
             completed++
           } else {
             // Non-COMPLETED branch: either the row is still pending, or it's
@@ -82,7 +81,7 @@ export async function checkPendingGenerations() {
               console.error(
                 `[check-pending] record=${record.id} queue=${statusStr} message=${blob.message}`,
               )
-              await markGenerationFailedWithBlob(supabase, record.id, blob)
+              await markGenerationFailedWithBlob(record.id, blob)
               failed++
             }
             // IN_QUEUE / IN_PROGRESS — still waiting, skip
@@ -99,7 +98,7 @@ export async function checkPendingGenerations() {
             blob.stage = 'queue'
             if (blob.code === 'unknown') blob.code = 'fal_queue'
             blob.fal_request_id ??= record.request_id
-            await markGenerationFailedWithBlob(supabase, record.id, blob)
+            await markGenerationFailedWithBlob(record.id, blob)
             failed++
           }
           // Otherwise leave as pending to retry on next poll
@@ -108,7 +107,7 @@ export async function checkPendingGenerations() {
     )
   } // end FAL processing block
 
-  return { checked: pending?.length ?? 0, completed, failed }
+  return { checked: pending.length, completed, failed }
 }
 
 /** Check if the error is a definitive FAL rejection (not a transient network error) */

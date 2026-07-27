@@ -3,29 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // Import AFTER the mocks below are hoisted.
 import { fal } from '@fal-ai/client'
 import * as falCompletion from './fal-completion.server'
-import * as supabaseAdmin from './supabase-admin.server'
+import { sql } from './db.server'
 
 import { checkPendingGenerations } from './check-pending-generations.server'
-
-// Use an object container so the vi.mock factory can assign to it
-// (avoids "cannot access before initialization" since we're not READING
-// the outer variable inside the factory, just assigning to its property)
-const captured = {
-  handler: null as null | ((opts: { data: unknown }) => Promise<unknown>),
-}
-
-// Mock @tanstack/react-start before it's imported by the source file.
-// The factory only writes to captured.handler — no outer var read issue.
-vi.mock('@tanstack/react-start', () => ({
-  createServerFn: () => ({
-    inputValidator: () => ({
-      handler: (fn: (opts: { data: unknown }) => Promise<unknown>) => {
-        captured.handler = fn
-        return fn
-      },
-    }),
-  }),
-}))
 
 vi.mock('@fal-ai/client', () => ({
   fal: {
@@ -41,9 +21,9 @@ vi.mock('./auth.server', () => ({
   resolveAuth: vi.fn().mockResolvedValue({ userId: 'user-test' }),
 }))
 
-vi.mock('./supabase-admin.server', () => ({
-  getSupabaseAdmin: vi.fn(),
-}))
+// `sql` is a tagged template, so the mock is just a function returning the
+// rows the query would have.
+vi.mock('./db.server', () => ({ sql: vi.fn() }))
 
 vi.mock('./fal-completion.server', () => ({
   processImageResult: vi.fn(),
@@ -59,17 +39,10 @@ vi.mock('./fal-error.server', () => ({
   }),
 }))
 
-function makeMockSupabase(rows: Array<Record<string, unknown>> = []) {
-  const rpcFn = vi.fn().mockResolvedValue({ data: null, error: null })
-  return {
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      not: vi.fn().mockResolvedValue({ data: rows, error: null }),
-    }),
-    rpc: rpcFn,
-  }
+function mockPendingRows(rows: Array<Record<string, unknown>>) {
+  // Cast through a bare mock type: `sql`'s own signature is generic enough that
+  // `vi.mocked` on it blows the instantiation depth limit.
+  ;(sql as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(rows)
 }
 
 function makePendingRecord(overrides: Record<string, unknown> = {}) {
@@ -94,12 +67,7 @@ describe('checkPendingGenerations handler', () => {
 
   it('processes COMPLETED record and returns completed:1, failed:0', async () => {
     const record = makePendingRecord()
-    const mockSupabase = makeMockSupabase([record])
-    vi.mocked(supabaseAdmin.getSupabaseAdmin).mockReturnValue(
-      mockSupabase as unknown as ReturnType<
-        typeof supabaseAdmin.getSupabaseAdmin
-      >,
-    )
+    mockPendingRows([record])
     vi.mocked(fal.queue.status).mockResolvedValue({
       status: 'COMPLETED',
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
@@ -116,12 +84,7 @@ describe('checkPendingGenerations handler', () => {
 
   it('marks FAILED record and returns completed:0, failed:1', async () => {
     const record = makePendingRecord()
-    const mockSupabase = makeMockSupabase([record])
-    vi.mocked(supabaseAdmin.getSupabaseAdmin).mockReturnValue(
-      mockSupabase as unknown as ReturnType<
-        typeof supabaseAdmin.getSupabaseAdmin
-      >,
-    )
+    mockPendingRows([record])
     vi.mocked(fal.queue.status).mockResolvedValue({
       status: 'FAILED',
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
@@ -137,12 +100,7 @@ describe('checkPendingGenerations handler', () => {
 
   it('skips IN_QUEUE record and returns completed:0, failed:0', async () => {
     const record = makePendingRecord()
-    const mockSupabase = makeMockSupabase([record])
-    vi.mocked(supabaseAdmin.getSupabaseAdmin).mockReturnValue(
-      mockSupabase as unknown as ReturnType<
-        typeof supabaseAdmin.getSupabaseAdmin
-      >,
-    )
+    mockPendingRows([record])
     vi.mocked(fal.queue.status).mockResolvedValue({
       status: 'IN_QUEUE',
     } as unknown as Awaited<ReturnType<typeof fal.queue.status>>)
@@ -158,12 +116,7 @@ describe('checkPendingGenerations handler', () => {
   it('processes second record even when first throws a non-FAL network error', async () => {
     const rec1 = makePendingRecord({ id: 'rec-001', request_id: 'req-001' })
     const rec2 = makePendingRecord({ id: 'rec-002', request_id: 'req-002' })
-    const mockSupabase = makeMockSupabase([rec1, rec2])
-    vi.mocked(supabaseAdmin.getSupabaseAdmin).mockReturnValue(
-      mockSupabase as unknown as ReturnType<
-        typeof supabaseAdmin.getSupabaseAdmin
-      >,
-    )
+    mockPendingRows([rec1, rec2])
     vi.mocked(fal.queue.status)
       .mockRejectedValueOnce(new Error('network timeout'))
       .mockResolvedValueOnce({

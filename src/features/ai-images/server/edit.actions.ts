@@ -2,6 +2,7 @@
 
 import type { Tables } from '@/lib/types/supabase'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 
 // The edit page's reads, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()`.
@@ -9,7 +10,8 @@ import { resolveAuth } from '@/lib/server/auth.server'
 // The two tree walks moved with them. Both used to pull every one of the user's
 // image rows into the browser to find a handful of descendants -- the BFS was
 // client-side only because the data happened to be there. Server-side the
-// browser asks for descendants and gets descendants.
+// browser asks for descendants and gets descendants, and since #172 the walk
+// itself is a recursive CTE rather than a map-and-queue over a full table read.
 
 export interface EditSourceImage {
   id: string
@@ -22,33 +24,29 @@ export interface EditSourceImage {
 export async function getEditSourceImage(
   imageId: string,
 ): Promise<EditSourceImage | null> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, title, storage_path, generation_metadata')
-    .eq('user_id', userId)
-    .eq('id', imageId)
-    .maybeSingle()
+  const data = first(
+    await sql<
+      Array<
+        Omit<EditSourceImage, 'storage_path'> & { storage_path: string | null }
+      >
+    >`
+    select id, title, storage_path, generation_metadata
+    from user_images
+    where user_id = ${userId} and id = ${imageId}
+  `,
+  )
 
-  if (error) throw new Error(error.message)
   if (!data?.storage_path) return null
 
   return {
     id: data.id,
     title: data.title,
     storage_path: data.storage_path,
-    generation_metadata: data.generation_metadata as Record<
-      string,
-      unknown
-    > | null,
+    generation_metadata: data.generation_metadata,
   }
 }
-
-type ParentRow = Pick<
-  Tables<'user_images'>,
-  'id' | 'storage_path' | 'thumbnail_path' | 'generation_metadata'
->
 
 /**
  * Every image whose `parent_id` chain reaches `rootId`, plus the root itself,
@@ -58,21 +56,14 @@ type ParentRow = Pick<
 export async function listDescendantIds(
   rootId: string,
 ): Promise<Array<string>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, generation_metadata')
-    .eq('user_id', userId)
-    .in('source', ['upload', 'ai_generated'])
-    .is('deleted_at', null)
+  const rows = await sql<Array<{ id: string }>>`
+    ${descendantsCte([rootId], userId, sql`and c.source in ('upload', 'ai_generated')`)}
+    select id from descendants order by depth
+  `
 
-  if (error) throw new Error(error.message)
-
-  return walk(
-    [rootId],
-    childrenByParent(data as unknown as Array<ParentRow>, (row) => row.id),
-  ).chain
+  return rows.map((r) => r.id)
 }
 
 export interface EditChildRef {
@@ -90,43 +81,70 @@ export async function listEditChildren(
 ): Promise<Record<string, Array<EditChildRef>>> {
   if (parentIds.length === 0) return {}
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, generation_metadata')
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-
-  if (error) throw new Error(error.message)
-
-  const rows = data as unknown as Array<ParentRow>
-  const childrenOf = childrenByParent(rows, (row) => row)
-
-  // Rows arrive created_at desc, so position is recency.
-  const recency = new Map<string, number>()
-  rows.forEach((row, i) => recency.set(row.id, i))
+  // `depth > 0` drops each root itself -- a parent is not its own child.
+  const rows = await sql<
+    Array<{
+      root: string
+      id: string
+      storage_path: string
+      thumbnail_path: string | null
+    }>
+  >`
+    ${descendantsCte(parentIds, userId, sql`and c.status = 'completed'`)}
+    select root, id, storage_path, thumbnail_path
+    from descendants
+    where depth > 0 and storage_path is not null
+    order by root, created_at desc
+  `
 
   const result: Record<string, Array<EditChildRef>> = {}
-  for (const rootId of parentIds) {
-    const { visited } = walk([rootId], childrenOf)
-    const descendants = visited
-      .filter((row) => row.storage_path)
-      .map((row) => ({
-        id: row.id,
-        storagePath: row.storage_path!,
-        thumbnailPath: row.thumbnail_path,
-      }))
-    if (descendants.length === 0) continue
-    descendants.sort(
-      (a, b) => (recency.get(a.id) ?? 999) - (recency.get(b.id) ?? 999),
-    )
-    result[rootId] = descendants
+  for (const row of rows) {
+    ;(result[row.root] ??= []).push({
+      id: row.id,
+      storagePath: row.storage_path,
+      thumbnailPath: row.thumbnail_path,
+    })
   }
 
   return result
+}
+
+/**
+ * The `parent_id` subtree under each of `rootIds`, tagged with the root it came
+ * from so one query serves every parent the gallery is showing.
+ *
+ * Seeded from `unnest` rather than from `user_images`, because a caller may ask
+ * about an id that has no row (or no longer matches the filter) and the JS walk
+ * it replaces was happy to start from one.
+ *
+ * The `path` array is the visited-set that walk kept. It is load-bearing:
+ * nothing stops a row naming itself as its own `parent_id`, and that is an
+ * unbounded recursion rather than a wrong answer.
+ */
+function descendantsCte(
+  rootIds: Array<string>,
+  userId: string,
+  childFilter: ReturnType<typeof sql>,
+) {
+  return sql`
+    with recursive descendants as (
+      select r.id, null::text as storage_path, null::text as thumbnail_path,
+             null::timestamptz as created_at,
+             r.id as root, 0 as depth, array[r.id] as path
+      from unnest(${rootIds}::uuid[]) as r(id)
+      union all
+      select c.id, c.storage_path, c.thumbnail_path, c.created_at,
+             d.root, d.depth + 1, d.path || c.id
+      from user_images c
+      join descendants d on c.generation_metadata->>'parent_id' = d.id::text
+      where c.user_id = ${userId}
+        and c.deleted_at is null
+        ${childFilter}
+        and not (c.id = any(d.path))
+    )
+  `
 }
 
 export interface EditSourceRef {
@@ -142,18 +160,15 @@ export async function listEditSourceRefs(
 ): Promise<Array<EditSourceRef>> {
   if (ids.length === 0) return []
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, hidden')
-    .eq('user_id', userId)
-    .in('id', ids)
-    .is('deleted_at', null)
+  const rows = await sql<Array<EditSourceRef>>`
+    select id, storage_path, thumbnail_path, hidden
+    from user_images
+    where user_id = ${userId} and id in ${sql(ids)} and deleted_at is null
+  `
 
-  if (error) throw new Error(error.message)
-
-  return data.map((row) => ({
+  return rows.map((row) => ({
     id: row.id,
     storage_path: row.storage_path,
     thumbnail_path: row.thumbnail_path,
@@ -187,20 +202,22 @@ export async function listGenerationResultRows({
   limit: number
   sourceImageIds?: Array<string>
 }): Promise<Array<GenerationResultRow>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select(
-      'id, storage_path, thumbnail_path, status, generation_metadata, title, file_size, created_at',
-    )
-    .eq('user_id', userId)
-    .in('source', ['upload', 'ai_generated'])
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-
-  if (error) throw new Error(error.message)
+  // `file_size` is bigint, which the driver returns as a string; the cast keeps
+  // `GenerationResultRow.file_size` a number. `created_at` is an ISO string on
+  // that type, not a `Date`.
+  const data = await sql<Array<GenerationResultRow>>`
+    select id, storage_path, thumbnail_path, status, generation_metadata, title,
+           file_size::float8 as file_size,
+           to_json(created_at)#>>'{}' as created_at
+    from user_images
+    where user_id = ${userId}
+      and source in ('upload', 'ai_generated')
+      and deleted_at is null
+    order by created_at desc
+    limit ${limit}
+  `
 
   const types = Array.isArray(generationType)
     ? generationType
@@ -223,53 +240,10 @@ export async function listGenerationResultRows({
 
 /** Soft-delete one result and take it off the canvas. */
 export async function trashGenerationResult(id: string): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
-    .eq('user_id', userId)
-    .eq('id', id)
-
-  if (error) throw new Error(error.message)
-}
-
-/** Index rows by their `generation_metadata.parent_id`, projecting each row. */
-function childrenByParent<T>(
-  rows: Array<ParentRow>,
-  project: (row: ParentRow) => T,
-): Map<string, Array<{ id: string; value: T }>> {
-  const map = new Map<string, Array<{ id: string; value: T }>>()
-  for (const row of rows) {
-    const meta = row.generation_metadata as Record<string, unknown> | null
-    if (typeof meta?.parent_id !== 'string') continue
-    const siblings = map.get(meta.parent_id) ?? []
-    siblings.push({ id: row.id, value: project(row) })
-    map.set(meta.parent_id, siblings)
-  }
-  return map
-}
-
-/** BFS from the given roots over a parent index, ids and values, cycle-safe. */
-function walk<T>(
-  roots: Array<string>,
-  childrenOf: Map<string, Array<{ id: string; value: T }>>,
-): { chain: Array<string>; visited: Array<T> } {
-  const chain = [...roots]
-  const visited: Array<T> = []
-  const seen = new Set(roots)
-  const queue = [...roots]
-
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    for (const child of childrenOf.get(current) ?? []) {
-      if (seen.has(child.id)) continue
-      seen.add(child.id)
-      chain.push(child.id)
-      visited.push(child.value)
-      queue.push(child.id)
-    }
-  }
-
-  return { chain, visited }
+  await sql`
+    update user_images set deleted_at = now(), on_canvas = false
+    where user_id = ${userId} and id = ${id}
+  `
 }

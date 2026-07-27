@@ -1,7 +1,7 @@
 'use server'
 
-import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { createImageStorage } from '@/lib/image-storage'
 
@@ -20,13 +20,12 @@ export async function captionImage(data: CaptionImageInput) {
     if (!/^[0-9a-f-]{36}$/i.test(data.imageId)) {
       throw new Error('Invalid imageId')
     }
-    const supabase = getSupabaseAdmin()
-    const { data: row } = await supabase
-      .from('user_images')
-      .select('storage_path')
-      .eq('id', data.imageId)
-      .eq('user_id', userId)
-      .single()
+    const row = first(
+      await sql<Array<{ storage_path: string | null }>>`
+      select storage_path from user_images
+      where id = ${data.imageId} and user_id = ${userId}
+    `,
+    )
     if (!row?.storage_path) throw new Error('Image not found')
     const url = await createImageStorage().getUrl(row.storage_path)
     if (!url) throw new Error('Could not resolve a URL for that image')

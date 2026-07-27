@@ -1,6 +1,7 @@
 'use server'
 
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 
 // The canvas's reads and writes, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()` -- which
@@ -20,17 +21,13 @@ export interface CanvasDbRecord {
 
 /** Every image the DB considers on-canvas -- the membership source of truth. */
 export async function listOnCanvasRecords(): Promise<Array<CanvasDbRecord>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, storage_path, status, generation_metadata')
-    .eq('user_id', userId)
-    .eq('on_canvas', true)
-    .is('deleted_at', null)
-
-  if (error) throw new Error(error.message)
-  return data as unknown as Array<CanvasDbRecord>
+  return sql<Array<CanvasDbRecord>>`
+    select id, storage_path, status, generation_metadata
+    from user_images
+    where user_id = ${userId} and on_canvas = true and deleted_at is null
+  `
 }
 
 /**
@@ -45,18 +42,15 @@ export async function listDeadRecordIds(
   const list = ids.filter(Boolean)
   if (list.length === 0) return []
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, deleted_at')
-    .eq('user_id', userId)
-    .in('id', list)
+  const alive = await sql<Array<{ id: string }>>`
+    select id from user_images
+    where user_id = ${userId} and id in ${sql(list)} and deleted_at is null
+  `
 
-  if (error) throw new Error(error.message)
-
-  const alive = new Set(data.filter((r) => !r.deleted_at).map((r) => r.id))
-  return list.filter((id) => !alive.has(id))
+  const aliveIds = new Set(alive.map((r) => r.id))
+  return list.filter((id) => !aliveIds.has(id))
 }
 
 /** Flip canvas membership for the given records. */
@@ -67,15 +61,12 @@ export async function setImagesOnCanvas(
   const list = ids.filter(Boolean)
   if (list.length === 0) return
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ on_canvas: value })
-    .eq('user_id', userId)
-    .in('id', list)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set on_canvas = ${value}
+    where user_id = ${userId} and id in ${sql(list)}
+  `
 }
 
 /**
@@ -87,16 +78,12 @@ export async function trashCanvasImages(ids: Array<string>): Promise<void> {
   const list = ids.filter(Boolean)
   if (list.length === 0) return
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('user_id', userId)
-    .in('id', list)
-    .is('deleted_at', null)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set deleted_at = now()
+    where user_id = ${userId} and id in ${sql(list)} and deleted_at is null
+  `
 }
 
 /** Undo a `trashCanvasImages`: clear `deleted_at` and re-mark the rows on-canvas. */
@@ -104,15 +91,12 @@ export async function restoreCanvasImages(ids: Array<string>): Promise<void> {
   const list = ids.filter(Boolean)
   if (list.length === 0) return
 
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: null, on_canvas: true })
-    .eq('user_id', userId)
-    .in('id', list)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set deleted_at = null, on_canvas = true
+    where user_id = ${userId} and id in ${sql(list)}
+  `
 }
 
 export interface CanvasGenerationRecord extends CanvasDbRecord {
@@ -123,32 +107,30 @@ export interface CanvasGenerationRecord extends CanvasDbRecord {
 export async function getCanvasGenerationRecord(
   id: string,
 ): Promise<CanvasGenerationRecord | null> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('id, status, storage_path, generation_metadata, generation_error')
-    .eq('user_id', userId)
-    .eq('id', id)
-    .maybeSingle()
+  const row = first(
+    await sql<Array<CanvasGenerationRecord>>`
+    select id, status, storage_path, generation_metadata, generation_error
+    from user_images
+    where user_id = ${userId} and id = ${id}
+  `,
+  )
 
-  if (error) throw new Error(error.message)
-  return data as unknown as CanvasGenerationRecord | null
+  return row ?? null
 }
 
 /** The prompt an image was generated with, for pre-filling a re-generate. */
 export async function getImagePrompt(id: string): Promise<string | null> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('user_id', userId)
-    .eq('id', id)
-    .maybeSingle()
+  const row = first(
+    await sql<Array<{ generation_metadata: Record<string, unknown> | null }>>`
+    select generation_metadata from user_images
+    where user_id = ${userId} and id = ${id}
+  `,
+  )
 
-  if (error) throw new Error(error.message)
-
-  const meta = data?.generation_metadata as Record<string, unknown> | null
+  const meta = row?.generation_metadata
   return typeof meta?.prompt === 'string' ? meta.prompt : null
 }

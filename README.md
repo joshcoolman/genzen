@@ -119,6 +119,15 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **Nothing talks to Supabase any more (#172 done).** All 100 remaining
+  `.from()` calls became SQL through `src/lib/server/db.server.ts`, and the
+  admin client is deleted. Three "read the whole table and BFS it in JS" walks
+  became recursive CTEs; `resolveAuth()` returns an id and nothing else, so a
+  query has to name `user_id` itself. Two things the conversion turned up: the
+  planned `postgres.camel` transform would have silently camel-cased the keys
+  *inside* `generation_metadata`, and a row naming itself as its own
+  `parent_id` makes a naive recursive CTE run forever — both are handled and
+  commented where they bite.
 - **The browser cannot reach the database at all (#173 done).** The last 19
   queries — Canvas, the edit page, generation results, Activity — became
   `canvas/server/canvas.actions.ts` and `ai-images/server/edit.actions.ts`, and
@@ -155,9 +164,9 @@ Conventions follow `~/repos/project-standard`.
   `users` table, whose ids are freshly generated, while `user_images.user_id`
   still holds Supabase auth uuids. Provision the local user with the matching
   uuid, or move the data, before expecting to see anything.
-- **#176 — delete Supabase.** Nothing but the server admin client and the
-  migrations still depend on it; plain Postgres + the `migrate.mjs` port is the
-  remaining work in #168.
+- **#176 — delete Supabase.** Nothing queries it now; the package, the generated
+  types in `src/lib/types/supabase.ts` and the old `supabase/migrations/` are
+  all that is left of it in #168.
 - Then the `project-standard` conformance pass: one-folder-per-component and
   CSS Modules over Tailwind.
 

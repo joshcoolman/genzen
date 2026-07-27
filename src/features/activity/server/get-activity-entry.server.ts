@@ -7,6 +7,7 @@ import type {
   GenerationStatus,
 } from '../types'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import { getModelName } from '@/features/ai-images/models'
 
 interface GetActivityEntryInput {
@@ -83,23 +84,26 @@ function extractErrorMessage(
 export async function getActivityEntry(
   data: GetActivityEntryInput,
 ): Promise<ActivityEntryDetail | null> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data: row, error } = await supabase
-    .from('user_images')
-    .select(
-      'id, source, storage_path, file_name, mime_type, file_size, width, height, status, generation_metadata, generation_error, created_at, deleted_at',
-    )
-    .eq('id', data.id)
-    .eq('user_id', userId)
-    .maybeSingle()
+  // `file_size` is bigint and the timestamps are timestamptz; the casts keep
+  // `DetailRow`'s number and ISO-string shape, which the driver would otherwise
+  // hand back as a string and a `Date`.
+  const row = first(
+    await sql<Array<DetailRow>>`
+    select id, source, storage_path, file_name, mime_type,
+           file_size::float8 as file_size,
+           width, height, status, generation_metadata, generation_error,
+           to_json(created_at)#>>'{}' as created_at,
+           to_json(deleted_at)#>>'{}' as deleted_at
+    from user_images
+    where id = ${data.id} and user_id = ${userId}
+  `,
+  )
 
-  if (error) {
-    throw new Error(`Failed to load activity entry: ${error.message}`)
-  }
   if (!row) return null
 
-  const r = row as DetailRow
+  const r = row
   const m = meta(r)
 
   const refIds = Array.isArray(
@@ -113,20 +117,21 @@ export async function getActivityEntry(
 
   let referenceImages: Array<ActivityReferenceImage> = []
   if (refIds.length > 0) {
-    const { data: refRows } = await supabase
-      .from('user_images')
-      .select('id, storage_path, deleted_at')
-      .in('id', refIds)
-      .eq('user_id', userId)
+    const refRows = await sql<
+      Array<{
+        id: string
+        storage_path: string | null
+        deleted_at: Date | null
+      }>
+    >`
+      select id, storage_path, deleted_at from user_images
+      where id in ${sql(refIds)} and user_id = ${userId}
+    `
     const byId = new Map<
       string,
-      { storage_path: string | null; deleted_at: string | null }
+      { storage_path: string | null; deleted_at: Date | null }
     >()
-    for (const rr of (refRows ?? []) as Array<{
-      id: string
-      storage_path: string | null
-      deleted_at: string | null
-    }>) {
+    for (const rr of refRows) {
       byId.set(rr.id, {
         storage_path: rr.storage_path,
         deleted_at: rr.deleted_at,

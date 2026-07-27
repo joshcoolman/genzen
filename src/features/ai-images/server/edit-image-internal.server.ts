@@ -1,6 +1,7 @@
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import {
   createPendingGeneration,
   describeGenerationError,
@@ -37,7 +38,7 @@ export interface EditImageResult {
 export async function editImageInternal(
   data: EditImageInput,
 ): Promise<EditImageResult> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   const {
     sourceImageId,
@@ -60,12 +61,14 @@ export async function editImageInternal(
 
   // Idempotency: if key provided and a non-failed record exists, return it
   if (data.idempotencyKey) {
-    const { data: existing } = await supabase
-      .from('user_images')
-      .select('id, request_id, status')
-      .eq('idempotency_key', data.idempotencyKey)
-      .eq('user_id', userId)
-      .single()
+    const existing = first(
+      await sql<
+        Array<{ id: string; request_id: string | null; status: string }>
+      >`
+      select id, request_id, status from user_images
+      where idempotency_key = ${data.idempotencyKey} and user_id = ${userId}
+    `,
+    )
     if (existing && existing.status !== 'failed') {
       return { recordId: existing.id, request_id: existing.request_id ?? '' }
     }
@@ -113,12 +116,12 @@ export async function editImageInternal(
     }
 
     // Fetch source image storage path -- enforce ownership
-    const { data: sourceImage } = await supabase
-      .from('user_images')
-      .select('storage_path, created_at, generation_metadata')
-      .eq('id', sourceImageId)
-      .eq('user_id', userId)
-      .single()
+    const sourceImage = first(
+      await sql<Array<{ storage_path: string | null }>>`
+      select storage_path from user_images
+      where id = ${sourceImageId} and user_id = ${userId}
+    `,
+    )
 
     if (!sourceImage?.storage_path) {
       throw new Error('Source image not found')
@@ -141,15 +144,16 @@ export async function editImageInternal(
     // Fetch and upload reference images in parallel
     const referenceUrls: Array<string> = []
     if (referenceImageIds?.length) {
-      const refImages = await supabase
-        .from('user_images')
-        .select('id, storage_path')
-        .in('id', referenceImageIds)
-        .eq('user_id', userId)
+      const refImages = await sql<
+        Array<{ id: string; storage_path: string | null }>
+      >`
+        select id, storage_path from user_images
+        where id in ${sql(referenceImageIds)} and user_id = ${userId}
+      `
 
-      if (refImages.data?.length) {
+      if (refImages.length) {
         const uploads = await Promise.all(
-          refImages.data.map(async (ref) => {
+          refImages.map(async (ref) => {
             if (!ref.storage_path) return null
             const refSignedUrl = await storage.getUrl(ref.storage_path)
             if (!refSignedUrl) return null

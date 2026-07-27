@@ -3,6 +3,7 @@
 import type { SavedAiImage } from '@/features/ai-images/types'
 import type { Tables } from '@/lib/types/supabase'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import { removeImages } from '@/features/user-images/server/remove-images.server'
 import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
 
@@ -31,22 +32,24 @@ export interface GalleryPayload {
   >
 }
 
-const GALLERY_COLUMNS =
-  'id, title, description, storage_path, thumbnail_path, created_at, sort_order, status, generation_error, generation_metadata'
-
 export async function listGalleryImages(): Promise<GalleryPayload> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select(GALLERY_COLUMNS)
-    .eq('user_id', userId)
-    .in('source', ['upload', 'ai_generated'])
-    .is('deleted_at', null)
-    .order('sort_order', { ascending: false, nullsFirst: false })
+  // `created_at` goes through `to_json(...)#>>'{}'` rather than being selected
+  // raw: `SavedAiImage.created_at` is an ISO string, and the driver would
+  // otherwise hand back a `Date`.
+  const rows = await sql`
+    select id, title, description, storage_path, thumbnail_path,
+           to_json(created_at)#>>'{}' as created_at,
+           sort_order, status, generation_error, generation_metadata
+    from user_images
+    where user_id = ${userId}
+      and source in ('upload', 'ai_generated')
+      and deleted_at is null
+    order by sort_order desc nulls last
+  `
 
-  if (error) throw new Error(error.message)
-  const images = data as unknown as Array<SavedAiImage>
+  const images = rows as unknown as Array<SavedAiImage>
 
   // A derived card shows its source. The source may be hidden or filtered out
   // of the list above, so it is resolved here rather than in a second call.
@@ -65,14 +68,20 @@ export async function listGalleryImages(): Promise<GalleryPayload> {
 
   if (rootIds.size === 0) return { images, rootImages: [] }
 
-  const { data: rootRows, error: rootError } = await supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, hidden')
-    .eq('user_id', userId)
-    .in('id', Array.from(rootIds))
-    .is('deleted_at', null)
-
-  if (rootError) throw new Error(rootError.message)
+  const rootRows = await sql<
+    Array<{
+      id: string
+      storage_path: string | null
+      thumbnail_path: string | null
+      hidden: boolean
+    }>
+  >`
+    select id, storage_path, thumbnail_path, hidden
+    from user_images
+    where user_id = ${userId}
+      and id in ${sql(Array.from(rootIds))}
+      and deleted_at is null
+  `
 
   return {
     images,
@@ -94,29 +103,33 @@ export async function listGalleryImages(): Promise<GalleryPayload> {
  * place in the app that destroys a row and its objects.
  */
 export async function deleteGalleryImage(imageId: string): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data: image, error: readError } = await supabase
-    .from('user_images')
-    .select('id, status, storage_path, thumbnail_path, generation_metadata')
-    .eq('id', imageId)
-    .eq('user_id', userId)
-    .maybeSingle()
+  const image = first(
+    await sql<
+      Array<{
+        id: string
+        status: string
+        storage_path: string | null
+        thumbnail_path: string | null
+        generation_metadata: Record<string, unknown> | null
+      }>
+    >`
+    select id, status, storage_path, thumbnail_path, generation_metadata
+    from user_images
+    where id = ${imageId} and user_id = ${userId}
+  `,
+  )
 
-  if (readError) throw new Error(readError.message)
   if (!image) return
 
   // A failed generation produced no image, so Trash has nothing to offer for
   // it -- restoring one just puts an error card back. Deleting it is the user
   // saying "get rid of this", and it goes for good.
   if (image.status === 'failed') {
-    const { error: purgeError } = await supabase
-      .from('user_images')
-      .delete()
-      .eq('id', imageId)
-      .eq('user_id', userId)
-
-    if (purgeError) throw new Error(purgeError.message)
+    await sql`
+      delete from user_images where id = ${imageId} and user_id = ${userId}
+    `
 
     // Defensive: a failed row normally has no objects, but a failure late in
     // the pipeline can leave one behind.
@@ -127,70 +140,73 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
     return
   }
 
-  const { count: variationCount, error: countError } = await supabase
-    .from('user_images')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .or(
-      `generation_metadata->>root_image_id.eq.${imageId},generation_metadata->>source_image_id.eq.${imageId}`,
-    )
-    .is('deleted_at', null)
-    .eq('hidden', false)
+  const [{ count: variationCount }] = await sql<Array<{ count: number }>>`
+    select count(*)::int as count
+    from user_images
+    where user_id = ${userId}
+      and (generation_metadata->>'root_image_id' = ${imageId}
+           or generation_metadata->>'source_image_id' = ${imageId})
+      and deleted_at is null
+      and hidden = false
+  `
 
-  if (countError) throw new Error(countError.message)
+  // Hidden keeps the row alive as a thumbnail source for its variations;
+  // soft-delete is the ordinary path.
+  if (variationCount > 0) {
+    await sql`
+      update user_images set hidden = true
+      where id = ${imageId} and user_id = ${userId}
+    `
+  } else {
+    await sql`
+      update user_images set deleted_at = now(), on_canvas = false
+      where id = ${imageId} and user_id = ${userId}
+    `
+  }
 
-  const { error: writeError } = await supabase
-    .from('user_images')
-    .update(
-      variationCount && variationCount > 0
-        ? { hidden: true }
-        : { deleted_at: new Date().toISOString(), on_canvas: false },
-    )
-    .eq('id', imageId)
-    .eq('user_id', userId)
-
-  if (writeError) throw new Error(writeError.message)
-
-  const meta = image.generation_metadata as Record<string, unknown> | null
+  const meta = image.generation_metadata
   if (meta?.generation_type !== 'variation') return
   const rootId = (meta.root_image_id ?? meta.source_image_id) as
     | string
     | undefined
-  if (rootId) await cleanupHiddenRoot(rootId, imageId, userId, supabase)
+  if (rootId) await cleanupHiddenRoot(rootId, imageId, userId)
 }
 
 async function cleanupHiddenRoot(
   rootId: string,
   excludeId: string,
   userId: string,
-  supabase: Awaited<ReturnType<typeof resolveAuth>>['supabase'],
 ): Promise<void> {
-  const { data: root } = await supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, hidden')
-    .eq('id', rootId)
-    .eq('user_id', userId)
-    .maybeSingle()
+  const root = first(
+    await sql<
+      Array<{
+        id: string
+        storage_path: string | null
+        thumbnail_path: string | null
+        hidden: boolean
+      }>
+    >`
+    select id, storage_path, thumbnail_path, hidden
+    from user_images
+    where id = ${rootId} and user_id = ${userId}
+  `,
+  )
 
   if (!root?.hidden) return
 
-  const { count } = await supabase
-    .from('user_images')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .or(
-      `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
-    )
-    .is('deleted_at', null)
-    .neq('id', excludeId)
+  const [{ count }] = await sql<Array<{ count: number }>>`
+    select count(*)::int as count
+    from user_images
+    where user_id = ${userId}
+      and (generation_metadata->>'root_image_id' = ${rootId}
+           or generation_metadata->>'source_image_id' = ${rootId})
+      and deleted_at is null
+      and id <> ${excludeId}
+  `
 
   if (count !== 0) return
 
-  await supabase
-    .from('user_images')
-    .delete()
-    .eq('id', rootId)
-    .eq('user_id', userId)
+  await sql`delete from user_images where id = ${rootId} and user_id = ${userId}`
 
   if (root.storage_path) {
     await removeImages({
@@ -212,48 +228,56 @@ async function cleanupHiddenRoot(
 export async function deleteGalleryImageWithDescendants(
   imageId: string,
 ): Promise<Array<string>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data: allRows, error } = await supabase
-    .from('user_images')
-    .select('id, generation_metadata')
-    .eq('user_id', userId)
-    .is('deleted_at', null)
+  const rows = await sql<Array<{ id: string }>>`
+    ${subtreeCte(imageId, userId)}
+    select id from subtree
+  `
+  const idsToDelete = rows.map((r) => r.id)
 
-  if (error) throw new Error(error.message)
-
-  const childrenOf = new Map<string, Array<string>>()
-  for (const row of allRows) {
-    const meta = row.generation_metadata as Record<string, unknown> | null
-    const parentId = meta?.parent_id as string | undefined
-    if (!parentId) continue
-    const siblings = childrenOf.get(parentId) ?? []
-    siblings.push(row.id)
-    childrenOf.set(parentId, siblings)
-  }
-
-  const idsToDelete = new Set<string>([imageId])
-  const queue = [imageId]
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    for (const childId of childrenOf.get(current) ?? []) {
-      if (idsToDelete.has(childId)) continue
-      idsToDelete.add(childId)
-      queue.push(childId)
-    }
-  }
-
-  const childIds = Array.from(idsToDelete).filter((id) => id !== imageId)
+  const childIds = idsToDelete.filter((id) => id !== imageId)
   if (childIds.length > 0) await ungroupImages({ imageIds: childIds })
 
-  const { error: deleteError } = await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
-    .eq('user_id', userId)
-    .in('id', Array.from(idsToDelete))
+  await sql`
+    update user_images set deleted_at = now(), on_canvas = false
+    where user_id = ${userId} and id in ${sql(idsToDelete)}
+  `
 
-  if (deleteError) throw new Error(deleteError.message)
-  return Array.from(idsToDelete)
+  return idsToDelete
+}
+
+/**
+ * The grouping subtree rooted at `rootId`, breadth-first.
+ *
+ * This used to be "select every one of the user's rows, build a parent->children
+ * map in JS, then BFS it" -- the whole library pulled across the wire to find a
+ * handful of descendants.
+ *
+ * The `path` array is the visited-set the JS walk kept, and it is not optional:
+ * nothing stops a row from naming itself as its own `parent_id`, and a plain
+ * `union` would not dedupe it away because each pass carries a new `depth`.
+ * That is an unbounded recursion, not a wrong answer.
+ *
+ * The edge is `generation_metadata->>'parent_id'` (grouping), not
+ * `source_image_id` (genealogy) -- the genealogy fields survive a delete so the
+ * rows stay independently restorable from trash.
+ */
+function subtreeCte(rootId: string, userId: string) {
+  return sql`
+    with recursive subtree as (
+      select id, storage_path, 0 as depth, array[id] as path
+      from user_images
+      where id = ${rootId} and user_id = ${userId} and deleted_at is null
+      union all
+      select c.id, c.storage_path, s.depth + 1, s.path || c.id
+      from user_images c
+      join subtree s on c.generation_metadata->>'parent_id' = s.id::text
+      where c.user_id = ${userId}
+        and c.deleted_at is null
+        and not (c.id = any(s.path))
+    )
+  `
 }
 
 /**
@@ -264,70 +288,40 @@ export async function deleteGalleryImageWithDescendants(
 export async function listSubtreeStoragePaths(
   imageId: string,
 ): Promise<Array<string>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data: allRows, error } = await supabase
-    .from('user_images')
-    .select('id, storage_path, generation_metadata')
-    .eq('user_id', userId)
-    .is('deleted_at', null)
+  // `depth > 0` drops the root itself, which the caller already holds; the
+  // ordering is what makes this breadth-first, as the JS queue was.
+  const rows = await sql<Array<{ storage_path: string }>>`
+    ${subtreeCte(imageId, userId)}
+    select storage_path from subtree
+    where depth > 0 and storage_path is not null
+    order by depth
+  `
 
-  if (error) throw new Error(error.message)
-
-  const childrenOf = new Map<
-    string,
-    Array<{ id: string; storage_path: string | null }>
-  >()
-  for (const row of allRows) {
-    const meta = row.generation_metadata as Record<string, unknown> | null
-    const parentId = meta?.parent_id as string | undefined
-    if (!parentId) continue
-    const siblings = childrenOf.get(parentId) ?? []
-    siblings.push({ id: row.id, storage_path: row.storage_path })
-    childrenOf.set(parentId, siblings)
-  }
-
-  const paths: Array<string> = []
-  const visited = new Set<string>()
-  const queue = [imageId]
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    for (const row of childrenOf.get(current) ?? []) {
-      if (visited.has(row.id)) continue
-      visited.add(row.id)
-      if (row.storage_path) paths.push(row.storage_path)
-      queue.push(row.id)
-    }
-  }
-  return paths
+  return rows.map((r) => r.storage_path)
 }
 
 /** Delete an image but leave its group members in the gallery, unparented. */
 export async function deleteGalleryImageDetachingChildren(
   imageId: string,
 ): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   await ungroupImages({ parentId: imageId })
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
-    .eq('id', imageId)
-    .eq('user_id', userId)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set deleted_at = now(), on_canvas = false
+    where id = ${imageId} and user_id = ${userId}
+  `
 }
 
 /** Un-hide a root that was hidden to keep its variations' origin thumbnail. */
 export async function restoreHiddenRootImage(rootId: string): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ hidden: false })
-    .eq('id', rootId)
-    .eq('user_id', userId)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set hidden = false
+    where id = ${rootId} and user_id = ${userId}
+  `
 }

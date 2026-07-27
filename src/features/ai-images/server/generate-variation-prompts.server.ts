@@ -3,6 +3,7 @@
 import { fal } from '@fal-ai/client'
 import { generateText } from 'ai'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import { ai, requireAiRole } from '@/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
@@ -24,7 +25,7 @@ export async function generateVariationPrompts(
   data: GenerateVariationPromptsInput,
 ) {
   requireAiRole('reasoning')
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
   const { prompt, sourceImageId } = data
   const count = Math.min(data.count, 4)
 
@@ -34,17 +35,21 @@ export async function generateVariationPrompts(
     throw new Error('Invalid sourceImageId')
   }
 
-  const { data: sourceImage } = await supabase
-    .from('user_images')
-    .select('sort_order, storage_path, generation_metadata')
-    .eq('id', sourceImageId)
-    .eq('user_id', userId)
-    .single()
+  const sourceImage = first(
+    await sql<
+      Array<{
+        sort_order: number | null
+        storage_path: string | null
+        generation_metadata: Record<string, unknown> | null
+      }>
+    >`
+    select sort_order, storage_path, generation_metadata
+    from user_images
+    where id = ${sourceImageId} and user_id = ${userId}
+  `,
+  )
 
-  const sourceMetadata = sourceImage?.generation_metadata as Record<
-    string,
-    unknown
-  > | null
+  const sourceMetadata = sourceImage?.generation_metadata ?? null
   const rootPrompt =
     sourceMetadata?.generation_type === 'variation' &&
     typeof sourceMetadata.original_prompt === 'string'
@@ -62,12 +67,12 @@ export async function generateVariationPrompts(
   // Use root image for vision to prevent quality drift
   let imageStoragePath = sourceImage?.storage_path
   if (rootImageId !== sourceImageId) {
-    const { data: rootImage } = await supabase
-      .from('user_images')
-      .select('storage_path')
-      .eq('id', rootImageId)
-      .eq('user_id', userId)
-      .single()
+    const rootImage = first(
+      await sql<Array<{ storage_path: string | null }>>`
+      select storage_path from user_images
+      where id = ${rootImageId} and user_id = ${userId}
+    `,
+    )
     if (rootImage?.storage_path) {
       imageStoragePath = rootImage.storage_path
     }
@@ -120,17 +125,20 @@ export async function generateVariationPrompts(
   }
 
   // Fetch existing variation prompts to avoid repeats
-  const { data: existingVariations } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('user_id', userId)
-    .filter('generation_metadata->>generation_type', 'eq', 'variation')
-    .or(
-      `generation_metadata->>root_image_id.eq.${rootImageId},generation_metadata->>source_image_id.eq.${rootImageId},generation_metadata->>source_image_id.eq.${sourceImageId}`,
-    )
-    .limit(20)
-  const usedPrompts = (existingVariations ?? [])
-    .map((v) => (v.generation_metadata as Record<string, unknown>).prompt)
+  const existingVariations = await sql<
+    Array<{ generation_metadata: Record<string, unknown> }>
+  >`
+    select generation_metadata
+    from user_images
+    where user_id = ${userId}
+      and generation_metadata->>'generation_type' = 'variation'
+      and (generation_metadata->>'root_image_id' = ${rootImageId}
+           or generation_metadata->>'source_image_id' = ${rootImageId}
+           or generation_metadata->>'source_image_id' = ${sourceImageId})
+    limit 20
+  `
+  const usedPrompts = existingVariations
+    .map((v) => v.generation_metadata.prompt)
     .filter((p): p is string => typeof p === 'string')
   const sourcePrompt =
     typeof sourceMetadata?.prompt === 'string' ? sourceMetadata.prompt : prompt

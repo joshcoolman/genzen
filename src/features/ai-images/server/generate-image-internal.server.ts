@@ -1,6 +1,7 @@
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 import { describeImage } from '@/lib/server/describe-image.server'
 import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
@@ -51,7 +52,7 @@ export interface GenerateImageResult {
 export async function generateImageInternal(
   data: GenerateImageInput,
 ): Promise<GenerateImageResult> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   const {
     prompt,
@@ -73,12 +74,14 @@ export async function generateImageInternal(
 
   // Idempotency: if key provided and a non-failed record exists, return it
   if (data.idempotencyKey) {
-    const { data: existing } = await supabase
-      .from('user_images')
-      .select('id, request_id, status')
-      .eq('idempotency_key', data.idempotencyKey)
-      .eq('user_id', userId)
-      .single()
+    const existing = first(
+      await sql<
+        Array<{ id: string; request_id: string | null; status: string }>
+      >`
+      select id, request_id, status from user_images
+      where idempotency_key = ${data.idempotencyKey} and user_id = ${userId}
+    `,
+    )
     if (existing && existing.status !== 'failed') {
       return {
         recordId: existing.id,
@@ -198,16 +201,17 @@ export async function generateImageInternal(
     // Fetch reference images and upload them to FAL storage
     let referenceUrls: Array<string> = []
     if (data.referenceImageIds?.length) {
-      const refImages = await supabase
-        .from('user_images')
-        .select('id, storage_path')
-        .in('id', data.referenceImageIds)
-        .eq('user_id', userId)
+      const refImages = await sql<
+        Array<{ id: string; storage_path: string | null }>
+      >`
+        select id, storage_path from user_images
+        where id in ${sql(data.referenceImageIds)} and user_id = ${userId}
+      `
 
-      if (refImages.data?.length) {
+      if (refImages.length) {
         const storage = createImageStorage()
         const uploads = await Promise.all(
-          refImages.data.map(async (ref) => {
+          refImages.map(async (ref) => {
             if (!ref.storage_path) return null
             const signedUrl = await storage.getUrl(ref.storage_path)
             if (!signedUrl) return null

@@ -8,6 +8,7 @@ import type {
   ListActivityResult,
 } from '../types'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { sql } from '@/lib/server/db.server'
 import { getModelName } from '@/features/ai-images/models'
 
 interface ListActivityInput {
@@ -94,79 +95,54 @@ function parseEntry(row: Row): ActivityEntry {
 export async function listActivity(
   data: ListActivityInput,
 ): Promise<ListActivityResult> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const applyFilters = <
-    TQuery extends {
-      eq: (...args: Array<unknown>) => TQuery
-      in: (...args: Array<unknown>) => TQuery
-      gte: (...args: Array<unknown>) => TQuery
-      lte: (...args: Array<unknown>) => TQuery
-    },
-  >(
-    q: TQuery,
-  ): TQuery => {
-    let out = q.eq('user_id', userId).eq('source', 'ai_generated')
-    if (data.models && data.models.length > 0) {
-      out = out.in('generation_metadata->>model', data.models)
-    }
-    if (data.statuses && data.statuses.length > 0) {
-      out = out.in('status', data.statuses)
-    }
-    if (data.dateFrom) out = out.gte('created_at', data.dateFrom)
-    if (data.dateTo) out = out.lte('created_at', data.dateTo)
-    return out
-  }
+  // One predicate, three queries. It was a chain of builder calls applied to
+  // two query objects through a structurally-typed `applyFilters` helper --
+  // the shape that helper existed to satisfy went with supabase-js.
+  const where = sql`
+    where user_id = ${userId}
+      and source = 'ai_generated'
+      ${
+        data.models?.length
+          ? sql`and generation_metadata->>'model' in ${sql(data.models)}`
+          : sql``
+      }
+      ${data.statuses?.length ? sql`and status in ${sql(data.statuses)}` : sql``}
+      ${data.dateFrom ? sql`and created_at >= ${data.dateFrom}` : sql``}
+      ${data.dateTo ? sql`and created_at <= ${data.dateTo}` : sql``}
+  `
 
   const offset = data.page * data.pageSize
 
-  const pageQueryBase = supabase
-    .from('user_images')
-    .select(
-      'id, source, storage_path, status, generation_metadata, created_at, deleted_at',
-      { count: 'exact' },
-    )
-    .order('created_at', { ascending: false })
-    .range(offset, offset + data.pageSize - 1)
-
-  const totalsQueryBase = supabase
-    .from('user_images')
-    .select('status, generation_metadata')
-    .order('created_at', { ascending: false })
-    .limit(TOTALS_ROW_CAP)
-
-  const [pageResult, totalsResult] = await Promise.all([
-    applyFilters(pageQueryBase as never),
-    applyFilters(totalsQueryBase as never),
+  const [pageRows, totalsRows, [{ count }]] = await Promise.all([
+    sql<Array<Row>>`
+      select id, source, storage_path, status, generation_metadata,
+             to_json(created_at)#>>'{}' as created_at,
+             to_json(deleted_at)#>>'{}' as deleted_at
+      from user_images
+      ${where}
+      order by created_at desc
+      limit ${data.pageSize} offset ${offset}
+    `,
+    sql<Array<TotalsRow>>`
+      select status, generation_metadata
+      from user_images
+      ${where}
+      order by created_at desc
+      limit ${TOTALS_ROW_CAP}
+    `,
+    sql<Array<{ count: number }>>`
+      select count(*)::int as count from user_images ${where}
+    `,
   ])
 
-  const {
-    data: pageRows,
-    count,
-    error: pageError,
-  } = pageResult as {
-    data: Array<Row> | null
-    count: number | null
-    error: { message: string } | null
-  }
-  if (pageError) {
-    throw new Error(`Failed to list activity: ${pageError.message}`)
-  }
-
-  const { data: totalsRows, error: totalsError } = totalsResult as {
-    data: Array<TotalsRow> | null
-    error: { message: string } | null
-  }
-  if (totalsError) {
-    throw new Error(`Failed to load activity totals: ${totalsError.message}`)
-  }
-
-  const entries = (pageRows ?? []).map(parseEntry)
+  const entries = pageRows.map(parseEntry)
 
   let totalDurationMs = 0
   let totalProviderCostCents = 0
   let totalsIncludeEstimates = false
-  for (const r of totalsRows ?? []) {
+  for (const r of totalsRows) {
     const m = meta(r)
     const dur = computeDurationMs(m)
     if (dur != null) totalDurationMs += dur
@@ -176,16 +152,15 @@ export async function listActivity(
     }
   }
 
-  const total = count ?? 0
   return {
     entries,
-    total,
+    total: count,
     totals: {
-      count: totalsRows?.length ?? 0,
+      count: totalsRows.length,
       totalDurationMs,
       totalProviderCostCents,
       totalsIncludeEstimates,
-      exceedsCap: (totalsRows?.length ?? 0) >= TOTALS_ROW_CAP,
+      exceedsCap: totalsRows.length >= TOTALS_ROW_CAP,
     },
   }
 }

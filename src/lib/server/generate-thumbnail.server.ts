@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { sql } from './db.server'
 import { createImageStorage } from '@/lib/image-storage'
 
 const THUMBNAIL_WIDTH = 400
@@ -50,7 +50,6 @@ export async function generateAndStoreThumbnail(
  * thumbnail_path. Errors are silently swallowed.
  */
 export function generateThumbnailInBackground(
-  supabase: SupabaseClient,
   userId: string,
   storagePath: string,
   recordId: string,
@@ -58,10 +57,11 @@ export function generateThumbnailInBackground(
   generateAndStoreThumbnail(userId, storagePath)
     .then(async (thumbnailPath) => {
       if (thumbnailPath) {
-        await supabase
-          .from('user_images')
-          .update({ thumbnail_path: thumbnailPath })
-          .eq('id', recordId)
+        await sql`
+          update user_images
+          set thumbnail_path = ${thumbnailPath}
+          where id = ${recordId}
+        `
       }
     })
     .catch(() => {})

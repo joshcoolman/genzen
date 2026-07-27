@@ -1,6 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
-import { sql } from '@/lib/server/db.server'
+import { first, sql } from '@/lib/server/db.server'
 
 // Password hashing and verification. Server-only -- `node:crypto` is not
 // available on the Edge runtime, which is why `../session` deliberately holds
@@ -45,11 +45,13 @@ export async function verifyCredentials(
   email: string,
   password: string,
 ): Promise<string | null> {
-  const [user] = await sql<Array<{ id: string; passwordHash: string }>>`
+  const user = first(
+    await sql<Array<{ id: string; password_hash: string }>>`
     select id, password_hash from users where email = ${email}
-  `
+  `,
+  )
 
-  const row = user as { id: string; passwordHash: string } | undefined
-  const isMatch = await matchesHash(password, row?.passwordHash ?? DUMMY_HASH)
+  const row = user as { id: string; password_hash: string } | undefined
+  const isMatch = await matchesHash(password, row?.password_hash ?? DUMMY_HASH)
   return isMatch && row ? row.id : null
 }

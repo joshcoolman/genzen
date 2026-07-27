@@ -1,8 +1,9 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
 import type { UserImage } from '@/features/user-images/types'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
+import { userImageColumns } from '@/features/user-images/server/columns.server'
 import { removeImages } from '@/features/user-images/server/remove-images.server'
 
 // Trash's reads and writes, which the browser used to run directly against
@@ -31,22 +32,19 @@ export interface TrashPayload {
 }
 
 export async function listTrashedImages(): Promise<TrashPayload> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .select('*')
-    .eq('user_id', userId)
-    .not('deleted_at', 'is', null)
-    .eq('hidden', false)
-    .in('source', ['upload', 'ai_generated'])
-    .order('deleted_at', { ascending: false })
+  const images = await sql<Array<UserImage>>`
+    select ${userImageColumns()}
+    from user_images
+    where user_id = ${userId}
+      and deleted_at is not null
+      and hidden = false
+      and source in ('upload', 'ai_generated')
+    order by deleted_at desc
+  `
 
-  if (error) throw new Error(error.message)
-
-  const images = data as unknown as Array<UserImage>
   const links = await computeLinks(
-    supabase,
     userId,
     images.map((img) => img.id),
   )
@@ -58,7 +56,6 @@ export async function listTrashedImages(): Promise<TrashPayload> {
  * generation's source/root, or placed on the canvas.
  */
 async function computeLinks(
-  supabase: SupabaseClient,
   userId: string,
   trashedIds: Array<string>,
 ): Promise<TrashLinks> {
@@ -70,39 +67,35 @@ async function computeLinks(
     return { ids: [], counts, canvasIds: [] }
   }
 
-  const trashedSet = new Set(trashedIds)
+  // Counting used to mean reading every living row's metadata and tallying in
+  // JS. The `values` join is what preserves the old arithmetic: a row naming
+  // the same trashed id as *both* its source and its root counted twice, and
+  // still does, because it contributes two rows here.
+  const refCounts = await sql<Array<{ ref: string; count: number }>>`
+    select t.ref, count(*)::int as count
+    from user_images ui
+    cross join lateral (values
+      (ui.generation_metadata->>'source_image_id'),
+      (ui.generation_metadata->>'root_image_id')
+    ) as t(ref)
+    where ui.user_id = ${userId}
+      and ui.deleted_at is null
+      and ui.hidden = false
+      and t.ref = any(${trashedIds}::text[])
+    group by t.ref
+  `
 
-  const { data: livingImages } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .eq('user_id', userId)
-    .is('deleted_at', null)
-    .eq('hidden', false)
-    .not('generation_metadata', 'is', null)
-
-  for (const row of livingImages ?? []) {
-    const meta = row.generation_metadata as Record<string, unknown> | null
-    if (!meta) continue
-
-    const refs = [
-      typeof meta.source_image_id === 'string' ? meta.source_image_id : null,
-      typeof meta.root_image_id === 'string' ? meta.root_image_id : null,
-    ].filter((id): id is string => id !== null && trashedSet.has(id))
-
-    for (const refId of refs) {
-      ids.add(refId)
-      counts[refId] = (counts[refId] || 0) + 1
-    }
+  for (const row of refCounts) {
+    ids.add(row.ref)
+    counts[row.ref] = row.count
   }
 
-  const { data: onCanvasRows } = await supabase
-    .from('user_images')
-    .select('id')
-    .eq('user_id', userId)
-    .in('id', trashedIds)
-    .eq('on_canvas', true)
+  const onCanvasRows = await sql<Array<{ id: string }>>`
+    select id from user_images
+    where user_id = ${userId} and id in ${sql(trashedIds)} and on_canvas = true
+  `
 
-  for (const row of onCanvasRows ?? []) {
+  for (const row of onCanvasRows) {
     canvasIds.add(row.id)
     ids.add(row.id)
   }
@@ -112,15 +105,12 @@ async function computeLinks(
 
 export async function restoreImages(ids: Array<string>): Promise<void> {
   if (ids.length === 0) return
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: null })
-    .eq('user_id', userId)
-    .in('id', ids)
-
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set deleted_at = null
+    where user_id = ${userId} and id in ${sql(ids)}
+  `
 }
 
 /**
@@ -133,26 +123,29 @@ export async function restoreImages(ids: Array<string>): Promise<void> {
 export async function permanentlyDeleteImages(
   ids?: Array<string>,
 ): Promise<Array<string>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  let query = supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, generation_metadata')
-    .eq('user_id', userId)
-    .not('deleted_at', 'is', null)
-    .eq('hidden', false)
+  if (ids && ids.length === 0) return []
 
-  if (ids) {
-    if (ids.length === 0) return []
-    query = query.in('id', ids)
-  }
+  const candidates = await sql<
+    Array<{
+      id: string
+      storage_path: string | null
+      thumbnail_path: string | null
+      generation_metadata: Record<string, unknown> | null
+    }>
+  >`
+    select id, storage_path, thumbnail_path, generation_metadata
+    from user_images
+    where user_id = ${userId}
+      and deleted_at is not null
+      and hidden = false
+      ${ids ? sql`and id in ${sql(ids)}` : sql``}
+  `
 
-  const { data: candidates, error } = await query
-  if (error) throw new Error(error.message)
   if (candidates.length === 0) return []
 
   const links = await computeLinks(
-    supabase,
     userId,
     candidates.map((c) => c.id),
   )
@@ -161,13 +154,10 @@ export async function permanentlyDeleteImages(
   if (targets.length === 0) return []
 
   const targetIds = targets.map((t) => t.id)
-  const { error: deleteError } = await supabase
-    .from('user_images')
-    .delete()
-    .eq('user_id', userId)
-    .in('id', targetIds)
-
-  if (deleteError) throw new Error(deleteError.message)
+  await sql`
+    delete from user_images
+    where user_id = ${userId} and id in ${sql(targetIds)}
+  `
 
   const storagePaths = targets.flatMap((t) => [
     ...(t.storage_path ? [t.storage_path] : []),
@@ -179,7 +169,7 @@ export async function permanentlyDeleteImages(
   // origin thumbnail alive. With the last variation gone, so is the reason.
   const rootIds = new Set<string>()
   for (const target of targets) {
-    const meta = target.generation_metadata as Record<string, unknown> | null
+    const meta = target.generation_metadata
     if (meta?.generation_type !== 'variation') continue
     const rootId =
       (typeof meta.root_image_id === 'string' ? meta.root_image_id : null) ??
@@ -187,42 +177,45 @@ export async function permanentlyDeleteImages(
     if (rootId) rootIds.add(rootId)
   }
   for (const rootId of rootIds) {
-    await cleanupHiddenRoot(supabase, userId, rootId)
+    await cleanupHiddenRoot(userId, rootId)
   }
 
   return targetIds
 }
 
 async function cleanupHiddenRoot(
-  supabase: SupabaseClient,
   userId: string,
   rootId: string,
 ): Promise<void> {
-  const { data: root } = await supabase
-    .from('user_images')
-    .select('id, storage_path, thumbnail_path, hidden')
-    .eq('id', rootId)
-    .eq('user_id', userId)
-    .maybeSingle()
+  const root = first(
+    await sql<
+      Array<{
+        id: string
+        storage_path: string | null
+        thumbnail_path: string | null
+        hidden: boolean
+      }>
+    >`
+    select id, storage_path, thumbnail_path, hidden
+    from user_images
+    where id = ${rootId} and user_id = ${userId}
+  `,
+  )
 
   if (!root?.hidden) return
 
-  const { count } = await supabase
-    .from('user_images')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .or(
-      `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
-    )
-    .is('deleted_at', null)
+  const [{ count }] = await sql<Array<{ count: number }>>`
+    select count(*)::int as count
+    from user_images
+    where user_id = ${userId}
+      and (generation_metadata->>'root_image_id' = ${rootId}
+           or generation_metadata->>'source_image_id' = ${rootId})
+      and deleted_at is null
+  `
 
   if (count !== 0) return
 
-  await supabase
-    .from('user_images')
-    .delete()
-    .eq('id', rootId)
-    .eq('user_id', userId)
+  await sql`delete from user_images where id = ${rootId} and user_id = ${userId}`
 
   if (root.storage_path) {
     await removeImages({

@@ -1,6 +1,7 @@
 'use server'
 
 import { resolveAuth } from '@/lib/server/auth.server'
+import { sql } from '@/lib/server/db.server'
 
 interface GroupImagesInput {
   primaryId: string
@@ -8,42 +9,30 @@ interface GroupImagesInput {
 }
 
 export async function groupImages(data: GroupImagesInput) {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   if (data.childIds.length === 0) return
 
-  // Fetch current metadata for all children
-  const { data: rows, error: fetchError } = await supabase
-    .from('user_images')
-    .select('id, generation_metadata')
-    .eq('user_id', userId)
-    .is('deleted_at', null)
-    .in('id', data.childIds)
+  // Merge `parent_id` into each child's metadata, leaving the rest of the
+  // object alone. Previously a read of every child followed by one update per
+  // child, each of which wrote back a whole object read moments earlier.
+  const grouped = await sql`
+    update user_images
+    set generation_metadata =
+      coalesce(generation_metadata, '{}'::jsonb)
+        || jsonb_build_object('parent_id', ${data.primaryId}::text)
+    where user_id = ${userId}
+      and deleted_at is null
+      and id in ${sql(data.childIds)}
+    returning id
+  `
 
-  if (fetchError) throw new Error(fetchError.message)
-  if (rows.length === 0) return
-
-  // Set parent_id on each child — merge into existing metadata
-  await Promise.all(
-    rows.map(async (row) => {
-      const existing = (row.generation_metadata ?? {}) as Record<
-        string,
-        unknown
-      >
-      const meta = { ...existing, parent_id: data.primaryId }
-      const { error } = await supabase
-        .from('user_images')
-        .update({ generation_metadata: meta })
-        .eq('id', row.id)
-        .eq('user_id', userId)
-      if (error) throw new Error(error.message)
-    }),
-  )
+  if (grouped.length === 0) return
 
   // Bump primary's sort_order so it floats to top
-  await supabase
-    .from('user_images')
-    .update({ sort_order: Date.now() / 1000 })
-    .eq('id', data.primaryId)
-    .eq('user_id', userId)
+  await sql`
+    update user_images
+    set sort_order = ${Date.now() / 1000}
+    where id = ${data.primaryId} and user_id = ${userId}
+  `
 }

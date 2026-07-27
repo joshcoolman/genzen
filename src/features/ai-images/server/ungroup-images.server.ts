@@ -1,7 +1,7 @@
 'use server'
 
-import type { Json } from '@/lib/types/supabase'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { sql } from '@/lib/server/db.server'
 
 interface UngroupByIds {
   imageIds: Array<string>
@@ -16,55 +16,29 @@ interface UngroupByParent {
 type UngroupImagesInput = UngroupByIds | UngroupByParent
 
 export async function ungroupImages(data: UngroupImagesInput) {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  let rows: Array<{ id: string; generation_metadata: unknown }>
-
+  // One statement either way. Finding a parent's children used to mean reading
+  // every one of the user's rows and filtering in JS, and dropping the key
+  // meant a read-modify-write per row -- N+1 round trips that could each lose a
+  // concurrent edit to the rest of the object. `- 'parent_id'` removes the one
+  // key and leaves the rest of the metadata alone.
   if (data.parentId) {
-    // Find all children of the given parent
-    const { data: allRows, error } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-
-    if (error) throw new Error(error.message)
-
-    rows = allRows.filter((row) => {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      return meta?.parent_id === data.parentId
-    })
-  } else if (data.imageIds && data.imageIds.length > 0) {
-    // Use the provided image IDs directly
-    const { data: fetchedRows, error } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', userId)
-      .in('id', data.imageIds)
-
-    if (error) throw new Error(error.message)
-    rows = fetchedRows
-  } else {
+    await sql`
+      update user_images
+      set generation_metadata = generation_metadata - 'parent_id'
+      where user_id = ${userId}
+        and deleted_at is null
+        and generation_metadata->>'parent_id' = ${data.parentId}
+    `
     return
   }
 
-  if (rows.length === 0) return
+  if (!data.imageIds?.length) return
 
-  // Remove parent_id from each image — merge, never replace
-  await Promise.all(
-    rows.map(async (row) => {
-      const existing = (row.generation_metadata ?? {}) as Record<
-        string,
-        unknown
-      >
-      const meta = { ...existing }
-      delete meta.parent_id
-      const { error } = await supabase
-        .from('user_images')
-        .update({ generation_metadata: meta as Json })
-        .eq('id', row.id)
-        .eq('user_id', userId)
-      if (error) throw new Error(error.message)
-    }),
-  )
+  await sql`
+    update user_images
+    set generation_metadata = generation_metadata - 'parent_id'
+    where user_id = ${userId} and id in ${sql(data.imageIds)}
+  `
 }

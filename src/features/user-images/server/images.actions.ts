@@ -1,7 +1,9 @@
 'use server'
 
+import { userImageColumns } from './columns.server'
 import type { UserImage } from '../types'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, sql } from '@/lib/server/db.server'
 
 // Server actions for the image queries the browser used to run directly against
 // Supabase.
@@ -21,28 +23,28 @@ export interface ListImagesFilters {
 export async function listImages(
   filters?: ListImagesFilters,
 ): Promise<Array<UserImage>> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
-  let query = supabase
-    .from('user_images')
-    .select('*')
-    .eq('user_id', userId)
-    .in('source', ['upload', 'ai_generated'])
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
+  const pattern = filters?.search_term ? `%${filters.search_term}%` : null
 
-  if (filters?.search_term) {
-    const pattern = `%${filters.search_term}%`
-    query = query.or(`title.ilike.${pattern},description.ilike.${pattern}`)
-  }
-  if (filters?.limit !== undefined) {
-    const offset = filters.offset ?? 0
-    query = query.range(offset, offset + filters.limit - 1)
-  }
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
-  return data as Array<UserImage>
+  return sql<Array<UserImage>>`
+    select ${userImageColumns()}
+    from user_images
+    where user_id = ${userId}
+      and source in ('upload', 'ai_generated')
+      and deleted_at is null
+      ${
+        pattern
+          ? sql`and (title ilike ${pattern} or description ilike ${pattern})`
+          : sql``
+      }
+    order by created_at desc
+    ${
+      filters?.limit !== undefined
+        ? sql`limit ${filters.limit} offset ${filters.offset ?? 0}`
+        : sql``
+    }
+  `
 }
 
 export interface CreateImageRecordInput {
@@ -58,7 +60,7 @@ export interface CreateImageRecordInput {
 export async function createImageRecord(
   input: CreateImageRecordInput,
 ): Promise<UserImage> {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   // The path is built client-side but must still be inside this user's prefix,
   // or one user could write a row pointing at another's object.
@@ -66,23 +68,21 @@ export async function createImageRecord(
     throw new Error('Storage path must be scoped to the authenticated user')
   }
 
-  const { data, error } = await supabase
-    .from('user_images')
-    .insert({
-      user_id: userId,
-      title: input.title,
-      description: input.description ?? null,
-      storage_path: input.storagePath,
-      file_name: input.fileName,
-      file_size: input.fileSize,
-      mime_type: input.mimeType,
-      file_hash: input.fileHash,
-    })
-    .select()
-    .single()
+  const row = first(
+    await sql<Array<UserImage>>`
+    insert into user_images
+      (user_id, title, description, storage_path, file_name, file_size,
+       mime_type, file_hash)
+    values
+      (${userId}, ${input.title}, ${input.description ?? null},
+       ${input.storagePath}, ${input.fileName}, ${input.fileSize},
+       ${input.mimeType}, ${input.fileHash ?? null})
+    returning ${userImageColumns()}
+  `,
+  )
 
-  if (error) throw new Error(error.message)
-  return data as UserImage
+  if (!row) throw new Error('Insert returned no row')
+  return row
 }
 
 export async function updateImageMeta(
@@ -90,40 +90,38 @@ export async function updateImageMeta(
   title: string,
   description: string | null,
 ): Promise<UserImage> {
-  const { userId, supabase } = await resolveAuth()
-  const { data, error } = await supabase
-    .from('user_images')
-    .update({ title, description })
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select()
-    .single()
+  const { userId } = await resolveAuth()
 
-  if (error) throw new Error(error.message)
-  return data as UserImage
+  const row = first(
+    await sql<Array<UserImage>>`
+    update user_images
+    set title = ${title}, description = ${description}
+    where id = ${id} and user_id = ${userId}
+    returning ${userImageColumns()}
+  `,
+  )
+
+  if (!row) throw new Error('Image not found')
+  return row
 }
 
 export async function softDeleteImage(id: string): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
-  const { error } = await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
-    .eq('id', id)
-    .eq('user_id', userId)
+  const { userId } = await resolveAuth()
 
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set deleted_at = now(), on_canvas = false
+    where id = ${id} and user_id = ${userId}
+  `
 }
 
 export async function updateImageDescription(
   id: string,
   description: string,
 ): Promise<void> {
-  const { userId, supabase } = await resolveAuth()
-  const { error } = await supabase
-    .from('user_images')
-    .update({ description })
-    .eq('id', id)
-    .eq('user_id', userId)
+  const { userId } = await resolveAuth()
 
-  if (error) throw new Error(error.message)
+  await sql`
+    update user_images set description = ${description}
+    where id = ${id} and user_id = ${userId}
+  `
 }

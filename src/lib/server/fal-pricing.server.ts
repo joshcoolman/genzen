@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from '@/lib/server/supabase-admin.server'
+import { first, sql } from '@/lib/server/db.server'
 import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
@@ -37,23 +37,25 @@ async function fetchFromFal(endpointId: string): Promise<FalPrice | null> {
 export async function getFalModelPrice(
   endpointId: string,
 ): Promise<FalPrice | null> {
-  const supabase = getSupabaseAdmin()
-
+  // `unit_price` is numeric(10,6), which the driver hands back as a string to
+  // avoid float rounding -- hence the `Number()` on every read below.
   interface CacheRow {
-    unit_price: number
+    unit_price: string
     unit: string
     currency: string
-    fetched_at: string
+    fetched_at: Date
   }
 
-  const { data: cached } = (await supabase
-    .from('fal_price_cache')
-    .select('unit_price, unit, currency, fetched_at')
-    .eq('endpoint_id', endpointId)
-    .single()) as { data: CacheRow | null }
+  const cached = first(
+    await sql<Array<CacheRow>>`
+    select unit_price, unit, currency, fetched_at
+    from fal_price_cache
+    where endpoint_id = ${endpointId}
+  `,
+  )
 
   const isStale =
-    !cached || Date.now() - new Date(cached.fetched_at).getTime() > CACHE_TTL_MS
+    !cached || Date.now() - cached.fetched_at.getTime() > CACHE_TTL_MS
 
   if (!isStale) {
     // cached is non-null when !isStale (isStale = !cached || ...)
@@ -78,13 +80,15 @@ export async function getFalModelPrice(
       : null
   }
 
-  await supabase.from('fal_price_cache').upsert({
-    endpoint_id: endpointId,
-    unit_price: fresh.unit_price,
-    unit: fresh.unit,
-    currency: fresh.currency,
-    fetched_at: new Date().toISOString(),
-  })
+  await sql`
+    insert into fal_price_cache (endpoint_id, unit_price, unit, currency, fetched_at)
+    values (${endpointId}, ${fresh.unit_price}, ${fresh.unit}, ${fresh.currency}, now())
+    on conflict (endpoint_id) do update
+    set unit_price = excluded.unit_price,
+        unit = excluded.unit,
+        currency = excluded.currency,
+        fetched_at = excluded.fetched_at
+  `
 
   return fresh
 }

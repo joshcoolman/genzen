@@ -3,6 +3,7 @@
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import { resolveAuth } from '@/lib/server/auth.server'
+import { first, jsonb, sql } from '@/lib/server/db.server'
 import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
 import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
 import { createImageStorage } from '@/lib/image-storage'
@@ -20,22 +21,24 @@ interface RetryGenerationInput {
 }
 
 export async function retryGeneration(data: RetryGenerationInput) {
-  const { userId, supabase } = await resolveAuth()
+  const { userId } = await resolveAuth()
 
   // Checked inside the reserved-row block below (see the note in
   // edit-image-internal.server.ts): a missing key must produce a visible
   // failed card, not a silent throw.
 
   // Fetch the failed record
-  const { data: record, error: fetchError } = await supabase
-    .from('user_images')
-    .select('id, status, generation_metadata')
-    .eq('id', data.recordId)
-    .eq('user_id', userId)
-    .eq('status', 'failed')
-    .single()
+  const record = first(
+    await sql<
+      Array<{ id: string; status: string; generation_metadata: unknown }>
+    >`
+    select id, status, generation_metadata
+    from user_images
+    where id = ${data.recordId} and user_id = ${userId} and status = 'failed'
+  `,
+  )
 
-  if (fetchError) {
+  if (!record) {
     throw new Error('Record not found or not in failed state')
   }
 
@@ -58,13 +61,14 @@ export async function retryGeneration(data: RetryGenerationInput) {
 
   const referenceUrls: Array<string> = []
   if (meta.reference_image_ids?.length) {
-    const { data: refImages } = await supabase
-      .from('user_images')
-      .select('id, storage_path')
-      .in('id', meta.reference_image_ids)
-      .eq('user_id', userId)
+    const refImages = await sql<
+      Array<{ id: string; storage_path: string | null }>
+    >`
+      select id, storage_path from user_images
+      where id in ${sql(meta.reference_image_ids)} and user_id = ${userId}
+    `
 
-    if (refImages?.length) {
+    if (refImages.length) {
       const storage = createImageStorage()
       const uploads = await Promise.all(
         refImages.map(async (ref) => {
@@ -110,27 +114,22 @@ export async function retryGeneration(data: RetryGenerationInput) {
       ? (meta as { retry_count: number }).retry_count + 1
       : 1
 
-  const { error: reserveError } = await supabase
-    .from('user_images')
-    .update({
-      status: 'pending',
-      generation_error: null,
-      request_id: null,
-      generation_metadata: {
-        ...meta,
-        // Drop the previous failure's structured blob, or Activity would show
-        // the old error against a row that is running again.
-        error: undefined,
-        retry_count: retryCount,
-        submitted_at: new Date().toISOString(),
-      },
-    })
-    .eq('id', data.recordId)
-    .eq('user_id', userId)
-
-  if (reserveError) {
-    throw new Error(`Failed to reset record for retry: ${reserveError.message}`)
-  }
+  // `- 'error'` drops the previous failure's structured blob, or Activity would
+  // show the old error against a row that is running again. Merging with `||`
+  // rather than writing `meta` back wholesale keeps whatever else is in there.
+  await sql`
+    update user_images
+    set status = 'pending',
+        generation_error = null,
+        request_id = null,
+        generation_metadata =
+          (coalesce(generation_metadata, '{}'::jsonb) - 'error')
+            || ${jsonb({
+              retry_count: retryCount,
+              submitted_at: new Date().toISOString(),
+            })}
+    where id = ${data.recordId} and user_id = ${userId}
+  `
 
   const newRecord = { id: data.recordId }
 

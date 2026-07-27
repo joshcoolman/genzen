@@ -4,16 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // The handler keeps its JWKS cache and failure counter in module scope, so each
 // test re-imports it fresh via vi.resetModules() + dynamic import.
 
-vi.mock('@/lib/server/supabase-admin.server', () => ({
-  getSupabaseAdmin: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-    }),
-  }),
+// No matching row: these tests exercise signature verification, not dispatch.
+vi.mock('@/lib/server/db.server', () => ({
+  sql: vi.fn(async () => []),
+  first: (rows: Array<unknown>) => rows[0],
 }))
 
 vi.mock('@/lib/server/fal-completion.server', () => ({
