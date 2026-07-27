@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ActivityPreview } from './activity-preview/activity-preview'
 import { useAuth } from '#/lib/auth'
-import { ActivityPreview } from '#/features/activity/components/ActivityPreview'
 import { checkConnections } from '#/lib/server/check-connections'
 
 type Status = 'checking' | 'connected' | 'error'

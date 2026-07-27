@@ -19,22 +19,20 @@ import {
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
+import { GeneratorPanel } from '../../_components/generator-panel/generator-panel'
+import { ImageGallery } from '../../_components/image-gallery/image-gallery'
+import { VariationPromptsDialog } from '../../_components/variation-prompts-dialog/variation-prompts-dialog'
+import { DescribeDialog } from '../../_components/describe-dialog/describe-dialog'
+import { ImageLightbox } from './image-lightbox/image-lightbox'
+import { ParentPickerDialog } from './parent-picker-dialog/parent-picker-dialog'
+import { GroupPickerDialog } from './group-picker-dialog/group-picker-dialog'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { MobileDialogHeader } from '#/components/MobileDialogHeader'
-import {
-  GeneratorPanel,
-  ImageGallery,
-  ImageLightbox,
-  useAiImagesPage,
-} from '#/features/ai-images'
-import { VariationPromptsDialog } from '#/features/ai-images/components/VariationPromptsDialog'
-import { ParentPickerDialog } from '#/features/ai-images/components/ParentPickerDialog'
+import { useAiImagesPage } from '#/features/ai-images'
 import { groupImages } from '#/features/ai-images/server/group-images.server'
 import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
-import { DescribeDialog } from '#/features/ai-images/components/DescribeDialog'
-import { GroupPickerDialog } from '#/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '#/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
 import { listSubtreeStoragePaths } from '#/features/ai-images/server/gallery.actions'

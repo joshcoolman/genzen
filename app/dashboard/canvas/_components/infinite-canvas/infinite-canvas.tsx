@@ -24,6 +24,7 @@ import {
 import { CANVAS_MAX_GROUP_SELECTION } from '../../_lib/canvas-models'
 import { SelectionActions } from '../selection-actions/selection-actions'
 import { CanvasGenerateDialog } from '../canvas-generate-dialog/canvas-generate-dialog'
+import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
 import styles from './infinite-canvas.module.css'
 import type {
   CanvasGroup,
@@ -44,7 +45,7 @@ import {
 } from '#/components/ui/dialog'
 import { Button } from '#/components/ui/button'
 import { useAuth } from '#/lib/auth'
-import { ExistingImagePicker, useExistingImages } from '#/features/user-images'
+import { useExistingImages } from '#/features/user-images'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
 
 interface InfiniteCanvasProps {

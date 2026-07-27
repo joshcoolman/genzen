@@ -8,7 +8,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
-- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `useAiImagesPage`, `GeneratorPanel`, `ImageGallery`, `ImageLightbox`
+- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`, `useAiImagesPage`
 
 ## Server
 
@@ -47,26 +47,18 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
 - `useEditPageADContext.ts` -- registers edit page context with AD system
 
-## Components
-
-- `GeneratorPanel.tsx` -- main prompt input, aspect ratio, model selector, ref images, generation controls
-- `ImageGallery.tsx` -- image grid with nested edit children thumbnails under parent cards
-- `ImageLightbox.tsx` -- fullscreen lightbox viewer
-- `ImageCard.tsx` -- single image card with model label, root preview, edit children grid, actions menu
-- `PendingImageCard.tsx` -- skeleton card during generation
-- `FailedImageCard.tsx` -- error card with retry (if retryable)
-- `DescribeDialog.tsx` -- auto-generate or edit image captions via vision API
-- `VariationPromptsDialog.tsx` -- manage variation prompts with ref image picker; supports smart paste (multi-line text splits into prompts)
-- `GeneratePromptsDialog.tsx` -- generate shot list prompts from images via vision API
-- `PastePromptsDialog.tsx` -- paste/import bulk prompts for batch generation
-- `ParentPickerDialog.tsx` -- select new parent when adopting/moving an image
-- `GroupPickerDialog.tsx` -- select target group for reparenting
-- `DescribeJsonPanel.tsx` -- JSON description output with syntax highlighting
-
-## Routes
+## Routes and UI
 
 - `app/dashboard/ai-images/page.tsx` -- main gallery + generation page
-- `app/dashboard/edit.$imageId.tsx` -- dedicated edit page for a single image
+- `app/dashboard/edit/[imageId]/page.tsx` -- dedicated edit page for a single image
+
+This feature is headless. The generation UI shared by both routes (plus canvas)
+lives in `app/dashboard/_components/` -- `generator-panel/`, `image-gallery/`,
+`image-card/`, `pending-image-card/`, `failed-image-card/`, `describe-dialog/`,
+`variation-prompts-dialog/`, `generate-prompts-dialog/`, `paste-prompts-dialog/`,
+`prompt-list/`. The gallery-only dialogs (`image-lightbox/`,
+`parent-picker-dialog/`, `group-picker-dialog/`) live in
+`app/dashboard/ai-images/_components/`.
 
 ## Shared Dependencies
 
@@ -75,7 +67,6 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `src/lib/server/describe-image.server.ts` -- vision description for images without prompts
 - `src/lib/prompts/image-variation.ts` -- system prompt + user content builder for variations
 - `src/lib/prompts/shot-list.ts` -- system prompt for shot list generation
-- `src/components/PromptList.tsx` -- reusable prompt list with optional AI generation
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
 - `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)

@@ -10,8 +10,3 @@ export { normalizeGeneration } from './normalize-generation'
 
 // Hooks
 export { useAiImagesPage } from './hooks/use-ai-images-page'
-
-// Components
-export { GeneratorPanel } from './components/GeneratorPanel'
-export { ImageGallery } from './components/ImageGallery'
-export { ImageLightbox } from './components/ImageLightbox'
