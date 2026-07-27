@@ -26,7 +26,8 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 
 ## Quirks / Notes
 
-- Uses Supabase Realtime (`postgres_changes` UPDATE + DELETE events) to live-update the trash list
+- Uses Supabase Realtime (`postgres_changes` UPDATE + DELETE events) to live-update the trash list. It delivers nothing since #171 and goes with #174 -- see `ai-images/hooks/use-images.ts` for the polling shape that replaces it
+- **Failed generations never arrive here.** Deleting one from AI Images destroys the row (`deleteGalleryImage`): there is no image to restore, and a restored failure is just an error card again
 - Queries filter by `deleted_at IS NOT NULL` and `hidden = false` and `source IN ('upload', 'ai_generated')`
 - **Linked image protection**: prevents deletion of images referenced by active (non-deleted, non-hidden) images via `generation_metadata` or placed on canvas (`on_canvas = true`)
 - Permanent delete cascades: if deleting a variation whose hidden root image has no remaining living variations, the root is also cleaned up

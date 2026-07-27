@@ -295,14 +295,21 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
   }
 
   async function retryImage(img: SavedAiImage) {
-    // Drop the failed card; the resubmitted record comes back on the refresh.
-    setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
+    // The retry reuses this row, so the card stays where it is and goes back to
+    // pending in place. Flipping it here also restarts the poll, which is what
+    // carries it to its next outcome.
+    setSavedImages((prev) =>
+      prev.map((i) =>
+        i.id === img.id
+          ? { ...i, status: 'pending' as const, generation_error: null }
+          : i,
+      ),
+    )
     try {
       await retryGeneration({ recordId: img.id })
-      await loadSavedImages({ silent: true })
     } catch {
-      // If retry fails, restore the failed card
-      setSavedImages((prev) => sortByOrder([...prev, img]))
+      // Put the failed state back -- the retry never reached FAL.
+      setSavedImages((prev) => prev.map((i) => (i.id === img.id ? img : i)))
     }
   }
 

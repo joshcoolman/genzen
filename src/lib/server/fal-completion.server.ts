@@ -1,5 +1,6 @@
 import { downloadAndStoreImage } from './image-storage.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
+import { failureTitle } from './create-pending-generation.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '@/lib/image-storage'
@@ -158,6 +159,7 @@ export async function markGenerationFailedWithBlob(
       status: 'failed',
       generation_error: blob.message,
       generation_metadata: { ...meta, error: blob },
+      ...(await failureTitle(supabase, recordId)),
     })
     .eq('id', recordId)
 }

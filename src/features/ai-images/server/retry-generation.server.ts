@@ -97,29 +97,42 @@ export async function retryGeneration(data: RetryGenerationInput) {
     safetyLevel: 'permissive',
   })
 
-  // A retry is a generation, so it obeys the same rule: reserve the row
-  // first, then submit. A retry that fails again leaves its own failed
+  // A retry reuses the failed row rather than inserting a new one. Retrying is
+  // "try that again", not "make another" -- a new row left the original behind
+  // as a second card the user then had to clean up, and the row it left was a
+  // failure, which is exactly what they were trying to be rid of.
+  //
+  // It still obeys the reserve-then-submit rule: the row goes back to `pending`
+  // before FAL is contacted, so a retry that fails again lands back on the same
   // card rather than disappearing.
-  const { data: newRecord, error: insertError } = await supabase
+  const retryCount =
+    typeof (meta as { retry_count?: number }).retry_count === 'number'
+      ? (meta as { retry_count: number }).retry_count + 1
+      : 1
+
+  const { error: reserveError } = await supabase
     .from('user_images')
-    .insert({
-      user_id: userId,
+    .update({
       status: 'pending',
-      source: 'ai_generated',
-      title: 'Generating...',
-      sort_order: Date.now() / 1000,
+      generation_error: null,
+      request_id: null,
       generation_metadata: {
         ...meta,
-        retried_from: data.recordId,
+        // Drop the previous failure's structured blob, or Activity would show
+        // the old error against a row that is running again.
+        error: undefined,
+        retry_count: retryCount,
         submitted_at: new Date().toISOString(),
       },
     })
-    .select()
-    .single()
+    .eq('id', data.recordId)
+    .eq('user_id', userId)
 
-  if (insertError) {
-    throw new Error(`Failed to create retry record: ${insertError.message}`)
+  if (reserveError) {
+    throw new Error(`Failed to reset record for retry: ${reserveError.message}`)
   }
+
+  const newRecord = { id: data.recordId }
 
   try {
     if (!process.env.FAL_KEY) {

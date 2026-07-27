@@ -21,7 +21,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
 - `reparent-image.server.ts` -- move image under new parent or detach from parent
-- `retry-generation.server.ts` -- resubmit failed image generation to FAL
+- `retry-generation.server.ts` -- resubmit a failed generation **on the same row**: back to `pending`, error cleared, `retry_count` bumped. Retry means "try that again", not "make another" -- inserting a new row left the original failure behind as a second card to clean up
 - `caption-image.server.ts` -- vision API image captioning
 - `generate-shot-list.server.ts` -- vision-based shot list prompt generation (Gemini Flash)
 - `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
@@ -89,3 +89,5 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
 - Reparenting allows moving images between parent groups or detaching from a parent entirely
+- **Failed generations are deleted outright, not soft-deleted.** There is no image to restore, so Trash has nothing to offer for one -- restoring it just puts an error card back. Everything else still soft-deletes.
+- A row is titled `Generating...` while reserved; success renames it to the model and so does failure (`failureTitle`). Before that, a failure kept the placeholder forever, so Trash filled with rows that all read "Generating..."

@@ -1,6 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from './supabase-admin.server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Json } from '@/lib/types/supabase'
+import { getModelName } from '@/features/ai-images/models'
+
+/** Title a generation row carries between being reserved and settling. */
+export const PENDING_TITLE = 'Generating...'
 
 interface CreatePendingGenerationOptions {
   accessToken?: string
@@ -35,7 +40,7 @@ export async function createPendingGeneration({
   prompt,
   aspectRatio,
   extraMetadata,
-  title = 'Generating...',
+  title = PENDING_TITLE,
   idempotencyKey,
   onCanvas,
   sortOrder,
@@ -192,9 +197,34 @@ export async function markGenerationFailed(
       .update({
         status: 'failed',
         generation_error: message.slice(0, 1000),
+        ...(await failureTitle(supabase, recordId)),
       })
       .eq('id', recordId)
   } catch (err) {
     console.error(`[generation] could not mark ${recordId} failed:`, err)
   }
+}
+
+/**
+ * A row is titled 'Generating...' from the moment it is reserved, and success
+ * renames it to the model. Failure used to leave the placeholder in place, so a
+ * failed card -- and every trashed one after it -- read "Generating..." forever.
+ * Returns a `title` patch, or nothing when the row already has a real one.
+ */
+export async function failureTitle(
+  supabase: SupabaseClient,
+  recordId: string,
+): Promise<{ title?: string }> {
+  const { data: record } = await supabase
+    .from('user_images')
+    .select('title, generation_metadata')
+    .eq('id', recordId)
+    .maybeSingle()
+
+  if (record?.title && record.title !== PENDING_TITLE) return {}
+
+  const meta = (record?.generation_metadata ?? {}) as Record<string, unknown>
+  const model = (meta.model ?? meta.fal_model_id) as string | undefined
+  if (!model) return {}
+  return { title: getModelName(model) || model }
 }

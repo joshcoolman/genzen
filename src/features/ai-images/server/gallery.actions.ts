@@ -98,13 +98,34 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
 
   const { data: image, error: readError } = await supabase
     .from('user_images')
-    .select('id, generation_metadata')
+    .select('id, status, storage_path, thumbnail_path, generation_metadata')
     .eq('id', imageId)
     .eq('user_id', userId)
     .maybeSingle()
 
   if (readError) throw new Error(readError.message)
   if (!image) return
+
+  // A failed generation produced no image, so Trash has nothing to offer for
+  // it -- restoring one just puts an error card back. Deleting it is the user
+  // saying "get rid of this", and it goes for good.
+  if (image.status === 'failed') {
+    const { error: purgeError } = await supabase
+      .from('user_images')
+      .delete()
+      .eq('id', imageId)
+      .eq('user_id', userId)
+
+    if (purgeError) throw new Error(purgeError.message)
+
+    // Defensive: a failed row normally has no objects, but a failure late in
+    // the pipeline can leave one behind.
+    const paths = [image.storage_path, image.thumbnail_path].filter(
+      (p): p is string => !!p,
+    )
+    if (paths.length > 0) await removeImages({ storagePaths: paths })
+    return
+  }
 
   const { count: variationCount, error: countError } = await supabase
     .from('user_images')
