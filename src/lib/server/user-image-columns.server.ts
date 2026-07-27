@@ -1,4 +1,4 @@
-import { sql } from '@/lib/server/db.server'
+import { sql } from './db.server'
 
 /**
  * Every `user_images` column, shaped the way `UserImage` declares it.
@@ -9,6 +9,9 @@ import { sql } from '@/lib/server/db.server'
  * browser received) says ISO string and number. Selecting the columns by name
  * is also what makes that difference visible instead of leaving a `Date` to
  * surface later as `created_at.slice is not a function`.
+ *
+ * Must stay in step with `UserImageRow` in `@/lib/types/db` -- the type says
+ * what these columns produce, and `db.server.test.ts` fails if they disagree.
  *
  * A function rather than a constant so each caller embeds a fresh fragment.
  */

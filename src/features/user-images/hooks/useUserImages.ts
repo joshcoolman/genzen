@@ -4,7 +4,11 @@
  * useUserImages Hook
  *
  * React hook for managing user images state and operations.
- * Uses Supabase client directly with RLS for security.
+ *
+ * Calls the server actions in `../server/images.actions`. It has no database
+ * client and names no user: identity comes from the session cookie, server
+ * side. There is no RLS behind that -- the explicit `user_id` filter in each
+ * action is what keeps one user's rows away from another's.
  */
 
 import { useCallback, useEffect, useState } from 'react'

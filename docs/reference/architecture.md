@@ -5,10 +5,15 @@ recurring patterns, and the deliberate seams. Read this to orient before
 diving into a feature; each feature also has its own `CLAUDE.md` with local
 detail. This is the "what shape is this and where does X live" document.
 
-> Status: describes the **TanStack Start / Supabase** shape, which #168 replaces
-> with Next + Postgres + S3 + Node. The topology and naming below go stale with
-> that migration; the domain model and the saga framing survive it. Rewrite this
-> once #168 lands rather than trusting it verbatim.
+> **Status: the topology below is historical.** It describes the TanStack Start
+> and Supabase shape. #168 has since landed: the app now runs on Next, Postgres,
+> S3 and Node, with no Supabase and no realtime anywhere. Do not trust the stack
+> table, the route layout, or the Data and Realtime rows verbatim — the current
+> sources of truth are the root `CLAUDE.md`, each feature's `CLAUDE.md`, and
+> `migrations/`.
+>
+> What survives the migration and is still worth reading here: the domain model
+> and the saga framing. Rewriting the rest is #188.
 
 ---
 

@@ -1,7 +1,7 @@
 'use server'
 
 import type { SavedAiImage } from '@/features/ai-images/types'
-import type { Tables } from '@/lib/types/supabase'
+import type { UserImageRow } from '@/lib/types/db'
 import { resolveAuth } from '@/lib/server/auth.server'
 import { first, sql } from '@/lib/server/db.server'
 import { removeImages } from '@/features/user-images/server/remove-images.server'
@@ -26,7 +26,7 @@ export interface GalleryPayload {
   /** Sources of edits/variations that are not themselves in `images` --
    *  needed for the little origin thumbnail on a derived card. */
   rootImages: Array<
-    Pick<Tables<'user_images'>, 'id' | 'storage_path' | 'thumbnail_path'> & {
+    Pick<UserImageRow, 'id' | 'storage_path' | 'thumbnail_path'> & {
       hidden: boolean
     }
   >

@@ -1,6 +1,6 @@
 'use server'
 
-import type { Tables } from '@/lib/types/supabase'
+import type { UserImageRow } from '@/lib/types/db'
 import { resolveAuth } from '@/lib/server/auth.server'
 import { first, sql } from '@/lib/server/db.server'
 
@@ -177,7 +177,7 @@ export async function listEditSourceRefs(
 }
 
 export type GenerationResultRow = Pick<
-  Tables<'user_images'>,
+  UserImageRow,
   | 'id'
   | 'storage_path'
   | 'thumbnail_path'

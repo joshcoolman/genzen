@@ -9,7 +9,7 @@ longer talks to the database.
 - `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
 - `hooks/useUserImages.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.actions`
 - `hooks/useExistingImages.ts` -- Fetch user's existing images + public R2 URLs (used by the shared image picker)
-- `hooks/useImageUpload.ts` -- Supabase storage upload + DB insert + triggers background thumbnail generation
+- `hooks/useImageUpload.ts` -- S3 upload + DB insert + triggers background thumbnail generation
 - `hooks/useClipboardPaste.ts` -- Global paste listener that uploads clipboard images
 - `hooks/useDownloadImages.ts` -- Batch download as ZIP (uses JSZip + file-saver, concurrency=4)
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection

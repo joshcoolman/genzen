@@ -1,7 +1,7 @@
 'use server'
 
-import { userImageColumns } from './columns.server'
 import type { UserImage } from '../types'
+import { userImageColumns } from '@/lib/server/user-image-columns.server'
 import { resolveAuth } from '@/lib/server/auth.server'
 import { first, sql } from '@/lib/server/db.server'
 

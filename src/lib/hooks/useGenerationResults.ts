@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GenerationResult } from '@/lib/types/generation-result'
-import type { Tables } from '@/lib/types/supabase'
+import type { UserImageRow } from '@/lib/types/db'
 import type { SavedAiImage } from '@/features/ai-images/types'
 import {
   listGenerationResultRows,
@@ -22,7 +22,7 @@ interface UseGenerationResultsOptions {
 }
 
 function getMetadata(
-  value: Tables<'user_images'>['generation_metadata'],
+  value: UserImageRow['generation_metadata'],
 ): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)

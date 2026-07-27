@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
-import type { Tables } from '@/lib/types/supabase'
+import type { UserImageRow } from '@/lib/types/db'
 import { first, sql } from '@/lib/server/db.server'
 import {
   markGenerationFailedWithBlob,
@@ -15,7 +15,7 @@ interface FalWebhookBody {
   error?: string
 }
 
-type WebhookRecord = Pick<Tables<'user_images'>, 'id' | 'user_id' | 'source'>
+type WebhookRecord = Pick<UserImageRow, 'id' | 'user_id' | 'source'>
 
 // --- ED25519 JWKS signature verification per FAL docs ---
 

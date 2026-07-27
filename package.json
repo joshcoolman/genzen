@@ -13,8 +13,8 @@
     "db:migrate": "node scripts/migrate.mjs",
     "auth:create-user": "node scripts/create-user.mjs",
     "local:up": "node scripts/local-up.mjs",
-    "local:down": "docker compose down && supabase stop",
-    "local:reset": "docker compose down -v && supabase stop --no-backup",
+    "local:down": "docker compose down",
+    "local:reset": "docker compose down -v",
     "start": "next start --port 3000"
   },
   "dependencies": {
@@ -26,7 +26,6 @@
     "@floating-ui/react-dom": "^2.1.8",
     "@json-render/core": "^0.16.0",
     "@json-render/react": "^0.16.0",
-    "@supabase/supabase-js": "^2.94.1",
     "@tanstack/react-hotkeys": "^0.3.0",
     "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.98",
