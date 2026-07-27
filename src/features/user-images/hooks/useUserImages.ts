@@ -198,11 +198,6 @@ export function useUserImages(
       try {
         setState((prev) => ({ ...prev, isCreating: true, error: null }))
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        if (!session?.access_token) throw new Error('No active session')
-
         // Generate storage path
         const timestamp = Date.now()
         const uuid = crypto.randomUUID()
@@ -434,11 +429,6 @@ export function useUserImages(
   const createOptimistic = useCallback(
     async (input: CreateOptimisticInput): Promise<void> => {
       if (!userId) throw new Error('User not authenticated')
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('No active session')
 
       const { file, title, description, tempId, previewUrl } = input
 

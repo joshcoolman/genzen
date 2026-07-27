@@ -46,11 +46,6 @@ export function useImageUpload(
         )
         const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
 
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        if (!session?.access_token) throw new Error('No active session')
-
         const base64Data = await fileToBase64(input.file)
         await uploadImage({
           storagePath,
