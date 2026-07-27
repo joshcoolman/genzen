@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { listImages } from '../server/images.actions'
 import type { UserImage } from '../types'
-import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
 
 interface UseExistingImagesReturn {
@@ -45,15 +45,7 @@ export function useExistingImages(
       setIsLoading(true)
       setError(null)
 
-      const { data, error: fetchError } = await supabase
-        .from('user_images')
-        .select('*')
-        .eq('user_id', userId)
-        .in('source', ['upload', 'ai_generated'])
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
-
-      if (fetchError) throw new Error(fetchError.message)
+      const data = await listImages()
 
       setImages(data)
 

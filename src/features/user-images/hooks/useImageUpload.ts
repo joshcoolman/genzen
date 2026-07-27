@@ -4,8 +4,8 @@ import { useCallback, useState } from 'react'
 import { createThumbnail } from '../server/create-thumbnail.server'
 import { uploadImage } from '../server/upload-image.server'
 import { removeImages } from '../server/remove-images.server'
-import type { CollectedImage, CreateUserImageInput } from '../types'
-import { supabase } from '@/lib/supabase'
+import { createImageRecord } from '../server/images.actions'
+import type { CollectedImage, CreateUserImageInput, UserImage } from '../types'
 import { createImageStorage } from '@/lib/image-storage'
 
 interface UseImageUploadReturn {
@@ -53,25 +53,21 @@ export function useImageUpload(
           contentType: input.file.type,
         })
 
-        const { data: newImage, error: insertError } = await supabase
-          .from('user_images')
-          .insert({
-            user_id: userId,
+        let newImage: UserImage
+        try {
+          newImage = await createImageRecord({
             title: input.title,
             description: input.description ?? null,
-            storage_path: storagePath,
-            file_name: input.file.name,
-            file_size: input.file.size,
-            mime_type: input.file.type,
-            file_hash: input.file_hash,
+            storagePath,
+            fileName: input.file.name,
+            fileSize: input.file.size,
+            mimeType: input.file.type,
+            fileHash: input.file_hash,
           })
-          .select()
-          .single()
-
-        if (insertError) {
+        } catch (insertError) {
           await removeImages({ storagePaths: [storagePath] }).catch(() => {})
           throw new Error(
-            `Failed to create image record: ${insertError.message}`,
+            `Failed to create image record: ${(insertError as Error).message}`,
           )
         }
 

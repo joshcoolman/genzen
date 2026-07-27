@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { supabase } from '@/lib/supabase'
+import { updateImageDescription } from '@/features/user-images/server/images.actions'
 import { captionImage } from '@/features/ai-images/server/caption-image.server'
 
 interface DescribeDialogProps {
@@ -66,10 +66,7 @@ export function DescribeDialog({
   const handleSave = async () => {
     setSaving(true)
     try {
-      await supabase
-        .from('user_images')
-        .update({ description })
-        .eq('id', imageId)
+      await updateImageDescription(imageId, description)
       onSave?.(imageId, description)
       onOpenChange(false)
     } finally {
