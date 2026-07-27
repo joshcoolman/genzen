@@ -117,13 +117,21 @@ to the browser.
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow `~/repos/project-standard`.
 
-**Last shipped** (2026-07-26)
+**Last shipped** (2026-07-27)
 
-- **Generations no longer hang on pending (#174, partial).** FAL settled them
-  fine; the UI never heard. Realtime delivers nothing — `user_images` is in no
-  publication, and the browser client lost its Supabase session with #171 — so
-  the 5s poll now drives the refetch in AI Images, generation results, and
-  Activity. The five dead channels are still in place.
+- **A failed generation is no longer treated as worth keeping.** Retry reuses the
+  failed row instead of spawning a second card; deleting a failure destroys it
+  rather than filling Trash with unrestorable rows; and a failure finally gets a
+  title, so a failed card stops reading "Generating..." forever.
+- **AI Images is off the browser database client (#173).** Its 14 queries became
+  `ai-images/server/gallery.actions.ts`, user-scoped by `resolveAuth()`. The
+  cascading delete moved server-side wholesale — it was four browser round trips
+  reading each other's results.
+- **Nothing pushes any more; the poll is the update signal (#174, 3 of 5).**
+  Realtime delivered nothing after #171 — `user_images` is in no publication and
+  the browser has no Supabase session — so generations hung on pending. A submit
+  refreshes once, and each poll that settles a row refreshes again. `use-images.ts`
+  has no channel left; `useTrash` and `use-edit-children` still do.
 - **The app runs on Next (#175).** TanStack Start, Router, Vite and Nitro are
   gone — 15 file routes became `app/` route folders, 20 `createServerFn`
   definitions became server actions, and the FAL webhook became a route handler.
@@ -131,28 +139,30 @@ Conventions follow `~/repos/project-standard`.
   deny-by-default: every path is private unless listed. `resolveAuth()` reads
   identity from the cookie, which retired `jose`, the remote-JWKS verification,
   and all 232 `accessToken` references that used to ride in request bodies.
-- **`useAuth()` returns a non-nullable user.** The layout resolves it server-side
-  and hands it down, so the loading/redirect dance every page opened with is gone
-  — as is `onAuthStateChange` and the localStorage session.
 - **Plain Postgres, scrypt auth, and a one-command local stack** landed for #168
   — `migrations/0001_init.sql`, `pnpm auth:create-user`, and a `local:up` that
   brings up both databases.
-- **45 migrations collapsed into one baseline**, generated from the live database
-  and verified structurally against it.
 
 **Up next**
 
-- **#173 — browser data access, and it is now load-bearing.** ~55 `.from()` calls
+- **#173 — browser data access, and it is now load-bearing.** ~40 `.from()` calls
   still run through the anon browser client against `auth.uid()` RLS, which no
-  longer resolves. A clean browser sees an empty gallery; a stale localStorage
-  session from before #171 is the only reason it looks like it works. Biggest
-  offenders: `useTrash.ts` (15), `use-images.ts` (14), `canvas/lib/persistence.ts` (7).
+  longer resolves. A clean browser sees empty pages; a stale localStorage session
+  from before #171 is the only reason they look like they work. Remaining:
+  `useTrash.ts` (15), `canvas/lib/persistence.ts` (7), `use-edit-page.ts` (4),
+  `useGenerationResults.ts` (3), then three small ones. Trash is next —
+  `ai-images/server/gallery.actions.ts` is the template.
 - **Signing in gives you an empty library today.** Login verifies against the new
   `users` table, whose ids are freshly generated, while `user_images.user_id`
   still holds Supabase auth uuids. Provision the local user with the matching
   uuid, or move the data, before expecting to see anything.
-- **#174 — remove the 5 dead realtime channels.** Best done per-file alongside
-  #173, since both land in the same hooks. Then **#176 — delete Supabase**.
+- **#174 — 2 dead realtime channels left** (`useTrash`, `use-edit-children`).
+  Do each alongside its #173 pass; they land in the same hooks. Then **#176 —
+  delete Supabase**.
+- **24 failed rows sit in Trash from before the fix**, still titled
+  "Generating...". Fix-forward left them; they are unrestorable by definition, so
+  `DELETE FROM user_images WHERE deleted_at IS NOT NULL AND status = 'failed'`
+  when you want them gone.
 - Then the `project-standard` conformance pass: one-folder-per-component and
   CSS Modules over Tailwind.
 
