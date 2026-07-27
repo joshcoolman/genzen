@@ -12,7 +12,11 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const user = await getCurrentUser()
-  if (!user) redirect('/login')
+  // Valid cookie, no such user -- the row was deleted or its id changed under a
+  // live session. Redirecting to /login would loop, because proxy.ts only checks
+  // the signature and would send it right back; the cookie has to be cleared,
+  // and only a route handler can do that.
+  if (!user) redirect('/api/auth/sign-out')
 
   return (
     <AuthProvider user={user}>
