@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
-import { ExpandableIconButton } from '@/components/ExpandableIconButton'
+import { ExpandableIconButton } from '#/components/ExpandableIconButton'
 
 interface CopyButtonProps {
   text: string

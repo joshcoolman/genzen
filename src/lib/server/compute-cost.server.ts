@@ -1,5 +1,5 @@
 import { getFalModelPrice } from './fal-pricing.server'
-import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
+import { RATIO_TO_SIZE } from '#/features/ai-images/constants'
 
 interface FalCostParams {
   quantity?: number

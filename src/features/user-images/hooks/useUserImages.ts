@@ -26,7 +26,7 @@ import type {
   UserImage,
   UserImageFilters,
 } from '../types'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()

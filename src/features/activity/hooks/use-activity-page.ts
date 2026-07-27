@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry, ActivityFilters, ActivityTotals } from '../types'
-import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
 
 const PAGE_SIZE = 50
 

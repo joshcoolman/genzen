@@ -6,7 +6,7 @@ import { uploadImage } from '../server/upload-image.server'
 import { removeImages } from '../server/remove-images.server'
 import { createImageRecord } from '../server/images.actions'
 import type { CollectedImage, CreateUserImageInput, UserImage } from '../types'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface UseImageUploadReturn {
   upload: (input: CreateUserImageInput) => Promise<CollectedImage>

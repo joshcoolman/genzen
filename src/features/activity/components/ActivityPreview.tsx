@@ -5,8 +5,8 @@ import { ArrowRight, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry } from '../types'
-import { formatDurationMs, formatRelativeOrDate } from '@/lib/time-format'
-import { cn } from '@/lib/utils'
+import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
+import { cn } from '#/lib/utils'
 
 const PREVIEW_SIZE = 5
 

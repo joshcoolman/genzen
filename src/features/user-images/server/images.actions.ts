@@ -1,9 +1,9 @@
 'use server'
 
 import type { UserImage } from '../types'
-import { userImageColumns } from '@/lib/server/user-image-columns.server'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
+import { userImageColumns } from '#/lib/server/user-image-columns.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
 
 // Server actions for the image queries the browser used to run directly against
 // Supabase.

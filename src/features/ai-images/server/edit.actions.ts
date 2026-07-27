@@ -1,8 +1,8 @@
 'use server'
 
-import type { UserImageRow } from '@/lib/types/db'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
+import type { UserImageRow } from '#/lib/types/db'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
 
 // The edit page's reads, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()`.

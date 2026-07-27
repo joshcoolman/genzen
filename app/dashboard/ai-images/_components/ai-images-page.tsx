@@ -19,26 +19,26 @@ import {
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
 import JSZip from 'jszip'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import { usePersistedState } from '@/lib/use-persisted-state'
-import { useIsMobile } from '@/lib/hooks/use-is-mobile'
-import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { usePersistedState } from '#/lib/use-persisted-state'
+import { useIsMobile } from '#/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '#/components/MobileDialogHeader'
 import {
   GeneratorPanel,
   ImageGallery,
   ImageLightbox,
   useAiImagesPage,
-} from '@/features/ai-images'
-import { VariationPromptsDialog } from '@/features/ai-images/components/VariationPromptsDialog'
-import { ParentPickerDialog } from '@/features/ai-images/components/ParentPickerDialog'
-import { groupImages } from '@/features/ai-images/server/group-images.server'
-import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
-import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
-import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
-import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
-import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
-import { listSubtreeStoragePaths } from '@/features/ai-images/server/gallery.actions'
-import { createImageStorage } from '@/lib/image-storage'
+} from '#/features/ai-images'
+import { VariationPromptsDialog } from '#/features/ai-images/components/VariationPromptsDialog'
+import { ParentPickerDialog } from '#/features/ai-images/components/ParentPickerDialog'
+import { groupImages } from '#/features/ai-images/server/group-images.server'
+import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
+import { DescribeDialog } from '#/features/ai-images/components/DescribeDialog'
+import { GroupPickerDialog } from '#/features/ai-images/components/GroupPickerDialog'
+import { useAiImagesADContext } from '#/features/ai-images/hooks/useAiImagesADContext'
+import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
+import { listSubtreeStoragePaths } from '#/features/ai-images/server/gallery.actions'
+import { createImageStorage } from '#/lib/image-storage'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,20 +48,20 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '#/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useSelection } from '@/lib/use-selection'
-import { SelectionDrawer } from '@/components/SelectionDrawer'
-import { useADOpen } from '@/lib/use-ad-open'
-import { cn } from '@/lib/utils'
+} from '#/components/ui/dialog'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
+import { useSelection } from '#/lib/use-selection'
+import { SelectionDrawer } from '#/components/SelectionDrawer'
+import { useADOpen } from '#/lib/use-ad-open'
+import { cn } from '#/lib/utils'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
 const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {

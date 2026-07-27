@@ -9,14 +9,14 @@ import {
 import { canvasModelIdsForRefCount } from '../canvas-models'
 import { mapOutcomesToPlaceholders } from '../lib/generation-mapping'
 import type { CanvasImage } from '../types'
-import { useGenerator } from '@/features/ai-images/hooks/use-generator'
-import { useModelSelector } from '@/components/ModelSelector'
-import { useUserImages } from '@/features/user-images'
-import { useAuth } from '@/lib/auth'
-import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import { detectAspectRatio } from '@/features/ai-images/constants'
-import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
-import { normalizeGeneration } from '@/features/ai-images/normalize-generation'
+import { useGenerator } from '#/features/ai-images/hooks/use-generator'
+import { useModelSelector } from '#/components/ModelSelector'
+import { useUserImages } from '#/features/user-images'
+import { useAuth } from '#/lib/auth'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { detectAspectRatio } from '#/features/ai-images/constants'
+import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
+import { normalizeGeneration } from '#/features/ai-images/normalize-generation'
 
 /** A failed tile can be retried once it has a DB record to resubmit. */
 export function canRetryFailure(img: CanvasImage): boolean {

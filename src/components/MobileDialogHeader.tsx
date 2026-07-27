@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DialogHeader, DialogTitle } from '#/components/ui/dialog'
 
 interface MobileDialogHeaderProps {
   title: string

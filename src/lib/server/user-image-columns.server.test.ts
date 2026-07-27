@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 // The shape of `user_images` is asserted in three places that nothing forces to
 // agree: the table in `migrations/0001_init.sql`, the select list in
-// `user-image-columns.server.ts`, and `UserImageRow` in `@/lib/types/db`. Add a
+// `user-image-columns.server.ts`, and `UserImageRow` in `#/lib/types/db`. Add a
 // column and you have to remember all three -- and the failure from forgetting
 // is a column that silently reads as `undefined` at runtime.
 //

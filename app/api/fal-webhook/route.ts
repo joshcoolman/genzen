@@ -1,12 +1,12 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
-import type { UserImageRow } from '@/lib/types/db'
-import { first, sql } from '@/lib/server/db.server'
+import type { UserImageRow } from '#/lib/types/db'
+import { first, sql } from '#/lib/server/db.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
-} from '@/lib/server/fal-completion.server'
-import { extractFalError } from '@/lib/server/fal-error.server'
+} from '#/lib/server/fal-completion.server'
+import { extractFalError } from '#/lib/server/fal-error.server'
 
 interface FalWebhookBody {
   request_id: string

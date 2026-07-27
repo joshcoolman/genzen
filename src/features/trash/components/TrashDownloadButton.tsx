@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Download } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
-import type { UserImage } from '@/features/user-images/types'
-import { ActionButton } from '@/components/ActionButton'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import type { UserImage } from '#/features/user-images/types'
+import { ActionButton } from '#/components/ActionButton'
+import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
+} from '#/components/ui/dialog'
 
 const CONCURRENCY = 4
 

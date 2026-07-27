@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
-import { Textarea } from '@/components/ui/textarea'
-import { GeneratePromptsDialog } from '@/features/ai-images/components/GeneratePromptsDialog'
-import { PastePromptsDialog } from '@/features/ai-images/components/PastePromptsDialog'
+import { Textarea } from '#/components/ui/textarea'
+import { GeneratePromptsDialog } from '#/features/ai-images/components/GeneratePromptsDialog'
+import { PastePromptsDialog } from '#/features/ai-images/components/PastePromptsDialog'
 
 interface PromptListProps {
   prompts: Array<string>

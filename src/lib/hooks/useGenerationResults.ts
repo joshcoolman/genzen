@@ -1,16 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GenerationResult } from '@/lib/types/generation-result'
-import type { UserImageRow } from '@/lib/types/db'
-import type { SavedAiImage } from '@/features/ai-images/types'
+import type { GenerationResult } from '#/lib/types/generation-result'
+import type { UserImageRow } from '#/lib/types/db'
+import type { SavedAiImage } from '#/features/ai-images/types'
 import {
   listGenerationResultRows,
   trashGenerationResult,
-} from '@/features/ai-images/server/edit.actions'
-import { getModelName } from '@/features/ai-images/models'
-import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import { createImageStorage } from '@/lib/image-storage'
+} from '#/features/ai-images/server/edit.actions'
+import { getModelName } from '#/features/ai-images/models'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { createImageStorage } from '#/lib/image-storage'
 
 const DEFAULT_LIMIT = 50
 

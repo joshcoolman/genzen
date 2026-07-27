@@ -1,7 +1,7 @@
 'use server'
 
 import { fal } from '@fal-ai/client'
-import { resolveAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '#/lib/server/auth.server'
 
 export async function checkConnections() {
   await resolveAuth()

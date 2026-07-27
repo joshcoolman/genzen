@@ -1,7 +1,7 @@
 'use server'
 
-import { resolveAuth } from '@/lib/server/auth.server'
-import { sql } from '@/lib/server/db.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { sql } from '#/lib/server/db.server'
 
 interface UngroupByIds {
   imageIds: Array<string>

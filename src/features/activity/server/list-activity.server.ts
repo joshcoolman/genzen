@@ -7,9 +7,9 @@ import type {
   GenerationStatus,
   ListActivityResult,
 } from '../types'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { sql } from '@/lib/server/db.server'
-import { getModelName } from '@/features/ai-images/models'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { sql } from '#/lib/server/db.server'
+import { getModelName } from '#/features/ai-images/models'
 
 interface ListActivityInput {
   page: number

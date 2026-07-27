@@ -1,19 +1,19 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
-import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
-import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
-import { createImageStorage } from '@/lib/image-storage'
-import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
+import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { createImageStorage } from '#/lib/image-storage'
+import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
 import {
   deleteGalleryImage,
   deleteGalleryImageDetachingChildren,
   deleteGalleryImageWithDescendants,
   listGalleryImages,
   restoreHiddenRootImage,
-} from '@/features/ai-images/server/gallery.actions'
+} from '#/features/ai-images/server/gallery.actions'
 
 interface UseImagesOptions {
   userId: string | undefined

@@ -1,10 +1,10 @@
 // Enumerated rather than globbed: Turbopack resolves imports statically, so a
 // new skill file means a line here. Four skills; the explicitness is cheap and
 // the failure mode (a skill silently missing from the index) is not.
-import characterReferenceSheet from '@/lib/prompts/skills/character-reference-sheet.md'
-import enhancePrompt from '@/lib/prompts/skills/enhance-prompt.md'
-import imagePrompting from '@/lib/prompts/skills/image-prompting.md'
-import videoSceneComposition from '@/lib/prompts/skills/video-scene-composition.md'
+import characterReferenceSheet from '#/lib/prompts/skills/character-reference-sheet.md'
+import enhancePrompt from '#/lib/prompts/skills/enhance-prompt.md'
+import imagePrompting from '#/lib/prompts/skills/image-prompting.md'
+import videoSceneComposition from '#/lib/prompts/skills/video-scene-composition.md'
 
 export interface Skill {
   name: string

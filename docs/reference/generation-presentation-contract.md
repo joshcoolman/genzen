@@ -51,7 +51,7 @@ interface GenerationView {
 ```
 
 - `modelName` is **always** `getModelName(generation_metadata.model)`
-  (`@/features/ai-images/models`). This is the shared glossary; it resolves edit
+  (`#/features/ai-images/models`). This is the shared glossary; it resolves edit
   endpoints and aliases (e.g. `fal-ai/flux-pro/kontext` → "FLUX Kontext Pro").
 - `isRetryable` comes from `classifyError(generation_error)` for FAL records.
   Google records are not retryable today (see saga in ARCHITECTURE.md).

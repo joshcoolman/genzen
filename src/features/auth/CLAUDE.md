@@ -1,5 +1,5 @@
 Owns who the user is: password verification and the signed session cookie. It
-imports `@/lib/server/db.server` and nothing else from the app; no feature
+imports `#/lib/server/db.server` and nothing else from the app; no feature
 imports back into it.
 
 ## The dependency direction that matters

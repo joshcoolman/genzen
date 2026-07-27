@@ -2,14 +2,14 @@
 
 import { fal } from '@fal-ai/client'
 import { generateText } from 'ai'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
-import { ai, requireAiRole } from '@/lib/server/ai.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
+import { ai, requireAiRole } from '#/lib/server/ai.server'
 import {
   IMAGE_VARIATION_SYSTEM,
   variationUserContent,
-} from '@/lib/prompts/image-variation'
-import { createImageStorage } from '@/lib/image-storage'
+} from '#/lib/prompts/image-variation'
+import { createImageStorage } from '#/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 

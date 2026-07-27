@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { getDefaultSelectedId, getModelsByCapability } from './models'
 import type { ModelCapability, SelectionMode } from './types'
-import { usePersistedState } from '@/lib/use-persisted-state'
-import { useEnabledModels } from '@/lib/use-enabled-models'
+import { usePersistedState } from '#/lib/use-persisted-state'
+import { useEnabledModels } from '#/lib/use-enabled-models'
 
 interface UseModelSelectorOptions {
   capability: ModelCapability

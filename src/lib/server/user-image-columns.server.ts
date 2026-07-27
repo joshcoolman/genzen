@@ -10,7 +10,7 @@ import { sql } from './db.server'
  * is also what makes that difference visible instead of leaving a `Date` to
  * surface later as `created_at.slice is not a function`.
  *
- * Must stay in step with `UserImageRow` in `@/lib/types/db` -- the type says
+ * Must stay in step with `UserImageRow` in `#/lib/types/db` -- the type says
  * what these columns produce, and `db.server.test.ts` fails if they disagree.
  *
  * A function rather than a constant so each caller embeds a fresh fragment.

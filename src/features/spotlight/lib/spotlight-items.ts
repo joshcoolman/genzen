@@ -1,6 +1,6 @@
 import { BookOpen, Home } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { navItems } from '@/lib/nav-items'
+import { navItems } from '#/lib/nav-items'
 
 export interface SpotlightItem {
   id: string

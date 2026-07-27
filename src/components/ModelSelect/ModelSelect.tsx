@@ -4,8 +4,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+} from '#/components/ui/select'
+import { cn } from '#/lib/utils'
 
 export interface ModelOption {
   id: string

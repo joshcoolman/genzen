@@ -1,8 +1,8 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { AuthUser } from '@/lib/auth'
-import { AuthContext } from '@/lib/auth'
+import type { AuthUser } from '#/lib/auth'
+import { AuthContext } from '#/lib/auth'
 
 /**
  * Carries the server-resolved user into client components.

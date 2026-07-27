@@ -1,5 +1,5 @@
-import { first, sql } from '@/lib/server/db.server'
-import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
+import { first, sql } from '#/lib/server/db.server'
+import { ALL_IMAGE_MODELS, EDIT_MODELS } from '#/features/ai-images/models'
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 

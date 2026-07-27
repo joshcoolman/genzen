@@ -1,9 +1,9 @@
 'use server'
 
 import { generateText } from 'ai'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { models, requireAiKey } from '@/lib/server/ai.server'
-import { SHOT_LIST_SYSTEM, shotListUserContent } from '@/lib/prompts/shot-list'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { models, requireAiKey } from '#/lib/server/ai.server'
+import { SHOT_LIST_SYSTEM, shotListUserContent } from '#/lib/prompts/shot-list'
 
 interface GenerateShotListInput {
   imageBase64: string

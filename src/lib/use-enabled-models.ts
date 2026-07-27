@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { usePersistedState } from '@/lib/use-persisted-state'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { ALL_TEXT_MODELS } from '@/lib/text-models'
+import { usePersistedState } from '#/lib/use-persisted-state'
+import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
+import { ALL_TEXT_MODELS } from '#/lib/text-models'
 
 const STORAGE_KEY = 'genzen:disabled-models'
 

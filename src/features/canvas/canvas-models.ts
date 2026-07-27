@@ -1,5 +1,5 @@
-import type { ImageModel } from '@/features/ai-images/models'
-import { ALL_IMAGE_MODELS, EDIT_MODELS } from '@/features/ai-images/models'
+import type { ImageModel } from '#/features/ai-images/models'
+import { ALL_IMAGE_MODELS, EDIT_MODELS } from '#/features/ai-images/models'
 
 /**
  * Curated, code-based allowlist of models surfaced in Canvas generation.

@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPaste } from 'lucide-react'
 import { useClipboardPaste } from './useClipboardPaste'
-import { Button } from '@/components/ui/button'
+import { Button } from '#/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '#/components/ui/popover'
 
 interface ClipboardPasteButtonProps {
   onImagePasted: (file: File) => void

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { describeImageJson } from '@/features/ai-images/server/describe-image-json.server'
+import { describeImageJson } from '#/features/ai-images/server/describe-image-json.server'
 
 interface UseDescribeJsonOptions {
   imageUrl: string | undefined

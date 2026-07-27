@@ -1,9 +1,9 @@
 'use server'
 
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
-import { describeImage } from '@/lib/server/describe-image.server'
-import { createImageStorage } from '@/lib/image-storage'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
+import { describeImage } from '#/lib/server/describe-image.server'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface CaptionImageInput {
   imageBase64?: string

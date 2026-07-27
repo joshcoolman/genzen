@@ -1,17 +1,17 @@
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
 import {
   createPendingGeneration,
   describeGenerationError,
   markGenerationFailed,
   markGenerationSubmitted,
-} from '@/lib/server/create-pending-generation.server'
-import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
-import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
-import { createImageStorage } from '@/lib/image-storage'
-import { computeFalCostCents } from '@/lib/server/compute-cost.server'
+} from '#/lib/server/create-pending-generation.server'
+import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
+import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
+import { createImageStorage } from '#/lib/image-storage'
+import { computeFalCostCents } from '#/lib/server/compute-cost.server'
 
 export interface EditImageInput {
   userId?: string

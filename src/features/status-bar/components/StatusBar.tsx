@@ -1,6 +1,6 @@
 import { MessageSquare } from 'lucide-react'
-import { useADOpen } from '@/lib/use-ad-open'
-import { cn } from '@/lib/utils'
+import { useADOpen } from '#/lib/use-ad-open'
+import { cn } from '#/lib/utils'
 
 export function StatusBar() {
   const { isOpen: isADOpen, toggleOpen: toggleAD } = useADOpen()

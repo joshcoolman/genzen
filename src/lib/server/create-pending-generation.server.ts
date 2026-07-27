@@ -1,5 +1,5 @@
 import { first, jsonb, sql } from './db.server'
-import { getModelName } from '@/features/ai-images/models'
+import { getModelName } from '#/features/ai-images/models'
 
 /** Title a generation row carries between being reserved and settling. */
 export const PENDING_TITLE = 'Generating...'

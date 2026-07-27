@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { GeneratorState } from './use-generator'
-import { useRegisterADContext } from '@/features/ad/context/ad-context'
-import { getModelName } from '@/features/ai-images/models'
+import { useRegisterADContext } from '#/features/ad/context/ad-context'
+import { getModelName } from '#/features/ai-images/models'
 
 interface AiImagesADContextInput {
   generator: GeneratorState

@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import { reparentImage } from '@/features/ai-images/server/reparent-image.server'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { reparentImage } from '#/features/ai-images/server/reparent-image.server'
 
 interface UseReparentOptions {
   onComplete: () => void

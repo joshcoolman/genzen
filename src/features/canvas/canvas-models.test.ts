@@ -6,7 +6,7 @@ import {
   CANVAS_MODELS,
   canvasModelIdsForRefCount,
 } from './canvas-models'
-import { EDIT_MODELS, getModelName } from '@/features/ai-images/models'
+import { EDIT_MODELS, getModelName } from '#/features/ai-images/models'
 
 const KONTEXT_PRO_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 const SEEDREAM_45_ID = 'fal-ai/bytedance/seedream/v4.5/text-to-image'

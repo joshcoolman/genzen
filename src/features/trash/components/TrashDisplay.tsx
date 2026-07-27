@@ -12,20 +12,20 @@ import {
 } from 'lucide-react'
 import { useTrash } from '../hooks/useTrash'
 import { TrashDownloadButton } from './TrashDownloadButton'
-import { useAuth } from '@/lib/auth'
-import { useSelection } from '@/lib/use-selection'
-import { ImageGrid } from '@/components/ImageGrid'
-import { Thumbnail } from '@/components/Thumbnail'
-import { SelectionDrawer } from '@/components/SelectionDrawer'
-import { formatFileSize } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { useAuth } from '#/lib/auth'
+import { useSelection } from '#/lib/use-selection'
+import { ImageGrid } from '#/components/ImageGrid'
+import { Thumbnail } from '#/components/Thumbnail'
+import { SelectionDrawer } from '#/components/SelectionDrawer'
+import { formatFileSize } from '#/lib/format'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '#/components/ui/tooltip'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '#/components/ui/alert-dialog'
 
 function formatDeletedDate(dateStr: string | null): string {
   if (!dateStr) return ''

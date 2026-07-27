@@ -1,9 +1,9 @@
 'use server'
 
 import { generateText } from 'ai'
-import { ai, requireAiRole } from '@/lib/server/ai.server'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { getSkill } from '@/features/ad/skills/registry'
+import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { getSkill } from '#/features/ad/skills/registry'
 
 interface EnhancePromptInput {
   prompt: string

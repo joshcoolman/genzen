@@ -1,7 +1,7 @@
 import {
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,
-} from '@/components/AspectRatioSelect'
+} from '#/components/AspectRatioSelect'
 
 export {
   LANDSCAPE_RATIOS,
@@ -9,7 +9,7 @@ export {
   FLIP_MAP,
   getRatioOptions,
   flipOrientation,
-} from '@/components/AspectRatioSelect'
+} from '#/components/AspectRatioSelect'
 
 export function detectAspectRatio(width: number, height: number): string {
   const ratio = width / height

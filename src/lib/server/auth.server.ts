@@ -1,4 +1,4 @@
-import { requireUserId } from '@/features/auth/server/current-user.server'
+import { requireUserId } from '#/features/auth/server/current-user.server'
 
 export interface ResolvedAuth {
   userId: string

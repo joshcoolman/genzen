@@ -73,12 +73,12 @@ There is no separate "Combine" feature anymore (retired into this flow).
 
 ## Shared Dependencies
 
-- `@/features/ai-images/hooks/use-generator` -- prompt state, source image, generation submission
-- `@/features/ai-images/components/GeneratorPanel` -- reused UI for generation controls
-- `@/features/ai-images/server/generate-image.server` -- server action for multi-image combination
-- `@/features/user-images/` -- `useUserImages` for upload, `ExistingImagePicker` for library
-- `@/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
-- `@/lib/server/check-pending-generations.server` -- triggers FAL status checks
+- `#/features/ai-images/hooks/use-generator` -- prompt state, source image, generation submission
+- `#/features/ai-images/components/GeneratorPanel` -- reused UI for generation controls
+- `#/features/ai-images/server/generate-image.server` -- server action for multi-image combination
+- `#/features/user-images/` -- `useUserImages` for upload, `ExistingImagePicker` for library
+- `#/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
+- `#/lib/server/check-pending-generations.server` -- triggers FAL status checks
 
 ## Quirks / Notes
 

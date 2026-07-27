@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 import { sql } from './db.server'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 const THUMBNAIL_WIDTH = 400
 const THUMBNAIL_QUALITY = 80

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
-import { Thumbnail } from '@/components/Thumbnail'
-import { ImageGrid } from '@/components/ImageGrid'
+import { Thumbnail } from '#/components/Thumbnail'
+import { ImageGrid } from '#/components/ImageGrid'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

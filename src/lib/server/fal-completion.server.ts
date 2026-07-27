@@ -3,8 +3,8 @@ import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { failureTitle } from './create-pending-generation.server'
 import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
-import { createImageStorage } from '@/lib/image-storage'
-import { getModelName } from '@/features/ai-images/models'
+import { createImageStorage } from '#/lib/image-storage'
+import { getModelName } from '#/features/ai-images/models'
 
 // Defensive extractor — FAL doesn't expose cost consistently across endpoints,
 // and in practice its image queue results carry no cost field at all, so this

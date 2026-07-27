@@ -9,17 +9,17 @@ import {
 } from 'react'
 import { Key } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { MissingKeyInfo } from '@/lib/ai-keys'
-import { parseMissingKey } from '@/lib/ai-keys'
+import type { MissingKeyInfo } from '#/lib/ai-keys'
+import { parseMissingKey } from '#/lib/ai-keys'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
+} from '#/components/ui/dialog'
+import { Button } from '#/components/ui/button'
+import { toast } from '#/components/ui/toast'
 
 interface MissingKeyContextValue {
   /**

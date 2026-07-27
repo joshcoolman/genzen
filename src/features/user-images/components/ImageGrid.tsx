@@ -1,4 +1,4 @@
-export { ImageGrid, ImageGridSkeleton } from '@/components/ImageGrid'
+export { ImageGrid, ImageGridSkeleton } from '#/components/ImageGrid'
 
 /**
  * Empty state component

@@ -3,15 +3,15 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Check, ImageIcon } from 'lucide-react'
 import type { SelectedImage } from './LibraryPickerButton'
-import { Button } from '@/components/ui/button'
-import { Thumbnail } from '@/components/Thumbnail'
-import { ImageGrid } from '@/components/ImageGrid'
+import { Button } from '#/components/ui/button'
+import { Thumbnail } from '#/components/Thumbnail'
+import { ImageGrid } from '#/components/ImageGrid'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '#/components/ui/dialog'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

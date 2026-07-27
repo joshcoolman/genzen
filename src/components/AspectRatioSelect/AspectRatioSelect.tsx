@@ -8,7 +8,7 @@ import {
   shift,
   useFloating,
 } from '@floating-ui/react-dom'
-import { cn } from '@/lib/utils'
+import { cn } from '#/lib/utils'
 
 interface AspectRatioSelectProps {
   orientation: 'landscape' | 'portrait'

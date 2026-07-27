@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { hashPassword, verifyCredentials } from './credentials.server'
-import { sql } from '@/lib/server/db.server'
+import { sql } from '#/lib/server/db.server'
 
 // Runs against the local Postgres from docker-compose (DATABASE_URL). Password
 // verification is worth a real database rather than a mock: the failure mode

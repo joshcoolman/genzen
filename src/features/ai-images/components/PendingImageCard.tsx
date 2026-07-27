@@ -1,4 +1,4 @@
-import { Thumbnail } from '@/components/Thumbnail'
+import { Thumbnail } from '#/components/Thumbnail'
 
 interface PendingImageCardProps {
   prompt: string

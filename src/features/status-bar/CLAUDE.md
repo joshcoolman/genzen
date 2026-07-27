@@ -9,8 +9,8 @@ Fixed bottom-left floating pill with context-independent action buttons. Replace
 
 ## Shared Dependencies
 
-- `@/lib/auth` -- `useAuth()` to gate visibility behind authentication
-- `@/lib/use-ad-open` -- `useADOpen()` for Chat button toggle
+- `#/lib/auth` -- `useAuth()` to gate visibility behind authentication
+- `#/lib/use-ad-open` -- `useADOpen()` for Chat button toggle
 
 ## Quirks / Notes
 

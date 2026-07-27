@@ -13,17 +13,17 @@ import {
   Trash2,
   Unlink,
 } from 'lucide-react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
-import { Thumbnail } from '@/components/Thumbnail'
-import { ExpandableText } from '@/components/ExpandableText'
-import { ExpandableIconButton } from '@/components/ExpandableIconButton'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { Thumbnail } from '#/components/Thumbnail'
+import { ExpandableText } from '#/components/ExpandableText'
+import { ExpandableIconButton } from '#/components/ExpandableIconButton'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '#/components/ui/dropdown-menu'
 
 interface ImageCardProps {
   img: SavedAiImage

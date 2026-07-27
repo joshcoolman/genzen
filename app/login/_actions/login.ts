@@ -6,8 +6,8 @@ import {
   SESSION_COOKIE_NAME,
   createSessionValue,
   sessionCookieOptions,
-} from '@/features/auth/session'
-import { verifyCredentials } from '@/features/auth/server/credentials.server'
+} from '#/features/auth/session'
+import { verifyCredentials } from '#/features/auth/server/credentials.server'
 
 export interface LoginState {
   error: string | null

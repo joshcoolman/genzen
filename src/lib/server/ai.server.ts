@@ -1,7 +1,7 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
-import type { AiProvider } from '@/lib/ai-keys'
-import { AI_PROVIDERS, missingKeyMessage } from '@/lib/ai-keys'
+import type { AiProvider } from '#/lib/ai-keys'
+import { AI_PROVIDERS, missingKeyMessage } from '#/lib/ai-keys'
 
 // All available model instances
 export const models = {

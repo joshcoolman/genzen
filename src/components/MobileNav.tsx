@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
-import { logout } from '@/features/auth/logout.action'
+import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,13 +15,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { NavMore } from '@/components/NavMore'
-import { navItems } from '@/lib/nav-items'
-import { useNavVisibility } from '@/lib/use-nav-visibility'
-import { cn } from '@/lib/utils'
+} from '#/components/ui/alert-dialog'
+import { Button } from '#/components/ui/button'
+import { Sheet, SheetContent, SheetTrigger } from '#/components/ui/sheet'
+import { NavMore } from '#/components/NavMore'
+import { navItems } from '#/lib/nav-items'
+import { useNavVisibility } from '#/lib/use-nav-visibility'
+import { cn } from '#/lib/utils'
 
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)

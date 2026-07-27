@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { listEditChildren } from '@/features/ai-images/server/edit.actions'
-import { createImageStorage } from '@/lib/image-storage'
+import { listEditChildren } from '#/features/ai-images/server/edit.actions'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface EditChild {
   id: string

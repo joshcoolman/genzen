@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 export async function downloadAndStoreImage(
   userId: string,

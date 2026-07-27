@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { SESSION_COOKIE_NAME } from '@/features/auth/session'
+import { SESSION_COOKIE_NAME } from '#/features/auth/session'
 
 /**
  * Clears the session cookie and returns to /login.

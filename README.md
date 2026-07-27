@@ -160,8 +160,8 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- The `project-standard` conformance pass (#187): one-folder-per-component,
-  CSS Modules over Tailwind, and the `@/` → `#/` alias rename.
+- The `project-standard` conformance pass (#187): CSS Modules over Tailwind
+  (#183 → #186), and `docs/CODE-STANDARDS.md` (#180).
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 

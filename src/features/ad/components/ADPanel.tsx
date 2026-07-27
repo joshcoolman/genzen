@@ -17,8 +17,8 @@ import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 import { SkillChipRow } from './SkillChipRow'
 import type { ADMessage } from '../hooks/useADChat'
-import { useADOpen } from '@/lib/use-ad-open'
-import { cn } from '@/lib/utils'
+import { useADOpen } from '#/lib/use-ad-open'
+import { cn } from '#/lib/utils'
 
 function formatChatAsMarkdown(messages: Array<ADMessage>): string {
   return messages

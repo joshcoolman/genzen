@@ -3,11 +3,11 @@
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
-import { ADPanel } from '@/features/ad/components/ADPanel'
-import { ADContextProvider } from '@/features/ad/context/ad-context'
-import { useADOpen } from '@/lib/use-ad-open'
-import { cn } from '@/lib/utils'
-import { StatusBar } from '@/features/status-bar'
+import { ADPanel } from '#/features/ad/components/ADPanel'
+import { ADContextProvider } from '#/features/ad/context/ad-context'
+import { useADOpen } from '#/lib/use-ad-open'
+import { cn } from '#/lib/utils'
+import { StatusBar } from '#/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

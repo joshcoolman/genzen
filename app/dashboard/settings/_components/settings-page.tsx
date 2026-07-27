@@ -1,12 +1,12 @@
 'use client'
 
 import { CheckCircle2, Circle, Lock } from 'lucide-react'
-import { ALL_IMAGE_MODELS } from '@/features/ai-images/models'
-import { ALL_TEXT_MODELS } from '@/lib/text-models'
-import { useEnabledModels } from '@/lib/use-enabled-models'
-import { navItems } from '@/lib/nav-items'
-import { useNavVisibility } from '@/lib/use-nav-visibility'
-import { cn } from '@/lib/utils'
+import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
+import { ALL_TEXT_MODELS } from '#/lib/text-models'
+import { useEnabledModels } from '#/lib/use-enabled-models'
+import { navItems } from '#/lib/nav-items'
+import { useNavVisibility } from '#/lib/use-nav-visibility'
+import { cn } from '#/lib/utils'
 
 export function SettingsPage() {
   const {

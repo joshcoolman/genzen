@@ -1,7 +1,7 @@
 'use server'
 
-import { resolveAuth } from '@/lib/server/auth.server'
-import { createImageStorage } from '@/lib/image-storage'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface RemoveImagesInput {
   storagePaths: Array<string>

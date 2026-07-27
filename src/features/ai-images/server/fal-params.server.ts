@@ -3,7 +3,7 @@
  * Uses runtime schema detection to auto-resolve size, safety, and image input params.
  */
 import { fetchModelSchema } from './fal-schema.server'
-import { RATIO_TO_SIZE } from '@/features/ai-images/constants'
+import { RATIO_TO_SIZE } from '#/features/ai-images/constants'
 
 // Maps our aspect ratios to resolution strings for models like GPT Image 1.5
 // that accept a fixed enum of "WIDTHxHEIGHT" values

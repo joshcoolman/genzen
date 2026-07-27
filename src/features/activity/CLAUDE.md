@@ -27,13 +27,13 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 
 ## Shared Dependencies
 
-- `@/lib/auth` -- useAuth for access token
-- `@/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
-- `@/lib/utils` -- `cn` (classname merge)
-- `@/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
-- `@/lib/server/auth.server` -- requireAuth
-- `@/lib/server/check-pending-generations.server` -- FAL polling for pending rows
-- `@/components/ui/sheet` -- Sheet/SheetContent for detail panel
+- `#/lib/auth` -- useAuth for access token
+- `#/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
+- `#/lib/utils` -- `cn` (classname merge)
+- `#/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
+- `#/lib/server/auth.server` -- requireAuth
+- `#/lib/server/check-pending-generations.server` -- FAL polling for pending rows
+- `#/components/ui/sheet` -- Sheet/SheetContent for detail panel
 
 ## Quirks / Notes
 

@@ -1,7 +1,7 @@
-import type { SelectedImage } from '@/components/LibraryPickerButton'
-import { LibraryPickerButton } from '@/components/LibraryPickerButton'
-import { FileUploadButton } from '@/components/FileUploadButton'
-import { ClipboardPasteButton } from '@/components/ClipboardPasteButton'
+import type { SelectedImage } from '#/components/LibraryPickerButton'
+import { LibraryPickerButton } from '#/components/LibraryPickerButton'
+import { FileUploadButton } from '#/components/FileUploadButton'
+import { ClipboardPasteButton } from '#/components/ClipboardPasteButton'
 
 interface UserImageRow {
   id: string

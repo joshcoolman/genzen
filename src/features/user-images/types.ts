@@ -2,12 +2,12 @@
  * User Images Types
  *
  * Types for the user images feature. `UserImage` is the `user_images` row
- * shape from `@/lib/types/db`, which is hand-written -- the generated Supabase
+ * shape from `#/lib/types/db`, which is hand-written -- the generated Supabase
  * types it used to come from went with #176.
  */
 
 import { z } from 'zod'
-import type { UserImageRow } from '@/lib/types/db'
+import type { UserImageRow } from '#/lib/types/db'
 
 /**
  * A user-uploaded image (from database)

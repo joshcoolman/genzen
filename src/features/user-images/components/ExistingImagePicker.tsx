@@ -10,10 +10,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ActionButton } from '@/components/ActionButton'
-import { Thumbnail } from '@/components/Thumbnail'
-import { ImageGrid } from '@/components/ImageGrid'
+} from '#/components/ui/dialog'
+import { ActionButton } from '#/components/ActionButton'
+import { Thumbnail } from '#/components/Thumbnail'
+import { ImageGrid } from '#/components/ImageGrid'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

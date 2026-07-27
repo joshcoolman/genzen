@@ -1,24 +1,24 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePersistedState } from '@/lib/use-persisted-state'
-import { generateImage } from '@/features/ai-images/server/generate-image.server'
-import { captionImage } from '@/features/ai-images/server/caption-image.server'
-import { enhancePrompt } from '@/features/ai-images/server/enhance-prompt.server'
-import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
-import { useReportError } from '@/components/MissingKeyDialog'
+import { usePersistedState } from '#/lib/use-persisted-state'
+import { generateImage } from '#/features/ai-images/server/generate-image.server'
+import { captionImage } from '#/features/ai-images/server/caption-image.server'
+import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.server'
+import { fetchImageAsBase64 } from '#/lib/server/fetch-image-base64.server'
+import { useReportError } from '#/components/MissingKeyDialog'
 import {
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,
   flipOrientation,
   getRatioOptions,
-} from '@/features/ai-images/constants'
+} from '#/features/ai-images/constants'
 import {
   ALL_IMAGE_MODELS,
   EDIT_MODELS,
   KONTEXT_DEV_FALLBACK_ID,
   KONTEXT_DEV_ID,
-} from '@/features/ai-images/models'
+} from '#/features/ai-images/models'
 
 // Kontext Dev is image-input only -- fall back to FLUX Dev for text-only
 const EMPTY_PROMPTS: Array<string> = ['']

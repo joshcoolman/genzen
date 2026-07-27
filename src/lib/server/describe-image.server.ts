@@ -1,5 +1,5 @@
 import { generateText } from 'ai'
-import { ai, requireAiRole } from '@/lib/server/ai.server'
+import { ai, requireAiRole } from '#/lib/server/ai.server'
 
 const ANCHOR_PROMPT = `You are an image description engine for an image-to-image generation pipeline. The generative model will receive both your description and the source image. Your job is to anchor the generation, not reconstruct the image from text.
 

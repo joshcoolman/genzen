@@ -1,10 +1,10 @@
 'use server'
 
-import type { UserImage } from '@/features/user-images/types'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
-import { userImageColumns } from '@/lib/server/user-image-columns.server'
-import { removeImages } from '@/features/user-images/server/remove-images.server'
+import type { UserImage } from '#/features/user-images/types'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
+import { userImageColumns } from '#/lib/server/user-image-columns.server'
+import { removeImages } from '#/features/user-images/server/remove-images.server'
 
 // Trash's reads and writes, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()`.

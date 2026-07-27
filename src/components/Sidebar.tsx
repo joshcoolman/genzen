@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
-import { logout } from '@/features/auth/logout.action'
+import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,19 +14,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+} from '#/components/ui/alert-dialog'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { useSidebarCollapsed } from '@/lib/use-sidebar-collapsed'
+} from '#/components/ui/tooltip'
+import { useSidebarCollapsed } from '#/lib/use-sidebar-collapsed'
 
-import { NavMore } from '@/components/NavMore'
-import { navItems } from '@/lib/nav-items'
-import { useNavVisibility } from '@/lib/use-nav-visibility'
-import { cn } from '@/lib/utils'
+import { NavMore } from '#/components/NavMore'
+import { navItems } from '#/lib/nav-items'
+import { useNavVisibility } from '#/lib/use-nav-visibility'
+import { cn } from '#/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()

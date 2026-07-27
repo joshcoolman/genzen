@@ -2,16 +2,16 @@
 
 import { useState } from 'react'
 import { Check, Copy, RotateCcw } from 'lucide-react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import { classifyError } from '@/features/ai-images/error-classification'
-import { getModelName } from '@/features/ai-images/models'
-import { Thumbnail } from '@/components/Thumbnail'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { classifyError } from '#/features/ai-images/error-classification'
+import { getModelName } from '#/features/ai-images/models'
+import { Thumbnail } from '#/components/Thumbnail'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from '#/components/ui/dialog'
 
 interface FailedImageCardProps {
   img: SavedAiImage

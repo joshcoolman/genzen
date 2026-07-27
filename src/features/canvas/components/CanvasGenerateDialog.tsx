@@ -5,8 +5,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { GeneratorPanel } from '@/features/ai-images/components/GeneratorPanel'
+} from '#/components/ui/dialog'
+import { GeneratorPanel } from '#/features/ai-images/components/GeneratorPanel'
 
 interface CanvasGenerateDialogProps {
   canvasGen: ReturnType<typeof useCanvasGenerate>

@@ -2,8 +2,8 @@
 
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { ai, requireAiRole } from '@/lib/server/ai.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { ai, requireAiRole } from '#/lib/server/ai.server'
 
 interface DescribeImageJsonInput {
   imageUrl: string

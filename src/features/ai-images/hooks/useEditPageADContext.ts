@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
-import type { ADContextImage } from '@/features/ad/context/ad-context'
+import type { ADContextImage } from '#/features/ad/context/ad-context'
 import {
   useRegisterADContext,
   useRegisterADImage,
-} from '@/features/ad/context/ad-context'
-import { getModelName } from '@/features/ai-images/models'
+} from '#/features/ad/context/ad-context'
+import { getModelName } from '#/features/ai-images/models'
 
 interface EditPageADContextInput {
   sourceImageMeta: {

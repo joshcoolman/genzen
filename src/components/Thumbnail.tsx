@@ -3,7 +3,7 @@
 import { Trash2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ExpandableIconButton } from '@/components/ExpandableIconButton'
+import { ExpandableIconButton } from '#/components/ExpandableIconButton'
 
 function Skeleton({ className = '' }: { className?: string }) {
   return (

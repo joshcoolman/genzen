@@ -3,18 +3,18 @@
 import { useCallback, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight, SquareLibrary } from 'lucide-react'
-import type { NavItem } from '@/lib/nav-items'
+import type { NavItem } from '#/lib/nav-items'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
+} from '#/components/ui/popover'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+} from '#/components/ui/tooltip'
+import { cn } from '#/lib/utils'
 
 interface NavMoreProps {
   isCollapsed?: boolean

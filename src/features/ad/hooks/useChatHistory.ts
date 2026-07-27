@@ -2,7 +2,7 @@
 
 import { useCallback, useRef } from 'react'
 import type { ADMessage } from './useADChat'
-import { usePersistedState } from '@/lib/use-persisted-state'
+import { usePersistedState } from '#/lib/use-persisted-state'
 
 const STORAGE_KEY = 'ad-chat-history'
 const MAX_MESSAGES = 50

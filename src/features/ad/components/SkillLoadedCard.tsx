@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '#/lib/utils'
 
 interface SkillLoadedCardProps {
   name: string

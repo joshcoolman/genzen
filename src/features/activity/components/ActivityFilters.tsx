@@ -1,14 +1,14 @@
 import { ChevronDown, X } from 'lucide-react'
 import { useMemo } from 'react'
 import type { ActivityFilters as Filters, GenerationStatus } from '../types'
-import { ALL_IMAGE_MODELS, getModelName } from '@/features/ai-images/models'
+import { ALL_IMAGE_MODELS, getModelName } from '#/features/ai-images/models'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { Checkbox } from '@/components/ui/checkbox'
-import { cn } from '@/lib/utils'
+} from '#/components/ui/popover'
+import { Checkbox } from '#/components/ui/checkbox'
+import { cn } from '#/lib/utils'
 
 type DatePreset = 'all' | 'today' | '7d' | '30d'
 

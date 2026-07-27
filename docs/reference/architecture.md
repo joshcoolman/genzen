@@ -6,9 +6,9 @@ This described the TanStack Start and Supabase shape, which no longer exists:
 the app runs on Next, Postgres, S3 and Node, with no Supabase and no realtime
 (#168). Rather than leave a map of a stack that is gone, it was reduced to this.
 
-Rewriting it waits on the conversion finishing (#187) — one-folder-per-component,
-CSS Modules over Tailwind, the `@/` → `#/` alias rename. Writing it before then
-would document a layout that is still moving.
+Rewriting it waits on the conversion finishing (#187) — CSS Modules over
+Tailwind, and Base UI replacing shadcn. Writing it before then would document a
+layout that is still moving.
 
 Until it lands, the shape of the app lives in:
 

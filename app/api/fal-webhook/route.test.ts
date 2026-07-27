@@ -5,17 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // test re-imports it fresh via vi.resetModules() + dynamic import.
 
 // No matching row: these tests exercise signature verification, not dispatch.
-vi.mock('@/lib/server/db.server', () => ({
+vi.mock('#/lib/server/db.server', () => ({
   sql: vi.fn(async () => []),
   first: (rows: Array<unknown>) => rows[0],
 }))
 
-vi.mock('@/lib/server/fal-completion.server', () => ({
+vi.mock('#/lib/server/fal-completion.server', () => ({
   markGenerationFailedWithBlob: vi.fn(),
   processImageResult: vi.fn(),
 }))
 
-vi.mock('@/lib/server/fal-error.server', () => ({
+vi.mock('#/lib/server/fal-error.server', () => ({
   extractFalError: vi.fn(() => ({
     message: 'error',
     code: 'unknown',

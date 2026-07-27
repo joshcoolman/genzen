@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
-import { getModelName } from '@/features/ai-images/models'
-import { PendingImageCard } from '@/features/ai-images/components/PendingImageCard'
-import { ImageCard } from '@/features/ai-images/components/ImageCard'
-import { FailedImageCard } from '@/features/ai-images/components/FailedImageCard'
-import { ImageGridSkeleton } from '@/components/ImageGrid'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { getModelName } from '#/features/ai-images/models'
+import { PendingImageCard } from '#/features/ai-images/components/PendingImageCard'
+import { ImageCard } from '#/features/ai-images/components/ImageCard'
+import { FailedImageCard } from '#/features/ai-images/components/FailedImageCard'
+import { ImageGridSkeleton } from '#/components/ImageGrid'
 
 const GRID_MIN_WIDTH: Record<string, string> = {
   lg: '200px',

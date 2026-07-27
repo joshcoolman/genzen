@@ -1,6 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
-import { first, sql } from '@/lib/server/db.server'
+import { first, sql } from '#/lib/server/db.server'
 
 // Password hashing and verification. Server-only -- `node:crypto` is not
 // available on the Edge runtime, which is why `../session` deliberately holds

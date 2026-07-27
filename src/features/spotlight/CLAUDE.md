@@ -10,9 +10,9 @@ Cmd+K / Ctrl+K spotlight navigation dialog for quickly jumping between pages.
 
 - `@tanstack/react-router` -- useNavigate for navigation
 - `@tanstack/react-hotkeys` -- useHotkey for Mod+K binding
-- `@/lib/nav-items` -- Dashboard navigation items (label, href, icon)
-- `@/lib/auth` -- useAuth (only renders when logged in)
-- `@/components/ui/command` -- shadcn CommandDialog, CommandInput, CommandItem, CommandList, CommandEmpty
+- `#/lib/nav-items` -- Dashboard navigation items (label, href, icon)
+- `#/lib/auth` -- useAuth (only renders when logged in)
+- `#/components/ui/command` -- shadcn CommandDialog, CommandInput, CommandItem, CommandList, CommandEmpty
 
 ## Quirks / Notes
 

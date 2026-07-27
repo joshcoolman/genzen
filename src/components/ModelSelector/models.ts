@@ -3,7 +3,7 @@ import {
   ALL_IMAGE_MODELS,
   EDIT_MODELS,
   IMAGE_INPUT_MODELS,
-} from '@/features/ai-images/models'
+} from '#/features/ai-images/models'
 
 export const UNIFIED_GENERATE_MODELS: Array<UnifiedModel> =
   ALL_IMAGE_MODELS.map((m) => ({

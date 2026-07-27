@@ -1,7 +1,7 @@
 'use server'
 
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
 
 // The canvas's reads and writes, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()` -- which

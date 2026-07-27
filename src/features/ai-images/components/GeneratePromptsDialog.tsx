@@ -6,11 +6,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { NumberStepper } from '@/components/NumberStepper'
-import { ActionButton } from '@/components/ActionButton'
-import { generateShotList } from '@/features/ai-images/server/generate-shot-list.server'
+} from '#/components/ui/dialog'
+import { Textarea } from '#/components/ui/textarea'
+import { NumberStepper } from '#/components/NumberStepper'
+import { ActionButton } from '#/components/ActionButton'
+import { generateShotList } from '#/features/ai-images/server/generate-shot-list.server'
 
 interface GeneratePromptsDialogProps {
   open: boolean

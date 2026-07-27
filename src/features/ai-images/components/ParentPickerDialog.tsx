@@ -1,16 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { ImageGrid } from '@/components/ImageGrid'
-import { Thumbnail } from '@/components/Thumbnail'
+} from '#/components/ui/dialog'
+import { ImageGrid } from '#/components/ImageGrid'
+import { Thumbnail } from '#/components/Thumbnail'
 
 interface ParentPickerDialogProps {
   open: boolean

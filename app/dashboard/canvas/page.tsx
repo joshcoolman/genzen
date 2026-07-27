@@ -1,4 +1,4 @@
-import { InfiniteCanvas } from '@/features/canvas'
+import { InfiniteCanvas } from '#/features/canvas'
 
 export default function CanvasPage() {
   return <InfiniteCanvas />

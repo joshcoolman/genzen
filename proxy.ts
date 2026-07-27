@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import {
   SESSION_COOKIE_NAME,
   verifySessionValue,
-} from '@/features/auth/session'
+} from '#/features/auth/session'
 
 // Deny-by-default route protection. Every path is private unless it appears in
 // PUBLIC_PATHS below -- the inverse of the old arrangement, where each route

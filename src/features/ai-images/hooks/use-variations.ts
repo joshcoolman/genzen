@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import { generateVariationPrompts } from '@/features/ai-images/server/generate-variation-prompts.server'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.server'
 
 interface UseVariationsOptions {
   setError: (error: string | null) => void

@@ -2,17 +2,17 @@
 
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, jsonb, sql } from '@/lib/server/db.server'
-import { getFalWebhookUrl } from '@/lib/server/fal-webhook-url.server'
-import { uploadBufferToFal } from '@/lib/server/fal-image-upload.server'
-import { createImageStorage } from '@/lib/image-storage'
-import { computeFalCostCents } from '@/lib/server/compute-cost.server'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, jsonb, sql } from '#/lib/server/db.server'
+import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
+import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
+import { createImageStorage } from '#/lib/image-storage'
+import { computeFalCostCents } from '#/lib/server/compute-cost.server'
 import {
   describeGenerationError,
   markGenerationFailed,
   markGenerationSubmitted,
-} from '@/lib/server/create-pending-generation.server'
+} from '#/lib/server/create-pending-generation.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 

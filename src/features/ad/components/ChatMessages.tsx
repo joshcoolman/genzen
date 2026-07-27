@@ -10,7 +10,7 @@ import type {
   ClarifyingCardTool,
   PromptCardTool,
 } from '../hooks/useADChat'
-import { cn } from '@/lib/utils'
+import { cn } from '#/lib/utils'
 
 interface PromptCardProps extends PromptCardTool {
   onCopy: (prompt: string) => void

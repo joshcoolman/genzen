@@ -16,13 +16,13 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
+} from '#/components/ui/sheet'
 import {
   formatAbsolute,
   formatDurationMs,
   formatRelativeOrDate,
-} from '@/lib/time-format'
-import { cn } from '@/lib/utils'
+} from '#/lib/time-format'
+import { cn } from '#/lib/utils'
 
 interface ActivityDetailPanelProps {
   entryId: string | null

@@ -6,9 +6,9 @@ import type {
   ActivityReferenceImage,
   GenerationStatus,
 } from '../types'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
-import { getModelName } from '@/features/ai-images/models'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
+import { getModelName } from '#/features/ai-images/models'
 
 interface GetActivityEntryInput {
   id: string

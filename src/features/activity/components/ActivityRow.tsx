@@ -9,8 +9,8 @@ import {
   formatAbsolute,
   formatDurationMs,
   formatRelativeOrDate,
-} from '@/lib/time-format'
-import { cn } from '@/lib/utils'
+} from '#/lib/time-format'
+import { cn } from '#/lib/utils'
 
 interface ActivityRowProps {
   entry: ActivityEntry

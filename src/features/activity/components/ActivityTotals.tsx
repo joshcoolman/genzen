@@ -1,6 +1,6 @@
 import { Clock4, DollarSign, Receipt } from 'lucide-react'
 import type { ActivityTotals as Totals } from '../types'
-import { formatDurationMs } from '@/lib/time-format'
+import { formatDurationMs } from '#/lib/time-format'
 
 function formatDollarsFromCents(cents: number): string {
   const dollars = cents / 100

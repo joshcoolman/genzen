@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import '@/styles.css'
+import '#/styles.css'
 
 // The App Router equivalent of __root.tsx's `head`. Fonts stay as plain
 // stylesheet links rather than next/font: the theme in src/styles.css refers to

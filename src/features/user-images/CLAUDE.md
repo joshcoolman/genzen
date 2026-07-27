@@ -34,10 +34,10 @@ No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useI
 
 ## Shared Dependencies
 
-- `@/lib/auth` -- useAuth for user context
-- `@/components/Thumbnail` -- Shared composable thumbnail component
-- `@/components/ImageGrid` -- Shared responsive grid
-- `@/components/ActionButton` -- Shared loading button
+- `#/lib/auth` -- useAuth for user context
+- `#/components/Thumbnail` -- Shared composable thumbnail component
+- `#/components/ImageGrid` -- Shared responsive grid
+- `#/components/ActionButton` -- Shared loading button
 
 ## Quirks / Notes
 
@@ -48,5 +48,5 @@ No dedicated route. This is a utility feature: its hooks (`useUserImages`, `useI
 - Delete is soft-delete (sets `deleted_at` timestamp)
 - Storage uses R2 public URLs (no signing/expiry), loaded incrementally per-image
 - Palette generator runs entirely in-browser via Canvas API (no edge function)
-- Storage uses R2 via `createImageStorage()` from `@/lib/image-storage`
+- Storage uses R2 via `createImageStorage()` from `#/lib/image-storage`
 - Max upload size: 50MB; allowed types: JPEG, PNG, WebP, GIF

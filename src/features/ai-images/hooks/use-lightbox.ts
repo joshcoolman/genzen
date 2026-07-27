@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { SavedAiImage } from '@/features/ai-images/types'
-import type { EditChildrenMap } from '@/features/ai-images/hooks/use-edit-children'
-import { getR2PublicUrl } from '@/lib/image-storage'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { getR2PublicUrl } from '#/lib/image-storage'
 
 export interface LightboxItem {
   id: string

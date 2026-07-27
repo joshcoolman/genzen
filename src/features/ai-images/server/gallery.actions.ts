@@ -1,11 +1,11 @@
 'use server'
 
-import type { SavedAiImage } from '@/features/ai-images/types'
-import type { UserImageRow } from '@/lib/types/db'
-import { resolveAuth } from '@/lib/server/auth.server'
-import { first, sql } from '@/lib/server/db.server'
-import { removeImages } from '@/features/user-images/server/remove-images.server'
-import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import type { UserImageRow } from '#/lib/types/db'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { first, sql } from '#/lib/server/db.server'
+import { removeImages } from '#/features/user-images/server/remove-images.server'
+import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
 
 // The gallery's reads and deletes, which the browser used to run directly
 // against Supabase. As in user-images (#173), the change that matters is that

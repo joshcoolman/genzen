@@ -1,7 +1,7 @@
 import type { UserImage } from '../types'
-import { Thumbnail } from '@/components/Thumbnail'
-import { ExpandableText } from '@/components/ExpandableText'
-import { formatFileSize } from '@/lib/format'
+import { Thumbnail } from '#/components/Thumbnail'
+import { ExpandableText } from '#/components/ExpandableText'
+import { formatFileSize } from '#/lib/format'
 
 interface ImageCardProps {
   image: UserImage

@@ -1,6 +1,6 @@
 'use server'
 
-import { resolveAuth } from '@/lib/server/auth.server'
+import { resolveAuth } from '#/lib/server/auth.server'
 
 export async function fetchImageAsBase64(data: { url: string }) {
   await resolveAuth()

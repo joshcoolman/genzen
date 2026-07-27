@@ -7,7 +7,7 @@ import {
 } from '../server/canvas.actions'
 import type { CanvasImage, PersistedState } from '../types'
 import type { CanvasDbRecord } from '../server/canvas.actions'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 const DEFAULT_DB = 'moodboard'
 const STORE_NAME = 'state'

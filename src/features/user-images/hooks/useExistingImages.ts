@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listImages } from '../server/images.actions'
 import type { UserImage } from '../types'
-import { createImageStorage } from '@/lib/image-storage'
+import { createImageStorage } from '#/lib/image-storage'
 
 interface UseExistingImagesReturn {
   images: Array<UserImage>

@@ -10,7 +10,7 @@
 import { useRef } from 'react'
 import { Upload } from 'lucide-react'
 import { parseFilenameToTitle } from '../lib/filename-parser'
-import { ActionButton } from '@/components/ActionButton'
+import { ActionButton } from '#/components/ActionButton'
 
 export interface SelectedFile {
   file: File

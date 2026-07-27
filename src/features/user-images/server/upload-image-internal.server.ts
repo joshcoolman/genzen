@@ -1,5 +1,5 @@
-import { resolveAuth } from '@/lib/server/auth.server'
-import { createImageStorage } from '@/lib/image-storage'
+import { resolveAuth } from '#/lib/server/auth.server'
+import { createImageStorage } from '#/lib/image-storage'
 
 function validateImageBuffer(buffer: Buffer): string {
   if (buffer.length > 50 * 1024 * 1024) throw new Error('File too large')

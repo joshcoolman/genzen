@@ -33,7 +33,7 @@ GenZen uses Tailwind v4 with a custom breakpoint defined in `src/styles.css`:
 **Use the `useIsMobile` hook** (recommended):
 
 ```tsx
-import { useIsMobile } from '@/lib/hooks/use-is-mobile'
+import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 
 // Default breakpoint is 400px (matches --breakpoint-xs)
 const isMobile = useIsMobile()
@@ -76,7 +76,7 @@ For most cases, use Tailwind responsive classes instead of JavaScript:
 Standardized header for full-screen mobile dialogs:
 
 ```tsx
-import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { MobileDialogHeader } from '#/components/MobileDialogHeader'
 ;<Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
     <MobileDialogHeader title="Generate" onClose={() => setIsOpen(false)} />
@@ -100,7 +100,7 @@ import { MobileDialogHeader } from '@/components/MobileDialogHeader'
 Consistent circular buttons for navigation and CTAs:
 
 ```tsx
-import { CircularIconButton } from '@/components/CircularIconButton'
+import { CircularIconButton } from '#/components/CircularIconButton'
 import { ArrowLeft, Plus } from 'lucide-react'
 
 // White variant (default) - for navigation/back buttons
@@ -135,7 +135,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 Use constants instead of magic numbers:
 
 ```tsx
-import { BREAKPOINTS } from '@/lib/constants/breakpoints'
+import { BREAKPOINTS } from '#/lib/constants/breakpoints'
 
 // Breakpoint values
 BREAKPOINTS.xs // 400px
@@ -180,8 +180,8 @@ const isEditPage = location.pathname.startsWith('/dashboard/edit/')
 **Mobile**: Full-screen dialog
 
 ```tsx
-import { useIsMobile } from '@/lib/hooks/use-is-mobile'
-import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { useIsMobile } from '#/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '#/components/MobileDialogHeader'
 
 const isMobile = useIsMobile()
 
@@ -468,8 +468,8 @@ useEffect(() => {
 For complex panels with inputs (generator, edit, etc.):
 
 ```tsx
-import { useIsMobile } from '@/lib/hooks/use-is-mobile'
-import { MobileDialogHeader } from '@/components/MobileDialogHeader'
+import { useIsMobile } from '#/lib/hooks/use-is-mobile'
+import { MobileDialogHeader } from '#/components/MobileDialogHeader'
 
 const isMobile = useIsMobile()
 

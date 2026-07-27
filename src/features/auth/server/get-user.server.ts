@@ -1,6 +1,6 @@
 import { requireUserId } from './current-user.server'
-import type { AuthUser } from '@/lib/auth'
-import { first, sql } from '@/lib/server/db.server'
+import type { AuthUser } from '#/lib/auth'
+import { first, sql } from '#/lib/server/db.server'
 
 /**
  * The signed-in user's row, for the layout to hand to the client provider.

@@ -8,11 +8,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { updateImageDescription } from '@/features/user-images/server/images.actions'
-import { captionImage } from '@/features/ai-images/server/caption-image.server'
+} from '#/components/ui/dialog'
+import { Button } from '#/components/ui/button'
+import { Textarea } from '#/components/ui/textarea'
+import { updateImageDescription } from '#/features/user-images/server/images.actions'
+import { captionImage } from '#/features/ai-images/server/caption-image.server'
 
 interface DescribeDialogProps {
   open: boolean
