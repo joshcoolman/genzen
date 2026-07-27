@@ -2,17 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '@/features/ai-images/types'
-import type { Tables } from '@/lib/types/supabase'
-import { supabase } from '@/lib/supabase'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '@/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { createImageStorage } from '@/lib/image-storage'
-import { removeImages } from '@/features/user-images/server/remove-images.server'
 import { ungroupImages } from '@/features/ai-images/server/ungroup-images.server'
+import {
+  deleteGalleryImage,
+  deleteGalleryImageDetachingChildren,
+  deleteGalleryImageWithDescendants,
+  listGalleryImages,
+  restoreHiddenRootImage,
+} from '@/features/ai-images/server/gallery.actions'
 
 interface UseImagesOptions {
   userId: string | undefined
+}
+
+interface RefreshOptions {
+  /** Leave the existing cards on screen instead of showing the skeleton. */
+  silent?: boolean
 }
 
 function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
@@ -37,6 +46,33 @@ function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
   })
 }
 
+/** Ids of `imageId` and everything grouped beneath it, walking `parent_id`. */
+function collectSubtree(
+  imageId: string,
+  images: Array<SavedAiImage>,
+): Set<string> {
+  const childrenOf = new Map<string, Array<string>>()
+  for (const img of images) {
+    const parentId = img.generation_metadata?.parent_id
+    if (!parentId) continue
+    const siblings = childrenOf.get(parentId) ?? []
+    siblings.push(img.id)
+    childrenOf.set(parentId, siblings)
+  }
+
+  const ids = new Set<string>([imageId])
+  const queue = [imageId]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const childId of childrenOf.get(current) ?? []) {
+      if (ids.has(childId)) continue
+      ids.add(childId)
+      queue.push(childId)
+    }
+  }
+  return ids
+}
+
 export interface GalleryState {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
@@ -53,7 +89,7 @@ export interface GalleryState {
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
   ungroupChildren: (img: SavedAiImage) => Promise<void>
   retryImage: (img: SavedAiImage) => Promise<void>
-  refresh: () => Promise<void>
+  refresh: (options?: RefreshOptions) => Promise<void>
 }
 
 export function useImages({ userId }: UseImagesOptions): GalleryState {
@@ -64,257 +100,73 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
   >({})
   const [loadingGallery, setLoadingGallery] = useState(true)
 
-  // Set while a poll-driven refetch is in flight, so it doesn't flash the
-  // gallery skeleton over cards that are already on screen.
-  const silentReloadRef = useRef(false)
+  const loadSavedImages = useCallback(
+    async (options?: RefreshOptions) => {
+      if (!userId) return
 
-  const loadSavedImages = useCallback(async () => {
-    if (!userId) return
+      try {
+        if (!options?.silent) setLoadingGallery(true)
 
-    try {
-      if (!silentReloadRef.current) setLoadingGallery(true)
-      const { data, error: queryError } = await supabase
-        .from('user_images')
-        .select(
-          'id, title, description, storage_path, thumbnail_path, created_at, sort_order, status, generation_error, generation_metadata',
+        const { images: rows, rootImages } = await listGalleryImages()
+        const images = sortByOrder(rows)
+        setSavedImages(images)
+        setLoadingGallery(false)
+
+        // Batch signed URL generation
+        const completedWithPath = images.filter(
+          (img) => img.status === 'completed' && img.storage_path,
         )
-        .eq('user_id', userId)
-        .in('source', ['upload', 'ai_generated'])
-        .is('deleted_at', null)
-        .order('sort_order', { ascending: false, nullsFirst: false })
-
-      if (queryError) throw queryError
-
-      const allImages = data as Array<SavedAiImage>
-      const images = sortByOrder(allImages)
-      setSavedImages(images)
-      setLoadingGallery(false)
-
-      // Batch signed URL generation
-      const completedWithPath = images.filter(
-        (img) => img.status === 'completed' && img.storage_path,
-      )
-      const urlEntries = await Promise.all(
-        completedWithPath.map(async (img) => {
-          const path = img.thumbnail_path ?? img.storage_path!
-          const url = await createImageStorage().getUrl(path)
-          return url ? ([img.id, url] as const) : null
-        }),
-      )
-      const urls: Record<string, string> = {}
-      for (const entry of urlEntries) {
-        if (entry) urls[entry[0]] = entry[1]
-      }
-      setImageUrls(urls)
-
-      // Fetch source image URLs for edits and variations (including hidden sources)
-      const rootIds = new Set<string>()
-      for (const img of images) {
-        const meta = img.generation_metadata
-        const generationType = meta?.generation_type
-        if (generationType === 'edit' || generationType === 'variation') {
-          // Use source_image_id (immutable generation history)
-          const sourceId = meta?.source_image_id
-          if (sourceId && !urls[sourceId]) rootIds.add(sourceId)
+        const urlEntries = await Promise.all(
+          completedWithPath.map(async (img) => {
+            const path = img.thumbnail_path ?? img.storage_path!
+            const url = await createImageStorage().getUrl(path)
+            return url ? ([img.id, url] as const) : null
+          }),
+        )
+        const urls: Record<string, string> = {}
+        for (const entry of urlEntries) {
+          if (entry) urls[entry[0]] = entry[1]
         }
-      }
-      if (rootIds.size > 0) {
-        const { data: rootRows } = await supabase
-          .from('user_images')
-          .select('id, storage_path, thumbnail_path, hidden')
-          .in('id', Array.from(rootIds))
-          .is('deleted_at', null)
-        if (rootRows) {
-          const meta: Record<string, { hidden: boolean }> = {}
-          const rootUrlEntries = await Promise.all(
-            (rootRows as Array<RootImageRow>).map(async (r) => {
-              const storagePath = r.storage_path
-              if (!storagePath) return null
-              const path = r.thumbnail_path ?? storagePath
-              const url = await createImageStorage().getUrl(path)
-              return url ? ([r.id, url] as const) : null
-            }),
-          )
-          for (const r of rootRows) {
-            meta[r.id] = { hidden: !!r.hidden }
-          }
-          const rootUrls: Record<string, string> = {}
-          for (const entry of rootUrlEntries) {
-            if (entry) rootUrls[entry[0]] = entry[1]
-          }
-          setImageUrls((prev) => ({ ...prev, ...rootUrls }))
-          setRootImageMeta(meta)
+
+        // Source images for edits and variations, which may be hidden and so
+        // absent from the list above.
+        const rootUrlEntries = await Promise.all(
+          rootImages.map(async (r) => {
+            if (!r.storage_path) return null
+            const path = r.thumbnail_path ?? r.storage_path
+            const url = await createImageStorage().getUrl(path)
+            return url ? ([r.id, url] as const) : null
+          }),
+        )
+        for (const entry of rootUrlEntries) {
+          if (entry) urls[entry[0]] = entry[1]
         }
+
+        setImageUrls(urls)
+        setRootImageMeta(
+          Object.fromEntries(
+            rootImages.map((r) => [r.id, { hidden: r.hidden }]),
+          ),
+        )
+      } catch {
+        console.error('Failed to load saved AI images')
+      } finally {
+        setLoadingGallery(false)
       }
-    } catch {
-      console.error('Failed to load saved AI images')
-    } finally {
-      setLoadingGallery(false)
-    }
-  }, [userId])
+    },
+    [userId],
+  )
 
   useEffect(() => {
-    loadSavedImages()
+    void loadSavedImages()
   }, [loadSavedImages])
 
-  // Realtime subscription for user_images table
-  useEffect(() => {
-    if (!userId) return
-
-    const channel = supabase
-      .channel('user_images_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_images',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newImage = payload.new as SavedAiImage
-            // Only include uploads and ai_generated sources
-            const rawInsert = payload.new as Record<string, unknown>
-            if (
-              rawInsert.source !== 'upload' &&
-              rawInsert.source !== 'ai_generated'
-            )
-              return
-            // Bump parent's sort_order when a child is added
-            const parentId = newImage.generation_metadata?.source_image_id
-            const bumpedSort = Date.now() / 1000
-
-            setSavedImages((prev) => {
-              if (prev.some((img) => img.id === newImage.id)) return prev
-
-              // Check if this is a realtime echo of an optimistic upload.
-              // Match by title (file name) to find the correct optimistic card
-              // when multiple files are uploading in parallel.
-              const isOptimistic = (img: SavedAiImage) =>
-                img.id.startsWith('upload-') || img.id.startsWith('paste-')
-              if (newImage.storage_path && prev.some(isOptimistic)) {
-                const optimisticIdx = prev.findIndex(
-                  (img) => isOptimistic(img) && img.title === newImage.title,
-                )
-                if (optimisticIdx !== -1) {
-                  // Silently swap temp ID for real ID, same position
-                  return prev.map((img, i) =>
-                    i === optimisticIdx ? newImage : img,
-                  )
-                }
-              }
-
-              const metadata = newImage.generation_metadata
-              if (
-                metadata?.generation_type === 'variation' &&
-                metadata.source_image_id
-              ) {
-                const sourceId = metadata.source_image_id
-                const optimisticIdx = prev.findIndex((img) =>
-                  img.id.startsWith(`optimistic-${sourceId}-`),
-                )
-                if (optimisticIdx !== -1) {
-                  const updated = [...prev]
-                  updated[optimisticIdx] = newImage
-                  // Also bump parent
-                  if (parentId) {
-                    const pi = updated.findIndex((i) => i.id === parentId)
-                    if (pi !== -1)
-                      updated[pi] = {
-                        ...updated[pi],
-                        sort_order: bumpedSort,
-                      }
-                  }
-                  return sortByOrder(updated)
-                }
-              }
-              // Bump parent in the list
-              let next = [...prev, newImage]
-              if (parentId) {
-                next = next.map((i) =>
-                  i.id === parentId ? { ...i, sort_order: bumpedSort } : i,
-                )
-              }
-              return sortByOrder(next)
-            })
-
-            // Persist parent bump to DB
-            if (parentId) {
-              void supabase
-                .from('user_images')
-                .update({ sort_order: bumpedSort })
-                .eq('id', parentId)
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedImage = payload.new as SavedAiImage
-            const rawUpdate = payload.new as Record<string, unknown>
-            if (updatedImage.deleted_at || rawUpdate.hidden === true) {
-              setSavedImages((prev) =>
-                prev.filter((img) => img.id !== updatedImage.id),
-              )
-              setImageUrls((prev) => {
-                const next = { ...prev }
-                delete next[updatedImage.id]
-                return next
-              })
-              return
-            }
-            setSavedImages((prev) => {
-              const exists = prev.some((img) => img.id === updatedImage.id)
-              if (exists) {
-                return prev.map((img) =>
-                  img.id === updatedImage.id ? updatedImage : img,
-                )
-              }
-              // Image was restored from trash -- re-add to gallery
-              return sortByOrder([...prev, updatedImage])
-            })
-
-            if (
-              updatedImage.status === 'completed' &&
-              updatedImage.storage_path
-            ) {
-              const path =
-                updatedImage.thumbnail_path ?? updatedImage.storage_path
-              createImageStorage()
-                .getUrl(path)
-                .then((url) => {
-                  if (url) {
-                    setImageUrls((prev) => ({
-                      ...prev,
-                      [updatedImage.id]: url,
-                    }))
-                  }
-                })
-                .catch(() => {
-                  // Signed URL fetch failed — image will show on next full reload
-                })
-            }
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = payload.old.id
-            setSavedImages((prev) => prev.filter((img) => img.id !== deletedId))
-            setImageUrls((prev) => {
-              const next = { ...prev }
-              delete next[deletedId]
-              return next
-            })
-          }
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId])
-
   // Poll FAL for pending generations (skipped when webhooks are enabled).
-  // The poll also drives the UI: `checkPendingGenerations` settles rows
-  // server-side, and any settled row means the gallery is stale. Realtime used
-  // to deliver those UPDATEs, but `user_images` is in no publication and the
-  // browser client has no Supabase session since #171, so nothing arrives (#174).
+  //
+  // The poll is also how the gallery finds out anything changed. There used to
+  // be a `postgres_changes` channel here doing that, but it went with #174:
+  // `user_images` is in no publication, and the browser has had no Supabase
+  // session since #171, so it had already stopped delivering anything.
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     if (process.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
@@ -323,14 +175,9 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
 
     const pollOnce = () =>
       checkPendingGenerations()
-        .then(async (result) => {
+        .then((result) => {
           if (result.completed === 0 && result.failed === 0) return
-          silentReloadRef.current = true
-          try {
-            await loadSavedImages()
-          } finally {
-            silentReloadRef.current = false
-          }
+          return loadSavedImages({ silent: true })
         })
         .catch(() => {})
 
@@ -351,7 +198,7 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
         pollingRef.current = null
       }
     }
-  }, [savedImages.some((img) => img.status === 'pending')])
+  }, [savedImages.some((img) => img.status === 'pending'), loadSavedImages])
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => [card, ...prev])
@@ -371,139 +218,41 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     setImageUrls((prev) => ({ ...prev, [id]: url }))
   }
 
+  function forgetImages(ids: Set<string>) {
+    setSavedImages((prev) => prev.filter((i) => !ids.has(i.id)))
+    setImageUrls((prev) => {
+      const next = { ...prev }
+      for (const id of ids) delete next[id]
+      return next
+    })
+  }
+
   async function deleteImage(img: SavedAiImage) {
     if (img.storage_path) createImageStorage().invalidateUrl(img.storage_path)
     if (img.thumbnail_path)
       createImageStorage().invalidateUrl(img.thumbnail_path)
-    setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
+    forgetImages(new Set([img.id]))
 
     try {
-      // Check if this image has living variations (is a root/source)
-      const { count: variationCount } = await supabase
-        .from('user_images')
-        .select('id', { count: 'exact', head: true })
-        .or(
-          `generation_metadata->>root_image_id.eq.${img.id},generation_metadata->>source_image_id.eq.${img.id}`,
-        )
-        .is('deleted_at', null)
-        .eq('hidden', false)
-
-      if (variationCount && variationCount > 0) {
-        // Hide instead of soft-delete — variations still need this image
-        const { error: hideError } = await supabase
-          .from('user_images')
-          .update({ hidden: true })
-          .eq('id', img.id)
-        if (hideError) throw hideError
-      } else {
-        // Normal soft delete
-        const { error: deleteError } = await supabase
-          .from('user_images')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', img.id)
-        if (deleteError) throw deleteError
-      }
-
-      // If this image is a variation, check if its root should be cleaned up
-      const metadata = img.generation_metadata
-      if (metadata?.generation_type === 'variation') {
-        const rootId = metadata.root_image_id ?? metadata.source_image_id
-        if (rootId) {
-          await cleanupHiddenRoot(rootId, img.id)
-        }
-      }
+      // Hide-vs-delete, and cleaning up an orphaned hidden root, are decided
+      // server-side now -- they were four browser round trips reading each
+      // other's results.
+      await deleteGalleryImage(img.id)
     } catch {
-      loadSavedImages()
-    }
-  }
-
-  async function cleanupHiddenRoot(rootId: string, excludeId: string) {
-    // Check if root is hidden
-    const { data: rootImage } = await supabase
-      .from('user_images')
-      .select('id, storage_path, thumbnail_path, hidden')
-      .eq('id', rootId)
-      .single()
-
-    if (!rootImage?.hidden) return
-
-    // Check for other living variations
-    const { count } = await supabase
-      .from('user_images')
-      .select('id', { count: 'exact', head: true })
-      .or(
-        `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
-      )
-      .is('deleted_at', null)
-      .neq('id', excludeId)
-
-    if (count === 0) {
-      // No more living variations — permanently delete the hidden root
-      await supabase.from('user_images').delete().eq('id', rootId)
-      if (rootImage.storage_path) {
-        const paths = [
-          rootImage.storage_path,
-          ...(rootImage.thumbnail_path ? [rootImage.thumbnail_path] : []),
-        ]
-        await removeImages({ storagePaths: paths })
-      }
+      await loadSavedImages({ silent: true })
     }
   }
 
   async function deleteImageWithDescendants(img: SavedAiImage) {
-    // Collect group children via BFS on parent_id (grouping, not genealogy)
-    const { data: allRows } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', userId!)
-      .is('deleted_at', null)
-
-    const childrenOf = new Map<string, Array<string>>()
-    for (const row of allRows ?? []) {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      const pid = meta?.parent_id as string | undefined
-      if (pid) {
-        const siblings = childrenOf.get(pid) ?? []
-        siblings.push(row.id)
-        childrenOf.set(pid, siblings)
-      }
-    }
-
-    const idsToDelete = new Set<string>([img.id])
-    const queue = [img.id]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      for (const childId of childrenOf.get(current) ?? []) {
-        if (!idsToDelete.has(childId)) {
-          idsToDelete.add(childId)
-          queue.push(childId)
-        }
-      }
-    }
-
-    // Optimistic removal
-    setSavedImages((prev) => prev.filter((i) => !idsToDelete.has(i.id)))
-    setImageUrls((prev) => {
-      const next = { ...prev }
-      for (const id of idsToDelete) delete next[id]
-      return next
-    })
+    // Remove the subtree optimistically from what's on screen; the server
+    // walks it again authoritatively and returns what it actually deleted.
+    forgetImages(collectSubtree(img.id, savedImages))
 
     try {
-      // Remove parent_id from children so they're independent in trash
-      // Genealogy fields (source_image_id, root_image_id, generation_type) stay intact
-      const childIds = Array.from(idsToDelete).filter((id) => id !== img.id)
-      if (childIds.length > 0) {
-        await ungroupImages({ imageIds: childIds })
-      }
-
-      // Soft-delete all
-      await supabase
-        .from('user_images')
-        .update({ deleted_at: new Date().toISOString() })
-        .in('id', Array.from(idsToDelete))
+      const deletedIds = await deleteGalleryImageWithDescendants(img.id)
+      forgetImages(new Set(deletedIds))
     } catch {
-      loadSavedImages()
+      await loadSavedImages({ silent: true })
     }
   }
 
@@ -525,39 +274,32 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     )
 
     try {
-      // Detach all children via server function
-      await ungroupImages({ parentId: img.id })
-
-      // Soft-delete the parent
-      const { error: deleteError } = await supabase
-        .from('user_images')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', img.id)
-      if (deleteError) throw deleteError
+      await deleteGalleryImageDetachingChildren(img.id)
     } catch {
-      loadSavedImages()
+      await loadSavedImages({ silent: true })
     }
   }
 
   async function restoreRootImage(rootId: string) {
-    const { error } = await supabase
-      .from('user_images')
-      .update({ hidden: false })
-      .eq('id', rootId)
-    if (!error) {
+    try {
+      await restoreHiddenRootImage(rootId)
       setRootImageMeta((prev) => {
         const next = { ...prev }
         delete next[rootId]
         return next
       })
+      await loadSavedImages({ silent: true })
+    } catch {
+      // Leave the badge in place -- the root is still hidden.
     }
   }
 
   async function retryImage(img: SavedAiImage) {
-    // Optimistically remove the failed card — the new pending record will appear via realtime
+    // Drop the failed card; the resubmitted record comes back on the refresh.
     setSavedImages((prev) => prev.filter((i) => i.id !== img.id))
     try {
       await retryGeneration({ recordId: img.id })
+      await loadSavedImages({ silent: true })
     } catch {
       // If retry fails, restore the failed card
       setSavedImages((prev) => sortByOrder([...prev, img]))
@@ -619,7 +361,3 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     refresh: loadSavedImages,
   }
 }
-type RootImageRow = Pick<
-  Tables<'user_images'>,
-  'id' | 'storage_path' | 'thumbnail_path' | 'hidden'
->

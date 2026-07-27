@@ -34,6 +34,12 @@ export function useAiImagesPage() {
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     setError,
+    // A submit inserts pending rows server-side. The gallery used to hear about
+    // them on the realtime INSERT (#174); it now asks once the submits land,
+    // and the 5s poll takes over from there until they settle.
+    onAfterSubmit: () => {
+      void gallery.refresh({ silent: true })
+    },
   })
 
   const completedImages = gallery.images.filter(

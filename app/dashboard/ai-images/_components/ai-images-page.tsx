@@ -37,7 +37,7 @@ import { DescribeDialog } from '@/features/ai-images/components/DescribeDialog'
 import { GroupPickerDialog } from '@/features/ai-images/components/GroupPickerDialog'
 import { useAiImagesADContext } from '@/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '@/features/user-images/hooks/useImageUpload'
-import { supabase } from '@/lib/supabase'
+import { listSubtreeStoragePaths } from '@/features/ai-images/server/gallery.actions'
 import { createImageStorage } from '@/lib/image-storage'
 import {
   AlertDialog,
@@ -173,7 +173,7 @@ export function AiImagesPage() {
   const handleUploadFiles = useCallback(
     (files: Array<File>) => {
       // Show skeleton placeholders immediately, upload in parallel.
-      // No blob preview -- avoids jarring mismatch when realtime swaps the card.
+      // No blob preview -- avoids a jarring mismatch when the real card lands.
       // On failure: remove the card.
       for (const file of files) {
         const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
@@ -189,7 +189,24 @@ export function AiImagesPage() {
 
         void (async () => {
           try {
-            await upload({ file, title: file.name, description: null })
+            const created = await upload({
+              file,
+              title: file.name,
+              description: null,
+            })
+            // The realtime INSERT used to swap this card by matching on title
+            // (#174). The upload's own return value identifies it exactly.
+            page.gallery.replaceOptimisticCard(tempId, {
+              id: created.id,
+              title: created.title,
+              storage_path: null,
+              created_at: new Date().toISOString(),
+              status: 'completed',
+              generation_error: null,
+              generation_metadata: null,
+            })
+            if (created.url) page.gallery.setImageUrl(created.id, created.url)
+            void page.gallery.refresh({ silent: true })
           } catch {
             page.gallery.removeOptimisticCard(tempId)
           }
@@ -225,7 +242,24 @@ export function AiImagesPage() {
 
           void (async () => {
             try {
-              await upload({ file, title: file.name, description: null })
+              const created = await upload({
+                file,
+                title: file.name,
+                description: null,
+              })
+              page.gallery.replaceOptimisticCard(tempId, {
+                id: created.id,
+                title: created.title,
+                storage_path: null,
+                created_at: new Date().toISOString(),
+                status: 'completed',
+                generation_error: null,
+                generation_metadata: null,
+              })
+              // Keep the blob preview until the refresh brings a real URL --
+              // swapping to nothing would blink the card empty.
+              page.gallery.setImageUrl(created.id, created.url || previewUrl)
+              void page.gallery.refresh({ silent: true })
             } catch {
               page.gallery.removeOptimisticCard(tempId)
             }
@@ -458,49 +492,17 @@ export function AiImagesPage() {
         const blob = await response.blob()
         saveAs(blob, `${baseName}${extOf(storagePath)}`)
       } else {
-        // Fetch ALL descendants via BFS
-        const { data: allRows } = await supabase
-          .from('user_images')
-          .select('id, storage_path, generation_metadata')
-          .eq('user_id', page.userId)
-          .is('deleted_at', null)
-
-        const childrenOf = new Map<
-          string,
-          Array<{ id: string; storage_path: string | null }>
-        >()
-        for (const row of allRows ?? []) {
-          const meta = row.generation_metadata as Record<string, unknown> | null
-          // Use parent_id for group membership (mutable organizational parent)
-          const parentId = meta?.parent_id as string | undefined
-          if (parentId) {
-            const siblings = childrenOf.get(parentId) ?? []
-            siblings.push(row)
-            childrenOf.set(parentId, siblings)
-          }
-        }
-        const descendants: Array<{ path: string }> = []
-        const queue = [img.id]
-        const visited = new Set<string>()
-        while (queue.length > 0) {
-          const current = queue.shift()!
-          for (const row of childrenOf.get(current) ?? []) {
-            if (visited.has(row.id)) continue
-            visited.add(row.id)
-            if (row.storage_path) {
-              descendants.push({ path: row.storage_path })
-            }
-            queue.push(row.id)
-          }
-        }
+        // The subtree walk (by parent_id, the mutable grouping parent) runs
+        // server-side -- see listSubtreeStoragePaths.
+        const descendantPaths = await listSubtreeStoragePaths(img.id)
 
         const items: Array<{ path: string; name: string }> = [
           { path: storagePath, name: `${baseName}-1${extOf(storagePath)}` },
         ]
-        descendants.forEach((d, i) => {
+        descendantPaths.forEach((path, i) => {
           items.push({
-            path: d.path,
-            name: `${baseName}-${i + 2}${extOf(d.path)}`,
+            path,
+            name: `${baseName}-${i + 2}${extOf(path)}`,
           })
         })
 

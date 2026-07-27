@@ -12,6 +12,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Server
 
+- `gallery.actions.ts` -- the gallery's reads and deletes, user-scoped by `resolveAuth()`: `listGalleryImages` (rows + the source images derived cards need), `deleteGalleryImage` (decides hide-vs-soft-delete and cleans up an orphaned hidden root), `deleteGalleryImageWithDescendants`, `deleteGalleryImageDetachingChildren`, `restoreHiddenRootImage`, `listSubtreeStoragePaths` (download-as-zip)
 - `generate-image.server.ts` -- TanStack server fn wrapper for generation
 - `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
 - `edit-image.server.ts` -- TanStack server fn wrapper for editing
@@ -35,7 +36,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 - `use-ai-images-page.ts` -- master hook composing all sub-hooks for the main page
 - `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`
-- `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards
+- `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards. No database access and no realtime: it calls `gallery.actions.ts`, and the 5s poll is what tells it anything changed
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
 - `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, R2 public URLs)
@@ -84,7 +85,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - Variations use Claude Sonnet to rewrite prompts with "creative tension" -- always references the root image, not the immediate parent, to prevent quality drift
 - `fal-params.server.ts` is the central param resolver used across the image server fns (generate, edit, variations, retry) and `media.server.ts`
 - Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
-- FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook
+- FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook. The poll is also the gallery's only update signal: a submit refreshes once via `onAfterSubmit` so the pending cards appear, and each poll that settles a row refreshes again. Nothing pushes.
 - Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
 - Reparenting allows moving images between parent groups or detaching from a parent entirely
