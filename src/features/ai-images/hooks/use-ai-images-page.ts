@@ -51,7 +51,7 @@ export function useAiImagesPage() {
     [completedImages],
   )
 
-  const editChildren = useEditChildren(parentIds, user.id)
+  const editChildren = useEditChildren(parentIds)
   const editChildrenMap = editChildren.map
 
   const reparent = useReparent({

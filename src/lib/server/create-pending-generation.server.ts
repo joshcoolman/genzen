@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
 import { getSupabaseAdmin } from './supabase-admin.server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Json } from '@/lib/types/supabase'
@@ -8,7 +7,6 @@ import { getModelName } from '@/features/ai-images/models'
 export const PENDING_TITLE = 'Generating...'
 
 interface CreatePendingGenerationOptions {
-  accessToken?: string
   userId: string
   /**
    * FAL's id for the queued job. Optional on purpose: the row is reserved
@@ -32,7 +30,6 @@ interface CreatePendingGenerationOptions {
 }
 
 export async function createPendingGeneration({
-  accessToken,
   userId,
   requestId,
   generationType,
@@ -45,17 +42,7 @@ export async function createPendingGeneration({
   onCanvas,
   sortOrder,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
-  const supabase = accessToken
-    ? createClient(
-        process.env.VITE_SUPABASE_URL!,
-        process.env.VITE_SUPABASE_ANON_KEY!,
-        {
-          global: {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          },
-        },
-      )
-    : getSupabaseAdmin()
+  const supabase = getSupabaseAdmin()
 
   const model = falModelId.replace(/\/edit$/, '')
 

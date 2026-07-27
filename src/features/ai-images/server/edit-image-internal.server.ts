@@ -13,7 +13,6 @@ import { createImageStorage } from '@/lib/image-storage'
 import { computeFalCostCents } from '@/lib/server/compute-cost.server'
 
 export interface EditImageInput {
-  accessToken?: string
   userId?: string
   sourceImageId: string
   parentId?: string // Optional organizational parent (defaults to sourceImageId)
@@ -77,7 +76,6 @@ export async function editImageInternal(
   // carrying its reason and a working Retry. `request_id` is attached later,
   // once FAL has actually accepted the job.
   const { recordId } = await createPendingGeneration({
-    accessToken: data.accessToken,
     userId,
     generationType: 'edit',
     falModelId: falEditModel,

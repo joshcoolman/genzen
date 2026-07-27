@@ -1,14 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { Tables } from '@/lib/types/supabase'
-import { supabase } from '@/lib/supabase'
+import { listEditChildren } from '@/features/ai-images/server/edit.actions'
 import { createImageStorage } from '@/lib/image-storage'
-
-type EditChildRow = Pick<
-  Tables<'user_images'>,
-  'id' | 'storage_path' | 'thumbnail_path' | 'generation_metadata'
->
 
 interface EditChild {
   id: string
@@ -19,111 +13,44 @@ interface EditChild {
 
 export type EditChildrenMap = Record<string, Array<EditChild>>
 
-export function useEditChildren(
-  parentIds: Array<string>,
-  userId: string | undefined,
-): { map: EditChildrenMap; refresh: () => void } {
+/**
+ * Nested thumbnails under a gallery card. No database access and no realtime:
+ * the tree walk lives in `edit.actions.ts`, and the parent list is derived from
+ * the gallery, so a newly completed child re-runs this the moment the gallery's
+ * poll picks it up (#173, #174).
+ */
+export function useEditChildren(parentIds: Array<string>): {
+  map: EditChildrenMap
+  refresh: () => void
+} {
   const [childrenMap, setChildrenMap] = useState<EditChildrenMap>({})
   const [refreshKey, setRefreshKey] = useState(0)
 
   const refresh = () => setRefreshKey((k) => k + 1)
 
   useEffect(() => {
-    if (!userId || parentIds.length === 0) return
+    if (parentIds.length === 0) return
+    // An object so the closure below reads the *current* value after each
+    // await, not the one narrowed at capture time.
+    const run = { cancelled: false }
 
     async function fetchChildren() {
-      const { data } = await supabase
-        .from('user_images')
-        .select('id, storage_path, thumbnail_path, generation_metadata')
-        .eq('user_id', userId!)
-        .eq('status', 'completed')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+      const grouped = await listEditChildren(parentIds).catch(() => null)
+      if (!grouped || run.cancelled) return
 
-      if (!data) return
-      const rows = data as Array<EditChildRow>
-
-      // Build a map of all child images (edits, variations, etc.) by parent_id (organizational grouping)
-      const allEdits = rows.filter((row) => {
-        const meta = row.generation_metadata as Record<string, unknown> | null
-        return typeof meta?.parent_id === 'string'
-      })
-
-      if (allEdits.length === 0) {
-        setChildrenMap({})
-        return
-      }
-
-      // Walk the tree: find all descendants of each parent ID
-      const childrenOf = new Map<string, typeof allEdits>()
-      for (const row of allEdits) {
-        const meta = row.generation_metadata as Record<string, unknown>
-        const parentId = meta.parent_id as string
-        const siblings = childrenOf.get(parentId) ?? []
-        siblings.push(row)
-        childrenOf.set(parentId, siblings)
-      }
-
-      // Build index for recency ordering (data is already sorted created_at desc)
-      const recencyIndex = new Map<string, number>()
-      rows.forEach((row, i) => recencyIndex.set(row.id, i))
-
-      // BFS to collect all descendants for each root parent, then sort newest-first
-      const grouped: Record<
-        string,
-        Array<{ id: string; path: string; thumbnailPath: string | null }>
-      > = {}
-      for (const rootId of parentIds) {
-        const descendants: Array<{
-          id: string
-          path: string
-          thumbnailPath: string | null
-        }> = []
-        const queue = [rootId]
-        const visited = new Set<string>()
-        while (queue.length > 0) {
-          const current = queue.shift()!
-          for (const row of childrenOf.get(current) ?? []) {
-            if (visited.has(row.id)) continue
-            visited.add(row.id)
-            if (row.storage_path) {
-              descendants.push({
-                id: row.id,
-                path: row.storage_path,
-                thumbnailPath: row.thumbnail_path,
-              })
-            }
-            queue.push(row.id)
-          }
-        }
-        if (descendants.length > 0) {
-          // Sort by recency (lower index = newer) and take top 8
-          descendants.sort(
-            (a, b) =>
-              (recencyIndex.get(a.id) ?? 999) - (recencyIndex.get(b.id) ?? 999),
-          )
-          grouped[rootId] = descendants
-        }
-      }
-
-      // Get signed URLs
       const result: EditChildrenMap = {}
       await Promise.all(
         Object.entries(grouped).map(async ([parentId, children]) => {
-          const urls = await Promise.all(
+          const resolved = await Promise.all(
             children.map(async (child) => {
-              const path = child.thumbnailPath ?? child.path
-              const url = await createImageStorage().getUrl(path)
+              const url = await createImageStorage().getUrl(
+                child.thumbnailPath ?? child.storagePath,
+              )
               if (!url) return null
-              return {
-                id: child.id,
-                url,
-                storagePath: child.path,
-                thumbnailPath: child.thumbnailPath,
-              }
+              return { ...child, url }
             }),
           )
-          result[parentId] = urls.filter(
+          result[parentId] = resolved.filter(
             (child): child is EditChild => child !== null,
           )
         }),
@@ -133,84 +60,10 @@ export function useEditChildren(
     }
 
     void fetchChildren()
-  }, [userId, parentIds.join(','), refreshKey])
-
-  // Realtime updates for new edit children
-  useEffect(() => {
-    if (!userId || parentIds.length === 0) return
-
-    const channel = supabase
-      .channel('edit_children_realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_images',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const updated = payload.new as {
-            id: string
-            status: string
-            storage_path: string | null
-            generation_metadata: Record<string, unknown> | null
-          }
-          if (updated.status !== 'completed' || !updated.storage_path) return
-          const meta = updated.generation_metadata
-          // Use parent_id for group membership (mutable organizational parent)
-          if (typeof meta?.parent_id !== 'string') return
-          const parentId = meta.parent_id as string | undefined
-          if (!parentId) return
-          // Check if this edit belongs to any root parent's descendant tree
-          // For realtime, check if the parent is either a root or already a known child
-          const isDescendant =
-            parentIds.includes(parentId) ||
-            Object.values(childrenMap).some((children) =>
-              children.some((c) => c.id === parentId),
-            )
-          if (!isDescendant) return
-
-          // Find the root parent this descendant belongs to
-          const rootParent =
-            parentIds.find((rootId) => rootId === parentId) ??
-            parentIds.find((rootId) =>
-              (childrenMap[rootId] ?? []).some((c) => c.id === parentId),
-            )
-          if (!rootParent) return
-
-          const thumbPath = (updated as { thumbnail_path?: string | null })
-            .thumbnail_path
-          createImageStorage()
-            .getUrl(thumbPath ?? updated.storage_path)
-            .then((url) => {
-              if (!url) return
-              setChildrenMap((prev) => {
-                const existing = prev[rootParent] ?? []
-                if (existing.some((c) => c.id === updated.id)) return prev
-                return {
-                  ...prev,
-                  [rootParent]: [
-                    {
-                      id: updated.id,
-                      url,
-                      storagePath: updated.storage_path!,
-                      thumbnailPath: thumbPath ?? null,
-                    },
-                    ...existing,
-                  ],
-                }
-              })
-            })
-            .catch(() => {})
-        },
-      )
-      .subscribe()
-
     return () => {
-      supabase.removeChannel(channel)
+      run.cancelled = true
     }
-  }, [userId, parentIds.join(',')])
+  }, [parentIds.join(','), refreshKey])
 
   return { map: childrenMap, refresh }
 }

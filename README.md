@@ -119,6 +119,18 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **The browser cannot reach the database at all (#173 done).** The last 19
+  queries — Canvas, the edit page, generation results, Activity — became
+  `canvas/server/canvas.actions.ts` and `ai-images/server/edit.actions.ts`, and
+  `src/lib/supabase.ts` is deleted. The anon key is no longer inlined into the
+  bundle; `VITE_SUPABASE_URL` is server-only. Two tree walks moved with the
+  queries: both used to pull every one of the user's rows into the browser to
+  find a handful of descendants.
+- **Nothing pushes any more, anywhere (#174 done).** The last three realtime
+  channels (`use-edit-children`, `useGenerationResults`, `use-activity-page`)
+  are gone. A submit refreshes once; each poll that settles a row refreshes
+  again; the edit page's nested children re-read when the gallery's poll picks
+  up a newly completed row.
 - **Trash is off the browser database client (#173), and can no longer strand a
   row (#177).** Permanent delete moved server-side whole — the link check that
   decides whether a delete is allowed used to run in the browser, so a client
@@ -133,36 +145,19 @@ Conventions follow `~/repos/project-standard`.
   `ai-images/server/gallery.actions.ts`, user-scoped by `resolveAuth()`. The
   cascading delete moved server-side wholesale — it was four browser round trips
   reading each other's results.
-- **Nothing pushes any more; the poll is the update signal (#174, 3 of 5).**
-  Realtime delivered nothing after #171 — `user_images` is in no publication and
-  the browser has no Supabase session — so generations hung on pending. A submit
-  refreshes once, and each poll that settles a row refreshes again. `use-images.ts`
-  has no channel left; `useTrash` and `use-edit-children` still do.
 - **The app runs on Next (#175).** TanStack Start, Router, Vite and Nitro are
   gone — 15 file routes became `app/` route folders, 20 `createServerFn`
   definitions became server actions, and the FAL webhook became a route handler.
-- **Auth is the cookie session (#171, absorbed into the port).** `proxy.ts` is
-  deny-by-default: every path is private unless listed. `resolveAuth()` reads
-  identity from the cookie, which retired `jose`, the remote-JWKS verification,
-  and all 232 `accessToken` references that used to ride in request bodies.
 
 **Up next**
 
-- **#173 — browser data access, and it is now load-bearing.** 19 queries still
-  run through the anon browser client against `auth.uid()` RLS, which no longer
-  resolves. They work today only because a live Supabase session is still being
-  refreshed in the browser; when that refresh token lapses, Canvas and the edit
-  page go blank. Remaining: `canvas/lib/persistence.ts` (7), `use-edit-page.ts`
-  (4), `useGenerationResults.ts` (3), `use-canvas-generate.ts` (2),
-  `use-edit-children.ts` (2), `use-activity-page.ts` (1). Canvas is next, and is
-  the one with real design in it — arrangement lives in IndexedDB, membership in
-  the database. `gallery.actions.ts` and `trash.actions.ts` are the templates.
 - **Signing in gives you an empty library today.** Login verifies against the new
   `users` table, whose ids are freshly generated, while `user_images.user_id`
   still holds Supabase auth uuids. Provision the local user with the matching
   uuid, or move the data, before expecting to see anything.
-- **#174 — 1 dead realtime channel left** (`use-edit-children`). Do it alongside
-  its #173 pass. Then **#176 — delete Supabase**.
+- **#176 — delete Supabase.** Nothing but the server admin client and the
+  migrations still depend on it; plain Postgres + the `migrate.mjs` port is the
+  remaining work in #168.
 - Then the `project-standard` conformance pass: one-folder-per-component and
   CSS Modules over Tailwind.
 

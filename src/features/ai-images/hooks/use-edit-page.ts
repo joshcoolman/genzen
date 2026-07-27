@@ -25,7 +25,11 @@ import {
 } from '@/features/ai-images/constants'
 import { flipOrientation } from '@/components/AspectRatioSelect'
 import { EDIT_MODELS } from '@/features/ai-images/models'
-import { supabase } from '@/lib/supabase'
+import {
+  getEditSourceImage,
+  listDescendantIds,
+  listEditSourceRefs,
+} from '@/features/ai-images/server/edit.actions'
 import { createImageStorage } from '@/lib/image-storage'
 import { fetchImageAsBase64 } from '@/lib/server/fetch-image-base64.server'
 
@@ -98,51 +102,15 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   const existingImages = useExistingImages(user.id)
   const imageUpload = useImageUpload(user.id)
-  const editChildren = useEditChildren(sourceChain, user.id)
+  const editChildren = useEditChildren(sourceChain)
 
-  // BFS descendant discovery - uses parent_id (mutable grouping)
+  // Descendant discovery (BFS over parent_id) now runs server-side.
   const discoverDescendants = useCallback(async () => {
-    if (!user.id) return
-
-    const { data } = await supabase
-      .from('user_images')
-      .select('id, generation_metadata')
-      .eq('user_id', user.id)
-      .in('source', ['upload', 'ai_generated'])
-      .is('deleted_at', null)
-
-    if (!data) return
-
-    const childrenOf = new Map<string, Array<string>>()
-    for (const row of data) {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      // Use parent_id for group membership (mutable)
-      if (typeof meta?.parent_id === 'string') {
-        const parentId = meta.parent_id
-        const siblings = childrenOf.get(parentId) ?? []
-        siblings.push(row.id)
-        childrenOf.set(parentId, siblings)
-      }
-    }
-
-    const chain = [imageId]
-    const visited = new Set([imageId])
-    const queue = [imageId]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      for (const childId of childrenOf.get(current) ?? []) {
-        if (!visited.has(childId)) {
-          visited.add(childId)
-          chain.push(childId)
-          queue.push(childId)
-        }
-      }
-    }
-
-    if (chain.length > 1) {
+    const chain = await listDescendantIds(imageId).catch(() => null)
+    if (chain && chain.length > 1) {
       setSourceChain(chain)
     }
-  }, [user.id, imageId])
+  }, [imageId])
 
   useEffect(() => {
     void discoverDescendants()
@@ -161,12 +129,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
     async function fetchSource() {
       setPageLoading(true)
-      const { data } = await supabase
-        .from('user_images')
-        .select('id, title, storage_path, generation_metadata')
-        .eq('id', imageId)
-        .eq('user_id', user.id)
-        .single()
+      const data = await getEditSourceImage(imageId).catch(() => null)
 
       if (!data?.storage_path) {
         setError('Image not found')
@@ -182,7 +145,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         return
       }
 
-      const meta = data.generation_metadata as Record<string, unknown> | null
+      const meta = data.generation_metadata
       const srcRatio = meta?.aspect_ratio as string | undefined
 
       const imgMeta = {
@@ -460,12 +423,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     async (targetId: string) => {
       if (!user.id) return
 
-      const { data } = await supabase
-        .from('user_images')
-        .select('id, title, storage_path, generation_metadata')
-        .eq('id', targetId)
-        .eq('user_id', user.id)
-        .single()
+      const data = await getEditSourceImage(targetId).catch(() => null)
 
       if (!data?.storage_path) return
 
@@ -473,7 +431,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
       if (!url) return
 
-      const meta = data.generation_metadata as Record<string, unknown> | null
+      const meta = data.generation_metadata
       const srcRatio = meta?.aspect_ratio as string | undefined
 
       setSourceImageMeta({
@@ -656,18 +614,14 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     if (sourceIds.size === 0) return
 
     async function fetchSourceUrls() {
-      const { data: rows } = await supabase
-        .from('user_images')
-        .select('id, storage_path, thumbnail_path, hidden')
-        .in('id', Array.from(sourceIds))
-        .is('deleted_at', null)
+      const rows = await listEditSourceRefs([...sourceIds]).catch(() => null)
       if (!rows) return
 
       const meta: Record<string, { hidden: boolean }> = {}
       const urls: Record<string, string> = {}
       await Promise.all(
         rows.map(async (r) => {
-          meta[r.id] = { hidden: !!r.hidden }
+          meta[r.id] = { hidden: r.hidden }
           if (!r.storage_path) return
           const path = r.thumbnail_path ?? r.storage_path
           const url = await createImageStorage().getUrl(path)

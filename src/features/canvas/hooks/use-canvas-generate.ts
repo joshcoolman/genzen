@@ -2,6 +2,10 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { getSignedUrl, setOnCanvas } from '../lib/persistence'
+import {
+  getCanvasGenerationRecord,
+  getImagePrompt,
+} from '../server/canvas.actions'
 import { canvasModelIdsForRefCount } from '../canvas-models'
 import { mapOutcomesToPlaceholders } from '../lib/generation-mapping'
 import type { CanvasImage } from '../types'
@@ -9,7 +13,6 @@ import { useGenerator } from '@/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '@/components/ModelSelector'
 import { useUserImages } from '@/features/user-images'
 import { useAuth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 import { detectAspectRatio } from '@/features/ai-images/constants'
 import { retryGeneration } from '@/features/ai-images/server/retry-generation.server'
@@ -139,13 +142,9 @@ export function useCanvasGenerate(
         await checkPendingGenerations().catch(() => {})
 
         for (const recordId of [...pending]) {
-          const { data: record } = await supabase
-            .from('user_images')
-            .select(
-              'id, status, storage_path, generation_metadata, generation_error',
-            )
-            .eq('id', recordId)
-            .single()
+          const record = await getCanvasGenerationRecord(recordId).catch(
+            () => null,
+          )
 
           if (!record) continue
 
@@ -548,17 +547,7 @@ export function useCanvasGenerate(
 
       // Pre-fill prompt from the primary's metadata (single-image only).
       if (selection.length === 1 && source.recordId) {
-        const { data: record } = await supabase
-          .from('user_images')
-          .select('generation_metadata')
-          .eq('id', source.recordId)
-          .single()
-
-        const metadata = record?.generation_metadata as Record<
-          string,
-          unknown
-        > | null
-        const prompt = metadata?.prompt as string | undefined
+        const prompt = await getImagePrompt(source.recordId).catch(() => null)
         if (prompt) generator.setPrompt(prompt)
       }
 

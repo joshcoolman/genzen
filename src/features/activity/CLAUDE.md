@@ -5,7 +5,7 @@ Chronological record of every AI generation (image, success + failure, including
 - `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
 - `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses, dateFrom, dateTo). Runs page + totals queries in parallel. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 - `server/get-activity-entry.server.ts` -- fetches a single `user_images` row by ID. Returns `ActivityEntryDetail` with full file metadata, reference images (resolved from `generation_metadata.reference_image_ids`), and raw JSON-stringified metadata.
-- `hooks/use-activity-page.ts` -- page state: filters, pagination, totals, `getThumbUrl`. Resets page on filter change. Subscribes to Supabase realtime channel for live updates (400ms debounce). Polls `checkPendingGenerations` every 5s while pending rows exist.
+- `hooks/use-activity-page.ts` -- page state: filters, pagination, totals, `getThumbUrl`. Resets page on filter change. No database access and no realtime: it calls `list-activity.server.ts`, and polls `checkPendingGenerations` every 5s while pending rows exist, refetching when a poll settles a row.
 - `components/ActivityPage.tsx` -- full page: header + totals + filters + list + pagination + detail panel. Arrow keys (left/right) cycle selected entry while detail panel is open.
 - `components/ActivityRow.tsx` -- single row rendered as a `<button>`: thumbnail · model · prompt · status · duration · cost · time. Calls `onSelect` to open detail panel. Soft-deleted rows get reduced opacity + "deleted" badge.
 - `components/ActivityDetailPanel.tsx` -- slide-over Sheet showing full detail for a single generation: prompt (with copy), error message, costs, duration, file metadata (size/dimensions/MIME), reference image thumbnails, and syntax-highlighted raw metadata JSON.
@@ -28,7 +28,6 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 ## Shared Dependencies
 
 - `@/lib/auth` -- useAuth for access token
-- `@/lib/supabase` -- realtime channel subscription in hook
 - `@/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
 - `@/lib/utils` -- `cn` (classname merge)
 - `@/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
@@ -43,5 +42,5 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 - Model filter IDs use JSONB key `generation_metadata->>model`. Older rows that lack `model` in metadata are filtered out when any model is selected — by design.
 - Page size is 50 rows. Totals are computed across all matching rows (capped at 5000), not just the visible page.
 - Detail panel fetches reference images from `generation_metadata.reference_image_ids` array; missing refs show "missing" placeholder. Refs preserve metadata order.
-- Realtime updates: Supabase channel on `user_images` triggers debounced (400ms) silent refetch. FAL polling (5s interval) runs only while pending rows exist on the current page.
+- No realtime: the channel went with #173/#174. FAL polling (5s interval) runs only while pending rows exist on the current page, and a settled row triggers a silent refetch.
 - Arrow keys (left/right) cycle through entries when detail panel is open; skips when focus is in an input/textarea.

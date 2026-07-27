@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { listActivity } from '../server/list-activity.server'
 import type { ActivityEntry, ActivityFilters, ActivityTotals } from '../types'
-import { useAuth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
 import { checkPendingGenerations } from '@/lib/server/check-pending-generations.server'
 
 const PAGE_SIZE = 50
@@ -25,9 +23,6 @@ const EMPTY_TOTALS: ActivityTotals = {
 }
 
 export function useActivityPage() {
-  const { user } = useAuth()
-  const userId = user.id
-
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [total, setTotal] = useState(0)
   const [totals, setTotals] = useState<ActivityTotals>(EMPTY_TOTALS)
@@ -80,39 +75,6 @@ export function useActivityPage() {
   useEffect(() => {
     refetch()
   }, [refetch])
-
-  // Realtime: refetch (debounced) on any user_images change for this user.
-  // Batches rapid-fire updates when many generations complete at once.
-  const refetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    if (!userId) return
-
-    const scheduleRefetch = () => {
-      if (refetchDebounceRef.current) clearTimeout(refetchDebounceRef.current)
-      refetchDebounceRef.current = setTimeout(() => {
-        refetch({ silent: true })
-      }, 400)
-    }
-
-    const channel = supabase
-      .channel(`activity_changes_${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_images',
-          filter: `user_id=eq.${userId}`,
-        },
-        scheduleRefetch,
-      )
-      .subscribe()
-
-    return () => {
-      if (refetchDebounceRef.current) clearTimeout(refetchDebounceRef.current)
-      void supabase.removeChannel(channel)
-    }
-  }, [userId, refetch])
 
   // Poll for pending rows so this page progresses even when the user isn't on
   // AI Images. Runs only while work is live.

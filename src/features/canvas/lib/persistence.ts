@@ -1,5 +1,12 @@
+import {
+  listDeadRecordIds,
+  listOnCanvasRecords,
+  restoreCanvasImages,
+  setImagesOnCanvas,
+  trashCanvasImages,
+} from '../server/canvas.actions'
 import type { CanvasImage, PersistedState } from '../types'
-import { supabase } from '@/lib/supabase'
+import type { CanvasDbRecord } from '../server/canvas.actions'
 import { createImageStorage } from '@/lib/image-storage'
 
 const DEFAULT_DB = 'moodboard'
@@ -125,23 +132,8 @@ export async function syncCanvasFlags(canvasImages: Array<CanvasImage>) {
 
   const promises: Array<Promise<unknown>> = []
 
-  if (toAdd.length > 0) {
-    promises.push(
-      supabase
-        .from('user_images')
-        .update({ on_canvas: true })
-        .in('id', toAdd) as unknown as Promise<unknown>,
-    )
-  }
-
-  if (toRemove.length > 0) {
-    promises.push(
-      supabase
-        .from('user_images')
-        .update({ on_canvas: false })
-        .in('id', toRemove) as unknown as Promise<unknown>,
-    )
-  }
+  if (toAdd.length > 0) promises.push(setImagesOnCanvas(toAdd, true))
+  if (toRemove.length > 0) promises.push(setImagesOnCanvas(toRemove, false))
 
   await Promise.allSettled(promises)
   lastSyncedIds = currentIds
@@ -198,10 +190,7 @@ export async function setOnCanvas(recordIds: Array<string>, value: boolean) {
   const ids = recordIds.filter(Boolean)
   if (ids.length === 0) return
   try {
-    await supabase
-      .from('user_images')
-      .update({ on_canvas: value })
-      .in('id', ids)
+    await setImagesOnCanvas(ids, value)
   } catch {
     /* silent fail -- syncCanvasFlags will reconcile on the next save */
   }
@@ -214,13 +203,7 @@ export async function setOnCanvas(recordIds: Array<string>, value: boolean) {
  * trashed. Returns the ids that were trashed (for optimistic UI / undo messaging).
  */
 export async function moveToTrash(recordIds: Array<string>): Promise<void> {
-  const ids = recordIds.filter(Boolean)
-  if (ids.length === 0) return
-  await supabase
-    .from('user_images')
-    .update({ deleted_at: new Date().toISOString() })
-    .in('id', ids)
-    .is('deleted_at', null)
+  await trashCanvasImages(recordIds)
 }
 
 /**
@@ -230,33 +213,15 @@ export async function moveToTrash(recordIds: Array<string>): Promise<void> {
 export async function restoreFromTrash(
   recordIds: Array<string>,
 ): Promise<void> {
-  const ids = recordIds.filter(Boolean)
-  if (ids.length === 0) return
-  await supabase
-    .from('user_images')
-    .update({ deleted_at: null, on_canvas: true })
-    .in('id', ids)
+  await restoreCanvasImages(recordIds)
 }
 
-export interface CanvasDbRecord {
-  id: string
-  storage_path: string | null
-  status: string | null
-  generation_metadata: Record<string, unknown> | null
-}
+export type { CanvasDbRecord }
 
 /** Fetch every image the DB considers on-canvas (source of truth for membership) */
-export async function fetchOnCanvasRecords(
-  userId: string,
-): Promise<Array<CanvasDbRecord>> {
+export async function fetchOnCanvasRecords(): Promise<Array<CanvasDbRecord>> {
   try {
-    const { data } = await supabase
-      .from('user_images')
-      .select('id, storage_path, status, generation_metadata')
-      .eq('user_id', userId)
-      .eq('on_canvas', true)
-      .is('deleted_at', null)
-    return (data as Array<CanvasDbRecord> | null) ?? []
+    return await listOnCanvasRecords()
   } catch {
     return []
   }
@@ -274,16 +239,7 @@ export async function fetchDeadRecordIds(
   const list = ids.filter(Boolean)
   if (list.length === 0) return new Set()
   try {
-    const { data } = await supabase
-      .from('user_images')
-      .select('id, deleted_at')
-      .in('id', list)
-    const alive = new Set(
-      ((data as Array<{ id: string; deleted_at: string | null }> | null) ?? [])
-        .filter((r) => !r.deleted_at)
-        .map((r) => r.id),
-    )
-    return new Set(list.filter((id) => !alive.has(id)))
+    return new Set(await listDeadRecordIds(list))
   } catch {
     return new Set()
   }

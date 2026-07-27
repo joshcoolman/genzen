@@ -65,7 +65,11 @@ There is no separate "Combine" feature anymore (retired into this flow).
 ## Lib
 
 - `masonry.ts` -- `layoutMasonry()`: column-based masonry algorithm using median input width as default column width
-- `persistence.ts` -- IndexedDB read/write + DB-reconciliation helpers: `getSignedUrl()` (R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `getUrlDimensions()` (URL-based, for reclaimed images), `syncCanvasFlags()`, `setOnCanvas(ids, value)` (eager membership write), `fetchOnCanvasRecords(userId)` (membership source of truth), `fetchDeadRecordIds(ids)` (deleted-row detection for safe pruning). Save/load keep any image with a `recordId` (including in-flight pending placeholders); only `signedUrl` is stripped.
+- `persistence.ts` -- IndexedDB read/write + URL/dimension helpers, plus fail-safe wrappers over `server/canvas.actions.ts`: `getSignedUrl()` (R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `getUrlDimensions()` (URL-based, for reclaimed images), `syncCanvasFlags()`, `setOnCanvas(ids, value)` (eager membership write), `fetchOnCanvasRecords()` (membership source of truth), `fetchDeadRecordIds(ids)` (deleted-row detection for safe pruning). The wrappers swallow failures on purpose: a reconcile that cannot reach the server must never prune a live image, and a failed membership write is reconciled on the next save. Save/load keep any image with a `recordId` (including in-flight pending placeholders); only `signedUrl` is stripped.
+
+## Server
+
+- `server/canvas.actions.ts` -- the canvas's database access, user-scoped by `resolveAuth()`: `listOnCanvasRecords`, `listDeadRecordIds`, `setImagesOnCanvas`, `trashCanvasImages`, `restoreCanvasImages`, `getCanvasGenerationRecord`, `getImagePrompt`. Membership and trash used to be id-only queries from the browser, so an id from anywhere flipped or trashed a row (#173).
 
 ## Shared Dependencies
 

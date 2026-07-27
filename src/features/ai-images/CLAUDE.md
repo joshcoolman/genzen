@@ -12,6 +12,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Server
 
+- `edit.actions.ts` -- the edit page's reads, user-scoped by `resolveAuth()`: `getEditSourceImage`, `listDescendantIds` and `listEditChildren` (both BFS over `generation_metadata.parent_id`, server-side), `listEditSourceRefs`, `listGenerationResultRows`, `trashGenerationResult`
 - `gallery.actions.ts` -- the gallery's reads and deletes, user-scoped by `resolveAuth()`: `listGalleryImages` (rows + the source images derived cards need), `deleteGalleryImage` (decides hide-vs-soft-delete and cleans up an orphaned hidden root), `deleteGalleryImageWithDescendants`, `deleteGalleryImageDetachingChildren`, `restoreHiddenRootImage`, `listSubtreeStoragePaths` (download-as-zip)
 - `generate-image.server.ts` -- TanStack server fn wrapper for generation
 - `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
@@ -39,10 +40,10 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards. No database access and no realtime: it calls `gallery.actions.ts`, and the 5s poll is what tells it anything changed
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
 - `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
-- `use-edit-children.ts` -- fetch/display edit children nested under parent cards (max 8, R2 public URLs)
+- `use-edit-children.ts` -- edit children nested under parent cards. No database access and no realtime: the descendant walk is `edit.actions.ts`'s, and the parent list comes from the gallery, so a newly completed child appears when the gallery's poll picks it up
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
-- `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker)
+- `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker). No database access: it calls `edit.actions.ts`
 - `useAiImagesADContext.ts` -- registers AI Images context with AD system
 - `useEditPageADContext.ts` -- registers edit page context with AD system
 

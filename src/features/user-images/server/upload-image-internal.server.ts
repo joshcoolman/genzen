@@ -25,7 +25,6 @@ function validateImageBuffer(buffer: Buffer): string {
 }
 
 export interface UploadImageInput {
-  accessToken?: string
   userId?: string
   storagePath: string
   base64Data: string

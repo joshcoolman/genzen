@@ -19,7 +19,6 @@ fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 export interface GenerateImageInput {
   prompt: string
   model: string
-  accessToken?: string
   userId?: string
   aspectRatio?: string
   sourceImageBase64?: string
@@ -97,7 +96,6 @@ export async function generateImageInternal(
   // knowable after the fallible work (resolved endpoint, a prompt derived from
   // the source image, the cost estimate) are patched on at submit.
   const { recordId } = await createPendingGeneration({
-    accessToken: data.accessToken,
     userId,
     generationType: data.parentImageId ? 'variation' : undefined,
     falModelId: model,

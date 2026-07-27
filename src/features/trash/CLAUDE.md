@@ -16,7 +16,6 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 ## Shared Dependencies
 
 - `@/features/user-images/types` -- `UserImage` type
-- `@/lib/supabase` -- Client-side Supabase for queries and storage
 - `@/lib/auth` -- `useAuth()` for current user
 - `@/lib/use-selection` -- Multi-select state management for batch operations
 - `@/components/ImageGrid` -- Grid/list layout for images

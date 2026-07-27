@@ -364,10 +364,9 @@ export function InfiniteCanvas({
     if (!loaded || reconciledRef.current) return
     if (!user.id) return
     reconciledRef.current = true
-    const userId = user.id
 
     void (async () => {
-      const dbRecords = await fetchOnCanvasRecords(userId)
+      const dbRecords = await fetchOnCanvasRecords()
 
       const snapshot = iRef.current
       const cachedRecordIds = new Set(

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { listDeadRecordIds, setImagesOnCanvas } from '../server/canvas.actions'
 import {
   cleanImagesForSave,
   fetchDeadRecordIds,
@@ -7,7 +8,6 @@ import {
   setOnCanvas,
 } from './persistence'
 import type { CanvasImage } from '../types'
-import { supabase } from '@/lib/supabase'
 
 const completed: CanvasImage = {
   id: 'c1',
@@ -89,40 +89,25 @@ describe('persistence durability contract', () => {
 })
 
 // vi.mock is hoisted — keep factories self-contained
-vi.mock('@/lib/supabase', () => ({
-  supabase: { from: vi.fn() },
+vi.mock('../server/canvas.actions', () => ({
+  listDeadRecordIds: vi.fn(),
+  listOnCanvasRecords: vi.fn(),
+  restoreCanvasImages: vi.fn(),
+  setImagesOnCanvas: vi.fn(),
+  trashCanvasImages: vi.fn(),
 }))
 vi.mock('@/lib/image-storage', () => ({
   createImageStorage: vi.fn(),
 }))
 
-/** Chainable Supabase query stub that is awaitable and resolves to `result`. */
-function mockChain(result: unknown) {
-  const chain: Record<string, unknown> = {
-    select: vi.fn(() => chain),
-    update: vi.fn(() => chain),
-    eq: vi.fn(() => chain),
-    in: vi.fn(() => chain),
-    is: vi.fn(() => chain),
-    then: (resolve: (v: unknown) => void) => resolve(result),
-  }
-  return chain
-}
-
+// These two wrap the server actions and are the canvas's fail-safes: a failed
+// reconcile must never prune a live image, and a failed membership write must
+// never throw into a drag/drop handler.
 describe('fetchDeadRecordIds', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('reports soft-deleted and missing rows as dead, never live ones', async () => {
-    // a1 alive, a2 soft-deleted, a3 absent from the result entirely
-    vi.mocked(supabase.from).mockReturnValue(
-      mockChain({
-        data: [
-          { id: 'a1', deleted_at: null },
-          { id: 'a2', deleted_at: '2026-01-01T00:00:00Z' },
-        ],
-        error: null,
-      }) as unknown as ReturnType<typeof supabase.from>,
-    )
+  it('passes through what the server reports as dead', async () => {
+    vi.mocked(listDeadRecordIds).mockResolvedValue(['a2', 'a3'])
 
     const dead = await fetchDeadRecordIds(['a1', 'a2', 'a3'])
 
@@ -135,13 +120,11 @@ describe('fetchDeadRecordIds', () => {
   it('returns an empty set for empty input without querying', async () => {
     const dead = await fetchDeadRecordIds([])
     expect(dead.size).toBe(0)
-    expect(supabase.from).not.toHaveBeenCalled()
+    expect(listDeadRecordIds).not.toHaveBeenCalled()
   })
 
-  it('fails safe (empty set) when the query throws', async () => {
-    vi.mocked(supabase.from).mockImplementation(() => {
-      throw new Error('network')
-    })
+  it('fails safe (empty set) when the call throws', async () => {
+    vi.mocked(listDeadRecordIds).mockRejectedValue(new Error('network'))
     const dead = await fetchDeadRecordIds(['a1'])
     expect(dead.size).toBe(0)
   })
@@ -153,19 +136,19 @@ describe('setOnCanvas', () => {
   it('no-ops on empty / falsy ids without touching the DB', async () => {
     await setOnCanvas([], true)
     await setOnCanvas(['', ''], true)
-    expect(supabase.from).not.toHaveBeenCalled()
+    expect(setImagesOnCanvas).not.toHaveBeenCalled()
   })
 
   it('writes the on_canvas flag for the given ids', async () => {
-    const chain = mockChain({ data: null, error: null })
-    vi.mocked(supabase.from).mockReturnValue(
-      chain as unknown as ReturnType<typeof supabase.from>,
-    )
+    vi.mocked(setImagesOnCanvas).mockResolvedValue(undefined)
 
     await setOnCanvas(['x', 'y'], false)
 
-    expect(supabase.from).toHaveBeenCalledWith('user_images')
-    expect(chain.update).toHaveBeenCalledWith({ on_canvas: false })
-    expect(chain.in).toHaveBeenCalledWith('id', ['x', 'y'])
+    expect(setImagesOnCanvas).toHaveBeenCalledWith(['x', 'y'], false)
+  })
+
+  it('swallows a failed write -- syncCanvasFlags reconciles on the next save', async () => {
+    vi.mocked(setImagesOnCanvas).mockRejectedValue(new Error('network'))
+    await expect(setOnCanvas(['x'], true)).resolves.toBeUndefined()
   })
 })
