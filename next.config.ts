@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
       '*.md': { loaders: ['raw-loader'], as: '*.js' },
     },
   },
+  // Server Function logging prints each action's serialized arguments, and this
+  // app's uploads carry a base64 image -- so a single drag-and-drop buries the
+  // dev terminal in several thousand lines and the request log above it. The
+  // one-line `POST /path 200` entries are kept.
+  logging: {
+    serverFunctions: false,
+  },
   experimental: {
     serverActions: {
       // Reference images reach the server through a direct Server Action call
