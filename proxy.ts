@@ -61,7 +61,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
   if (isSignedIn && SIGNED_OUT_ONLY_PATHS.has(pathname)) {
-    return NextResponse.redirect(new URL('/ai-images', request.url))
+    return NextResponse.redirect(new URL('/images', request.url))
   }
   return NextResponse.next()
 }

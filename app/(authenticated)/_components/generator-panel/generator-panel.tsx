@@ -34,7 +34,7 @@ interface GeneratorPanelProps {
   refImagesReadOnly?: boolean
   libraryFilterIds?: Set<string>
   /**
-   * Canvas simplifications (default off = AI Images behavior unchanged). On
+   * Canvas simplifications (default off = Images behavior unchanged). On
    * canvas the input is the selected image, so the library/upload source
    * buttons and the bulk-prompt controls are removed.
    */

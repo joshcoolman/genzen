@@ -1,4 +1,4 @@
-# AI Images
+# Images
 
 Multi-model image generation with edit, variation, and reparenting workflows via FAL AI.
 
@@ -8,7 +8,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
-- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`, `useAiImagesPage`
+- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`, `useImagesPage`
 
 ## Server
 
@@ -35,7 +35,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Hooks
 
-- `use-ai-images-page.ts` -- master hook composing all sub-hooks for the main page
+- `use-images-page.ts` -- master hook composing all sub-hooks for the main page
 - `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards. No database access and no realtime: it calls `gallery.actions.ts`, and the 5s poll is what tells it anything changed
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
@@ -44,12 +44,12 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 - `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker). No database access: it calls `edit.actions.ts`
-- `useAiImagesADContext.ts` -- registers AI Images context with AD system
+- `useAiImagesADContext.ts` -- registers Images context with AD system
 - `useEditPageADContext.ts` -- registers edit page context with AD system
 
 ## Routes and UI
 
-- `app/(authenticated)/ai-images/page.tsx` -- main gallery + generation page
+- `app/(authenticated)/images/page.tsx` -- main gallery + generation page
 - `app/(authenticated)/edit/[imageId]/page.tsx` -- dedicated edit page for a single image
 
 This feature is headless. The generation UI shared by both routes (plus canvas)
@@ -58,7 +58,7 @@ lives in `app/(authenticated)/_components/` -- `generator-panel/`, `image-galler
 `variation-prompts-dialog/`, `generate-prompts-dialog/`, `paste-prompts-dialog/`,
 `prompt-list/`. The gallery-only dialogs (`image-lightbox/`,
 `parent-picker-dialog/`, `group-picker-dialog/`) live in
-`app/(authenticated)/ai-images/_components/`.
+`app/(authenticated)/images/_components/`.
 
 ## Shared Dependencies
 

@@ -9,4 +9,4 @@ export { getModelName } from './models'
 export { normalizeGeneration } from './normalize-generation'
 
 // Hooks
-export { useAiImagesPage } from './hooks/use-ai-images-page'
+export { useImagesPage } from './hooks/use-images-page'

@@ -14,7 +14,7 @@ import { useReparent } from '#/features/ai-images/hooks/use-reparent'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 
-export function useAiImagesPage() {
+export function useImagesPage() {
   const { user } = useAuth()
 
   const gallery = useImages({

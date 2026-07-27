@@ -23,7 +23,7 @@ interface UseModelSelectorOptions {
   allowedIds?: Array<string>
   /**
    * Optional storage namespace so callers sharing a `capability` (e.g. Canvas
-   * and AI Images both use 'generate') keep independent persisted selections.
+   * and Images both use 'generate') keep independent persisted selections.
    */
   storageScope?: string
 }

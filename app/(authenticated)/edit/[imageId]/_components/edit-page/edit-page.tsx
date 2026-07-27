@@ -336,8 +336,8 @@ export function EditPage() {
       <div className="space-y-4">
         <CircularIconButton
           icon={ArrowLeft}
-          to="/ai-images"
-          title="Back to AI Images"
+          to="/images"
+          title="Back to Images"
         />
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
           <h3 className="mb-2 text-lg font-semibold">Image not found</h3>
@@ -363,8 +363,8 @@ export function EditPage() {
         <div className="flex items-center justify-between">
           <CircularIconButton
             icon={ArrowLeft}
-            to="/ai-images"
-            title="Back to AI Images"
+            to="/images"
+            title="Back to Images"
           />
           {/* Desktop: full controls, Mobile: just generate button */}
           {isMobile ? (

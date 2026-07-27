@@ -15,8 +15,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
   // Pages with fixed sidebars manage their own AD push-in margins
   const isEditPage = pathname.startsWith('/edit/')
-  const isAiImagesPage = pathname === '/ai-images'
-  const hasOwnSidebar = isEditPage || isAiImagesPage
+  const isImagesPage = pathname === '/images'
+  const hasOwnSidebar = isEditPage || isImagesPage
 
   return (
     <ADContextProvider>

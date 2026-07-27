@@ -122,9 +122,14 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **The Images page is `/images`, not `/ai-images`.** Its query is
+  `source in ('upload', 'ai_generated')` -- it always listed uploads beside
+  generations, and an upload is routinely the root of a family of them. The
+  name described the Generate panel, not the grid it sat over. The panel is
+  dismissible; the grid is the page.
 - **There is no `/dashboard` any more.** The surfaces are top-level paths --
-  `/ai-images`, `/canvas`, `/activity` -- because there was never a dashboard to
-  be on: `/dashboard` was a redirect to AI Images. `app/dashboard/` became the
+  `/images`, `/canvas`, `/activity` -- because there was never a dashboard to
+  be on: `/dashboard` was a redirect to Images. `app/dashboard/` became the
   route group `app/(authenticated)/`, which draws the same layout boundary
   (identity resolved once, then the chrome) while contributing nothing to the
   URL. The group is not the gate; `proxy.ts` still is, deny-by-default.
@@ -147,10 +152,6 @@ Conventions follow `~/repos/project-standard`.
   consumers, and `features/` is headless. `docs/OVERVIEW.md` says what the app
   is. Written first, because #181 executes against it.
 - **Import alias is `#/` (#179).** 482 specifiers across 162 files.
-- **Supabase is gone (#176, closing #168).** The package, the generated types
-  and `supabase/` are deleted, and `local:up` sheds the CLI stack — Docker and
-  pnpm are the only prerequisites now. A test fails if the row type, the select
-  list and `0001_init.sql` ever disagree.
 
 **Up next**
 
@@ -162,6 +163,6 @@ Conventions follow `~/repos/project-standard`.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 
-The app is now six surfaces and nothing else: AI Images, Canvas, Activity, Trash,
+The app is now six surfaces and nothing else: Images, Canvas, Activity, Trash,
 Settings, Account — plus the AD assistant panel. If something does not serve
 generating and keeping images, it was cut on purpose.

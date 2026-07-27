@@ -77,7 +77,7 @@ export function useActivityPage() {
   }, [refetch])
 
   // Poll for pending rows so this page progresses even when the user isn't on
-  // AI Images. Runs only while work is live.
+  // Images. Runs only while work is live.
   const hasPendingWork = entries.some((e) => e.status === 'pending')
   useEffect(() => {
     if (!hasPendingWork) return

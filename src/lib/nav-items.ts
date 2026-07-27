@@ -13,9 +13,9 @@ export interface NavItem {
 
 export const navItems: Array<NavItem> = [
   {
-    id: 'ai-images',
-    label: 'AI Images',
-    href: '/ai-images',
+    id: 'images',
+    label: 'Images',
+    href: '/images',
     icon: Sparkles,
   },
   {

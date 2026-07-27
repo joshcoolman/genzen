@@ -1,13 +1,13 @@
-# Feature: "Run it" button on PromptCard in AI Images context
+# Feature: "Run it" button on PromptCard in Images context
 
 ## Problem
 
-When using the AD chat assistant on the AI Images page, the workflow to use a generated prompt requires multiple manual steps:
+When using the AD chat assistant on the Images page, the workflow to use a generated prompt requires multiple manual steps:
 
 1. User asks AD for a prompt
 2. AD generates a PromptCard with the prompt
 3. User clicks "Copy"
-4. User closes the AD panel to access the AI Images UI
+4. User closes the AD panel to access the Images UI
 5. User pastes the prompt into the prompt input
 6. User clicks generate
 
@@ -15,7 +15,7 @@ This breaks the conversational flow and requires UI gymnastics (closing panel, f
 
 ## Proposed Solution
 
-Add a **"Run it"** button to PromptCard components when the user is on the AI Images page (`/ai-images`).
+Add a **"Run it"** button to PromptCard components when the user is on the Images page (`/images`).
 
 ### Behavior
 
@@ -23,7 +23,7 @@ When clicked, the "Run it" button should:
 
 1. Take the prompt text from the PromptCard
 2. Close the AD panel
-3. Fill the prompt input in the AI Images generator
+3. Fill the prompt input in the Images generator
 4. Trigger image generation with current settings (model, aspect ratio, etc.)
 
 ### User Flow
@@ -34,7 +34,7 @@ AD: [conversational response]
     [PromptCard with Copy, Save, and "Run it" buttons]
 User: *clicks "Run it"*
 → AD panel closes
-→ Prompt appears in AI Images input
+→ Prompt appears in Images input
 → Generation starts automatically
 ```
 
@@ -42,8 +42,8 @@ User: *clicks "Run it"*
 
 **Context Detection:**
 
-- Use `useLocation()` to check if current route is `/ai-images`
-- Only show "Run it" button when on AI Images page
+- Use `useLocation()` to check if current route is `/images`
+- Only show "Run it" button when on Images page
 - Keep Copy/Save buttons everywhere
 
 **Integration Points:**

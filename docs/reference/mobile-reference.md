@@ -106,8 +106,8 @@ import { ArrowLeft, Plus } from 'lucide-react'
 // White variant (default) - for navigation/back buttons
 <CircularIconButton
   icon={ArrowLeft}
-  to="/ai-images"
-  title="Back to AI Images"
+  to="/images"
+  title="Back to Images"
 />
 
 // Primary variant - for CTAs
@@ -334,7 +334,7 @@ style={{
 }}
 ```
 
-**Mobile Override** (from `app/(authenticated)/ai-images/page.tsx`):
+**Mobile Override** (from `app/(authenticated)/images/page.tsx`):
 
 ```tsx
 const effectiveThumbSize = isMobile ? 'lg' : thumbSize
@@ -426,7 +426,7 @@ useEffect(() => {
 
 | Route                                         | Mobile Pattern                                          |
 | --------------------------------------------- | ------------------------------------------------------- |
-| `app/(authenticated)/ai-images/page.tsx`      | Full-screen dialog for generator, forced thumb size     |
+| `app/(authenticated)/images/page.tsx`         | Full-screen dialog for generator, forced thumb size     |
 | `app/(authenticated)/edit.$imageId.tsx`       | Full-screen dialog, simplified header (back + generate) |
 | `app/(authenticated)/video.index.tsx`         | Hidden sidebar on mobile                                |
 | `app/docs.tsx`                                | Full-screen toggle sidebar                              |
@@ -596,9 +596,9 @@ For simple lists or previews without text inputs:
 ```tsx
 // White circular back button (edit pages, etc.)
 <Link
-  to="/ai-images"
+  to="/images"
   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-  title="Back to AI Images"
+  title="Back to Images"
 >
   <ArrowLeft className="h-4 w-4" />
 </Link>

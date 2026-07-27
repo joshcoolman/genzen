@@ -13,7 +13,7 @@ interface AiImagesADContextInput {
 export function useAiImagesADContext(page: AiImagesADContextInput) {
   const summary = useMemo(() => {
     const parts: Array<string> = []
-    parts.push('Current AI Images state:')
+    parts.push('Current Images page state:')
 
     if (page.generator.prompt) {
       const truncated =

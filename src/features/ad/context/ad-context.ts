@@ -109,8 +109,8 @@ Use this tool when:
 Do NOT use this tool for open-ended exploration or multiple questions. Ask exactly one question with 2–4 concrete options. The user's selection will be submitted as a message, then you should proceed directly to create_prompt_card.`
 
 const ROUTE_DESCRIPTIONS: Record<string, string> = {
-  '/ai-images':
-    'The user is on the AI Images page -- multi-model image generation with prompt input, model selection, brainstorm, edit, and variation workflows.',
+  '/images':
+    'The user is on the Images page -- their whole image library, uploads and generations side by side, with multi-model generation, brainstorm, edit and variation workflows in a panel over it.',
 }
 
 const SKILLS_INDEX = buildSkillsIndex()

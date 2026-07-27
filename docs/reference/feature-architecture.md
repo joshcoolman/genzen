@@ -147,7 +147,7 @@ Dependencies flow downward. Domain hooks never import each other — the orchest
 
 | File                             | Purpose                             |
 | -------------------------------- | ----------------------------------- |
-| `hooks/use-ai-images-page.ts`    | Orchestrator                        |
+| `hooks/use-images-page.ts`       | Orchestrator                        |
 | `hooks/use-generator.ts`         | Prompt + generate action            |
 | `hooks/use-editor.ts`            | Edit dialog state                   |
 | `hooks/use-lightbox.ts`          | Lightbox nav                        |

@@ -1,7 +1,7 @@
 import { LoginForm } from './_components/login-form/login-form'
 
 // No signed-in check here. `proxy.ts` bounces an authenticated request to
-// /ai-images before this component runs, which is what retires the
+// /images before this component runs, which is what retires the
 // loading/redirect dance the TanStack version needed.
 export default function LoginPage() {
   return (

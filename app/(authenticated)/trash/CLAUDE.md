@@ -27,7 +27,7 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 ## Quirks / Notes
 
 - No database access and no realtime: `server/trash.actions.ts` holds the reads and writes, user-scoped by `resolveAuth()`. The realtime channel went with #174 -- Trash only changes from an action on this page or a delete elsewhere, and either way the next visit re-reads it
-- **Failed generations never arrive here.** Deleting one from AI Images destroys the row (`deleteGalleryImage`): there is no image to restore, and a restored failure is just an error card again
+- **Failed generations never arrive here.** Deleting one from Images destroys the row (`deleteGalleryImage`): there is no image to restore, and a restored failure is just an error card again
 - Queries filter by `deleted_at IS NOT NULL` and `hidden = false` and `source IN ('upload', 'ai_generated')`
 - **Linked image protection**: prevents deletion of images referenced by active (non-deleted, non-hidden) images via `generation_metadata` or placed on canvas (`on_canvas = true`). `linkedImageIds` in the hook only drives the disabled state -- `permanentlyDeleteImages` recomputes the set server-side and returns what it actually destroyed, so the guard is not something a client can skip
 - Permanent delete cascades: if deleting a variation whose hidden root image has no remaining living variations, the root is also cleaned up

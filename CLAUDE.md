@@ -11,7 +11,7 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), Tailwin
 
 - `app/` -- App Router routes (`_actions/ _components/` per route folder).
   `(authenticated)/` is a route group: a layout boundary that contributes
-  nothing to the URL, so `/ai-images`, `/canvas` etc. are top-level paths.
+  nothing to the URL, so `/images`, `/canvas` etc. are top-level paths.
   It is not the gate -- `proxy.ts` is
 - `src/features/` -- headless domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix

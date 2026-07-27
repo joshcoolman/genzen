@@ -2,10 +2,10 @@
 
 The single source of truth for **how a generation/asset is presented in each
 state, in every view**. When you build or change a view that shows generations
-(AI Images, Canvas, Activity, or a future one), conform to this — don't
+(Images, Canvas, Activity, or a future one), conform to this — don't
 re-decide it per surface.
 
-These rules are **extracted from AI Images**, the most mature view. It already
+These rules are **extracted from Images**, the most mature view. It already
 routes every state through one primitive; this doc names that primitive, the
 shared data shape, and the per-state rules so the next view inherits them
 instead of reinventing them.
@@ -91,7 +91,7 @@ completed | failed`. Don't invent synonyms ("generating", "in flight").
 `src/components/thumbnail/thumbnail.tsx` implements the contract for card/grid surfaces
 via `status="pending" | "complete" | "failed"` plus `pendingLabel`,
 `failedLabel`, `failedMessage`, `label`, `overlayActions`, `onDelete`,
-`selected`. AI Images consumes it through:
+`selected`. Images consumes it through:
 
 - `PendingImageCard` → `Thumbnail status="pending" pendingLabel={model}`
 - `FailedImageCard` → `Thumbnail status="failed" failedLabel={modelName}
@@ -105,11 +105,11 @@ into bespoke markup is how divergence starts.
 
 ## Where each view stands today (honest audit)
 
-| View          | Conforms?                         | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI Images** | ✅ structurally                   | Renders all states via `Thumbnail`. This is the canonical reference.                                                                                                                                                                                                                                                                                                                                                                    |
-| **Activity**  | ✅ to the vocabulary              | Row presentation (`ActivityRow` `StatusIndicator`) is its own substrate (a list row, not a tile) but speaks the same status vocabulary and shows model + error.                                                                                                                                                                                                                                                                         |
-| **Canvas**    | ⚠️ behaviorally, not structurally | As of the failed-tile/label work it now shows model + pending + failed + retry/dismiss — but via **bespoke markup + CSS**, a _second_ implementation of the contract, not `Thumbnail`. Reason: canvas tiles are absolutely-positioned on a scaled infinite plane with drag handlers, so the grid-card `Thumbnail` doesn't drop in cleanly. It owes the contract (and now meets it), but the implementation should converge — see below. |
+| View         | Conforms?                         | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Images**   | ✅ structurally                   | Renders all states via `Thumbnail`. This is the canonical reference.                                                                                                                                                                                                                                                                                                                                                                    |
+| **Activity** | ✅ to the vocabulary              | Row presentation (`ActivityRow` `StatusIndicator`) is its own substrate (a list row, not a tile) but speaks the same status vocabulary and shows model + error.                                                                                                                                                                                                                                                                         |
+| **Canvas**   | ⚠️ behaviorally, not structurally | As of the failed-tile/label work it now shows model + pending + failed + retry/dismiss — but via **bespoke markup + CSS**, a _second_ implementation of the contract, not `Thumbnail`. Reason: canvas tiles are absolutely-positioned on a scaled infinite plane with drag handlers, so the grid-card `Thumbnail` doesn't drop in cleanly. It owes the contract (and now meets it), but the implementation should converge — see below. |
 
 ---
 
@@ -154,7 +154,7 @@ ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
 - [ ] **Extract inline pure logic:** `spatialSort` and the placeholder collision
       geometry (`rectsOverlap` + relocate-below decision) — same move as the already
       extracted `mapOutcomesToPlaceholders` / `layoutMasonry`.
-- [ ] **Deletion semantics differ** — AI Images delete is genealogy-aware;
+- [ ] **Deletion semantics differ** — Images delete is genealogy-aware;
       Canvas trash is a plain `deleted_at`. Decide consciously rather than by accident.
 
 ### Explicitly NOT drift (don't "fix" these)

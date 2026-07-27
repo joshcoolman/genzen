@@ -362,7 +362,7 @@ export function InfiniteCanvas({
      *where* they sit. So: reclaim any on_canvas image the local cache lost (a
      missed write, a generation that finished while away, a wiped cache), drop any
      cached image the DB no longer considers a member, and resume polling for every
-     pending placeholder. Mirrors how AI Images survives restarts -- because canvas
+     pending placeholder. Mirrors how Images survives restarts -- because canvas
      images *are* the same user_images rows. */
 
   const reconciledRef = useRef(false)

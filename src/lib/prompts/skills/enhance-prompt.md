@@ -88,7 +88,7 @@ If this skill was invoked from a fresh chip click with no prompt in context:
 - Wait for the user's input. Don't ask follow-up clarifying questions unless the input is genuinely unparseable — the pipeline handles ambiguity by filling in sensible defaults.
 - On the user's next message, run the full pipeline and deliver via `create_prompt_card`.
 
-## When called from the AI Images "Enhance" button (server-side, one-shot)
+## When called from the Images "Enhance" button (server-side, one-shot)
 
 If this skill is being invoked as a server function with the user's current prompt as input:
 

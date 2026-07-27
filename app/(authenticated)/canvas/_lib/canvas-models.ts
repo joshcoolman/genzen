@@ -18,7 +18,7 @@ import { ALL_IMAGE_MODELS, EDIT_MODELS } from '#/features/ai-images/models'
  * NOTE: Kling V3 has an image-to-image variant on FAL
  * (`fal-ai/kling-image/v3/image-to-image`), but the shared registry only carries
  * Kling's text-to-image entries today. Adding it means editing
- * `ai-images/models.ts` (which would also change Kling's behavior in AI Images),
+ * `ai-images/models.ts` (which would also change Kling's behavior in Images),
  * so it's deferred to a deliberate follow-up.
  */
 const CURATED_CANVAS_MODEL_IDS: Array<string> = [

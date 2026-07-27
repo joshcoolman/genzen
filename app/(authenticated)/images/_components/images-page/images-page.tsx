@@ -48,7 +48,7 @@ import {
   MobileDialogHeader,
   SelectionDrawer,
 } from '#/components'
-import { useAiImagesPage } from '#/features/ai-images/index'
+import { useImagesPage } from '#/features/ai-images/index'
 import { groupImages } from '#/features/ai-images/server/group-images.server'
 import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
 import { useAiImagesADContext } from '#/features/ai-images/hooks/useAiImagesADContext'
@@ -66,7 +66,7 @@ const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
   sm: 'SM',
 }
 
-interface AiImagesPrefs {
+interface ImagesPrefs {
   thumbSize: 'lg' | 'md' | 'sm'
   sortAsc: boolean
   showInfo: boolean
@@ -74,14 +74,14 @@ interface AiImagesPrefs {
 
 const PREFS_KEY = 'genzen:ai-images-prefs'
 
-const DEFAULT_PREFS: AiImagesPrefs = {
+const DEFAULT_PREFS: ImagesPrefs = {
   thumbSize: 'lg',
   sortAsc: false,
   showInfo: true,
 }
 
 // Only ever called from an effect, never during render -- see usePersistedState.
-function getStoredPrefs(): AiImagesPrefs {
+function getStoredPrefs(): ImagesPrefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY)
     if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) }
@@ -91,7 +91,7 @@ function getStoredPrefs(): AiImagesPrefs {
   return DEFAULT_PREFS
 }
 
-function storePrefs(partial: Partial<AiImagesPrefs>) {
+function storePrefs(partial: Partial<ImagesPrefs>) {
   try {
     const current = getStoredPrefs()
     localStorage.setItem(PREFS_KEY, JSON.stringify({ ...current, ...partial }))
@@ -100,8 +100,8 @@ function storePrefs(partial: Partial<AiImagesPrefs>) {
   }
 }
 
-export function AiImagesPage() {
-  const page = useAiImagesPage()
+export function ImagesPage() {
+  const page = useImagesPage()
   const router = useRouter()
   useAiImagesADContext(page)
   const { upload } = useImageUpload(page.userId)
@@ -582,7 +582,7 @@ export function AiImagesPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-end xs:justify-between">
           <span className="hidden text-sm text-muted-foreground tabular-nums xs:inline">
-            AI Images
+            Images
           </span>
           <div className="flex items-center gap-1.5">
             {/* Thumb size toggle */}

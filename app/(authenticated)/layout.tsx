@@ -4,7 +4,7 @@ import { AuthProvider } from './_components/auth-provider/auth-provider'
 import { getCurrentUser } from '#/features/auth/server/get-user.server'
 
 // `(authenticated)` is a route group: it draws a layout boundary and contributes
-// nothing to the URL, so this file's children serve /ai-images, /canvas and the
+// nothing to the URL, so this file's children serve /images, /canvas and the
 // rest. It is not the gate. `proxy.ts` is deny-by-default over every path, so a
 // route created outside this group is still protected -- just without the chrome.
 //

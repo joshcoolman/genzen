@@ -4,7 +4,7 @@ Spatial moodboard with infinite pan-and-zoom canvas for organizing images. Suppo
 
 ## Architecture: DB is source of truth for membership, IndexedDB caches layout
 
-All canvas images are `user_images` rows (S3 storage via `createImageStorage()`). The DB is authoritative for **which** images are on the canvas via the `on_canvas` flag; IndexedDB is a best-effort cache for **where** they sit (positions, groups, transform) plus `recordId`/`storagePath` per image -- never image data. This mirrors why AI Images survives restarts: a canvas image _is_ the same `user_images` row.
+All canvas images are `user_images` rows (S3 storage via `createImageStorage()`). The DB is authoritative for **which** images are on the canvas via the `on_canvas` flag; IndexedDB is a best-effort cache for **where** they sit (positions, groups, transform) plus `recordId`/`storagePath` per image -- never image data. This mirrors why Images survives restarts: a canvas image _is_ the same `user_images` row.
 
 On every canvas mount, a reconcile pass (`InfiniteCanvas.tsx`) queries `on_canvas = true` rows and: reclaims any the local cache lost (a missed write, a generation that finished while away, a wiped cache -- completed ones placed via masonry, pending/queued ones resumed), and prunes cached images whose row is genuinely deleted. So anything the DB says is on the canvas always comes back, even if IndexedDB is stale.
 

@@ -11,7 +11,7 @@ Everything else in the app serves that loop.
 
 ## Surfaces
 
-**AI Images** — the primary surface. Multi-prompt, multi-model generation: select
+**Images** — the primary surface. Multi-prompt, multi-model generation: select
 several models and a per-model count, submit once, get every result back into one
 board. Reference images can be attached. Edit and variation flows work from an
 existing image rather than a blank prompt.
