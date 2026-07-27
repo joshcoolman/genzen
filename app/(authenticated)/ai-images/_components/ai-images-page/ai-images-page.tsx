@@ -895,8 +895,8 @@ export function AiImagesPage() {
             page.lightbox.close()
             router.push(
               sourceId
-                ? `/dashboard/edit/${imageId}?sourceId=${sourceId}`
-                : `/dashboard/edit/${imageId}`,
+                ? `/edit/${imageId}?sourceId=${sourceId}`
+                : `/edit/${imageId}`,
             )
           }}
         />

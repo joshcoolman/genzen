@@ -9,13 +9,13 @@ import { ADContextProvider } from '../ad-context-provider/ad-context-provider'
 import { useADOpen } from '#/lib/use-ad-open'
 import { cn } from '#/lib/utils'
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { isOpen: isADOpen } = useADOpen()
 
   // Pages with fixed sidebars manage their own AD push-in margins
-  const isEditPage = pathname.startsWith('/dashboard/edit/')
-  const isAiImagesPage = pathname === '/dashboard/ai-images'
+  const isEditPage = pathname.startsWith('/edit/')
+  const isAiImagesPage = pathname === '/ai-images'
   const hasOwnSidebar = isEditPage || isAiImagesPage
 
   return (

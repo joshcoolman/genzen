@@ -51,7 +51,6 @@ export function MobileNav({ className }: { className?: string }) {
   }, [pathname])
 
   const isActive = (item: { href: string; matchPaths?: Array<string> }) => {
-    if (item.href === '/dashboard') return pathname === '/dashboard'
     if (pathname.startsWith(item.href)) return true
     return item.matchPaths?.some((p) => pathname.startsWith(p)) ?? false
   }

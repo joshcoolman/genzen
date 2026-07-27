@@ -15,7 +15,7 @@ This breaks the conversational flow and requires UI gymnastics (closing panel, f
 
 ## Proposed Solution
 
-Add a **"Run it"** button to PromptCard components when the user is on the AI Images page (`/dashboard/ai-images`).
+Add a **"Run it"** button to PromptCard components when the user is on the AI Images page (`/ai-images`).
 
 ### Behavior
 
@@ -42,7 +42,7 @@ User: *clicks "Run it"*
 
 **Context Detection:**
 
-- Use `useLocation()` to check if current route is `/dashboard/ai-images`
+- Use `useLocation()` to check if current route is `/ai-images`
 - Only show "Run it" button when on AI Images page
 - Keep Copy/Save buttons everywhere
 

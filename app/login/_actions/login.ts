@@ -40,5 +40,5 @@ export async function login(
     sessionCookieOptions(),
   )
 
-  redirect('/dashboard')
+  redirect('/ai-images')
 }

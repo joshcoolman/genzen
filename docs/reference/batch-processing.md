@@ -97,7 +97,7 @@ Trigger.dev has been a recurring source of pain on this project and isn't worth 
 
 - **Supabase** for durable job state (one new table, same trust boundary as generations).
 - **Nitro h3 routes** in `server/api/` for submit / poll / fetch-results (same pattern as every other server route).
-- **On-demand polling** — the primary trigger. `src/lib/server/check-pending-generations.server.ts` already demonstrates this pattern for FAL: when a user loads a page, we check their in-flight work and pull results. A batch user loading `/dashboard/activity` or `/dashboard/history` is a user who wants their batch results — ride along with the page load.
+- **On-demand polling** — the primary trigger. `src/lib/server/check-pending-generations.server.ts` already demonstrates this pattern for FAL: when a user loads a page, we check their in-flight work and pull results. A batch user loading `/activity` or `/history` is a user who wants their batch results — ride along with the page load.
 - **Vercel Cron** as a fallback tick (every 1–5 min) for the "user submitted and wandered off" case. Vercel Analytics is already in deps, so we're on Vercel — a cron line in `vercel.json` pointed at `/api/batch/poll-all` is the whole integration.
 
 ### Comparison
@@ -125,7 +125,7 @@ A few design axes to pick from. None are exclusive.
 
 **A. Tier switch at the generation site** — a "Patient / Frugal" toggle next to the model picker. 50% off, results appear in history when ready. Low friction, highest discoverability.
 
-**B. Explicit "Batch Mode" surface** — a new route (`/dashboard/batch`) where the user composes N jobs and submits them together. Higher commitment, better fit for power users running evals or variation sweeps.
+**B. Explicit "Batch Mode" surface** — a new route (`/batch`) where the user composes N jobs and submits them together. Higher commitment, better fit for power users running evals or variation sweeps.
 
 **C. Background auto-batching for specific flows** — e.g. "Enhance all prompts in this set" in prompt-studio is _always_ routed through batch, never sync. No user-visible toggle, just shows a progress indicator. Simpler, but the savings are invisible — we'd either pocket them or pass them through as lower credit cost.
 

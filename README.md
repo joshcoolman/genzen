@@ -122,17 +122,23 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **There is no `/dashboard` any more.** The surfaces are top-level paths --
+  `/ai-images`, `/canvas`, `/activity` -- because there was never a dashboard to
+  be on: `/dashboard` was a redirect to AI Images. `app/dashboard/` became the
+  route group `app/(authenticated)/`, which draws the same layout boundary
+  (identity resolved once, then the chrome) while contributing nothing to the
+  URL. The group is not the gate; `proxy.ts` still is, deny-by-default.
 - **Pass 1 is done (#181).** `src/features/` holds no `.tsx` at all: the five
   remaining features went headless, and each component landed where the number
-  of routes reaching it says it belongs — `app/dashboard/_components/` for the
+  of routes reaching it says it belongs — `app/(authenticated)/_components/` for the
   shared ones, the route's own `_components/` for the rest. `src/components/` is
   now one folder per component in kebab-case behind a single root barrel,
   `#/components`, which also re-exports the shadcn set. Nine dead files went
   with it.
 - **The four single-consumer features collapsed into their routes (#181).**
-  `canvas` and `trash` are now `app/dashboard/<route>/` with their own
+  `canvas` and `trash` are now `app/(authenticated)/<route>/` with their own
   `_components/ _actions/ _lib/`; `spotlight` and `status-bar` joined the
-  dashboard chrome. `DashboardLayout` moved out of `src/components/` too — it
+  dashboard chrome. `AppChrome` moved out of `src/components/` too — it
   imported `#/features`, so it was never a primitive, and hiding there is why
   two features looked like they had no consumers.
 - **The deltas are written down (#180).** `docs/CODE-STANDARDS.md` states what
@@ -145,9 +151,6 @@ Conventions follow `~/repos/project-standard`.
   and `supabase/` are deleted, and `local:up` sheds the CLI stack — Docker and
   pnpm are the only prerequisites now. A test fails if the row type, the select
   list and `0001_init.sql` ever disagree.
-- **Nothing talks to Supabase any more (#172).** All 100 remaining `.from()`
-  calls became SQL through `src/lib/server/db.server.ts`. Three "read the whole
-  table and BFS it in JS" walks became recursive CTEs.
 
 **Up next**
 

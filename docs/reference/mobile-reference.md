@@ -106,7 +106,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 // White variant (default) - for navigation/back buttons
 <CircularIconButton
   icon={ArrowLeft}
-  to="/dashboard/ai-images"
+  to="/ai-images"
   title="Back to AI Images"
 />
 
@@ -128,7 +128,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 - `title`: Tooltip/aria-label text
 - `className`: Additional Tailwind classes
 
-**Location**: `app/dashboard/edit/[imageId]/_components/circular-icon-button/`
+**Location**: `app/(authenticated)/edit/[imageId]/_components/circular-icon-button/`
 
 ### Breakpoint Constants
 
@@ -156,7 +156,7 @@ BREAKPOINTS['2xl'] // 1536px
 
 - Always visible, icons-only layout
 - Tooltips on hover for collapsed state
-- Located at `app/dashboard/_components/sidebar/sidebar.tsx`
+- Located at `app/(authenticated)/_components/sidebar/sidebar.tsx`
 
 **Mobile (<md)**: Slide-out sheet (`MobileNav.tsx`)
 
@@ -164,11 +164,11 @@ BREAKPOINTS['2xl'] // 1536px
 - Full-height sheet from left side
 - Auto-closes on route change
 - **Hidden on edit pages** for focused editing experience
-- Located at `app/dashboard/_components/mobile-nav/mobile-nav.tsx`
+- Located at `app/(authenticated)/_components/mobile-nav/mobile-nav.tsx`
 
 ```tsx
-// Pattern from app/dashboard/_components/dashboard-layout/dashboard-layout.tsx
-const isEditPage = location.pathname.startsWith('/dashboard/edit/')
+// Pattern from app/(authenticated)/_components/app-chrome/app-chrome.tsx
+const isEditPage = location.pathname.startsWith('/edit/')
 
 <Sidebar className="hidden md:flex" />
 {!isEditPage && <MobileNav className="md:hidden" />}
@@ -334,7 +334,7 @@ style={{
 }}
 ```
 
-**Mobile Override** (from `app/dashboard/ai-images/page.tsx`):
+**Mobile Override** (from `app/(authenticated)/ai-images/page.tsx`):
 
 ```tsx
 const effectiveThumbSize = isMobile ? 'lg' : thumbSize
@@ -415,22 +415,22 @@ useEffect(() => {
 
 ### Mobile-Specific Components
 
-| Component     | Path                                    | Purpose                  |
-| ------------- | --------------------------------------- | ------------------------ |
-| `MobileNav`   | `app/dashboard/_components/mobile-nav/` | Mobile navigation sheet  |
-| `Drawer`      | `src/components/ui/drawer.tsx`          | Bottom drawer (Vaul)     |
-| `Sheet`       | `src/components/ui/sheet/sheet.tsx`     | Side sheet (Radix UI)    |
-| `PromptSheet` | `src/features/prompts/components/`      | Bottom sheet for prompts |
+| Component     | Path                                          | Purpose                  |
+| ------------- | --------------------------------------------- | ------------------------ |
+| `MobileNav`   | `app/(authenticated)/_components/mobile-nav/` | Mobile navigation sheet  |
+| `Drawer`      | `src/components/ui/drawer.tsx`                | Bottom drawer (Vaul)     |
+| `Sheet`       | `src/components/ui/sheet/sheet.tsx`           | Side sheet (Radix UI)    |
+| `PromptSheet` | `src/features/prompts/components/`            | Bottom sheet for prompts |
 
 ### Routes with Mobile Logic
 
 | Route                                         | Mobile Pattern                                          |
 | --------------------------------------------- | ------------------------------------------------------- |
-| `app/dashboard/ai-images/page.tsx`            | Full-screen dialog for generator, forced thumb size     |
-| `app/dashboard/edit.$imageId.tsx`             | Full-screen dialog, simplified header (back + generate) |
-| `app/dashboard/video.index.tsx`               | Hidden sidebar on mobile                                |
+| `app/(authenticated)/ai-images/page.tsx`      | Full-screen dialog for generator, forced thumb size     |
+| `app/(authenticated)/edit.$imageId.tsx`       | Full-screen dialog, simplified header (back + generate) |
+| `app/(authenticated)/video.index.tsx`         | Hidden sidebar on mobile                                |
 | `app/docs.tsx`                                | Full-screen toggle sidebar                              |
-| `app/dashboard/_components/dashboard-layout/` | Mobile nav vs desktop sidebar                           |
+| `app/(authenticated)/_components/app-chrome/` | Mobile nav vs desktop sidebar                           |
 
 ## Common Mobile Tasks
 
@@ -596,7 +596,7 @@ For simple lists or previews without text inputs:
 ```tsx
 // White circular back button (edit pages, etc.)
 <Link
-  to="/dashboard/ai-images"
+  to="/ai-images"
   className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
   title="Back to AI Images"
 >

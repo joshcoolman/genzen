@@ -4,7 +4,7 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 
 ## Key Files
 
-- `context/ad-context.ts` -- headless half of the context: the context object, `useADContext`, `useRegisterADContext`, `useRegisterADImage`, and `buildSystemPrompt`. The provider component is `app/dashboard/_components/ad-context-provider/`, because a `.tsx` cannot live here.
+- `context/ad-context.ts` -- headless half of the context: the context object, `useADContext`, `useRegisterADContext`, `useRegisterADImage`, and `buildSystemPrompt`. The provider component is `app/(authenticated)/_components/ad-context-provider/`, because a `.tsx` cannot live here.
 - `hooks/useADChat.ts` -- Message streaming with rAF-throttled state updates, abort support, URL-based image attachments (ADImage = { id, url, title? }), tool calling (create_prompt_card, create_clarifying_card, load_skill)
 - `hooks/useChatHistory.ts` -- localStorage persistence (50 msg cap, 500ms debounce). URLs are small so images now persist as-is and survive panel close/reopen and page refresh.
 - `hooks/useAnthropicKey.ts` -- API key management via external store pattern (localStorage, `sk-ant-` prefix)
@@ -12,10 +12,10 @@ Embedded AI chat assistant providing contextual creative direction with vision c
 
 ## Route and UI
 
-No dedicated route -- the panel is mounted by `app/dashboard/_components/dashboard-layout/`.
+No dedicated route -- the panel is mounted by `app/(authenticated)/_components/app-chrome/`.
 Every AD component (`ad-panel/`, `ad-setup/`, `chat-input/`, `chat-messages/`,
 `skill-chip-row/`, `skill-loaded-card/`, `ad-context-provider/`) sits beside it
-in `app/dashboard/_components/`; this feature is the headless half. Opens/closes via `useADOpen()` from `#/lib/use-ad-open`. Toggle button lives in the status-bar feature.
+in `app/(authenticated)/_components/`; this feature is the headless half. Opens/closes via `useADOpen()` from `#/lib/use-ad-open`. Toggle button lives in the status-bar feature.
 
 ## System Prompt Assembly
 

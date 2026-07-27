@@ -9,7 +9,10 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), Tailwin
 
 ## Structure
 
-- `app/` -- App Router routes (`_actions/ _components/` per route folder)
+- `app/` -- App Router routes (`_actions/ _components/` per route folder).
+  `(authenticated)/` is a route group: a layout boundary that contributes
+  nothing to the URL, so `/ai-images`, `/canvas` etc. are top-level paths.
+  It is not the gate -- `proxy.ts` is
 - `src/features/` -- headless domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix
 - `src/components/` -- primitives, one folder per component, imported from the
@@ -52,11 +55,11 @@ earned; see `docs/CODE-STANDARDS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface          | Where                                                                                    |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| Canvas           | `app/dashboard/canvas/` (has its CLAUDE.md)                                              |
-| Trash            | `app/dashboard/trash/` (has its CLAUDE.md)                                               |
-| Dashboard chrome | `app/dashboard/_components/` — shell, layout, sidebar, mobile nav, spotlight, status bar |
+| Surface    | Where                                                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                              |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                               |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, spotlight, status bar |
 
 ## Git workflow
 

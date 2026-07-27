@@ -49,16 +49,16 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Routes and UI
 
-- `app/dashboard/ai-images/page.tsx` -- main gallery + generation page
-- `app/dashboard/edit/[imageId]/page.tsx` -- dedicated edit page for a single image
+- `app/(authenticated)/ai-images/page.tsx` -- main gallery + generation page
+- `app/(authenticated)/edit/[imageId]/page.tsx` -- dedicated edit page for a single image
 
 This feature is headless. The generation UI shared by both routes (plus canvas)
-lives in `app/dashboard/_components/` -- `generator-panel/`, `image-gallery/`,
+lives in `app/(authenticated)/_components/` -- `generator-panel/`, `image-gallery/`,
 `image-card/`, `pending-image-card/`, `failed-image-card/`, `describe-dialog/`,
 `variation-prompts-dialog/`, `generate-prompts-dialog/`, `paste-prompts-dialog/`,
 `prompt-list/`. The gallery-only dialogs (`image-lightbox/`,
 `parent-picker-dialog/`, `group-picker-dialog/`) live in
-`app/dashboard/ai-images/_components/`.
+`app/(authenticated)/ai-images/_components/`.
 
 ## Shared Dependencies
 

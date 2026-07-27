@@ -109,7 +109,7 @@ Use this tool when:
 Do NOT use this tool for open-ended exploration or multiple questions. Ask exactly one question with 2–4 concrete options. The user's selection will be submitted as a message, then you should proceed directly to create_prompt_card.`
 
 const ROUTE_DESCRIPTIONS: Record<string, string> = {
-  '/dashboard/ai-images':
+  '/ai-images':
     'The user is on the AI Images page -- multi-model image generation with prompt input, model selection, brainstorm, edit, and variation workflows.',
 }
 
@@ -129,7 +129,7 @@ export function buildSystemPrompt(
   const routeDesc = ROUTE_DESCRIPTIONS[route]
   if (routeDesc) {
     parts.push(routeDesc)
-  } else if (route.startsWith('/dashboard')) {
+  } else if (route !== '/login') {
     parts.push(`The user is on: ${route}`)
   }
 

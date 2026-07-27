@@ -9,9 +9,9 @@ Chronological record of every AI generation (image, success + failure, including
 
 ## Route and UI
 
-`app/dashboard/activity/page.tsx`. The screen lives with the route in
-`app/dashboard/activity/_components/`; `activity-preview/` (the compact 5-row
-widget) lives with the one route that renders it, `app/dashboard/account/`.
+`app/(authenticated)/activity/page.tsx`. The screen lives with the route in
+`app/(authenticated)/activity/_components/`; `activity-preview/` (the compact 5-row
+widget) lives with the one route that renders it, `app/(authenticated)/account/`.
 
 ## Data Source
 

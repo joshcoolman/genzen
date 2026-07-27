@@ -17,7 +17,7 @@ src/features/<feature>/
   server/
     <action>.server.ts            # Server functions
 
-app/dashboard/<feature>.tsx  # Thin shell — 1 hook + composed components
+app/(authenticated)/<feature>.tsx  # Thin shell — 1 hook + composed components
 ```
 
 ## Rules

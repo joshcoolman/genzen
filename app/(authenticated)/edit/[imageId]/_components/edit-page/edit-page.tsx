@@ -336,7 +336,7 @@ export function EditPage() {
       <div className="space-y-4">
         <CircularIconButton
           icon={ArrowLeft}
-          to="/dashboard/ai-images"
+          to="/ai-images"
           title="Back to AI Images"
         />
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
@@ -363,7 +363,7 @@ export function EditPage() {
         <div className="flex items-center justify-between">
           <CircularIconButton
             icon={ArrowLeft}
-            to="/dashboard/ai-images"
+            to="/ai-images"
             title="Back to AI Images"
           />
           {/* Desktop: full controls, Mobile: just generate button */}

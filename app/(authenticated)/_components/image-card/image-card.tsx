@@ -198,7 +198,7 @@ export function ImageCard({
           if (onOpen) {
             onOpen(img)
           } else {
-            router.push(`/dashboard/edit/${img.id}`)
+            router.push(`/edit/${img.id}`)
           }
         }
       }}
@@ -252,9 +252,7 @@ export function ImageCard({
                       if (onChildOpen) {
                         onChildOpen(child.id, img)
                       } else {
-                        router.push(
-                          `/dashboard/edit/${img.id}?sourceId=${child.id}`,
-                        )
+                        router.push(`/edit/${img.id}?sourceId=${child.id}`)
                       }
                     }}
                     className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
