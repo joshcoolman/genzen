@@ -5,10 +5,9 @@ import { Download } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import type { UserImage } from '#/features/user-images/types'
-import { ActionButton } from '#/components/ActionButton'
-import { Button } from '#/components/ui/button'
-import { Input } from '#/components/ui/input'
 import {
+  ActionButton,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,7 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '#/components/ui/dialog'
+  Input,
+} from '#/components'
 
 const CONCURRENCY = 4
 

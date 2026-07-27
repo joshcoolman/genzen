@@ -6,10 +6,10 @@ import type { GenerationResult } from '#/lib/types/generation-result'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { useGenerationResults } from '#/lib/hooks/useGenerationResults'
-import { useModelSelector } from '#/components/ModelSelector'
+import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import { useEditChildren } from '#/features/ai-images/hooks/use-edit-children'
-import { toast } from '#/components/ui/toast'
+import { flipOrientation, toast, useReportError } from '#/components'
 import { useExistingImages } from '#/features/user-images/hooks/useExistingImages'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
 import { editImage } from '#/features/ai-images/server/edit-image.server'
@@ -17,13 +17,11 @@ import { reparentImage } from '#/features/ai-images/server/reparent-image.server
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.server'
-import { useReportError } from '#/components/MissingKeyDialog'
 import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.server'
 import {
   detectAspectRatio,
   getRatioOptions,
 } from '#/features/ai-images/constants'
-import { flipOrientation } from '#/components/AspectRatioSelect'
 import { EDIT_MODELS } from '#/features/ai-images/models'
 import {
   getEditSourceImage,

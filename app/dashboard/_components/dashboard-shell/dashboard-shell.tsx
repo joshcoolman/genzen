@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from '../dashboard-layout/dashboard-layout'
 import { SpotlightNav } from '../spotlight-nav/spotlight-nav'
-import { MissingKeyProvider } from '#/components/MissingKeyDialog'
+import { MissingKeyProvider } from '#/components'
 import { useDashboardRouteMemory } from '#/lib/use-dashboard-route-memory'
 
 // The client half of the dashboard layout: the chrome that needs hooks.

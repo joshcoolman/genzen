@@ -5,12 +5,7 @@ import type {
   GenerationStatus,
 } from '#/features/activity/types'
 import { ALL_IMAGE_MODELS, getModelName } from '#/features/ai-images/models'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#/components/ui/popover'
-import { Checkbox } from '#/components/ui/checkbox'
+import { Checkbox, Popover, PopoverContent, PopoverTrigger } from '#/components'
 import { cn } from '#/lib/utils'
 
 type DatePreset = 'all' | 'today' | '7d' | '30d'

@@ -3,17 +3,19 @@
 import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
+import { ModelSelector } from '../model-selector/model-selector'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
-import type { useModelSelector } from '#/components/ModelSelector/index'
-import { ActionButton } from '#/components/ActionButton'
-import { ImageSourceButtons } from '#/components/ImageSourceButtons/index'
-import { SourceImagePreview } from '#/components/SourceImagePreview/index'
-import { NumberStepper } from '#/components/NumberStepper'
-import { AspectRatioSelect } from '#/components/AspectRatioSelect/index'
-import { RefImageStrip } from '#/components/RefImageStrip'
-import { ModelSelector } from '#/components/ModelSelector/index'
+import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
+import {
+  ActionButton,
+  AspectRatioSelect,
+  ImageSourceButtons,
+  NumberStepper,
+  RefImageStrip,
+  SourceImagePreview,
+} from '#/components'
 
 interface UserImagesData {
   images: Array<UserImage>

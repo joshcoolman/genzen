@@ -30,7 +30,7 @@ in `app/dashboard/_components/`; this feature is the headless half. Opens/closes
 - `#/lib/auth` -- useAuth for session gating (gates image upload in the picker)
 - `#/lib/use-ad-open` -- useADOpen for managing panel open/close state
 - `marked` -- Markdown parsing for assistant responses
-- `#/components/ActionButton` -- Action button component
+- `#/components` -- `ActionButton`, `ImageSourceDialog`
 
 ## Integration Points
 
@@ -82,7 +82,7 @@ Tool calls are extracted from `stream.finalMessage()` by filtering content block
 
 ## Image attachments
 
-User-attached images go through the shared `ImageSourceDialog` at `#/components/ImageSourceDialog/ImageSourceDialog`. Clicking the ImagePlus button in `ChatInput` opens the picker titled "Attach Image"; the user picks from their library (All / Uploads / AI Generated tabs) or uploads/pastes a new image inside the dialog. Uploaded images land in the persistent `user_images` library via the shared `useUserImages` hook, so every attachment is reusable and visible in the Assets page.
+User-attached images go through the shared `ImageSourceDialog` from `#/components`. Clicking the ImagePlus button in `ChatInput` opens the picker titled "Attach Image"; the user picks from their library (All / Uploads / AI Generated tabs) or uploads/pastes a new image inside the dialog. Uploaded images land in the persistent `user_images` library via the shared `useUserImages` hook, so every attachment is reusable and visible in the Assets page.
 
 `ADImage = { id, url, title? }` — URL-referenced (R2 public URL, no expiry). Sent to Anthropic via `{ type: 'image', source: { type: 'url', url } }`. No base64 plumbing on user attachments.
 

@@ -14,18 +14,6 @@ import { TrashDownloadButton } from '../trash-download-button/trash-download-but
 import { useTrash } from './use-trash'
 import { useAuth } from '#/lib/auth'
 import { useSelection } from '#/lib/use-selection'
-import { ImageGrid } from '#/components/ImageGrid'
-import { Thumbnail } from '#/components/Thumbnail'
-import { SelectionDrawer } from '#/components/SelectionDrawer'
-import { formatFileSize } from '#/lib/format'
-import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +24,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '#/components/ui/alert-dialog'
+  Badge,
+  Button,
+  ImageGrid,
+  SelectionDrawer,
+  Thumbnail,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '#/components'
+import { formatFileSize } from '#/lib/format'
 
 function formatDeletedDate(dateStr: string | null): string {
   if (!dateStr) return ''

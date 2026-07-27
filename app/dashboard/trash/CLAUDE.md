@@ -18,10 +18,7 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 - `#/features/user-images/types` -- `UserImage` type
 - `#/lib/auth` -- `useAuth()` for current user
 - `#/lib/use-selection` -- Multi-select state management for batch operations
-- `#/components/ImageGrid` -- Grid/list layout for images
-- `#/components/Thumbnail` -- Composable thumbnail component
-- `#/components/SelectionDrawer` -- Floating drawer for batch action buttons
-- `#/components/ui/alert-dialog` -- Confirmation dialogs for destructive actions
+- `#/components` -- `ImageGrid`, `Thumbnail`, `SelectionDrawer`, and the `AlertDialog` set for destructive confirmations
 
 ## Server
 

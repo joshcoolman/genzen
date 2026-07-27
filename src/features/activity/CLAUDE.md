@@ -29,7 +29,7 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 - `#/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
 - `#/lib/server/auth.server` -- requireAuth
 - `#/lib/server/check-pending-generations.server` -- FAL polling for pending rows
-- `#/components/ui/sheet` -- Sheet/SheetContent for detail panel
+- `#/components` -- `Sheet`/`SheetContent` for the detail panel
 
 ## Quirks / Notes
 

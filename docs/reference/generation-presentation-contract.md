@@ -25,7 +25,7 @@ without diverging where they _shouldn't_.
 
 - **The contract** (this doc): _what each state must show._ Substrate-independent.
   Every view obeys it.
-- **The primitive**: `src/components/Thumbnail.tsx` — the reference
+- **The primitive**: `src/components/thumbnail/thumbnail.tsx` — the reference
   _implementation_ of the contract for **card/grid** contexts. Reuse it when your
   substrate is a card. When it isn't (see Canvas), you still owe the contract's
   required elements — you just render them on your own substrate.
@@ -88,7 +88,7 @@ completed | failed`. Don't invent synonyms ("generating", "in flight").
 
 ## Reference implementation: `<Thumbnail>`
 
-`src/components/Thumbnail.tsx` implements the contract for card/grid surfaces
+`src/components/thumbnail/thumbnail.tsx` implements the contract for card/grid surfaces
 via `status="pending" | "complete" | "failed"` plus `pendingLabel`,
 `failedLabel`, `failedMessage`, `label`, `overlayActions`, `onDelete`,
 `selected`. AI Images consumes it through:

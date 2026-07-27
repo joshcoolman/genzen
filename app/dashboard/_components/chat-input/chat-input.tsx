@@ -3,10 +3,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { ImagePlus, Send, Square, X } from 'lucide-react'
 import type { ADImage } from '#/features/ad/hooks/useADChat'
-import type { ImageSourceResult } from '#/components/ImageSourceDialog/ImageSourceDialog'
+import type { ImageSourceResult } from '#/components'
+import { ImageSourceDialog } from '#/components'
 import { useAuth } from '#/lib/auth'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
-import { ImageSourceDialog } from '#/components/ImageSourceDialog/ImageSourceDialog'
 
 interface ChatInputProps {
   onSend: (text: string, images?: Array<ADImage>) => void

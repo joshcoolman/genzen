@@ -31,9 +31,7 @@ edit routes and by the AD panel. The library picker they all open is
 ## Shared Dependencies
 
 - `#/lib/auth` -- useAuth for user context
-- `#/components/Thumbnail` -- Shared composable thumbnail component
-- `#/components/ImageGrid` -- Shared responsive grid
-- `#/components/ActionButton` -- Shared loading button
+- `#/components` -- `Thumbnail`, `ImageGrid`, `ActionButton`
 
 ## Quirks / Notes
 

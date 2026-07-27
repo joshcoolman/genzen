@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { DashboardShell } from './_components/dashboard-shell/dashboard-shell'
+import { AuthProvider } from './_components/auth-provider/auth-provider'
 import { getCurrentUser } from '#/features/auth/server/get-user.server'
-import { AuthProvider } from '#/components/auth-provider'
 
 // Identity is resolved once here, on the server, and handed down. `proxy.ts`
 // has already turned away anyone without a valid cookie; the redirect below

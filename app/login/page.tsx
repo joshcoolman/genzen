@@ -1,4 +1,4 @@
-import { LoginForm } from './_components/login-form'
+import { LoginForm } from './_components/login-form/login-form'
 
 // No signed-in check here. `proxy.ts` bounces an authenticated request to
 // /dashboard before this component runs, which is what retires the

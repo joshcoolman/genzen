@@ -11,12 +11,7 @@ import {
 } from 'lucide-react'
 import type { ActivityEntryDetail } from '#/features/activity/types'
 import { getActivityEntry } from '#/features/activity/server/get-activity-entry.server'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '#/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#/components'
 import {
   formatAbsolute,
   formatDurationMs,

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Loader2, Sparkles } from 'lucide-react'
 import { GeneratePromptsDialog } from '../generate-prompts-dialog/generate-prompts-dialog'
 import { PastePromptsDialog } from '../paste-prompts-dialog/paste-prompts-dialog'
-import { Textarea } from '#/components/ui/textarea'
+import { Textarea } from '#/components'
 
 interface PromptListProps {
   prompts: Array<string>

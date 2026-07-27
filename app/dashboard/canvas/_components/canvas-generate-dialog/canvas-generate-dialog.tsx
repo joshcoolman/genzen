@@ -1,12 +1,7 @@
 import { useMemo } from 'react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
 import type { useCanvasGenerate } from './use-canvas-generate'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '#/components'
 
 interface CanvasGenerateDialogProps {
   canvasGen: ReturnType<typeof useCanvasGenerate>

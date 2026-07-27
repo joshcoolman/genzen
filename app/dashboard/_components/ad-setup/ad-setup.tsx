@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { Key } from 'lucide-react'
 import { useAnthropicKey } from '#/features/ad/hooks/useAnthropicKey'
-import { Input } from '#/components/ui/input'
-import { ActionButton } from '#/components/ActionButton'
+import { ActionButton, Input } from '#/components'
 
 export function ADSetup() {
   const { setApiKey } = useAnthropicKey()

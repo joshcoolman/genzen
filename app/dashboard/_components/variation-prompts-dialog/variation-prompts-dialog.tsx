@@ -3,17 +3,17 @@
 import { useEffect, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import {
+  ActionButton,
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { Textarea } from '#/components/ui/textarea'
-import { Button } from '#/components/ui/button'
-import { ActionButton } from '#/components/ActionButton'
-import { Skeleton } from '#/components/ui/skeleton'
-import { RefImageStrip } from '#/components/RefImageStrip'
+  RefImageStrip,
+  Skeleton,
+  Textarea,
+} from '#/components'
 
 interface ReferenceImage {
   id: string

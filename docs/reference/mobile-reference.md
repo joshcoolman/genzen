@@ -76,7 +76,7 @@ For most cases, use Tailwind responsive classes instead of JavaScript:
 Standardized header for full-screen mobile dialogs:
 
 ```tsx
-import { MobileDialogHeader } from '#/components/MobileDialogHeader'
+import { MobileDialogHeader } from '#/components'
 ;<Dialog open={isOpen} onOpenChange={setIsOpen}>
   <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
     <MobileDialogHeader title="Generate" onClose={() => setIsOpen(false)} />
@@ -93,14 +93,14 @@ import { MobileDialogHeader } from '#/components/MobileDialogHeader'
 - ✅ Content auto-fills remaining space with `flex-1`
 - ✅ Sticky header via flex column layout
 
-**Location**: `src/components/MobileDialogHeader.tsx`
+**Location**: `src/components/mobile-dialog-header/mobile-dialog-header.tsx`
 
 ### CircularIconButton
 
 Consistent circular buttons for navigation and CTAs:
 
 ```tsx
-import { CircularIconButton } from '#/components/CircularIconButton'
+import { CircularIconButton } from '../circular-icon-button/circular-icon-button'
 import { ArrowLeft, Plus } from 'lucide-react'
 
 // White variant (default) - for navigation/back buttons
@@ -128,7 +128,7 @@ import { ArrowLeft, Plus } from 'lucide-react'
 - `title`: Tooltip/aria-label text
 - `className`: Additional Tailwind classes
 
-**Location**: `src/components/CircularIconButton.tsx`
+**Location**: `app/dashboard/edit/[imageId]/_components/circular-icon-button/`
 
 ### Breakpoint Constants
 
@@ -156,7 +156,7 @@ BREAKPOINTS['2xl'] // 1536px
 
 - Always visible, icons-only layout
 - Tooltips on hover for collapsed state
-- Located at `src/components/Sidebar.tsx`
+- Located at `app/dashboard/_components/sidebar/sidebar.tsx`
 
 **Mobile (<md)**: Slide-out sheet (`MobileNav.tsx`)
 
@@ -164,10 +164,10 @@ BREAKPOINTS['2xl'] // 1536px
 - Full-height sheet from left side
 - Auto-closes on route change
 - **Hidden on edit pages** for focused editing experience
-- Located at `src/components/MobileNav.tsx`
+- Located at `app/dashboard/_components/mobile-nav/mobile-nav.tsx`
 
 ```tsx
-// Pattern from src/components/DashboardLayout.tsx
+// Pattern from app/dashboard/_components/dashboard-layout/dashboard-layout.tsx
 const isEditPage = location.pathname.startsWith('/dashboard/edit/')
 
 <Sidebar className="hidden md:flex" />
@@ -181,7 +181,7 @@ const isEditPage = location.pathname.startsWith('/dashboard/edit/')
 
 ```tsx
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
-import { MobileDialogHeader } from '#/components/MobileDialogHeader'
+import { MobileDialogHeader } from '#/components'
 
 const isMobile = useIsMobile()
 
@@ -215,9 +215,9 @@ const isMobile = useIsMobile()
 
 **Key Files**:
 
-- `src/components/ui/dialog.tsx` - Radix dialog component (used for mobile)
+- `src/components/ui/dialog/dialog.tsx` - Radix dialog component (used for mobile)
 - `src/components/ui/drawer.tsx` - Vaul drawer component (deprecated for complex panels)
-- `src/components/ui/sheet.tsx` - Radix sheet component
+- `src/components/ui/sheet/sheet.tsx` - Radix sheet component
 
 ### Docs Navigation
 
@@ -415,22 +415,22 @@ useEffect(() => {
 
 ### Mobile-Specific Components
 
-| Component     | Path                               | Purpose                  |
-| ------------- | ---------------------------------- | ------------------------ |
-| `MobileNav`   | `src/components/MobileNav.tsx`     | Mobile navigation sheet  |
-| `Drawer`      | `src/components/ui/drawer.tsx`     | Bottom drawer (Vaul)     |
-| `Sheet`       | `src/components/ui/sheet.tsx`      | Side sheet (Radix UI)    |
-| `PromptSheet` | `src/features/prompts/components/` | Bottom sheet for prompts |
+| Component     | Path                                    | Purpose                  |
+| ------------- | --------------------------------------- | ------------------------ |
+| `MobileNav`   | `app/dashboard/_components/mobile-nav/` | Mobile navigation sheet  |
+| `Drawer`      | `src/components/ui/drawer.tsx`          | Bottom drawer (Vaul)     |
+| `Sheet`       | `src/components/ui/sheet/sheet.tsx`     | Side sheet (Radix UI)    |
+| `PromptSheet` | `src/features/prompts/components/`      | Bottom sheet for prompts |
 
 ### Routes with Mobile Logic
 
-| Route                                | Mobile Pattern                                          |
-| ------------------------------------ | ------------------------------------------------------- |
-| `app/dashboard/ai-images/page.tsx`   | Full-screen dialog for generator, forced thumb size     |
-| `app/dashboard/edit.$imageId.tsx`    | Full-screen dialog, simplified header (back + generate) |
-| `app/dashboard/video.index.tsx`      | Hidden sidebar on mobile                                |
-| `app/docs.tsx`                       | Full-screen toggle sidebar                              |
-| `src/components/DashboardLayout.tsx` | Mobile nav vs desktop sidebar                           |
+| Route                                         | Mobile Pattern                                          |
+| --------------------------------------------- | ------------------------------------------------------- |
+| `app/dashboard/ai-images/page.tsx`            | Full-screen dialog for generator, forced thumb size     |
+| `app/dashboard/edit.$imageId.tsx`             | Full-screen dialog, simplified header (back + generate) |
+| `app/dashboard/video.index.tsx`               | Hidden sidebar on mobile                                |
+| `app/docs.tsx`                                | Full-screen toggle sidebar                              |
+| `app/dashboard/_components/dashboard-layout/` | Mobile nav vs desktop sidebar                           |
 
 ## Common Mobile Tasks
 
@@ -469,7 +469,7 @@ For complex panels with inputs (generator, edit, etc.):
 
 ```tsx
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
-import { MobileDialogHeader } from '#/components/MobileDialogHeader'
+import { MobileDialogHeader } from '#/components'
 
 const isMobile = useIsMobile()
 

@@ -70,7 +70,7 @@ lives in `app/dashboard/_components/` -- `generator-panel/`, `image-gallery/`,
 - `src/features/user-images/` -- `useUserImages` for image picker
 - `src/lib/server/fetch-image-base64.server.ts` -- server-side image-to-base64 (avoids R2 CORS in edit page)
 - `src/lib/server/compute-cost.server.ts` -- `computeFalCostCents()` for pre-submit cost estimation (FAL pricing cache + live API)
-- `src/components/AspectRatioSelect/` -- ratio selector (`AspectRatioSelect.tsx` + `aspect-ratio-constants.ts`, barrel `index.ts`); ratio constants re-exported via `constants.ts`
+- `#/components` -- `AspectRatioSelect` and its ratio constants, re-exported via `constants.ts`
 
 ## Quirks / Notes
 

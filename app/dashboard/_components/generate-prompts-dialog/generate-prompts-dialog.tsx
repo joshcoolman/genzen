@@ -2,14 +2,14 @@
 
 import { useCallback, useState } from 'react'
 import {
+  ActionButton,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { Textarea } from '#/components/ui/textarea'
-import { NumberStepper } from '#/components/NumberStepper'
-import { ActionButton } from '#/components/ActionButton'
+  NumberStepper,
+  Textarea,
+} from '#/components'
 import { generateShotList } from '#/features/ai-images/server/generate-shot-list.server'
 
 interface GeneratePromptsDialogProps {

@@ -6,7 +6,7 @@ import { generateImage } from '#/features/ai-images/server/generate-image.server
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.server'
 import { fetchImageAsBase64 } from '#/lib/server/fetch-image-base64.server'
-import { useReportError } from '#/components/MissingKeyDialog'
+import { useReportError } from '#/components'
 import {
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,

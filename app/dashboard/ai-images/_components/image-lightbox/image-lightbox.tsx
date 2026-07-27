@@ -1,6 +1,6 @@
-import type { LightboxImage } from '#/components/Lightbox'
 import type { LightboxItem } from '#/features/ai-images/hooks/use-lightbox'
-import { Lightbox } from '#/components/Lightbox'
+import type { LightboxImage } from '#/components'
+import { Lightbox } from '#/components'
 
 interface ImageLightboxProps {
   items: Array<LightboxItem>

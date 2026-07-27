@@ -8,9 +8,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { ImageGrid } from '#/components/ImageGrid'
-import { Thumbnail } from '#/components/Thumbnail'
+  ImageGrid,
+  Thumbnail,
+} from '#/components'
 
 interface ParentPickerDialogProps {
   open: boolean

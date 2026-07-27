@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { NavMore } from '../nav-more/nav-more'
 import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
@@ -14,16 +15,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '#/components/ui/alert-dialog'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '#/components/ui/tooltip'
+} from '#/components'
 import { useSidebarCollapsed } from '#/lib/use-sidebar-collapsed'
 
-import { NavMore } from '#/components/NavMore'
 import { navItems } from '#/lib/nav-items'
 import { useNavVisibility } from '#/lib/use-nav-visibility'
 import { cn } from '#/lib/utils'

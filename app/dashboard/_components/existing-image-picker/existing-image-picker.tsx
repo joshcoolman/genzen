@@ -5,15 +5,15 @@ import { Check, Upload } from 'lucide-react'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
 import { processAndUploadFiles } from '#/features/user-images/lib/process-files'
 import {
+  ActionButton,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { ActionButton } from '#/components/ActionButton'
-import { Thumbnail } from '#/components/Thumbnail'
-import { ImageGrid } from '#/components/ImageGrid'
+  ImageGrid,
+  Thumbnail,
+} from '#/components'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

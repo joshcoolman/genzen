@@ -10,7 +10,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '#/components/ui/command'
+} from '#/components'
 
 export function SpotlightNav() {
   const [open, setOpen] = useState(false)

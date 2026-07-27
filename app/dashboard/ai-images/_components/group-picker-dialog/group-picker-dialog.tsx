@@ -4,14 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import {
+  ActionButton,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { ActionButton } from '#/components/ActionButton'
-import { ImageGrid } from '#/components/ImageGrid'
-import { Thumbnail } from '#/components/Thumbnail'
+  ImageGrid,
+  Thumbnail,
+} from '#/components'
 
 interface GroupPickerDialogProps {
   open: boolean

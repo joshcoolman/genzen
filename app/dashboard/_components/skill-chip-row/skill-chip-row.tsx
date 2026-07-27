@@ -4,18 +4,16 @@ import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { skills } from '#/features/ad/skills/registry'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#/components/ui/popover'
-import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
-} from '#/components/ui/command'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#/components'
 
 interface SkillLauncherProps {
   onLaunch: (text: string) => void

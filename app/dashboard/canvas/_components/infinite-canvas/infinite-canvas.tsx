@@ -34,16 +34,16 @@ import type {
 } from '../../_lib/types'
 import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
-import { toast } from '#/components/ui/toast'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/ui/dialog'
-import { Button } from '#/components/ui/button'
+  toast,
+} from '#/components'
 import { useAuth } from '#/lib/auth'
 import { useExistingImages } from '#/features/user-images'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'

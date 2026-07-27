@@ -79,7 +79,7 @@ about it — that's the usual reason generation 401s.
 | ------------------------ | -------------------------------------------------------------------------------------- |
 | `src/features/<name>/`   | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.** |
 | `src/lib/server/`        | Server-only helpers (files use `.server.ts` suffix).                                   |
-| `src/components/`        | Shared components, plus `ui/` for shadcn primitives.                                   |
+| `src/components/`        | Primitives, one folder each, imported from the root barrel `#/components`.             |
 | `app/api/`               | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                  |
 | `migrations/`            | Numbered SQL migrations, applied by `pnpm db:migrate`.                                 |
 | `CLAUDE.md`              | Feature catalog + service / convention notes.                                          |
@@ -122,13 +122,19 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
-- **The four single-consumer features collapsed into their routes (#181, in
-  progress).** `canvas` and `trash` are now `app/dashboard/<route>/` with their
-  own `_components/ _actions/ _lib/`; `spotlight` and `status-bar` joined the
+- **Pass 1 is done (#181).** `src/features/` holds no `.tsx` at all: the five
+  remaining features went headless, and each component landed where the number
+  of routes reaching it says it belongs — `app/dashboard/_components/` for the
+  shared ones, the route's own `_components/` for the rest. `src/components/` is
+  now one folder per component in kebab-case behind a single root barrel,
+  `#/components`, which also re-exports the shadcn set. Nine dead files went
+  with it.
+- **The four single-consumer features collapsed into their routes (#181).**
+  `canvas` and `trash` are now `app/dashboard/<route>/` with their own
+  `_components/ _actions/ _lib/`; `spotlight` and `status-bar` joined the
   dashboard chrome. `DashboardLayout` moved out of `src/components/` too — it
   imported `#/features`, so it was never a primitive, and hiding there is why
-  two features looked like they had no consumers. `src/features/` is five
-  earned folders now, down from nine.
+  two features looked like they had no consumers.
 - **The deltas are written down (#180).** `docs/CODE-STANDARDS.md` states what
   genzen does differently from `~/repos/project-standard` and settles the rule
   the standard leaves open: a `features/` folder is earned by two or more
@@ -142,15 +148,9 @@ Conventions follow `~/repos/project-standard`.
 - **Nothing talks to Supabase any more (#172).** All 100 remaining `.from()`
   calls became SQL through `src/lib/server/db.server.ts`. Three "read the whole
   table and BFS it in JS" walks became recursive CTEs.
-- **The browser cannot reach the database at all (#173, #174).** Every query is
-  a server action scoped by `resolveAuth()`, and nothing pushes anywhere.
 
 **Up next**
 
-- **#181 — finish Pass 1.** The collapses are done. What's left: move the five
-  remaining features' `.tsx` into `app/_components/` so `features/` is headless,
-  then one folder per component and kebab-case across `src/components/` (21 bare
-  files + the `ui/` grouping folder) and each route's `_components/`.
 - **#185 — Pass 2: styling.** `tokens.css`/`base.css`, then CSS Modules area by
   area with Base UI replacing shadcn as each is touched, then Tailwind out last.
   84 files carry utility classes today.

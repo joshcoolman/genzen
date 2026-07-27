@@ -10,9 +10,10 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), Tailwin
 ## Structure
 
 - `app/` -- App Router routes (`_actions/ _components/` per route folder)
-- `src/features/` -- domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
+- `src/features/` -- headless domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix
-- `src/components/` -- shared components + `ui/` (shadcn)
+- `src/components/` -- primitives, one folder per component, imported from the
+  single root barrel `#/components` (which also re-exports `ui/`, the shadcn set)
 - `migrations/` -- numbered SQL migrations, applied by `pnpm db:migrate`
 
 ## Services

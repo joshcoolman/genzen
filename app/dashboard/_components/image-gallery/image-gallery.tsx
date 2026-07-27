@@ -5,7 +5,7 @@ import { FailedImageCard } from '../failed-image-card/failed-image-card'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import { getModelName } from '#/features/ai-images/models'
-import { ImageGridSkeleton } from '#/components/ImageGrid'
+import { ImageGridSkeleton } from '#/components'
 
 const GRID_MIN_WIDTH: Record<string, string> = {
   lg: '200px',
