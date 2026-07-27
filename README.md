@@ -122,52 +122,38 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
-- **Supabase is gone (#176 done, closing #168).** The package, the generated
-  types and `supabase/` are deleted, and `local:up` sheds the CLI stack — Docker
-  and pnpm are now the only prerequisites for a local checkout. `UserImageRow`
-  in `src/lib/types/db.ts` replaces the generated types by hand, and a test
-  fails if it, the select list in `user-image-columns.server.ts` and the table
-  in `migrations/0001_init.sql` ever disagree.
-- **Nothing talks to Supabase any more (#172 done).** All 100 remaining
-  `.from()` calls became SQL through `src/lib/server/db.server.ts`, and the
-  admin client is deleted. Three "read the whole table and BFS it in JS" walks
-  became recursive CTEs; `resolveAuth()` returns an id and nothing else, so a
-  query has to name `user_id` itself. Two things the conversion turned up: the
-  planned `postgres.camel` transform would have silently camel-cased the keys
-  _inside_ `generation_metadata`, and a row naming itself as its own
-  `parent_id` makes a naive recursive CTE run forever — both are handled and
-  commented where they bite.
-- **The browser cannot reach the database at all (#173 done).** The last 19
-  queries — Canvas, the edit page, generation results, Activity — became
-  `canvas/server/canvas.actions.ts` and `ai-images/server/edit.actions.ts`, and
-  `src/lib/supabase.ts` is deleted. The anon key is no longer inlined into the
-  bundle; `VITE_SUPABASE_URL` is server-only. Two tree walks moved with the
-  queries: both used to pull every one of the user's rows into the browser to
-  find a handful of descendants.
-- **Nothing pushes any more, anywhere (#174 done).** The last three realtime
-  channels (`use-edit-children`, `useGenerationResults`, `use-activity-page`)
-  are gone. A submit refreshes once; each poll that settles a row refreshes
-  again; the edit page's nested children re-read when the gallery's poll picks
-  up a newly completed row.
-- **Trash is off the browser database client (#173), and can no longer strand a
-  row (#177).** Permanent delete moved server-side whole — the link check that
-  decides whether a delete is allowed used to run in the browser, so a client
-  that skipped it deleted whatever it liked. Soft-deleting now also clears
-  `on_canvas`, which is what left an image undeletable in Trash and invisible on
-  Canvas at the same time.
-- **A failed generation is no longer treated as worth keeping.** Retry reuses the
-  failed row instead of spawning a second card; deleting a failure destroys it
-  rather than filling Trash with unrestorable rows; and a failure finally gets a
-  title, so a failed card stops reading "Generating..." forever.
+- **The four single-consumer features collapsed into their routes (#181, in
+  progress).** `canvas` and `trash` are now `app/dashboard/<route>/` with their
+  own `_components/ _actions/ _lib/`; `spotlight` and `status-bar` joined the
+  dashboard chrome. `DashboardLayout` moved out of `src/components/` too — it
+  imported `#/features`, so it was never a primitive, and hiding there is why
+  two features looked like they had no consumers. `src/features/` is five
+  earned folders now, down from nine.
+- **The deltas are written down (#180).** `docs/CODE-STANDARDS.md` states what
+  genzen does differently from `~/repos/project-standard` and settles the rule
+  the standard leaves open: a `features/` folder is earned by two or more
+  consumers, and `features/` is headless. `docs/OVERVIEW.md` says what the app
+  is. Written first, because #181 executes against it.
+- **Import alias is `#/` (#179).** 482 specifiers across 162 files.
+- **Supabase is gone (#176, closing #168).** The package, the generated types
+  and `supabase/` are deleted, and `local:up` sheds the CLI stack — Docker and
+  pnpm are the only prerequisites now. A test fails if the row type, the select
+  list and `0001_init.sql` ever disagree.
+- **Nothing talks to Supabase any more (#172).** All 100 remaining `.from()`
+  calls became SQL through `src/lib/server/db.server.ts`. Three "read the whole
+  table and BFS it in JS" walks became recursive CTEs.
+- **The browser cannot reach the database at all (#173, #174).** Every query is
+  a server action scoped by `resolveAuth()`, and nothing pushes anywhere.
 
 **Up next**
 
-- **The conformance pass (#187), now two passes rather than six issues.**
-  **#181** moves every component to its final home — the four features with a
-  single consumer (canvas, trash, spotlight, status-bar) collapse into their
-  routes, the rest go headless with their UI in `app/`. **#185** then converts
-  to CSS Modules and takes Tailwind out. Placement first, because moving a
-  component and restyling it are the same touch.
+- **#181 — finish Pass 1.** The collapses are done. What's left: move the five
+  remaining features' `.tsx` into `app/_components/` so `features/` is headless,
+  then one folder per component and kebab-case across `src/components/` (21 bare
+  files + the `ui/` grouping folder) and each route's `_components/`.
+- **#185 — Pass 2: styling.** `tokens.css`/`base.css`, then CSS Modules area by
+  area with Base UI replacing shadcn as each is touched, then Tailwind out last.
+  84 files carry utility classes today.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
