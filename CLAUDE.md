@@ -80,33 +80,28 @@ folder, or a `continue/` directory; all of those existed and were removed
 deliberately. Update the README `## Status` block at natural beats so the front
 door always reflects the current state.
 
-`docs/` is small on purpose: `SPEC.md` (what the app does and must do) and
+`docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
+does and must do), `CODE-STANDARDS.md` (the deltas from the house standard) and
 `reference/` (prompt-craft material, the generation presentation contract,
 framework notes). Never a plan. There is no in-app docs viewer — that route and
 `src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled content.
 
 ## Project standard
 
-`~/repos/project-standard/README.md` is the house standard for this project's
-conventions — folder layout, component organization, styling, docs shape, naming.
+`~/repos/project-standard/README.md` is the house standard — folder layout,
+component organization, styling, docs shape, naming.
 
-The conformance pass is tracked as an epic (#187). Where the standard applies,
-prefer it over an older pattern found in the codebase — an existing file is not
-evidence of the current convention.
-
-**Three deliberate exceptions, settled — do not re-litigate them or "fix" the
-code toward the standard:**
+**`docs/CODE-STANDARDS.md` states genzen's deltas from it, and nothing else.**
+Read that file rather than re-deriving them; it is the only place they live.
+Two that come up constantly:
 
 - **Commit straight to `main`** (see Git workflow above).
-- **Server code lives in `src/features/<domain>/server/`**, not in each route's
-  `_queries/`/`_actions/`. The standard's route shape assumes reads and writes
-  belong to one route; here the same generation, image and trash code is reached
-  from AI Images, Canvas and the edit page alike, so splitting it per-route would
-  fight how the app actually works. Routes keep `page.tsx` + `_components/`.
-- **No resume/continuation files** — they existed, and were removed on purpose.
+- **`features/` is headless and earned by 2+ consumers.** No `.tsx` under
+  `src/features/`. One consumer means it belongs to that route.
 
-The standard itself is not changed by any of this; these are genzen's deltas, and
-they belong in `docs/CODE-STANDARDS.md` (#180).
+Where the standard applies, prefer it over an older pattern found in the
+codebase — an existing file is not evidence of the current convention, because
+the conformance pass (#187) is still in flight.
 
 ## Gotchas
 

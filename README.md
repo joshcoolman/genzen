@@ -75,15 +75,17 @@ about it — that's the usual reason generation 401s.
 
 ## Repo map
 
-| Path                   | What's there                                                                           |
-| ---------------------- | -------------------------------------------------------------------------------------- |
-| `src/features/<name>/` | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.** |
-| `src/lib/server/`      | Server-only helpers (files use `.server.ts` suffix).                                   |
-| `src/components/`      | Shared components, plus `ui/` for shadcn primitives.                                   |
-| `app/api/`             | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                  |
-| `migrations/`          | Numbered SQL migrations, applied by `pnpm db:migrate`.                                 |
-| `CLAUDE.md`            | Feature catalog + service / convention notes.                                          |
-| `docs/SPEC.md`         | What the app does and the rules that must hold.                                        |
+| Path                     | What's there                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| `src/features/<name>/`   | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.** |
+| `src/lib/server/`        | Server-only helpers (files use `.server.ts` suffix).                                   |
+| `src/components/`        | Shared components, plus `ui/` for shadcn primitives.                                   |
+| `app/api/`               | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                  |
+| `migrations/`            | Numbered SQL migrations, applied by `pnpm db:migrate`.                                 |
+| `CLAUDE.md`              | Feature catalog + service / convention notes.                                          |
+| `docs/SPEC.md`           | What the app does and the rules that must hold.                                        |
+| `docs/OVERVIEW.md`       | What genzen is, and what it deliberately is not.                                       |
+| `docs/CODE-STANDARDS.md` | genzen's deltas from `~/repos/project-standard`.                                       |
 
 ## Env
 
@@ -160,8 +162,14 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- The `project-standard` conformance pass (#187): CSS Modules over Tailwind
-  (#183 → #186), and `docs/CODE-STANDARDS.md` (#180).
+- **The conformance pass (#187), now two passes rather than six issues.**
+  **#181** moves every component to its final home — the four features with a
+  single consumer (canvas, trash, spotlight, status-bar) collapse into their
+  routes, the rest go headless with their UI in `app/`. **#185** then converts
+  to CSS Modules and takes Tailwind out. Placement first, because moving a
+  component and restyling it are the same touch.
+- **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
+  lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 
