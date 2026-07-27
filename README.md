@@ -119,6 +119,11 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-26)
 
+- **Generations no longer hang on pending (#174, partial).** FAL settled them
+  fine; the UI never heard. Realtime delivers nothing — `user_images` is in no
+  publication, and the browser client lost its Supabase session with #171 — so
+  the 5s poll now drives the refetch in AI Images, generation results, and
+  Activity. The five dead channels are still in place.
 - **The app runs on Next (#175).** TanStack Start, Router, Vite and Nitro are
   gone — 15 file routes became `app/` route folders, 20 `createServerFn`
   definitions became server actions, and the FAL webhook became a route handler.
@@ -134,18 +139,20 @@ Conventions follow `~/repos/project-standard`.
   brings up both databases.
 - **45 migrations collapsed into one baseline**, generated from the live database
   and verified structurally against it.
-- **Stripped the app back to its core before the migration** — the MCP server,
-  the API-keys feature, the docs viewer, the legal pages, ~18 dead files.
 
 **Up next**
 
-- **#172 / #173 — the data layer.** This port moved the framework, not the data:
-  133 `.from()` calls still run against Supabase, 54 of them in the browser.
+- **#173 — browser data access, and it is now load-bearing.** ~55 `.from()` calls
+  still run through the anon browser client against `auth.uid()` RLS, which no
+  longer resolves. A clean browser sees an empty gallery; a stale localStorage
+  session from before #171 is the only reason it looks like it works. Biggest
+  offenders: `useTrash.ts` (15), `use-images.ts` (14), `canvas/lib/persistence.ts` (7).
 - **Signing in gives you an empty library today.** Login verifies against the new
   `users` table, whose ids are freshly generated, while `user_images.user_id`
   still holds Supabase auth uuids. Provision the local user with the matching
   uuid, or move the data, before expecting to see anything.
-- **#174 — 5 realtime channels**, then **#176 — delete Supabase**.
+- **#174 — remove the 5 dead realtime channels.** Best done per-file alongside
+  #173, since both land in the same hooks. Then **#176 — delete Supabase**.
 - Then the `project-standard` conformance pass: one-folder-per-component and
   CSS Modules over Tailwind.
 
