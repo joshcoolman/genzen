@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { getSpotlightItems } from '../lib/spotlight-items'
+import { getSpotlightItems } from './spotlight-items'
 import {
   CommandDialog,
   CommandEmpty,

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { DashboardShell } from './_components/dashboard-shell'
+import { DashboardShell } from './_components/dashboard-shell/dashboard-shell'
 import { getCurrentUser } from '#/features/auth/server/get-user.server'
 import { AuthProvider } from '#/components/auth-provider'
 

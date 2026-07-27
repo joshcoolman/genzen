@@ -1,13 +1,13 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Sidebar } from './Sidebar'
-import { MobileNav } from './MobileNav'
+import { Sidebar } from '../sidebar/sidebar'
+import { MobileNav } from '../mobile-nav/mobile-nav'
+import { StatusBar } from '../status-bar/status-bar'
 import { ADPanel } from '#/features/ad/components/ADPanel'
 import { ADContextProvider } from '#/features/ad/context/ad-context'
 import { useADOpen } from '#/lib/use-ad-open'
 import { cn } from '#/lib/utils'
-import { StatusBar } from '#/features/status-bar'
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
