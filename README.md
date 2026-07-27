@@ -119,6 +119,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **Trash is off the browser database client (#173), and can no longer strand a
+  row (#177).** Permanent delete moved server-side whole — the link check that
+  decides whether a delete is allowed used to run in the browser, so a client
+  that skipped it deleted whatever it liked. Soft-deleting now also clears
+  `on_canvas`, which is what left an image undeletable in Trash and invisible on
+  Canvas at the same time.
 - **A failed generation is no longer treated as worth keeping.** Retry reuses the
   failed row instead of spawning a second card; deleting a failure destroys it
   rather than filling Trash with unrestorable rows; and a failure finally gets a
@@ -139,30 +145,24 @@ Conventions follow `~/repos/project-standard`.
   deny-by-default: every path is private unless listed. `resolveAuth()` reads
   identity from the cookie, which retired `jose`, the remote-JWKS verification,
   and all 232 `accessToken` references that used to ride in request bodies.
-- **Plain Postgres, scrypt auth, and a one-command local stack** landed for #168
-  — `migrations/0001_init.sql`, `pnpm auth:create-user`, and a `local:up` that
-  brings up both databases.
 
 **Up next**
 
-- **#173 — browser data access, and it is now load-bearing.** ~40 `.from()` calls
-  still run through the anon browser client against `auth.uid()` RLS, which no
-  longer resolves. A clean browser sees empty pages; a stale localStorage session
-  from before #171 is the only reason they look like they work. Remaining:
-  `useTrash.ts` (15), `canvas/lib/persistence.ts` (7), `use-edit-page.ts` (4),
-  `useGenerationResults.ts` (3), then three small ones. Trash is next —
-  `ai-images/server/gallery.actions.ts` is the template.
+- **#173 — browser data access, and it is now load-bearing.** 19 queries still
+  run through the anon browser client against `auth.uid()` RLS, which no longer
+  resolves. They work today only because a live Supabase session is still being
+  refreshed in the browser; when that refresh token lapses, Canvas and the edit
+  page go blank. Remaining: `canvas/lib/persistence.ts` (7), `use-edit-page.ts`
+  (4), `useGenerationResults.ts` (3), `use-canvas-generate.ts` (2),
+  `use-edit-children.ts` (2), `use-activity-page.ts` (1). Canvas is next, and is
+  the one with real design in it — arrangement lives in IndexedDB, membership in
+  the database. `gallery.actions.ts` and `trash.actions.ts` are the templates.
 - **Signing in gives you an empty library today.** Login verifies against the new
   `users` table, whose ids are freshly generated, while `user_images.user_id`
   still holds Supabase auth uuids. Provision the local user with the matching
   uuid, or move the data, before expecting to see anything.
-- **#174 — 2 dead realtime channels left** (`useTrash`, `use-edit-children`).
-  Do each alongside its #173 pass; they land in the same hooks. Then **#176 —
-  delete Supabase**.
-- **24 failed rows sit in Trash from before the fix**, still titled
-  "Generating...". Fix-forward left them; they are unrestorable by definition, so
-  `DELETE FROM user_images WHERE deleted_at IS NOT NULL AND status = 'failed'`
-  when you want them gone.
+- **#174 — 1 dead realtime channel left** (`use-edit-children`). Do it alongside
+  its #173 pass. Then **#176 — delete Supabase**.
 - Then the `project-standard` conformance pass: one-folder-per-component and
   CSS Modules over Tailwind.
 
