@@ -144,7 +144,7 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
     .update(
       variationCount && variationCount > 0
         ? { hidden: true }
-        : { deleted_at: new Date().toISOString() },
+        : { deleted_at: new Date().toISOString(), on_canvas: false },
     )
     .eq('id', imageId)
     .eq('user_id', userId)
@@ -248,7 +248,7 @@ export async function deleteGalleryImageWithDescendants(
 
   const { error: deleteError } = await supabase
     .from('user_images')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
     .eq('user_id', userId)
     .in('id', Array.from(idsToDelete))
 
@@ -312,7 +312,7 @@ export async function deleteGalleryImageDetachingChildren(
 
   const { error } = await supabase
     .from('user_images')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
     .eq('id', imageId)
     .eq('user_id', userId)
 

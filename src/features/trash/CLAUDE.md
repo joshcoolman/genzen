@@ -24,12 +24,16 @@ Soft-delete recovery for user images. Supports restore, permanent delete, batch 
 - `@/components/SelectionDrawer` -- Floating drawer for batch action buttons
 - `@/components/ui/alert-dialog` -- Confirmation dialogs for destructive actions
 
+## Server
+
+- `server/trash.actions.ts` -- `listTrashedImages` (rows + the linked set in one call), `restoreImages`, `permanentlyDeleteImages` (pass no ids to empty the trash). All user-scoped by `resolveAuth()`.
+
 ## Quirks / Notes
 
-- Uses Supabase Realtime (`postgres_changes` UPDATE + DELETE events) to live-update the trash list. It delivers nothing since #171 and goes with #174 -- see `ai-images/hooks/use-images.ts` for the polling shape that replaces it
+- No database access and no realtime: `server/trash.actions.ts` holds the reads and writes, user-scoped by `resolveAuth()`. The realtime channel went with #174 -- Trash only changes from an action on this page or a delete elsewhere, and either way the next visit re-reads it
 - **Failed generations never arrive here.** Deleting one from AI Images destroys the row (`deleteGalleryImage`): there is no image to restore, and a restored failure is just an error card again
 - Queries filter by `deleted_at IS NOT NULL` and `hidden = false` and `source IN ('upload', 'ai_generated')`
-- **Linked image protection**: prevents deletion of images referenced by active (non-deleted, non-hidden) images via `generation_metadata` or placed on canvas (`on_canvas = true`)
+- **Linked image protection**: prevents deletion of images referenced by active (non-deleted, non-hidden) images via `generation_metadata` or placed on canvas (`on_canvas = true`). `linkedImageIds` in the hook only drives the disabled state -- `permanentlyDeleteImages` recomputes the set server-side and returns what it actually destroyed, so the guard is not something a client can skip
 - Permanent delete cascades: if deleting a variation whose hidden root image has no remaining living variations, the root is also cleaned up
 - All mutations use optimistic updates with rollback on error
 - Image URLs are public R2 URLs via `createImageStorage()` (no signing/expiry)

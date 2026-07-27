@@ -391,7 +391,7 @@ export function useGenerationResults({
     })
     await supabase
       .from('user_images')
-      .update({ deleted_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), on_canvas: false })
       .eq('id', id)
   }, [])
 

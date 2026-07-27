@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { UserImage } from '@/features/user-images/types'
-import { removeImages } from '@/features/user-images/server/remove-images.server'
-import { supabase } from '@/lib/supabase'
 import { createImageStorage } from '@/lib/image-storage'
+import {
+  listTrashedImages,
+  permanentlyDeleteImages,
+  restoreImages,
+} from '@/features/trash/server/trash.actions'
 
 interface UseTrashReturn {
   images: Array<UserImage>
@@ -22,68 +25,18 @@ interface UseTrashReturn {
 }
 
 /**
- * Checks which trashed image IDs are referenced by living (non-deleted, non-hidden)
- * images via source_image_id (immutable generation history) or root_image_id
- * in generation_metadata, or are currently placed on the canvas (on_canvas = true).
+ * Trash list state.
  *
- * Images with active references cannot be permanently deleted until those references
- * are removed or the referencing images are also deleted.
+ * No database access and no realtime: everything goes through
+ * `trash.actions.ts` (#173/#174). Trash is only ever changed by an action taken
+ * on this page or by a delete elsewhere in the app, and either way the next
+ * visit re-reads it -- so there is nothing here for a live subscription to do
+ * that a refetch after each mutation does not.
+ *
+ * `linkedImageIds` drives the disabled state on the delete controls, but it is
+ * not what enforces the rule. The server recomputes the linked set inside
+ * `permanentlyDeleteImages` and returns the ids it actually destroyed.
  */
-async function fetchLinkedIds(trashedIds: Array<string>): Promise<{
-  ids: Set<string>
-  counts: Record<string, number>
-  canvasIds: Set<string>
-}> {
-  const ids = new Set<string>()
-  const counts: Record<string, number> = {}
-  const canvasIds = new Set<string>()
-
-  if (trashedIds.length === 0) return { ids, counts, canvasIds }
-
-  const trashedSet = new Set(trashedIds)
-
-  // Fetch all living images that have generation_metadata
-  const { data: livingImages } = await supabase
-    .from('user_images')
-    .select('generation_metadata')
-    .is('deleted_at', null)
-    .eq('hidden', false)
-    .not('generation_metadata', 'is', null)
-
-  if (livingImages) {
-    for (const row of livingImages) {
-      const meta = row.generation_metadata as Record<string, unknown> | null
-      if (!meta) continue
-
-      const refs = [
-        typeof meta.source_image_id === 'string' ? meta.source_image_id : null,
-        typeof meta.root_image_id === 'string' ? meta.root_image_id : null,
-      ].filter((id): id is string => id !== null && trashedSet.has(id))
-
-      for (const refId of refs) {
-        ids.add(refId)
-        counts[refId] = (counts[refId] || 0) + 1
-      }
-    }
-  }
-
-  // Check which trashed images are still on the canvas
-  const { data: onCanvasRows } = await supabase
-    .from('user_images')
-    .select('id')
-    .in('id', trashedIds)
-    .eq('on_canvas', true)
-
-  if (onCanvasRows) {
-    for (const row of onCanvasRows) {
-      canvasIds.add(row.id)
-      ids.add(row.id)
-    }
-  }
-
-  return { ids, counts, canvasIds }
-}
-
 export function useTrash(userId: string | undefined): UseTrashReturn {
   const [images, setImages] = useState<Array<UserImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
@@ -91,15 +44,6 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
   const [linkedImageIds, setLinkedImageIds] = useState<Set<string>>(new Set())
   const [linkedCounts, setLinkedCounts] = useState<Record<string, number>>({})
   const [canvasLinkedIds, setCanvasLinkedIds] = useState<Set<string>>(new Set())
-
-  const refreshLinked = useCallback(async (trashedImages: Array<UserImage>) => {
-    const { ids, counts, canvasIds } = await fetchLinkedIds(
-      trashedImages.map((img) => img.id),
-    )
-    setLinkedImageIds(ids)
-    setLinkedCounts(counts)
-    setCanvasLinkedIds(canvasIds)
-  }, [])
 
   const fetchTrashed = useCallback(async () => {
     if (!userId) {
@@ -109,25 +53,16 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
 
     try {
       setIsLoading(true)
-      const { data, error } = await supabase
-        .from('user_images')
-        .select('*')
-        .eq('user_id', userId)
-        .not('deleted_at', 'is', null)
-        .eq('hidden', false)
-        .in('source', ['upload', 'ai_generated'])
-        .order('deleted_at', { ascending: false })
+      const { images: rows, links } = await listTrashedImages()
 
-      if (error) throw error
-
-      setImages(data)
-
-      // Check linked status
-      refreshLinked(data)
+      setImages(rows)
+      setLinkedImageIds(new Set(links.ids))
+      setLinkedCounts(links.counts)
+      setCanvasLinkedIds(new Set(links.canvasIds))
 
       // Sign URLs in background
       const storage = createImageStorage()
-      for (const image of data) {
+      for (const image of rows) {
         if (!image.storage_path) continue
         storage
           .getUrl(image.storage_path)
@@ -146,298 +81,81 @@ export function useTrash(userId: string | undefined): UseTrashReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, refreshLinked])
+  }, [userId])
 
   useEffect(() => {
-    fetchTrashed()
+    void fetchTrashed()
   }, [fetchTrashed])
 
-  // Realtime subscription for trash changes
-  useEffect(() => {
-    if (!userId) return
+  const forget = useCallback((ids: Set<string>) => {
+    setImages((prev) => prev.filter((img) => !ids.has(img.id)))
+    setImageUrls((prev) => {
+      const next = { ...prev }
+      for (const id of ids) delete next[id]
+      return next
+    })
+  }, [])
 
-    const channel = supabase
-      .channel('trash_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_images',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as UserImage
-            const rawUpdate = payload.new as Record<string, unknown>
-            if (rawUpdate.hidden === true) {
-              setImages((prev) => prev.filter((img) => img.id !== updated.id))
-              return
-            }
-            if (updated.deleted_at) {
-              setImages((prev) => {
-                const next = prev.some((img) => img.id === updated.id)
-                  ? prev.map((img) => (img.id === updated.id ? updated : img))
-                  : [updated, ...prev]
-                // Re-check linked status with updated list
-                refreshLinked(next)
-                return next
-              })
-              createImageStorage()
-                .getUrl(updated.storage_path ?? '')
-                .then((url) => {
-                  if (url) {
-                    setImageUrls((prev) => ({
-                      ...prev,
-                      [updated.id]: url,
-                    }))
-                  }
-                })
-                .catch(() => {})
-            } else {
-              setImages((prev) => {
-                const next = prev.filter((img) => img.id !== updated.id)
-                refreshLinked(next)
-                return next
-              })
-            }
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = payload.old.id
-            setImages((prev) => {
-              const next = prev.filter((img) => img.id !== deletedId)
-              refreshLinked(next)
-              return next
-            })
-            setImageUrls((prev) => {
-              const next = { ...prev }
-              delete next[deletedId]
-              return next
-            })
-          }
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [userId, refreshLinked])
+  const restoreMany = useCallback(
+    async (ids: Array<string>) => {
+      forget(new Set(ids))
+      try {
+        await restoreImages(ids)
+      } catch (err) {
+        await fetchTrashed()
+        throw err
+      }
+    },
+    [fetchTrashed, forget],
+  )
 
   const restore = useCallback(
     async (id: string) => {
-      setImages((prev) => prev.filter((img) => img.id !== id))
-
-      const { error } = await supabase
-        .from('user_images')
-        .update({ deleted_at: null })
-        .eq('id', id)
-
-      if (error) {
-        fetchTrashed()
-        throw error
-      }
+      await restoreMany([id])
     },
-    [fetchTrashed],
-  )
-
-  const permanentDelete = useCallback(
-    async (id: string) => {
-      // Safety guard: don't delete linked images
-      if (linkedImageIds.has(id)) return
-
-      const image = images.find((img) => img.id === id)
-      if (!image) return
-
-      setImages((prev) => prev.filter((img) => img.id !== id))
-
-      const { error } = await supabase.from('user_images').delete().eq('id', id)
-
-      if (error) {
-        fetchTrashed()
-        throw error
-      }
-
-      await removeImages({
-        storagePaths: [
-          ...(image.storage_path ? [image.storage_path] : []),
-          ...(image.thumbnail_path ? [image.thumbnail_path] : []),
-        ],
-      })
-
-      // Cascade cleanup for variations
-      const metadata = image.generation_metadata as Record<
-        string,
-        unknown
-      > | null
-      if (metadata?.generation_type === 'variation') {
-        const rootId =
-          (typeof metadata.root_image_id === 'string'
-            ? metadata.root_image_id
-            : null) ??
-          (typeof metadata.source_image_id === 'string'
-            ? metadata.source_image_id
-            : null)
-        if (rootId) {
-          const { data: rootImage } = await supabase
-            .from('user_images')
-            .select('id, storage_path, thumbnail_path, hidden')
-            .eq('id', rootId)
-            .single()
-
-          if (rootImage?.hidden) {
-            const { count } = await supabase
-              .from('user_images')
-              .select('id', { count: 'exact', head: true })
-              .or(
-                `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
-              )
-              .is('deleted_at', null)
-
-            if (count === 0) {
-              await supabase.from('user_images').delete().eq('id', rootId)
-              if (rootImage.storage_path) {
-                await removeImages({
-                  storagePaths: [
-                    rootImage.storage_path,
-                    ...(rootImage.thumbnail_path
-                      ? [rootImage.thumbnail_path]
-                      : []),
-                  ],
-                })
-              }
-            }
-          }
-        }
-      }
-    },
-    [images, fetchTrashed, linkedImageIds],
+    [restoreMany],
   )
 
   const permanentDeleteMany = useCallback(
     async (ids: Array<string>) => {
-      // Filter out linked images
-      const safeIds = ids.filter((id) => !linkedImageIds.has(id))
-      const targetImages = images.filter((img) => safeIds.includes(img.id))
-      if (targetImages.length === 0) return
+      const requested = ids.filter((id) => !linkedImageIds.has(id))
+      if (requested.length === 0) return
 
-      const idSet = new Set(safeIds)
-      const storagePaths = targetImages.flatMap((img) => [
-        ...(img.storage_path ? [img.storage_path] : []),
-        ...(img.thumbnail_path ? [img.thumbnail_path] : []),
-      ])
-
-      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
-
-      const { error } = await supabase
-        .from('user_images')
-        .delete()
-        .in('id', safeIds)
-
-      if (error) {
-        fetchTrashed()
-        throw error
-      }
-
-      if (storagePaths.length > 0) {
-        await removeImages({ storagePaths })
-      }
-
-      // Cascade cleanup for variations
-      for (const image of targetImages) {
-        const metadata = image.generation_metadata as Record<
-          string,
-          unknown
-        > | null
-        if (metadata?.generation_type === 'variation') {
-          const rootId =
-            (typeof metadata.root_image_id === 'string'
-              ? metadata.root_image_id
-              : null) ??
-            (typeof metadata.source_image_id === 'string'
-              ? metadata.source_image_id
-              : null)
-          if (rootId) {
-            const { data: rootImage } = await supabase
-              .from('user_images')
-              .select('id, storage_path, thumbnail_path, hidden')
-              .eq('id', rootId)
-              .single()
-
-            if (rootImage?.hidden) {
-              const { count } = await supabase
-                .from('user_images')
-                .select('id', { count: 'exact', head: true })
-                .or(
-                  `generation_metadata->>root_image_id.eq.${rootId},generation_metadata->>source_image_id.eq.${rootId}`,
-                )
-                .is('deleted_at', null)
-
-              if (count === 0) {
-                await supabase.from('user_images').delete().eq('id', rootId)
-                if (rootImage.storage_path) {
-                  await removeImages({
-                    storagePaths: [
-                      rootImage.storage_path,
-                      ...(rootImage.thumbnail_path
-                        ? [rootImage.thumbnail_path]
-                        : []),
-                    ],
-                  })
-                }
-              }
-            }
-          }
-        }
+      forget(new Set(requested))
+      try {
+        const deleted = await permanentlyDeleteImages(requested)
+        // The server may have refused some of them -- a link can appear between
+        // the page load and the click. Re-read rather than trust the optimism.
+        if (deleted.length !== requested.length) await fetchTrashed()
+      } catch (err) {
+        await fetchTrashed()
+        throw err
       }
     },
-    [images, fetchTrashed, linkedImageIds],
+    [fetchTrashed, forget, linkedImageIds],
   )
 
-  const restoreMany = useCallback(
-    async (ids: Array<string>) => {
-      const idSet = new Set(ids)
-
-      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
-
-      const { error } = await supabase
-        .from('user_images')
-        .update({ deleted_at: null })
-        .in('id', ids)
-
-      if (error) {
-        fetchTrashed()
-        throw error
-      }
+  const permanentDelete = useCallback(
+    async (id: string) => {
+      await permanentDeleteMany([id])
     },
-    [fetchTrashed],
+    [permanentDeleteMany],
   )
 
   const emptyTrash = useCallback(async () => {
-    // Only delete non-linked images
     const deletable = images.filter((img) => !linkedImageIds.has(img.id))
     if (deletable.length === 0) return
 
-    const storagePaths = deletable.flatMap((img) => [
-      ...(img.storage_path ? [img.storage_path] : []),
-      ...(img.thumbnail_path ? [img.thumbnail_path] : []),
-    ])
-    const ids = deletable.map((img) => img.id)
-
-    // Optimistic: keep only linked images
-    const linked = images.filter((img) => linkedImageIds.has(img.id))
-    setImages(linked)
-
-    const { error } = await supabase.from('user_images').delete().in('id', ids)
-
-    if (error) {
-      fetchTrashed()
-      throw error
+    // Keep the linked rows on screen; the server decides the rest.
+    setImages(images.filter((img) => linkedImageIds.has(img.id)))
+    try {
+      await permanentlyDeleteImages()
+      await fetchTrashed()
+    } catch (err) {
+      await fetchTrashed()
+      throw err
     }
-
-    if (storagePaths.length > 0) {
-      await removeImages({ storagePaths })
-    }
-  }, [images, fetchTrashed, linkedImageIds])
+  }, [images, linkedImageIds, fetchTrashed])
 
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {

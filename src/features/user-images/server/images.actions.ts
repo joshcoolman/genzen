@@ -107,7 +107,7 @@ export async function softDeleteImage(id: string): Promise<void> {
   const { userId, supabase } = await resolveAuth()
   const { error } = await supabase
     .from('user_images')
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: new Date().toISOString(), on_canvas: false })
     .eq('id', id)
     .eq('user_id', userId)
 
