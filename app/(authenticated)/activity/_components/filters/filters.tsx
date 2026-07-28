@@ -1,4 +1,4 @@
-import { ChevronDown, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useMemo } from 'react'
 import { clsx } from 'clsx'
 import styles from './filters.module.css'
@@ -11,7 +11,7 @@ import {
   RETIRED_MODEL_NAMES,
   pickerId,
 } from '#/features/ai-images/models'
-import { Checkbox, Popover, PopoverContent, PopoverTrigger } from '#/components'
+import { MultiSelect } from '#/components'
 
 type DatePreset = 'all' | 'today' | '7d' | '30d'
 
@@ -113,60 +113,13 @@ export function Filters({
 
   return (
     <div className={styles.filters}>
-      {/* Model multi-select */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={clsx(
-              styles.modelTrigger,
-              filters.models.length > 0 && styles.modelTriggerActive,
-            )}
-          >
-            <span>
-              Models
-              {filters.models.length > 0 && (
-                <span className={styles.modelCount}>
-                  ({filters.models.length})
-                </span>
-              )}
-            </span>
-            <ChevronDown className={styles.chevron} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          collisionPadding={8}
-          className={styles.popover}
-        >
-          {filters.models.length > 0 && (
-            <button
-              type="button"
-              onClick={() => onChange({ ...filters, models: [] })}
-              className={styles.clearAll}
-            >
-              Clear all
-              <span className={styles.clearAllCount}>
-                {filters.models.length}
-              </span>
-            </button>
-          )}
-          <div className={styles.optionList}>
-            {modelOptions.map((m) => {
-              const checked = filters.models.includes(m.id)
-              return (
-                <label key={m.id} className={styles.option}>
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggleModel(m.id)}
-                  />
-                  <span className={styles.optionLabel}>{m.label}</span>
-                </label>
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
+      <MultiSelect
+        label="Models"
+        options={modelOptions}
+        selected={filters.models}
+        onToggle={toggleModel}
+        onClear={() => onChange({ ...filters, models: [] })}
+      />
 
       {/* Status pills */}
       <div className={styles.pillGroup}>

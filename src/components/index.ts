@@ -9,6 +9,11 @@ export {
   Pagination,
   type PaginationProps,
 } from './primitives/pagination/pagination'
+export {
+  MultiSelect,
+  type MultiSelectProps,
+  type MultiSelectOption,
+} from './primitives/multi-select/multi-select'
 
 export { ActionButton } from './action-button/action-button'
 export { AspectRatioSelect } from './aspect-ratio-select/aspect-ratio-select'

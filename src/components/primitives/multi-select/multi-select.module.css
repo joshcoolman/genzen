@@ -1,0 +1,99 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: var(--space-32);
+  padding-inline: var(--space-12);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.trigger:hover {
+  background: var(--accent);
+}
+
+.triggerActive {
+  border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+}
+
+.count {
+  margin-left: var(--space-4);
+  color: var(--muted-foreground);
+}
+
+.chevron {
+  width: var(--space-12);
+  height: var(--space-12);
+}
+
+/* Grow to fit the list, and only scroll once the viewport runs out. Radix
+   measures the space between the trigger and the viewport edge and publishes it
+   here; the fallback is for a render where the var is not set yet.
+   The panel itself does not scroll -- the option list inside it does, so
+   "Clear all" stays put at the top. */
+.popover {
+  display: flex;
+  flex-direction: column;
+  width: 18rem;
+  max-height: var(--radix-popover-content-available-height, 20rem);
+  padding: var(--space-8);
+  overflow: hidden;
+}
+
+.clearAll {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding: var(--space-6) var(--space-8);
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  text-align: left;
+  cursor: pointer;
+}
+
+.clearAll:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.clearAllCount {
+  font-variant-numeric: tabular-nums;
+}
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--accent);
+}
+
+.optionLabel {
+  flex: 1 1 0%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
