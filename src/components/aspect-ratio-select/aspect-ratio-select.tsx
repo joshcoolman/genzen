@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Check } from 'lucide-react'
 import {
   autoUpdate,
   flip,
@@ -200,20 +201,7 @@ export function AspectRatioSelect({
                 >
                   <RatioIcon w={opt.w} h={opt.h} />
                   <span className="flex-1 text-left">{opt.label}</span>
-                  {opt.label === aspectRatio && (
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3.5 8.5L6.5 11.5L12.5 5" />
-                    </svg>
-                  )}
+                  {opt.label === aspectRatio && <Check size={16} />}
                 </button>
               ))}
             </div>

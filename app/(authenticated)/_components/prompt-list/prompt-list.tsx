@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles, X } from 'lucide-react'
 import { GeneratePromptsDialog } from '../generate-prompts-dialog/generate-prompts-dialog'
 import { PastePromptsDialog } from '../paste-prompts-dialog/paste-prompts-dialog'
 import { Textarea } from '#/components'
@@ -94,7 +94,7 @@ export function PromptList({
                   className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
                   title="Clear all prompts, source image, and references"
                 >
-                  <XIcon />
+                  <X size={14} />
                 </button>
               )
             ) : (
@@ -104,7 +104,7 @@ export function PromptList({
                 className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
                 title="Remove this prompt"
               >
-                <XIcon />
+                <X size={14} />
               </button>
             )}
             {onEnhancePrompt && (
@@ -185,23 +185,5 @@ export function PromptList({
         />
       )}
     </div>
-  )
-}
-
-function XIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
   )
 }
