@@ -1,7 +1,6 @@
 'use client'
 
 import { DetailPanel } from './_components/detail-panel/detail-panel'
-import { CostBadge } from './_components/cost-badge/cost-badge'
 import { Filters } from './_components/filters/filters'
 import { RunTable } from './_components/run-table/run-table'
 import { useView } from './use-view'
@@ -12,7 +11,6 @@ export function View() {
     entries,
     total,
     totalPages,
-    totals,
     isLoading,
     page,
     setPage,
@@ -27,7 +25,7 @@ export function View() {
 
   return (
     <Stack gap={24}>
-      <PageHeader title="Activity" aside={<CostBadge totals={totals} />} />
+      <PageHeader title="Activity" />
 
       <Filters
         filters={filters}
