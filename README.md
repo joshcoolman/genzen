@@ -122,6 +122,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **Styling L0/L1 landed (#183).** `src/styles/tokens.css` is the single source
+  of values — the whole `:root` block out of `styles.css`, hex to HSL, plus the
+  tokens Tailwind supplied implicitly (status, scrim, on-dark, shadows, spacing,
+  radii, type, z-index). `styles/base.css` is written but not imported;
+  Preflight still owns the reset until #186. Verified by diffing compiled CSS:
+  every changed line is a token declaration, no rule moved.
 - **The Images page is `/images`, not `/ai-images`.** Its query is
   `source in ('upload', 'ai_generated')` -- it always listed uploads beside
   generations, and an upload is routinely the root of a family of them. The
@@ -151,13 +157,12 @@ Conventions follow `~/repos/project-standard`.
   the standard leaves open: a `features/` folder is earned by two or more
   consumers, and `features/` is headless. `docs/OVERVIEW.md` says what the app
   is. Written first, because #181 executes against it.
-- **Import alias is `#/` (#179).** 482 specifiers across 162 files.
 
 **Up next**
 
-- **#185 — Pass 2: styling.** `tokens.css`/`base.css`, then CSS Modules area by
-  area with Base UI replacing shadcn as each is touched, then Tailwind out last.
-  84 files carry utility classes today.
+- **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
+  CSS Modules, with Base UI replacing shadcn as each component is touched.
+  Tailwind comes out last (#186). 84 files carry utility classes today.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
