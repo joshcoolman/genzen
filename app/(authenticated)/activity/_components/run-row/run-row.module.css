@@ -1,10 +1,10 @@
-/* Must stay in step with the header strip in activity-page.module.css --
-   the two grids are siblings, so nothing enforces this but the comment. */
+/* `--run-columns` is defined by run-table, the component that owns both this
+   row and the header strip above it. Reading it here is what makes the column
+   geometry a single declaration -- so RunRow is only renderable inside a
+   RunTable, deliberately. */
 .row {
   display: grid;
-  grid-template-columns:
-    48px minmax(0, 1.2fr) minmax(0, 2fr) 110px 80px 90px
-    minmax(130px, auto);
+  grid-template-columns: var(--run-columns);
   align-items: center;
   gap: var(--space-12);
   width: 100%;

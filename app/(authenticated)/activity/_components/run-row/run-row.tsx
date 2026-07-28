@@ -5,7 +5,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import styles from './activity-row.module.css'
+import styles from './run-row.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import {
   formatAbsolute,
@@ -13,7 +13,7 @@ import {
   formatRelativeOrDate,
 } from '#/lib/time-format'
 
-interface ActivityRowProps {
+interface RunRowProps {
   entry: ActivityEntry
   thumbnailUrl: string | null
   onSelect?: (id: string) => void
@@ -54,11 +54,7 @@ function formatCents(cents: number | null, isEstimate = false): string {
   return `${prefix}$${dollars.toFixed(2)}`
 }
 
-export function ActivityRow({
-  entry,
-  thumbnailUrl,
-  onSelect,
-}: ActivityRowProps) {
+export function RunRow({ entry, thumbnailUrl, onSelect }: RunRowProps) {
   const duration =
     entry.durationMs != null ? formatDurationMs(entry.durationMs) : '—'
 

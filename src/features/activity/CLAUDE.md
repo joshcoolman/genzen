@@ -4,14 +4,22 @@ Chronological record of every AI generation (image, success + failure, including
 
 - `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
 - `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses, dateFrom, dateTo). Runs page + totals queries in parallel. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
-- `server/get-activity-entry.server.ts` -- fetches a single `user_images` row by ID. Returns `ActivityEntryDetail` with full file metadata, reference images (resolved from `generation_metadata.reference_image_ids`), and raw JSON-stringified metadata.
-- `hooks/use-activity-page.ts` -- page state: filters, pagination, totals, `getThumbUrl`. Resets page on filter change. No database access and no realtime: it calls `list-activity.server.ts`, and polls `checkPendingGenerations` every 5s while pending rows exist, refetching when a poll settles a row.
+
+Two files left here when the Activity route was restructured, because each had a
+single consumer and this folder is earned by two or more:
+
+- `get-activity-entry` -> `app/(authenticated)/activity/_actions/get-entry.ts`
+- `use-activity-page` -> `app/(authenticated)/activity/use-view.ts`
+
+What remains is what Activity and Account's Recent-activity preview both use.
 
 ## Route and UI
 
-`app/(authenticated)/activity/page.tsx`. The screen lives with the route in
-`app/(authenticated)/activity/_components/`; `activity-preview/` (the compact 5-row
-widget) lives with the one route that renders it, `app/(authenticated)/account/`.
+`app/(authenticated)/activity/` -- `page.tsx` renders `view.tsx`, which composes
+components and carries no styles of its own; `use-view.ts` holds the state.
+Parts live in `_components/` (`run-table`, `run-row`, `totals`, `filters`,
+`detail-panel`). `activity-preview/` (the compact 5-row widget) lives with the
+one route that renders it, `app/(authenticated)/account/`.
 
 ## Data Source
 
@@ -25,7 +33,6 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 
 - `#/lib/auth` -- useAuth for access token
 - `#/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
-- `#/lib/utils` -- `cn` (classname merge)
 - `#/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
 - `#/lib/server/auth.server` -- requireAuth
 - `#/lib/server/check-pending-generations.server` -- FAL polling for pending rows

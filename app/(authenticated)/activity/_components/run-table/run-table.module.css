@@ -1,0 +1,47 @@
+/* The one owner of the column geometry. It was declared twice before -- on the
+   header strip and again on the row -- with a comment in each file asking the
+   next reader to keep them in step. The header and the rows are siblings, so
+   the only way to have one declaration is for something to own both, and that
+   is what this component is for. */
+.table {
+  --run-columns: 48px minmax(0, 1.2fr) minmax(0, 2fr) 110px 80px 90px
+    minmax(130px, auto);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: var(--run-columns);
+  align-items: center;
+  gap: var(--space-12);
+  padding-inline: var(--space-12);
+  color: var(--muted-foreground);
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.columnTime {
+  text-align: right;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.placeholder {
+  padding: var(--space-40) var(--space-16);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--card) 40%, transparent);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-align: center;
+}

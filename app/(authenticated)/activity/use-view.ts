@@ -1,8 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { listActivity } from '../server/list-activity.server'
-import type { ActivityEntry, ActivityFilters, ActivityTotals } from '../types'
+import type {
+  ActivityEntry,
+  ActivityFilters,
+  ActivityTotals,
+} from '#/features/activity/types'
+import { listActivity } from '#/features/activity/server/list-activity.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
 
 const PAGE_SIZE = 50
@@ -22,13 +26,14 @@ const EMPTY_TOTALS: ActivityTotals = {
   exceedsCap: false,
 }
 
-export function useActivityPage() {
+export function useView() {
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [total, setTotal] = useState(0)
   const [totals, setTotals] = useState<ActivityTotals>(EMPTY_TOTALS)
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [filters, setFiltersState] = useState<ActivityFilters>(EMPTY_FILTERS)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const getThumbUrl = useMemo(() => {
     const base = process.env.VITE_R2_PUBLIC_URL?.replace(/\/$/, '') ?? ''
@@ -98,6 +103,33 @@ export function useActivityPage() {
     return () => clearInterval(interval)
   }, [hasPendingWork, refetch])
 
+  // Arrow keys cycle the detail panel through the visible rows. Lives here
+  // rather than in the view because it is selection behaviour, not layout --
+  // and the view owns no state to hang it on any more.
+  useEffect(() => {
+    if (!selectedId) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      const idx = entries.findIndex((entry) => entry.id === selectedId)
+      if (idx === -1) return
+      const nextIdx = e.key === 'ArrowRight' ? idx + 1 : idx - 1
+      if (nextIdx < 0 || nextIdx >= entries.length) return
+      e.preventDefault()
+      setSelectedId(entries[nextIdx].id)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [selectedId, entries])
+
   const setFilters = (next: ActivityFilters) => {
     setFiltersState(next)
     setPage(0)
@@ -126,5 +158,7 @@ export function useActivityPage() {
     clearFilters,
     hasActiveFilters,
     getThumbUrl,
+    selectedId,
+    setSelectedId,
   }
 }

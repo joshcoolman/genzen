@@ -1,0 +1,31 @@
+/* Tailwind's `space-y-*` was a block container with margin-bottom on all but the
+   last child, not flex + gap -- an inline child kept its line box that way. This
+   is the flex form, so a route adopting it must be composing block-level
+   sections. That is the only shape `Stack` is for. */
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.gap4 {
+  gap: var(--space-4);
+}
+.gap8 {
+  gap: var(--space-8);
+}
+.gap12 {
+  gap: var(--space-12);
+}
+.gap16 {
+  gap: var(--space-16);
+}
+.gap24 {
+  gap: var(--space-24);
+}
+.gap32 {
+  gap: var(--space-32);
+}

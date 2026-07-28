@@ -5,7 +5,7 @@ import type {
   ActivityGenerationMetadata,
   ActivityReferenceImage,
   GenerationStatus,
-} from '../types'
+} from '#/features/activity/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { getModelName } from '#/features/ai-images/models'

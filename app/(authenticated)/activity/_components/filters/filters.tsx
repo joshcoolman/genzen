@@ -1,9 +1,9 @@
 import { ChevronDown, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { clsx } from 'clsx'
-import styles from './activity-filters.module.css'
+import styles from './filters.module.css'
 import type {
-  ActivityFilters as Filters,
+  ActivityFilters,
   GenerationStatus,
 } from '#/features/activity/types'
 import {
@@ -29,7 +29,7 @@ const STATUS_OPTIONS: Array<{ value: GenerationStatus; label: string }> = [
   { value: 'pending', label: 'Pending' },
 ]
 
-function computeDatePreset(filters: Filters): DatePreset {
+function computeDatePreset(filters: ActivityFilters): DatePreset {
   if (!filters.dateFrom) return 'all'
   const from = new Date(filters.dateFrom)
   const now = new Date()
@@ -62,19 +62,19 @@ function computeDateFrom(preset: DatePreset): string | null {
   return from.toISOString()
 }
 
-interface ActivityFiltersProps {
-  filters: Filters
-  onChange: (next: Filters) => void
+interface FiltersProps {
+  filters: ActivityFilters
+  onChange: (next: ActivityFilters) => void
   onClear: () => void
   hasActiveFilters: boolean
 }
 
-export function ActivityFilters({
+export function Filters({
   filters,
   onChange,
   onClear,
   hasActiveFilters,
-}: ActivityFiltersProps) {
+}: FiltersProps) {
   const modelOptions = useMemo(() => {
     const out: Array<{ id: string; label: string }> = []
     for (const m of IMAGE_MODELS) {

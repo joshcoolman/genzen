@@ -10,9 +10,9 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import styles from './activity-detail-panel.module.css'
+import { getActivityEntry } from '../../_actions/get-entry'
+import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
-import { getActivityEntry } from '#/features/activity/server/get-activity-entry.server'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#/components'
 import {
   formatAbsolute,
@@ -20,7 +20,7 @@ import {
   formatRelativeOrDate,
 } from '#/lib/time-format'
 
-interface ActivityDetailPanelProps {
+interface DetailPanelProps {
   entryId: string | null
   onClose: () => void
   getThumbUrl: (path: string | null) => string | null
@@ -189,11 +189,11 @@ function JsonBlock({ json }: { json: string }) {
   )
 }
 
-export function ActivityDetailPanel({
+export function DetailPanel({
   entryId,
   onClose,
   getThumbUrl,
-}: ActivityDetailPanelProps) {
+}: DetailPanelProps) {
   const [detail, setDetail] = useState<ActivityEntryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

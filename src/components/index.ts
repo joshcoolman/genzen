@@ -1,3 +1,15 @@
+// Staging folder -- see primitives/README.md. These move up into src/components/
+// before #185 closes; the import path for consumers never changes.
+export { Stack, type StackProps } from './primitives/stack/stack'
+export {
+  PageHeader,
+  type PageHeaderProps,
+} from './primitives/page-header/page-header'
+export {
+  Pagination,
+  type PaginationProps,
+} from './primitives/pagination/pagination'
+
 export { ActionButton } from './action-button/action-button'
 export { AspectRatioSelect } from './aspect-ratio-select/aspect-ratio-select'
 export {

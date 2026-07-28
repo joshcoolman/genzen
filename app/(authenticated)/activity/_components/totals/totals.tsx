@@ -1,6 +1,6 @@
 import { Clock4, DollarSign, Receipt } from 'lucide-react'
-import styles from './activity-totals.module.css'
-import type { ActivityTotals as Totals } from '#/features/activity/types'
+import styles from './totals.module.css'
+import type { ActivityTotals } from '#/features/activity/types'
 import { formatDurationMs } from '#/lib/time-format'
 
 function formatDollarsFromCents(cents: number): string {
@@ -32,15 +32,12 @@ function Stat({ icon, label, value, muted, title }: StatProps) {
   )
 }
 
-interface ActivityTotalsProps {
-  totals: Totals
+interface TotalsProps {
+  totals: ActivityTotals
   hasActiveFilters: boolean
 }
 
-export function ActivityTotals({
-  totals,
-  hasActiveFilters,
-}: ActivityTotalsProps) {
+export function Totals({ totals, hasActiveFilters }: TotalsProps) {
   return (
     <div className={styles.totals}>
       <div className={styles.grid}>

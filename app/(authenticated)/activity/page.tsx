@@ -1,5 +1,5 @@
-import { ActivityPage } from './_components/activity-page/activity-page'
+import { View } from './view'
 
-export default function ActivityRoute() {
-  return <ActivityPage />
+export default function Activity() {
+  return <View />
 }
