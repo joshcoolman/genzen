@@ -122,6 +122,11 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **Login is off Tailwind (#185).** First area of Pass 2 — two modules, no
+  utility class left under `app/login/`. It surfaced the trap worth knowing:
+  `text-sm` sets a line-height too, so L0 now pairs `--text-*-leading` with
+  every size. Verified by screenshot diff across a stash; default and focus
+  states are pixel-identical.
 - **Styling L0/L1 landed (#183).** `src/styles/tokens.css` is the single source
   of values — the whole `:root` block out of `styles.css`, hex to HSL, plus the
   tokens Tailwind supplied implicitly (status, scrim, on-dark, shadows, spacing,
@@ -152,17 +157,13 @@ Conventions follow `~/repos/project-standard`.
   dashboard chrome. `AppChrome` moved out of `src/components/` too — it
   imported `#/features`, so it was never a primitive, and hiding there is why
   two features looked like they had no consumers.
-- **The deltas are written down (#180).** `docs/CODE-STANDARDS.md` states what
-  genzen does differently from `~/repos/project-standard` and settles the rule
-  the standard leaves open: a `features/` folder is earned by two or more
-  consumers, and `features/` is headless. `docs/OVERVIEW.md` says what the app
-  is. Written first, because #181 executes against it.
 
 **Up next**
 
 - **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
   CSS Modules, with Base UI replacing shadcn as each component is touched.
-  Tailwind comes out last (#186). 84 files carry utility classes today.
+  Tailwind comes out last (#186). Login is done; 82 files still carry utility
+  classes.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
