@@ -122,6 +122,11 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **Account is off Tailwind (#185).** Third area of Pass 2; 64 files still carry
+  utility classes. The trap this one cost: Tailwind v4's line-heights are
+  unitless **ratios**, not lengths, so a smaller child re-derives its own from
+  the ratio it inherits — L0's rem equivalent made every activity row 4px
+  taller. `--text-*-leading` is now the same `calc(a / b)` Tailwind emits.
 - **The Settings page is gone.** The lineup is the offer — what is in
   `IMAGE_MODELS` is what every selector shows, one to one — so there was nothing
   left for it to do. All three of its sections turned out to be nothing: Text
@@ -142,29 +147,25 @@ Conventions follow `~/repos/project-standard`.
   endpoint wired, and they were the whole 13-vs-7 discrepancy. FLUX Dev stays
   reachable as Kontext Dev's text-only routing target. Settings also lost its
   Text and Sidebar sections; the sidebar is a fixed set now.
-- **Login and Settings are off Tailwind (#185).** First two areas of Pass 2;
-  81 files to go. Both surfaced traps now written down on the issue: `text-sm`
-  carries a line-height (L0 pairs `--text-*-leading` with every size), and
-  `space-y-*` is not always flex + gap (an inline-block child needs the block
-  container's line box). Each verified by pixel diff across a stash.
+- **Login and Settings are off Tailwind (#185).** First two areas of Pass 2.
+  Both surfaced traps now written down on the issue: `text-sm` carries a
+  line-height (L0 pairs `--text-*-leading` with every size), and `space-y-*` is
+  not always flex + gap (an inline-block child needs the block container's line
+  box). Each verified by pixel diff across a stash.
 - **Styling L0/L1 landed (#183).** `src/styles/tokens.css` is the single source
   of values — the whole `:root` block out of `styles.css`, hex to HSL, plus the
   tokens Tailwind supplied implicitly (status, scrim, on-dark, shadows, spacing,
   radii, type, z-index). `styles/base.css` is written but not imported;
   Preflight still owns the reset until #186. Verified by diffing compiled CSS:
   every changed line is a token declaration, no rule moved.
-- **The Images page is `/images`, not `/ai-images`.** Its query is
-  `source in ('upload', 'ai_generated')` -- it always listed uploads beside
-  generations, and an upload is routinely the root of a family of them. The
-  name described the Generate panel, not the grid it sat over. The panel is
-  dismissible; the grid is the page.
 
 **Up next**
 
 - **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
   CSS Modules, with Base UI replacing shadcn as each component is touched.
-  Tailwind comes out last (#186). Login and Settings are done; 81 files still
-  carry utility classes.
+  Tailwind comes out last (#186). Login, Settings and Account are done; Activity
+  and Trash are next, then the shared chrome in
+  `app/(authenticated)/_components/`. 64 files still carry utility classes.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
