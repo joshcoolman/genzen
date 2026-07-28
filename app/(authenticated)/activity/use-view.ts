@@ -14,8 +14,6 @@ const PAGE_SIZE = 50
 const EMPTY_FILTERS: ActivityFilters = {
   models: [],
   statuses: [],
-  dateFrom: null,
-  dateTo: null,
 }
 
 const EMPTY_TOTALS: ActivityTotals = {
@@ -54,8 +52,6 @@ export function useView() {
         pageSize: PAGE_SIZE,
         models: filters.models.length > 0 ? filters.models : undefined,
         statuses: filters.statuses.length > 0 ? filters.statuses : undefined,
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
       })
         .then((result) => {
           if (id !== fetchRef.current) return
@@ -138,10 +134,7 @@ export function useView() {
   const clearFilters = () => setFilters(EMPTY_FILTERS)
 
   const hasActiveFilters =
-    filters.models.length > 0 ||
-    filters.statuses.length > 0 ||
-    filters.dateFrom != null ||
-    filters.dateTo != null
+    filters.models.length > 0 || filters.statuses.length > 0
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 

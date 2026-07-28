@@ -16,8 +16,6 @@ interface ListActivityInput {
   pageSize: number
   models?: Array<string>
   statuses?: Array<GenerationStatus>
-  dateFrom?: string | null
-  dateTo?: string | null
 }
 
 interface Row {
@@ -109,8 +107,6 @@ export async function listActivity(
           : sql``
       }
       ${data.statuses?.length ? sql`and status in ${sql(data.statuses)}` : sql``}
-      ${data.dateFrom ? sql`and created_at >= ${data.dateFrom}` : sql``}
-      ${data.dateTo ? sql`and created_at <= ${data.dateTo}` : sql``}
   `
 
   const offset = data.page * data.pageSize

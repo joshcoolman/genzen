@@ -39,8 +39,6 @@ export interface ActivityEntry {
 export interface ActivityFilters {
   models: Array<string>
   statuses: Array<GenerationStatus>
-  dateFrom: string | null
-  dateTo: string | null
 }
 
 export interface ActivityTotals {
