@@ -1,0 +1,91 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-4);
+  color: var(--foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.input {
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.input:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--accent-brand);
+}
+
+/* Room for the reveal toggle sitting on top of the field */
+.passwordField {
+  position: relative;
+}
+
+.passwordField .input {
+  padding-right: var(--space-40);
+}
+
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: var(--space-12);
+  transform: translateY(-50%);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.reveal:hover {
+  color: var(--foreground);
+}
+
+.error {
+  padding: var(--space-12);
+  border-radius: var(--radius-md);
+  background: var(--danger-surface);
+  color: var(--danger-text);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.submit {
+  width: 100%;
+  padding: var(--space-8) var(--space-16);
+  background: var(--accent-brand);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--primary-foreground);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.submit:hover {
+  background: var(--accent-brand-hover);
+}
+
+.submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

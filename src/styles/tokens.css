@@ -98,6 +98,12 @@
 
   --danger: hsl(0 84.2% 60.2%);
   --danger-foreground: hsl(0 0% 100%);
+  /* The inline-error pair: text on a tinted panel, not a solid danger fill.
+     Values are Tailwind's red-400 / red-900 at 30%, carried over so the
+     existing error banners do not shift. Fold into --danger if a design pass
+     ever decides the two reds should be one. */
+  --danger-text: hsl(358.8 100% 69.8%);
+  --danger-surface: hsl(358.9 68.8% 30.2% / 0.3);
   --success: var(--accent-brand);
   --success-foreground: hsl(0 0% 7.8%);
   --warning: var(--warm-gold);
@@ -183,14 +189,25 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
 
+  /* Each size ships with the line-height it is drawn at. Tailwind's `text-*`
+     utilities set both; a module that takes only the size shifts every element
+     below it by a pixel or two, which is exactly how a conversion drifts. */
   --text-xs: 0.75rem;
+  --text-xs-leading: 1rem;
   --text-sm: 0.875rem;
+  --text-sm-leading: 1.25rem;
   --text-base: 1rem;
+  --text-base-leading: 1.5rem;
   --text-lg: 1.125rem;
+  --text-lg-leading: 1.75rem;
   --text-xl: 1.25rem;
+  --text-xl-leading: 1.75rem;
   --text-2xl: 1.5rem;
+  --text-2xl-leading: 2rem;
   --text-3xl: 1.875rem;
+  --text-3xl-leading: 2.25rem;
   --text-4xl: 2.25rem;
+  --text-4xl-leading: 2.5rem;
 
   --leading-none: 1;
   --leading-tight: 1.25;
@@ -222,6 +239,7 @@
      ======================================== */
 
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --duration-fast: 100ms;
   --duration-normal: 150ms;
   --duration-slow: 300ms;
