@@ -10,7 +10,6 @@ import {
   getModelsByCapability,
 } from '#/features/ai-images/model-selector/models'
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { useEnabledModels } from '#/lib/use-enabled-models'
 
 interface UseModelSelectorOptions {
   capability: ModelCapability
@@ -54,7 +53,6 @@ export function useModelSelector({
   allowedIds,
   storageScope,
 }: UseModelSelectorOptions) {
-  const { isModelEnabled } = useEnabledModels()
   const allModels = useMemo(() => {
     const base = getModelsByCapability(capability)
     if (!allowedIds) return base
@@ -63,10 +61,9 @@ export function useModelSelector({
       .map((id) => base.find((m) => m.id === id))
       .filter((m): m is (typeof base)[number] => !!m)
   }, [capability, allowedIds])
-  const models = useMemo(
-    () => allModels.filter((m) => isModelEnabled(m.id)),
-    [allModels, isModelEnabled],
-  )
+  // The lineup is the offer: what is in IMAGE_MODELS is what a selector shows.
+  // There is no per-user hiding to subtract, which is why this is not a filter.
+  const models = allModels
   const modelIds = useMemo(() => models.map((m) => m.id), [models])
 
   const defaultId =

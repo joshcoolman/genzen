@@ -28,11 +28,8 @@ export function MobileNav({ className }: { className?: string }) {
   const pathname = usePathname()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
-  const settingsItem = navItems.find((item) => item.id === 'settings')!
 
-  const mainItems = navItems.filter(
-    (item) => item.id !== 'account' && item.id !== 'settings',
-  )
+  const mainItems = navItems.filter((item) => item.id !== 'account')
 
   const handleSignOut = () => {
     void logout()
@@ -85,7 +82,7 @@ export function MobileNav({ className }: { className?: string }) {
               )
             })}
             <div className="my-2 border-t border-border" />
-            {[settingsItem, accountItem].map((item) => (
+            {[accountItem].map((item) => (
               <Link
                 key={item.id}
                 href={item.href}

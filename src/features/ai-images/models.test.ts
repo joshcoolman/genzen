@@ -72,7 +72,6 @@ const LEGACY_ALL_IMAGE_MODELS = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
-    locked: true,
     displayPrice: '~$0.04/img',
     useCase: 'Reasoning-guided generation',
   },
@@ -118,7 +117,6 @@ describe('lineup, pinned to what shipped', () => {
       expect(m.withImages !== null, legacy.id).toBe(
         legacy.supportsImageInput === true,
       )
-      expect(m.locked === true, legacy.id).toBe(legacy.locked === true)
       expect(m.description, legacy.id).toBe(legacy.description)
       expect(m.displayPrice, legacy.id).toBe(legacy.displayPrice)
     }

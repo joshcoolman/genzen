@@ -42,7 +42,6 @@ export interface ModelEntry {
   /** Borrowed endpoint for the no-image case. Only for `textToImage: null`. */
   textOnlyFallback?: string
   maxRefs: number
-  locked?: boolean
   displayPrice?: string
   useCase?: string
 }
@@ -120,7 +119,6 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/nano-banana-2',
     withImages: 'fal-ai/nano-banana-2/edit',
     maxRefs: 3,
-    locked: true,
     displayPrice: '~$0.04/img',
     useCase: 'Reasoning-guided generation',
   },

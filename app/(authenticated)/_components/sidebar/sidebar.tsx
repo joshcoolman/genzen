@@ -29,11 +29,8 @@ export function Sidebar({ className }: { className?: string }) {
   const { isCollapsed } = useSidebarCollapsed()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
-  const settingsItem = navItems.find((item) => item.id === 'settings')!
 
-  const mainItems = navItems.filter(
-    (item) => item.id !== 'account' && item.id !== 'settings',
-  )
+  const mainItems = navItems.filter((item) => item.id !== 'account')
 
   const handleSignOut = () => {
     void logout()
@@ -101,7 +98,7 @@ export function Sidebar({ className }: { className?: string }) {
             )
           })}
           <div className="my-2 border-t border-border" />
-          {[settingsItem, accountItem].map((item) => (
+          {[accountItem].map((item) => (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
                 <Link

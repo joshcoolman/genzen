@@ -1,4 +1,4 @@
-import { Frame, Logs, Settings, Sparkles, Trash2, User } from 'lucide-react'
+import { Frame, Logs, Sparkles, Trash2, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -35,12 +35,6 @@ export const navItems: Array<NavItem> = [
     href: '/trash',
     icon: Trash2,
     dividerBefore: true,
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    href: '/settings',
-    icon: Settings,
   },
   {
     id: 'account',
