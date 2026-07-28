@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ALL_IMAGE_MODELS,
-  EDIT_MODELS,
   IMAGE_MODELS,
   endpointFor,
   getModelName,
   maxRefsFor,
+  pickerId,
 } from './models'
 
 const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
 
 /**
- * `ALL_IMAGE_MODELS` used to be a hand-written literal; it is now derived from
- * `IMAGE_MODELS`. This is that literal, verbatim, so the derivation is pinned
- * to it rather than to itself. Delete it with the legacy shape (#190 step 4).
+ * The hand-written array `models.ts` carried before #190, verbatim. The lineup
+ * is pinned to it rather than to itself, so a rewrite of the file cannot
+ * quietly change which model answers to which endpoint. Entries removed from
+ * the lineup on purpose are deleted from here in the same commit.
  */
 const LEGACY_ALL_IMAGE_MODELS = [
   {
@@ -136,26 +136,40 @@ const LEGACY_ALL_IMAGE_MODELS = [
   },
 ]
 
-describe('derived legacy shape', () => {
-  it('reproduces the hand-written array exactly, order included', () => {
-    expect(ALL_IMAGE_MODELS).toEqual(LEGACY_ALL_IMAGE_MODELS)
+/** What `EDIT_MODELS` said before it was deleted: endpoint -> reference cap. */
+const LEGACY_EDIT_CAPS: Record<string, number> = {
+  'fal-ai/gpt-image-1.5/edit': 4,
+  'fal-ai/gpt-image-2/edit': 4,
+  'fal-ai/nano-banana-2/edit': 3,
+  'fal-ai/bytedance/seedream/v4/edit': 10,
+  'fal-ai/bytedance/seedream/v4.5/edit': 10,
+}
+
+describe('lineup, pinned to what shipped', () => {
+  it('keeps the same models in the same order', () => {
+    expect(IMAGE_MODELS.map(pickerId)).toEqual(
+      LEGACY_ALL_IMAGE_MODELS.map((m) => m.id),
+    )
+    expect(IMAGE_MODELS.map((m) => m.name)).toEqual(
+      LEGACY_ALL_IMAGE_MODELS.map((m) => m.name),
+    )
   })
 
-  it('omits optional keys rather than setting them undefined', () => {
-    // `toEqual` treats {a: undefined} as {}, so assert the keys directly:
-    // a stray `supportsImageInput: undefined` would spread into every object
-    // that gets copied downstream.
-    const schnell = ALL_IMAGE_MODELS.find(
-      (m) => m.id === 'fal-ai/flux/schnell',
-    )!
-    expect(Object.keys(schnell).sort()).toEqual([
-      'category',
-      'description',
-      'displayPrice',
-      'id',
-      'name',
-      'useCase',
-    ])
+  it('routes each model to the endpoint it used to route to', () => {
+    for (const legacy of LEGACY_ALL_IMAGE_MODELS) {
+      const m = IMAGE_MODELS.find((x) => pickerId(x) === legacy.id)!
+      expect(m, legacy.id).toBeDefined()
+      // `imageInputModelId` was set only when a model had a *different*
+      // endpoint to switch to, which is why Kontext Dev never had one.
+      const switchesTo = m.textToImage ? m.withImages : undefined
+      expect(switchesTo ?? undefined, legacy.id).toBe(legacy.imageInputModelId)
+      expect(m.withImages !== null, legacy.id).toBe(
+        legacy.supportsImageInput === true,
+      )
+      expect(m.locked === true, legacy.id).toBe(legacy.locked === true)
+      expect(m.description, legacy.id).toBe(legacy.description)
+      expect(m.displayPrice, legacy.id).toBe(legacy.displayPrice)
+    }
   })
 })
 
@@ -217,8 +231,8 @@ describe('endpointFor', () => {
 
 describe('maxRefsFor', () => {
   it('agrees with the EDIT_MODELS numbers it replaces', () => {
-    for (const edit of EDIT_MODELS) {
-      expect(maxRefsFor(edit.id), edit.id).toBe(edit.maxRefImages)
+    for (const [id, cap] of Object.entries(LEGACY_EDIT_CAPS)) {
+      expect(maxRefsFor(id), id).toBe(cap)
     }
   })
 
@@ -255,9 +269,13 @@ describe('getModelName', () => {
   })
 
   it('names every id EDIT_MODELS used to answer for', () => {
-    for (const edit of EDIT_MODELS) {
-      expect(getModelName(edit.id), edit.id).toBe(edit.name)
+    for (const id of Object.keys(LEGACY_EDIT_CAPS)) {
+      expect(getModelName(id), id).not.toBe(id)
     }
+  })
+
+  it('names a retired endpoint that no live model claims', () => {
+    expect(getModelName('fal-ai/bytedance/seedream/v4')).toBe('Seedream v4')
   })
 
   it('falls back to the raw id, which is what an un-retired model looks like', () => {

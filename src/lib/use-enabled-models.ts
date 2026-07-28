@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
+import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 
 const STORAGE_KEY = 'genzen:disabled-models'
 
@@ -18,7 +18,7 @@ function readDisabledSet(): Set<string> {
 }
 
 export function isModelLocked(id: string): boolean {
-  return ALL_IMAGE_MODELS.some((m) => m.id === id && m.locked)
+  return IMAGE_MODELS.some((m) => pickerId(m) === id && m.locked)
 }
 
 const EMPTY_DISABLED: Set<string> = new Set()
@@ -35,7 +35,7 @@ export function useEnabledModels() {
   }, [disabledIds, hydrated])
 
   const enabledImageModels = useMemo(
-    () => ALL_IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
+    () => IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(pickerId(m))),
     [disabledIds],
   )
 
@@ -62,7 +62,7 @@ export function useEnabledModels() {
   }, [])
 
   const enabledImageInputModels = useMemo(
-    () => enabledImageModels.filter((m) => m.supportsImageInput),
+    () => enabledImageModels.filter((m) => m.withImages),
     [enabledImageModels],
   )
 

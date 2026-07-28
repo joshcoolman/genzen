@@ -2,7 +2,7 @@
 
 import { CheckCircle2, Circle, Lock } from 'lucide-react'
 import styles from './settings-page.module.css'
-import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
+import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 import { useEnabledModels } from '#/lib/use-enabled-models'
 
 export function SettingsPage() {
@@ -25,19 +25,20 @@ export function SettingsPage() {
           <h3 className={styles.groupTitle}>
             Text to Image{' '}
             <span className={styles.groupCount}>
-              ({enabledImageCount} of {ALL_IMAGE_MODELS.length} enabled)
+              ({enabledImageCount} of {IMAGE_MODELS.length} enabled)
             </span>
           </h3>
           <div className={styles.grid}>
-            {[...ALL_IMAGE_MODELS]
+            {[...IMAGE_MODELS]
               .sort((a, b) => (b.locked ? 1 : 0) - (a.locked ? 1 : 0))
               .map((model) => {
-                const enabled = isModelEnabled(model.id)
+                const id = pickerId(model)
+                const enabled = isModelEnabled(id)
                 const locked = model.locked === true
                 return (
                   <button
-                    key={model.id}
-                    onClick={() => toggleModel(model.id)}
+                    key={id}
+                    onClick={() => toggleModel(id)}
                     disabled={locked}
                     className={`${styles.modelCard} ${
                       enabled
@@ -60,7 +61,7 @@ export function SettingsPage() {
                     <div className={styles.modelText}>
                       <div className={styles.modelHeading}>
                         <span className={styles.modelName}>{model.name}</span>
-                        {model.supportsImageInput && (
+                        {model.withImages && (
                           <span className={styles.tag}>img</span>
                         )}
                       </div>

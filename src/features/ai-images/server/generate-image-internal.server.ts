@@ -3,7 +3,7 @@ import { buildFalInput } from './fal-params.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
-import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
+import { endpointFor } from '#/features/ai-images/models'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
 import { createImageStorage } from '#/lib/image-storage'
@@ -144,15 +144,13 @@ export async function generateImageInternal(
       )
     }
 
-    const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === model)
-
     let falModelId = model
     let effectivePrompt = prompt.trim()
     let imageUrl: string | null = null
 
     if (sourceImageUrl) {
       imageUrl = sourceImageUrl
-      falModelId = modelDef?.imageInputModelId ?? model
+      falModelId = endpointFor(model, true)
     } else if (sourceImageBase64) {
       // Strip data URL prefix and decode to buffer
       const base64Data = sourceImageBase64.replace(
@@ -187,7 +185,7 @@ export async function generateImageInternal(
       )
 
       // Use image-mode endpoint if specified
-      falModelId = modelDef?.imageInputModelId ?? model
+      falModelId = endpointFor(model, true)
     }
 
     // Save the user-facing prompt before any model-specific wrapping
@@ -225,7 +223,7 @@ export async function generateImageInternal(
 
       // Reference images require image-input model variant
       if (referenceUrls.length > 0 && !imageUrl) {
-        falModelId = modelDef?.imageInputModelId ?? model
+        falModelId = endpointFor(model, true)
       }
     }
 

@@ -22,7 +22,7 @@ import {
   detectAspectRatio,
   getRatioOptions,
 } from '#/features/ai-images/constants'
-import { EDIT_MODELS } from '#/features/ai-images/models'
+import { getModelName, maxRefsFor } from '#/features/ai-images/models'
 import {
   getEditSourceImage,
   listDescendantIds,
@@ -184,9 +184,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
   // maxRefImages from selected models
   const maxRefImages = useMemo(() => {
     const modelId = modelSelector.selectedIds[0]
-    if (!modelId) return 0
-    const editModel = EDIT_MODELS.find((m) => m.id === modelId)
-    return editModel?.maxRefImages ?? 0
+    return modelId ? maxRefsFor(modelId) : 0
   }, [modelSelector.selectedIds])
 
   const addRefImages = useCallback(
@@ -247,10 +245,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       for (const promptText of activePrompts) {
         const finalPrompt = promptText.trim()
         for (const editModelId of modelSelector.selectedIds) {
-          const modelLabel =
-            EDIT_MODELS.find((m) => m.id === editModelId)?.name ??
-            modelSelector.models.find((m) => m.id === editModelId)?.name ??
-            editModelId
+          const modelLabel = getModelName(editModelId)
 
           for (let g = 0; g < modelSelector.gensPerModel; g++) {
             // Put the tile on the board BEFORE the request, so the click always

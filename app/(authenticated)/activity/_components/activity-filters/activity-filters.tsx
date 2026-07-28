@@ -4,7 +4,11 @@ import type {
   ActivityFilters as Filters,
   GenerationStatus,
 } from '#/features/activity/types'
-import { ALL_IMAGE_MODELS, getModelName } from '#/features/ai-images/models'
+import {
+  IMAGE_MODELS,
+  getModelName,
+  pickerId,
+} from '#/features/ai-images/models'
 import { Checkbox, Popover, PopoverContent, PopoverTrigger } from '#/components'
 import { cn } from '#/lib/utils'
 
@@ -71,8 +75,8 @@ export function ActivityFilters({
 }: ActivityFiltersProps) {
   const modelOptions = useMemo(() => {
     const out: Array<{ id: string; label: string }> = []
-    for (const m of ALL_IMAGE_MODELS) {
-      out.push({ id: m.id, label: m.name })
+    for (const m of IMAGE_MODELS) {
+      out.push({ id: pickerId(m), label: m.name })
     }
     return out
   }, [])

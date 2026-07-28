@@ -6,7 +6,11 @@ import {
   CANVAS_MODELS,
   canvasModelIdsForRefCount,
 } from './canvas-models'
-import { EDIT_MODELS, getModelName } from '#/features/ai-images/models'
+import {
+  IMAGE_MODELS,
+  getModelName,
+  pickerId,
+} from '#/features/ai-images/models'
 
 const KONTEXT_PRO_ID = 'fal-ai/flux-pro/kontext/text-to-image'
 const SEEDREAM_45_ID = 'fal-ai/bytedance/seedream/v4.5/text-to-image'
@@ -23,35 +27,30 @@ describe('canvas model registry invariants', () => {
     expect(CANVAS_MODELS.length).toBeGreaterThan(0)
   })
 
-  it('every canvas model flags supportsImageInput', () => {
+  it('every canvas model has an image endpoint', () => {
     for (const m of CANVAS_MODELS) {
-      expect(m.supportsImageInput).toBe(true)
+      expect(m.withImages, m.slug).not.toBeNull()
     }
   })
 
-  // The source image is sent to the model's `imageInputModelId` (edit/img2img)
-  // endpoint. Without it, buildFalInput has no image param to fill and the image
-  // is dropped -- the model runs as text-to-image. supportsImageInput alone does
-  // NOT prevent this; the resolvable endpoint does.
-  it.each(CANVAS_MODELS.map((m) => [m.name, m.imageInputModelId]))(
-    '%s has an image-input endpoint so the source image is applied',
-    (_name, imageInputModelId) => {
-      expect(imageInputModelId).toBeTruthy()
+  // The source image is sent to the model's `withImages` endpoint. Without one,
+  // buildFalInput has no image param to fill and the image is dropped -- the
+  // model runs as text-to-image.
+  it.each(CANVAS_MODELS.map((m) => [m.name, m.withImages]))(
+    '%s has an image endpoint so the source image is applied',
+    (_name, withImages) => {
+      expect(withImages).toBeTruthy()
     },
   )
 
-  // Each resolved endpoint must be one we recognise -- either a first-class
-  // EDIT_MODELS entry or a named alias in getModelName. This guards two things at
-  // once: a typo'd/non-existent endpoint id, and an endpoint that would render as
-  // a raw `fal-ai/...` string on the canvas label / in Activity.
-  it.each(CANVAS_MODELS.map((m) => [m.name, m.imageInputModelId]))(
+  // Each resolved endpoint must be one getModelName can name. This guards a
+  // typo'd endpoint id and an endpoint that would render as a raw `fal-ai/...`
+  // string on the canvas label and in Activity.
+  it.each(CANVAS_MODELS.map((m) => [m.name, m.withImages]))(
     '%s resolves to a recognised, human-named endpoint',
-    (_name, imageInputModelId) => {
-      expect(imageInputModelId).toBeTruthy()
-      const id = imageInputModelId as string
-      const recognised =
-        EDIT_MODELS.some((e) => e.id === id) || getModelName(id) !== id
-      expect(recognised).toBe(true)
+    (_name, withImages) => {
+      const id = withImages as string
+      expect(getModelName(id)).not.toBe(id)
     },
   )
 })
@@ -65,7 +64,7 @@ describe('canvas model registry invariants', () => {
 describe('canvas reference-capacity gating', () => {
   it('a single image (refCount 0) exposes every curated model', () => {
     const ids = canvasModelIdsForRefCount(0)
-    expect(ids).toEqual(CANVAS_MODELS.map((m) => m.id))
+    expect(ids).toEqual(CANVAS_MODELS.map(pickerId))
   })
 
   it('refCount 0 includes single-image-only models (e.g. Kontext Pro)', () => {
@@ -87,17 +86,19 @@ describe('canvas reference-capacity gating', () => {
   })
 
   it('CANVAS_EDIT_MODELS excludes single-image-only models (Kontext Pro)', () => {
-    // Kontext Pro's img2img endpoint is single-image (not in EDIT_MODELS), so it
-    // must not appear in the group-capable edit-model list.
+    // Kontext Pro's img2img endpoint takes one image, which the source occupies
+    // (maxRefs 0), so it must not appear in the group-capable edit-model list.
     expect(CANVAS_EDIT_MODELS.some((m) => m.name === 'FLUX Kontext Pro')).toBe(
       false,
     )
   })
 
-  it('every CANVAS_EDIT_MODELS entry maps to a real EDIT_MODELS endpoint', () => {
+  it('every CANVAS_EDIT_MODELS entry maps to a real image endpoint', () => {
     for (const m of CANVAS_EDIT_MODELS) {
-      expect(EDIT_MODELS.some((e) => e.id === m.id)).toBe(true)
-      expect(m.maxRefImages).toBeGreaterThan(0)
+      const owner = IMAGE_MODELS.find((e) => e.withImages === m.id)
+      expect(owner, m.id).toBeDefined()
+      expect(owner!.maxRefs).toBeGreaterThan(0)
+      expect(m.maxRefImages).toBe(owner!.maxRefs)
     }
   })
 })

@@ -237,40 +237,24 @@ function findModel(modelId: string): ModelEntry | undefined {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Legacy shape, derived. Consumers move off these over steps 3 and 4 of #190.
-// ---------------------------------------------------------------------------
-
-export interface ImageModel {
-  id: string
-  name: string
-  description: string
-  category: ModelCategory
-  supportsImageInput?: boolean
-  imageInputModelId?: string
-  locked?: boolean
-  displayPrice?: string
-  useCase?: string
-}
-
-export const ALL_IMAGE_MODELS: Array<ImageModel> = IMAGE_MODELS.map((m) => ({
-  id: pickerId(m),
-  name: m.name,
-  description: m.description,
-  category: m.category,
-  ...(m.withImages ? { supportsImageInput: true } : {}),
-  // Only a model with both endpoints has one to *switch to*; Kontext Dev's
-  // single endpoint is already the picker id, which is why it never had this.
-  ...(m.textToImage && m.withImages ? { imageInputModelId: m.withImages } : {}),
-  ...(m.locked ? { locked: true } : {}),
-  ...(m.displayPrice ? { displayPrice: m.displayPrice } : {}),
-  ...(m.useCase ? { useCase: m.useCase } : {}),
-}))
+/** Every endpoint the app can submit to. Used to warm the FAL pricing cache. */
+export const ALL_ENDPOINT_IDS: Array<string> = [
+  ...new Set(
+    IMAGE_MODELS.flatMap((m) =>
+      [m.textToImage, m.withImages, m.textOnlyFallback].filter(
+        (id): id is string => !!id,
+      ),
+    ),
+  ),
+]
 
 /**
  * Every endpoint genzen has ever submitted to, mapped to a display name.
  * `images.model` stores the *resolved* endpoint, so history rows hold ids like
  * `fal-ai/gpt-image-1.5/edit` and both of a model's endpoints must resolve.
+ *
+ * A `textOnlyFallback` is deliberately absent: it belongs to the model that
+ * owns it, and a row made through the borrow really was made by that model.
  */
 const ENDPOINT_NAMES = new Map<string, string>(
   IMAGE_MODELS.flatMap((m) =>
@@ -281,45 +265,18 @@ const ENDPOINT_NAMES = new Map<string, string>(
 )
 
 export function getModelName(modelId: string): string {
-  return ENDPOINT_NAMES.get(modelId) ?? modelId
+  return ENDPOINT_NAMES.get(modelId) ?? RETIRED_MODEL_NAMES[modelId] ?? modelId
 }
 
-interface EditModel {
-  id: string
-  name: string
-  description: string
-  maxRefImages: number
+/**
+ * Models genzen no longer offers, kept only so history can name them.
+ *
+ * `images` rows outlive the lineup: dropping a model from IMAGE_MODELS does not
+ * delete the images it made, and Activity, Canvas and Trash still have to label
+ * them. Nothing here is selectable or submittable. Removing a name does not
+ * break anything, it just makes old rows show a raw endpoint id.
+ */
+export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
+  // Seedream v4 before FAL split the endpoint into /text-to-image and /edit.
+  'fal-ai/bytedance/seedream/v4': 'Seedream v4',
 }
-
-export const EDIT_MODELS: Array<EditModel> = [
-  {
-    id: 'fal-ai/gpt-image-1.5/edit',
-    name: 'GPT Image 1.5',
-    description: 'OpenAI, high-quality edits',
-    maxRefImages: 4,
-  },
-  {
-    id: 'fal-ai/gpt-image-2/edit',
-    name: 'GPT Image 2',
-    description: 'OpenAI, latest image edits with inpainting',
-    maxRefImages: 4,
-  },
-  {
-    id: 'fal-ai/nano-banana-2/edit',
-    name: 'Nano Banana 2',
-    description: 'Reasoning-guided edits',
-    maxRefImages: 3,
-  },
-  {
-    id: 'fal-ai/bytedance/seedream/v4/edit',
-    name: 'Seedream v4',
-    description: 'ByteDance, high-quality edits',
-    maxRefImages: 10,
-  },
-  {
-    id: 'fal-ai/bytedance/seedream/v4.5/edit',
-    name: 'Seedream v4.5',
-    description: 'Multi-image reference editing',
-    maxRefImages: 10,
-  },
-]
