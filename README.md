@@ -122,11 +122,16 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
-- **Account is off Tailwind (#185).** Third area of Pass 2; 64 files still carry
-  utility classes. The trap this one cost: Tailwind v4's line-heights are
-  unitless **ratios**, not lengths, so a smaller child re-derives its own from
-  the ratio it inherits — L0's rem equivalent made every activity row 4px
-  taller. `--text-*-leading` is now the same `calc(a / b)` Tailwind emits.
+- **Activity is off Tailwind (#185).** Fourth area, and the first with real
+  surface area — five components, the detail sheet and the filter bar. Outside
+  the thumbnail column the page diffs at max 1/255. Two capture lessons on the
+  issue: `--full` screenshots resize and re-render, so lazy images land
+  mid-paint; and `img.complete` is true long before anything is painted.
+- **Account is off Tailwind (#185).** Third area. The trap it cost: Tailwind
+  v4's line-heights are unitless **ratios**, not lengths, so a smaller child
+  re-derives its own from the ratio it inherits — L0's rem equivalent made every
+  activity row 4px taller. `--text-*-leading` is now the same `calc(a / b)`
+  Tailwind emits.
 - **The Settings page is gone.** The lineup is the offer — what is in
   `IMAGE_MODELS` is what every selector shows, one to one — so there was nothing
   left for it to do. All three of its sections turned out to be nothing: Text
@@ -152,20 +157,15 @@ Conventions follow `~/repos/project-standard`.
   line-height (L0 pairs `--text-*-leading` with every size), and `space-y-*` is
   not always flex + gap (an inline-block child needs the block container's line
   box). Each verified by pixel diff across a stash.
-- **Styling L0/L1 landed (#183).** `src/styles/tokens.css` is the single source
-  of values — the whole `:root` block out of `styles.css`, hex to HSL, plus the
-  tokens Tailwind supplied implicitly (status, scrim, on-dark, shadows, spacing,
-  radii, type, z-index). `styles/base.css` is written but not imported;
-  Preflight still owns the reset until #186. Verified by diffing compiled CSS:
-  every changed line is a token declaration, no rule moved.
 
 **Up next**
 
 - **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
   CSS Modules, with Base UI replacing shadcn as each component is touched.
-  Tailwind comes out last (#186). Login, Settings and Account are done; Activity
-  and Trash are next, then the shared chrome in
-  `app/(authenticated)/_components/`. 64 files still carry utility classes.
+  Tailwind comes out last (#186). Login, Settings, Account and Activity are
+  done; Trash is next. After that the remainder is effectively one surface —
+  `src/components/` + the Images cluster in `_components/` + `/images` — about
+  35 files. 60 files still carry utility classes.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
