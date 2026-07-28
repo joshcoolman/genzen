@@ -4,7 +4,14 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Key Files
 
-- `models.ts` -- model registry (FLUX, Kling, Seedream, GPT Image, etc.), `getModelName()`, `EDIT_MODELS`, `REFINE_CAPABLE_MODELS`; exports `KONTEXT_DEV_ID`, `KONTEXT_DEV_FALLBACK_ID`, `FLUX_KONTEXT_PRO_ID`, `LOCKED_IMAGE_MODEL_ID`; models have optional `locked` and `isNew` flags
+- `models.ts` -- **the lineup.** `IMAGE_MODELS` is one entry per model and the
+  only place to add or remove one; everything else in the file is derived from
+  it. A model is one name over up to two FAL endpoints -- `textToImage` (no
+  references) and `withImages` (references attached) -- picked by
+  `endpointFor(id, hasRefs)`, with `maxRefs` capping how many are sent.
+  `getModelName()` resolves either endpoint, because `images.model` stores the
+  resolved one. `ALL_IMAGE_MODELS`, `IMAGE_INPUT_MODELS` and `EDIT_MODELS` are
+  the legacy shape, still consumed, being retired by #190
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
@@ -76,7 +83,7 @@ lives in `app/(authenticated)/_components/` -- `generator-panel/`, `image-galler
 
 - Variations use Claude Sonnet to rewrite prompts with "creative tension" -- always references the root image, not the immediate parent, to prevent quality drift
 - `fal-params.server.ts` is the central param resolver used across the image server fns (generate, edit, variations, retry) and `media.server.ts`
-- Models with `supportsImageInput` can do image-to-image; `imageInputModelId` maps to their edit endpoint
+- A model with `withImages` set can do image-to-image; `supportsImageInput` and `imageInputModelId` are the derived legacy view of that
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook. The poll is also the gallery's only update signal: a submit refreshes once via `onAfterSubmit` so the pending cards appear, and each poll that settles a row refreshes again. Nothing pushes.
 - Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
 - Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
