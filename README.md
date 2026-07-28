@@ -122,6 +122,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-28)
 
+- **Account and Login are in the route shape too (#185).** Both were off
+  Tailwind but not in the shape, which made them a second dialect beside the
+  reference. Zero diff each. Login forced a fix to
+  `docs/reference/route-shape.md`: the tree listed a `view.module.css` the rules
+  forbade, and a frame that carries design (Login's centred column) becomes a
+  named component instead.
 - **Activity is the reference shape (#185).** `page.tsx` renders `view.tsx`,
   which composes components and carries no styles of its own; `use-view.ts`
   holds the state. Parts are named by subject (`run-row`, `totals`, `filters`),
