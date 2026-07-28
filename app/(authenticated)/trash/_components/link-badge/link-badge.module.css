@@ -1,0 +1,19 @@
+/* Only the parts `Badge` does not already carry: it supplies the pill, the
+   border, the padding and the type. Colour, the gap around the icon and
+   "never shrink" are this badge's own. */
+.badge {
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
+.canvas {
+  composes: badge;
+  border-color: color-mix(in oklab, var(--info-text) 50%, transparent);
+  color: var(--info-text);
+}
+
+.linked {
+  composes: badge;
+  border-color: color-mix(in oklab, var(--caution-text) 50%, transparent);
+  color: var(--caution-text);
+}

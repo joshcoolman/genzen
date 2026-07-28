@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Download } from 'lucide-react'
 import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
+import styles from './download-dialog.module.css'
 import type { UserImage } from '#/features/user-images/types'
 import {
   ActionButton,
@@ -46,15 +47,15 @@ async function fetchInBatches(
   return results
 }
 
-interface TrashDownloadButtonProps {
+interface DownloadDialogProps {
   images: Array<UserImage>
   signFullResUrls: (imgs: Array<UserImage>) => Promise<Record<string, string>>
 }
 
-export function TrashDownloadButton({
+export function DownloadDialog({
   images,
   signFullResUrls,
-}: TrashDownloadButtonProps) {
+}: DownloadDialogProps) {
   const [open, setOpen] = useState(false)
   const [zipName, setZipName] = useState('')
   const [isDownloading, setIsDownloading] = useState(false)
@@ -133,7 +134,7 @@ export function TrashDownloadButton({
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Download className="mr-2 h-4 w-4" />
+          <Download className={styles.triggerIcon} />
           Download
         </Button>
       </DialogTrigger>
@@ -145,11 +146,11 @@ export function TrashDownloadButton({
             as a ZIP file.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          <label htmlFor="zip-name" className="mb-2 block text-sm font-medium">
+        <div className={styles.body}>
+          <label htmlFor="zip-name" className={styles.label}>
             File name
           </label>
-          <div className="flex items-center gap-2">
+          <div className={styles.field}>
             <Input
               id="zip-name"
               value={zipName}
@@ -159,25 +160,22 @@ export function TrashDownloadButton({
                 if (e.key === 'Enter' && !isDownloading) handleDownload()
               }}
             />
-            <span className="shrink-0 text-sm text-muted-foreground">.zip</span>
+            <span className={styles.suffix}>.zip</span>
           </div>
           {isDownloading && (
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center justify-between text-sm font-medium text-accent-brand">
+            <div className={styles.progress}>
+              <div className={styles.progressLabel}>
                 <span>{status}</span>
                 {progress > 0 && (
-                  <span className="tabular-nums">{progress}%</span>
+                  <span className={styles.percent}>{progress}%</span>
                 )}
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-accent-brand transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className={styles.track}>
+                <div className={styles.bar} style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
-          {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+          {error && <p className={styles.error}>{error}</p>}
         </div>
         <DialogFooter>
           <ActionButton
@@ -187,7 +185,7 @@ export function TrashDownloadButton({
             loadingText={
               progress > 0 ? `Downloading ${progress}%` : 'Preparing...'
             }
-            icon={<Download className="h-4 w-4" />}
+            icon={<Download />}
           >
             Download
           </ActionButton>

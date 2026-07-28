@@ -1,0 +1,105 @@
+/* The row is the click target for selection, so the whole strip -- checkmark,
+   thumbnail, actions -- sits inside one clickable box, and the buttons inside
+   it stop propagation rather than the row narrowing what it listens to. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out),
+    border-color var(--duration-normal) var(--ease-in-out);
+}
+
+.row:hover {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+}
+
+.rowSelected {
+  composes: row;
+  background: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.check {
+  flex-shrink: 0;
+  padding-left: var(--space-12);
+}
+
+.checkOn,
+.checkOff {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.checkOn {
+  color: var(--accent-brand);
+}
+
+.checkOff {
+  color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Handed to Thumbnail's `listImageClassName`, which supplies everything else
+   about the image box. This is only its size. */
+.thumb {
+  height: 6rem;
+  width: 6rem;
+}
+
+.footer {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text {
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.meta {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
+/* Margin only. The button variant sizes its own svg, and a module rule is
+   unlayered, so stating a size here would silently override it. */
+.buttonIcon {
+  margin-right: var(--space-4);
+}
+
+.deleteButton,
+.deleteButton:hover {
+  color: var(--destructive);
+}

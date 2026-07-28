@@ -1,0 +1,75 @@
+/* Margin only -- the button variant sizes its own svg. */
+.triggerIcon {
+  margin-right: var(--space-8);
+}
+
+.body {
+  padding-block: var(--space-16);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-8);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.suffix {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.progress {
+  margin-top: var(--space-16);
+}
+
+/* Was `space-y-2`, which is margin between block children rather than flex and
+   gap -- kept in that form because the label row is a flex box that would
+   otherwise be re-parented. */
+.progress > * + * {
+  margin-top: var(--space-8);
+}
+
+.progressLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--accent-brand);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.percent {
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent-brand);
+  transition: all var(--duration-slow) var(--ease-out);
+}
+
+.error {
+  margin-top: var(--space-12);
+  color: var(--destructive);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}

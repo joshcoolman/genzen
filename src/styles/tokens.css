@@ -122,6 +122,21 @@
   --success-foreground: hsl(0 0% 7.8%);
   --warning: var(--warm-gold);
   --warning-foreground: hsl(0 0% 7.8%);
+  /* Two more text colors, on the badges that say why a trashed image cannot be
+     deleted: blue-500 for "it is on the canvas", amber-500 for "something
+     living still points at it". Tailwind's values verbatim.
+
+     The only two colors in this file not written as HSL. Their borders are
+     color-mix(... in oklab ...), and mixing from the HSL round-trip moved the
+     badge border by 6/255 -- small, but a conversion should move a color by
+     nothing. Rewrite them as HSL when the mix goes.
+
+     --caution-text is amber-500 and --warning-text above is yellow-500 -- two
+     ambers, which is a duplicate a design pass should collapse. They are kept
+     apart here because folding them shifts a badge's hue by 8 degrees, and a
+     conversion is the wrong commit to decide that in. */
+  --info-text: oklch(0.623 0.214 259.815);
+  --caution-text: oklch(0.769 0.188 70.08);
 
   /* shadcn's name for --danger; kept until the last shadcn primitive goes */
   --destructive: var(--danger);

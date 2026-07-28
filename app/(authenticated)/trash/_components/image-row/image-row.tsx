@@ -1,0 +1,156 @@
+'use client'
+
+import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
+import { LinkBadge } from '../link-badge/link-badge'
+import styles from './image-row.module.css'
+import type { UserImage } from '#/features/user-images/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  Button,
+  Thumbnail,
+} from '#/components'
+import { formatFileSize } from '#/lib/format'
+
+function formatDeletedDate(dateStr: string | null): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString()
+}
+
+interface ImageRowProps {
+  image: UserImage
+  url: string | null
+  selected: boolean
+  /** Hides the per-row actions: a selection is running, and the drawer owns
+   *  the verbs while it is. */
+  hasSelection: boolean
+  busy: boolean
+  onCanvas: boolean
+  /** How many living images point at this one. 0 when nothing does. */
+  dependents: number
+  onToggle: (id: string, shiftKey: boolean) => void
+  onRestore: (id: string) => void
+  onDelete: (id: string) => void
+}
+
+export function ImageRow({
+  image,
+  url,
+  selected,
+  hasSelection,
+  busy,
+  onCanvas,
+  dependents,
+  onToggle,
+  onRestore,
+  onDelete,
+}: ImageRowProps) {
+  const isLinked = onCanvas || dependents > 0
+
+  return (
+    <div
+      className={selected ? styles.rowSelected : styles.row}
+      onClick={(e) => onToggle(image.id, e.shiftKey)}
+    >
+      <div className={styles.check}>
+        {selected ? (
+          <CheckCircle2 className={styles.checkOn} />
+        ) : (
+          <Circle className={styles.checkOff} />
+        )}
+      </div>
+
+      <div className={styles.body}>
+        <Thumbnail
+          url={url}
+          alt={image.title}
+          layout="list"
+          listImageClassName={styles.thumb}
+          footer={
+            <div className={styles.footer}>
+              <div className={styles.text}>
+                <div className={styles.titleRow}>
+                  <p className={styles.title}>{image.title}</p>
+                  {onCanvas && <LinkBadge kind="canvas" dependents={0} />}
+                  {!onCanvas && dependents > 0 && (
+                    <LinkBadge kind="linked" dependents={dependents} />
+                  )}
+                </div>
+                <p className={styles.meta}>
+                  {image.source === 'ai_generated' ? 'AI' : 'Upload'}
+                  {' -- '}
+                  {formatFileSize(image.file_size ?? 0)}
+                  {' -- '}
+                  Deleted {formatDeletedDate(image.deleted_at)}
+                </p>
+              </div>
+
+              {!hasSelection && (
+                <div className={styles.actions}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={(e: React.MouseEvent) => {
+                      e.stopPropagation()
+                      onRestore(image.id)
+                    }}
+                  >
+                    <RotateCcw className={styles.buttonIcon} />
+                    Restore
+                  </Button>
+                  {!isLinked && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.deleteButton}
+                          disabled={busy}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        >
+                          <X className={styles.buttonIcon} />
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete forever?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &ldquo;{image.title}&rdquo; will be permanently
+                            deleted. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDelete(image.id)}>
+                            Delete Forever
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              )}
+            </div>
+          }
+        />
+      </div>
+    </div>
+  )
+}

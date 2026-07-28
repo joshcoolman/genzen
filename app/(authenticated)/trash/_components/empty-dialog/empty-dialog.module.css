@@ -1,0 +1,4 @@
+/* Margin only -- the button variant sizes its own svg. */
+.icon {
+  margin-right: var(--space-8);
+}
