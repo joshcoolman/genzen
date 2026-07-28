@@ -13,9 +13,15 @@ export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
  *   withImages   the endpoint used when references are attached. null when the
  *                model has no image input at all, in which case references are
  *                dropped and the prompt is sent on its own.
- *   maxRefs      how many references that endpoint actually takes. Submit sends
- *                min(attached, maxRefs). 0 is not a special case, it is just
- *                the smallest number -- it is what "text only" means.
+ *   maxRefs      how many ADDITIONAL reference images the model accepts,
+ *                beyond the source image. Not the endpoint's total image
+ *                capacity: both Kontext endpoints take exactly one image, and
+ *                the source image is already it, so their maxRefs is 0.
+ *
+ * A model with no text-to-image endpoint of its own may borrow one via
+ * `textOnlyFallback` -- the user picks one name and gets whichever endpoint
+ * fits. The borrowed endpoint stays out of the name index, so history rows
+ * label it as the model that actually ran.
  *
  * Both null is not a model. At least one endpoint must be set.
  *
@@ -33,6 +39,8 @@ export interface ModelEntry {
   category: ModelCategory
   textToImage: string | null
   withImages: string | null
+  /** Borrowed endpoint for the no-image case. Only for `textToImage: null`. */
+  textOnlyFallback?: string
   maxRefs: number
   locked?: boolean
   displayPrice?: string
@@ -49,7 +57,11 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     category: 'FLUX',
     textToImage: null,
     withImages: 'fal-ai/flux-kontext/dev',
-    maxRefs: 1,
+    // FAL lists `image_url` as required, so there is no text-to-image mode:
+    // with no image we run FLUX Dev, which is what the row is then labelled.
+    textOnlyFallback: 'fal-ai/flux/dev',
+    // The single `image_url` slot is the source image's.
+    maxRefs: 0,
     displayPrice: '~$0.03/img',
     useCase: 'Cheap img2img — fast iteration with a reference',
   },
@@ -165,7 +177,8 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // The single-image Kontext editor. Without switching to it the source
     // image was silently dropped and it generated from the prompt alone.
     withImages: 'fal-ai/flux-pro/kontext',
-    maxRefs: 1,
+    // Single-image endpoint; the source image occupies its one slot.
+    maxRefs: 0,
     displayPrice: '~$0.04/img',
     useCase: 'Pro img2img — solid for refinement work',
   },
@@ -203,17 +216,14 @@ export function pickerId(m: ModelEntry): string {
 }
 
 /** Which endpoint a submit should go to. */
-export function endpointFor(
-  modelId: string,
-  hasReferenceImages: boolean,
-): string {
+export function endpointFor(modelId: string, hasSourceImage: boolean): string {
   const m = findModel(modelId)
   if (!m) return modelId
-  if (hasReferenceImages && m.withImages) return m.withImages
-  return m.textToImage ?? m.withImages ?? modelId
+  if (hasSourceImage && m.withImages) return m.withImages
+  return m.textToImage ?? m.textOnlyFallback ?? m.withImages ?? modelId
 }
 
-/** How many reference images this model actually accepts. */
+/** Additional reference images this model accepts, beyond the source image. */
 export function maxRefsFor(modelId: string): number {
   return findModel(modelId)?.maxRefs ?? 0
 }
@@ -256,13 +266,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = IMAGE_MODELS.map((m) => ({
   ...(m.displayPrice ? { displayPrice: m.displayPrice } : {}),
   ...(m.useCase ? { useCase: m.useCase } : {}),
 }))
-
-export const KONTEXT_DEV_ID = 'fal-ai/flux-kontext/dev'
-export const KONTEXT_DEV_FALLBACK_ID = 'fal-ai/flux/dev'
-
-export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
-  (m) => m.supportsImageInput,
-)
 
 /**
  * Every endpoint genzen has ever submitted to, mapped to a display name.

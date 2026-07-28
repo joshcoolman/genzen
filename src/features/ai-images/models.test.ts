@@ -171,9 +171,17 @@ describe('entries', () => {
     expect(new Set(slugs).size).toBe(slugs.length)
   })
 
-  it('only claims references it has an endpoint for', () => {
+  it('only claims extra references if it has an image endpoint', () => {
+    // One-directional: both Kontext endpoints take an image but only one, and
+    // the source image is already it, so they accept no *extra* references.
     for (const m of IMAGE_MODELS) {
-      expect(m.maxRefs > 0, m.slug).toBe(m.withImages !== null)
+      if (m.maxRefs > 0) expect(m.withImages, m.slug).not.toBeNull()
+    }
+  })
+
+  it('only borrows a text endpoint when it has none of its own', () => {
+    for (const m of IMAGE_MODELS) {
+      if (m.textOnlyFallback) expect(m.textToImage, m.slug).toBeNull()
     }
   })
 })
@@ -192,10 +200,11 @@ describe('endpointFor', () => {
     expect(endpointFor('fal-ai/flux/schnell', true)).toBe('fal-ai/flux/schnell')
   })
 
-  it('stays on the single endpoint of a model that has no text mode', () => {
-    // FLUX Kontext Dev lists `image_url` as required at FAL, so there is no
-    // text-to-image endpoint to fall back to.
-    expect(endpointFor(KONTEXT_DEV, false)).toBe(KONTEXT_DEV)
+  it('borrows FLUX Dev when Kontext Dev is asked to run without an image', () => {
+    // FAL lists `image_url` as required on fal-ai/flux-kontext/dev, so a
+    // text-only submit to it fails outright. This replaces the hand-written
+    // KONTEXT_DEV / DRAFT_TEXT_ONLY_FALLBACK special case in use-generator.
+    expect(endpointFor(KONTEXT_DEV, false)).toBe('fal-ai/flux/dev')
     expect(endpointFor(KONTEXT_DEV, true)).toBe(KONTEXT_DEV)
   })
 
@@ -211,6 +220,13 @@ describe('maxRefsFor', () => {
     for (const edit of EDIT_MODELS) {
       expect(maxRefsFor(edit.id), edit.id).toBe(edit.maxRefImages)
     }
+  })
+
+  it('is 0 for the single-image Kontext endpoints', () => {
+    // The source image takes their one slot; they never had an EDIT_MODELS row
+    // and so derived 0 before this refactor too.
+    expect(maxRefsFor(KONTEXT_DEV)).toBe(0)
+    expect(maxRefsFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(0)
   })
 
   it('is 0 for a model with no image endpoint', () => {
@@ -230,6 +246,12 @@ describe('getModelName', () => {
 
   it('names the endpoint that used to need a hand-written alias', () => {
     expect(getModelName('fal-ai/flux-pro/kontext')).toBe('FLUX Kontext Pro')
+  })
+
+  it('does not let a borrowed endpoint steal its owner name', () => {
+    // Kontext Dev falls back to FLUX Dev's endpoint, and a row made that way
+    // really was made by FLUX Dev -- it must not be labelled Kontext Dev.
+    expect(getModelName('fal-ai/flux/dev')).toBe('FLUX Dev')
   })
 
   it('names every id EDIT_MODELS used to answer for', () => {

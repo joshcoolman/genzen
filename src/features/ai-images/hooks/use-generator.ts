@@ -13,18 +13,9 @@ import {
   flipOrientation,
   getRatioOptions,
 } from '#/features/ai-images/constants'
-import {
-  ALL_IMAGE_MODELS,
-  EDIT_MODELS,
-  KONTEXT_DEV_FALLBACK_ID,
-  KONTEXT_DEV_ID,
-} from '#/features/ai-images/models'
+import { endpointFor, maxRefsFor } from '#/features/ai-images/models'
 
-// Kontext Dev is image-input only -- fall back to FLUX Dev for text-only
 const EMPTY_PROMPTS: Array<string> = ['']
-
-const KONTEXT_DEV = KONTEXT_DEV_ID
-const DRAFT_TEXT_ONLY_FALLBACK = KONTEXT_DEV_FALLBACK_ID
 
 export interface RefImage {
   id: string
@@ -240,19 +231,10 @@ export function useGenerator({
     localStorage.setItem(aspectRatioKey, aspectRatio)
   }, [aspectRatio, aspectRatioHydrated])
 
-  // Compute maxRefImages from selected models' edit endpoints
-  const maxRefImages = useMemo(() => {
-    const activeModelId = selectedModels[0]
-    if (!activeModelId) return 0
-    // Kontext Dev does img2img directly, no ref images
-    if (activeModelId === KONTEXT_DEV) return 0
-    const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === activeModelId)
-    if (!modelDef?.supportsImageInput || !modelDef.imageInputModelId) return 0
-    const editModel = EDIT_MODELS.find(
-      (m) => m.id === modelDef.imageInputModelId,
-    )
-    return editModel?.maxRefImages ?? 0
-  }, [selectedModels])
+  const maxRefImages = useMemo(
+    () => (selectedModels[0] ? maxRefsFor(selectedModels[0]) : 0),
+    [selectedModels],
+  )
 
   const addRefImages = useCallback(
     (images: Array<RefImage>) => {
@@ -298,17 +280,7 @@ export function useGenerator({
     // Each entry keeps the user-facing `base` id (for labelling) alongside the
     // `resolved` endpoint we actually submit to (edit/img2img variant).
     const modelsToUse = selectedModels.flatMap((modelId) => {
-      let resolved = modelId
-      if (modelId === KONTEXT_DEV && !sourceImage) {
-        // Kontext Dev needs a source image -- fall back to FLUX Dev for text-only
-        resolved = DRAFT_TEXT_ONLY_FALLBACK
-      } else if (sourceImage) {
-        // If source image is present and model has an edit endpoint, use it
-        const modelDef = ALL_IMAGE_MODELS.find((m) => m.id === modelId)
-        if (modelDef?.imageInputModelId && modelId !== KONTEXT_DEV) {
-          resolved = modelDef.imageInputModelId
-        }
-      }
+      const resolved = endpointFor(modelId, !!sourceImage)
       return Array.from({ length: gensPerModel }, () => ({
         base: modelId,
         resolved,

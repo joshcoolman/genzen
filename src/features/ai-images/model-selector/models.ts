@@ -5,7 +5,8 @@ import type {
 import {
   ALL_IMAGE_MODELS,
   EDIT_MODELS,
-  IMAGE_INPUT_MODELS,
+  IMAGE_MODELS,
+  pickerId,
 } from '#/features/ai-images/models'
 
 export const UNIFIED_GENERATE_MODELS: Array<UnifiedModel> =
@@ -29,22 +30,19 @@ export const UNIFIED_EDIT_MODELS: Array<UnifiedModel> = EDIT_MODELS.map(
   }),
 )
 
-// Sidebar models: all image-input-capable models with their edit endpoints + maxRefImages
-export const UNIFIED_SIDEBAR_MODELS: Array<UnifiedModel> =
-  IMAGE_INPUT_MODELS.map((m) => {
-    const editModel = m.imageInputModelId
-      ? EDIT_MODELS.find((e) => e.id === m.imageInputModelId)
-      : undefined
-    return {
-      id: m.id,
-      name: m.name,
-      description: m.description,
-      capability: 'sidebar' as const,
-      editId: m.imageInputModelId,
-      maxRefImages: editModel?.maxRefImages ?? 0,
-      displayPrice: m.displayPrice,
-    }
-  })
+// Sidebar models: every model that accepts an image, with the endpoint it
+// switches to and how many extra references it takes.
+export const UNIFIED_SIDEBAR_MODELS: Array<UnifiedModel> = IMAGE_MODELS.filter(
+  (m) => m.withImages,
+).map((m) => ({
+  id: pickerId(m),
+  name: m.name,
+  description: m.description,
+  capability: 'sidebar' as const,
+  editId: m.textToImage ? (m.withImages ?? undefined) : undefined,
+  maxRefImages: m.maxRefs,
+  displayPrice: m.displayPrice,
+}))
 
 export function getModelsByCapability(
   capability: ModelCapability,
