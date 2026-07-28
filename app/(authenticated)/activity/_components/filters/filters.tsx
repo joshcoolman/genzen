@@ -9,7 +9,6 @@ import type {
 import {
   IMAGE_MODELS,
   RETIRED_MODEL_NAMES,
-  getModelName,
   pickerId,
 } from '#/features/ai-images/models'
 import { Checkbox, Popover, PopoverContent, PopoverTrigger } from '#/components'
@@ -88,14 +87,6 @@ export function Filters({
     return out
   }, [])
 
-  const selectedModelLabels = filters.models
-    .map((id) => {
-      const fromList = modelOptions.find((m) => m.id === id)
-      if (fromList) return fromList.label
-      return getModelName(id) || id
-    })
-    .filter(Boolean)
-
   const datePreset = computeDatePreset(filters)
 
   const toggleModel = (id: string) => {
@@ -143,7 +134,23 @@ export function Filters({
             <ChevronDown className={styles.chevron} />
           </button>
         </PopoverTrigger>
-        <PopoverContent align="start" className={styles.popover}>
+        <PopoverContent
+          align="start"
+          collisionPadding={8}
+          className={styles.popover}
+        >
+          {filters.models.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onChange({ ...filters, models: [] })}
+              className={styles.clearAll}
+            >
+              Clear all
+              <span className={styles.clearAllCount}>
+                {filters.models.length}
+              </span>
+            </button>
+          )}
           <div className={styles.optionList}>
             {modelOptions.map((m) => {
               const checked = filters.models.includes(m.id)
@@ -160,24 +167,6 @@ export function Filters({
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Selected model chips */}
-      {selectedModelLabels.slice(0, 2).map((label, i) => (
-        <button
-          key={`${filters.models[i]}-chip`}
-          type="button"
-          onClick={() => toggleModel(filters.models[i])}
-          className={styles.chip}
-        >
-          <span className={styles.chipLabel}>{label}</span>
-          <X className={styles.chipIcon} />
-        </button>
-      ))}
-      {filters.models.length > 2 && (
-        <span className={styles.overflowCount}>
-          +{filters.models.length - 2} more
-        </span>
-      )}
 
       {/* Status pills */}
       <div className={styles.pillGroup}>
