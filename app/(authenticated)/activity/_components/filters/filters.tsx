@@ -1,6 +1,5 @@
 import { X } from 'lucide-react'
 import { useMemo } from 'react'
-import { clsx } from 'clsx'
 import styles from './filters.module.css'
 import type {
   ActivityFilters,

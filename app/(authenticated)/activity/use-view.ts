@@ -1,11 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type {
-  ActivityEntry,
-  ActivityFilters,
-  ActivityTotals,
-} from '#/features/activity/types'
+import type { ActivityEntry, ActivityFilters } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
 
@@ -16,18 +12,9 @@ const EMPTY_FILTERS: ActivityFilters = {
   statuses: [],
 }
 
-const EMPTY_TOTALS: ActivityTotals = {
-  count: 0,
-  totalDurationMs: 0,
-  totalProviderCostCents: 0,
-  totalsIncludeEstimates: false,
-  exceedsCap: false,
-}
-
 export function useView() {
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [total, setTotal] = useState(0)
-  const [totals, setTotals] = useState<ActivityTotals>(EMPTY_TOTALS)
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [filters, setFiltersState] = useState<ActivityFilters>(EMPTY_FILTERS)
@@ -57,13 +44,11 @@ export function useView() {
           if (id !== fetchRef.current) return
           setEntries(result.entries)
           setTotal(result.total)
-          setTotals(result.totals)
         })
         .catch(() => {
           if (id !== fetchRef.current) return
           setEntries([])
           setTotal(0)
-          setTotals(EMPTY_TOTALS)
         })
         .finally(() => {
           if (id !== fetchRef.current) return
@@ -142,7 +127,6 @@ export function useView() {
     entries,
     total,
     totalPages,
-    totals,
     isLoading,
     page,
     setPage,

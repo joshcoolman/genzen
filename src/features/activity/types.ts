@@ -41,18 +41,8 @@ export interface ActivityFilters {
   statuses: Array<GenerationStatus>
 }
 
-export interface ActivityTotals {
-  count: number
-  totalDurationMs: number
-  totalProviderCostCents: number
-  /** True when any run in the totals contributed an estimated figure. */
-  totalsIncludeEstimates: boolean
-  exceedsCap: boolean
-}
-
 export interface ListActivityResult {
   entries: Array<ActivityEntry>
-  totals: ActivityTotals
   total: number
 }
 
@@ -74,5 +64,3 @@ export interface ActivityEntryDetail extends ActivityEntry {
   /** JSON-stringified raw `generation_metadata`. Parse on the client. */
   rawMetadataJson: string
 }
-
-export const TOTALS_ROW_CAP = 5000

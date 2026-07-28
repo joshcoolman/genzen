@@ -1,6 +1,5 @@
 'use server'
 
-import { TOTALS_ROW_CAP } from '../types'
 import type {
   ActivityEntry,
   ActivityGenerationMetadata,
@@ -10,6 +9,10 @@ import type {
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 import { getModelName } from '#/features/ai-images/models'
+
+/** How many days that produced runs the log reaches back. Days with nothing in
+ *  them do not count against it. */
+const ACTIVE_DAYS = 3
 
 interface ListActivityInput {
   page: number
@@ -26,11 +29,6 @@ interface Row {
   generation_metadata: unknown
   created_at: string
   deleted_at: string | null
-}
-
-interface TotalsRow {
-  status: GenerationStatus
-  generation_metadata: unknown
 }
 
 function meta(row: {
@@ -109,54 +107,41 @@ export async function listActivity(
       ${data.statuses?.length ? sql`and status in ${sql(data.statuses)}` : sql``}
   `
 
+  // The window is the last ACTIVE_DAYS days that actually produced runs, not
+  // the last ACTIVE_DAYS calendar days -- a week away should not empty the page.
+  // Computed over the *filtered* set, so narrowing to a model you last used in
+  // March still shows that model's last three working days.
+  //
+  // `created_at::date` buckets in UTC. A run late at night local time lands on
+  // the next bucket; for a window this coarse that is not worth a timezone
+  // round trip.
+  const windowed = sql`
+    ${where}
+    and created_at::date in (
+      select distinct created_at::date
+      from user_images
+      ${where}
+      order by 1 desc
+      limit ${ACTIVE_DAYS}
+    )
+  `
+
   const offset = data.page * data.pageSize
 
-  const [pageRows, totalsRows, [{ count }]] = await Promise.all([
+  const [pageRows, [{ count }]] = await Promise.all([
     sql<Array<Row>>`
       select id, source, storage_path, status, generation_metadata,
              to_json(created_at)#>>'{}' as created_at,
              to_json(deleted_at)#>>'{}' as deleted_at
       from user_images
-      ${where}
+      ${windowed}
       order by created_at desc
       limit ${data.pageSize} offset ${offset}
     `,
-    sql<Array<TotalsRow>>`
-      select status, generation_metadata
-      from user_images
-      ${where}
-      order by created_at desc
-      limit ${TOTALS_ROW_CAP}
-    `,
     sql<Array<{ count: number }>>`
-      select count(*)::int as count from user_images ${where}
+      select count(*)::int as count from user_images ${windowed}
     `,
   ])
 
-  const entries = pageRows.map(parseEntry)
-
-  let totalDurationMs = 0
-  let totalProviderCostCents = 0
-  let totalsIncludeEstimates = false
-  for (const r of totalsRows) {
-    const m = meta(r)
-    const dur = computeDurationMs(m)
-    if (dur != null) totalDurationMs += dur
-    if (m.provider_cost_cents != null) {
-      totalProviderCostCents += m.provider_cost_cents
-      if (m.provider_cost_is_estimate === true) totalsIncludeEstimates = true
-    }
-  }
-
-  return {
-    entries,
-    total: count,
-    totals: {
-      count: totalsRows.length,
-      totalDurationMs,
-      totalProviderCostCents,
-      totalsIncludeEstimates,
-      exceedsCap: totalsRows.length >= TOTALS_ROW_CAP,
-    },
-  }
+  return { entries: pageRows.map(parseEntry), total: count }
 }

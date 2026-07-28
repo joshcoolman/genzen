@@ -3,7 +3,7 @@ Chronological record of every AI generation (image, success + failure, including
 ## Key Files
 
 - `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
-- `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Runs page + totals queries in parallel. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
+- `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 
 Two files left here when the Activity route was restructured, because each had a
 single consumer and this folder is earned by two or more:
@@ -25,10 +25,6 @@ one route that renders it, `app/(authenticated)/account/`.
 
 Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal-completion.server.ts` → `extractFalCostCents()`).
 
-## Totals query
-
-Uses a slim `select('status, generation_metadata').limit(5000)` alongside the paginated page query. `exceedsCap: true` surfaces a caveat when there are 5k+ matching rows — user should narrow with filters. In-memory aggregation avoids JSONB ops in Postgres.
-
 ## Shared Dependencies
 
 - `#/lib/auth` -- useAuth for access token
@@ -43,7 +39,7 @@ Uses a slim `select('status, generation_metadata').limit(5000)` alongside the pa
 - Cost is `provider_cost_cents`, written once at completion by `processImageResult` as `extractFalCostCents(result) ?? estimated_cost_cents`. FAL's image queue results carry no cost field in practice, so it is nearly always the estimate — `provider_cost_is_estimate` records which, and the UI prefixes estimates with `~`. Every one of the five generate paths writes `estimated_cost_cents` via `computeFalCostCents` at submit; a row shows `—` only when the pricing lookup itself failed.
 - FAL cost extraction is defensive: probes `cost_cents`, `price_cents`, `cost`, `price`, and nested `metering` / `fal_billing` paths. None has ever been observed in a live image-queue response — expand if one appears.
 - Model filter IDs use JSONB key `generation_metadata->>model`. Older rows that lack `model` in metadata are filtered out when any model is selected — by design.
-- Page size is 50 rows. Totals are computed across all matching rows (capped at 5000), not just the visible page.
+- Page size is 50 rows, inside the three-active-day window. `created_at::date` buckets in UTC, so a run late at night local time lands on the next day's bucket — not worth a timezone round trip at this granularity.
 - Detail panel fetches reference images from `generation_metadata.reference_image_ids` array; missing refs show "missing" placeholder. Refs preserve metadata order.
 - No realtime: the channel went with #173/#174. FAL polling (5s interval) runs only while pending rows exist on the current page, and a settled row triggers a silent refetch.
 - Arrow keys (left/right) cycle through entries when detail panel is open; skips when focus is in an input/textarea.
