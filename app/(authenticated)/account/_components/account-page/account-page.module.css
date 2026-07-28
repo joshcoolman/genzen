@@ -1,0 +1,141 @@
+/* Tailwind's `space-y-*` is a block container with margin-bottom on every child
+   but the last -- not flex + gap. Reproduced literally here so an inline child
+   keeps the line box it had. */
+.page > *:not(:last-child) {
+  margin-bottom: var(--space-32);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl-leading);
+  font-weight: var(--weight-semibold);
+}
+
+.card {
+  padding: var(--space-24);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.card > *:not(:last-child) {
+  margin-bottom: var(--space-16);
+}
+
+.cardTitle {
+  font-weight: var(--weight-medium);
+}
+
+.fields {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.fields > *:not(:last-child) {
+  margin-bottom: var(--space-12);
+}
+
+.field {
+  display: flex;
+  justify-content: space-between;
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.field:last-child {
+  border-bottom: 0;
+}
+
+.fieldLabel {
+  color: var(--muted-foreground);
+}
+
+.fieldValue {
+  color: var(--foreground);
+}
+
+.fieldValueMono {
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.section > *:not(:last-child) {
+  margin-bottom: var(--space-16);
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--weight-medium);
+}
+
+.statusTitle {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.statusRows > *:not(:last-child) {
+  margin-bottom: var(--space-12);
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.statusRow:last-child {
+  border-bottom: 0;
+}
+
+.statusLabel {
+  color: var(--foreground);
+}
+
+.statusMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.statusDetail {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.statusError {
+  color: var(--danger);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.badge {
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--weight-medium);
+}
+
+.badgeChecking {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+}
+
+.badgeConnected {
+  /* What `bg-accent-sage/20` compiled to. A tint this page happens to want,
+     not a value another screen should reach for -- so it stays here. */
+  background: color-mix(in oklab, var(--accent-sage) 20%, transparent);
+  color: var(--accent-sage);
+}
+
+.badgeError {
+  background: var(--danger-surface);
+  color: var(--danger-text);
+}

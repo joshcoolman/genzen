@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { ActivityPreview } from '../activity-preview/activity-preview'
+import styles from './account-page.module.css'
 import { useAuth } from '#/lib/auth'
 import { checkConnections } from '#/lib/server/check-connections'
 
 type Status = 'checking' | 'connected' | 'error'
 
 function StatusBadge({ status }: { status: Status }) {
-  const styles: Record<Status, string> = {
-    checking: 'bg-yellow-900/30 text-yellow-500',
-    connected: 'bg-accent-sage/20 text-accent-sage',
-    error: 'bg-red-900/30 text-red-400',
+  const variants: Record<Status, string> = {
+    checking: styles.badgeChecking,
+    connected: styles.badgeConnected,
+    error: styles.badgeError,
   }
   const labels: Record<Status, string> = {
     checking: 'Checking...',
@@ -19,9 +20,7 @@ function StatusBadge({ status }: { status: Status }) {
     error: 'Error',
   }
   return (
-    <span
-      className={`text-xs px-2 py-1 rounded-full font-medium ${styles[status]}`}
-    >
+    <span className={`${styles.badge} ${variants[status]}`}>
       {labels[status]}
     </span>
   )
@@ -39,15 +38,13 @@ function StatusRow({
   error?: string
 }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
-      <span className="text-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        {detail && (
-          <span className="text-sm text-muted-foreground">{detail}</span>
-        )}
+    <div className={styles.statusRow}>
+      <span className={styles.statusLabel}>{label}</span>
+      <div className={styles.statusMeta}>
+        {detail && <span className={styles.statusDetail}>{detail}</span>}
         <StatusBadge status={status} />
         {error && status === 'error' && (
-          <span className="text-xs text-destructive">{error}</span>
+          <span className={styles.statusError}>{error}</span>
         )}
       </div>
     </div>
@@ -75,23 +72,23 @@ export function AccountPage() {
   }, [])
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Account</h1>
+    <div className={styles.page}>
+      <h1 className={styles.title}>Account</h1>
 
-      <div className="bg-card rounded-lg p-6 space-y-4">
-        <h2 className="font-medium">User Information</h2>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b border-border">
-            <span className="text-muted-foreground">Email</span>
-            <span className="text-foreground">{user.email}</span>
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>User Information</h2>
+        <div className={styles.fields}>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Email</span>
+            <span className={styles.fieldValue}>{user.email}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-border">
-            <span className="text-muted-foreground">User ID</span>
-            <span className="text-foreground font-mono text-xs">{user.id}</span>
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>User ID</span>
+            <span className={styles.fieldValueMono}>{user.id}</span>
           </div>
-          <div className="flex justify-between py-2">
-            <span className="text-muted-foreground">Created</span>
-            <span className="text-foreground">
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Created</span>
+            <span className={styles.fieldValue}>
               {new Date(user.createdAt).toLocaleDateString()}
             </span>
           </div>
@@ -100,13 +97,11 @@ export function AccountPage() {
 
       <ActivityPreview />
 
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium">Status</h2>
-        <div className="bg-card rounded-lg p-6 space-y-4">
-          <h3 className="font-medium text-sm text-muted-foreground">
-            Connection Status
-          </h3>
-          <div className="space-y-3">
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>Status</h2>
+        <div className={styles.card}>
+          <h3 className={styles.statusTitle}>Connection Status</h3>
+          <div className={styles.statusRows}>
             <StatusRow label="Auth" status="connected" detail={user.email} />
             <StatusRow label="FAL" status={fal.status} error={fal.error} />
           </div>

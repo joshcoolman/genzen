@@ -109,6 +109,11 @@
      ever decides the two reds should be one. */
   --danger-text: hsl(358.8 100% 69.8%);
   --danger-surface: hsl(358.9 68.8% 30.2% / 0.3);
+  /* Same pair for the in-progress state -- Tailwind's yellow-500 / yellow-900
+     at 30%, carried over so the badges do not shift. Distinct from --warning
+     below, which is the solid warm-gold fill. */
+  --warning-text: hsl(44.3 100% 47.1%);
+  --warning-surface: hsl(29.7 84% 24.5% / 0.3);
   --success: var(--accent-brand);
   --success-foreground: hsl(0 0% 7.8%);
   --warning: var(--warm-gold);
@@ -196,7 +201,14 @@
 
   /* Each size ships with the line-height it is drawn at. Tailwind's `text-*`
      utilities set both; a module that takes only the size shifts every element
-     below it by a pixel or two, which is exactly how a conversion drifts. */
+     below it by a pixel or two, which is exactly how a conversion drifts.
+
+     The leadings are **unitless on purpose** -- each is the rem pair divided by
+     its size (sm is 1.25/0.875), which is what Tailwind emits. A ratio is
+     inherited as a ratio, so a smaller child re-derives its own line-height; the
+     equivalent rem would hand every descendant the parent's box. That is a 4px
+     row on the account page: an 11px caption under `text-sm` draws at 15.71px,
+     not 20px. */
   /* Below `xs` the repo authored px directly -- `text-[10px]` 29 times,
      `text-[11px]` 21 times. That is a scale whether or not it was named as one.
      No `-leading` pair: Tailwind's arbitrary sizes set font-size only, so these
@@ -205,21 +217,21 @@
   --text-2xs: 0.6875rem;
 
   --text-xs: 0.75rem;
-  --text-xs-leading: 1rem;
+  --text-xs-leading: calc(1 / 0.75);
   --text-sm: 0.875rem;
-  --text-sm-leading: 1.25rem;
+  --text-sm-leading: calc(1.25 / 0.875);
   --text-base: 1rem;
-  --text-base-leading: 1.5rem;
+  --text-base-leading: calc(1.5 / 1);
   --text-lg: 1.125rem;
-  --text-lg-leading: 1.75rem;
+  --text-lg-leading: calc(1.75 / 1.125);
   --text-xl: 1.25rem;
-  --text-xl-leading: 1.75rem;
+  --text-xl-leading: calc(1.75 / 1.25);
   --text-2xl: 1.5rem;
-  --text-2xl-leading: 2rem;
+  --text-2xl-leading: calc(2 / 1.5);
   --text-3xl: 1.875rem;
-  --text-3xl-leading: 2.25rem;
+  --text-3xl-leading: calc(2.25 / 1.875);
   --text-4xl: 2.25rem;
-  --text-4xl-leading: 2.5rem;
+  --text-4xl-leading: calc(2.5 / 2.25);
 
   --leading-none: 1;
   --leading-tight: 1.25;

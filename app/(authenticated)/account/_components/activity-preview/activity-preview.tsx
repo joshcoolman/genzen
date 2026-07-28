@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
+import { clsx } from 'clsx'
+import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.server'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
-import { cn } from '#/lib/utils'
 
 const PREVIEW_SIZE = 5
 
@@ -53,70 +54,61 @@ export function ActivityPreview() {
   }, [])
 
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <div className="flex items-center justify-between border-b border-border px-6 py-4">
-        <h3 className="font-medium">Recent activity</h3>
-        <Link
-          href="/activity"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-        >
+    <div className={styles.card}>
+      <div className={styles.header}>
+        <h3 className={styles.title}>Recent activity</h3>
+        <Link href="/activity" className={styles.viewAll}>
           View all
-          <ArrowRight className="h-3 w-3" />
+          <ArrowRight className={styles.viewAllIcon} />
         </Link>
       </div>
 
       {isLoading && entries.length === 0 ? (
-        <div className="px-6 py-6 text-center text-sm text-muted-foreground">
-          Loading…
-        </div>
+        <div className={styles.empty}>Loading…</div>
       ) : entries.length === 0 ? (
-        <div className="px-6 py-6 text-center text-sm text-muted-foreground">
-          Nothing to show yet.
-        </div>
+        <div className={styles.empty}>Nothing to show yet.</div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className={styles.list}>
           {entries.map((entry) => {
             const thumb = getThumbUrl(entry.thumbnailPath)
             return (
               <li
                 key={entry.id}
-                className={cn(
-                  'flex items-center gap-3 px-6 py-3 text-sm',
-                  entry.isDeleted && 'opacity-60',
+                className={clsx(
+                  styles.row,
+                  entry.isDeleted && styles.rowDeleted,
                 )}
               >
-                <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-black">
+                <div className={styles.thumb}>
                   {thumb ? (
                     <img
                       src={thumb}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover"
+                      className={styles.thumbImage}
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                      <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className={styles.thumbFallback}>
+                      <ImageIcon className={styles.thumbIcon} />
                     </div>
                   )}
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-xs font-medium text-foreground">
-                    {entry.modelName}
-                  </span>
-                  <span className="truncate text-[11px] text-muted-foreground">
+                <div className={styles.meta}>
+                  <span className={styles.modelName}>{entry.modelName}</span>
+                  <span className={styles.prompt}>
                     {entry.prompt || 'No prompt'}
                   </span>
                 </div>
-                <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                <span className={styles.duration}>
                   {entry.durationMs != null
                     ? formatDurationMs(entry.durationMs)
                     : '—'}
                 </span>
-                <span className="shrink-0 text-[11px] tabular-nums text-foreground">
+                <span className={styles.cost}>
                   {formatCents(entry.providerCostCents, entry.costIsEstimate)}
                 </span>
-                <span className="shrink-0 text-right text-[11px] text-muted-foreground">
+                <span className={styles.time}>
                   {formatRelativeOrDate(entry.createdAt)}
                 </span>
               </li>
