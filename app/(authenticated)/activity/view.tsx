@@ -1,9 +1,9 @@
 'use client'
 
 import { DetailPanel } from './_components/detail-panel/detail-panel'
+import { CostBadge } from './_components/cost-badge/cost-badge'
 import { Filters } from './_components/filters/filters'
 import { RunTable } from './_components/run-table/run-table'
-import { Totals } from './_components/totals/totals'
 import { useView } from './use-view'
 import { PageHeader, Pagination, Stack } from '#/components'
 
@@ -27,12 +27,7 @@ export function View() {
 
   return (
     <Stack gap={24}>
-      <PageHeader
-        title="Activity"
-        description="Every generation you've run. Includes failures and deleted items."
-      />
-
-      <Totals totals={totals} hasActiveFilters={hasActiveFilters} />
+      <PageHeader title="Activity" aside={<CostBadge totals={totals} />} />
 
       <Filters
         filters={filters}

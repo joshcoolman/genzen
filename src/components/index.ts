@@ -10,6 +10,15 @@ export {
   type PaginationProps,
 } from './primitives/pagination/pagination'
 export {
+  SingleSelect,
+  type SingleSelectProps,
+  type SingleSelectOption,
+} from './primitives/single-select/single-select'
+export {
+  StatBadge,
+  type StatBadgeProps,
+} from './primitives/stat-badge/stat-badge'
+export {
   MultiSelect,
   type MultiSelectProps,
   type MultiSelectOption,

@@ -11,7 +11,7 @@ import {
   RETIRED_MODEL_NAMES,
   pickerId,
 } from '#/features/ai-images/models'
-import { MultiSelect } from '#/components'
+import { MultiSelect, SingleSelect } from '#/components'
 
 const STATUS_OPTIONS: Array<{ value: GenerationStatus; label: string }> = [
   { value: 'completed', label: 'Completed' },
@@ -52,13 +52,6 @@ export function Filters({
     onChange({ ...filters, models: next })
   }
 
-  const toggleStatus = (s: GenerationStatus) => {
-    const next = filters.statuses.includes(s)
-      ? filters.statuses.filter((x) => x !== s)
-      : [...filters.statuses, s]
-    onChange({ ...filters, statuses: next })
-  }
-
   return (
     <div className={styles.filters}>
       <MultiSelect
@@ -69,32 +62,20 @@ export function Filters({
         onClear={() => onChange({ ...filters, models: [] })}
       />
 
-      {/* Status pills */}
-      <div className={styles.pillGroup}>
-        {STATUS_OPTIONS.map((s) => {
-          const active = filters.statuses.includes(s.value)
-          return (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => toggleStatus(s.value)}
-              className={clsx(
-                styles.pill,
-                active ? styles.pillActive : styles.pillInactive,
-              )}
-            >
-              {s.label}
-            </button>
-          )
-        })}
-      </div>
+      <div className={styles.right}>
+        <SingleSelect
+          options={STATUS_OPTIONS}
+          value={filters.statuses[0] ?? null}
+          onChange={(v) => onChange({ ...filters, statuses: v ? [v] : [] })}
+        />
 
-      {hasActiveFilters && (
-        <button type="button" onClick={onClear} className={styles.clear}>
-          <X className={styles.clearIcon} />
-          Clear
-        </button>
-      )}
+        {hasActiveFilters && (
+          <button type="button" onClick={onClear} className={styles.clear}>
+            <X className={styles.clearIcon} />
+            Clear
+          </button>
+        )}
+      </div>
     </div>
   )
 }
