@@ -69,6 +69,34 @@ The cost: it needs a layout primitive to exist first, or the view has nowhere to
 put spacing. `Stack` is deliberately two props — every prop added to it is a
 styling decision creeping back into the view.
 
+## Primitives
+
+Staged in `src/components/primitives/` — a temporary folder with its own README,
+flattened into `src/components/` before #185 closes. All exported from the single
+root barrel, so the import path never changes.
+
+| built          | why it exists                                                                                              |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `Stack`        | the view has to compose spacing without styling                                                            |
+| `PageHeader`   | title + optional description, and an `aside` slot so "put a stat opposite the title" stays out of the view |
+| `Pagination`   | domain wording behind an `itemNoun` prop                                                                   |
+| `MultiSelect`  | trigger with count, grow-to-fit panel, pinned "Clear all", brand-green check                               |
+| `SingleSelect` | segmented pills, one at a time; choosing the chosen one clears it                                          |
+
+Candidates, seen two or more times and waiting for the next sighting to fix
+their shape: `ImageBox`, `EmptyState`, `Card`, `Label`, `StatusBadge`.
+
+`StatBadge` was built and deleted the same day when its only consumer went
+(`git show adf67e8`). An unused primitive is worse than a missing one — it gets
+shaped by needs nobody has.
+
+**A note on grain.** `Thumbnail` already existed when three call sites
+hand-rolled a small image box, because it had grown to 15+ props — delete
+button, four overlay slots, selection, pending/failed states. Every one was
+locally reasonable and the ratchet only turns one way. The test: a new prop must
+be a **variant of the same thing** (size, tone, density). A new _capability_ is
+a second primitive.
+
 ## Unresolved: the server/client seam
 
 `page.tsx` is three lines and `use-view.ts` fetches from the client in an
@@ -90,6 +118,10 @@ it has caught are on #185; two that bear repeating:
 - When a column is genuinely unstable, mask it and say so. "Excluding the
   thumbnail column, max delta 0" is a stronger and more honest claim than one
   number over the whole image.
+- **Park the pointer off _content_, not merely off the element under test.**
+  Moving it to 900,700 to clear a popover put it over a table row instead, and
+  `.row:hover` repainted a border and a background: 72,657 pixels of difference
+  that were entirely the mouse. `1435,3` is outside everything.
 
 **Do one job per commit.** Convert, then rename, then move, then extract. A
 diff cannot distinguish a styling regression from a renamed import, and reuse

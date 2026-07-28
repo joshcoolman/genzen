@@ -120,10 +120,19 @@ to the browser.
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow `~/repos/project-standard`.
 
-**Last shipped** (2026-07-27)
+**Last shipped** (2026-07-28)
 
-- **Activity is off Tailwind (#185).** Fourth area, and the first with real
-  surface area — five components, the detail sheet and the filter bar. Outside
+- **Activity is the reference shape (#185).** `page.tsx` renders `view.tsx`,
+  which composes components and carries no styles of its own; `use-view.ts`
+  holds the state. Parts are named by subject (`run-row`, `totals`, `filters`),
+  never by route. Written down once in `docs/reference/route-shape.md` — copy
+  Activity, not an older route. Six primitives fell out of doing it, staged in
+  `src/components/primitives/`.
+- **Activity is also simpler.** Model chips, the date filters, the stat grid and
+  the cost badge are gone; the log is windowed to the last three days that
+  produced runs, so the 5,000-row totals query went with them. What is left is a
+  title, a Models multi-select, a state filter and the table.
+- **Activity is off Tailwind (#185).** Fourth area converted. Outside
   the thumbnail column the page diffs at max 1/255. Two capture lessons on the
   issue: `--full` screenshots resize and re-render, so lazy images land
   mid-paint; and `img.complete` is true long before anything is painted.
@@ -147,25 +156,19 @@ Conventions follow `~/repos/project-standard`.
   `EDIT_MODELS`, nine dead exports and the hardcoded Kontext branch. Adding a
   model is one object literal; removing one is deleting it plus a line in
   `RETIRED_MODEL_NAMES`.
-- **Settings and Images show the same seven models (#190).** Cut FLUX Schnell,
-  FLUX Dev, both Klings, Recraft V3 and Grok Imagine — none had an image
-  endpoint wired, and they were the whole 13-vs-7 discrepancy. FLUX Dev stays
-  reachable as Kontext Dev's text-only routing target. Settings also lost its
-  Text and Sidebar sections; the sidebar is a fixed set now.
-- **Login and Settings are off Tailwind (#185).** First two areas of Pass 2.
-  Both surfaced traps now written down on the issue: `text-sm` carries a
-  line-height (L0 pairs `--text-*-leading` with every size), and `space-y-*` is
-  not always flex + gap (an inline-block child needs the block container's line
-  box). Each verified by pixel diff across a stash.
 
 **Up next**
 
 - **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
   CSS Modules, with Base UI replacing shadcn as each component is touched.
   Tailwind comes out last (#186). Login, Settings, Account and Activity are
-  done; Trash is next. After that the remainder is effectively one surface —
-  `src/components/` + the Images cluster in `_components/` + `/images` — about
-  35 files. 60 files still carry utility classes.
+  done; **Trash is next**, and is where the one open question in
+  `docs/reference/route-shape.md` gets settled — whether `page.tsx` fetches on
+  the server and hands props down (bootsy's shape) or the client fetches in an
+  effect (genzen's today). It is invisible in the file tree, so it settles by
+  default if nobody settles it. After Trash the remainder is effectively one
+  surface — `src/components/` + the Images cluster in `_components/` + `/images`
+  — about 35 files. 59 files still carry utility classes.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
