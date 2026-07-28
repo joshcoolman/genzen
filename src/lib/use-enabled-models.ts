@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
-import { ALL_TEXT_MODELS } from '#/lib/text-models'
 
 const STORAGE_KEY = 'genzen:disabled-models'
 
@@ -19,18 +18,7 @@ function readDisabledSet(): Set<string> {
 }
 
 export function isModelLocked(id: string): boolean {
-  return (
-    ALL_IMAGE_MODELS.some((m) => m.id === id && m.locked) ||
-    ALL_TEXT_MODELS.some((m) => m.id === id && m.locked)
-  )
-}
-
-export function resolveModel(preferredId: string, fallbackId: string): string {
-  const disabled = readDisabledSet()
-  if (isModelLocked(preferredId) || !disabled.has(preferredId)) {
-    return preferredId
-  }
-  return fallbackId
+  return ALL_IMAGE_MODELS.some((m) => m.id === id && m.locked)
 }
 
 const EMPTY_DISABLED: Set<string> = new Set()
@@ -48,11 +36,6 @@ export function useEnabledModels() {
 
   const enabledImageModels = useMemo(
     () => ALL_IMAGE_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
-    [disabledIds],
-  )
-
-  const enabledTextModels = useMemo(
-    () => ALL_TEXT_MODELS.filter((m) => m.locked || !disabledIds.has(m.id)),
     [disabledIds],
   )
 
@@ -84,16 +67,13 @@ export function useEnabledModels() {
   )
 
   const enabledImageCount = enabledImageModels.length
-  const enabledTextCount = enabledTextModels.length
 
   return {
     enabledImageModels,
     enabledImageInputModels,
-    enabledTextModels,
     isModelEnabled,
     toggleModel,
     resetToDefaults,
     enabledImageCount,
-    enabledTextCount,
   }
 }

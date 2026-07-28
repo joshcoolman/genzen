@@ -7,7 +7,6 @@ export interface NavItem {
   href: string
   icon: LucideIcon
   dividerBefore?: boolean
-  alwaysVisible?: boolean
   matchPaths?: Array<string>
 }
 
@@ -42,13 +41,11 @@ export const navItems: Array<NavItem> = [
     label: 'Settings',
     href: '/settings',
     icon: Settings,
-    alwaysVisible: true,
   },
   {
     id: 'account',
     label: 'Account',
     href: '/account',
     icon: User,
-    alwaysVisible: true,
   },
 ]

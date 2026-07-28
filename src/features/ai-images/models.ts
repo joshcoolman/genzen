@@ -8,7 +8,6 @@ export interface ImageModel {
   supportsImageInput?: boolean
   imageInputModelId?: string
   locked?: boolean
-  isNew?: boolean
   displayPrice?: string
   useCase?: string
 }
@@ -87,7 +86,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/gpt-image-2/edit',
-    isNew: true,
     displayPrice: '~$1.00/img',
     useCase: 'Premium OpenAI — use when you know what you want',
   },
@@ -146,21 +144,6 @@ export const ALL_IMAGE_MODELS: Array<ImageModel> = [
   },
 ]
 
-export const DEFAULT_MODEL = ALL_IMAGE_MODELS[0].id
-
-// Feature-specific model defaults — change here, not in server files
-export const STORYBOARD_FRAME_MODEL = ALL_IMAGE_MODELS.find(
-  (m) => m.id === 'fal-ai/nano-banana-2',
-)!.id
-
-export const CHARACTER_REF_MODEL = ALL_IMAGE_MODELS.find(
-  (m) => m.id === 'fal-ai/flux/schnell',
-)!.id
-
-export const FLUX_KONTEXT_PRO_ID = ALL_IMAGE_MODELS.find(
-  (m) => m.id === 'fal-ai/flux-pro/kontext/text-to-image',
-)!.id
-
 export const KONTEXT_DEV_ID = ALL_IMAGE_MODELS.find(
   (m) => m.id === 'fal-ai/flux-kontext/dev',
 )!.id
@@ -169,14 +152,8 @@ export const KONTEXT_DEV_FALLBACK_ID = ALL_IMAGE_MODELS.find(
   (m) => m.id === 'fal-ai/flux/dev',
 )!.id
 
-export const LOCKED_IMAGE_MODEL_ID = ALL_IMAGE_MODELS.find((m) => m.locked)!.id
-
 export const IMAGE_INPUT_MODELS = ALL_IMAGE_MODELS.filter(
   (m) => m.supportsImageInput,
-)
-
-export const REFINE_CAPABLE_MODELS = ALL_IMAGE_MODELS.filter(
-  (m) => m.supportsImageInput && m.imageInputModelId,
 )
 
 // Resolved image-input endpoints that aren't first-class registry/EDIT_MODELS
@@ -195,7 +172,7 @@ export function getModelName(modelId: string): string {
   )
 }
 
-export interface EditModel {
+interface EditModel {
   id: string
   name: string
   description: string
@@ -234,5 +211,3 @@ export const EDIT_MODELS: Array<EditModel> = [
     maxRefImages: 10,
   },
 ]
-
-export const DEFAULT_EDIT_MODEL = EDIT_MODELS[0].id

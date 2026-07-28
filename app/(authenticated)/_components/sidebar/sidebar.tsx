@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
-import { NavMore } from '../nav-more/nav-more'
 import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
@@ -23,13 +22,11 @@ import {
 import { useSidebarCollapsed } from '#/lib/use-sidebar-collapsed'
 
 import { navItems } from '#/lib/nav-items'
-import { useNavVisibility } from '#/lib/use-nav-visibility'
 import { cn } from '#/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
   const { isCollapsed } = useSidebarCollapsed()
-  const { isItemHidden, showMoreNav } = useNavVisibility()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
   const settingsItem = navItems.find((item) => item.id === 'settings')!
@@ -37,10 +34,6 @@ export function Sidebar({ className }: { className?: string }) {
   const mainItems = navItems.filter(
     (item) => item.id !== 'account' && item.id !== 'settings',
   )
-
-  const visibleItems = mainItems.filter((item) => !isItemHidden(item.id))
-
-  const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
   const handleSignOut = () => {
     void logout()
@@ -62,7 +55,7 @@ export function Sidebar({ className }: { className?: string }) {
       {/* Navigation */}
       <TooltipProvider delayDuration={0}>
         <nav className="flex-1 space-y-1 p-4">
-          {visibleItems.map((item) => {
+          {mainItems.map((item) => {
             const active = isActive(item)
             return (
               <div key={item.href}>
@@ -107,13 +100,6 @@ export function Sidebar({ className }: { className?: string }) {
               </div>
             )
           })}
-          {showMoreNav && (
-            <NavMore
-              isCollapsed={isCollapsed}
-              variant="sidebar"
-              hiddenItems={hiddenItems}
-            />
-          )}
           <div className="my-2 border-t border-border" />
           {[settingsItem, accountItem].map((item) => (
             <Tooltip key={item.id}>

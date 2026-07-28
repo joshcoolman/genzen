@@ -163,11 +163,6 @@
   font-size: var(--text-3xs);
 }
 
-.tagNew {
-  background: color-mix(in oklab, var(--warm-gold) 15%, transparent);
-  color: var(--warm-gold);
-}
-
 .reset {
   padding: 0;
   background: none;
@@ -182,55 +177,4 @@
 
 .reset:hover {
   color: var(--foreground);
-}
-
-/* ---- sidebar section ---- */
-
-.navCard {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-8) var(--space-12);
-  background: none;
-  border: 0;
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    color var(--duration-normal) var(--ease-in-out),
-    background-color var(--duration-normal) var(--ease-in-out);
-}
-
-.navCard:hover {
-  background: var(--muted);
-}
-
-.navCardPinned {
-  cursor: default;
-}
-
-.navCardPinned:hover {
-  background: none;
-}
-
-.navCardVisible {
-  color: var(--foreground);
-}
-
-.navCardHidden {
-  color: var(--muted-foreground);
-}
-
-.navIcon {
-  flex-shrink: 0;
-  width: 1rem;
-  height: 1rem;
-}
-
-.footer {
-  padding-top: var(--space-16);
-  border-top: 1px solid var(--border);
 }

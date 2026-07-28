@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
-import { NavMore } from '../nav-more/nav-more'
 import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
@@ -22,13 +21,11 @@ import {
   SheetTrigger,
 } from '#/components'
 import { navItems } from '#/lib/nav-items'
-import { useNavVisibility } from '#/lib/use-nav-visibility'
 import { cn } from '#/lib/utils'
 
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
-  const { isItemHidden, showMoreNav } = useNavVisibility()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
   const settingsItem = navItems.find((item) => item.id === 'settings')!
@@ -36,10 +33,6 @@ export function MobileNav({ className }: { className?: string }) {
   const mainItems = navItems.filter(
     (item) => item.id !== 'account' && item.id !== 'settings',
   )
-
-  const visibleItems = mainItems.filter((item) => !isItemHidden(item.id))
-
-  const hiddenItems = mainItems.filter((item) => isItemHidden(item.id))
 
   const handleSignOut = () => {
     void logout()
@@ -69,7 +62,7 @@ export function MobileNav({ className }: { className?: string }) {
         >
           {/* Nav items */}
           <nav className="space-y-1 p-4">
-            {visibleItems.map((item) => {
+            {mainItems.map((item) => {
               const active = isActive(item)
               return (
                 <div key={item.href}>
@@ -91,9 +84,6 @@ export function MobileNav({ className }: { className?: string }) {
                 </div>
               )
             })}
-            {showMoreNav && (
-              <NavMore variant="mobile" hiddenItems={hiddenItems} />
-            )}
             <div className="my-2 border-t border-border" />
             {[settingsItem, accountItem].map((item) => (
               <Link
