@@ -33,6 +33,11 @@ special too.
   a `Stack` of components.
 - **The wrapper takes a role name** (`view`). One per route, so the folder
   supplies the subject.
+- **The hook paired with `view.tsx` takes the same role name** — `use-view.ts`,
+  always. The pair shares a base name because it is one thing split in two.
+- **Any other hook takes a subject name** — `use-generate.ts`, not
+  `use-canvas-generate.ts`. Same shape as components: one role-named wrapper,
+  subject-named parts.
 - **A part takes a subject name, and a bare shape is not one.** `row`, `card`,
   `panel`, `list` need a subject; `totals`, `filters` already are one. Hence
   `run-row`, matching the existing `image-card` family.
