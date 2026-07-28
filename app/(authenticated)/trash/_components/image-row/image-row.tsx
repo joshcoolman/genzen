@@ -4,19 +4,7 @@ import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
 import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-  Button,
-  Thumbnail,
-} from '#/components'
+import { Button, ConfirmDialog, Thumbnail } from '#/components'
 import { formatFileSize } from '#/lib/format'
 
 function formatDeletedDate(dateStr: string | null): string {
@@ -115,35 +103,28 @@ export function ImageRow({
                     Restore
                   </Button>
                   {!isLinked && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={styles.deleteButton}
-                          disabled={busy}
-                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        >
-                          <X className={styles.buttonIcon} />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete forever?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            &ldquo;{image.title}&rdquo; will be permanently
-                            deleted. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => onDelete(image.id)}>
-                            Delete Forever
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <ConfirmDialog
+                      title="Delete forever?"
+                      description={
+                        <>
+                          &ldquo;{image.title}&rdquo; will be permanently
+                          deleted. This action cannot be undone.
+                        </>
+                      }
+                      confirmLabel="Delete Forever"
+                      onConfirm={() => onDelete(image.id)}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={styles.deleteButton}
+                        disabled={busy}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                      >
+                        <X className={styles.buttonIcon} />
+                        Delete
+                      </Button>
+                    </ConfirmDialog>
                   )}
                 </div>
               )}

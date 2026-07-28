@@ -6,16 +6,8 @@ import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
 import { logout } from '#/features/auth/logout.action'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
   Button,
+  ConfirmDialog,
   Sheet,
   SheetContent,
   SheetTrigger,
@@ -97,28 +89,17 @@ export function MobileNav({ className }: { className?: string }) {
                 {item.label}
               </Link>
             ))}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">
-                  <LogOut className="h-4 w-4" />
-                  Log out
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Log out?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    You'll need to sign in again to access your account.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSignOut}>
-                    Log out
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+              title="Log out?"
+              description="You'll need to sign in again to access your account."
+              confirmLabel="Log out"
+              onConfirm={handleSignOut}
+            >
+              <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </ConfirmDialog>
           </nav>
         </SheetContent>
       </Sheet>

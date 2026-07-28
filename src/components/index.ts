@@ -31,6 +31,10 @@ export {
 } from './aspect-ratio-select/aspect-ratio-constants'
 export { ClipboardPasteButton } from './clipboard-paste-button/clipboard-paste-button'
 export { useClipboardPaste } from './clipboard-paste-button/use-clipboard-paste'
+export {
+  ConfirmDialog,
+  type ConfirmDialogProps,
+} from './confirm-dialog/confirm-dialog'
 export { CopyButton } from './copy-button/copy-button'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
