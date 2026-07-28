@@ -1,11 +1,11 @@
 # Route shape
 
-How a route is built. Established converting Activity (#185, `3ec82c1`), which
-is the worked example — read it beside this file.
+How a route is built. Established converting Activity (#185, `3ec82c1`) and
+extended by Trash, which settled the server/client seam below. Read both beside
+this file; Trash is the one with the seam right.
 
-Provisional: Activity is the only route in this shape. It is a candidate for
-`~/repos/project-standard` once a complex view (Images, Canvas) proves it
-survives contact.
+Provisional: still a candidate for `~/repos/project-standard` rather than part
+of it, until a complex view (Images, Canvas) proves it survives contact.
 
 ## The shape
 
@@ -87,6 +87,7 @@ root barrel, so the import path never changes.
 
 Candidates, seen two or more times and waiting for the next sighting to fix
 their shape: `ImageBox`, `EmptyState`, `Card`, `Label`, `StatusBadge`.
+`EmptyState` picked up its third sighting on Trash and is the next one to build.
 
 `StatBadge` was built and deleted the same day when its only consumer went
 (`git show adf67e8`). An unused primitive is worse than a missing one — it gets
@@ -99,15 +100,32 @@ locally reasonable and the ratchet only turns one way. The test: a new prop must
 be a **variant of the same thing** (size, tone, density). A new _capability_ is
 a second primitive.
 
-## Unresolved: the server/client seam
+## The server/client seam
 
-`page.tsx` is three lines and `use-view.ts` fetches from the client in an
-effect. `~/repos/bootsy` does the opposite: `page.tsx` is a server component
-doing auth and queries, handing props to a `'use client'` view.
+**`page.tsx` fetches. The view is seeded, not empty.** It is a server component
+that runs the route's read and hands the result to a `'use client'` view as
+`initial`; `use-view.ts` seeds its state from that prop and owns every read
+after it. Settled on Trash (#185); Activity still has the old shape and is the
+exception, not the pattern.
 
-The file tree looks identical either way, so this decides itself by default if
-nobody decides it — and Activity is now the thing six other routes will copy.
-Settle it before Images.
+```tsx
+export default async function Trash() {
+  const initial = await listTrashedImages()
+  return <View initial={initial} />
+}
+```
+
+What it buys, and the one thing to watch:
+
+- **The loading state stops existing.** Trash's `isLoading`, its `Loading…`
+  block and its empty first paint all went in the same commit. A spinner that
+  covers a query the server already ran is work the page invented for itself.
+- **`resolveAuth()` runs once, on the server.** The client hook took a `userId`
+  prop it only used to decide whether to fetch.
+- **`initial` is a seed, not the source of truth.** Every mutation here is
+  optimistic and refetches, so the hook must still own the list. A route that
+  reads the prop on every render instead of `useState(initial)` will snap back
+  to server state mid-interaction.
 
 ## Verifying a conversion
 
@@ -120,6 +138,15 @@ it has caught are on #185; two that bear repeating:
 - When a column is genuinely unstable, mask it and say so. "Excluding the
   thumbnail column, max delta 0" is a stronger and more honest claim than one
   number over the whole image.
+- **A module class is unlayered, so it beats every utility it replaces.**
+  Tailwind's output sits in `@layer utilities`; an unlayered rule wins whatever
+  the specificity. Convenient for `hover:` pairs — `.deleteButton { color }` no
+  longer needs a hover twin to outrank `hover:text-accent-foreground`. Dangerous
+  for anything a shadcn variant sizes: `Button` sets its own svg via
+  `[&_svg:not([class*='size-'])]:size-4`, so the `h-3 w-3` on the icon was
+  already dead, and restating it as `.icon { width: .75rem }` would silently
+  shrink an icon the conversion was supposed to leave alone. Check what the
+  utility was actually doing before porting it — here, only the margin was.
 - **Park the pointer off _content_, not merely off the element under test.**
   Moving it to 900,700 to clear a popover put it over a table row instead, and
   `.row:hover` repainted a border and a background: 72,657 pixels of difference

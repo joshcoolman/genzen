@@ -122,6 +122,18 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-28)
 
+- **Trash is converted, and it settled the seam (#185).** `page.tsx` is now a
+  server component that runs the read and hands the payload to `view.tsx` as
+  `initial` — bootsy's shape, written down in `docs/reference/route-shape.md`.
+  The loading state stopped existing along with the empty first paint. The
+  407-line `TrashDisplay` became five subject-named parts (`image-row`,
+  `link-badge`, `empty-dialog`, `download-dialog`, `selection-bar`). Below the
+  header the page diffs at max 2/255; the header moved on purpose, adopting the
+  shared `PageHeader`.
+  The trap it cost: a module rule is **unlayered**, so it outranks every utility
+  it replaces and can override things that utility never could. `Button` sizes
+  its own svg, so the `h-3 w-3` on each icon was already dead — restating it in
+  a module would have shrunk icons the conversion was meant to leave alone.
 - **Account and Login are in the route shape too (#185).** Both were off
   Tailwind but not in the shape, which made them a second dialect beside the
   reference. Zero diff each. Login forced a fix to
@@ -147,34 +159,16 @@ Conventions follow `~/repos/project-standard`.
   re-derives its own from the ratio it inherits — L0's rem equivalent made every
   activity row 4px taller. `--text-*-leading` is now the same `calc(a / b)`
   Tailwind emits.
-- **The Settings page is gone.** The lineup is the offer — what is in
-  `IMAGE_MODELS` is what every selector shows, one to one — so there was nothing
-  left for it to do. All three of its sections turned out to be nothing: Text
-  toggled models no code path could reach, Sidebar hid items from a sidebar
-  that is now fixed, Models subtracted from the registry that is now the single
-  source of truth. `use-enabled-models` went with it deliberately: it stored
-  _disabled_ ids, so leaving the hook alive would have hidden models with no UI
-  left to restore them.
-- **One source of truth for image models (#190).** `IMAGE_MODELS` is the whole
-  lineup — one entry per model, one name over up to two FAL endpoints
-  (`textToImage` / `withImages`), routed by `endpointFor(id, hasImage)`. The
-  five-places-per-model sprawl is gone, along with `ALL_IMAGE_MODELS`,
-  `EDIT_MODELS`, nine dead exports and the hardcoded Kontext branch. Adding a
-  model is one object literal; removing one is deleting it plus a line in
-  `RETIRED_MODEL_NAMES`.
 
 **Up next**
 
-- **#185 — Pass 2: styling.** L0/L1 are in; next is converting area by area to
-  CSS Modules, with Base UI replacing shadcn as each component is touched.
-  Tailwind comes out last (#186). Login, Settings, Account and Activity are
-  done; **Trash is next**, and is where the one open question in
-  `docs/reference/route-shape.md` gets settled — whether `page.tsx` fetches on
-  the server and hands props down (bootsy's shape) or the client fetches in an
-  effect (genzen's today). It is invisible in the file tree, so it settles by
-  default if nobody settles it. After Trash the remainder is effectively one
-  surface — `src/components/` + the Images cluster in `_components/` + `/images`
-  — about 35 files. 59 files still carry utility classes.
+- **#185 — Pass 2: styling.** L0/L1 are in; conversion runs area by area to CSS
+  Modules, with Base UI replacing shadcn as each component is touched. Tailwind
+  comes out last (#186). Login, Settings, Account, Activity and Trash are done.
+  What is left is effectively one surface — `src/components/` + the Images
+  cluster in `_components/` + `/images`. 52 files still carry utility classes,
+  and the shared list components (`Thumbnail`, `ImageGrid`, `SelectionDrawer`)
+  are the knot in the middle of it: four routes render them.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
