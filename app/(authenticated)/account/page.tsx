@@ -1,5 +1,5 @@
-import { AccountPage } from './_components/account-page/account-page'
+import { View } from './view'
 
 export default function Account() {
-  return <AccountPage />
+  return <View />
 }

@@ -13,15 +13,15 @@ survives contact.
 app/(authenticated)/<route>/
 ├── page.tsx              renders <View />, nothing else
 ├── view.tsx              composes components; no className, no module
-├── use-view.ts           the state view.tsx renders
+├── use-view.ts           the state view.tsx renders -- omit if there is none
 ├── _actions/             this route's own reads and writes
 └── _components/
     ├── <subject>/        <subject>.tsx + <subject>.module.css
     └── …
 ```
 
-`page.tsx`, `view.tsx`, `view.module.css` and `use-view.ts` sit bare in the
-route folder. They are **route files**, the category Next.js already puts there
+`page.tsx`, `view.tsx` and `use-view.ts` sit bare in the route folder. There is
+no `view.module.css` -- the view has no styles to put in one. They are **route files**, the category Next.js already puts there
 (`page`, `layout`, `loading`, `error`), not components — so "one folder per
 component, everywhere, no exceptions" does not reach them. State it as the
 category, never as an exception, or the next reader argues their component is
@@ -30,7 +30,9 @@ special too.
 ## Rules
 
 - **`view.tsx` carries no styles.** No `className`, no module of its own. It is
-  a `Stack` of components.
+  a `Stack` of components. Where the frame itself is the design -- Login is a
+  full-height centred column -- that frame becomes a named component
+  (`centered-panel`), not a module on the view.
 - **The wrapper takes a role name** (`view`). One per route, so the folder
   supplies the subject.
 - **The hook paired with `view.tsx` takes the same role name** — `use-view.ts`,

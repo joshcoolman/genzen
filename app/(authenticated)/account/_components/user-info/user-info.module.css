@@ -1,0 +1,51 @@
+/* The same surface connection-status uses. Not promoted to a `Card` primitive:
+   activity-preview's card carries a border and these do not, so sharing one
+   would mean picking a winner -- a visual decision, not a refactor. */
+.card {
+  padding: var(--space-24);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.card > *:not(:last-child) {
+  margin-bottom: var(--space-16);
+}
+
+.cardTitle {
+  font-weight: var(--weight-medium);
+}
+
+.fields {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.fields > *:not(:last-child) {
+  margin-bottom: var(--space-12);
+}
+
+.field {
+  display: flex;
+  justify-content: space-between;
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--border);
+}
+
+.field:last-child {
+  border-bottom: 0;
+}
+
+.fieldLabel {
+  color: var(--muted-foreground);
+}
+
+.fieldValue {
+  color: var(--foreground);
+}
+
+.fieldValueMono {
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}

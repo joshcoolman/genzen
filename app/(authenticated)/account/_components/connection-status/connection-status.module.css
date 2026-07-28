@@ -1,14 +1,11 @@
-/* Tailwind's `space-y-*` is a block container with margin-bottom on every child
-   but the last -- not flex + gap. Reproduced literally here so an inline child
-   keeps the line box it had. */
-.page > *:not(:last-child) {
-  margin-bottom: var(--space-32);
+.section > *:not(:last-child) {
+  margin-bottom: var(--space-16);
 }
 
-.title {
-  font-size: var(--text-2xl);
-  line-height: var(--text-2xl-leading);
-  font-weight: var(--weight-semibold);
+.sectionTitle {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--weight-medium);
 }
 
 .card {
@@ -19,55 +16,6 @@
 
 .card > *:not(:last-child) {
   margin-bottom: var(--space-16);
-}
-
-.cardTitle {
-  font-weight: var(--weight-medium);
-}
-
-.fields {
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
-}
-
-.fields > *:not(:last-child) {
-  margin-bottom: var(--space-12);
-}
-
-.field {
-  display: flex;
-  justify-content: space-between;
-  padding-block: var(--space-8);
-  border-bottom: 1px solid var(--border);
-}
-
-.field:last-child {
-  border-bottom: 0;
-}
-
-.fieldLabel {
-  color: var(--muted-foreground);
-}
-
-.fieldValue {
-  color: var(--foreground);
-}
-
-.fieldValueMono {
-  color: var(--foreground);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-}
-
-.section > *:not(:last-child) {
-  margin-bottom: var(--space-16);
-}
-
-.sectionTitle {
-  font-size: var(--text-lg);
-  line-height: var(--text-lg-leading);
-  font-weight: var(--weight-medium);
 }
 
 .statusTitle {
