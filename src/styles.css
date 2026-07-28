@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+/* L0. Must follow tailwindcss so :root wins over its default theme values.
+   L1 (styles/base.css) is authored but not imported -- Preflight still owns
+   the reset; #186 swaps them. */
+@import './styles/tokens.css';
 
 @theme inline {
   --breakpoint-xs: 400px;
@@ -55,86 +59,8 @@
   --color-primary-light: var(--primary-light);
 }
 
-:root {
-  /* ========================================
-     DESIGN CONTROLS
-     Change these to affect the whole UI
-     ======================================== */
-
-  /* Shape -- controls all buttons, cards, inputs, dialogs */
-  --radius: 0.375rem;
-
-  /* Brand color -- active states, focus rings, links, highlights */
-  --accent-brand: #4ade80;
-  --accent-brand-hover: #22c55e;
-
-  /* Text -- main body text, headings, active sidebar links */
-  --foreground: #ffffff;
-
-  /* Text -- unselected sidebar links, placeholders, secondary text */
-  --muted-foreground: #737373;
-
-  /* Surfaces -- page background */
-  --background: #0d0d0d;
-
-  /* Surfaces -- cards, popovers, code blocks */
-  --card: var(--sidebar-bg);
-
-  /* Surfaces -- secondary buttons, muted areas, input backgrounds */
-  --secondary: var(--sidebar-border);
-
-  /* Lines -- borders on cards, inputs, dividers */
-  --border: var(--sidebar-border);
-
-  /* Sidebar -- background, text, hover, selected, dividers */
-  --sidebar-bg: #1c2020;
-  --sidebar-text: #a1a1a1;
-  --sidebar-hover-text: #f9f9f9;
-  --sidebar-hover: #000000;
-  --sidebar-selected: #0c3e2d;
-  --sidebar-selected-text: #fff;
-  --sidebar-border: #2b2b2b;
-
-  /* ========================================
-     DERIVED / STRUCTURAL
-     These reference the controls above.
-     Usually no need to touch these directly.
-     ======================================== */
-
-  --card-foreground: var(--foreground);
-  --popover: var(--card);
-  --popover-foreground: var(--foreground);
-  --primary: var(--foreground);
-  --primary-foreground: var(--background);
-  --secondary-foreground: var(--foreground);
-  --muted: var(--secondary);
-  --accent: var(--secondary);
-  --accent-foreground: var(--foreground);
-  --input: var(--secondary);
-  --ring: var(--accent-brand);
-  --destructive: #ef4444;
-
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--accent-brand);
-  --sidebar-primary-foreground: #141414;
-  --sidebar-accent: var(--sidebar-hover);
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-ring: var(--accent-brand);
-
-  /* Additional accent colors */
-  --accent-sage: #8fa888;
-  --accent-sage-hover: #9fb898;
-  --warm-gold: #d4a853;
-  --primary-dark: #061610;
-  --primary-light: #7edba6;
-
-  /* Chart colors */
-  --chart-1: #4ade80;
-  --chart-2: #8fa888;
-  --chart-3: #6b8e9f;
-  --chart-4: #9b8aa8;
-  --chart-5: #c88a8a;
-}
+/* Every token now lives in styles/tokens.css (L0). Nothing below names a
+   color; the @theme block above only maps token names onto Tailwind's. */
 
 @layer base {
   * {
