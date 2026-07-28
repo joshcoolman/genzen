@@ -1,12 +1,12 @@
 'use client'
 
 import { CheckCircle2, Circle, Lock } from 'lucide-react'
+import styles from './settings-page.module.css'
 import { ALL_IMAGE_MODELS } from '#/features/ai-images/models'
 import { ALL_TEXT_MODELS } from '#/lib/text-models'
 import { useEnabledModels } from '#/lib/use-enabled-models'
 import { navItems } from '#/lib/nav-items'
 import { useNavVisibility } from '#/lib/use-nav-visibility'
-import { cn } from '#/lib/utils'
 
 export function SettingsPage() {
   const {
@@ -22,25 +22,25 @@ export function SettingsPage() {
   const sidebarItems = navItems.filter((item) => item.id !== 'account')
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+    <div className={styles.page}>
+      <h1 className={styles.title}>Settings</h1>
 
-      <div className="bg-card rounded-lg p-6 space-y-6">
+      <div className={styles.section}>
         <div>
-          <h2 className="text-lg font-medium">Models</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className={styles.sectionTitle}>Models</h2>
+          <p className={styles.sectionNote}>
             Manage which models appear in selectors across the app.
           </p>
         </div>
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
+        <div className={styles.group}>
+          <h3 className={styles.groupTitle}>
             Text to Image{' '}
-            <span className="text-xs font-normal">
+            <span className={styles.groupCount}>
               ({enabledImageCount} of {ALL_IMAGE_MODELS.length} enabled)
             </span>
           </h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={styles.grid}>
             {[...ALL_IMAGE_MODELS]
               .sort((a, b) => (b.locked ? 1 : 0) - (a.locked ? 1 : 0))
               .map((model) => {
@@ -51,36 +51,32 @@ export function SettingsPage() {
                     key={model.id}
                     onClick={() => toggleModel(model.id)}
                     disabled={locked}
-                    className={cn(
-                      'relative flex items-start gap-2 rounded-md px-3 py-2 text-left transition-colors',
-                      locked ? 'cursor-default' : 'cursor-pointer',
+                    className={`${styles.modelCard} ${
                       enabled
-                        ? 'bg-accent-brand/10 text-foreground'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted',
-                    )}
+                        ? styles.modelCardEnabled
+                        : styles.modelCardDisabled
+                    } ${locked ? styles.modelCardLocked : ''}`}
                   >
                     {locked && (
-                      <span className="absolute top-1 right-1.5 text-[9px] font-medium uppercase tracking-wider text-[#7dac8e]">
-                        DEFAULT
-                      </span>
+                      <span className={styles.lockedBadge}>DEFAULT</span>
                     )}
                     {locked ? (
-                      <Lock className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                      <Lock className={`${styles.icon} ${styles.iconOn}`} />
                     ) : enabled ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                      <CheckCircle2
+                        className={`${styles.icon} ${styles.iconOn}`}
+                      />
                     ) : (
-                      <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
+                      <Circle className={`${styles.icon} ${styles.iconOff}`} />
                     )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm truncate">{model.name}</span>
+                    <div className={styles.modelText}>
+                      <div className={styles.modelHeading}>
+                        <span className={styles.modelName}>{model.name}</span>
                         {model.supportsImageInput && (
-                          <span className="shrink-0 rounded bg-accent-brand/15 px-1 py-px text-[10px] text-accent-brand">
-                            img
-                          </span>
+                          <span className={styles.tag}>img</span>
                         )}
                       </div>
-                      <div className="text-[10px] truncate text-[#7dac8e]">
+                      <div className={styles.modelDesc}>
                         {model.description}
                       </div>
                     </div>
@@ -90,14 +86,14 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
+        <div className={styles.group}>
+          <h3 className={styles.groupTitle}>
             Text{' '}
-            <span className="text-xs font-normal">
+            <span className={styles.groupCount}>
               ({enabledTextCount} of {ALL_TEXT_MODELS.length} enabled)
             </span>
           </h3>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={styles.grid}>
             {[...ALL_TEXT_MODELS]
               .sort((a, b) => (b.locked ? 1 : 0) - (a.locked ? 1 : 0))
               .map((model) => {
@@ -108,41 +104,37 @@ export function SettingsPage() {
                     key={model.id}
                     onClick={() => toggleModel(model.id)}
                     disabled={locked}
-                    className={cn(
-                      'relative flex items-start gap-2 rounded-md px-3 py-2 text-left transition-colors',
-                      locked ? 'cursor-default' : 'cursor-pointer',
+                    className={`${styles.modelCard} ${
                       enabled
-                        ? 'bg-accent-brand/10 text-foreground'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted',
-                    )}
+                        ? styles.modelCardEnabled
+                        : styles.modelCardDisabled
+                    } ${locked ? styles.modelCardLocked : ''}`}
                   >
                     {locked && (
-                      <span className="absolute top-1 right-1.5 text-[9px] font-medium uppercase tracking-wider text-[#7dac8e]">
-                        DEFAULT
-                      </span>
+                      <span className={styles.lockedBadge}>DEFAULT</span>
                     )}
                     {locked ? (
-                      <Lock className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                      <Lock className={`${styles.icon} ${styles.iconOn}`} />
                     ) : enabled ? (
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-brand" />
+                      <CheckCircle2
+                        className={`${styles.icon} ${styles.iconOn}`}
+                      />
                     ) : (
-                      <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/40" />
+                      <Circle className={`${styles.icon} ${styles.iconOff}`} />
                     )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm truncate">{model.name}</span>
+                    <div className={styles.modelText}>
+                      <div className={styles.modelHeading}>
+                        <span className={styles.modelName}>{model.name}</span>
                         {model.supportsVision && (
-                          <span className="shrink-0 rounded bg-accent-brand/15 px-1 py-px text-[10px] text-accent-brand">
-                            vision
-                          </span>
+                          <span className={styles.tag}>vision</span>
                         )}
                         {model.isNew && (
-                          <span className="shrink-0 rounded bg-warm-gold/15 px-1 py-px text-[10px] text-warm-gold">
+                          <span className={`${styles.tag} ${styles.tagNew}`}>
                             new
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] truncate text-[#7dac8e]">
+                      <div className={styles.modelDesc}>
                         {model.description}
                       </div>
                     </div>
@@ -152,23 +144,20 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <button
-          onClick={resetToDefaults}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
+        <button onClick={resetToDefaults} className={styles.reset}>
           Reset to defaults
         </button>
       </div>
 
-      <div className="bg-card rounded-lg p-6 space-y-6">
+      <div className={styles.section}>
         <div>
-          <h2 className="text-lg font-medium">Sidebar</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className={styles.sectionTitle}>Sidebar</h2>
+          <p className={styles.sectionNote}>
             Choose which items appear in the sidebar navigation.
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className={styles.grid}>
           {sidebarItems.map((item) => {
             const isAlwaysVisible = item.alwaysVisible === true
             const isHidden = isItemHidden(item.id)
@@ -180,38 +169,35 @@ export function SettingsPage() {
                   if (!isAlwaysVisible) toggleItem(item.id)
                 }}
                 disabled={isAlwaysVisible}
-                className={cn(
-                  'flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-                  isAlwaysVisible
-                    ? 'cursor-default'
-                    : 'cursor-pointer hover:bg-muted',
-                  isVisible ? 'text-foreground' : 'text-muted-foreground',
-                )}
+                className={`${styles.navCard} ${
+                  isVisible ? styles.navCardVisible : styles.navCardHidden
+                } ${isAlwaysVisible ? styles.navCardPinned : ''}`}
               >
                 {isVisible ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-accent-brand" />
+                  <CheckCircle2
+                    className={`${styles.navIcon} ${styles.iconOn}`}
+                  />
                 ) : (
-                  <Circle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+                  <Circle className={`${styles.navIcon} ${styles.iconOff}`} />
                 )}
-                <item.icon className="h-4 w-4 shrink-0" />
+                <item.icon className={styles.navIcon} />
                 <span>{item.label}</span>
               </button>
             )
           })}
         </div>
 
-        <div className="border-t border-border pt-4">
+        <div className={styles.footer}>
           <button
             onClick={() => toggleShowMore()}
-            className={cn(
-              'flex items-center gap-2 rounded-md px-3 py-2 text-sm cursor-pointer hover:bg-muted transition-colors',
-              showMoreNav ? 'text-foreground' : 'text-muted-foreground',
-            )}
+            className={`${styles.navCard} ${
+              showMoreNav ? styles.navCardVisible : styles.navCardHidden
+            }`}
           >
             {showMoreNav ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-accent-brand" />
+              <CheckCircle2 className={`${styles.navIcon} ${styles.iconOn}`} />
             ) : (
-              <Circle className="h-4 w-4 shrink-0 text-muted-foreground/40" />
+              <Circle className={`${styles.navIcon} ${styles.iconOff}`} />
             )}
             <span>Show More menu</span>
           </button>

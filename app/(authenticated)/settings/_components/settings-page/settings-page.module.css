@@ -1,0 +1,236 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-32);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl-leading);
+  font-weight: var(--weight-semibold);
+}
+
+/* Stays a block box with margin between children rather than flex + gap.
+   The last child is an inline-block button, and a block container gives it a
+   line box -- strut included -- that a flex column does not. Switching to gap
+   silently reclaims 8px under "Reset to defaults". */
+.section {
+  padding: var(--space-24);
+  background: var(--card);
+  border-radius: var(--radius-lg);
+}
+
+.section > *:not(:last-child) {
+  margin-bottom: var(--space-24);
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--weight-medium);
+}
+
+.sectionNote {
+  margin-top: var(--space-4);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.groupTitle {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.groupCount {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--weight-normal);
+}
+
+/* minmax(0, 1fr) rather than 1fr, or the truncating card contents
+   refuse to shrink and the columns blow out */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8);
+}
+
+/* ---- model card ---- */
+
+.modelCard {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.modelCardEnabled {
+  background: color-mix(in oklab, var(--accent-brand) 10%, transparent);
+  color: var(--foreground);
+}
+
+.modelCardDisabled {
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  color: var(--muted-foreground);
+}
+
+.modelCardDisabled:hover {
+  background: var(--muted);
+}
+
+.modelCardLocked {
+  cursor: default;
+}
+
+.lockedBadge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-6);
+  color: var(--accent-brand-muted);
+  /* One step below the smallest scale token, this badge only */
+  font-size: 9px;
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+}
+
+.iconOn {
+  color: var(--accent-brand);
+}
+
+.iconOff {
+  color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+}
+
+/* Lets the truncating name and description actually truncate */
+.modelText {
+  min-width: 0;
+}
+
+.modelHeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.modelName {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modelDesc {
+  overflow: hidden;
+  color: var(--accent-brand-muted);
+  font-size: var(--text-3xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag {
+  flex-shrink: 0;
+  padding: 1px var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--accent-brand) 15%, transparent);
+  color: var(--accent-brand);
+  font-size: var(--text-3xs);
+}
+
+.tagNew {
+  background: color-mix(in oklab, var(--warm-gold) 15%, transparent);
+  color: var(--warm-gold);
+}
+
+.reset {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.reset:hover {
+  color: var(--foreground);
+}
+
+/* ---- sidebar section ---- */
+
+.navCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.navCard:hover {
+  background: var(--muted);
+}
+
+.navCardPinned {
+  cursor: default;
+}
+
+.navCardPinned:hover {
+  background: none;
+}
+
+.navCardVisible {
+  color: var(--foreground);
+}
+
+.navCardHidden {
+  color: var(--muted-foreground);
+}
+
+.navIcon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.footer {
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--border);
+}

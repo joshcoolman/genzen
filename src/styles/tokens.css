@@ -77,6 +77,11 @@
   --sidebar-ring: var(--accent-brand);
 
   /* Additional accent colors */
+  /* Brand hue at a quarter of the saturation. Metadata that should read as
+     "part of the brand" without competing with it -- model descriptions, the
+     DEFAULT badge. Was a bare #7dac8e at four call sites. */
+  --accent-brand-muted: hsl(141.7 22.1% 58.2%);
+
   --accent-sage: hsl(106.9 15.5% 59.6%);
   --accent-sage-hover: hsl(106.9 18.4% 65.9%);
   --warm-gold: hsl(39.5 60% 57.8%);
@@ -192,6 +197,13 @@
   /* Each size ships with the line-height it is drawn at. Tailwind's `text-*`
      utilities set both; a module that takes only the size shifts every element
      below it by a pixel or two, which is exactly how a conversion drifts. */
+  /* Below `xs` the repo authored px directly -- `text-[10px]` 29 times,
+     `text-[11px]` 21 times. That is a scale whether or not it was named as one.
+     No `-leading` pair: Tailwind's arbitrary sizes set font-size only, so these
+     inherit their line-height and must keep doing so. */
+  --text-3xs: 0.625rem;
+  --text-2xs: 0.6875rem;
+
   --text-xs: 0.75rem;
   --text-xs-leading: 1rem;
   --text-sm: 0.875rem;
