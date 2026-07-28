@@ -115,6 +115,11 @@ Where the standard applies, prefer it over an older pattern found in the
 codebase — an existing file is not evidence of the current convention, because
 the conformance pass (#187) is still in flight.
 
+**How a route is built: `docs/reference/route-shape.md`.** `page.tsx` renders
+`view.tsx`, which composes components and carries no styles; `use-view.ts` holds
+the state. `app/(authenticated)/activity/` is the worked example — copy it, not
+an older route.
+
 ## Gotchas
 
 - Route protection is deny-by-default in `proxy.ts`; a new public path must be
