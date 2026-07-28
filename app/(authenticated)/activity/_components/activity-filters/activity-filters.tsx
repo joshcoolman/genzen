@@ -1,5 +1,7 @@
 import { ChevronDown, X } from 'lucide-react'
 import { useMemo } from 'react'
+import { clsx } from 'clsx'
+import styles from './activity-filters.module.css'
 import type {
   ActivityFilters as Filters,
   GenerationStatus,
@@ -11,7 +13,6 @@ import {
   pickerId,
 } from '#/features/ai-images/models'
 import { Checkbox, Popover, PopoverContent, PopoverTrigger } from '#/components'
-import { cn } from '#/lib/utils'
 
 type DatePreset = 'all' | 'today' | '7d' | '30d'
 
@@ -120,45 +121,39 @@ export function ActivityFilters({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={styles.filters}>
       {/* Model multi-select */}
       <Popover>
         <PopoverTrigger asChild>
           <button
             type="button"
-            className={cn(
-              'inline-flex h-8 items-center gap-1.5 rounded border border-input bg-background px-3 text-xs text-foreground hover:bg-accent',
-              filters.models.length > 0 && 'border-primary/60',
+            className={clsx(
+              styles.modelTrigger,
+              filters.models.length > 0 && styles.modelTriggerActive,
             )}
           >
             <span>
               Models
               {filters.models.length > 0 && (
-                <span className="ml-1 text-muted-foreground">
+                <span className={styles.modelCount}>
                   ({filters.models.length})
                 </span>
               )}
             </span>
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown className={styles.chevron} />
           </button>
         </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="max-h-80 w-72 overflow-y-auto p-2"
-        >
-          <div className="flex flex-col gap-0.5">
+        <PopoverContent align="start" className={styles.popover}>
+          <div className={styles.optionList}>
             {modelOptions.map((m) => {
               const checked = filters.models.includes(m.id)
               return (
-                <label
-                  key={m.id}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent"
-                >
+                <label key={m.id} className={styles.option}>
                   <Checkbox
                     checked={checked}
                     onCheckedChange={() => toggleModel(m.id)}
                   />
-                  <span className="flex-1 truncate">{m.label}</span>
+                  <span className={styles.optionLabel}>{m.label}</span>
                 </label>
               )
             })}
@@ -172,20 +167,20 @@ export function ActivityFilters({
           key={`${filters.models[i]}-chip`}
           type="button"
           onClick={() => toggleModel(filters.models[i])}
-          className="inline-flex h-8 items-center gap-1 rounded border border-primary/40 bg-primary/10 px-2.5 text-xs text-foreground"
+          className={styles.chip}
         >
-          <span className="truncate max-w-[120px]">{label}</span>
-          <X className="h-3 w-3" />
+          <span className={styles.chipLabel}>{label}</span>
+          <X className={styles.chipIcon} />
         </button>
       ))}
       {filters.models.length > 2 && (
-        <span className="text-xs text-muted-foreground">
+        <span className={styles.overflowCount}>
           +{filters.models.length - 2} more
         </span>
       )}
 
       {/* Status pills */}
-      <div className="flex items-center gap-1 rounded border border-input bg-background p-0.5">
+      <div className={styles.pillGroup}>
         {STATUS_OPTIONS.map((s) => {
           const active = filters.statuses.includes(s.value)
           return (
@@ -193,11 +188,9 @@ export function ActivityFilters({
               key={s.value}
               type="button"
               onClick={() => toggleStatus(s.value)}
-              className={cn(
-                'rounded px-2 py-1 text-[11px] transition',
-                active
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
+              className={clsx(
+                styles.pill,
+                active ? styles.pillActive : styles.pillInactive,
               )}
             >
               {s.label}
@@ -207,7 +200,7 @@ export function ActivityFilters({
       </div>
 
       {/* Date preset */}
-      <div className="flex items-center gap-1 rounded border border-input bg-background p-0.5">
+      <div className={styles.pillGroup}>
         {DATE_PRESETS.map((d) => {
           const active = datePreset === d.value
           return (
@@ -215,11 +208,9 @@ export function ActivityFilters({
               key={d.value}
               type="button"
               onClick={() => setDatePreset(d.value)}
-              className={cn(
-                'rounded px-2 py-1 text-[11px] transition',
-                active
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
+              className={clsx(
+                styles.pill,
+                active ? styles.pillActive : styles.pillInactive,
               )}
             >
               {d.label}
@@ -229,12 +220,8 @@ export function ActivityFilters({
       </div>
 
       {hasActiveFilters && (
-        <button
-          type="button"
-          onClick={onClear}
-          className="inline-flex h-8 items-center gap-1 rounded border border-input bg-background px-2.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <X className="h-3 w-3" />
+        <button type="button" onClick={onClear} className={styles.clear}>
+          <X className={styles.clearIcon} />
           Clear
         </button>
       )}

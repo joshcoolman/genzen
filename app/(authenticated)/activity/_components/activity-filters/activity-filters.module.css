@@ -1,0 +1,164 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.modelTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  height: var(--space-32);
+  padding-inline: var(--space-12);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.modelTrigger:hover {
+  background: var(--accent);
+}
+
+.modelTriggerActive {
+  border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+}
+
+.modelCount {
+  margin-left: var(--space-4);
+  color: var(--muted-foreground);
+}
+
+.chevron {
+  width: var(--space-12);
+  height: var(--space-12);
+}
+
+.popover {
+  width: 18rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: var(--space-8);
+}
+
+.optionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--accent);
+}
+
+.optionLabel {
+  flex: 1 1 0%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--space-32);
+  padding-inline: var(--space-10);
+  border: 1px solid color-mix(in oklab, var(--primary) 40%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.chipLabel {
+  max-width: 7.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chipIcon {
+  width: var(--space-12);
+  height: var(--space-12);
+}
+
+.overflowCount {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.pillGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+}
+
+.pill {
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-md);
+  font-size: var(--text-2xs);
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out),
+    border-color var(--duration-normal) var(--ease-in-out);
+}
+
+/* Two states, never both: the selected pill deliberately has no hover
+   response, so the hover rule lives on the inactive class rather than on
+   `.pill` with an override. */
+.pillInactive {
+  color: var(--muted-foreground);
+}
+
+.pillInactive:hover {
+  color: var(--foreground);
+}
+
+.pillActive {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.clear {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--space-32);
+  padding-inline: var(--space-10);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.clear:hover {
+  color: var(--foreground);
+}
+
+.clearIcon {
+  width: var(--space-12);
+  height: var(--space-12);
+}

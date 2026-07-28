@@ -1,4 +1,5 @@
 import { Clock4, DollarSign, Receipt } from 'lucide-react'
+import styles from './activity-totals.module.css'
 import type { ActivityTotals as Totals } from '#/features/activity/types'
 import { formatDurationMs } from '#/lib/time-format'
 
@@ -19,24 +20,11 @@ interface StatProps {
 
 function Stat({ icon, label, value, muted, title }: StatProps) {
   return (
-    <div
-      className="flex items-center gap-3 rounded-md border border-border bg-card px-4 py-3"
-      title={title}
-    >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted/60 text-muted-foreground">
-        {icon}
-      </div>
-      <div className="min-w-0 flex-col">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <p
-          className={
-            muted
-              ? 'text-sm text-muted-foreground tabular-nums'
-              : 'text-lg font-semibold tabular-nums text-foreground'
-          }
-        >
+    <div className={styles.stat} title={title}>
+      <div className={styles.statIcon}>{icon}</div>
+      <div className={styles.statBody}>
+        <p className={styles.statLabel}>{label}</p>
+        <p className={muted ? styles.statValueMuted : styles.statValue}>
           {value}
         </p>
       </div>
@@ -54,16 +42,16 @@ export function ActivityTotals({
   hasActiveFilters,
 }: ActivityTotalsProps) {
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className={styles.totals}>
+      <div className={styles.grid}>
         <Stat
-          icon={<Receipt className="h-4 w-4" />}
+          icon={<Receipt />}
           label="Runs"
           value={totals.count.toLocaleString()}
           title={hasActiveFilters ? 'Matching current filters' : 'All runs'}
         />
         <Stat
-          icon={<Clock4 className="h-4 w-4" />}
+          icon={<Clock4 />}
           label="Total time"
           value={
             totals.totalDurationMs > 0
@@ -72,7 +60,7 @@ export function ActivityTotals({
           }
         />
         <Stat
-          icon={<DollarSign className="h-4 w-4" />}
+          icon={<DollarSign />}
           label="Cost"
           value={
             totals.totalProviderCostCents > 0
@@ -87,7 +75,7 @@ export function ActivityTotals({
         />
       </div>
       {totals.exceedsCap && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className={styles.cap}>
           Totals capped at the most recent 5,000 runs. Narrow with filters for
           precise numbers.
         </p>

@@ -9,6 +9,8 @@ import {
   Copy,
   Image as ImageIcon,
 } from 'lucide-react'
+import { clsx } from 'clsx'
+import styles from './activity-detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
 import { getActivityEntry } from '#/features/activity/server/get-activity-entry.server'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#/components'
@@ -17,7 +19,6 @@ import {
   formatDurationMs,
   formatRelativeOrDate,
 } from '#/lib/time-format'
-import { cn } from '#/lib/utils'
 
 interface ActivityDetailPanelProps {
   entryId: string | null
@@ -26,10 +27,10 @@ interface ActivityDetailPanelProps {
 }
 
 function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
-  const styles = {
-    completed: 'bg-emerald-500/10 text-emerald-500',
-    failed: 'bg-destructive/10 text-destructive',
-    pending: 'bg-muted text-muted-foreground',
+  const variants = {
+    completed: styles.badgeCompleted,
+    failed: styles.badgeFailed,
+    pending: styles.badgePending,
   } as const
   const labels = {
     completed: 'Completed',
@@ -42,13 +43,8 @@ function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
     pending: Clock4,
   }[status]
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium',
-        styles[status],
-      )}
-    >
-      <Icon className="h-3 w-3" />
+    <span className={`${styles.badge} ${variants[status]}`}>
+      <Icon className={styles.badgeIcon} />
       {labels[status]}
     </span>
   )
@@ -81,13 +77,10 @@ function DetailRow({
   mono?: boolean
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-1.5 text-xs">
-      <span className="text-muted-foreground">{label}</span>
+    <div className={styles.detailRow}>
+      <span className={styles.detailLabel}>{label}</span>
       <span
-        className={cn(
-          'min-w-0 break-all text-right text-foreground',
-          mono && 'font-mono text-[11px]',
-        )}
+        className={clsx(styles.detailValue, mono && styles.detailValueMono)}
       >
         {children}
       </span>
@@ -106,14 +99,14 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1200)
       }}
-      className="absolute right-1.5 top-1.5 rounded p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+      className={styles.copy}
       title={label}
       aria-label={label}
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-500" />
+        <Check className={`${styles.copyIcon} ${styles.copyIconDone}`} />
       ) : (
-        <Copy className="h-3.5 w-3.5" />
+        <Copy className={styles.copyIcon} />
       )}
     </button>
   )
@@ -127,13 +120,9 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </h3>
-      <div className="rounded-md border border-border bg-card/40 px-3 py-2">
-        {children}
-      </div>
+    <div className={styles.section}>
+      <h3 className={styles.sectionTitle}>{title}</h3>
+      <div className={styles.sectionBody}>{children}</div>
     </div>
   )
 }
@@ -159,27 +148,27 @@ function highlightJson(json: string): Array<React.ReactNode> {
     if (str !== undefined) {
       if (colon !== undefined) {
         out.push(
-          <span key={key++} className="text-rose-400">
+          <span key={key++} className={styles.jsonKey}>
             {str}
           </span>,
         )
         out.push(colon)
       } else {
         out.push(
-          <span key={key++} className="text-emerald-400">
+          <span key={key++} className={styles.jsonString}>
             {str}
           </span>,
         )
       }
     } else if (num !== undefined) {
       out.push(
-        <span key={key++} className="text-amber-400">
+        <span key={key++} className={styles.jsonNumber}>
           {num}
         </span>,
       )
     } else if (lit !== undefined) {
       out.push(
-        <span key={key++} className="text-sky-400">
+        <span key={key++} className={styles.jsonLiteral}>
           {lit}
         </span>,
       )
@@ -194,8 +183,8 @@ function highlightJson(json: string): Array<React.ReactNode> {
 
 function JsonBlock({ json }: { json: string }) {
   return (
-    <pre className="max-h-[40vh] overflow-auto rounded bg-muted/40 p-2 text-[11px] leading-relaxed text-foreground">
-      <code className="font-mono">{highlightJson(json)}</code>
+    <pre className={styles.json}>
+      <code className={styles.jsonCode}>{highlightJson(json)}</code>
     </pre>
   )
 }
@@ -243,43 +232,31 @@ export function ActivityDetailPanel({
       {/* Large preview rendered in the dim area to the left of the sheet.
           pointer-events-none so clicks pass through to the overlay (close). */}
       {open && detail && thumbUrl && (
-        <div className="pointer-events-none fixed inset-y-0 left-0 right-0 z-[51] hidden items-center justify-center p-12 sm:right-[28rem] sm:flex">
-          <img
-            src={thumbUrl}
-            alt=""
-            className="max-h-[90vh] max-w-full rounded-md object-contain shadow-2xl"
-          />
+        <div className={styles.preview}>
+          <img src={thumbUrl} alt="" className={styles.previewImage} />
         </div>
       )}
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
-          <SheetHeader className="space-y-3 border-b border-border px-4 py-4">
-            <SheetTitle className="text-sm">Generation</SheetTitle>
+        <SheetContent className={styles.sheet}>
+          <SheetHeader className={styles.sheetHeader}>
+            <SheetTitle className={styles.sheetTitle}>Generation</SheetTitle>
             {detail && (
-              <div className="flex items-center gap-3">
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-black">
+              <div className={styles.summary}>
+                <div className={styles.thumb}>
                   {thumbUrl ? (
-                    <img
-                      src={thumbUrl}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    <img src={thumbUrl} alt="" className={styles.thumbImage} />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted/50">
-                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                    <div className={styles.thumbFallback}>
+                      <ImageIcon className={styles.thumbIcon} />
                     </div>
                   )}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground">
-                    {detail.modelName}
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
+                <div className={styles.summaryBody}>
+                  <div className={styles.summaryName}>{detail.modelName}</div>
+                  <div className={styles.summaryMeta}>
                     <StatusBadge status={detail.status} />
                     {detail.isDeleted && (
-                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                        deleted
-                      </span>
+                      <span className={styles.deletedTag}>deleted</span>
                     )}
                   </div>
                 </div>
@@ -287,25 +264,15 @@ export function ActivityDetailPanel({
             )}
           </SheetHeader>
 
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-            {isLoading && (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                Loading…
-              </div>
-            )}
-            {error && (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {error}
-              </div>
-            )}
+          <div className={styles.body}>
+            {isLoading && <div className={styles.state}>Loading…</div>}
+            {error && <div className={styles.error}>{error}</div>}
             {!isLoading && !error && detail && (
               <>
                 {detail.prompt && (
                   <Section title="Prompt">
-                    <div className="relative">
-                      <p className="whitespace-pre-wrap pr-7 text-xs leading-relaxed text-foreground">
-                        {detail.prompt}
-                      </p>
+                    <div className={styles.copyWrap}>
+                      <p className={styles.prompt}>{detail.prompt}</p>
                       <CopyButton text={detail.prompt} label="Copy prompt" />
                     </div>
                   </Section>
@@ -313,8 +280,8 @@ export function ActivityDetailPanel({
 
                 {detail.errorMessage && (
                   <Section title="Error">
-                    <div className="relative">
-                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all pr-7 font-mono text-[11px] leading-relaxed text-destructive">
+                    <div className={styles.copyWrap}>
+                      <pre className={styles.errorText}>
                         {detail.errorMessage}
                       </pre>
                       <CopyButton
@@ -341,9 +308,7 @@ export function ActivityDetailPanel({
                     )}
                     {detail.costIsEstimate &&
                       detail.providerCostCents != null && (
-                        <span className="ml-1.5 text-[11px] text-muted-foreground">
-                          estimated
-                        </span>
+                        <span className={styles.estimated}>estimated</span>
                       )}
                   </DetailRow>
                   <DetailRow label="Created">
@@ -366,33 +331,29 @@ export function ActivityDetailPanel({
                   <Section
                     title={`References (${detail.referenceImages.length})`}
                   >
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className={styles.refGrid}>
                       {detail.referenceImages.map((ref) => {
                         const url = getThumbUrl(ref.storagePath)
                         return (
                           <div
                             key={ref.id}
-                            className="relative aspect-square overflow-hidden rounded bg-black"
+                            className={styles.ref}
                             title={ref.id}
                           >
                             {url ? (
                               <img
                                 src={url}
                                 alt=""
-                                className={cn(
-                                  'h-full w-full object-cover',
-                                  ref.isDeleted && 'opacity-40',
+                                className={clsx(
+                                  styles.refImage,
+                                  ref.isDeleted && styles.refImageDeleted,
                                 )}
                               />
                             ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                                missing
-                              </div>
+                              <div className={styles.refMissing}>missing</div>
                             )}
                             {ref.isDeleted && (
-                              <span className="absolute bottom-0.5 left-0.5 rounded bg-background/80 px-1 py-0.5 text-[9px] uppercase tracking-wide text-muted-foreground">
-                                del
-                              </span>
+                              <span className={styles.refDeletedTag}>del</span>
                             )}
                           </div>
                         )
@@ -407,9 +368,7 @@ export function ActivityDetailPanel({
               </>
             )}
             {!isLoading && !error && !detail && entryId && (
-              <div className="py-12 text-center text-xs text-muted-foreground">
-                Not found.
-              </div>
+              <div className={styles.state}>Not found.</div>
             )}
           </div>
         </SheetContent>

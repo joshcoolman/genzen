@@ -115,6 +115,10 @@
   --warning-text: hsl(44.3 100% 47.1%);
   --warning-surface: hsl(29.7 84% 24.5% / 0.3);
   --success: var(--accent-brand);
+  /* Completing the text/surface trio. Tailwind's emerald-500, which the status
+     indicators used rather than --accent-brand -- a colder green that reads as
+     "state", not "brand". Kept distinct on purpose. */
+  --success-text: hsl(159.9 100% 36.9%);
   --success-foreground: hsl(0 0% 7.8%);
   --warning: var(--warm-gold);
   --warning-foreground: hsl(0 0% 7.8%);
@@ -232,6 +236,12 @@
   --text-3xl-leading: calc(2.25 / 1.875);
   --text-4xl: 2.25rem;
   --text-4xl-leading: calc(2.5 / 2.25);
+
+  /* Only the three the repo actually uses, on the uppercase micro-labels that
+     head a stat or a panel section. Tailwind's values verbatim. */
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
 
   --leading-none: 1;
   --leading-tight: 1.25;

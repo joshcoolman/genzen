@@ -1,0 +1,97 @@
+/* The row grid is declared twice on purpose -- once on the header strip here,
+   once on activity-row -- because the header is a sibling of the rows, not
+   their container, so no single grid can span both. Change one, change both. */
+.columns {
+  display: grid;
+  grid-template-columns:
+    48px minmax(0, 1.2fr) minmax(0, 2fr) 110px 80px 90px
+    minmax(130px, auto);
+  align-items: center;
+  gap: var(--space-12);
+  padding-inline: var(--space-12);
+  color: var(--muted-foreground);
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.columnTime {
+  text-align: right;
+}
+
+.page > *:not(:last-child) {
+  margin-bottom: var(--space-24);
+}
+
+.header > *:not(:last-child) {
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl-leading);
+  font-weight: var(--weight-semibold);
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.list > *:not(:last-child) {
+  margin-bottom: var(--space-8);
+}
+
+.placeholder {
+  padding: var(--space-40) var(--space-16);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--card) 40%, transparent);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-align: center;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-8);
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.pageButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.pageButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-32);
+  height: var(--space-32);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--muted-foreground);
+}
+
+.pageButton:hover {
+  color: var(--foreground);
+}
+
+.pageButton:disabled {
+  opacity: 0.4;
+}
+
+.pageButtonIcon {
+  width: var(--space-16);
+  height: var(--space-16);
+}

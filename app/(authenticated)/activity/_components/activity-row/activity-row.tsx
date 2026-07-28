@@ -4,13 +4,14 @@ import {
   Clock4,
   Image as ImageIcon,
 } from 'lucide-react'
+import { clsx } from 'clsx'
+import styles from './activity-row.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import {
   formatAbsolute,
   formatDurationMs,
   formatRelativeOrDate,
 } from '#/lib/time-format'
-import { cn } from '#/lib/utils'
 
 interface ActivityRowProps {
   entry: ActivityEntry
@@ -21,24 +22,24 @@ interface ActivityRowProps {
 function StatusIndicator({ status }: { status: ActivityEntry['status'] }) {
   if (status === 'completed') {
     return (
-      <span className="inline-flex items-center gap-1 text-emerald-500">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        <span className="text-[11px]">Completed</span>
+      <span className={`${styles.status} ${styles.statusCompleted}`}>
+        <CheckCircle2 className={styles.statusIcon} />
+        <span className={styles.statusLabel}>Completed</span>
       </span>
     )
   }
   if (status === 'failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-destructive">
-        <AlertCircle className="h-3.5 w-3.5" />
-        <span className="text-[11px]">Failed</span>
+      <span className={`${styles.status} ${styles.statusFailed}`}>
+        <AlertCircle className={styles.statusIcon} />
+        <span className={styles.statusLabel}>Failed</span>
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-muted-foreground">
-      <Clock4 className="h-3.5 w-3.5" />
-      <span className="text-[11px]">Pending</span>
+    <span className={`${styles.status} ${styles.statusPending}`}>
+      <Clock4 className={styles.statusIcon} />
+      <span className={styles.statusLabel}>Pending</span>
     </span>
   )
 }
@@ -65,76 +66,59 @@ export function ActivityRow({
     <button
       type="button"
       onClick={() => onSelect?.(entry.id)}
-      className={cn(
-        'grid w-full grid-cols-[48px_minmax(0,1.2fr)_minmax(0,2fr)_110px_80px_90px_minmax(130px,_auto)] items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm transition-colors hover:border-primary/40 hover:bg-card/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-        entry.isDeleted && 'opacity-60',
-      )}
+      className={clsx(styles.row, entry.isDeleted && styles.rowDeleted)}
     >
       {/* Thumbnail */}
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-black">
+      <div className={styles.thumb}>
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
             alt=""
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className={styles.thumbImage}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted/50">
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          <div className={styles.thumbFallback}>
+            <ImageIcon className={styles.thumbIcon} />
           </div>
         )}
       </div>
 
       {/* Model + provider + deleted badge */}
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="truncate text-sm font-medium text-foreground">
-          {entry.modelName}
-        </span>
+      <div className={styles.model}>
+        <span className={styles.modelName}>{entry.modelName}</span>
         {entry.provider && (
-          <span className="truncate text-[10px] text-muted-foreground/70">
-            {entry.provider}
-          </span>
+          <span className={styles.provider}>{entry.provider}</span>
         )}
-        {entry.isDeleted && (
-          <span className="inline-flex w-fit items-center rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-            deleted
-          </span>
-        )}
+        {entry.isDeleted && <span className={styles.deletedTag}>deleted</span>}
       </div>
 
       {/* Prompt */}
-      <div className="min-w-0">
-        <p
-          className="truncate text-xs text-muted-foreground"
-          title={entry.prompt || undefined}
-        >
-          {entry.prompt || <span className="italic">No prompt</span>}
+      <div className={styles.cell}>
+        <p className={styles.prompt} title={entry.prompt || undefined}>
+          {entry.prompt || (
+            <span className={styles.promptEmpty}>No prompt</span>
+          )}
         </p>
         {entry.status === 'failed' && entry.errorMessage && (
-          <p
-            className="mt-0.5 truncate text-[11px] text-destructive/80"
-            title={entry.errorMessage}
-          >
+          <p className={styles.rowError} title={entry.errorMessage}>
             {entry.errorMessage}
           </p>
         )}
       </div>
 
       {/* Status */}
-      <div className="min-w-0">
+      <div className={styles.cell}>
         <StatusIndicator status={entry.status} />
       </div>
 
       {/* Duration */}
-      <div className="text-xs tabular-nums text-muted-foreground">
-        {duration}
-      </div>
+      <div className={styles.duration}>{duration}</div>
 
       {/* Cost */}
       <div
-        className="text-xs tabular-nums text-foreground"
+        className={styles.cost}
         title={
           entry.costIsEstimate
             ? "Estimated from FAL's pricing table — FAL's result carried no cost field"
@@ -145,10 +129,7 @@ export function ActivityRow({
       </div>
 
       {/* Time */}
-      <div
-        className="text-right text-xs text-muted-foreground"
-        title={formatAbsolute(entry.createdAt)}
-      >
+      <div className={styles.time} title={formatAbsolute(entry.createdAt)}>
         {formatRelativeOrDate(entry.createdAt)}
       </div>
     </button>
