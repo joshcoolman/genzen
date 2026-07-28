@@ -1,8 +1,7 @@
 'use client'
 
-import { ChevronDown } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Circle } from 'lucide-react'
 import { clsx } from 'clsx'
-import { Checkbox } from '../../ui/checkbox/checkbox'
 import {
   Popover,
   PopoverContent,
@@ -62,15 +61,25 @@ export function MultiSelect({
           </button>
         )}
         <div className={styles.optionList}>
-          {options.map((o) => (
-            <label key={o.id} className={styles.option}>
-              <Checkbox
-                checked={selected.includes(o.id)}
-                onCheckedChange={() => onToggle(o.id)}
-              />
-              <span className={styles.optionLabel}>{o.label}</span>
-            </label>
-          ))}
+          {options.map((o) => {
+            const isSelected = selected.includes(o.id)
+            return (
+              <button
+                key={o.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onToggle(o.id)}
+                className={styles.option}
+              >
+                {isSelected ? (
+                  <CheckCircle2 className={styles.optionIconSelected} />
+                ) : (
+                  <Circle className={styles.optionIcon} />
+                )}
+                <span className={styles.optionLabel}>{o.label}</span>
+              </button>
+            )
+          })}
         </div>
       </PopoverContent>
     </Popover>

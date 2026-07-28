@@ -78,6 +78,8 @@
 
 .option {
   display: flex;
+  width: 100%;
+  text-align: left;
   align-items: center;
   gap: var(--space-8);
   padding: var(--space-6) var(--space-8);
@@ -89,6 +91,22 @@
 
 .option:hover {
   background: var(--accent);
+}
+
+/* The selected/unselected pair the model selector established: a brand-green
+   filled check, a faint ring when not. */
+.optionIcon {
+  flex-shrink: 0;
+  width: var(--space-14);
+  height: var(--space-14);
+  color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+}
+
+.optionIconSelected {
+  flex-shrink: 0;
+  width: var(--space-14);
+  height: var(--space-14);
+  color: var(--accent-brand);
 }
 
 .optionLabel {
