@@ -26,38 +26,6 @@ const LEGACY_ALL_IMAGE_MODELS = [
     useCase: 'Cheap img2img — fast iteration with a reference',
   },
   {
-    id: 'fal-ai/flux/schnell',
-    name: 'FLUX Schnell',
-    description: 'Fast, reliable default',
-    category: 'FLUX',
-    displayPrice: '~$0.003/img',
-    useCase: 'Cheapest, fastest — exploration mode, run dozens',
-  },
-  {
-    id: 'fal-ai/flux/dev',
-    name: 'FLUX Dev',
-    description: 'High-quality 12B model',
-    category: 'FLUX',
-    displayPrice: '~$0.05/img',
-    useCase: 'Quality 12B model — go-to for finished work',
-  },
-  {
-    id: 'fal-ai/kling-image/v3/text-to-image',
-    name: 'Kling v3',
-    description: 'Latest Kling model',
-    category: 'Kling',
-    displayPrice: '~$0.05/img',
-    useCase: 'Latest Kling — solid all-rounder',
-  },
-  {
-    id: 'fal-ai/kling-image/o3/text-to-image',
-    name: 'Kling Omni 3',
-    description: 'Flawless consistency',
-    category: 'Kling',
-    displayPrice: '~$0.05/img',
-    useCase: 'Premium Kling — flawless consistency',
-  },
-  {
     id: 'fal-ai/bytedance/seedream/v4/text-to-image',
     name: 'Seedream v4',
     description: 'ByteDance, high-quality realism',
@@ -117,22 +85,6 @@ const LEGACY_ALL_IMAGE_MODELS = [
     imageInputModelId: 'fal-ai/flux-pro/kontext',
     displayPrice: '~$0.04/img',
     useCase: 'Pro img2img — solid for refinement work',
-  },
-  {
-    id: 'fal-ai/recraft/v3/text-to-image',
-    name: 'Recraft V3',
-    description: 'SOTA benchmarks, vector art',
-    category: 'Specialized',
-    displayPrice: '~$0.04/img',
-    useCase: 'Vector art and clean illustration',
-  },
-  {
-    id: 'xai/grok-imagine-image',
-    name: 'Grok Imagine',
-    description: 'xAI, highly aesthetic',
-    category: 'Specialized',
-    displayPrice: '~$0.04/img',
-    useCase: 'xAI — highly aesthetic style',
   },
 ]
 
@@ -196,6 +148,18 @@ describe('entries', () => {
   it('only borrows a text endpoint when it has none of its own', () => {
     for (const m of IMAGE_MODELS) {
       if (m.textOnlyFallback) expect(m.textToImage, m.slug).toBeNull()
+    }
+  })
+
+  it('gives every borrowed endpoint a name', () => {
+    // A borrow points at an endpoint no entry owns, so nothing else guarantees
+    // it resolves. Cutting FLUX Dev from the lineup without leaving its name
+    // behind would relabel every Kontext-Dev-without-an-image row a raw id.
+    for (const m of IMAGE_MODELS) {
+      if (!m.textOnlyFallback) continue
+      expect(getModelName(m.textOnlyFallback), m.slug).not.toBe(
+        m.textOnlyFallback,
+      )
     }
   })
 })

@@ -6,6 +6,7 @@ import type {
 } from '#/features/activity/types'
 import {
   IMAGE_MODELS,
+  RETIRED_MODEL_NAMES,
   getModelName,
   pickerId,
 } from '#/features/ai-images/models'
@@ -77,6 +78,11 @@ export function ActivityFilters({
     const out: Array<{ id: string; label: string }> = []
     for (const m of IMAGE_MODELS) {
       out.push({ id: pickerId(m), label: m.name })
+    }
+    // Activity outlives the lineup: rows made by a model that has since been
+    // cut still need to be filterable, or the history is there but unreachable.
+    for (const [id, label] of Object.entries(RETIRED_MODEL_NAMES)) {
+      if (label) out.push({ id, label: `${label} (retired)` })
     }
     return out
   }, [])

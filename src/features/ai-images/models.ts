@@ -65,51 +65,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     displayPrice: '~$0.03/img',
     useCase: 'Cheap img2img — fast iteration with a reference',
   },
-  {
-    slug: 'flux-schnell',
-    name: 'FLUX Schnell',
-    description: 'Fast, reliable default',
-    category: 'FLUX',
-    textToImage: 'fal-ai/flux/schnell',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.003/img',
-    useCase: 'Cheapest, fastest — exploration mode, run dozens',
-  },
-  {
-    slug: 'flux-dev',
-    name: 'FLUX Dev',
-    description: 'High-quality 12B model',
-    category: 'FLUX',
-    textToImage: 'fal-ai/flux/dev',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.05/img',
-    useCase: 'Quality 12B model — go-to for finished work',
-  },
   // Kling
-  {
-    slug: 'kling-v3',
-    name: 'Kling v3',
-    description: 'Latest Kling model',
-    category: 'Kling',
-    textToImage: 'fal-ai/kling-image/v3/text-to-image',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.05/img',
-    useCase: 'Latest Kling — solid all-rounder',
-  },
-  {
-    slug: 'kling-omni-3',
-    name: 'Kling Omni 3',
-    description: 'Flawless consistency',
-    category: 'Kling',
-    textToImage: 'fal-ai/kling-image/o3/text-to-image',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.05/img',
-    useCase: 'Premium Kling — flawless consistency',
-  },
   // ByteDance Seedream
   {
     slug: 'seedream-v4',
@@ -182,28 +138,6 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     displayPrice: '~$0.04/img',
     useCase: 'Pro img2img — solid for refinement work',
   },
-  {
-    slug: 'recraft-v3',
-    name: 'Recraft V3',
-    description: 'SOTA benchmarks, vector art',
-    category: 'Specialized',
-    textToImage: 'fal-ai/recraft/v3/text-to-image',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.04/img',
-    useCase: 'Vector art and clean illustration',
-  },
-  {
-    slug: 'grok-imagine',
-    name: 'Grok Imagine',
-    description: 'xAI, highly aesthetic',
-    category: 'Specialized',
-    textToImage: 'xai/grok-imagine-image',
-    withImages: null,
-    maxRefs: 0,
-    displayPrice: '~$0.04/img',
-    useCase: 'xAI — highly aesthetic style',
-  },
 ]
 
 /**
@@ -269,14 +203,30 @@ export function getModelName(modelId: string): string {
 }
 
 /**
- * Models genzen no longer offers, kept only so history can name them.
+ * Endpoints no model in the lineup claims, mapped to a name anyway.
  *
  * `images` rows outlive the lineup: dropping a model from IMAGE_MODELS does not
  * delete the images it made, and Activity, Canvas and Trash still have to label
- * them. Nothing here is selectable or submittable. Removing a name does not
- * break anything, it just makes old rows show a raw endpoint id.
+ * them. Removing a name here does not break anything, it just makes old rows
+ * show a raw endpoint id.
+ *
+ * Nothing here is selectable. Most of it is not submittable either -- the
+ * exception is `fal-ai/flux/dev`, which is live as FLUX Kontext Dev's
+ * `textOnlyFallback`. It is a routing target, not a model the user picks, which
+ * is exactly why it needs a name without an entry.
  */
 export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // Seedream v4 before FAL split the endpoint into /text-to-image and /edit.
   'fal-ai/bytedance/seedream/v4': 'Seedream v4',
+
+  // Cut from the lineup: no image endpoint wired, so they could not honour
+  // "attach an image or not and it works". FAL does offer image endpoints for
+  // Kling, Recraft and Grok -- re-adding any of them is one entry with
+  // `withImages` set. FLUX Schnell has no image variant at FAL at all.
+  'fal-ai/flux/schnell': 'FLUX Schnell',
+  'fal-ai/flux/dev': 'FLUX Dev',
+  'fal-ai/kling-image/v3/text-to-image': 'Kling v3',
+  'fal-ai/kling-image/o3/text-to-image': 'Kling Omni 3',
+  'fal-ai/recraft/v3/text-to-image': 'Recraft V3',
+  'xai/grok-imagine-image': 'Grok Imagine',
 }
