@@ -122,6 +122,18 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **One source of truth for image models (#190).** `IMAGE_MODELS` is the whole
+  lineup — one entry per model, one name over up to two FAL endpoints
+  (`textToImage` / `withImages`), routed by `endpointFor(id, hasImage)`. The
+  five-places-per-model sprawl is gone, along with `ALL_IMAGE_MODELS`,
+  `EDIT_MODELS`, nine dead exports and the hardcoded Kontext branch. Adding a
+  model is one object literal; removing one is deleting it plus a line in
+  `RETIRED_MODEL_NAMES`.
+- **Settings and Images show the same seven models (#190).** Cut FLUX Schnell,
+  FLUX Dev, both Klings, Recraft V3 and Grok Imagine — none had an image
+  endpoint wired, and they were the whole 13-vs-7 discrepancy. FLUX Dev stays
+  reachable as Kontext Dev's text-only routing target. Settings also lost its
+  Text and Sidebar sections; the sidebar is a fixed set now.
 - **Login and Settings are off Tailwind (#185).** First two areas of Pass 2;
   81 files to go. Both surfaced traps now written down on the issue: `text-sm`
   carries a line-height (L0 pairs `--text-*-leading` with every size), and
@@ -144,19 +156,6 @@ Conventions follow `~/repos/project-standard`.
   route group `app/(authenticated)/`, which draws the same layout boundary
   (identity resolved once, then the chrome) while contributing nothing to the
   URL. The group is not the gate; `proxy.ts` still is, deny-by-default.
-- **Pass 1 is done (#181).** `src/features/` holds no `.tsx` at all: the five
-  remaining features went headless, and each component landed where the number
-  of routes reaching it says it belongs — `app/(authenticated)/_components/` for the
-  shared ones, the route's own `_components/` for the rest. `src/components/` is
-  now one folder per component in kebab-case behind a single root barrel,
-  `#/components`, which also re-exports the shadcn set. Nine dead files went
-  with it.
-- **The four single-consumer features collapsed into their routes (#181).**
-  `canvas` and `trash` are now `app/(authenticated)/<route>/` with their own
-  `_components/ _actions/ _lib/`; `spotlight` and `status-bar` joined the
-  dashboard chrome. `AppChrome` moved out of `src/components/` too — it
-  imported `#/features`, so it was never a primitive, and hiding there is why
-  two features looked like they had no consumers.
 
 **Up next**
 
