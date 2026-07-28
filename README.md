@@ -122,6 +122,14 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-27)
 
+- **The Settings page is gone.** The lineup is the offer — what is in
+  `IMAGE_MODELS` is what every selector shows, one to one — so there was nothing
+  left for it to do. All three of its sections turned out to be nothing: Text
+  toggled models no code path could reach, Sidebar hid items from a sidebar
+  that is now fixed, Models subtracted from the registry that is now the single
+  source of truth. `use-enabled-models` went with it deliberately: it stored
+  _disabled_ ids, so leaving the hook alive would have hidden models with no UI
+  left to restore them.
 - **One source of truth for image models (#190).** `IMAGE_MODELS` is the whole
   lineup — one entry per model, one name over up to two FAL endpoints
   (`textToImage` / `withImages`), routed by `endpointFor(id, hasImage)`. The
@@ -150,12 +158,6 @@ Conventions follow `~/repos/project-standard`.
   generations, and an upload is routinely the root of a family of them. The
   name described the Generate panel, not the grid it sat over. The panel is
   dismissible; the grid is the page.
-- **There is no `/dashboard` any more.** The surfaces are top-level paths --
-  `/images`, `/canvas`, `/activity` -- because there was never a dashboard to
-  be on: `/dashboard` was a redirect to Images. `app/dashboard/` became the
-  route group `app/(authenticated)/`, which draws the same layout boundary
-  (identity resolved once, then the chrome) while contributing nothing to the
-  URL. The group is not the gate; `proxy.ts` still is, deny-by-default.
 
 **Up next**
 
@@ -168,6 +170,6 @@ Conventions follow `~/repos/project-standard`.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 
-The app is now six surfaces and nothing else: Images, Canvas, Activity, Trash,
-Settings, Account — plus the AD assistant panel. If something does not serve
-generating and keeping images, it was cut on purpose.
+The app is now five surfaces and nothing else: Images, Canvas, Activity, Trash,
+Account — plus the AD assistant panel. If something does not serve generating
+and keeping images, it was cut on purpose.
