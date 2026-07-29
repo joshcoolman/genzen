@@ -4,8 +4,10 @@ import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
 import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { Button, ConfirmDialog, Thumbnail } from '#/components'
+import { Button, ConfirmDialog, ImageBox } from '#/components'
 import { formatFileSize } from '#/lib/format'
+
+const THUMB_SIZE = 96
 
 function formatDeletedDate(dateStr: string | null): string {
   if (!dateStr) return ''
@@ -55,82 +57,75 @@ export function ImageRow({
       className={selected ? styles.rowSelected : styles.row}
       onClick={(e) => onToggle(image.id, e.shiftKey)}
     >
-      <div className={styles.check}>
-        {selected ? (
-          <CheckCircle2 className={styles.checkOn} />
-        ) : (
-          <Circle className={styles.checkOff} />
+      {selected ? (
+        <CheckCircle2 className={styles.checkOn} />
+      ) : (
+        <Circle className={styles.checkOff} />
+      )}
+
+      {/* The card is the bordered surface. It was Thumbnail's list-layout root
+          until ImageBox took over the picture; the row draws it now, because
+          the row is what it is a card of. */}
+      <div className={styles.card}>
+        <ImageBox src={url} alt={image.title} size={THUMB_SIZE} />
+
+        <div className={styles.text}>
+          <div className={styles.titleRow}>
+            <p className={styles.title}>{image.title}</p>
+            {onCanvas && <LinkBadge kind="canvas" dependents={0} />}
+            {!onCanvas && dependents > 0 && (
+              <LinkBadge kind="linked" dependents={dependents} />
+            )}
+          </div>
+          <p className={styles.meta}>
+            {image.source === 'ai_generated' ? 'AI' : 'Upload'}
+            {' -- '}
+            {formatFileSize(image.file_size ?? 0)}
+            {' -- '}
+            Deleted {formatDeletedDate(image.deleted_at)}
+          </p>
+        </div>
+
+        {!hasSelection && (
+          <div className={styles.actions}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation()
+                onRestore(image.id)
+              }}
+            >
+              <RotateCcw className={styles.buttonIcon} />
+              Restore
+            </Button>
+            {!isLinked && (
+              <ConfirmDialog
+                title="Delete forever?"
+                description={
+                  <>
+                    &ldquo;{image.title}&rdquo; will be permanently deleted.
+                    This action cannot be undone.
+                  </>
+                }
+                confirmLabel="Delete Forever"
+                onConfirm={() => onDelete(image.id)}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={styles.deleteButton}
+                  disabled={busy}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                >
+                  <X className={styles.buttonIcon} />
+                  Delete
+                </Button>
+              </ConfirmDialog>
+            )}
+          </div>
         )}
-      </div>
-
-      <div className={styles.body}>
-        <Thumbnail
-          url={url}
-          alt={image.title}
-          layout="list"
-          listImageClassName={styles.thumb}
-          footer={
-            <div className={styles.footer}>
-              <div className={styles.text}>
-                <div className={styles.titleRow}>
-                  <p className={styles.title}>{image.title}</p>
-                  {onCanvas && <LinkBadge kind="canvas" dependents={0} />}
-                  {!onCanvas && dependents > 0 && (
-                    <LinkBadge kind="linked" dependents={dependents} />
-                  )}
-                </div>
-                <p className={styles.meta}>
-                  {image.source === 'ai_generated' ? 'AI' : 'Upload'}
-                  {' -- '}
-                  {formatFileSize(image.file_size ?? 0)}
-                  {' -- '}
-                  Deleted {formatDeletedDate(image.deleted_at)}
-                </p>
-              </div>
-
-              {!hasSelection && (
-                <div className={styles.actions}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={busy}
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation()
-                      onRestore(image.id)
-                    }}
-                  >
-                    <RotateCcw className={styles.buttonIcon} />
-                    Restore
-                  </Button>
-                  {!isLinked && (
-                    <ConfirmDialog
-                      title="Delete forever?"
-                      description={
-                        <>
-                          &ldquo;{image.title}&rdquo; will be permanently
-                          deleted. This action cannot be undone.
-                        </>
-                      }
-                      confirmLabel="Delete Forever"
-                      onConfirm={() => onDelete(image.id)}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.deleteButton}
-                        disabled={busy}
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                      >
-                        <X className={styles.buttonIcon} />
-                        Delete
-                      </Button>
-                    </ConfirmDialog>
-                  )}
-                </div>
-              )}
-            </div>
-          }
-        />
       </div>
     </div>
   )

@@ -39,6 +39,7 @@ export { CopyButton } from './copy-button/copy-button'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'
+export { ImageBox, type ImageBoxProps } from './image-box/image-box'
 export { ImageGrid, ImageGridSkeleton } from './image-grid/image-grid'
 export { ImageSourceButtons } from './image-source-buttons/image-source-buttons'
 export {

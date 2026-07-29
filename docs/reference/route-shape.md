@@ -58,8 +58,8 @@ Not tidiness. Three things it buys, all observed rather than predicted:
   forever; a component has to be called something, and naming it is what reveals
   it already exists elsewhere.
 - **It smoked out primitives.** `Stack`, `PageHeader` and `Pagination` fell out
-  of one route. `ImageBox`, `Label`, `Card`, `EmptyState` and `StatusBadge` are
-  visible and waiting — see #187.
+  of one route. `Label`, `Card`, `EmptyState` and `StatusBadge` are visible and
+  waiting — see #187.
 - **It fixed a defect a comment was holding shut.** The seven-value
   `grid-template-columns` was declared twice, on the header strip and on the
   row, with a note in each file asking the next reader to keep them in step. The
@@ -86,8 +86,17 @@ root barrel, so the import path never changes.
 | `SingleSelect` | segmented pills, one at a time; choosing the chosen one clears it                                          |
 
 Candidates, seen two or more times and waiting for the next sighting to fix
-their shape: `ImageBox`, `EmptyState`, `Card`, `Label`, `StatusBadge`.
-`EmptyState` picked up its third sighting on Trash and is the next one to build.
+their shape: `EmptyState`, `Card`, `Label`, `StatusBadge`. `EmptyState` picked
+up its third sighting on Trash and is the next one to build.
+
+Two more landed reviewing the Trash conversion, both flat in `src/components/`
+rather than staged — they came out of reading the code, not out of converting
+it, and neither is provisional:
+
+| built           | why it exists                                                                            |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `ConfirmDialog` | nine imports of `AlertDialog` repeated at five call sites, varying only in their strings |
+| `ImageBox`      | a square that shows an image, and owns the four states it can be in                      |
 
 `StatBadge` was built and deleted the same day when its only consumer went
 (`git show adf67e8`). An unused primitive is worse than a missing one — it gets
@@ -99,6 +108,29 @@ button, four overlay slots, selection, pending/failed states. Every one was
 locally reasonable and the ratchet only turns one way. The test: a new prop must
 be a **variant of the same thing** (size, tone, density). A new _capability_ is
 a second primitive.
+
+It reached **31 props**, and the worked example of the rule is its `layout`
+prop. `layout="list"` returned early into a branch sharing almost nothing with
+the grid one: no status, no overlays, no badges, no selection. About 20 of the
+31 props were silently dead inside it — Trash's first draft passed `selected`
+and `selectedClassName` and they did nothing at all. That is what a
+capability wearing a variant's clothes looks like: the type says the props
+exist, and the branch decides they don't.
+
+Two symptoms worth recognising early, both visible from the call site alone:
+
+- **A slot whose name stops being true.** `footer` genuinely was a footer in
+  grid layout. In list layout nothing was below anything and it meant
+  "everything that isn't the image" — one prop, two meanings, chosen by a
+  different prop.
+- **Wrappers that exist to satisfy the component rather than the design.** The
+  Trash row needed four nested elements to reach its own title, two of them
+  only because content had to be handed in through a slot.
+
+The fix was not to simplify Thumbnail. It was to ask what the row actually
+needed — a square, an image, and a fallback — and find that Base UI's `Avatar`
+already owned the only hard part, the load-state machine. `ImageBox` is 60
+lines. Deleting the branch it replaced removed 45 and three props.
 
 ## The server/client seam
 

@@ -149,6 +149,10 @@
   --scrim: hsl(0 0% 0% / 0.6);
   --scrim-strong: hsl(0 0% 0% / 0.8);
 
+  /* The mat behind a `contain`-fitted image, so the letterboxing reads as
+     deliberate rather than as a layout fault. */
+  --image-backing: hsl(0 0% 0%);
+
   /* Text sitting on an image or a scrim, never on a surface token */
   --on-dark: hsl(0 0% 100%);
   --on-dark-muted: hsl(0 0% 100% / 0.7);

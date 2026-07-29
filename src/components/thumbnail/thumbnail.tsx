@@ -47,10 +47,7 @@ export interface ThumbnailProps {
   objectFit?: 'contain' | 'cover'
   asButton?: boolean
   fallback?: ReactNode
-  footer?: ReactNode
   imageOverlay?: ReactNode
-  layout?: 'grid' | 'list'
-  listImageClassName?: string
   className?: string
 
   children?: ReactNode
@@ -82,10 +79,7 @@ export function Thumbnail({
   objectFit = 'contain',
   asButton = false,
   fallback,
-  footer,
   imageOverlay,
-  layout = 'grid',
-  listImageClassName,
   className,
   children,
 }: ThumbnailProps) {
@@ -99,41 +93,6 @@ export function Thumbnail({
   const El = asButton ? 'button' : 'div'
   const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
   const cursorClass = onClick ? 'cursor-pointer' : ''
-
-  // List layout: horizontal row
-  if (layout === 'list') {
-    return (
-      <El
-        className={`group flex items-center gap-4 overflow-hidden border border-border bg-card rounded-lg p-2 transition-opacity ${cursorClass} ${hoverBorder ?? ''} ${dimmed ? 'opacity-50' : ''} ${className ?? ''}`}
-        onClick={onClick}
-      >
-        <div
-          className={`relative ${listImageClassName ?? 'h-16 w-16'} shrink-0 overflow-hidden rounded-md ${bgClass}`}
-        >
-          {url ? (
-            <>
-              {!loaded && (
-                <Skeleton className="absolute inset-0 h-full w-full" />
-              )}
-              <img
-                ref={imgRef}
-                src={url}
-                alt={alt}
-                loading="lazy"
-                decoding="async"
-                onLoad={() => setLoaded(true)}
-                className={`h-full w-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
-              />
-            </>
-          ) : (
-            (fallback ?? <Skeleton className="h-full w-full" />)
-          )}
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-2">{footer}</div>
-        {children}
-      </El>
-    )
-  }
 
   // Grid layout
   const rounding = compact ? 'rounded-md' : 'rounded-lg'
@@ -279,7 +238,6 @@ export function Thumbnail({
       </div>
 
       {children}
-      {footer}
     </El>
   )
 }

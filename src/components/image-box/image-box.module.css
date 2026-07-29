@@ -1,0 +1,48 @@
+/* Square, always. `--image-box-size` is set inline from the `size` prop and is
+   the only thing a call site gets to change about the geometry. */
+.box {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: var(--image-box-size);
+  height: var(--image-box-size);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--image-backing);
+  /* The mat. `--image-box-pad` comes from the `pad` prop, which defaults by
+     `fit`: 10px under `contain`, where the letterboxing wants a margin to read
+     as deliberate, and 0 under `cover`, which has nothing to mat. */
+  padding: var(--image-box-pad);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity var(--duration-slow) var(--ease-in-out);
+}
+
+.imageCover {
+  composes: image;
+  object-fit: cover;
+}
+
+/* Base UI marks the image's first paint with `data-starting-style`, so the
+   fade in is a stylesheet concern rather than a `loaded` boolean in React. */
+.image[data-starting-style] {
+  opacity: 0;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+}
+
+.fallbackIcon {
+  width: 30%;
+  height: 30%;
+}

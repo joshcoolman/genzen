@@ -66,7 +66,7 @@ about it — that's the usual reason generation 401s.
 | Layer       | Tech                                                       |
 | ----------- | ---------------------------------------------------------- |
 | App         | Next.js App Router (React 19 + Turbopack)                  |
-| UI          | Tailwind v4 (CSS config in `src/styles.css`) + shadcn/ui   |
+| UI          | CSS Modules + Base UI, migrating off Tailwind v4 / shadcn  |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
 | Storage     | S3 — MinIO locally, Cloudflare R2 in prod                  |
@@ -134,6 +134,20 @@ Conventions follow `~/repos/project-standard`.
   it replaces and can override things that utility never could. `Button` sizes
   its own svg, so the `h-3 w-3` on each icon was already dead — restating it in
   a module would have shrunk icons the conversion was meant to leave alone.
+- **`ImageBox`, and Base UI is in the repo (#185).** A square that shows an
+  image and owns the four states it can be in — loading, loaded, failed, no
+  file. Built on Base UI's `Avatar`, the first Base UI component here and the
+  start of the migration off shadcn. It fixes a real bug: a trashed image whose
+  object has gone away used to show a skeleton that pulsed forever, because
+  nothing handled `onError`. Trash's row uses it, which made `Thumbnail`'s
+  `layout="list"` branch dead — 45 lines and three props (`layout`, `footer`,
+  `listImageClassName`) deleted, 31 props down to 28.
+- **`ConfirmDialog` (#185).** Nine imports and ~28 lines of `AlertDialog`
+  nesting were repeated verbatim at five call sites, varying only in their
+  strings — three of them written during the Trash conversion itself. Now five
+  props, with the trigger as `children`. 162 lines out, 89 in. Sidebar keeps
+  composing by hand; it wraps its trigger in a Tooltip, and bending the
+  primitive for one case is how the last one reached 31 props.
 - **Account and Login are in the route shape too (#185).** Both were off
   Tailwind but not in the shape, which made them a second dialect beside the
   reference. Zero diff each. Login forced a fix to
@@ -150,15 +164,6 @@ Conventions follow `~/repos/project-standard`.
   the cost badge are gone; the log is windowed to the last three days that
   produced runs, so the 5,000-row totals query went with them. What is left is a
   title, a Models multi-select, a state filter and the table.
-- **Activity is off Tailwind (#185).** Fourth area converted. Outside
-  the thumbnail column the page diffs at max 1/255. Two capture lessons on the
-  issue: `--full` screenshots resize and re-render, so lazy images land
-  mid-paint; and `img.complete` is true long before anything is painted.
-- **Account is off Tailwind (#185).** Third area. The trap it cost: Tailwind
-  v4's line-heights are unitless **ratios**, not lengths, so a smaller child
-  re-derives its own from the ratio it inherits — L0's rem equivalent made every
-  activity row 4px taller. `--text-*-leading` is now the same `calc(a / b)`
-  Tailwind emits.
 
 **Up next**
 
