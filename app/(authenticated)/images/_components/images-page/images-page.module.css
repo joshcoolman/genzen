@@ -22,3 +22,212 @@
   width: 0.75rem;
   height: 0.75rem;
 }
+
+/* ---- page shell ----
+   The content shifts left for whatever is docked on the right: the generator
+   panel, the AD panel, or both. 20rem each, so the both case is 40rem.
+   No spacing token goes that far -- these are panel widths, not spacing. */
+
+.page {
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+.pagePushed {
+  margin-right: 20rem;
+}
+
+.pagePushedBoth {
+  margin-right: 40rem;
+}
+
+.body > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-16);
+}
+
+/* ---- toolbar ----
+   Below the custom 400px breakpoint only Upload and New generation survive:
+   the view controls are refinements, and there is no room for them. */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.heading {
+  display: none;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.viewToggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.viewToggle:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.viewToggleOn {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.thumbSizeToggle {
+  width: 3.5rem;
+}
+
+.thumbSizeLabel {
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 400px) {
+  .toolbar {
+    justify-content: space-between;
+  }
+
+  .heading {
+    display: inline;
+  }
+
+  .viewToggle {
+    display: flex;
+  }
+}
+
+.fileInput {
+  display: none;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.action:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.actionPrimary {
+  background: var(--accent-brand);
+  color: var(--on-dark);
+}
+
+.actionPrimary:hover {
+  background: color-mix(in oklab, var(--accent-brand) 90%, transparent);
+  color: var(--on-dark);
+}
+
+.toolbarIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.smallIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* ---- docked generator panel ---- */
+
+/* Click-away target when the panel is floating rather than pinned. */
+.dismissLayer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--z-canvas-hud);
+  height: 100vh;
+  width: 20rem;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: hsl(0 0% 0% / 0.9);
+  backdrop-filter: blur(40px);
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+/* Sits beside the AD panel rather than under it. */
+.panelBesideAD {
+  right: 20rem;
+}
+
+.panelFloating {
+  box-shadow: var(--shadow-xl);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-16) var(--space-8);
+}
+
+.panelTitle {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}
+
+.panelHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.panelButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.panelButton:hover {
+  color: var(--foreground);
+}
+
+.panelBody {
+  padding: 0 var(--space-16) var(--space-16);
+}

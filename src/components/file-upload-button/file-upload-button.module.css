@@ -1,0 +1,6 @@
+/* The real <input type="file"> behind the visible button. Kept in the DOM
+   rather than created on demand, so `inputRef.current?.click()` has something
+   to click. */
+.input {
+  display: none;
+}

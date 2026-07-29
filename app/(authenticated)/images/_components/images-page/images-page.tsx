@@ -51,7 +51,7 @@ import { listSubtreeStoragePaths } from '#/features/ai-images/server/gallery.act
 import { createImageStorage } from '#/lib/image-storage'
 import { useSelection } from '#/lib/use-selection'
 import { useADOpen } from '#/lib/use-ad-open'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
 const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
@@ -570,27 +570,29 @@ export function ImagesPage() {
 
   return (
     <div
-      className={cn(
-        'transition-all duration-300',
-        generatorOpen && panelPinned && !isADOpen && 'mr-80',
-        generatorOpen && panelPinned && isADOpen && !isMobile && 'mr-[640px]',
-        !panelPinned && isADOpen && !isMobile && 'mr-80',
+      className={cx(
+        styles.page,
+        generatorOpen && panelPinned && !isADOpen && styles.pagePushed,
+        generatorOpen &&
+          panelPinned &&
+          isADOpen &&
+          !isMobile &&
+          styles.pagePushedBoth,
+        !panelPinned && isADOpen && !isMobile && styles.pagePushed,
       )}
     >
-      <div className="space-y-4">
-        <div className="flex items-center justify-end xs:justify-between">
-          <span className="hidden text-sm text-muted-foreground tabular-nums xs:inline">
-            Images
-          </span>
-          <div className="flex items-center gap-1.5">
+      <div className={styles.body}>
+        <div className={styles.toolbar}>
+          <span className={styles.heading}>Images</span>
+          <div className={styles.tools}>
             {/* Thumb size toggle */}
             <button
               onClick={handleToggleThumbSize}
-              className="hidden w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors xs:flex"
+              className={cx(styles.viewToggle, styles.thumbSizeToggle)}
               aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
             >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              <span className="text-[10px] font-medium">
+              <LayoutGrid className={styles.smallIcon} />
+              <span className={styles.thumbSizeLabel}>
                 {THUMB_LABELS[thumbSize]}
               </span>
             </button>
@@ -598,27 +600,23 @@ export function ImagesPage() {
             {/* Sort toggle */}
             <button
               onClick={handleToggleSort}
-              className="hidden rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors xs:block"
+              className={styles.viewToggle}
               aria-label={sortAsc ? 'Sort oldest first' : 'Sort newest first'}
             >
               {sortAsc ? (
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className={styles.toolbarIcon} />
               ) : (
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className={styles.toolbarIcon} />
               )}
             </button>
 
             {/* Info toggle */}
             <button
               onClick={handleToggleInfo}
-              className={`hidden rounded-md p-1.5 transition-colors xs:block ${
-                showInfo
-                  ? 'text-foreground bg-muted'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
+              className={cx(styles.viewToggle, showInfo && styles.viewToggleOn)}
               aria-label={showInfo ? 'Hide info' : 'Show info'}
             >
-              <Info className="h-4 w-4" />
+              <Info className={styles.toolbarIcon} />
             </button>
 
             <input
@@ -626,7 +624,7 @@ export function ImagesPage() {
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               multiple
-              className="hidden"
+              className={styles.fileInput}
               onChange={(e) => {
                 const files = Array.from(e.target.files ?? [])
                 if (files.length > 0) void handleUploadFiles(files)
@@ -635,18 +633,18 @@ export function ImagesPage() {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className={styles.action}
               title="Upload image"
             >
-              <Upload className="h-4 w-4" />
+              <Upload className={styles.toolbarIcon} />
             </button>
             {!generatorOpen && (
               <button
                 onClick={() => setGeneratorOpen(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                className={cx(styles.action, styles.actionPrimary)}
                 title="New generation"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className={styles.toolbarIcon} />
               </button>
             )}
           </div>
@@ -748,7 +746,7 @@ export function ImagesPage() {
           {/* Dismiss overlay when unpinned */}
           {generatorOpen && !panelPinned && (
             <div
-              className="fixed inset-0 z-20"
+              className={styles.dismissLayer}
               onClick={() => setGeneratorOpen(false)}
             />
           )}
@@ -756,35 +754,35 @@ export function ImagesPage() {
           {/* Right sidebar generator panel */}
           {generatorOpen && (
             <div
-              className={cn(
-                'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
-                isADOpen ? 'right-80' : 'right-0',
-                !panelPinned && 'shadow-xl',
+              className={cx(
+                styles.panel,
+                isADOpen && styles.panelBesideAD,
+                !panelPinned && styles.panelFloating,
               )}
             >
-              <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span className="text-xs text-muted-foreground">Generate</span>
-                <div className="flex items-center gap-1">
+              <div className={styles.panelHeader}>
+                <span className={styles.panelTitle}>Generate</span>
+                <div className={styles.panelHeaderActions}>
                   <button
                     onClick={() => setPanelPinned((p) => !p)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    className={styles.panelButton}
                     title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
                   >
                     {panelPinned ? (
-                      <Pin className="h-3.5 w-3.5" />
+                      <Pin className={styles.smallIcon} />
                     ) : (
-                      <PinOff className="h-3.5 w-3.5" />
+                      <PinOff className={styles.smallIcon} />
                     )}
                   </button>
                   <button
                     onClick={() => setGeneratorOpen(false)}
-                    className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                    className={styles.panelButton}
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className={styles.smallIcon} />
                   </button>
                 </div>
               </div>
-              <div className="px-4 pb-4">
+              <div className={styles.panelBody}>
                 <GeneratorPanel
                   generator={page.generator}
                   modelSelector={page.modelSelector}

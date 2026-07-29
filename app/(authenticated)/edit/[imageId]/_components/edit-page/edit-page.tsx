@@ -41,7 +41,7 @@ import { useSelection } from '#/lib/use-selection'
 import { useEditPage } from '#/features/ai-images/hooks/use-edit-page'
 import { createImageStorage, getR2PublicUrl } from '#/lib/image-storage'
 import { useADOpen } from '#/lib/use-ad-open'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 import { useEditPageADContext } from '#/features/ai-images/hooks/useEditPageADContext'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
@@ -325,23 +325,23 @@ export function EditPage() {
 
   if (page.pageLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <p className="text-sm text-muted-foreground">Loading image...</p>
+      <div className={styles.placeholder}>
+        <p className={styles.placeholderText}>Loading image...</p>
       </div>
     )
   }
 
   if (!page.sourceImageMeta) {
     return (
-      <div className="space-y-4">
+      <div className={styles.body}>
         <CircularIconButton
           icon={ArrowLeft}
           to="/images"
           title="Back to Images"
         />
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
-          <h3 className="mb-2 text-lg font-semibold">Image not found</h3>
-          <p className="text-sm text-muted-foreground">
+        <div className={styles.notFound}>
+          <h3 className={styles.notFoundTitle}>Image not found</h3>
+          <p className={styles.placeholderText}>
             {page.error ?? 'This image may have been deleted.'}
           </p>
         </div>
@@ -351,16 +351,16 @@ export function EditPage() {
 
   return (
     <div
-      className={cn(
-        'transition-all duration-300',
-        panelPinned && !isMobile && !isADOpen && 'mr-80',
-        panelPinned && !isMobile && isADOpen && 'mr-[640px]',
-        !panelPinned && isADOpen && !isMobile && 'mr-80',
+      className={cx(
+        styles.page,
+        panelPinned && !isMobile && !isADOpen && styles.pagePushed,
+        panelPinned && !isMobile && isADOpen && styles.pagePushedBoth,
+        !panelPinned && isADOpen && !isMobile && styles.pagePushed,
       )}
     >
-      <div className="space-y-4">
+      <div className={styles.body}>
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className={styles.header}>
           <CircularIconButton
             icon={ArrowLeft}
             to="/images"
@@ -371,48 +371,48 @@ export function EditPage() {
             !panelOpen && (
               <button
                 onClick={() => setPanelOpen(true)}
-                className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                className={styles.openPanel}
                 title="Open edit panel"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className={styles.icon} />
               </button>
             )
           ) : (
-            <div className="flex items-center gap-3">
+            <div className={styles.headerTools}>
               {/* View controls — same as main view */}
-              <div className="flex items-center gap-1">
+              <div className={styles.viewToggles}>
                 <button
                   onClick={handleToggleThumbSize}
-                  className="flex w-14 items-center justify-center gap-1 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className={cx(styles.viewToggle, styles.thumbSizeToggle)}
                   aria-label={`Thumbnail size: ${THUMB_LABELS[thumbSize]}`}
                 >
-                  <LayoutGrid className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">
+                  <LayoutGrid className={styles.smallIcon} />
+                  <span className={styles.thumbSizeLabel}>
                     {THUMB_LABELS[thumbSize]}
                   </span>
                 </button>
                 <button
                   onClick={handleToggleSort}
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className={styles.viewToggle}
                   aria-label={
                     sortAsc ? 'Sort newest first' : 'Sort oldest first'
                   }
                 >
                   {sortAsc ? (
-                    <ArrowUp className="h-4 w-4" />
+                    <ArrowUp className={styles.icon} />
                   ) : (
-                    <ArrowDown className="h-4 w-4" />
+                    <ArrowDown className={styles.icon} />
                   )}
                 </button>
                 <button
                   onClick={handleToggleInfo}
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className={styles.viewToggle}
                   aria-label={showInfo ? 'Hide info' : 'Show info'}
                 >
                   {showInfo ? (
-                    <Info className="h-4 w-4" />
+                    <Info className={styles.icon} />
                   ) : (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className={styles.icon} />
                   )}
                 </button>
               </div>
@@ -420,28 +420,28 @@ export function EditPage() {
               {page.isChained && (
                 <button
                   onClick={page.resetToOriginal}
-                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className={styles.textAction}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
+                  <RotateCcw className={styles.smallIcon} />
                   Reset
                 </button>
               )}
               {page.hasParent && (
                 <button
                   onClick={() => void page.detachFromParent()}
-                  className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className={styles.textAction}
                 >
-                  <Unlink className="h-3.5 w-3.5" />
+                  <Unlink className={styles.smallIcon} />
                   Detach
                 </button>
               )}
               {!panelOpen && (
                 <button
                   onClick={() => setPanelOpen(true)}
-                  className="flex h-7 w-7 items-center justify-center rounded-md bg-accent-brand text-white hover:bg-accent-brand/90 transition-colors"
+                  className={styles.openPanel}
                   title="Open edit panel"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className={styles.icon} />
                 </button>
               )}
             </div>
@@ -511,29 +511,29 @@ export function EditPage() {
         </Dialog>
       ) : (
         <div
-          className={cn(
-            'fixed top-0 h-screen w-80 border-l border-border bg-black/90 backdrop-blur-2xl overflow-y-auto z-30 transition-all duration-300',
-            isADOpen ? 'right-80' : 'right-0',
-            !panelPinned && 'shadow-xl',
+          className={cx(
+            styles.panel,
+            isADOpen && styles.panelBesideAD,
+            !panelPinned && styles.panelFloating,
           )}
         >
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <span className="text-xs text-muted-foreground">Edit</span>
-            <div className="flex items-center gap-1">
+          <div className={styles.panelHeader}>
+            <span className={styles.panelTitle}>Edit</span>
+            <div className={styles.panelHeaderActions}>
               <button
                 onClick={() => setPanelPinned((p) => !p)}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                className={styles.panelButton}
                 title={panelPinned ? 'Unpin (overlay)' : 'Pin (inline)'}
               >
                 {panelPinned ? (
-                  <Pin className="h-3.5 w-3.5" />
+                  <Pin className={styles.smallIcon} />
                 ) : (
-                  <PinOff className="h-3.5 w-3.5" />
+                  <PinOff className={styles.smallIcon} />
                 )}
               </button>
             </div>
           </div>
-          <div className="px-4 pb-4 space-y-3">
+          <div className={styles.panelBody}>
             <GeneratorPanel
               generator={page.generator}
               modelSelector={page.modelSelector}
