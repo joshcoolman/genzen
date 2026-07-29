@@ -159,8 +159,16 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-**#189 — Canvas, the other half.** This is the whole priority; everything below
-it waits.
+**#178 first, then #189's canvas half.** The order was reversed on 2026-07-29
+and the reasoning is a plan comment on #178. Short version: #178 moves canvas
+arrangement out of IndexedDB into Postgres and eventually retires `on_canvas`,
+which deletes the mount-time reconcile — so splitting canvas first means
+carefully extracting a `use-reconcile.ts` that is about to be thrown away.
+#178 is two phases (document to Postgres with `on_canvas` intact, then retire
+it); neither needs the split to have happened. Phase 1 also gives canvas the
+real #189 server seam for free.
+
+**#189 — Canvas, the other half**, after that.
 
 `docs/reference/route-shape.md` is the contract. **Images is now the closest
 worked example of it** — a real view with dialogs, persisted prefs and a
