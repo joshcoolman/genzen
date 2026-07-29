@@ -13,11 +13,12 @@ import { useVariations } from '#/features/ai-images/hooks/use-variations'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 
-export function useImagesPage() {
+export function useImagesPage(initialImages: Array<SavedAiImage>) {
   const { user } = useAuth()
 
   const gallery = useImages({
     userId: user.id,
+    initial: initialImages,
   })
 
   const userImages = useUserImages(user.id)

@@ -81,8 +81,8 @@ function storePrefs(partial: Partial<ImagesPrefs>) {
   }
 }
 
-export function ImagesPage() {
-  const page = useImagesPage()
+export function ImagesPage({ initial }: { initial: Array<SavedAiImage> }) {
+  const page = useImagesPage(initial)
   const { upload } = useImageUpload(page.userId)
   const fileInputRef = useRef<HTMLInputElement>(null)
 

@@ -5,7 +5,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { createImageStorage, getR2PublicUrl } from '#/lib/image-storage'
 import {
   deleteGalleryImage,
   listGalleryImages,
@@ -13,6 +13,9 @@ import {
 
 interface UseImagesOptions {
   userId: string | undefined
+  /** The server component's read. A seed, not the source of truth -- every
+   *  read after the first is this hook's. */
+  initial: Array<SavedAiImage>
 }
 
 interface RefreshOptions {
@@ -42,10 +45,27 @@ export interface GalleryState {
   refresh: (options?: RefreshOptions) => Promise<void>
 }
 
-export function useImages({ userId }: UseImagesOptions): GalleryState {
-  const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
-  const [loadingGallery, setLoadingGallery] = useState(true)
+/** Public S3 URLs are built from the path, so the seed's map needs no request. */
+function urlsFor(images: Array<SavedAiImage>): Record<string, string> {
+  const urls: Record<string, string> = {}
+  for (const img of images) {
+    if (img.status !== 'completed') continue
+    const path = img.thumbnail_path ?? img.storage_path
+    if (path) urls[img.id] = getR2PublicUrl(path)
+  }
+  return urls
+}
+
+export function useImages({ userId, initial }: UseImagesOptions): GalleryState {
+  const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>(() =>
+    sortByOrder(initial),
+  )
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>(() =>
+    urlsFor(initial),
+  )
+  // The server component already ran the read, so there is nothing to wait for
+  // on first paint. A non-silent refresh can still turn this on.
+  const [loadingGallery, setLoadingGallery] = useState(false)
 
   const loadSavedImages = useCallback(
     async (options?: RefreshOptions) => {
@@ -58,23 +78,7 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
         setSavedImages(images)
         setLoadingGallery(false)
 
-        // Batch signed URL generation
-        const completedWithPath = images.filter(
-          (img) => img.status === 'completed' && img.storage_path,
-        )
-        const urlEntries = await Promise.all(
-          completedWithPath.map(async (img) => {
-            const path = img.thumbnail_path ?? img.storage_path!
-            const url = await createImageStorage().getUrl(path)
-            return url ? ([img.id, url] as const) : null
-          }),
-        )
-        const urls: Record<string, string> = {}
-        for (const entry of urlEntries) {
-          if (entry) urls[entry[0]] = entry[1]
-        }
-
-        setImageUrls(urls)
+        setImageUrls(urlsFor(images))
       } catch {
         console.error('Failed to load saved AI images')
       } finally {
@@ -84,9 +88,8 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     [userId],
   )
 
-  useEffect(() => {
-    void loadSavedImages()
-  }, [loadSavedImages])
+  // No mount fetch: `initial` is the read, and a client navigation back to the
+  // route re-runs the server component, so the seed is never stale on arrival.
 
   // Poll FAL for pending generations (skipped when webhooks are enabled).
   //
