@@ -122,13 +122,25 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
-- **#193 clusters 1-2, and two primitives deleted outright.** `ui/select` and
-  `ui/checkbox` had zero consumers — 218 lines and 2 of the 10 Radix imports
-  gone for no call-site churn. Six dialogs converted, none with a utility class
-  left. The survey had `mobile-dialog-header` as the blocking leaf; the
-  dependency runs the other way — `DialogTitle` wires `aria-labelledby`, so it
-  must come from whichever library owns the surrounding Dialog, and its
-  consumers are cluster 5. It flips with them, not before.
+- **`src/components/ui/` is 15 → 9, because deleting needs a component-first
+  pass.** `badge`, `input` and `tooltip` are ours now and shadcn's are gone;
+  `select` and `checkbox` went as dead code. The lesson worth carrying: a
+  route-driven pass never reaches the point where a shared component's file can
+  be deleted, since "every consumer converted" is not a route's finish line —
+  and both names cannot sit in the root barrel at once, so route-first quietly
+  accumulates deep imports. Chasing a component's consumers is what flips the
+  barrel. Dialog stays route-first for the opposite reason: its nine remaining
+  consumers hold all the hazards.
+- **Mixed-library composition has a right nesting and a wrong one.** Radix
+  `asChild` outside, Base UI `render` inside, one real element at the bottom —
+  then both merge onto _it_ rather than onto each other's wrapper. The sidebar's
+  Log out button is the worked example, and the sheet and alert-dialog clusters
+  will hit it again.
+- **#193 clusters 1-2 done, 6 of 19 dialog files.** The survey had
+  `mobile-dialog-header` as the blocking leaf; the dependency runs the other way
+  — `DialogTitle` wires `aria-labelledby`, so it must come from whichever
+  library owns the surrounding Dialog, and its consumers are cluster 5. It flips
+  with them, not before.
 - **Every toast in the app was invisible, and now isn't (#192).** `<Toaster />`
   was mounted nowhere, so six `toast(...)` calls ran correctly and painted
   nothing — including the canvas Undo affordance. Probably lost in the TanStack
@@ -147,29 +159,26 @@ Conventions follow `~/repos/project-standard`.
   instead of blue. `Badge` now takes colour through `--badge-color` /
   `--badge-border` — a custom property has no fight to lose. Prefer that over
   `composes:` when a component is coloured by its call site.
-- **Button and ConfirmDialog are ported from `~/repos/bootsy`, on Base UI.** No
-  shadcn, no Radix, CSS Modules. The Button brings a real `loading` state with
-  `aria-busy` and drives state off Base UI's `[data-disabled]`; the dialog gets
-  a focus trap, scroll lock and `initialFocus` on Cancel, so a reflexive Enter
-  cannot delete. The dialog's API is controlled, with a `useConfirm` hook giving
-  back the ergonomics: `if (await confirm({title, message})) onDelete(id)`.
-- **Porting is cheap; token _names_ are the cost.** Eight tokens came across
-  with bootsy's values. Two could not, and they are the ones to remember:
-  `--accent` means the brand colour there and a muted grey surface here, and the
-  `--space-*` scales collide outright — bootsy's is keyed by index (`--space-2`
-  is 8px), genzen's by pixel (`--space-2` _is_ 2px). A verbatim copy compiles,
-  renders at a quarter size, and nothing catches it.
 
 **Up next**
 
-- **#193 — Dialog app-wide.** Clusters 1-2 are done (6 of 19 files). Next is
-  cluster 3 — `generate-prompts`, `variation-prompts`, `failed-image-card` —
-  which settles the inner-scroll recipe. No consumer anywhere uses a Radix
-  escape hatch our `DialogContent` lacks; the issue carries the ordering and
-  the traps.
-- **#185 — Pass 2: styling.** Login, Settings, Account, Activity and Trash are
-  done, and `ImageGrid` and `SelectionDrawer` went with Trash. `Thumbnail` is
-  the shared component still on utilities.
+There are two lanes running, deliberately. Pick either; they do not conflict.
+
+- **#185 — the component lane.** Chase a shared component's consumers until its
+  shadcn file can be deleted and the barrel flipped. Ordered and ready to start:
+  `skeleton` (2 sites) → `textarea` (5) → `popover` (3) → `dropdown-menu` (1).
+  Eleven call sites, four files deleted, Radix down from 8 files to 4. The issue
+  comment carries the per-component detail.
+- **#193 — the dialog lane.** Route-first, because the hazards live in the call
+  sites. Cluster 3 next — `generate-prompts`, `variation-prompts`,
+  `failed-image-card` — which settles the inner-scroll recipe. No consumer
+  anywhere uses a Radix escape hatch our `DialogContent` lacks.
+- **`Button` is the one to be careful with.** Its 12 call sites can flip any
+  time, but `ui/button` cannot be deleted until `ui/dialog` and
+  `ui/alert-dialog` stop importing it. Converting call sites and deleting the
+  file are separate unlocks.
+- **#194 — canvas Undo does not restore.** Two faults: the client restore does
+  not take, and `undo()` never reverses the server write. Wants #189 first.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
