@@ -75,8 +75,11 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
     return
   }
 
+  // Canvas membership is deliberately untouched (#212). Trashing is a library
+  // operation; evicting the image from a canvas as a side effect destroyed an
+  // arrangement, and canvas reads already filter `deleted_at is null`.
   await sql`
-    update user_images set deleted_at = now(), on_canvas = false
+    update user_images set deleted_at = now()
     where id = ${imageId} and user_id = ${userId}
   `
 }

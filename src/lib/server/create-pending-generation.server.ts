@@ -1,4 +1,8 @@
 import { first, jsonb, sql } from './db.server'
+import {
+  addCanvasMembers,
+  ensureDefaultCanvas,
+} from './canvas-membership.server'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { getModelName } from '#/features/ai-images/models'
 
@@ -75,6 +79,16 @@ export async function createPendingGeneration({
   )
 
   if (!record) throw new Error('Failed to create image record')
+
+  // Membership at reserve time, unplaced: this is what makes a canvas
+  // generation reclaimable when the client navigates away before FAL answers.
+  // The client has not decided where the card goes yet, and under #212 it does
+  // not have to -- the load pass places whatever is unplaced.
+  if (onCanvas) {
+    const canvasId = await ensureDefaultCanvas(userId)
+    await addCanvasMembers(userId, canvasId, [{ imageId: record.id }])
+  }
+
   return { recordId: record.id }
 }
 

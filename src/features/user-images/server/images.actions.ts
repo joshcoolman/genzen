@@ -110,11 +110,22 @@ export async function updateImageMeta(
   return row
 }
 
+/**
+ * Move an image to Trash. Deliberately does *not* touch canvas membership
+ * (#212): trashing is a library operation, and evicting the image from a canvas
+ * as a side effect destroyed an arrangement the user would have to rebuild by
+ * hand. Membership survives, so restoring puts the card back where it was.
+ *
+ * Canvas reads filter `deleted_at is null`, so a trashed image stops rendering
+ * on its own. Until the canvas's mount-time prune is gone, that prune still
+ * strips the image locally and the next layout save drops the membership row --
+ * so this write is correct but not yet sufficient on its own.
+ */
 export async function softDeleteImage(id: string): Promise<void> {
   const { userId } = await resolveAuth()
 
   await sql`
-    update user_images set deleted_at = now(), on_canvas = false
+    update user_images set deleted_at = now()
     where id = ${id} and user_id = ${userId}
   `
 }

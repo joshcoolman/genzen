@@ -2,6 +2,11 @@
 
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
+import {
+  addCanvasMembers,
+  ensureDefaultCanvas,
+  removeCanvasMembers,
+} from '#/lib/server/canvas-membership.server'
 
 // The canvas's reads and writes, which the browser used to run directly against
 // Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()` -- which
@@ -53,7 +58,14 @@ export async function listDeadRecordIds(
   return list.filter((id) => !aliveIds.has(id))
 }
 
-/** Flip canvas membership for the given records. */
+/**
+ * Flip canvas membership for the given records.
+ *
+ * Writes both representations while #212 is in flight: the `on_canvas` boolean,
+ * which every read still uses, and the `canvas_images` rows that replace it. The
+ * rows are written unplaced -- position still lives in IndexedDB until reads
+ * move -- and `canvas-membership.server.test.ts` asserts the two sets agree.
+ */
 export async function setImagesOnCanvas(
   ids: Array<string>,
   value: boolean,
@@ -67,6 +79,17 @@ export async function setImagesOnCanvas(
     update user_images set on_canvas = ${value}
     where user_id = ${userId} and id in ${sql(list)}
   `
+
+  const canvasId = await ensureDefaultCanvas(userId)
+  if (value) {
+    await addCanvasMembers(
+      userId,
+      canvasId,
+      list.map((imageId) => ({ imageId })),
+    )
+  } else {
+    await removeCanvasMembers(userId, canvasId, list)
+  }
 }
 
 /**
@@ -97,6 +120,13 @@ export async function restoreCanvasImages(ids: Array<string>): Promise<void> {
     update user_images set deleted_at = null, on_canvas = true
     where user_id = ${userId} and id in ${sql(list)}
   `
+
+  const canvasId = await ensureDefaultCanvas(userId)
+  await addCanvasMembers(
+    userId,
+    canvasId,
+    list.map((imageId) => ({ imageId })),
+  )
 }
 
 export interface CanvasGenerationRecord extends CanvasDbRecord {
