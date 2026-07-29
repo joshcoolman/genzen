@@ -181,12 +181,17 @@ Ordered:
    creates a `user_images` row. #207, #208 and #212 all depend on it; none is
    estimable until it exists.
 3. **#207 — origin as a column.** `upload | images | canvas`, three values by
-   declaration. Additive, ships a filter, and proves the inventory.
+   declaration. Additive, proves the inventory, and ships the filter that keeps
+   Images focused: **the library is the exhaustive record of everything
+   uploaded and generated**, so Images defaults to generations and filters to
+   uploads / canvas / all. Folds in the unpinned-generator toolbar bug, which
+   is no longer cosmetic — unpinned Images _is_ the exhaustive-record mode.
 4. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
    than handling it, and makes the Trash-eviction bug undefinable instead of
-   unfixed.
+   unfixed. Membership is an _arrangement over library images_, never exile —
+   nothing exists only inside a canvas.
 5. **#189 — the canvas half of the route split**, last, with the reconcile
    already gone rather than carefully extracted and then deleted. `docs/reference/route-shape.md` is the contract and **Images is now the
    closest worked example of it**; Trash is still the reference for the server
@@ -206,7 +211,8 @@ Also open, unsequenced:
   which is done.
 - Unpinning the generator on Images hides the toolbar's own controls — the
   workspace stops being pushed, so the right-aligned tools end up under the
-  floating panel. Predates #189 and is noted in `images/CLAUDE.md`.
+  floating panel. Noted in `images/CLAUDE.md`; now folded into #207 rather than
+  floating, because unpinned Images is the exhaustive-record mode.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
 plus Account. No assistant, no grouping, no separate edit page. If something
