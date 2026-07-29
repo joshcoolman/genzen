@@ -122,6 +122,14 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **Images has the route shape (#189, half).** Three commits, one job each:
+  `page.tsx` reads on the server and seeds the view, killing the skeleton and
+  the empty first paint; the 628-line `images-page.tsx` split into `view.tsx` +
+  `use-view.ts` + four hooks and five components; then six component folders
+  and three hooks came home from `(authenticated)/_components/` and
+  `features/ai-images/`, which one route was importing. What is left in
+  `_components/` is app chrome and the generator UI canvas also renders.
+  Pixel diff against the old render: 0. **Canvas is the other half.**
 - **The `/edit` route is gone, replaced by a highlight (#205).** Clicking a
   gallery image toggles a highlight; a highlighted image is the primary
   reference for whatever you prompt next. The prompt box is untouched by
@@ -148,26 +156,25 @@ Conventions follow `~/repos/project-standard`.
   rebuilt the chain array every render, and an effect mirroring it into
   selection state set state every render — forever. The page rendered correctly
   while looping, which is why only the console caught it.
-- **`EmptyState` is the seventh primitive.** Two byte-identical empty states —
-  the bar `route-shape.md` sets for extracting one.
 
 **Up next**
 
-**#189 — the route shape, Images first, then Canvas.** This is the whole
-priority; everything below it waits.
+**#189 — Canvas, the other half.** This is the whole priority; everything below
+it waits.
 
-`docs/reference/route-shape.md` is the contract, and **Trash is the canonical
-one — copy it, not an older route.** Activity established the shape but still
-fetches from the client; Trash settled the seam, so `page.tsx` reads on the
-server and seeds the view. Naming and folder layout follow it too.
+`docs/reference/route-shape.md` is the contract. **Images is now the closest
+worked example of it** — a real view with dialogs, persisted prefs and a
+generator panel — and Trash is still the reference for the server seam.
 
-1. **Images.** `page.tsx` renders a 628-line `_components/images-page/`
-   client component that holds the entire route, and nothing reads on the
-   server. The smaller of the two, and ~400 lines lighter after #202 — do it
-   first, against the template, rather than learning the pattern on Canvas.
-2. **Canvas.** `infinite-canvas.tsx` is 1,760 lines and `use-canvas-generate.ts`
-   is 577. This is the actual monolith, and the reason to arrive with the
-   pattern already in hand.
+`infinite-canvas.tsx` is 1,760 lines and `use-canvas-generate.ts` is 577. This
+is the actual monolith: pan/zoom, drag-move, marquee selection, undo/redo,
+paste/drop upload, context menu, library picker and the mount-time reconcile,
+in one component. Split by concern (viewport, selection, undo, ingest,
+reconcile), not by line count.
+
+While in there: unpinning the generator on Images hides the toolbar's own
+controls — the workspace stops being pushed, so the right-aligned tools end up
+under the floating panel. Predates #189 and is noted in `images/CLAUDE.md`.
 
 Then, in no fixed order:
 
