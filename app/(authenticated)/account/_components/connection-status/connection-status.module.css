@@ -1,4 +1,4 @@
-.section > *:not(:last-child) {
+.section > :where(*:not(:last-child)) {
   margin-bottom: var(--space-16);
 }
 
@@ -14,7 +14,7 @@
   background: var(--card);
 }
 
-.card > *:not(:last-child) {
+.card > :where(*:not(:last-child)) {
   margin-bottom: var(--space-16);
 }
 
@@ -25,7 +25,7 @@
   font-weight: var(--weight-medium);
 }
 
-.statusRows > *:not(:last-child) {
+.statusRows > :where(*:not(:last-child)) {
   margin-bottom: var(--space-12);
 }
 

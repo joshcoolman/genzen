@@ -1,7 +1,94 @@
-/* The sidebar is otherwise still on utilities -- it is part of the alert-dialog
-   and sheet clusters, not this one. This file exists so the tooltip's own
-   styling is fully off them, and is where the rest lands when the sidebar
-   converts. */
+/* The icon rail. Below 768px it is icons only whatever the collapsed setting
+   says -- there is no room for labels -- so `isCollapsed` only changes the
+   desktop layout. */
+
+.root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--space-64);
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+.nav {
+  flex: 1;
+  padding: var(--space-16);
+}
+
+/* `:where()` is load-bearing, not decoration. Tailwind v4 emits `space-y-*`
+   inside `:where(& > :not(:last-child))`, which has zero specificity, so a
+   child that sets its own margin -- the divider's `my-2` right below -- wins.
+   Written as a plain `.nav > *:not(:last-child)` the space rule outranks the
+   divider instead and the last two rail items sit 4px too high. */
+.nav > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-4);
+}
+
+.divider {
+  margin-block: var(--space-8);
+  border-top: 1px solid var(--border);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--sidebar-text);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.item:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-hover-text);
+}
+
+.itemActive,
+.itemActive:hover {
+  background: var(--sidebar-selected);
+  color: var(--sidebar-selected-text);
+}
+
+.label {
+  display: none;
+  flex: 1;
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+@media (min-width: 48rem) {
+  .rootExpanded {
+    width: 13rem;
+  }
+
+  .itemExpanded {
+    justify-content: flex-start;
+  }
+
+  .itemActive.itemExpanded {
+    border-left: 2px solid var(--accent-brand);
+  }
+
+  .label {
+    display: inline;
+  }
+}
 
 /* When the sidebar is expanded the labels are already visible on desktop, so
    the tooltip would just repeat them. It stays for the narrow layout, where the

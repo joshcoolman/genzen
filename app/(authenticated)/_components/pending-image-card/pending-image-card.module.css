@@ -1,0 +1,25 @@
+/* The caption under a generation that has not landed yet. Same two lines as a
+   finished ImageCard -- model, then prompt -- so a card does not move when it
+   completes. */
+
+.model {
+  padding: var(--space-8) var(--space-12) 0;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--weight-medium);
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prompt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  padding: var(--space-2) var(--space-12) var(--space-12);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}

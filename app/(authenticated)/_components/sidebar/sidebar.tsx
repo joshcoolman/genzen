@@ -16,7 +16,7 @@ import {
 import { useSidebarCollapsed } from '#/lib/use-sidebar-collapsed'
 
 import { navItems } from '#/lib/nav-items'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
@@ -45,45 +45,32 @@ export function Sidebar({ className }: { className?: string }) {
 
   return (
     <aside
-      className={cn(
-        'fixed left-0 top-0 h-screen flex-col bg-sidebar transition-all duration-300',
-        isCollapsed ? 'w-16' : 'w-16 md:w-52',
+      className={cx(
+        styles.root,
+        !isCollapsed && styles.rootExpanded,
         className,
       )}
     >
       {/* Navigation */}
       <TooltipProvider delay={0}>
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className={styles.nav}>
           {mainItems.map((item) => {
             const active = isActive(item)
             return (
               <div key={item.href}>
-                {item.dividerBefore && (
-                  <div className="my-2 border-t border-border" />
-                )}
+                {item.dividerBefore && <div className={styles.divider} />}
                 <Tooltip>
                   <TooltipTrigger
                     render={<Link href={item.href} />}
-                    className={cn(
-                      'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
-                      'gap-3',
-                      isCollapsed
-                        ? 'justify-center'
-                        : 'justify-center md:justify-start',
-                      active
-                        ? cn(
-                            'bg-sidebar-selected text-sidebar-selected-text',
-                            !isCollapsed &&
-                              'md:border-l-2 md:border-accent-brand',
-                          )
-                        : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                    className={cx(
+                      styles.item,
+                      !isCollapsed && styles.itemExpanded,
+                      active && styles.itemActive,
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    <item.icon className={styles.icon} />
                     {!isCollapsed && (
-                      <span className="hidden flex-1 md:inline">
-                        {item.label}
-                      </span>
+                      <span className={styles.label}>{item.label}</span>
                     )}
                   </TooltipTrigger>
                   <TooltipContent
@@ -97,28 +84,20 @@ export function Sidebar({ className }: { className?: string }) {
               </div>
             )
           })}
-          <div className="my-2 border-t border-border" />
+          <div className={styles.divider} />
           {[accountItem].map((item) => (
             <Tooltip key={item.id}>
               <TooltipTrigger
                 render={<Link href={item.href} />}
-                className={cn(
-                  'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
-                  'gap-3',
-                  isCollapsed
-                    ? 'justify-center'
-                    : 'justify-center md:justify-start',
-                  isActive(item)
-                    ? cn(
-                        'bg-sidebar-selected text-sidebar-selected-text',
-                        !isCollapsed && 'md:border-l-2 md:border-accent-brand',
-                      )
-                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                className={cx(
+                  styles.item,
+                  !isCollapsed && styles.itemExpanded,
+                  isActive(item) && styles.itemActive,
                 )}
               >
-                <item.icon className="h-4 w-4 shrink-0" />
+                <item.icon className={styles.icon} />
                 {!isCollapsed && (
-                  <span className="hidden flex-1 md:inline">{item.label}</span>
+                  <span className={styles.label}>{item.label}</span>
                 )}
               </TooltipTrigger>
               <TooltipContent
@@ -138,17 +117,10 @@ export function Sidebar({ className }: { className?: string }) {
             <TooltipTrigger
               render={<button type="button" />}
               onClick={() => void askThenSignOut()}
-              className={cn(
-                'flex w-full items-center rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors gap-3',
-                isCollapsed
-                  ? 'justify-center'
-                  : 'justify-center md:justify-start',
-              )}
+              className={cx(styles.item, !isCollapsed && styles.itemExpanded)}
             >
-              <LogOut className="h-4 w-4 shrink-0" />
-              {!isCollapsed && (
-                <span className="hidden md:inline">Log out</span>
-              )}
+              <LogOut className={styles.icon} />
+              {!isCollapsed && <span className={styles.label}>Log out</span>}
             </TooltipTrigger>
             <TooltipContent
               side="right"

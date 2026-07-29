@@ -1,3 +1,4 @@
+import styles from './pending-image-card.module.css'
 import { Thumbnail } from '#/components'
 
 interface PendingImageCardProps {
@@ -24,12 +25,8 @@ export function PendingImageCard({
       onDelete={onDelete}
       alwaysShowOverlay={!!onDelete}
     >
-      <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
-        {model}
-      </p>
-      <p className="px-3 pt-0.5 pb-3 text-xs text-muted-foreground line-clamp-2">
-        {prompt}
-      </p>
+      <p className={styles.model}>{model}</p>
+      <p className={styles.prompt}>{prompt}</p>
     </Thumbnail>
   )
 }

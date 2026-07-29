@@ -1,0 +1,36 @@
+/* The image grid itself. The column width is still an inline style, because it
+   is chosen per thumb size at render time. */
+
+.root > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-16);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-48);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin-bottom: var(--space-8);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg-leading);
+  font-weight: var(--weight-semibold);
+  color: var(--foreground);
+}
+
+.emptyBody {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--muted-foreground);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-16);
+}

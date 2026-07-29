@@ -7,7 +7,7 @@
   background: var(--card);
 }
 
-.card > *:not(:last-child) {
+.card > :where(*:not(:last-child)) {
   margin-bottom: var(--space-16);
 }
 
@@ -20,7 +20,7 @@
   line-height: var(--text-sm-leading);
 }
 
-.fields > *:not(:last-child) {
+.fields > :where(*:not(:last-child)) {
   margin-bottom: var(--space-12);
 }
 

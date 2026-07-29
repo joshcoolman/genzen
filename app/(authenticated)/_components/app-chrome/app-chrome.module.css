@@ -1,0 +1,50 @@
+/* The frame every signed-in route renders inside: icon rail on the left, AD
+   panel on the right, content between them. */
+
+.shell {
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--background);
+}
+
+.sidebar {
+  display: none;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-24);
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+/* Images and edit run their own fixed sidebar, so they own the right edge --
+   the shell must not add padding the page then has to fight. */
+.mainFlush {
+  padding-right: 0;
+}
+
+@media (min-width: 48rem) {
+  .sidebar {
+    display: flex;
+  }
+
+  /* MobileNav's own root sets position/z-index and no display, so hiding it is
+     the only thing the shell has to say about it. */
+  .mobileNav {
+    display: none;
+  }
+
+  .main {
+    margin-left: var(--space-64);
+  }
+
+  /* Pushed in by the AD panel -- only on the routes that do not manage their
+     own right margin. 20rem is the panel's own width; there is no spacing
+     token that large, and inventing one for a single layout would be worse
+     than stating it. */
+  .mainPushed {
+    margin-right: 20rem;
+  }
+}

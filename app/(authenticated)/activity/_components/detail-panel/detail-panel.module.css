@@ -49,7 +49,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-.sheetHeader > *:not(:last-child) {
+.sheetHeader > :where(*:not(:last-child)) {
   margin-bottom: var(--space-12);
 }
 
@@ -132,7 +132,7 @@
   padding: var(--space-16);
 }
 
-.body > *:not(:last-child) {
+.body > :where(*:not(:last-child)) {
   margin-bottom: var(--space-16);
 }
 
@@ -154,7 +154,7 @@
   line-height: var(--text-xs-leading);
 }
 
-.section > *:not(:last-child) {
+.section > :where(*:not(:last-child)) {
   margin-bottom: var(--space-4);
 }
 

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
 import { ImageCard } from '../image-card/image-card'
 import { FailedImageCard } from '../failed-image-card/failed-image-card'
+import styles from './image-gallery.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import { getModelName } from '#/features/ai-images/models'
@@ -82,22 +83,20 @@ export function ImageGallery({
   )
 
   return (
-    <div className="space-y-4">
+    <div className={styles.root}>
       {loadingGallery ? (
         <ImageGridSkeleton />
       ) : images.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12 text-center">
-          <h3 className="mb-2 text-lg font-semibold text-foreground">
-            No images yet
-          </h3>
-          <p className="text-sm text-muted-foreground">
+        <div className={styles.empty}>
+          <h3 className={styles.emptyTitle}>No images yet</h3>
+          <p className={styles.emptyBody}>
             Type a prompt in the panel below and hit Generate to create your
             first image.
           </p>
         </div>
       ) : (
         <div
-          className="grid gap-4"
+          className={styles.grid}
           style={{
             gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH[thumbSize]}, 1fr))`,
           }}

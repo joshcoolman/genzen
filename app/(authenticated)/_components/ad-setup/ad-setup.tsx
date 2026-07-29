@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Key } from 'lucide-react'
+import styles from './ad-setup.module.css'
 import { useAnthropicKey } from '#/features/ad/hooks/useAnthropicKey'
 import { ActionButton, Input } from '#/components'
 
@@ -20,20 +21,20 @@ export function ADSetup() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-        <Key className="h-5 w-5 text-muted-foreground" />
+    <div className={styles.root}>
+      <div className={styles.badge}>
+        <Key className={styles.badgeIcon} />
       </div>
 
-      <div className="space-y-1 text-center">
-        <p className="text-sm font-medium">Anthropic API Key</p>
-        <p className="text-xs text-muted-foreground">
+      <div className={styles.copy}>
+        <p className={styles.copyTitle}>Anthropic API Key</p>
+        <p className={styles.copyBody}>
           Your key is stored locally in this browser and never sent to GenZen
           servers.
         </p>
       </div>
 
-      <div className="w-full space-y-2">
+      <div className={styles.field}>
         <Input
           type="password"
           placeholder="sk-ant-..."
@@ -46,13 +47,13 @@ export function ADSetup() {
             if (e.key === 'Enter') handleSave()
           }}
         />
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && <p className={styles.error}>{error}</p>}
       </div>
 
       <ActionButton
         onClick={handleSave}
-        className="w-full"
-        icon={<Key className="h-4 w-4" />}
+        className={styles.save}
+        icon={<Key className={styles.saveIcon} />}
       >
         Save Key
       </ActionButton>

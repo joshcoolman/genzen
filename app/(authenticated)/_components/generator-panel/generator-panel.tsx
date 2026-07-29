@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
+import styles from './generator-panel.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
@@ -65,7 +66,7 @@ export function GeneratorPanel({
     : userImages.images
 
   return (
-    <div className="space-y-3">
+    <div className={styles.root}>
       {/* Row 1: Source image */}
       {generator.sourceImage && (
         <SourceImagePreview
@@ -77,7 +78,7 @@ export function GeneratorPanel({
       )}
 
       {/* Image source buttons + aspect ratio */}
-      <div className="flex gap-2 items-center">
+      <div className={styles.row}>
         {!hideSourceButtons && (
           <ImageSourceButtons
             onFileSelected={generator.setSourceFile}
@@ -95,7 +96,7 @@ export function GeneratorPanel({
                   : undefined,
               onOpen: userImages.refresh,
             }}
-            className="contents"
+            className={styles.contents}
           />
         )}
         <AspectRatioSelect
@@ -104,7 +105,7 @@ export function GeneratorPanel({
           onOrientationChange={generator.setOrientation}
           onAspectRatioChange={generator.setAspectRatio}
           disabled={generator.loading}
-          className={isEdit || hideSourceButtons ? 'flex-1' : undefined}
+          className={isEdit || hideSourceButtons ? styles.fill : undefined}
         />
       </div>
 
@@ -183,7 +184,7 @@ export function GeneratorPanel({
       )}
 
       {/* Generate button + gens stepper */}
-      <div className="flex gap-2 items-center">
+      <div className={styles.row}>
         <ActionButton
           onClick={() => generator.handleGenerate()}
           loading={generator.loading}
@@ -195,7 +196,7 @@ export function GeneratorPanel({
                 : 'Generating...'
           }
           disabled={!generator.canGenerate}
-          className="flex-1"
+          className={styles.fill}
         >
           {isEdit
             ? generator.totalImages > 1
@@ -226,14 +227,14 @@ export function GeneratorPanel({
 
       {/* Describe / JSON -- only when source image present */}
       {generator.sourceImage && (
-        <div className="flex items-center gap-2">
+        <div className={styles.row}>
           <ActionButton
             variant="outline"
             onClick={() => void generator.handleCaption()}
             loading={generator.describingImage}
             loadingText="..."
             disabled={generator.loading}
-            className="flex-1"
+            className={styles.fill}
           >
             Describe
           </ActionButton>
@@ -244,7 +245,7 @@ export function GeneratorPanel({
               loading={describe.jsonLoading}
               loadingText="..."
               disabled={generator.loading}
-              className="flex-1"
+              className={styles.fill}
             >
               JSON
             </ActionButton>

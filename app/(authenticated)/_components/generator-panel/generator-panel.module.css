@@ -1,0 +1,22 @@
+/* The Generate panel's own stack: prompt, source, controls, model list. */
+
+.root > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-12);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* `display: contents` -- ImageSourceButtons' wrapper dissolves so its three
+   buttons become direct children of the row and share its gap, rather than
+   forming a nested flex box with its own spacing. */
+.contents {
+  display: contents;
+}
+
+.fill {
+  flex: 1;
+}

@@ -6,8 +6,9 @@ import { MobileNav } from '../mobile-nav/mobile-nav'
 import { StatusBar } from '../status-bar/status-bar'
 import { ADPanel } from '../ad-panel/ad-panel'
 import { ADContextProvider } from '../ad-context-provider/ad-context-provider'
+import styles from './app-chrome.module.css'
 import { useADOpen } from '#/lib/use-ad-open'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -20,19 +21,19 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <ADContextProvider>
-      <div className="flex min-h-screen overflow-x-hidden bg-background">
+      <div className={styles.shell}>
         {/* Desktop sidebar - collapsed on md+, always icons-only on sm */}
-        <Sidebar className="hidden md:flex" />
+        <Sidebar className={styles.sidebar} />
 
         {/* Mobile nav trigger (hidden on edit pages) */}
-        {!isEditPage && <MobileNav className="md:hidden" />}
+        {!isEditPage && <MobileNav className={styles.mobileNav} />}
 
         {/* Main content — edit page manages its own right margin for AD push-in */}
         <main
-          className={cn(
-            'min-w-0 flex-1 p-6 transition-all duration-300 md:ml-16',
-            isADOpen && !hasOwnSidebar && 'md:mr-80',
-            hasOwnSidebar && 'pr-0',
+          className={cx(
+            styles.main,
+            isADOpen && !hasOwnSidebar && styles.mainPushed,
+            hasOwnSidebar && styles.mainFlush,
           )}
         >
           {children}

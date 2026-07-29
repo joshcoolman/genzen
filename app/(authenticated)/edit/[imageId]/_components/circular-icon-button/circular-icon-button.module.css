@@ -1,0 +1,37 @@
+/* A round icon button that sits on top of an image, not on a surface -- hence
+   the `--on-dark` whites and the translucent fill rather than a token colour. */
+
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.white {
+  background: color-mix(in oklab, var(--on-dark) 10%, transparent);
+  color: var(--on-dark);
+}
+
+.white:hover {
+  background: color-mix(in oklab, var(--on-dark) 20%, transparent);
+}
+
+.primary {
+  background: var(--accent-brand);
+  color: var(--on-dark);
+}
+
+.primary:hover {
+  background: color-mix(in oklab, var(--accent-brand) 90%, transparent);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+}

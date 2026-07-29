@@ -43,7 +43,7 @@
 }
 
 /* `divide-y`: the border sits on every row but the last, not between pairs. */
-.list > li:not(:last-child) {
+.list > :where(li:not(:last-child)) {
   border-bottom: 1px solid var(--border);
 }
 

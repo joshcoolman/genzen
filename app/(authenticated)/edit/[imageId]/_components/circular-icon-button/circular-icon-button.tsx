@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import styles from './circular-icon-button.module.css'
 import type { LucideIcon } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 
 interface CircularIconButtonProps {
   icon: LucideIcon
@@ -25,26 +26,19 @@ export function CircularIconButton({
   variant = 'white',
   className,
 }: CircularIconButtonProps) {
-  const baseClasses =
-    'flex h-9 w-9 items-center justify-center rounded-full transition-colors'
-  const variantClasses = {
-    white: 'bg-white/10 text-white hover:bg-white/20',
-    primary: 'bg-accent-brand text-white hover:bg-accent-brand/90',
-  }
-
-  const combinedClasses = cn(baseClasses, variantClasses[variant], className)
+  const combinedClasses = cx(styles.root, styles[variant], className)
 
   if (to) {
     return (
       <Link href={to} className={combinedClasses} title={title}>
-        <Icon className="h-4 w-4" />
+        <Icon className={styles.icon} />
       </Link>
     )
   }
 
   return (
     <button onClick={onClick} className={combinedClasses} title={title}>
-      <Icon className="h-4 w-4" />
+      <Icon className={styles.icon} />
     </button>
   )
 }
