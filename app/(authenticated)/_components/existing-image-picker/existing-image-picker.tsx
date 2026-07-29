@@ -5,17 +5,18 @@ import { Check, Upload } from 'lucide-react'
 import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
 import { processAndUploadFiles } from '#/features/user-images/lib/process-files'
-import { ImageGrid, Thumbnail } from '#/components'
-// Deep imports while the barrel still holds the shadcn Dialog and Button for
-// their remaining consumers -- see #193.
-import { Button } from '#/components/button/button'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  ImageGrid,
+  Thumbnail,
+} from '#/components'
+// Button is still deep-imported: the barrel's `Button` is shadcn's until its
+// last consumer flips -- see #193.
+import { Button } from '#/components/button/button'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

@@ -23,6 +23,17 @@ export {
   DropdownMenuTrigger,
   type DropdownMenuContentProps,
 } from './dropdown-menu/dropdown-menu'
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  type DialogContentProps,
+} from './dialog/dialog'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'
@@ -83,5 +94,4 @@ export { toast, Toaster } from './toast/toast'
 export * from './ui/alert-dialog/alert-dialog'
 export * from './ui/button/button'
 export * from './ui/command/command'
-export * from './ui/dialog/dialog'
 export * from './ui/sheet/sheet'

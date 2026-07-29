@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import styles from './describe-dialog.module.css'
-import { Textarea } from '#/components'
-import { Button } from '#/components/button/button'
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  Textarea,
+} from '#/components'
+import { Button } from '#/components/button/button'
 import { updateImageDescription } from '#/features/user-images/server/images.actions'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 

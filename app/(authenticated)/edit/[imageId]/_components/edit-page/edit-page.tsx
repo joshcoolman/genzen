@@ -30,14 +30,15 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import {
   Button,
+  Dialog,
+  DialogContent,
   Lightbox,
   MobileDialogHeader,
   SelectionDrawer,
 } from '#/components'
-// Deep imports while the barrel still holds the shadcn Dialog and Button for
-// their remaining consumers -- see #193.
+// Button is still deep-imported: the barrel's `Button` is shadcn's until its
+// last consumer flips -- see #193.
 import { Button as HouseButton } from '#/components/button/button'
-import { Dialog, DialogContent } from '#/components/dialog/dialog'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { useSelection } from '#/lib/use-selection'
 import { useEditPage } from '#/features/ai-images/hooks/use-edit-page'

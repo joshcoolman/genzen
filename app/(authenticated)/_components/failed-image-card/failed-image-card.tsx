@@ -6,15 +6,13 @@ import styles from './failed-image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { classifyError } from '#/features/ai-images/error-classification'
 import { getModelName } from '#/features/ai-images/models'
-import { Thumbnail } from '#/components'
-// Deep import while the barrel still holds the shadcn Dialog for its remaining
-// consumers -- see #193.
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  Thumbnail,
+} from '#/components'
 
 interface FailedImageCardProps {
   img: SavedAiImage

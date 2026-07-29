@@ -35,10 +35,6 @@ import type {
 } from '../../_lib/types'
 import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
-import { toast } from '#/components'
-// Deep imports while the barrel still holds the shadcn Dialog and Button for
-// their remaining consumers -- see #193.
-import { Button } from '#/components/button/button'
 import {
   Dialog,
   DialogContent,
@@ -46,7 +42,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  toast,
+} from '#/components'
+// Button is still deep-imported: the barrel's `Button` is shadcn's until its
+// last consumer flips -- see #193.
+import { Button } from '#/components/button/button'
 import { useAuth } from '#/lib/auth'
 import { useExistingImages } from '#/features/user-images'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'

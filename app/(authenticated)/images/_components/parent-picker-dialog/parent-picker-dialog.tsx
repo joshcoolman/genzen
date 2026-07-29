@@ -4,13 +4,14 @@ import { useMemo, useState } from 'react'
 import styles from './parent-picker-dialog.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
-import { ImageGrid, Thumbnail } from '#/components'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  ImageGrid,
+  Thumbnail,
+} from '#/components'
 
 interface ParentPickerDialogProps {
   open: boolean

@@ -6,10 +6,6 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import styles from './download-dialog.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { Input } from '#/components'
-// Deep imports while the shadcn `Dialog` and `Button` still hold those names in
-// the barrel for their remaining consumers. They go when the barrel flips.
-import { Button } from '#/components/button/button'
 import {
   Dialog,
   DialogContent,
@@ -18,7 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '#/components/dialog/dialog'
+  Input,
+} from '#/components'
+// Deep imports while the shadcn `Dialog` and `Button` still hold those names in
+// the barrel for their remaining consumers. They go when the barrel flips.
+import { Button } from '#/components/button/button'
 
 const CONCURRENCY = 4
 

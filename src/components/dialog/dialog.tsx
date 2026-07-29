@@ -50,7 +50,8 @@ export interface DialogContentProps {
    * Layout only. Set size and scrolling through the popup's custom properties
    * rather than by re-declaring the properties themselves, which races this
    * module on bundle order -- see dialog.module.css:
-   *   `--dialog-max-width`, `--dialog-max-height`, `--dialog-overflow`.
+   *   `--dialog-max-width`, `--dialog-max-height`, `--dialog-overflow`,
+   *   `--dialog-padding`.
    */
   className?: string
   /** @default true */

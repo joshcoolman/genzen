@@ -40,19 +40,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
-  Input,
-  MobileDialogHeader,
-  SelectionDrawer,
-} from '#/components'
-// Deep import while the barrel still holds the shadcn Dialog for AlertDialog's
-// and Command's use of it -- see #193.
-import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '#/components/dialog/dialog'
+  Input,
+  MobileDialogHeader,
+  SelectionDrawer,
+} from '#/components'
 import { useImagesPage } from '#/features/ai-images/index'
 import { groupImages } from '#/features/ai-images/server/group-images.server'
 import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'

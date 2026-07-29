@@ -4,13 +4,17 @@ import * as React from 'react'
 import { Command as CommandPrimitive } from 'cmdk'
 import { SearchIcon } from 'lucide-react'
 
+// The house Dialog, not shadcn's -- cmdk is not Radix, so this file's only tie
+// to the old primitive was this import (#193). The rest of it is still on
+// utilities and converts with Spotlight.
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../dialog/dialog'
+} from '../../dialog/dialog'
+import dialogStyles from './command-dialog.module.css'
 import { cn } from '#/lib/utils'
 
 function Command({
@@ -36,7 +40,10 @@ function CommandDialog({
   className,
   showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
+}: Omit<React.ComponentProps<typeof Dialog>, 'children'> & {
+  // Base UI's Root accepts a render function as children; the palette always
+  // passes elements, and cmdk's parts are not render-prop aware.
+  children?: React.ReactNode
   title?: string
   description?: string
   className?: string
@@ -44,14 +51,16 @@ function CommandDialog({
 }) {
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
       <DialogContent
-        className={cn('overflow-hidden p-0', className)}
+        className={cn(dialogStyles.popup, className)}
         showCloseButton={showCloseButton}
       >
+        {/* Inside the popup, not beside it: the title is what labels the
+            dialog, and Base UI renders un-portalled Root children in place. */}
+        <DialogHeader className={dialogStyles.srOnly}>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
         <Command className="**:data-[slot=command-input-wrapper]:h-12 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
           {children}
         </Command>

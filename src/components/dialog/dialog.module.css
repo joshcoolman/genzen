@@ -50,7 +50,7 @@
   flex-direction: column;
   gap: var(--space-16);
   overflow-y: var(--dialog-overflow, auto);
-  padding: var(--space-24);
+  padding: var(--dialog-padding, var(--space-24));
   background: var(--surface-overlay);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
@@ -70,8 +70,8 @@
   --dialog-max-width: 100%;
   --dialog-max-height: 100vh;
   --dialog-overflow: hidden;
+  --dialog-padding: 0;
   height: 100vh;
-  padding: 0;
   border: none;
   border-radius: 0;
   gap: 0;
