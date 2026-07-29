@@ -1,0 +1,92 @@
+/* The inner-scroll recipe, first of the cluster to need it: the popup stops
+   scrolling and `.list` scrolls instead, so the title and the Back/Apply row
+   stay put while the generated prompts move. `min-height: 0` on the flex parent
+   is what lets the list actually shrink -- without it a flex item's automatic
+   minimum size is its content, and the popup grows past its max-height. */
+.popup {
+  --dialog-max-width: 28rem;
+  --dialog-max-height: 80vh;
+  --dialog-overflow: hidden;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.countRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  color: var(--muted-foreground);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.error {
+  color: var(--danger);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+.generate {
+  width: 100%;
+}
+
+.results {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-8);
+  overflow-y: auto;
+  padding-right: var(--space-4);
+}
+
+.promptRow {
+  position: relative;
+}
+
+/* 28px is a literal on purpose -- it is clearance for the remove button, not a
+   spacing decision, and the scale has no --space-28 (see #185's Account note). */
+.prompt {
+  padding-right: 1.75rem;
+  resize: none;
+}
+
+/* Sits over the textarea's own padding, so it is a hit target rather than a
+   Button -- button.tsx excludes exactly this shape. */
+.remove {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  padding: var(--space-2);
+  color: var(--muted-foreground);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-out);
+}
+
+.remove:hover {
+  color: var(--foreground);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+  padding-top: var(--space-4);
+}
+
+.action {
+  flex: 1;
+}

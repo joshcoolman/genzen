@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { Plus, X } from 'lucide-react'
+import styles from './variation-prompts-dialog.module.css'
+import { RefImageStrip, Skeleton, Textarea } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button } from '#/components/button/button'
 import {
-  ActionButton,
-  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  RefImageStrip,
-  Skeleton,
-  Textarea,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 interface ReferenceImage {
   id: string
@@ -121,29 +121,25 @@ export function VariationPromptsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Generate Variations</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
+        <div className={styles.body}>
           {sourceImageUrl && (
-            <div className="flex items-center gap-3 pb-1">
+            <div className={styles.sourceRow}>
               <img
                 src={sourceImageUrl}
-                className="w-12 h-12 rounded object-cover border border-border"
+                className={styles.sourceThumb}
                 alt="Source"
               />
-              <span className="text-xs text-muted-foreground">
-                Source image
-              </span>
+              <span className={styles.label}>Source image</span>
             </div>
           )}
 
-          <div className="space-y-1">
-            <span className="text-xs text-muted-foreground">
-              Reference images
-            </span>
+          <div className={styles.fieldTight}>
+            <span className={styles.label}>Reference images</span>
             <RefImageStrip
               images={referenceImages}
               max={maxReferences}
@@ -155,30 +151,25 @@ export function VariationPromptsDialog({
 
           {isPreGeneration && (
             <>
-              <div className="space-y-1.5">
-                <span className="text-xs text-muted-foreground">
-                  Guidance (optional)
-                </span>
+              <div className={styles.field}>
+                <span className={styles.label}>Guidance (optional)</span>
                 <Textarea
                   value={guidance}
                   onChange={(e) => setGuidance(e.target.value)}
                   rows={2}
-                  className="resize-none"
+                  className={styles.textarea}
                   placeholder="Describe a direction or mood..."
                 />
               </div>
-              <div className="space-y-1.5">
-                <span className="text-xs text-muted-foreground">Count</span>
-                <div className="flex gap-1.5">
+              <div className={styles.field}>
+                <span className={styles.label}>Count</span>
+                <div className={styles.counts}>
                   {COUNT_OPTIONS.map((n) => (
                     <button
                       key={n}
+                      type="button"
                       onClick={() => setCount(n)}
-                      className={`h-7 w-7 rounded text-xs font-medium transition-colors cursor-pointer ${
-                        count === n
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={`${styles.count} ${count === n ? styles.countSelected : ''}`}
                     >
                       {n}
                     </button>
@@ -189,44 +180,43 @@ export function VariationPromptsDialog({
           )}
 
           {loading && (
-            <div className="space-y-3">
+            <div className={styles.skeletons}>
               {Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-md" />
+                <Skeleton key={i} className={styles.skeleton} />
               ))}
-              <p className="text-xs text-muted-foreground text-center">
-                Generating prompts...
-              </p>
+              <p className={styles.loadingLabel}>Generating prompts...</p>
             </div>
           )}
 
           {!loading && prompts.length > 0 && (
             <>
               {prompts.map((prompt, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className={styles.promptRow}>
                   <Textarea
                     value={prompt}
                     onChange={(e) => updatePrompt(i, e.target.value)}
                     onPaste={(e) => handlePaste(i, e)}
                     rows={2}
-                    className="flex-1 resize-none"
+                    className={styles.prompt}
                     placeholder="Describe a variation..."
                   />
                   <button
                     onClick={() => removePrompt(i)}
-                    className="self-start p-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    type="button"
+                    className={styles.remove}
                     aria-label="Remove prompt"
                   >
-                    <X className="h-4 w-4" />
+                    <X />
                   </button>
                 </div>
               ))}
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={addPrompt}
-                className="w-full"
+                className={styles.addPrompt}
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                <Plus />
                 Add prompt
               </Button>
             </>
@@ -238,18 +228,23 @@ export function VariationPromptsDialog({
             Cancel
           </Button>
           {isPreGeneration ? (
-            <Button onClick={() => onGenerate(guidance, count)}>
+            <Button
+              variant="primary"
+              onClick={() => onGenerate(guidance, count)}
+            >
               Generate {count}
             </Button>
           ) : (
-            <ActionButton
+            <Button
+              variant="primary"
               onClick={handleApply}
               disabled={loading || validCount === 0}
               loading={loading}
-              loadingText="Generating..."
             >
-              Apply {validCount} prompt{validCount !== 1 ? 's' : ''}
-            </ActionButton>
+              {loading
+                ? 'Generating...'
+                : `Apply ${validCount} prompt${validCount !== 1 ? 's' : ''}`}
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

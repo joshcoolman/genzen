@@ -1,5 +1,5 @@
 .popup {
-  max-width: 28rem;
+  --dialog-max-width: 28rem;
 }
 
 .loading {

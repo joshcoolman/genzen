@@ -2,15 +2,17 @@
 
 import { useCallback, useState } from 'react'
 import { X } from 'lucide-react'
+import styles from './generate-prompts-dialog.module.css'
+import { NumberStepper, Textarea } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button } from '#/components/button/button'
 import {
-  ActionButton,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  NumberStepper,
-  Textarea,
-} from '#/components'
+} from '#/components/dialog/dialog'
 import { generateShotList } from '#/features/ai-images/server/generate-shot-list.server'
 
 interface GeneratePromptsDialogProps {
@@ -88,19 +90,17 @@ export function GeneratePromptsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+      <DialogContent className={styles.popup}>
         <DialogHeader>
-          <DialogTitle className="text-sm">
+          <DialogTitle>
             {hasResults ? 'Review Prompts' : 'Generate Prompts'}
           </DialogTitle>
         </DialogHeader>
 
         {!hasResults ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                Number of prompts
-              </span>
+          <div className={styles.form}>
+            <div className={styles.countRow}>
+              <span className={styles.label}>Number of prompts</span>
               <NumberStepper
                 value={count}
                 min={1}
@@ -118,31 +118,31 @@ export function GeneratePromptsDialog({
               disabled={loading}
               rows={2}
             />
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <ActionButton
+            {error && <p className={styles.error}>{error}</p>}
+            <Button
+              variant="primary"
               onClick={handleGenerate}
               loading={loading}
-              loadingText="Generating prompts..."
-              className="w-full"
+              className={styles.generate}
             >
-              Generate {count} prompts
-            </ActionButton>
+              {loading ? 'Generating prompts...' : `Generate ${count} prompts`}
+            </Button>
           </div>
         ) : (
-          <div className="flex flex-col gap-3 min-h-0">
-            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
+          <div className={styles.results}>
+            <div className={styles.list}>
               {results.map((prompt, index) => (
-                <div key={index} className="relative">
+                <div key={index} className={styles.promptRow}>
                   <Textarea
                     value={prompt}
                     onChange={(e) => handleUpdatePrompt(index, e.target.value)}
-                    className="pr-7 resize-none"
+                    className={styles.prompt}
                     rows={Math.max(2, Math.ceil(prompt.length / 45))}
                   />
                   <button
                     type="button"
                     onClick={() => handleRemovePrompt(index)}
-                    className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                    className={styles.remove}
                     title="Remove this prompt"
                   >
                     <X size={14} />
@@ -150,21 +150,22 @@ export function GeneratePromptsDialog({
                 </div>
               ))}
             </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
+            <div className={styles.actions}>
+              <Button
+                variant="secondary"
                 onClick={handleBack}
-                className="flex-1 py-2 text-xs text-muted-foreground hover:text-foreground border border-border rounded-md transition-colors"
+                className={styles.action}
               >
                 Back
-              </button>
-              <ActionButton
+              </Button>
+              <Button
+                variant="primary"
                 onClick={handleApply}
                 disabled={results.filter((p) => p.trim()).length === 0}
-                className="flex-1"
+                className={styles.action}
               >
                 Apply {results.filter((p) => p.trim()).length} prompts
-              </ActionButton>
+              </Button>
             </div>
           </div>
         )}

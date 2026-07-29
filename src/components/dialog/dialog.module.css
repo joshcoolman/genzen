@@ -32,15 +32,24 @@
   padding: var(--space-24);
 }
 
+/* The four things a call site legitimately changes about the popup come in as
+   custom properties, not as a class it adds. A call-site module setting
+   `max-width` or `overflow-y` on the same element is a bundle-order race with
+   this rule -- equal specificity, different files -- and the winner is whatever
+   the bundler happened to emit last. A property has no fight to lose.
+     .popup { --dialog-max-width: 28rem; --dialog-overflow: hidden; }
+   `--dialog-overflow: hidden` is half of the inner-scroll recipe: the popup
+   stops scrolling, and the call site gives its own body `overflow-y: auto` and
+   `min-height: 0` so the header and footer stay put. */
 .popup {
   position: relative;
   display: flex;
   width: 100%;
-  max-width: 32rem;
-  max-height: calc(100vh - var(--space-48));
+  max-width: var(--dialog-max-width, 32rem);
+  max-height: var(--dialog-max-height, calc(100vh - var(--space-48)));
   flex-direction: column;
   gap: var(--space-16);
-  overflow-y: auto;
+  overflow-y: var(--dialog-overflow, auto);
   padding: var(--space-24);
   background: var(--surface-overlay);
   border: var(--border-width) solid var(--border);
@@ -55,7 +64,7 @@
 }
 
 .title {
-  color: var(--text);
+  color: var(--dialog-title-color, var(--text));
   font-size: var(--text-lg);
   font-weight: var(--weight-semibold);
   line-height: var(--leading-none);

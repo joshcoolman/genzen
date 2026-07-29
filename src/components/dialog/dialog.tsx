@@ -46,7 +46,12 @@ export function DialogClose(props: ComponentProps<typeof BaseDialog.Close>) {
 
 export interface DialogContentProps {
   children: ReactNode
-  /** Layout only -- width, max-height. Not for restyling the surface. */
+  /**
+   * Layout only. Set size and scrolling through the popup's custom properties
+   * rather than by re-declaring the properties themselves, which races this
+   * module on bundle order -- see dialog.module.css:
+   *   `--dialog-max-width`, `--dialog-max-height`, `--dialog-overflow`.
+   */
   className?: string
   /** @default true */
   showCloseButton?: boolean
