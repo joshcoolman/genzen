@@ -164,7 +164,8 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-The component lane is finished, so #193 is the whole migration now.
+The component-first sub-lane is finished. #185 stays open for the routes that
+still carry utility classes; #193 owns what is left of shadcn and Radix.
 
 - **#193 — the dialog lane.** Route-first, because the hazards live in the call
   sites. Cluster 3 next — `generate-prompts`, `variation-prompts`,
