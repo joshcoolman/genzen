@@ -122,6 +122,16 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **The insert-path inventory is written (#211).**
+  `docs/reference/insert-paths.md`. **There are exactly two insert statements in
+  the app** — one for generations, one for uploads — so every hole is a caller
+  that did not pass a fact down, not an insert that forgot it. Four live creation
+  paths, two moments per generation (reserve / settle, and a settle fact is
+  absent for anything that fails). Three corrections to what the issue assumed:
+  `parent_id` is **not** being written back (its branch is unreachable — no
+  caller passes `parentImageId` since #204), `width`/`height`/`color_palette`
+  have no writer in the app at all, and uploads sort last in SQL with
+  `use-gallery.ts` quietly repairing it client-side. Filed #215 out of it.
 - **Two data losses closed (#210).** Enhancing a prompt overwrote the one thing
   that cannot be re-derived: what you typed. It is now kept beside the enhanced
   text and written to `generation_metadata.original_prompt`, keyed by the
@@ -158,10 +168,6 @@ Conventions follow `~/repos/project-standard`.
 - **The AD assistant and BYOK are out (#203).** Never used, and making it
   useful was a rabbit hole. The status bar went with it -- its only control was
   the chat toggle. Server-side Anthropic stays for prompt work. Closed #201 too.
-- **Tailwind is gone, and #187 closed with it.** The reset swap was the whole
-  job: dropping `@import 'tailwindcss'` took Preflight, so `styles/base.css`
-  switched on in the same commit. `src/styles.css` is two imports now. Also out:
-  `postcss.config.mjs`, `components.json`, `.cta.json`, and `cn()`.
   **Up next — #209, the data model conformance pass.** A deliberate pivot on
   2026-07-29. Canvas work is paused behind it.
 
@@ -181,12 +187,10 @@ additive-then-subtractive and the drop is always its own late commit.
 before starting — it is what the data work is _for_, and knowing that stops the
 schema from drifting toward elegance.
 
-Ordered (#210 done):
+Ordered (#210 and #211 done — the inventory the rest depends on is
+`docs/reference/insert-paths.md`):
 
-1. **#211 — the insert-path inventory.** Read-only audit of every path that
-   creates a `user_images` row, and what each records. #207, #208 and #212 all
-   depend on it; none is estimable until it exists.
-2. **#207 — origin as a column.** `upload | images | canvas`, three values by
+1. **#207 — origin as a column.** `upload | images | canvas`, three values by
    declaration — an upload is an upload, but a canvas _generation_ is different
    because the canvas supplied the request. Plus the browse filter (default to
    generations) and the unpinned-generator toolbar bug. **Talk this one through
@@ -194,13 +198,13 @@ Ordered (#210 done):
    scope moved three times and whether `canvas` carries a canvas id is still
    open. See the check-in note on the issue. The rest of the pass is
    unambiguous enough to just execute.
-3. **#212 — canvas is a container, not a view.** `canvases` +
+2. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
    than handling it, and makes the Trash-eviction bug undefinable instead of
    unfixed. **The library owns everything** — membership is an _arrangement over
    library images_, never exile. Nothing exists only inside a canvas.
-4. **#189 — the canvas half of the route split**, last, with the reconcile
+3. **#189 — the canvas half of the route split**, last, with the reconcile
    already gone rather than carefully extracted and then deleted.
    `docs/reference/route-shape.md` is the contract and **Images is now the
    closest worked example of it**; Trash is still the reference for the server
@@ -231,8 +235,11 @@ Also open, unsequenced:
   exactly what was sent; retry ignores `source_image_id` entirely and hands
   `source_image_url` to FAL as a URL, which cannot work locally. References
   already replay correctly. The pasted-source case is a decision (persist the
-  bytes as a library row, or refuse honestly), so this may land **behind** #211,
-  #207 and #212 rather than before them.
+  bytes as a library row, or refuse honestly), so this may land **behind** #207
+  and #212 rather than before them.
+- **#215 — three upload implementations, one thumbnail.** Canvas paste/drop
+  reaches the one that skips `createThumbnail`, so those rows render full-size
+  in the gallery forever. From the #211 inventory.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write. Downstream of #212,
   which changes what the server write is.
