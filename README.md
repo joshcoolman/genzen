@@ -122,6 +122,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **Every toast in the app was invisible, and now isn't (#192).** `<Toaster />`
+  was mounted nowhere, so six `toast(...)` calls ran correctly and painted
+  nothing — including the canvas Undo affordance. Probably lost in the TanStack
+  → Next port. `toast/` also left `ui/`: it was never shadcn, and its 60 lines
+  of inline hex became a CSS module on tokens. Mounting it exposed a second bug
+  the silence had been hiding, #194 — that Undo does not restore.
 - **Trash is at zero shadcn, Tailwind and Radix (#191).** Dialog, Input, Badge
   and Tooltip are ours on Base UI; `SelectionDrawer` and `ImageGrid` moved off
   utilities. The parts keep shadcn's names (`DialogContent`, not
@@ -152,15 +158,6 @@ Conventions follow `~/repos/project-standard`.
   that pulsed forever, because nothing handled `onError`. Trash and Activity's
   two thumbnails use it, which killed `Thumbnail`'s `layout="list"` branch: 45
   lines and three props gone, 31 props down to 28.
-- **`src/components/` is flat again.** The `primitives/` staging folder had
-  started reading as "where the design system goes" — the drift the standard
-  forbids grouping-by-kind to prevent, and the second time it happened. Five
-  folders up one level; no call site changed, because everything imports through
-  the one barrel.
-- **Trash is converted, and it settled the seam (#185).** `page.tsx` is a server
-  component that runs the read and hands the payload to `view.tsx` as `initial`.
-  The loading state stopped existing along with the empty first paint. The
-  407-line `TrashDisplay` became six subject-named parts.
 
 **Up next**
 
