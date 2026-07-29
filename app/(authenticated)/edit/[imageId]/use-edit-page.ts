@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { GeneratorState, RefImage } from './use-generator'
+import type {
+  GeneratorState,
+  RefImage,
+} from '#/features/ai-images/hooks/use-generator'
 import type { GenerationResult } from '#/lib/types/generation-result'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'

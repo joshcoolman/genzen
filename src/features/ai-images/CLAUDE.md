@@ -50,9 +50,10 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-edit-children.ts` -- edit children nested under parent cards. No database access and no realtime: the descendant walk is `edit.actions.ts`'s, and the parent list comes from the gallery, so a newly completed child appears when the gallery's poll picks it up
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
-- `use-edit-page.ts` -- dedicated edit page state (source loading via server-side base64 fetch, aspect ratio, variants, parent picker). No database access: it calls `edit.actions.ts`
 - `useAiImagesADContext.ts` -- registers Images context with AD system
-- `useEditPageADContext.ts` -- registers edit page context with AD system
+
+The edit route's own state and AD registration are **not here**. They have one
+consumer, so they live with it: `app/(authenticated)/edit/[imageId]/`.
 
 ## Routes and UI
 

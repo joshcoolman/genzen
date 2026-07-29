@@ -6,7 +6,7 @@ import {
 } from '#/features/ad/context/ad-context'
 import { getModelName } from '#/features/ai-images/models'
 
-interface EditPageADContextInput {
+interface ADContextInput {
   sourceImageMeta: {
     id: string
     title: string | null
@@ -27,7 +27,7 @@ interface EditPageADContextInput {
   isChained: boolean
 }
 
-export function useEditPageADContext(page: EditPageADContextInput) {
+export function useADContext(page: ADContextInput) {
   // Text context: metadata about what the user is editing
   const summary = useMemo(() => {
     const parts: Array<string> = []

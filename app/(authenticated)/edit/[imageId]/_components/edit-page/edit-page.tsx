@@ -25,6 +25,8 @@ import { DescribeDialog } from '../../../../_components/describe-dialog/describe
 import { VariationPromptsDialog } from '../../../../_components/variation-prompts-dialog/variation-prompts-dialog'
 import { ExistingImagePicker } from '../../../../_components/existing-image-picker/existing-image-picker'
 import { CircularIconButton } from '../circular-icon-button/circular-icon-button'
+import { useEditPage } from '../../use-edit-page'
+import { useADContext } from '../../use-ad-context'
 import styles from './edit-page.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
@@ -38,11 +40,9 @@ import {
 } from '#/components'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { useSelection } from '#/lib/use-selection'
-import { useEditPage } from '#/features/ai-images/hooks/use-edit-page'
 import { createImageStorage, getR2PublicUrl } from '#/lib/image-storage'
 import { useADOpen } from '#/lib/use-ad-open'
 import { cx } from '#/lib/utils'
-import { useEditPageADContext } from '#/features/ai-images/hooks/useEditPageADContext'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
 const THUMB_LABELS: Record<(typeof THUMB_SIZES)[number], string> = {
@@ -131,7 +131,7 @@ export function EditPage() {
   const page = useEditPage(imageId, selection.selectedIds)
 
   // Register edit page context with AD (image + metadata)
-  useEditPageADContext({
+  useADContext({
     sourceImageMeta: page.sourceImageMeta,
     generator: page.generator,
     modelSelector: page.modelSelector,
