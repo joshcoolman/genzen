@@ -172,35 +172,53 @@ Read #209 for the four rules and the verification contract. Unlike the
 component pass, none of this is `git revert`-able, so every change is
 additive-then-subtractive and the drop is always its own late commit.
 
+**Why bother:** #213 is the payoff, and it is the thing worth building. Read it
+before starting — it is what the data work is _for_, and knowing that stops the
+schema from drifting toward elegance.
+
 Ordered:
 
 1. **#210 — two active data losses.** Enhancing a prompt overwrites the
-   original; a base64 source image is recorded as `has_source_image: true`, a
-   boolean where an id belongs. The only items where waiting costs data.
+   original (`use-generator.ts:476`); a base64 source image is recorded as
+   `has_source_image: true`, a boolean where an id belongs. Everything else in
+   the pass is absent data — these are data being deleted. Start here.
 2. **#211 — the insert-path inventory.** Read-only audit of every path that
-   creates a `user_images` row. #207, #208 and #212 all depend on it; none is
-   estimable until it exists.
+   creates a `user_images` row, and what each records. #207, #208 and #212 all
+   depend on it; none is estimable until it exists.
 3. **#207 — origin as a column.** `upload | images | canvas`, three values by
-   declaration. Additive, proves the inventory, and ships the filter that keeps
-   Images focused: **the library is the exhaustive record of everything
-   uploaded and generated**, so Images defaults to generations and filters to
-   uploads / canvas / all. Folds in the unpinned-generator toolbar bug, which
-   is no longer cosmetic — unpinned Images _is_ the exhaustive-record mode.
+   declaration — an upload is an upload, but a canvas _generation_ is different
+   because the canvas supplied the request. Plus the browse filter (default to
+   generations) and the unpinned-generator toolbar bug.
 4. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
    than handling it, and makes the Trash-eviction bug undefinable instead of
-   unfixed. Membership is an _arrangement over library images_, never exile —
-   nothing exists only inside a canvas.
+   unfixed. **The library owns everything** — membership is an _arrangement over
+   library images_, never exile. Nothing exists only inside a canvas.
 5. **#189 — the canvas half of the route split**, last, with the reconcile
-   already gone rather than carefully extracted and then deleted. `docs/reference/route-shape.md` is the contract and **Images is now the
+   already gone rather than carefully extracted and then deleted.
+   `docs/reference/route-shape.md` is the contract and **Images is now the
    closest worked example of it**; Trash is still the reference for the server
    seam.
+
+**#213 — the ephemeral search overlay.** Command-F from anywhere, live filter
+over prompts, take the prompt or the image, Escape and you are exactly where you
+were. The principle is **don't break my flow — give me what I want and get out
+of the way**, and it forbids more than it prescribes: no latency, no
+round-tripping bytes on paste, no decisions on the way out, no residue.
+
+Not a route. A locate-only _place_ failed here once (the squashed Uploads
+section) and the reason was that it was a place you had to go — which breaks
+flow by construction. Images stays a place to generate.
+
+It is a front door, not a subsystem: all three of its actions already exist as
+capabilities. Its two common ones only need #210, so it is buildable early; only
+"take me there" waits on #212.
 
 Deferred by decision, not oversight: **#208** (`image_edges`), a prompts table,
 any `collections` generalization, a keep/favourite signal, and anything that
 renders a graph. Each gets cheaper after #211; none gets more expensive by
-waiting.
+waiting. The prompts table gets pulled forward when #213 needs a real index.
 
 Also open, unsequenced:
 
@@ -209,10 +227,7 @@ Also open, unsequenced:
   which changes what the server write is.
 - **#188 — rewrite `docs/reference/architecture.md`.** It was waiting on #202,
   which is done.
-- Unpinning the generator on Images hides the toolbar's own controls — the
-  workspace stops being pushed, so the right-aligned tools end up under the
-  floating panel. Noted in `images/CLAUDE.md`; now folded into #207 rather than
-  floating, because unpinned Images is the exhaustive-record mode.
+- **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
 plus Account. No assistant, no grouping, no separate edit page. If something
