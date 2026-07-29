@@ -164,6 +164,10 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
+- **#193 — Dialog app-wide, 19 consumers in six clusters.** Surveyed off the
+  back of #191: no consumer uses a Radix escape hatch our `DialogContent` lacks,
+  and the first four clusters are 11 of the 19 files with one real hazard
+  between them. The issue carries the ordering and the traps.
 - **#185 — Pass 2: styling.** Login, Settings, Account, Activity and Trash are
   done, and `ImageGrid` and `SelectionDrawer` went with Trash. `Thumbnail` is
   the shared component still on utilities.
