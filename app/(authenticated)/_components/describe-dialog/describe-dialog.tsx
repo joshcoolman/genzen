@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import styles from './describe-dialog.module.css'
+import { Textarea } from '#/components'
+import { Button } from '#/components/button/button'
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Textarea,
-} from '#/components'
+} from '#/components/dialog/dialog'
 import { updateImageDescription } from '#/features/user-images/server/images.actions'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 
@@ -76,21 +77,19 @@ export function DescribeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Describe Image</DialogTitle>
         </DialogHeader>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">
-              Describing...
-            </span>
+          <div className={styles.loading}>
+            <Loader2 className={styles.spinner} />
+            <span>Describing...</span>
           </div>
         ) : error ? (
-          <div className="space-y-3">
-            <p className="text-sm text-destructive">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchDescription}>
+          <div className={styles.errorBlock}>
+            <p className={styles.error}>{error}</p>
+            <Button variant="secondary" size="sm" onClick={fetchDescription}>
               Retry
             </Button>
           </div>
@@ -99,20 +98,22 @@ export function DescribeDialog({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={6}
-            className="resize-none"
+            className={styles.textarea}
             placeholder="Image description..."
           />
         )}
         {currentDescription && (
-          <p className="text-xs text-muted-foreground">
-            Current: {currentDescription}
-          </p>
+          <p className={styles.current}>Current: {currentDescription}</p>
         )}
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={loading || saving || !!error}>
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={loading || saving || !!error}
+          >
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>

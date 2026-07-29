@@ -1,0 +1,40 @@
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0;
+  padding: var(--space-10) var(--space-12);
+  background: var(--background);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-none);
+}
+
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  /* Pulls the optical edge of the glyph flush with the bar's padding. */
+  margin-right: calc(var(--space-4) * -1);
+  color: var(--on-dark);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-out);
+}
+
+.close:hover {
+  color: var(--on-dark-muted);
+}
+
+.closeIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}

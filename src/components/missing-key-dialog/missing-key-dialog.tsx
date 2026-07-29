@@ -14,9 +14,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog/dialog'
-import { Button } from '../ui/button/button'
+} from '../dialog/dialog'
+import { Button } from '../button/button'
 import { toast } from '../toast/toast'
+import styles from './missing-key-dialog.module.css'
 import type { ReactNode } from 'react'
 import type { MissingKeyInfo } from '#/lib/ai-keys'
 import { parseMissingKey } from '#/lib/ai-keys'
@@ -60,10 +61,10 @@ export function MissingKeyProvider({ children }: { children: ReactNode }) {
         open={missing !== null}
         onOpenChange={(open) => !open && setMissing(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={styles.popup}>
           <DialogHeader>
-            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Key className="h-5 w-5 text-muted-foreground" />
+            <div className={styles.icon}>
+              <Key className={styles.iconGlyph} />
             </div>
             <DialogTitle>{missing?.label} API key required</DialogTitle>
             <DialogDescription>
@@ -72,16 +73,14 @@ export function MissingKeyProvider({ children }: { children: ReactNode }) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 text-sm">
-            <p className="text-muted-foreground">
-              Add it to <code className="text-foreground">.env.local</code> and
+          <div className={styles.body}>
+            <p className={styles.lead}>
+              Add it to <code className={styles.code}>.env.local</code> and
               restart the dev server:
             </p>
-            <pre className="overflow-x-auto rounded border border-border bg-muted/40 px-3 py-2 text-xs text-foreground">
-              {missing?.envVar}=...
-            </pre>
+            <pre className={styles.envVar}>{missing?.envVar}=...</pre>
             {missing?.provider === 'anthropic' && (
-              <p className="text-xs text-muted-foreground">
+              <p className={styles.note}>
                 The key you may have entered in the AD panel is a separate,
                 browser-only key — it is deliberately never sent to the server,
                 so it can't be used here.
@@ -89,7 +88,7 @@ export function MissingKeyProvider({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <div className="flex justify-end">
+          <div className={styles.footer}>
             <Button variant="ghost" onClick={() => setMissing(null)}>
               Close
             </Button>

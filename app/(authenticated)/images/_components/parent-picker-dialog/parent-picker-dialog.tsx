@@ -1,16 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import styles from './parent-picker-dialog.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { ImageGrid, Thumbnail } from '#/components'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  ImageGrid,
-  Thumbnail,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 interface ParentPickerDialogProps {
   open: boolean
@@ -100,14 +100,14 @@ export function ParentPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Move under...</DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 rounded-md border border-border bg-muted/50 p-3">
+        <div className={styles.banner}>
           {isBatch ? (
-            <span className="text-sm text-muted-foreground">
+            <span className={styles.bannerText}>
               Select a new parent for {movingImages.length} images
             </span>
           ) : (
@@ -116,10 +116,10 @@ export function ParentPickerDialog({
                 <img
                   src={movingImageUrl}
                   alt=""
-                  className="w-12 h-12 rounded object-cover"
+                  className={styles.bannerThumb}
                 />
               )}
-              <span className="text-sm text-muted-foreground">
+              <span className={styles.bannerText}>
                 Select a new parent for this image
               </span>
             </>
@@ -127,9 +127,7 @@ export function ParentPickerDialog({
         </div>
 
         {availableImages.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No available images to move under
-          </p>
+          <p className={styles.empty}>No available images to move under</p>
         ) : (
           <ImageGrid size="md">
             {availableImages.map((img) => (

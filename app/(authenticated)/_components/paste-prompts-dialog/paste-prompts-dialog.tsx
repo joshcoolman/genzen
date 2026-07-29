@@ -1,14 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import styles from './paste-prompts-dialog.module.css'
+import { Textarea } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button } from '#/components/button/button'
 import {
-  ActionButton,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Textarea,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 interface PastePromptsDialogProps {
   open: boolean
@@ -39,30 +42,31 @@ export function PastePromptsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={styles.popup}>
         <DialogHeader>
-          <DialogTitle className="text-sm">Paste Prompts</DialogTitle>
+          <DialogTitle>Paste Prompts</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className={styles.body}>
           <Textarea
             placeholder="Paste prompts separated by blank lines, or use * as a delimiter..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={8}
-            className="text-xs"
+            className={styles.textarea}
           />
           {parsed.length > 0 && (
-            <p className="text-[10px] text-muted-foreground">
+            <p className={styles.count}>
               {parsed.length} prompt{parsed.length !== 1 ? 's' : ''} detected
             </p>
           )}
-          <ActionButton
+          <Button
+            variant="primary"
             onClick={handleSubmit}
             disabled={parsed.length === 0}
-            className="w-full"
+            className={styles.submit}
           >
             Add {parsed.length || ''} prompt{parsed.length !== 1 ? 's' : ''}
-          </ActionButton>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

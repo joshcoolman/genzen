@@ -1,17 +1,17 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import styles from './group-picker-dialog.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { ImageGrid, Thumbnail } from '#/components'
+import { Button } from '#/components/button/button'
 import {
-  ActionButton,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  ImageGrid,
-  Thumbnail,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 interface GroupPickerDialogProps {
   open: boolean
@@ -88,33 +88,31 @@ export function GroupPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Select Primary Image</DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2 justify-end">
-          <ActionButton
-            variant="outline"
+        <div className={styles.actions}>
+          <Button
+            variant="secondary"
             onClick={() => handleOpenChange(false)}
             disabled={loading}
           >
             Cancel
-          </ActionButton>
-          <ActionButton
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => onConfirm(primaryId)}
             loading={loading}
-            loadingText="Grouping..."
             disabled={!primaryId}
           >
-            Create Group
-          </ActionButton>
+            {loading ? 'Grouping...' : 'Create Group'}
+          </Button>
         </div>
 
         {allImages.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No images to group
-          </p>
+          <p className={styles.empty}>No images to group</p>
         ) : (
           <ImageGrid size="sm">
             {allImages.map((item) => (
@@ -125,9 +123,11 @@ export function GroupPickerDialog({
                 status="complete"
                 compact
                 selected={primaryId === item.id}
-                selectedClassName="ring-2 ring-inset ring-primary border-primary"
+                selectedClassName={styles.thumbSelected}
                 objectFit="cover"
-                className={primaryId !== item.id ? 'opacity-30' : undefined}
+                className={
+                  primaryId !== item.id ? styles.thumbDimmed : undefined
+                }
                 onClick={() => {
                   if (!loading) setPrimaryId(item.id)
                 }}

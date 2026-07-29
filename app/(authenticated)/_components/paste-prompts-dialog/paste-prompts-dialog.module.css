@@ -1,0 +1,22 @@
+.popup {
+  max-width: 28rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.textarea {
+  font-size: var(--text-xs);
+}
+
+.count {
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
+.submit {
+  width: 100%;
+}

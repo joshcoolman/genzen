@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
-import { DialogHeader, DialogTitle } from '../ui/dialog/dialog'
+import { DialogTitle } from '../ui/dialog/dialog'
+import styles from './mobile-dialog-header.module.css'
 
 interface MobileDialogHeaderProps {
   title: string
@@ -7,25 +8,37 @@ interface MobileDialogHeaderProps {
 }
 
 /**
- * Standardized header for full-screen mobile dialogs
- * Sticky header with title (left) and close button (right)
+ * The app bar for a full-screen mobile dialog: title left, close right, sticky
+ * to the top of a scrolling body.
+ *
+ * Deliberately not built on `DialogHeader`. That part is a stacked column for a
+ * title and its description; this is a horizontal bar, and overriding its
+ * `flex-direction` from a call-site class is exactly the module-vs-module
+ * ordering fight that made the Canvas badge render the wrong colour. A plain
+ * div wins by not entering it.
+ *
+ * The `DialogTitle` import still points at the shadcn dialog, and has to: that
+ * part is what wires the dialog's `aria-labelledby`, so it must come from
+ * whichever library owns the surrounding Dialog. Both consumers (images-page,
+ * edit-page) are still on the shadcn one, and a Base UI `Dialog.Title` inside a
+ * Radix Dialog has no context to attach to. That one line flips with them, in
+ * one commit, as cluster 5 of #193. Nothing else here depends on either library.
  */
 export function MobileDialogHeader({
   title,
   onClose,
 }: MobileDialogHeaderProps) {
   return (
-    <DialogHeader className="px-3 py-2.5 border-b border-border sticky top-0 bg-background z-10 flex-row items-center justify-between space-y-0 min-h-0">
-      <DialogTitle className="text-sm font-medium leading-none">
-        {title}
-      </DialogTitle>
+    <div className={styles.bar}>
+      <DialogTitle className={styles.title}>{title}</DialogTitle>
       <button
+        type="button"
         onClick={onClose}
-        className="flex h-6 w-6 items-center justify-center text-white hover:text-white/80 transition-colors -mr-1"
+        className={styles.close}
         aria-label="Close"
       >
-        <X className="h-5 w-5" />
+        <X className={styles.closeIcon} />
       </button>
-    </DialogHeader>
+    </div>
   )
 }

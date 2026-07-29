@@ -1,0 +1,28 @@
+.popup {
+  max-width: 42rem;
+  max-height: 80vh;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+.empty {
+  padding-block: var(--space-16);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* Was `ring-2 ring-inset ring-primary border-primary` -- an inset ring is a
+   box-shadow, and --primary here is the plain foreground, not the brand. */
+.thumbSelected {
+  box-shadow: inset 0 0 0 2px var(--text);
+  border-color: var(--text);
+}
+
+.thumbDimmed {
+  opacity: 0.3;
+}
