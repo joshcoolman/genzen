@@ -334,10 +334,22 @@
 
   /* ========================================
      BREAKPOINTS
-     Custom-property breakpoints cannot be used
-     in a media query; these are for reference and
-     for @theme, and media queries state the px.
+     Reference only. A custom property cannot be used in a media query, so
+     modules state the px directly -- these exist so everyone states the same
+     px. `xs` is genzen's own; the rest are Tailwind's, kept because the
+     modules were converted from them.
+
+       xs 400  sm 640  md 768  lg 1024  xl 1280  2xl 1536
+
+     Write them as `min-width` in px. Two modules currently say `48rem` and one
+     says `width >= 768px` for the same md breakpoint -- same result, three
+     spellings; fold them in when you next touch those files.
      ======================================== */
 
   --breakpoint-xs: 400px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
 }
