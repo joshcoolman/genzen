@@ -15,6 +15,8 @@ app/(authenticated)/<route>/
 ├── view.tsx              composes components; no className, no module
 ├── use-view.ts           the state view.tsx renders -- omit if there is none
 ├── _actions/             this route's own reads and writes
+├── _hooks/               every other hook -- appears only once there is one
+│   └── use-<subject>.ts
 └── _components/
     ├── <subject>/        <subject>.tsx + <subject>.module.css
     └── …
@@ -27,6 +29,18 @@ component, everywhere, no exceptions" does not reach them. State it as the
 category, never as an exception, or the next reader argues their component is
 special too.
 
+**`use-view.ts` stays bare; a second hook creates `_hooks/`** and takes that one
+and every one after it. The split is not arbitrary: `view.tsx` and `use-view.ts`
+are one thing cut in two, which is why they share a base name, and filing one of
+them away hides the pair — you would read the view and have to go looking for
+its state. Every other hook is a part, and parts live in folders, exactly as
+components do.
+
+Written when Edit reached six hooks. Activity, Trash and Account have one each
+and keep three bare files; they do not grow an empty folder for symmetry. The
+folder is earned the same way `features/` is, so its presence carries
+information: this route has state beyond its view.
+
 ## Rules
 
 - **`view.tsx` carries no styles.** No `className`, no module of its own. It is
@@ -37,9 +51,9 @@ special too.
   supplies the subject.
 - **The hook paired with `view.tsx` takes the same role name** — `use-view.ts`,
   always. The pair shares a base name because it is one thing split in two.
-- **Any other hook takes a subject name** — `use-generate.ts`, not
-  `use-canvas-generate.ts`. Same shape as components: one role-named wrapper,
-  subject-named parts.
+- **Any other hook takes a subject name and lives in `_hooks/`** —
+  `_hooks/use-generate.ts`, not `use-canvas-generate.ts`. Same shape as
+  components: one role-named wrapper, subject-named parts.
 - **A part takes a subject name, and a bare shape is not one.** `row`, `card`,
   `panel`, `list` need a subject; `totals`, `filters` already are one. Hence
   `run-row`, matching the existing `image-card` family.

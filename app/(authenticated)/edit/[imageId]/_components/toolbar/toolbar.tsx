@@ -12,9 +12,9 @@ import {
   Unlink,
 } from 'lucide-react'
 import { CircularIconButton } from '../circular-icon-button/circular-icon-button'
-import { THUMB_LABELS } from '../../use-prefs'
+import { THUMB_LABELS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
-import type { PrefsState } from '../../use-prefs'
+import type { PrefsState } from '../../_hooks/use-prefs'
 import { cx } from '#/lib/utils'
 
 export interface ToolbarProps {
