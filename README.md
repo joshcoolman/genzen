@@ -122,62 +122,49 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-28)
 
-- **Trash is converted, and it settled the seam (#185).** `page.tsx` is now a
-  server component that runs the read and hands the payload to `view.tsx` as
-  `initial` — bootsy's shape, written down in `docs/reference/route-shape.md`.
+- **Button and ConfirmDialog are ported from `~/repos/bootsy`, on Base UI.** No
+  shadcn, no Radix, CSS Modules. The Button brings a real `loading` state with
+  `aria-busy` and drives state off Base UI's `[data-disabled]`; the dialog gets
+  a focus trap, scroll lock and `initialFocus` on Cancel, so a reflexive Enter
+  cannot delete. The dialog's API is controlled, with a `useConfirm` hook giving
+  back the ergonomics: `if (await confirm({title, message})) onDelete(id)`.
+- **Porting is cheap; token _names_ are the cost.** Eight tokens came across
+  with bootsy's values. Two could not, and they are the ones to remember:
+  `--accent` means the brand colour there and a muted grey surface here, and the
+  `--space-*` scales collide outright — bootsy's is keyed by index (`--space-2`
+  is 8px), genzen's by pixel (`--space-2` _is_ 2px). A verbatim copy compiles,
+  renders at a quarter size, and nothing catches it.
+- **`ImageBox`, the first Base UI component here.** A square that shows an image
+  and owns its four states — loading, loaded, failed, no file. The last two did
+  not exist: a trashed image whose object had gone away used to show a skeleton
+  that pulsed forever, because nothing handled `onError`. Trash and Activity's
+  two thumbnails use it, which killed `Thumbnail`'s `layout="list"` branch: 45
+  lines and three props gone, 31 props down to 28.
+- **`src/components/` is flat again.** The `primitives/` staging folder had
+  started reading as "where the design system goes" — the drift the standard
+  forbids grouping-by-kind to prevent, and the second time it happened. Five
+  folders up one level; no call site changed, because everything imports through
+  the one barrel.
+- **Trash is converted, and it settled the seam (#185).** `page.tsx` is a server
+  component that runs the read and hands the payload to `view.tsx` as `initial`.
   The loading state stopped existing along with the empty first paint. The
-  407-line `TrashDisplay` became five subject-named parts (`image-row`,
-  `link-badge`, `empty-dialog`, `download-dialog`, `selection-bar`). Below the
-  header the page diffs at max 2/255; the header moved on purpose, adopting the
-  shared `PageHeader`.
-  The trap it cost: a module rule is **unlayered**, so it outranks every utility
-  it replaces and can override things that utility never could. `Button` sizes
-  its own svg, so the `h-3 w-3` on each icon was already dead — restating it in
-  a module would have shrunk icons the conversion was meant to leave alone.
-- **`ImageBox`, and Base UI is in the repo (#185).** A square that shows an
-  image and owns the four states it can be in — loading, loaded, failed, no
-  file. Built on Base UI's `Avatar`, the first Base UI component here and the
-  start of the migration off shadcn. It fixes a real bug: a trashed image whose
-  object has gone away used to show a skeleton that pulsed forever, because
-  nothing handled `onError`. Trash's row uses it, which made `Thumbnail`'s
-  `layout="list"` branch dead — 45 lines and three props (`layout`, `footer`,
-  `listImageClassName`) deleted, 31 props down to 28. Activity's two thumbnails
-  took it next, at 48px and 64px: four hand-rolled image boxes down to two call
-  sites, and three copies of a raw `hsl(0 0% 0%)` replaced by `--image-backing`.
-  Activity's reference strip wants a _fluid_ square and did not fit, which is
-  the primitive holding its shape rather than a gap to close.
-- **`ConfirmDialog` (#185).** Nine imports and ~28 lines of `AlertDialog`
-  nesting were repeated verbatim at five call sites, varying only in their
-  strings — three of them written during the Trash conversion itself. Now five
-  props, with the trigger as `children`. 162 lines out, 89 in. Sidebar keeps
-  composing by hand; it wraps its trigger in a Tooltip, and bending the
-  primitive for one case is how the last one reached 31 props.
-- **Account and Login are in the route shape too (#185).** Both were off
-  Tailwind but not in the shape, which made them a second dialect beside the
-  reference. Zero diff each. Login forced a fix to
-  `docs/reference/route-shape.md`: the tree listed a `view.module.css` the rules
-  forbade, and a frame that carries design (Login's centred column) becomes a
-  named component instead.
-- **Activity is the reference shape (#185).** `page.tsx` renders `view.tsx`,
-  which composes components and carries no styles of its own; `use-view.ts`
-  holds the state. Parts are named by subject (`run-row`, `totals`, `filters`),
-  never by route. Written down once in `docs/reference/route-shape.md` — copy
-  Activity, not an older route. Five primitives fell out of doing it, now flat
-  in `src/components/` alongside everything else.
-- **Activity is also simpler.** Model chips, the date filters, the stat grid and
-  the cost badge are gone; the log is windowed to the last three days that
-  produced runs, so the 5,000-row totals query went with them. What is left is a
-  title, a Models multi-select, a state filter and the table.
+  407-line `TrashDisplay` became six subject-named parts.
+- **Icons come from `lucide-react`** — rule now in `~/repos/project-standard`.
+  Five inline `<svg>` blocks turned out to be lucide path data pasted by hand.
+  One survives, and it is why the rule is worded as it is: a rectangle drawn at
+  the chosen aspect ratio, which no icon library has.
 
 **Up next**
 
-- **#185 — Pass 2: styling.** L0/L1 are in; conversion runs area by area to CSS
-  Modules, with Base UI replacing shadcn as each component is touched. Tailwind
-  comes out last (#186). Login, Settings, Account, Activity and Trash are done.
-  What is left is effectively one surface — `src/components/` + the Images
-  cluster in `_components/` + `/images`. 52 files still carry utility classes,
-  and the shared list components (`Thumbnail`, `ImageGrid`, `SelectionDrawer`)
-  are the knot in the middle of it: four routes render them.
+- **#191 — Trash to zero shadcn/Tailwind.** Dialog, Input, Tooltip, Badge, and
+  two of our own components still styled with utilities. Trash's own `.tsx`
+  files already carry no raw Tailwind — all of it is inherited through
+  `src/components/`. The issue carries the traps already paid for; read it
+  before starting rather than rediscovering them.
+- **#185 — Pass 2: styling.** Login, Settings, Account, Activity and Trash are
+  done. 52 files still carry utility classes, and the shared list components
+  (`Thumbnail`, `ImageGrid`, `SelectionDrawer`) are the knot in the middle:
+  four routes render them.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
