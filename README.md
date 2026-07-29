@@ -122,6 +122,13 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **#193 clusters 1-2, and two primitives deleted outright.** `ui/select` and
+  `ui/checkbox` had zero consumers — 218 lines and 2 of the 10 Radix imports
+  gone for no call-site churn. Six dialogs converted, none with a utility class
+  left. The survey had `mobile-dialog-header` as the blocking leaf; the
+  dependency runs the other way — `DialogTitle` wires `aria-labelledby`, so it
+  must come from whichever library owns the surrounding Dialog, and its
+  consumers are cluster 5. It flips with them, not before.
 - **Every toast in the app was invisible, and now isn't (#192).** `<Toaster />`
   was mounted nowhere, so six `toast(...)` calls ran correctly and painted
   nothing — including the canvas Undo affordance. Probably lost in the TanStack
@@ -152,19 +159,14 @@ Conventions follow `~/repos/project-standard`.
   `--space-*` scales collide outright — bootsy's is keyed by index (`--space-2`
   is 8px), genzen's by pixel (`--space-2` _is_ 2px). A verbatim copy compiles,
   renders at a quarter size, and nothing catches it.
-- **`ImageBox`, the first Base UI component here.** A square that shows an image
-  and owns its four states — loading, loaded, failed, no file. The last two did
-  not exist: a trashed image whose object had gone away used to show a skeleton
-  that pulsed forever, because nothing handled `onError`. Trash and Activity's
-  two thumbnails use it, which killed `Thumbnail`'s `layout="list"` branch: 45
-  lines and three props gone, 31 props down to 28.
 
 **Up next**
 
-- **#193 — Dialog app-wide, 19 consumers in six clusters.** Surveyed off the
-  back of #191: no consumer uses a Radix escape hatch our `DialogContent` lacks,
-  and the first four clusters are 11 of the 19 files with one real hazard
-  between them. The issue carries the ordering and the traps.
+- **#193 — Dialog app-wide.** Clusters 1-2 are done (6 of 19 files). Next is
+  cluster 3 — `generate-prompts`, `variation-prompts`, `failed-image-card` —
+  which settles the inner-scroll recipe. No consumer anywhere uses a Radix
+  escape hatch our `DialogContent` lacks; the issue carries the ordering and
+  the traps.
 - **#185 — Pass 2: styling.** Login, Settings, Account, Activity and Trash are
   done, and `ImageGrid` and `SelectionDrawer` went with Trash. `Thumbnail` is
   the shared component still on utilities.
