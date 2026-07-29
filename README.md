@@ -119,13 +119,14 @@ to the browser.
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow `~/repos/project-standard`.
 
-**Last shipped** (2026-07-28)
+**Last shipped** (2026-07-29)
 
-- **shadcn and Radix are out of the app (#193).** `src/components/ui/` is one
-  folder — `command`, which is cmdk. Dialog, Sheet, AlertDialog and Button are
-  ours on Base UI, and `radix-ui` is uninstalled. `ui/command` was never the
-  blocker it was filed as: cmdk is not Radix, and its only tie to the old
-  primitive was one `DialogContent` import.
+- **`src/components/ui/` is gone entirely.** The Cmd+K Spotlight was never used,
+  so deleting it took `cmdk` — the last thing in `ui/` — with it. The AD panel's
+  Agent Skills popover used the command primitives for nothing (four skills, and
+  the search input only mounts at six), so it is four buttons now. Closes #195.
+- **shadcn and Radix are out of the app (#193).** Dialog, Sheet, AlertDialog and
+  Button are ours on Base UI, and `radix-ui` is uninstalled.
 - **The rule the whole conversion came down to: a property the call site sets is
   a custom property, not a class it re-declares.** Two CSS modules setting
   `max-width` on one element race on bundle order. `DialogContent` takes
@@ -152,10 +153,10 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- **#185 — what's left of the styling pass is routes, not components.** 60-odd
-  `.tsx` files still carry utility classes; the primitives underneath them are
-  all ours now. `ui/command` and `Thumbnail` are the two that convert with their
-  own consumers rather than ahead of them.
+- **#185 — all that is left is utility classes.** 36 `.tsx` files: 16 in
+  `src/components/`, 16 in `app/(authenticated)/_components/`, and the edit,
+  images and canvas routes. Every primitive underneath them is already ours.
+  Then #186 removes Tailwind itself.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write. Wants #189 first.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764

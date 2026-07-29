@@ -16,7 +16,7 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix
 - `src/components/` -- primitives, one folder per component, imported from the
   single root barrel `#/components`. Hand-rolled or on Base UI; there is no
-  shadcn set left, and no Radix. `ui/command` is the one holdout (cmdk)
+  shadcn set left, no `ui/` folder, and no Radix
 - `migrations/` -- numbered SQL migrations, applied by `pnpm db:migrate`
 
 ## Services
@@ -59,7 +59,7 @@ live with the one route that renders them:
 | ---------- | ---------------------------------------------------------------------------------------------- |
 | Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                              |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                               |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, spotlight, status bar |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, status bar |
 
 ## Git workflow
 
