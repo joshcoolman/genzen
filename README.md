@@ -188,7 +188,11 @@ Ordered:
 3. **#207 — origin as a column.** `upload | images | canvas`, three values by
    declaration — an upload is an upload, but a canvas _generation_ is different
    because the canvas supplied the request. Plus the browse filter (default to
-   generations) and the unpinned-generator toolbar bug.
+   generations) and the unpinned-generator toolbar bug. **Talk this one through
+   before starting** — the column and backfill are settled, but the filter's
+   scope moved three times and whether `canvas` carries a canvas id is still
+   open. See the check-in note on the issue. The rest of the pass is
+   unambiguous enough to just execute.
 4. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
