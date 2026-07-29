@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Check, ImageIcon } from 'lucide-react'
-import { Button } from '../ui/button/button'
+import { Button } from '../button/button'
 import { Thumbnail } from '../thumbnail/thumbnail'
 import { ImageGrid } from '../image-grid/image-grid'
 import {
@@ -10,7 +10,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog/dialog'
+} from '../dialog/dialog'
+import styles from './library-picker-dialog.module.css'
 import type { SelectedImage } from './library-picker-button'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
@@ -119,15 +120,16 @@ export function LibraryPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="flex flex-col"
-        style={{ width: '66vw', maxWidth: '66vw', maxHeight: '80vh' }}
-      >
+      <DialogContent size="wide" className={styles.popup}>
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className={styles.headerRow}>
             <DialogTitle>Library</DialogTitle>
             {multiple && selectedIds.size > 0 && (
-              <Button size="sm" onClick={handleConfirmMultiple}>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleConfirmMultiple}
+              >
                 Add {selectedIds.size} image
                 {selectedIds.size !== 1 ? 's' : ''}
               </Button>
@@ -135,31 +137,26 @@ export function LibraryPickerDialog({
           </div>
         </DialogHeader>
 
-        <div className="flex gap-2">
+        <div className={styles.filters}>
           {filterButtons.map((btn) => (
             <button
               key={btn.value}
+              type="button"
               onClick={() => setSourceFilter(btn.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                sourceFilter === btn.value
-                  ? 'bg-accent-brand text-black'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
+              className={`${styles.filter} ${sourceFilter === btn.value ? styles.filterSelected : ''}`}
             >
               {btn.label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+        <div className={styles.grid}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              Loading images...
-            </div>
+            <div className={styles.state}>Loading images...</div>
           ) : filteredImages.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              <div className="text-center space-y-2">
-                <ImageIcon className="size-8 mx-auto opacity-50" />
+            <div className={styles.state}>
+              <div className={styles.empty}>
+                <ImageIcon className={styles.emptyIcon} />
                 <p>No images in your library yet</p>
               </div>
             </div>
@@ -186,13 +183,9 @@ export function LibraryPickerDialog({
                     imageOverlay={
                       multiple ? (
                         <div
-                          className={`absolute top-2 right-2 size-5 rounded border flex items-center justify-center transition-colors ${
-                            isSelected
-                              ? 'bg-accent-brand border-accent-brand text-black'
-                              : 'bg-background/80 border-border'
-                          }`}
+                          className={`${styles.checkbox} ${isSelected ? styles.checkboxSelected : ''}`}
                         >
-                          {isSelected && <Check className="size-3" />}
+                          {isSelected && <Check />}
                         </div>
                       ) : undefined
                     }

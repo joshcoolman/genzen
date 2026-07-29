@@ -56,6 +56,12 @@ export interface DialogContentProps {
   /** @default true */
   showCloseButton?: boolean
   /**
+   * `wide` sizes off the viewport (66vw x 80vh) instead of off content -- for
+   * dialogs that are a grid, where the default 32rem shows two thumbnails.
+   * @default 'default'
+   */
+  size?: 'default' | 'wide'
+  /**
    * Where focus lands on open. Point it at the safe control when the dialog
    * can destroy something -- `ConfirmDialog` focuses Cancel for exactly that.
    */
@@ -66,6 +72,7 @@ export function DialogContent({
   children,
   className,
   showCloseButton = true,
+  size = 'default',
   initialFocus,
 }: DialogContentProps) {
   return (
@@ -74,7 +81,7 @@ export function DialogContent({
       <BaseDialog.Viewport className={styles.viewport}>
         <BaseDialog.Popup
           initialFocus={initialFocus}
-          className={`${styles.popup} ${className ?? ''}`}
+          className={`${styles.popup} ${size === 'wide' ? styles.wide : ''} ${className ?? ''}`}
         >
           {children}
           {showCloseButton && (

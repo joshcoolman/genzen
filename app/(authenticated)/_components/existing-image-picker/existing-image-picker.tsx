@@ -2,18 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Upload } from 'lucide-react'
+import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
 import { processAndUploadFiles } from '#/features/user-images/lib/process-files'
+import { ImageGrid, Thumbnail } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button } from '#/components/button/button'
 import {
-  ActionButton,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  ImageGrid,
-  Thumbnail,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 
@@ -161,24 +163,18 @@ export function ExistingImagePicker({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        className="flex flex-col"
-        style={{ width: '66vw', maxWidth: '66vw', maxHeight: '80vh' }}
-      >
+      <DialogContent size="wide" className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Select from Library</DialogTitle>
         </DialogHeader>
 
-        <div className="flex items-center gap-2">
+        <div className={styles.filters}>
           {filterButtons.map((btn) => (
             <button
               key={btn.value}
+              type="button"
               onClick={() => setSourceFilter(btn.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                sourceFilter === btn.value
-                  ? 'bg-accent-brand text-black'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
+              className={`${styles.filter} ${sourceFilter === btn.value ? styles.filterSelected : ''}`}
             >
               {btn.label}
             </button>
@@ -189,40 +185,34 @@ export function ExistingImagePicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="ml-auto flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                className={styles.upload}
                 title="Upload image"
               >
-                <Upload className="h-3.5 w-3.5" />
+                <Upload />
               </button>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
-                className="hidden"
+                className={styles.fileInput}
                 onChange={handleFileChange}
               />
             </>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+        <div className={styles.grid}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              Loading images...
-            </div>
+            <div className={styles.state}>Loading images...</div>
           ) : filteredImages.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              No images found
-            </div>
+            <div className={styles.state}>No images found</div>
           ) : (
             <>
               {alreadyCollectedImages.length > 0 && (
                 <>
-                  <div className="mb-2">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Already collected
-                    </p>
+                  <div className={styles.collected}>
+                    <p className={styles.collectedLabel}>Already collected</p>
                     <ImageGrid size="md">
                       {alreadyCollectedImages.map((image) => (
                         <Thumbnail
@@ -234,7 +224,7 @@ export function ExistingImagePicker({
                       ))}
                     </ImageGrid>
                   </div>
-                  <hr className="border-border my-3" />
+                  <hr className={styles.divider} />
                 </>
               )}
               <ImageGrid size="md">
@@ -255,8 +245,8 @@ export function ExistingImagePicker({
                       }
                       imageOverlay={
                         isSelected ? (
-                          <div className="absolute top-1 right-1 rounded-full bg-accent-brand p-0.5">
-                            <Check className="size-3 text-black" />
+                          <div className={styles.check}>
+                            <Check />
                           </div>
                         ) : undefined
                       }
@@ -268,19 +258,20 @@ export function ExistingImagePicker({
           )}
         </div>
 
-        <DialogFooter className="shrink-0 border-t border-border pt-4">
-          <div className="flex items-center gap-3">
+        <DialogFooter className={styles.footer}>
+          <div className={styles.footerInner}>
             {max !== undefined && (
-              <span className="text-xs text-muted-foreground">
+              <span className={styles.count}>
                 {selectedIds.size}/{max} selected
               </span>
             )}
-            <ActionButton
+            <Button
+              variant="primary"
               onClick={handleConfirm}
               disabled={selectedIds.size === 0}
             >
               Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
-            </ActionButton>
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

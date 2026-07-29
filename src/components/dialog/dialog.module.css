@@ -57,6 +57,16 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* `size="wide"`. A picker is sized off the viewport rather than off its content
+   -- it is a grid of thumbnails, and 32rem shows two of them. Both pickers had
+   this as an inline `style`, which the new DialogContent rejects at the type
+   level; it lives here so the next one does not reinvent the numbers. */
+.wide {
+  width: 66vw;
+  --dialog-max-width: 66vw;
+  --dialog-max-height: 80vh;
+}
+
 .header {
   display: flex;
   flex-direction: column;
