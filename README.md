@@ -227,6 +227,12 @@ waiting. The prompts table gets pulled forward when #213 needs a real index.
 
 Also open, unsequenced:
 
+- **#214 — Retry drops the focus image.** A failed generation should re-send
+  exactly what was sent; retry ignores `source_image_id` entirely and hands
+  `source_image_url` to FAL as a URL, which cannot work locally. References
+  already replay correctly. The pasted-source case is a decision (persist the
+  bytes as a library row, or refuse honestly), so this may land **behind** #211,
+  #207 and #212 rather than before them.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write. Downstream of #212,
   which changes what the server write is.
