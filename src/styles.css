@@ -1,86 +1,8 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
-/* L0. Must follow tailwindcss so :root wins over its default theme values.
-   L1 (styles/base.css) is authored but not imported -- Preflight still owns
-   the reset; #186 swaps them. */
+/* L0 tokens, then L1 reset. Order matters: tokens must be defined before the
+   reset reads them. Tailwind and its Preflight were removed in #186; base.css
+   is the reset now. */
 @import './styles/tokens.css';
-
-@theme inline {
-  --breakpoint-xs: 400px;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar-bg);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-accent-brand: var(--accent-brand);
-  --color-accent-brand-hover: var(--accent-brand-hover);
-  --color-accent-sage: var(--accent-sage);
-  --color-accent-sage-hover: var(--accent-sage-hover);
-  --color-sidebar-text: var(--sidebar-text);
-  --color-sidebar-hover: var(--sidebar-hover);
-  --color-sidebar-hover-text: var(--sidebar-hover-text);
-  --color-sidebar-selected: var(--sidebar-selected);
-  --color-sidebar-selected-text: var(--sidebar-selected-text);
-  --color-warm-gold: var(--warm-gold);
-  --color-primary-dark: var(--primary-dark);
-  --color-primary-light: var(--primary-light);
-}
-
-/* Every token now lives in styles/tokens.css (L0). Nothing below names a
-   color; the @theme block above only maps token names onto Tailwind's. */
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-    font-family:
-      'Noto Sans',
-      system-ui,
-      -apple-system,
-      sans-serif;
-  }
-  h1,
-  h2,
-  h3,
-  h4 {
-    @apply text-foreground;
-  }
-}
+@import './styles/base.css';
 
 /* Prose styles for markdown docs */
 .prose {
@@ -183,13 +105,4 @@
 .prose th {
   background: var(--card);
   font-weight: 600;
-}
-
-/* Prevent iOS Safari auto-zoom on input focus */
-@media screen and (max-width: 767px) {
-  input,
-  textarea,
-  select {
-    font-size: max(16px, 1rem) !important;
-  }
 }

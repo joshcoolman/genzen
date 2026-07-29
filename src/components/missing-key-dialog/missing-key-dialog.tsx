@@ -79,13 +79,6 @@ export function MissingKeyProvider({ children }: { children: ReactNode }) {
               restart the dev server:
             </p>
             <pre className={styles.envVar}>{missing?.envVar}=...</pre>
-            {missing?.provider === 'anthropic' && (
-              <p className={styles.note}>
-                The key you may have entered in the AD panel is a separate,
-                browser-only key — it is deliberately never sent to the server,
-                so it can't be used here.
-              </p>
-            )}
           </div>
 
           <div className={styles.footer}>

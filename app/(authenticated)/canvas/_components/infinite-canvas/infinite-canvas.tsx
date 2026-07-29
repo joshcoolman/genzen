@@ -1542,7 +1542,7 @@ export function InfiniteCanvas({
                 top: transform.y + (img.y + img.height / 2) * transform.scale,
               }}
             >
-              <div className="size-6 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
+              <div className={styles.pendingSpinner} />
               {img.model && transform.scale > 0.1 && (
                 <span className={styles.pendingModel}>
                   {getModelName(img.model)}

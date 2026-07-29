@@ -31,5 +31,5 @@ well, durable state so nothing is lost when the tab closes. Its sibling
 ## The surface
 
 Six screens and nothing else — Images, Canvas, Activity, Trash, Settings,
-Account — plus the AD assistant panel. If something does not serve generating
-and keeping images, it was cut on purpose.
+Account. If something does not serve generating and keeping images, it was cut
+on purpose.

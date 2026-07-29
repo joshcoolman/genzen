@@ -2,7 +2,6 @@
 
 import { useParams, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useADContext } from './_hooks/use-ad-context'
 import { useDownloads } from './_hooks/use-downloads'
 import { useEditPage } from './_hooks/use-edit-page'
 import { usePanel } from './_hooks/use-panel'
@@ -12,14 +11,12 @@ import type { LightboxImage } from '#/components'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { useSelection } from '#/lib/use-selection'
 import { getR2PublicUrl } from '#/lib/image-storage'
-import { useADOpen } from '#/lib/use-ad-open'
 
 export function useView() {
   const { imageId } = useParams<{ imageId: string }>()
   const initialSourceId = useSearchParams().get('sourceId') ?? undefined
 
   const isMobile = useIsMobile()
-  const { isOpen: isADOpen } = useADOpen()
   const panel = usePanel()
   const prefs = usePrefs()
   const downloads = useDownloads()
@@ -31,15 +28,6 @@ export function useView() {
   const selectionActive = selection.count > 0
 
   const page = useEditPage(imageId, selection.selectedIds)
-
-  useADContext({
-    sourceImageMeta: page.sourceImageMeta,
-    generator: page.generator,
-    modelSelector: page.modelSelector,
-    chainImageCount: page.chainImages.length,
-    activeSourceId: page.activeSourceId,
-    isChained: page.isChained,
-  })
 
   const [refPickerOpen, setRefPickerOpen] = useState(false)
   const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
@@ -176,17 +164,14 @@ export function useView() {
       setLightboxIndex(lightboxIndex - 1)
   }, [lightboxIndex, lightboxImages, page.results.deleteResult])
 
-  // 20rem per docked panel: the generator when pinned, the AD when open, and
-  // neither docks on mobile.
-  const docked = ((!isMobile && panel.pinned ? 1 : 0) +
-    (!isMobile && isADOpen ? 1 : 0)) as 0 | 1 | 2
+  // The generator docks at 20rem when pinned, and never on mobile.
+  const docked = !isMobile && panel.pinned
 
   return {
     imageId,
     page,
     images,
     isMobile,
-    isADOpen,
     docked,
     panel,
     prefs,

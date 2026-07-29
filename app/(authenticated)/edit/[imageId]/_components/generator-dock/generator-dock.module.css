@@ -12,12 +12,6 @@
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
-/* The AD owns the rightmost 20rem when it is open, so the dock slides inboard
-   of it rather than under it. */
-.besideAD {
-  right: 20rem;
-}
-
 .floating {
   box-shadow: var(--shadow-xl);
 }

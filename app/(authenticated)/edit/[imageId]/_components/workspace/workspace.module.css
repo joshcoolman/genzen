@@ -1,15 +1,10 @@
-/* Docking arithmetic, shared with the Images route: 20rem clears one panel,
-   40rem clears the generator and the AD together. Panel widths, not spacing,
-   so no token. */
+/* Docking arithmetic, shared with the Images route: 20rem clears the docked
+   generator. A panel width, not spacing, so no token. */
 
 .root {
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
-.docked1 {
+.docked {
   margin-right: 20rem;
-}
-
-.docked2 {
-  margin-right: 40rem;
 }

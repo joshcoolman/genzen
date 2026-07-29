@@ -45,12 +45,10 @@ import {
 import { useImagesPage } from '#/features/ai-images/index'
 import { groupImages } from '#/features/ai-images/server/group-images.server'
 import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
-import { useAiImagesADContext } from '#/features/ai-images/hooks/useAiImagesADContext'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
 import { listSubtreeStoragePaths } from '#/features/ai-images/server/gallery.actions'
 import { createImageStorage } from '#/lib/image-storage'
 import { useSelection } from '#/lib/use-selection'
-import { useADOpen } from '#/lib/use-ad-open'
 import { cx } from '#/lib/utils'
 
 const THUMB_SIZES = ['lg', 'md', 'sm'] as const
@@ -97,7 +95,6 @@ function storePrefs(partial: Partial<ImagesPrefs>) {
 export function ImagesPage() {
   const page = useImagesPage()
   const router = useRouter()
-  useAiImagesADContext(page)
   const { upload } = useImageUpload(page.userId)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -117,7 +114,6 @@ export function ImagesPage() {
 
   // Force lg thumb size on mobile (<400px)
   const isMobile = useIsMobile()
-  const { isOpen: isADOpen } = useADOpen()
   const effectiveThumbSize = isMobile ? 'lg' : thumbSize
 
   const handleToggleThumbSize = () => {
@@ -572,13 +568,7 @@ export function ImagesPage() {
     <div
       className={cx(
         styles.page,
-        generatorOpen && panelPinned && !isADOpen && styles.pagePushed,
-        generatorOpen &&
-          panelPinned &&
-          isADOpen &&
-          !isMobile &&
-          styles.pagePushedBoth,
-        !panelPinned && isADOpen && !isMobile && styles.pagePushed,
+        generatorOpen && panelPinned && styles.pagePushed,
       )}
     >
       <div className={styles.body}>
@@ -754,11 +744,7 @@ export function ImagesPage() {
           {/* Right sidebar generator panel */}
           {generatorOpen && (
             <div
-              className={cx(
-                styles.panel,
-                isADOpen && styles.panelBesideAD,
-                !panelPinned && styles.panelFloating,
-              )}
+              className={cx(styles.panel, !panelPinned && styles.panelFloating)}
             >
               <div className={styles.panelHeader}>
                 <span className={styles.panelTitle}>Generate</span>

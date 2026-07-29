@@ -11,11 +11,10 @@ const nextConfig: NextConfig = {
     VITE_R2_PUBLIC_URL: process.env.VITE_R2_PUBLIC_URL,
     VITE_ENABLE_FAL_WEBHOOKS: process.env.VITE_ENABLE_FAL_WEBHOOKS,
   },
-  // The AD skills library is authored as markdown in src/lib/prompts/skills/
-  // and read into the client bundle as text. Vite did this with
-  // import.meta.glob('*.md', { query: '?raw' }); Turbopack needs an explicit
-  // loader. The .md files stay the source of truth -- they are prompt-craft
-  // material a human edits, not generated code.
+  // Prompt-craft in src/lib/prompts/ is authored as markdown and imported as
+  // text. Vite did this with import.meta.glob('*.md', { query: '?raw' });
+  // Turbopack needs an explicit loader. The .md files stay the source of
+  // truth -- they are material a human edits, not generated code.
   turbopack: {
     rules: {
       '*.md': { loaders: ['raw-loader'], as: '*.js' },

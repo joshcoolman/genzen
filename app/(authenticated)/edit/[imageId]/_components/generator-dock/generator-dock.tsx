@@ -22,7 +22,6 @@ export interface GeneratorDockProps extends Pick<
   onOpenChange: (open: boolean) => void
   pinned: boolean
   onTogglePin: () => void
-  adOpen: boolean
   variationsLoading: boolean
   onOpenVariations: () => void
 }
@@ -36,7 +35,6 @@ export function GeneratorDock({
   onOpenChange,
   pinned,
   onTogglePin,
-  adOpen,
   variationsLoading,
   onOpenVariations,
   ...panel
@@ -70,13 +68,7 @@ export function GeneratorDock({
   }
 
   return (
-    <div
-      className={cx(
-        styles.root,
-        adOpen && styles.besideAD,
-        !pinned && styles.floating,
-      )}
-    >
+    <div className={cx(styles.root, !pinned && styles.floating)}>
       <div className={styles.header}>
         <span className={styles.title}>Edit</span>
         <div className={styles.headerActions}>

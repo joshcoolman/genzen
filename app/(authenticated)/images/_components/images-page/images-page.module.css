@@ -24,9 +24,9 @@
 }
 
 /* ---- page shell ----
-   The content shifts left for whatever is docked on the right: the generator
-   panel, the AD panel, or both. 20rem each, so the both case is 40rem.
-   No spacing token goes that far -- these are panel widths, not spacing. */
+   The content shifts left for the docked generator panel. 20rem is the panel's
+   own width -- no spacing token goes that far, and it is a panel width, not
+   spacing. */
 
 .page {
   transition: all var(--duration-slow) var(--ease-in-out);
@@ -34,10 +34,6 @@
 
 .pagePushed {
   margin-right: 20rem;
-}
-
-.pagePushedBoth {
-  margin-right: 40rem;
 }
 
 .body > :where(*:not(:last-child)) {
@@ -181,11 +177,6 @@
   background: hsl(0 0% 0% / 0.9);
   backdrop-filter: blur(40px);
   transition: all var(--duration-slow) var(--ease-in-out);
-}
-
-/* Sits beside the AD panel rather than under it. */
-.panelBesideAD {
-  right: 20rem;
 }
 
 .panelFloating {

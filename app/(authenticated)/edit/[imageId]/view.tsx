@@ -81,7 +81,6 @@ export function View() {
         onOpenChange={v.panel.setOpen}
         pinned={v.panel.pinned}
         onTogglePin={v.panel.togglePinned}
-        adOpen={v.isADOpen}
         generator={page.generator}
         modelSelector={page.modelSelector}
         userImages={page.existingImages}

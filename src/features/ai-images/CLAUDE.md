@@ -38,7 +38,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `group-images.server.ts` -- group selected images under a new or existing parent
 - `ungroup-images.server.ts` -- ungroup images by removing parent association
 - `update-image-order.server.ts` -- reorder images via sort_order
-- `enhance-prompt.server.ts` -- LLM-powered prompt enhancement via Claude Sonnet; loads the `enhance-prompt` AD skill as its system prompt, shared with the AD panel's skill chip
+- `enhance-prompt.server.ts` -- LLM-powered prompt enhancement via Claude Sonnet; its system prompt is `src/lib/prompts/enhance-prompt.md`, imported as raw text
 
 ## Hooks
 
@@ -50,10 +50,9 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-edit-children.ts` -- edit children nested under parent cards. No database access and no realtime: the descendant walk is `edit.actions.ts`'s, and the parent list comes from the gallery, so a newly completed child appears when the gallery's poll picks it up
 - `use-reparent.ts` -- adopt/detach images between parents
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
-- `useAiImagesADContext.ts` -- registers Images context with AD system
 
-The edit route's own state and AD registration are **not here**. They have one
-consumer, so they live with it: `app/(authenticated)/edit/[imageId]/`.
+The edit route's own state is **not here**. It has one consumer, so it lives
+with it: `app/(authenticated)/edit/[imageId]/`.
 
 ## Routes and UI
 

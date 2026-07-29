@@ -1,5 +1,5 @@
-/* The frame every signed-in route renders inside: icon rail on the left, AD
-   panel on the right, content between them. */
+/* The frame every signed-in route renders inside: icon rail on the left,
+   content beside it. */
 
 .shell {
   display: flex;
@@ -38,13 +38,5 @@
 
   .main {
     margin-left: var(--space-64);
-  }
-
-  /* Pushed in by the AD panel -- only on the routes that do not manage their
-     own right margin. 20rem is the panel's own width; there is no spacing
-     token that large, and inventing one for a single layout would be worse
-     than stating it. */
-  .mainPushed {
-    margin-right: 20rem;
   }
 }

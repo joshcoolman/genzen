@@ -365,8 +365,6 @@ export function useGenerator({
           : typeof err === 'string'
             ? err
             : String(err)
-      // Keep page-level state (the AD context reads it) but also make sure the
-      // user actually sees it.
       setError(message)
       reportError(err, message)
     } finally {

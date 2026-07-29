@@ -1,12 +1,21 @@
 'use server'
 
 import { generateText } from 'ai'
+import enhancePromptSkill from '#/lib/prompts/enhance-prompt.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { getSkill } from '#/features/ad/skills/registry'
 
 interface EnhancePromptInput {
   prompt: string
+}
+
+/** The .md is prompt-craft a human edits, so it keeps the frontmatter block the
+ *  skills registry used to read. It is metadata, not instruction — strip it. */
+function stripFrontmatter(raw: string): string {
+  if (!raw.startsWith('---')) return raw.trim()
+  const end = raw.indexOf('\n---', 3)
+  if (end === -1) return raw.trim()
+  return raw.slice(end + 4).trim()
 }
 
 export async function enhancePrompt(data: EnhancePromptInput) {
@@ -18,17 +27,10 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     throw new Error('Prompt is empty — nothing to enhance.')
   }
 
-  const skill = getSkill('enhance-prompt')
-  if (!skill) {
-    throw new Error(
-      'Enhance Prompt skill not found in registry. Check src/lib/prompts/skills/enhance-prompt.md.',
-    )
-  }
-
   const response = await generateText({
     model: ai.reasoning,
     maxOutputTokens: 600,
-    system: skill.body,
+    system: stripFrontmatter(enhancePromptSkill),
     messages: [
       {
         role: 'user',

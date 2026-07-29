@@ -25,7 +25,7 @@ longer talks to the database.
 No dedicated route, and no components: this is a headless utility feature. Its
 hooks (`useUserImages`, `useImageUpload`, `useExistingImages`) and its
 upload/remove/thumbnail server actions are consumed by the ai-images, canvas and
-edit routes and by the AD panel. The library picker they all open is
+edit routes. The library picker they both open is
 `app/(authenticated)/_components/existing-image-picker/`.
 
 ## Shared Dependencies

@@ -33,7 +33,7 @@ optional keys (Anthropic, Google) are usually **empty** — the app
 runs fine without them, so a feature that needs one should fail loudly rather
 than assume it's there.
 
-- **Anthropic** (`ANTHROPIC_API_KEY`) — Claude. Server-side AND browser-stored BYOK for the AD panel (`useAnthropicKey`); either path is available.
+- **Anthropic** (`ANTHROPIC_API_KEY`) — Claude, server-side only. Prompt enhancement and variation prompts; there is no browser-held key.
 - **Google Gemini** (`GOOGLE_GENERATIVE_AI_API_KEY`) — vision only (Describe/Caption/shot lists) via `@ai-sdk/google`. There is no Google image-generation path; FAL is the only image provider.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Postgres** (`DATABASE_URL`) — the database, reached only through `sql` from `src/lib/server/db.server.ts`. There is no ORM and no query builder; server code writes SQL. There is also no RLS: `sql` connects as the owning role, so **every read and write carries an explicit `user_id` filter**, taken from `resolveAuth()` and never from the caller. Row shapes are `src/lib/types/db.ts`, paired with the select list in `src/lib/server/user-image-columns.server.ts` — a test fails if either drifts from `migrations/0001_init.sql`.
@@ -47,7 +47,6 @@ earned; see `docs/CODE-STANDARDS.md`.
 | Feature     | Description                                                    | CLAUDE.md                            |
 | ----------- | -------------------------------------------------------------- | ------------------------------------ |
 | activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
-| ad          | AI chat assistant sidebar with vision + tool calling           | `src/features/ad/CLAUDE.md`          |
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | auth        | Password verification + signed session cookie                  | `src/features/auth/CLAUDE.md`        |
 | user-images | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md` |

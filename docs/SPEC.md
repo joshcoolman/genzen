@@ -28,9 +28,6 @@ with its cost and duration.
 
 **Trash** — soft delete with recovery. Nothing is destroyed on the first action.
 
-**AD** — a chat assistant sidebar with vision and tool calling. Skills
-(`src/lib/prompts/skills/`) are prompt-craft presets it can launch.
-
 **MCP** — the same generation capability exposed to external Claude clients over
 `POST /api/mcp`, authenticated by a personal `gz_live_*` key.
 

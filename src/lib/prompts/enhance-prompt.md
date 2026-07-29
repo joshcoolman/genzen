@@ -80,26 +80,9 @@ Run the input through every step. Each step adds precision without diluting the 
 - **Describe what is present, never what is absent.** Diffusion models ignore negation. "Sharp focus throughout" not "no blur."
 - **Target length**: 40–120 words for the final prompt. Shorter for simple subjects, longer for dense multi-element scenes. Longer isn't better past ~120 words.
 
-## When launched directly (AD chip click, no prompt provided yet)
+## Deliverable
 
-If this skill was invoked from a fresh chip click with no prompt in context:
-
-- Ask: _"Paste the prompt you want to enhance, or describe the idea in a sentence or two. I'll run it through the 10-step pipeline."_
-- Wait for the user's input. Don't ask follow-up clarifying questions unless the input is genuinely unparseable — the pipeline handles ambiguity by filling in sensible defaults.
-- On the user's next message, run the full pipeline and deliver via `create_prompt_card`.
-
-## When called from the Images "Enhance" button (server-side, one-shot)
-
-If this skill is being invoked as a server function with the user's current prompt as input:
-
-- There is no conversation. Run the full pipeline on the given prompt and return _only_ the final enhanced prompt (step 9 output). No preamble, no explanation, no markdown formatting — just the prompt text, ready to drop back into the textarea.
-
-## Deliverable shape (AD chat context)
-
-Call `create_prompt_card` with:
-
-- `prompt`: the final enhanced prompt
-- `title`: a 2–5 word handle describing the scene
-- `tags`: 3–5 keywords (subject, style, mood, model hint if relevant)
-
-Provide one conversational sentence naming what you locked in — not a walkthrough of the 10 steps.
+There is no conversation. Run the full pipeline on the given prompt and return
+_only_ the final enhanced prompt (step 9 output) — no preamble, no explanation,
+no markdown formatting, just the prompt text, ready to drop back into the
+textarea.
