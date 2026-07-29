@@ -1,0 +1,127 @@
+/* The stack of prompt textareas, each with a clear/remove button top-right and
+   an Enhance chip bottom-right, plus the dashed row that adds more. */
+
+.root > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-8);
+}
+
+.clearAll {
+  border: none;
+  background: transparent;
+  font-size: var(--text-2xs);
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.clearAll:hover {
+  color: var(--foreground);
+}
+
+.clearAll:disabled {
+  opacity: 0.5;
+}
+
+.field {
+  position: relative;
+}
+
+/* 28px: clears the remove button so a long first line does not run under it.
+   Two call sites in one file -- not a scale, so not a token. */
+.textarea {
+  padding-right: 1.75rem;
+}
+
+.remove {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  padding: var(--space-2);
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.remove:hover {
+  color: var(--foreground);
+}
+
+.enhance {
+  position: absolute;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  font-size: var(--text-3xs);
+  color: var(--muted-foreground);
+  transition:
+    border-color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.enhance:hover {
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.enhance:disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.enhanceIcon {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.enhanceSpinner {
+  width: 0.625rem;
+  height: 0.625rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.action {
+  flex: 1;
+  padding-block: var(--space-6);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.action:hover {
+  color: var(--foreground);
+}
+
+.action:disabled {
+  opacity: 0.5;
+}
+
+/* Add prompt is the only button in the row when neither Paste nor Generate is
+   offered, and then it spans it. */
+.actionOnly {
+  width: 100%;
+  flex: none;
+}

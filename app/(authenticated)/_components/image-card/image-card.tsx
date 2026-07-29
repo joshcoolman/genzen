@@ -13,8 +13,10 @@ import {
   Trash2,
   Unlink,
 } from 'lucide-react'
+import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
+import { cx } from '#/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +89,7 @@ export function ImageCard({
       <DropdownMenuTrigger
         render={
           <ExpandableIconButton
-            icon={<MoreHorizontal className="h-3.5 w-3.5" />}
+            icon={<MoreHorizontal className={styles.menuIcon} />}
             label="More actions"
           />
         }
@@ -95,19 +97,19 @@ export function ImageCard({
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         {onDownload && (
           <DropdownMenuItem onClick={() => onDownload(img)}>
-            <Download className="h-4 w-4" />
+            <Download className={styles.menuItemIcon} />
             Download
           </DropdownMenuItem>
         )}
         {onStartAdopt && (
           <DropdownMenuItem onClick={() => onStartAdopt(img)}>
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowUpRight className={styles.menuItemIcon} />
             Move
           </DropdownMenuItem>
         )}
         {hasChildren && onUngroup && (
           <DropdownMenuItem onClick={() => onUngroup(img)}>
-            <Unlink className="h-4 w-4" />
+            <Unlink className={styles.menuItemIcon} />
             Ungroup
           </DropdownMenuItem>
         )}
@@ -115,19 +117,19 @@ export function ImageCard({
           typeof (img.generation_metadata as Record<string, unknown> | null)
             ?.parent_id === 'string' && (
             <DropdownMenuItem onClick={() => onUnlink(img)}>
-              <Unlink className="h-4 w-4" />
+              <Unlink className={styles.menuItemIcon} />
               Unlink
             </DropdownMenuItem>
           )}
         {onDescribe && (
           <DropdownMenuItem onClick={() => onDescribe(img)}>
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className={styles.menuItemIcon} />
             Describe
           </DropdownMenuItem>
         )}
         {onGenerateVariations && img.status === 'completed' && (
           <DropdownMenuItem onClick={() => onGenerateVariations(img)}>
-            <Layers className="h-4 w-4" />
+            <Layers className={styles.menuItemIcon} />
             Generate Variations
           </DropdownMenuItem>
         )}
@@ -137,7 +139,7 @@ export function ImageCard({
 
   const rightButtons = onDelete ? (
     <ExpandableIconButton
-      icon={<Trash2 className="h-3.5 w-3.5" />}
+      icon={<Trash2 className={styles.actionIcon} />}
       label="Delete"
       variant="destructive"
       onClick={() => onDelete(img)}
@@ -154,9 +156,7 @@ export function ImageCard({
       alwaysShowOverlay
       selected={selected || (active && !selectionActive)}
       selectedClassName={
-        active && !selectionActive
-          ? 'border-primary ring-2 ring-primary shadow-lg shadow-primary/20'
-          : 'border-accent-brand ring-1 ring-accent-brand'
+        active && !selectionActive ? styles.activeTile : styles.selectedTile
       }
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : rightButtons}
@@ -165,9 +165,11 @@ export function ImageCard({
           <ExpandableIconButton
             icon={
               selected ? (
-                <CheckCircle2 className="h-4 w-4 text-accent-brand" />
+                <CheckCircle2
+                  className={cx(styles.selectIcon, styles.selectIconOn)}
+                />
               ) : (
-                <Circle className="h-4 w-4" />
+                <Circle className={styles.selectIcon} />
               )
             }
             label={selected ? 'Deselect' : 'Select'}
@@ -178,7 +180,7 @@ export function ImageCard({
       overlayActionsBottomRight={
         onGallery && !selectionActive ? (
           <ExpandableIconButton
-            icon={<Maximize2 className="h-3.5 w-3.5" />}
+            icon={<Maximize2 className={styles.actionIcon} />}
             label="View in lightbox"
             onClick={() => onGallery(img)}
           />
@@ -187,7 +189,7 @@ export function ImageCard({
       imageOverlay={
         selectionActive && onSelect ? (
           <div
-            className="absolute inset-0 z-10 cursor-pointer select-none"
+            className={styles.selectOverlay}
             onClick={(e) => {
               e.stopPropagation()
               onSelect(img.id, e.shiftKey)
@@ -209,9 +211,7 @@ export function ImageCard({
         <>
           {showInfo && (
             <>
-              <p className="truncate px-3 pt-2 text-xs font-medium text-foreground">
-                {img.title}
-              </p>
+              <p className={styles.title}>{img.title}</p>
               <ExpandableText
                 text={
                   img.description ??
@@ -222,49 +222,38 @@ export function ImageCard({
             </>
           )}
           {rootImageUrl && (
-            <div className="px-3 pb-3 flex items-center gap-2">
+            <div className={styles.original}>
               <img
                 src={rootImageUrl}
-                className="w-8 h-8 rounded object-cover border border-border"
+                className={styles.originalThumb}
                 alt="Original"
               />
-              <span className="text-[10px] text-muted-foreground">
-                Original
-              </span>
+              <span className={styles.originalLabel}>Original</span>
               {rootIsHidden && onRestore && (
-                <button
-                  onClick={onRestore}
-                  className="text-[10px] text-primary hover:underline ml-auto cursor-pointer"
-                >
+                <button onClick={onRestore} className={styles.restore}>
                   Restore
                 </button>
               )}
             </div>
           )}
           {editChildren && editChildren.length > 0 && (
-            <div className="px-1.5 pb-1.5">
-              <div className="flex flex-wrap gap-1">
-                {editChildren.map((child) => (
-                  <button
-                    key={child.id}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (onChildOpen) {
-                        onChildOpen(child.id, img)
-                      } else {
-                        router.push(`/edit/${img.id}?sourceId=${child.id}`)
-                      }
-                    }}
-                    className="w-10 h-10 rounded overflow-hidden border border-border hover:border-foreground/30 transition-colors cursor-pointer"
-                  >
-                    <img
-                      src={child.url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
+            <div className={styles.children}>
+              {editChildren.map((child) => (
+                <button
+                  key={child.id}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (onChildOpen) {
+                      onChildOpen(child.id, img)
+                    } else {
+                      router.push(`/edit/${img.id}?sourceId=${child.id}`)
+                    }
+                  }}
+                  className={styles.child}
+                >
+                  <img src={child.url} alt="" className={styles.childImage} />
+                </button>
+              ))}
             </div>
           )}
         </>

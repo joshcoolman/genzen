@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { Loader2, Sparkles, X } from 'lucide-react'
 import { GeneratePromptsDialog } from '../generate-prompts-dialog/generate-prompts-dialog'
 import { PastePromptsDialog } from '../paste-prompts-dialog/paste-prompts-dialog'
+import styles from './prompt-list.module.css'
 import { Textarea } from '#/components'
+import { cx } from '#/lib/utils'
 
 interface PromptListProps {
   prompts: Array<string>
@@ -53,13 +55,13 @@ export function PromptList({
   const hasContent =
     prompts.length > 1 || (prompts.length === 1 && prompts[0].trim() !== '')
   return (
-    <div className="space-y-2">
+    <div className={styles.root}>
       {onClearPrompts && hasContent && (
         <button
           type="button"
           onClick={onClearPrompts}
           disabled={disabled}
-          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          className={styles.clearAll}
         >
           Clear prompts
         </button>
@@ -74,7 +76,7 @@ export function PromptList({
           !disabled &&
           !anyEnhancing
         return (
-          <div key={index} className="relative">
+          <div key={index} className={styles.field}>
             <Textarea
               id={index === 0 ? 'prompt-textarea' : `prompt-textarea-${index}`}
               placeholder={
@@ -84,14 +86,14 @@ export function PromptList({
               onChange={(e) => onUpdatePrompt(index, e.target.value)}
               disabled={disabled || isEnhancing}
               rows={index === 0 ? 4 : 3}
-              className="pr-7"
+              className={styles.textarea}
             />
             {index === 0 ? (
               canClear && (
                 <button
                   type="button"
                   onClick={onClear}
-                  className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                  className={styles.remove}
                   title="Clear all prompts, source image, and references"
                 >
                   <X size={14} />
@@ -101,7 +103,7 @@ export function PromptList({
               <button
                 type="button"
                 onClick={() => onRemovePrompt(index)}
-                className="absolute top-1.5 right-1.5 p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                className={styles.remove}
                 title="Remove this prompt"
               >
                 <X size={14} />
@@ -117,16 +119,16 @@ export function PromptList({
                     ? 'Enter a prompt to enhance'
                     : 'Enhance prompt with AI'
                 }
-                className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-md border border-border/60 bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                className={styles.enhance}
               >
                 {isEnhancing ? (
                   <>
-                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    <Loader2 className={styles.enhanceSpinner} />
                     Enhancing…
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-2.5 w-2.5" />
+                    <Sparkles className={styles.enhanceIcon} />
                     Enhance
                   </>
                 )}
@@ -137,14 +139,17 @@ export function PromptList({
       })}
       <div
         className={
-          generatePromptsConfig || onPastePrompts ? 'flex gap-2' : undefined
+          generatePromptsConfig || onPastePrompts ? styles.actions : undefined
         }
       >
         <button
           type="button"
           onClick={onAddPrompt}
           disabled={disabled}
-          className={`py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50 ${generatePromptsConfig || onPastePrompts ? 'flex-1' : 'w-full'}`}
+          className={cx(
+            styles.action,
+            !generatePromptsConfig && !onPastePrompts && styles.actionOnly,
+          )}
         >
           + Add prompt
         </button>
@@ -153,7 +158,7 @@ export function PromptList({
             type="button"
             onClick={() => setPasteDialogOpen(true)}
             disabled={disabled}
-            className="flex-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50"
+            className={styles.action}
           >
             Paste Prompts
           </button>
@@ -163,7 +168,7 @@ export function PromptList({
             type="button"
             onClick={() => setDialogOpen(true)}
             disabled={disabled}
-            className="flex-1 py-1.5 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-md transition-colors disabled:opacity-50"
+            className={styles.action}
           >
             Generate prompts
           </button>
