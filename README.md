@@ -65,7 +65,7 @@ about it — that's the usual reason generation 401s.
 | Layer       | Tech                                                       |
 | ----------- | ---------------------------------------------------------- |
 | App         | Next.js App Router (React 19 + Turbopack)                  |
-| UI          | CSS Modules + Base UI; Tailwind v4 still on routes         |
+| UI          | CSS Modules + Base UI (Tailwind v4 on its way out, #186)   |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
 | Storage     | S3 — MinIO locally, Cloudflare R2 in prod                  |
@@ -121,6 +121,17 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **No `.tsx` in the app carries a utility class (#185)**, except
+  `infinite-canvas.tsx`, which is left for #189 rather than converted twice.
+  35 files: every `src/components/` primitive, all of the app chrome, the AD
+  panel, and the Images and Edit routes. Each area was diffed against a stashed
+  baseline at 1440×1600 — the largest surviving difference is 11 pixels of
+  antialiasing on /edit.
+- **Two bugs the conversion surfaced.** `ExpandableText` never clamped —
+  `line-clamp-${lines}` is an interpolated class Tailwind's scanner cannot see,
+  so no rule existed and every description rendered full-length. And
+  `space-y-*` is emitted inside `:where()`, so a child's own margin beats it;
+  converting it to a plain child selector inverts that and moved the sidebar.
 - **`src/components/ui/` is gone entirely.** The Cmd+K Spotlight was never used,
   so deleting it took `cmdk` — the last thing in `ui/` — with it. The AD panel's
   Agent Skills popover used the command primitives for nothing (four skills, and
@@ -134,18 +145,6 @@ Conventions follow `~/repos/project-standard`.
   `--dialog-padding` / `--dialog-title-color`; Sheet takes `--sheet-*`. Repeated
   _shapes_ became props rather than components — `size="wide"`,
   `size="fullscreen"`, and `ConfirmDialog`'s `choices`.
-- **The inner-scroll recipe, used five times:** `--dialog-overflow: hidden` on
-  the popup, then `overflow-y: auto` **and `min-height: 0`** on the scrolling
-  child. Without the min-height a flex item's minimum size is its content, so
-  the popup grows past its own max-height instead of the list scrolling.
-- **`autoFocus` inside a focus trap is a silent no-op.** The download-name field
-  would have come up unfocused with its Enter-to-download path unreachable.
-  Base UI wants the control named by ref (`initialFocus`).
-- **The component lane (#185) is done: `src/components/ui/` went 15 → 1.**
-  `skeleton`, `textarea`, `popover`, `dropdown-menu`, `badge`, `input`,
-  `tooltip`. A shared component that spreads `{...rest}` after its own
-  `className` is a landmine: Base UI's `render` passes one where Radix's
-  `asChild` never did.
 - **Every toast in the app was invisible, and now isn't (#192).** `<Toaster />`
   was mounted nowhere, so six `toast(...)` calls ran correctly and painted
   nothing — including the canvas Undo affordance. Mounting it exposed a second
@@ -153,14 +152,13 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- **#185 — all that is left is utility classes.** 36 `.tsx` files: 16 in
-  `src/components/`, 16 in `app/(authenticated)/_components/`, and the edit,
-  images and canvas routes. Every primitive underneath them is already ours.
-  Then #186 removes Tailwind itself.
+- **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
+  lines, and now the only `.tsx` still on utilities. It converts as part of the
+  refactor rather than before it.
+- **#186 — remove Tailwind.** Blocked only by canvas above and by
+  `src/styles.css` itself, which still owns Preflight and the `@theme` map.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write. Wants #189 first.
-- **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
-  lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 - **#195 — Spotlight offers a Docs route that was deleted.** One line.
