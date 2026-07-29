@@ -157,45 +157,56 @@ Conventions follow `~/repos/project-standard`.
   selection state set state every render — forever. The page rendered correctly
   while looping, which is why only the console caught it.
 
-**Up next**
+**Up next — #209, the data model conformance pass.** A deliberate pivot on
+2026-07-29. Canvas work is paused behind it.
 
-**#178 first, then #189's canvas half.** The order was reversed on 2026-07-29
-and the reasoning is a plan comment on #178. Short version: #178 moves canvas
-arrangement out of IndexedDB into Postgres and eventually retires `on_canvas`,
-which deletes the mount-time reconcile — so splitting canvas first means
-carefully extracting a `use-reconcile.ts` that is about to be thrown away.
-#178 is two phases (document to Postgres with `on_canvas` intact, then retire
-it); neither needs the split to have happened. Phase 1 also gives canvas the
-real #189 server seam for free.
+The component pass (#186, #187, #189) settled how the app is _built_. This is
+the same pass one layer down: how it **records what an image is**. Four facts
+with four different mutabilities are collapsed into one JSONB bag and one
+boolean — creation event (write-once), provenance (append-only), membership
+(mutable), prompt lineage (append-only). Almost none of it is new data; it is
+existing facts in the wrong shape, which is what separates this from
+speculative schema work.
 
-**#189 — Canvas, the other half**, after that.
+Read #209 for the four rules and the verification contract. Unlike the
+component pass, none of this is `git revert`-able, so every change is
+additive-then-subtractive and the drop is always its own late commit.
 
-`docs/reference/route-shape.md` is the contract. **Images is now the closest
-worked example of it** — a real view with dialogs, persisted prefs and a
-generator panel — and Trash is still the reference for the server seam.
+Ordered:
 
-`infinite-canvas.tsx` is 1,760 lines and `use-canvas-generate.ts` is 577. This
-is the actual monolith: pan/zoom, drag-move, marquee selection, undo/redo,
-paste/drop upload, context menu, library picker and the mount-time reconcile,
-in one component. Split by concern (viewport, selection, undo, ingest,
-reconcile), not by line count.
+1. **#210 — two active data losses.** Enhancing a prompt overwrites the
+   original; a base64 source image is recorded as `has_source_image: true`, a
+   boolean where an id belongs. The only items where waiting costs data.
+2. **#211 — the insert-path inventory.** Read-only audit of every path that
+   creates a `user_images` row. #207, #208 and #212 all depend on it; none is
+   estimable until it exists.
+3. **#207 — origin as a column.** `upload | images | canvas`, three values by
+   declaration. Additive, ships a filter, and proves the inventory.
+4. **#212 — canvas is a container, not a view.** `canvases` +
+   `canvas_images` with foreign keys, superseding #178. Ownership needs a
+   container; integrity needs the FK. Deletes the mount-time reconcile rather
+   than handling it, and makes the Trash-eviction bug undefinable instead of
+   unfixed.
+5. **#189 — the canvas half of the route split**, last, with the reconcile
+   already gone rather than carefully extracted and then deleted. `docs/reference/route-shape.md` is the contract and **Images is now the
+   closest worked example of it**; Trash is still the reference for the server
+   seam.
 
-While in there: unpinning the generator on Images hides the toolbar's own
-controls — the workspace stops being pushed, so the right-aligned tools end up
-under the floating panel. Predates #189 and is noted in `images/CLAUDE.md`.
+Deferred by decision, not oversight: **#208** (`image_edges`), a prompts table,
+any `collections` generalization, a keep/favourite signal, and anything that
+renders a graph. Each gets cheaper after #211; none gets more expensive by
+waiting.
 
-Then, in no fixed order:
+Also open, unsequenced:
 
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
-  not take, and `undo()` never reverses the server write.
-- **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
-  it belongs in Postgres now that there is a database the browser cannot reach.
+  not take, and `undo()` never reverses the server write. Downstream of #212,
+  which changes what the server write is.
 - **#188 — rewrite `docs/reference/architecture.md`.** It was waiting on #202,
   which is done.
-- **#207 / #208 — image origin and provenance.** Filed, not triaged. #208 is
-  not a reversal of #204: `source_image_id` and `root_image_id` are still
-  recorded on every generation, so it builds a graph over facts already there.
-  What #204 removed was `parent_id`, the mutable grouping parent.
+- Unpinning the generator on Images hides the toolbar's own controls — the
+  workspace stops being pushed, so the right-aligned tools end up under the
+  floating panel. Predates #189 and is noted in `images/CLAUDE.md`.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
 plus Account. No assistant, no grouping, no separate edit page. If something
