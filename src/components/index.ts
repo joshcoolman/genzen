@@ -13,6 +13,7 @@ export { useClipboardPaste } from './clipboard-paste-button/use-clipboard-paste'
 export {
   ConfirmDialog,
   type ConfirmDialogProps,
+  type ConfirmChoice,
 } from './confirm-dialog/confirm-dialog'
 export { useConfirm, type UseConfirm } from './confirm-dialog/use-confirm'
 export { CopyButton } from './copy-button/copy-button'
@@ -99,6 +100,5 @@ export {
 export { toast, Toaster } from './toast/toast'
 
 // shadcn primitives (#185 replaces these with Base UI, one component at a time)
-export * from './ui/alert-dialog/alert-dialog'
 export * from './ui/button/button'
 export * from './ui/command/command'

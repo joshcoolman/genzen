@@ -4,6 +4,15 @@ import { useRef } from 'react'
 import { AlertDialog } from '@base-ui/react/alert-dialog'
 import { Button } from '../button/button'
 import styles from './confirm-dialog.module.css'
+import type { ButtonVariant } from '../button/button'
+
+export interface ConfirmChoice {
+  label: string
+  onClick: () => void
+  /** @default 'secondary' */
+  variant?: ButtonVariant
+  disabled?: boolean
+}
 
 export interface ConfirmDialogProps {
   open: boolean
@@ -13,6 +22,13 @@ export interface ConfirmDialogProps {
   cancelLabel?: string
   /** When true, the confirm button is styled as a destructive action. Default true. */
   destructive?: boolean
+  /**
+   * Replaces the single confirm button with several. For questions that are a
+   * choice between outcomes rather than yes-or-no -- "delete just this, or all
+   * of them?" -- where forcing the shape into confirm/cancel loses the
+   * distinction. Cancel is still supplied, and still holds initial focus.
+   */
+  choices?: Array<ConfirmChoice>
   onConfirm: () => void
   /** Fired by the Cancel button, backdrop click, and Escape key. */
   onCancel: () => void
@@ -22,6 +38,11 @@ export interface ConfirmDialogProps {
  * "Are you sure?" -- a title, a line of copy, Cancel, and one confirming
  * action. Every confirmation in the app is this shape, which is why it is a
  * component and not markup.
+ *
+ * `choices` swaps the single action for several, for the questions that are a
+ * choice between outcomes rather than yes-or-no. Focus policy does not change:
+ * Cancel still holds it, which matters more with three destructive-ish buttons
+ * than with one.
  *
  * Ported from ~/repos/bootsy, minus the two extras genzen has no use for yet
  * (a "don't ask me again" checkbox, a preview thumbnail). Base UI's AlertDialog
@@ -49,6 +70,7 @@ export function ConfirmDialog({
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
   destructive = true,
+  choices,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -78,19 +100,40 @@ export function ConfirmDialog({
               </AlertDialog.Description>
             </div>
 
-            <div className={styles.footer}>
+            <div
+              className={`${styles.footer} ${choices ? styles.footerStacked : ''}`}
+            >
               <AlertDialog.Close
                 ref={cancelRef}
-                render={<Button variant="ghost" />}
+                render={
+                  <Button
+                    variant="ghost"
+                    className={choices ? styles.cancelLast : undefined}
+                  />
+                }
+                disabled={choices?.every((c) => c.disabled)}
               >
                 {cancelLabel}
               </AlertDialog.Close>
-              <Button
-                variant={destructive ? 'danger' : 'primary'}
-                onClick={onConfirm}
-              >
-                {confirmLabel}
-              </Button>
+              {choices ? (
+                choices.map((choice) => (
+                  <Button
+                    key={choice.label}
+                    variant={choice.variant ?? 'secondary'}
+                    disabled={choice.disabled}
+                    onClick={choice.onClick}
+                  >
+                    {choice.label}
+                  </Button>
+                ))
+              ) : (
+                <Button
+                  variant={destructive ? 'danger' : 'primary'}
+                  onClick={onConfirm}
+                >
+                  {confirmLabel}
+                </Button>
+              )}
             </div>
           </AlertDialog.Popup>
         </AlertDialog.Viewport>

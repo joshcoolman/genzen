@@ -31,15 +31,8 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Button,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -964,103 +957,70 @@ export function ImagesPage() {
         />
       )}
 
-      <AlertDialog
+      <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              This image has {childCount}{' '}
-              {childCount === 1 ? 'child' : 'children'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete just this image, or delete it along with all related
-              images?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteTarget) {
-                  void page.gallery.deleteAndDetachChildren(deleteTarget)
-                  setDeleteTarget(null)
-                }
-              }}
-            >
-              Keep all
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteTarget) {
-                  void page.gallery.deleteImage(deleteTarget)
-                  setDeleteTarget(null)
-                }
-              }}
-            >
-              Keep children
-            </AlertDialogAction>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deleteTarget) {
-                  void page.gallery.deleteImageWithDescendants(deleteTarget)
-                  setDeleteTarget(null)
-                }
-              }}
-            >
-              Delete all
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={`This image has ${childCount} ${childCount === 1 ? 'child' : 'children'}`}
+        message="Delete just this image, or delete it along with all related images?"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => setDeleteTarget(null)}
+        choices={[
+          {
+            label: 'Keep all',
+            onClick: () => {
+              if (deleteTarget) {
+                void page.gallery.deleteAndDetachChildren(deleteTarget)
+                setDeleteTarget(null)
+              }
+            },
+          },
+          {
+            label: 'Keep children',
+            onClick: () => {
+              if (deleteTarget) {
+                void page.gallery.deleteImage(deleteTarget)
+                setDeleteTarget(null)
+              }
+            },
+          },
+          {
+            label: 'Delete all',
+            variant: 'danger',
+            onClick: () => {
+              if (deleteTarget) {
+                void page.gallery.deleteImageWithDescendants(deleteTarget)
+                setDeleteTarget(null)
+              }
+            },
+          },
+        ]}
+      />
 
       {/* Batch delete confirmation for images with children */}
-      <AlertDialog
+      <ConfirmDialog
         open={batchDeleteOpen}
-        onOpenChange={(open) => {
-          if (!open) setBatchDeleteOpen(false)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete {selection.count} images? ({batchChildCount()} children
-              affected)
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Some selected images have children. Choose how to handle them.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBatchDeleting}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isBatchDeleting}
-              onClick={() => void executeBatchDelete('detach')}
-            >
-              Keep all
-            </AlertDialogAction>
-            <AlertDialogAction
-              disabled={isBatchDeleting}
-              onClick={() => void executeBatchDelete('smart')}
-            >
-              Keep children
-            </AlertDialogAction>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isBatchDeleting}
-              onClick={() => void executeBatchDelete('cascade')}
-            >
-              Delete all
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title={`Delete ${selection.count} images? (${batchChildCount()} children affected)`}
+        message="Some selected images have children. Choose how to handle them."
+        onCancel={() => setBatchDeleteOpen(false)}
+        onConfirm={() => setBatchDeleteOpen(false)}
+        choices={[
+          {
+            label: 'Keep all',
+            disabled: isBatchDeleting,
+            onClick: () => void executeBatchDelete('detach'),
+          },
+          {
+            label: 'Keep children',
+            disabled: isBatchDeleting,
+            onClick: () => void executeBatchDelete('smart'),
+          },
+          {
+            label: 'Delete all',
+            variant: 'danger',
+            disabled: isBatchDeleting,
+            onClick: () => void executeBatchDelete('cascade'),
+          },
+        ]}
+      />
     </div>
   )
 }

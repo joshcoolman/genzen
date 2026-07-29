@@ -70,3 +70,17 @@
   justify-content: flex-end;
   gap: var(--space-16);
 }
+
+/* With `choices`, the actions stack full width instead of sitting in a row:
+   three labels like "Keep all / Keep children / Delete all" are read, not
+   scanned, and a row of them turns into a puzzle. Cancel stays first in the
+   DOM -- it holds initial focus -- and moves to the bottom with `order`. */
+.footerStacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-8);
+}
+
+.cancelLast {
+  order: 1;
+}
