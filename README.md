@@ -123,6 +123,12 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **Tailwind is gone, and #187 closed with it.** The reset swap was the whole
+  job: dropping `@import 'tailwindcss'` took Preflight, so `styles/base.css`
+  switched on in the same commit. `src/styles.css` is two imports now. Also out:
+  `postcss.config.mjs`, `components.json`, `.cta.json`, and `cn()`. One utility
+  line had survived #185 — the canvas spinner — and is converted; the tree is
+  genuinely at zero.
 - **The Edit route has the route shape (#189).** `page.tsx` → `view.tsx` +
   `use-view.ts`, and the 677-line `edit-page.tsx` is five components and three
   subject-named hooks. The generator dock is the concrete win: the mobile
@@ -164,8 +170,6 @@ Conventions follow `~/repos/project-standard`.
   the quarter that raises structural questions rather than generating images.
 - **#189 — route shape for Images and Canvas.** Edit is out of scope now; it is
   being deleted rather than converted. Do the removals first.
-- **#186 — remove Tailwind.** Blocked by canvas and by `src/styles.css`, which
-  still owns Preflight and the `@theme` map.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
