@@ -1,11 +1,12 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 // The shape of `user_images` is asserted in three places that nothing forces to
-// agree: the table in `migrations/0001_init.sql`, the select list in
-// `user-image-columns.server.ts`, and `UserImageRow` in `#/lib/types/db`. Add a
-// column and you have to remember all three -- and the failure from forgetting
-// is a column that silently reads as `undefined` at runtime.
+// agree: the numbered migrations in `migrations/`, the select list in
+// `user-image-columns.server.ts`, and `UserImageRow` in `#/lib/types/db`. Add or
+// drop a column and you have to remember all three -- and the failure from
+// forgetting is a column that silently reads as `undefined` at runtime, or a
+// select list naming a column the table no longer has.
 //
 // This is the cheap version of what an ORM's generated types would give: parse
 // the three, compare the sets, fail loudly on a mismatch. It reads the files as
@@ -14,14 +15,20 @@ import { describe, expect, it } from 'vitest'
 const ROOT = new URL('../../../', import.meta.url)
 const read = (p: string) => readFileSync(new URL(p, ROOT), 'utf8')
 
-/** Column names in the `create table user_images (...)` block. */
+/** Columns `user_images` has after every migration has run: the `create table`
+ *  block, less anything a later migration dropped. */
 function migrationColumns(): Array<string> {
-  const sql = read('migrations/0001_init.sql')
-  const start = sql.indexOf('create table user_images (')
-  expect(start, 'user_images table not found in 0001_init.sql').toBeGreaterThan(
-    -1,
-  )
-  const body = sql.slice(start + 'create table user_images ('.length)
+  const files = readdirSync(new URL('migrations/', ROOT))
+    .filter((f) => f.endsWith('.sql'))
+    .sort()
+
+  const init = read(`migrations/${files[0]}`)
+  const start = init.indexOf('create table user_images (')
+  expect(
+    start,
+    'user_images table not found in the first migration',
+  ).toBeGreaterThan(-1)
+  const body = init.slice(start + 'create table user_images ('.length)
   const end = body.indexOf('\n);')
   const names = new Set<string>()
   for (const line of body.slice(0, end).split('\n')) {
@@ -29,6 +36,16 @@ function migrationColumns(): Array<string> {
     // Skip the trailing `constraint ...` entries, which are not columns.
     if (m?.[1] && m[1] !== 'constraint') names.add(m[1])
   }
+
+  for (const file of files.slice(1)) {
+    const sql = read(`migrations/${file}`)
+    for (const m of sql.matchAll(
+      /alter table user_images\s+drop column (?:if exists )?([a-z_]+)/g,
+    )) {
+      names.delete(m[1])
+    }
+  }
+
   return [...names].sort()
 }
 

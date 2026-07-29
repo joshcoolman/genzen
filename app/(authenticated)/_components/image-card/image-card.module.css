@@ -1,5 +1,5 @@
-/* Everything an ImageCard adds to a Thumbnail: the caption block, the
-   "Original" row for an edit or variation, and the strip of edit children. */
+/* Everything an ImageCard adds to a Thumbnail: the caption block and the two
+   "selected" looks. */
 
 /* The two "selected" looks Thumbnail defers to the call site. Active is the
    source image on the edit page -- a thicker ring and a lift; selected is a
@@ -52,65 +52,4 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.original {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: 0 var(--space-12) var(--space-12);
-}
-
-.originalThumb {
-  width: var(--space-32);
-  height: var(--space-32);
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  object-fit: cover;
-}
-
-.originalLabel {
-  font-size: var(--text-3xs);
-  color: var(--muted-foreground);
-}
-
-.restore {
-  margin-left: auto;
-  border: none;
-  background: transparent;
-  font-size: var(--text-3xs);
-  color: var(--primary);
-  cursor: pointer;
-}
-
-.restore:hover {
-  text-decoration: underline;
-}
-
-.children {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  padding: 0 var(--space-6) var(--space-6);
-}
-
-.child {
-  width: var(--space-40);
-  height: var(--space-40);
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 0.25rem;
-  background: transparent;
-  cursor: pointer;
-  transition: border-color var(--duration-normal) var(--ease-in-out);
-}
-
-.child:hover {
-  border-color: color-mix(in oklab, var(--foreground) 30%, transparent);
-}
-
-.childImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }

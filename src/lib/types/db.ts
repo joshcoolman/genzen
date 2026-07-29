@@ -44,7 +44,6 @@ export type UserImageRow = {
   idempotency_key: string | null
   color_palette: Json | null
   sort_order: number | null
-  hidden: boolean
   on_canvas: boolean
   /** timestamptz; selected as an ISO string. */
   deleted_at: string | null

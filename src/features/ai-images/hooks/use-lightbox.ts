@@ -2,14 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import { getR2PublicUrl } from '#/lib/image-storage'
 
 export interface LightboxItem {
   id: string
   title: string
-  isChild: boolean
-  parentId?: string
 }
 
 export interface LightboxState {
@@ -28,7 +25,6 @@ export interface LightboxState {
 export function useLightbox(
   completedImages: Array<SavedAiImage>,
   deleteImage?: (img: SavedAiImage) => Promise<void>,
-  editChildrenMap?: EditChildrenMap,
 ): LightboxState {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -37,37 +33,15 @@ export function useLightbox(
     const urls: Record<string, string> = {}
 
     for (const img of completedImages) {
-      flatItems.push({
-        id: img.id,
-        title: img.title,
-        isChild: false,
-      })
+      flatItems.push({ id: img.id, title: img.title })
       // Always use storage_path (full-res) for lightbox
       if (img.storage_path) {
         urls[img.id] = getR2PublicUrl(img.storage_path)
       }
-
-      const children = editChildrenMap?.[img.id]
-      if (children) {
-        for (const child of children) {
-          flatItems.push({
-            id: child.id,
-            title: img.title,
-            isChild: true,
-            parentId: img.id,
-          })
-          // Use storagePath (full-res) for children too
-          if (child.storagePath) {
-            urls[child.id] = getR2PublicUrl(child.storagePath)
-          } else if (child.url) {
-            urls[child.id] = child.url
-          }
-        }
-      }
     }
 
     return { items: flatItems, imageUrls: urls }
-  }, [completedImages, editChildrenMap])
+  }, [completedImages])
 
   function open(img: SavedAiImage | { id: string }) {
     const idx = items.findIndex((i) => i.id === img.id)

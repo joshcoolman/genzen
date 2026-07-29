@@ -35,8 +35,6 @@ interface ImageRowProps {
   hasSelection: boolean
   busy: boolean
   onCanvas: boolean
-  /** How many living images point at this one. 0 when nothing does. */
-  dependents: number
   onToggle: (id: string, shiftKey: boolean) => void
   onRestore: (id: string) => void
   onDelete: (id: string) => void
@@ -49,12 +47,11 @@ export function ImageRow({
   hasSelection,
   busy,
   onCanvas,
-  dependents,
   onToggle,
   onRestore,
   onDelete,
 }: ImageRowProps) {
-  const isLinked = onCanvas || dependents > 0
+  const isLinked = onCanvas
   const { confirm, dialogProps } = useConfirm()
 
   async function askThenDelete() {
@@ -86,10 +83,7 @@ export function ImageRow({
         <div className={styles.text}>
           <div className={styles.titleRow}>
             <p className={styles.title}>{image.title}</p>
-            {onCanvas && <LinkBadge kind="canvas" dependents={0} />}
-            {!onCanvas && dependents > 0 && (
-              <LinkBadge kind="linked" dependents={dependents} />
-            )}
+            {onCanvas && <LinkBadge />}
           </div>
           <p className={styles.meta}>
             {image.source === 'ai_generated' ? 'AI' : 'Upload'}

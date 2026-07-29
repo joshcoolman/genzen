@@ -5,34 +5,27 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  FolderInput,
-  Group,
   Info,
   LayoutGrid,
   Pin,
   PinOff,
   Plus,
   Trash2,
-  Ungroup,
   Upload,
   X,
 } from 'lucide-react'
 import { saveAs } from 'file-saver'
-import JSZip from 'jszip'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
 import { ImageGallery } from '../../../_components/image-gallery/image-gallery'
 import { VariationPromptsDialog } from '../../../_components/variation-prompts-dialog/variation-prompts-dialog'
 import { DescribeDialog } from '../../../_components/describe-dialog/describe-dialog'
 import { ImageLightbox } from '../image-lightbox/image-lightbox'
-import { ParentPickerDialog } from '../parent-picker-dialog/parent-picker-dialog'
-import { GroupPickerDialog } from '../group-picker-dialog/group-picker-dialog'
 import styles from './images-page.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import {
   Button,
-  ConfirmDialog,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -43,10 +36,7 @@ import {
   SelectionDrawer,
 } from '#/components'
 import { useImagesPage } from '#/features/ai-images/index'
-import { groupImages } from '#/features/ai-images/server/group-images.server'
-import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
-import { listSubtreeStoragePaths } from '#/features/ai-images/server/gallery.actions'
 import { createImageStorage } from '#/lib/image-storage'
 import { useSelection } from '#/lib/use-selection'
 import { cx } from '#/lib/utils'
@@ -258,187 +248,23 @@ export function ImagesPage() {
     return () => document.removeEventListener('paste', handlePaste)
   }, [upload, page.gallery])
 
-  // Delete confirmation for images with children
-  const [deleteTarget, setDeleteTarget] = useState<SavedAiImage | null>(null)
-
-  const deleteTargetChildren = deleteTarget
-    ? (page.editChildrenMap[deleteTarget.id] as Array<unknown> | undefined)
-    : undefined
-  const childCount = deleteTargetChildren?.length ?? 0
-
-  const handleDelete = useCallback(
-    (img: SavedAiImage) => {
-      const children = page.editChildrenMap[img.id] as
-        | Array<unknown>
-        | undefined
-      const hasChildren = (children?.length ?? 0) > 0
-      if (hasChildren) {
-        setDeleteTarget(img)
-      } else {
-        void page.gallery.deleteImage(img)
-      }
-    },
-    [page.editChildrenMap, page.gallery],
-  )
-
   // Batch delete
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)
-  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false)
 
   const batchSelectedImages = useCallback(() => {
     return sortedImages.filter((img) => selection.selectedIds.has(img.id))
   }, [sortedImages, selection.selectedIds])
 
-  const batchChildCount = useCallback(() => {
-    let count = 0
-    for (const id of selection.selectedIds) {
-      const children = page.editChildrenMap[id] as Array<unknown> | undefined
-      if (children?.length) count += children.length
-    }
-    return count
-  }, [selection.selectedIds, page.editChildrenMap])
-
-  const batchHasChildren = useCallback(() => {
-    for (const id of selection.selectedIds) {
-      const children = page.editChildrenMap[id] as Array<unknown> | undefined
-      if (children?.length) return true
-    }
-    return false
-  }, [selection.selectedIds, page.editChildrenMap])
-
-  const executeBatchDelete = useCallback(
-    async (strategy: 'smart' | 'cascade' | 'detach') => {
-      const images = batchSelectedImages()
-      setIsBatchDeleting(true)
-      try {
-        for (const img of images) {
-          switch (strategy) {
-            case 'smart':
-              await page.gallery.deleteImage(img)
-              break
-            case 'cascade':
-              await page.gallery.deleteImageWithDescendants(img)
-              break
-            case 'detach':
-              await page.gallery.deleteAndDetachChildren(img)
-              break
-          }
-        }
-        selection.clearSelection()
-      } finally {
-        setIsBatchDeleting(false)
-        setBatchDeleteOpen(false)
-      }
-    },
-    [batchSelectedImages, page.gallery, selection],
-  )
-
-  const handleBatchDelete = useCallback(() => {
-    if (batchHasChildren()) {
-      setBatchDeleteOpen(true)
-    } else {
-      void executeBatchDelete('smart')
-    }
-  }, [batchHasChildren, executeBatchDelete])
-
-  // Batch move
-  const [batchMoveOpen, setBatchMoveOpen] = useState(false)
-  const [isBatchMoving, setIsBatchMoving] = useState(false)
-
-  const handleBatchMoveConfirm = useCallback(
-    async (newParentId: string) => {
-      const images = batchSelectedImages()
-      setIsBatchMoving(true)
-      try {
-        await groupImages({
-          primaryId: newParentId,
-          childIds: images.map((img) => img.id),
-        })
-        selection.clearSelection()
-        setBatchMoveOpen(false)
-        await page.gallery.refresh()
-        page.refreshEditChildren()
-      } catch (err) {
-        console.error('Batch move failed:', err)
-      } finally {
-        setIsBatchMoving(false)
-      }
-    },
-    [batchSelectedImages, selection, page.gallery, page.refreshEditChildren],
-  )
-
-  // Group
-  const [groupOpen, setGroupOpen] = useState(false)
-  const [isGrouping, setIsGrouping] = useState(false)
-
-  const handleGroupConfirm = useCallback(
-    async (primaryId: string) => {
-      const selected = batchSelectedImages()
-      setIsGrouping(true)
-      try {
-        // Collect all image IDs: selected images + their existing children
-        const allIds = new Set<string>()
-        for (const img of selected) {
-          allIds.add(img.id)
-          for (const child of page.editChildrenMap[img.id] ?? []) {
-            allIds.add(child.id)
-          }
-        }
-        // Remove the primary — it stays as the group parent
-        allIds.delete(primaryId)
-
-        // Single batch call
-        await groupImages({
-          primaryId,
-          childIds: Array.from(allIds),
-        })
-        selection.clearSelection()
-        setGroupOpen(false)
-        await page.gallery.refresh()
-        page.refreshEditChildren()
-      } catch (err) {
-        console.error('Group failed:', err)
-      } finally {
-        setIsGrouping(false)
-      }
-    },
-    [
-      batchSelectedImages,
-      page.editChildrenMap,
-      selection,
-      page.gallery,
-      page.refreshEditChildren,
-    ],
-  )
-
-  // Batch ungroup
-  const [isBatchUngrouping, setIsBatchUngrouping] = useState(false)
-
-  const handleBatchUngroup = useCallback(async () => {
-    const selected = batchSelectedImages()
-    setIsBatchUngrouping(true)
+  const handleBatchDelete = useCallback(async () => {
+    const images = batchSelectedImages()
+    setIsBatchDeleting(true)
     try {
-      // Ungroup each selected parent that has children
-      for (const img of selected) {
-        if ((page.editChildrenMap[img.id] ?? []).length > 0) {
-          await ungroupImages({ parentId: img.id })
-        }
-      }
+      for (const img of images) await page.gallery.deleteImage(img)
       selection.clearSelection()
-      await page.gallery.refresh()
-      page.refreshEditChildren()
-    } catch (err) {
-      console.error('Batch ungroup failed:', err)
     } finally {
-      setIsBatchUngrouping(false)
+      setIsBatchDeleting(false)
     }
-  }, [
-    batchSelectedImages,
-    page.editChildrenMap,
-    page.gallery,
-    page.refreshEditChildren,
-    selection,
-  ])
+  }, [batchSelectedImages, page.gallery, selection])
 
   // Download: two-step flow — dialog for name, then build + save
   const [downloadTarget, setDownloadTarget] = useState<SavedAiImage | null>(
@@ -470,69 +296,16 @@ export function ImagesPage() {
 
     setDownloading(true)
     try {
-      const children = page.editChildrenMap[img.id] as
-        | Array<{ id: string; url: string }>
-        | undefined
-      const hasChildren = (children?.length ?? 0) > 0
-
-      if (!hasChildren) {
-        const url = await createImageStorage().getUrl(storagePath)
-        if (!url) return
-        const response = await fetch(url)
-        const blob = await response.blob()
-        saveAs(blob, `${baseName}${extOf(storagePath)}`)
-      } else {
-        // The subtree walk (by parent_id, the mutable grouping parent) runs
-        // server-side -- see listSubtreeStoragePaths.
-        const descendantPaths = await listSubtreeStoragePaths(img.id)
-
-        const items: Array<{ path: string; name: string }> = [
-          { path: storagePath, name: `${baseName}-1${extOf(storagePath)}` },
-        ]
-        descendantPaths.forEach((path, i) => {
-          items.push({
-            path,
-            name: `${baseName}-${i + 2}${extOf(path)}`,
-          })
-        })
-
-        const zip = new JSZip()
-        for (const item of items) {
-          const url = await createImageStorage().getUrl(item.path)
-          if (!url) continue
-          const response = await fetch(url)
-          const blob = await response.blob()
-          zip.file(item.name, blob)
-        }
-
-        const zipBlob = await zip.generateAsync({ type: 'blob' })
-        saveAs(zipBlob, `${baseName}.zip`)
-      }
+      const url = await createImageStorage().getUrl(storagePath)
+      if (!url) return
+      const response = await fetch(url)
+      const blob = await response.blob()
+      saveAs(blob, `${baseName}${extOf(storagePath)}`)
     } finally {
       setDownloading(false)
       setDownloadTarget(null)
     }
-  }, [downloadTarget, downloadName, page.editChildrenMap, page.userId])
-
-  // Ungroup handler
-  const handleUngroup = useCallback(
-    async (img: SavedAiImage) => {
-      await page.gallery.ungroupChildren(img)
-      await page.gallery.refresh()
-      page.refreshEditChildren()
-    },
-    [page.gallery, page.refreshEditChildren],
-  )
-
-  // Unlink handler — detach a single image from its group parent
-  const handleUnlink = useCallback(
-    async (img: SavedAiImage) => {
-      await ungroupImages({ imageIds: [img.id] })
-      await page.gallery.refresh()
-      page.refreshEditChildren()
-    },
-    [page.gallery, page.refreshEditChildren],
-  )
+  }, [downloadTarget, downloadName])
 
   // Describe dialog state
   const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
@@ -643,20 +416,14 @@ export function ImagesPage() {
         <ImageGallery
           images={sortedImages}
           imageUrls={page.gallery.imageUrls}
-          rootImageMeta={page.gallery.rootImageMeta}
-          editChildrenMap={page.editChildrenMap}
           loadingGallery={page.gallery.loadingGallery}
           thumbSize={effectiveThumbSize}
           showInfo={showInfo}
           onLoadPrompt={page.handleLoadPrompt}
           onLoadPromptAndModel={page.handleLoadPromptAndModel}
-          onDelete={handleDelete}
-          onRestoreRoot={page.gallery.restoreRootImage}
+          onDelete={page.gallery.deleteImage}
           onRetry={page.gallery.retryImage}
-          onStartAdopt={page.reparent.startAdopt}
           onDownload={handleDownload}
-          onUngroup={handleUngroup}
-          onUnlink={handleUnlink}
           onDescribe={handleDescribe}
           onGenerateVariations={page.variations.openVariationDialog}
           onGallery={page.lightbox.open}
@@ -669,42 +436,11 @@ export function ImagesPage() {
           count={selection.count}
           onClear={selection.clearSelection}
         >
-          {selection.count >= 2 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={isGrouping}
-              onClick={() => setGroupOpen(true)}
-            >
-              <Group className={styles.actionIcon} />
-              {isGrouping ? 'Grouping...' : 'Group'}
-            </Button>
-          )}
-          {batchHasChildren() && (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={isBatchUngrouping}
-              onClick={() => void handleBatchUngroup()}
-            >
-              <Ungroup className={styles.actionIcon} />
-              {isBatchUngrouping ? 'Ungrouping...' : 'Ungroup'}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isBatchMoving}
-            onClick={() => setBatchMoveOpen(true)}
-          >
-            <FolderInput className={styles.actionIcon} />
-            {isBatchMoving ? 'Moving...' : `Move (${selection.count})`}
-          </Button>
           <Button
             variant="danger"
             size="sm"
             disabled={isBatchDeleting}
-            onClick={handleBatchDelete}
+            onClick={() => void handleBatchDelete()}
           >
             <Trash2 className={styles.actionIcon} />
             {isBatchDeleting ? 'Deleting...' : `Delete (${selection.count})`}
@@ -812,55 +548,6 @@ export function ImagesPage() {
         onRemoveReference={() => {}}
       />
 
-      {page.reparent.adoptTarget && (
-        <ParentPickerDialog
-          open={!!page.reparent.adoptTarget}
-          onOpenChange={(open) => {
-            if (!open) page.reparent.cancelAdopt()
-          }}
-          movingImage={page.reparent.adoptTarget}
-          movingImageUrl={page.gallery.imageUrls[page.reparent.adoptTarget.id]}
-          images={page.gallery.images}
-          imageUrls={page.gallery.imageUrls}
-          editChildrenMap={page.editChildrenMap}
-          loading={page.reparent.isReparenting}
-          onConfirm={(newParentId) =>
-            void page.reparent.confirmAdopt(newParentId)
-          }
-        />
-      )}
-
-      {groupOpen && batchSelectedImages().length >= 2 && (
-        <GroupPickerDialog
-          open={groupOpen}
-          onOpenChange={(open) => {
-            if (!open) setGroupOpen(false)
-          }}
-          selectedImages={batchSelectedImages()}
-          imageUrls={page.gallery.imageUrls}
-          editChildrenMap={page.editChildrenMap}
-          loading={isGrouping}
-          onConfirm={(primaryId) => void handleGroupConfirm(primaryId)}
-        />
-      )}
-
-      {batchMoveOpen && batchSelectedImages().length > 0 && (
-        <ParentPickerDialog
-          open={batchMoveOpen}
-          onOpenChange={(open) => {
-            if (!open) setBatchMoveOpen(false)
-          }}
-          movingImage={batchSelectedImages()[0]}
-          movingImageUrl={undefined}
-          movingImages={batchSelectedImages()}
-          images={page.gallery.images}
-          imageUrls={page.gallery.imageUrls}
-          editChildrenMap={page.editChildrenMap}
-          loading={isBatchMoving}
-          onConfirm={(newParentId) => void handleBatchMoveConfirm(newParentId)}
-        />
-      )}
-
       {page.lightbox.isOpen && (
         <ImageLightbox
           items={page.lightbox.items}
@@ -872,14 +559,8 @@ export function ImagesPage() {
           onDelete={page.lightbox.deleteAndAdvance}
           onEdit={() => {
             const item = page.lightbox.items[page.lightbox.index!]
-            const imageId = item.parentId ?? item.id
-            const sourceId = item.isChild ? item.id : undefined
             page.lightbox.close()
-            router.push(
-              sourceId
-                ? `/edit/${imageId}?sourceId=${sourceId}`
-                : `/edit/${imageId}`,
-            )
+            router.push(`/edit/${item.id}`)
           }}
         />
       )}
@@ -941,71 +622,6 @@ export function ImagesPage() {
           onSave={() => void page.gallery.refresh()}
         />
       )}
-
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title={`This image has ${childCount} ${childCount === 1 ? 'child' : 'children'}`}
-        message="Delete just this image, or delete it along with all related images?"
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={() => setDeleteTarget(null)}
-        choices={[
-          {
-            label: 'Keep all',
-            onClick: () => {
-              if (deleteTarget) {
-                void page.gallery.deleteAndDetachChildren(deleteTarget)
-                setDeleteTarget(null)
-              }
-            },
-          },
-          {
-            label: 'Keep children',
-            onClick: () => {
-              if (deleteTarget) {
-                void page.gallery.deleteImage(deleteTarget)
-                setDeleteTarget(null)
-              }
-            },
-          },
-          {
-            label: 'Delete all',
-            variant: 'danger',
-            onClick: () => {
-              if (deleteTarget) {
-                void page.gallery.deleteImageWithDescendants(deleteTarget)
-                setDeleteTarget(null)
-              }
-            },
-          },
-        ]}
-      />
-
-      {/* Batch delete confirmation for images with children */}
-      <ConfirmDialog
-        open={batchDeleteOpen}
-        title={`Delete ${selection.count} images? (${batchChildCount()} children affected)`}
-        message="Some selected images have children. Choose how to handle them."
-        onCancel={() => setBatchDeleteOpen(false)}
-        onConfirm={() => setBatchDeleteOpen(false)}
-        choices={[
-          {
-            label: 'Keep all',
-            disabled: isBatchDeleting,
-            onClick: () => void executeBatchDelete('detach'),
-          },
-          {
-            label: 'Keep children',
-            disabled: isBatchDeleting,
-            onClick: () => void executeBatchDelete('smart'),
-          },
-          {
-            label: 'Delete all',
-            variant: 'danger',
-            disabled: isBatchDeleting,
-            onClick: () => void executeBatchDelete('cascade'),
-          },
-        ]}
-      />
     </div>
   )
 }

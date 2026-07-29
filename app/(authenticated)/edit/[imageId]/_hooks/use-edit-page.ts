@@ -11,12 +11,10 @@ import { useAuth } from '#/lib/auth'
 import { useGenerationResults } from '#/lib/hooks/useGenerationResults'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
-import { useEditChildren } from '#/features/ai-images/hooks/use-edit-children'
 import { flipOrientation, toast, useReportError } from '#/components'
 import { useExistingImages } from '#/features/user-images/hooks/useExistingImages'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
 import { editImage } from '#/features/ai-images/server/edit-image.server'
-import { reparentImage } from '#/features/ai-images/server/reparent-image.server'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.server'
@@ -28,7 +26,6 @@ import {
 import { getModelName, maxRefsFor } from '#/features/ai-images/models'
 import {
   getEditSourceImage,
-  listDescendantIds,
   listEditSourceRefs,
 } from '#/features/ai-images/server/edit.actions'
 import { createImageStorage } from '#/lib/image-storage'
@@ -57,7 +54,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     useState<typeof sourceImageMeta>(null)
   const [sourceBase64, setSourceBase64] = useState<string | null>(null)
   const [pageLoading, setPageLoading] = useState(true)
-  const [hasParent, setHasParent] = useState(false)
 
   // Generator adapter state - multi-prompt
   const [prompts, setPromptsRaw] = useState<Array<string>>([''])
@@ -103,19 +99,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
   const existingImages = useExistingImages(user.id)
   const imageUpload = useImageUpload(user.id)
-  const editChildren = useEditChildren(sourceChain)
-
-  // Descendant discovery (BFS over parent_id) now runs server-side.
-  const discoverDescendants = useCallback(async () => {
-    const chain = await listDescendantIds(imageId).catch(() => null)
-    if (chain && chain.length > 1) {
-      setSourceChain(chain)
-    }
-  }, [imageId])
-
-  useEffect(() => {
-    void discoverDescendants()
-  }, [discoverDescendants])
 
   const results = useGenerationResults({
     userId: user.id,
@@ -161,7 +144,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
       setSourceImageMeta(imgMeta)
       setOriginalImageMeta(imgMeta)
-      setHasParent(typeof meta?.source_image_id === 'string')
 
       // Fetch base64 server-side to avoid R2 CORS restrictions
       fetchImageAsBase64({ url: signedUrl })
@@ -265,8 +247,7 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
 
             try {
               const { recordId } = await editImage({
-                sourceImageId: sourceId, // Actual image being edited (immutable history)
-                parentId: imageId, // Group parent (mutable, can be reparented)
+                sourceImageId: sourceId,
                 editPrompt: finalPrompt,
                 aspectRatio,
                 editModelId,
@@ -295,9 +276,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       } else {
         setPromptsRaw([''])
       }
-
-      // Pull the new rows in either way: on failure they are the failed cards.
-      editChildren.refresh()
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to edit image'
@@ -320,7 +298,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     isMultiSelectMode,
     multiSelectIds,
     imageId,
-    editChildren,
   ])
 
   /**
@@ -574,7 +551,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         generation_type: rawMeta.generation_type as string | undefined,
         source_image_id: rawMeta.source_image_id as string | undefined,
         root_image_id: rawMeta.root_image_id as string | undefined,
-        parent_id: rawMeta.parent_id as string | undefined,
       },
       created_at: new Date().toISOString(),
     }
@@ -586,12 +562,9 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     return [parentAsSaved, ...filteredResults]
   }, [originalImageMeta, results.savedImages])
 
-  // Fetch source image URLs for "Original" display on chain images
+  // Source image URLs for the chain's thumbnails.
   const [sourceImageUrls, setSourceImageUrls] = useState<
     Record<string, string>
-  >({})
-  const [rootImageMeta, setRootImageMeta] = useState<
-    Record<string, { hidden: boolean }>
   >({})
 
   useEffect(() => {
@@ -613,11 +586,9 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
       const rows = await listEditSourceRefs([...sourceIds]).catch(() => null)
       if (!rows) return
 
-      const meta: Record<string, { hidden: boolean }> = {}
       const urls: Record<string, string> = {}
       await Promise.all(
         rows.map(async (r) => {
-          meta[r.id] = { hidden: r.hidden }
           if (!r.storage_path) return
           const path = r.thumbnail_path ?? r.storage_path
           const url = await createImageStorage().getUrl(path)
@@ -625,7 +596,6 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
         }),
       )
       setSourceImageUrls(urls)
-      setRootImageMeta(meta)
     }
     void fetchSourceUrls()
   }, [chainImages])
@@ -752,78 +722,18 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     handleOrientationToggle,
     handleGenerate,
     setSourceFile: async (file: File) => {
-      // Upload and adopt into this chain
       setError(null)
       setAdoptingImage(true)
       try {
-        const uploaded = await imageUpload.upload({
-          file,
-          title: file.name,
-        })
-        // Adopt the uploaded image under the original parent
-        await reparentImage({
-          imageId: uploaded.id,
-          action: 'adopt',
-          newParentId: imageId,
-        })
-        // Refresh to discover the new child and update the gallery
-        await discoverDescendants()
+        await imageUpload.upload({ file, title: file.name })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to upload image')
       } finally {
         setAdoptingImage(false)
       }
     },
-    setSourceFromUrl: async (url: string, _name: string) => {
-      // Adopt existing library image into this chain
-      setError(null)
-      setAdoptingImage(true)
-      try {
-        // Find the image by URL (it's in existingImages)
-        const libraryImage = existingImages.images.find(
-          (img) => existingImages.imageUrls[img.id] === url,
-        )
-        if (!libraryImage) throw new Error('Image not found')
-
-        // Adopt it under the original parent
-        await reparentImage({
-          imageId: libraryImage.id,
-          action: 'adopt',
-          newParentId: imageId,
-        })
-        // Refresh to discover the adopted child and update the gallery
-        await discoverDescendants()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to add image')
-      } finally {
-        setAdoptingImage(false)
-      }
-    },
-    setSourceFromUrls: async (
-      images: Array<{ id: string; url: string; title: string }>,
-    ) => {
-      // Adopt multiple library images into this chain
-      setError(null)
-      setAdoptingImage(true)
-      try {
-        // Adopt all selected images under the original parent
-        ;(await Promise.all(
-          images.map((img) =>
-            reparentImage({
-              imageId: img.id,
-              action: 'adopt',
-              newParentId: imageId,
-            }),
-          ),
-        ),
-          // Refresh to discover the adopted children and update the gallery
-          await discoverDescendants())
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to add images')
-      } finally {
-        setAdoptingImage(false)
-      }
-    },
+    setSourceFromUrl: () => {}, // Adding a library image was a grouping action
+    setSourceFromUrls: () => {}, // ditto
     setSourceFromBase64: () => {}, // No base64 source in edit mode
     handleClear: () => {}, // No-op in edit mode
     handleClearSourceImage: () => {}, // Can't clear in edit mode
@@ -855,26 +765,15 @@ export function useEditPage(imageId: string, multiSelectIds?: Set<string>) {
     results,
     chainImages,
     chainImageUrls,
-    rootImageMeta,
-    editChildrenMap: editChildren.map,
     sourceImageMeta,
     originalImageMeta,
     activeSourceId,
     pageLoading,
-    hasParent,
     isChained,
     selectImage,
     selectImageById,
     resetToOriginal,
     existingImages,
-    detachFromParent: async () => {
-      await reparentImage({ imageId, action: 'detach' })
-      setHasParent(false)
-    },
-    detachResult: async (resultId: string) => {
-      await reparentImage({ imageId: resultId, action: 'detach' })
-      results.dismissResult(resultId)
-    },
     // Retry a failed card. This submits a NEW generation with the same
     // parameters (the failed row is kept as history), which is why the edit
     // page needs its own handler rather than reusing the gallery's.

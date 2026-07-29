@@ -98,15 +98,6 @@ export function useView() {
     ],
   )
 
-  // The original parent is the one image that cannot be unlinked.
-  const unlink = useCallback(
-    (img: SavedAiImage) => {
-      if (img.id === imageId) return
-      void page.detachResult(img.id)
-    },
-    [imageId, page],
-  )
-
   const downloadSelected = useCallback(async () => {
     await downloads.downloadMany(
       images.filter((img) => selection.selectedIds.has(img.id)),
@@ -121,12 +112,6 @@ export function useView() {
     await Promise.all(ids.map((id) => page.results.deleteResult(id)))
     selection.clearSelection()
   }, [selection, page.activeSourceId, page.results.deleteResult])
-
-  const unlinkSelected = useCallback(async () => {
-    const ids = Array.from(selection.selectedIds).filter((id) => id !== imageId)
-    await Promise.all(ids.map((id) => page.detachResult(id)))
-    selection.clearSelection()
-  }, [selection, imageId, page])
 
   // The lightbox shows completed images only, always at full resolution.
   // Memoised for the same reason: everything downstream depends on it.
@@ -180,11 +165,9 @@ export function useView() {
     open,
     openChild,
     remove,
-    unlink,
     downloadOne: downloads.downloadOne,
     downloadSelected,
     deleteSelected,
-    unlinkSelected,
     refPickerOpen,
     setRefPickerOpen,
     describeTarget,

@@ -1,11 +1,9 @@
 GenZen is a personal workspace for working with AI image models — a tool built
 for one person's use, not a product.
 
-It does four things. Fan one prompt across several models and compare the
-results side by side. Run non-destructive edit and variation flows that track
-parent→child genealogy, so an image always knows what it came from. Arrange
-results spatially on an infinite canvas. Ask an in-app assistant about the
-library.
+It does three things. Fan one prompt across several models and compare the
+results side by side. Run non-destructive edit and variation flows. Arrange
+results spatially on an infinite canvas.
 
 Every generated or uploaded asset is one `user_images` row, and the same row is
 the library card, the canvas tile and the Activity entry. Nothing is duplicated

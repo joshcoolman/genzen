@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
@@ -9,8 +9,6 @@ import { useModelSelector } from '#/features/ai-images/model-selector/use-model-
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useLightbox } from '#/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '#/features/ai-images/hooks/use-variations'
-import { useEditChildren } from '#/features/ai-images/hooks/use-edit-children'
-import { useReparent } from '#/features/ai-images/hooks/use-reparent'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 
@@ -46,26 +44,7 @@ export function useImagesPage() {
     (img) => img.status === 'completed',
   )
 
-  const parentIds = useMemo(
-    () => completedImages.map((img) => img.id),
-    [completedImages],
-  )
-
-  const editChildren = useEditChildren(parentIds)
-  const editChildrenMap = editChildren.map
-
-  const reparent = useReparent({
-    onComplete: async () => {
-      await gallery.refresh()
-      editChildren.refresh()
-    },
-  })
-
-  const lightbox = useLightbox(
-    completedImages,
-    gallery.deleteImage,
-    editChildrenMap,
-  )
+  const lightbox = useLightbox(completedImages, gallery.deleteImage)
 
   const variations = useVariations({ setError })
 
@@ -100,9 +79,6 @@ export function useImagesPage() {
     userImages,
     modelSelector,
     generator,
-    editChildrenMap,
-    refreshEditChildren: editChildren.refresh,
-    reparent,
     lightbox,
     variations,
     completedImages,

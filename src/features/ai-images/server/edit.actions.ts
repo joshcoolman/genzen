@@ -48,113 +48,13 @@ export async function getEditSourceImage(
   }
 }
 
-/**
- * Every image whose `parent_id` chain reaches `rootId`, plus the root itself,
- * in BFS order. `parent_id` is the mutable organizational parent, not the
- * immutable generation source.
- */
-export async function listDescendantIds(
-  rootId: string,
-): Promise<Array<string>> {
-  const { userId } = await resolveAuth()
-
-  const rows = await sql<Array<{ id: string }>>`
-    ${descendantsCte([rootId], userId, sql`and c.source in ('upload', 'ai_generated')`)}
-    select id from descendants order by depth
-  `
-
-  return rows.map((r) => r.id)
-}
-
-export interface EditChildRef {
-  id: string
-  storagePath: string
-  thumbnailPath: string | null
-}
-
-/**
- * Descendants of each given parent, newest first -- the nested thumbnails under
- * a gallery card. Only completed, undeleted images with a stored file.
- */
-export async function listEditChildren(
-  parentIds: Array<string>,
-): Promise<Record<string, Array<EditChildRef>>> {
-  if (parentIds.length === 0) return {}
-
-  const { userId } = await resolveAuth()
-
-  // `depth > 0` drops each root itself -- a parent is not its own child.
-  const rows = await sql<
-    Array<{
-      root: string
-      id: string
-      storage_path: string
-      thumbnail_path: string | null
-    }>
-  >`
-    ${descendantsCte(parentIds, userId, sql`and c.status = 'completed'`)}
-    select root, id, storage_path, thumbnail_path
-    from descendants
-    where depth > 0 and storage_path is not null
-    order by root, created_at desc
-  `
-
-  const result: Record<string, Array<EditChildRef>> = {}
-  for (const row of rows) {
-    ;(result[row.root] ??= []).push({
-      id: row.id,
-      storagePath: row.storage_path,
-      thumbnailPath: row.thumbnail_path,
-    })
-  }
-
-  return result
-}
-
-/**
- * The `parent_id` subtree under each of `rootIds`, tagged with the root it came
- * from so one query serves every parent the gallery is showing.
- *
- * Seeded from `unnest` rather than from `user_images`, because a caller may ask
- * about an id that has no row (or no longer matches the filter) and the JS walk
- * it replaces was happy to start from one.
- *
- * The `path` array is the visited-set that walk kept. It is load-bearing:
- * nothing stops a row naming itself as its own `parent_id`, and that is an
- * unbounded recursion rather than a wrong answer.
- */
-function descendantsCte(
-  rootIds: Array<string>,
-  userId: string,
-  childFilter: ReturnType<typeof sql>,
-) {
-  return sql`
-    with recursive descendants as (
-      select r.id, null::text as storage_path, null::text as thumbnail_path,
-             null::timestamptz as created_at,
-             r.id as root, 0 as depth, array[r.id] as path
-      from unnest(${rootIds}::uuid[]) as r(id)
-      union all
-      select c.id, c.storage_path, c.thumbnail_path, c.created_at,
-             d.root, d.depth + 1, d.path || c.id
-      from user_images c
-      join descendants d on c.generation_metadata->>'parent_id' = d.id::text
-      where c.user_id = ${userId}
-        and c.deleted_at is null
-        ${childFilter}
-        and not (c.id = any(d.path))
-    )
-  `
-}
-
 export interface EditSourceRef {
   id: string
   storage_path: string | null
   thumbnail_path: string | null
-  hidden: boolean
 }
 
-/** The rows an edit/variation names as its source, for the origin thumbnail. */
+/** The rows an edit names as its source, for the chain's thumbnails. */
 export async function listEditSourceRefs(
   ids: Array<string>,
 ): Promise<Array<EditSourceRef>> {
@@ -162,18 +62,11 @@ export async function listEditSourceRefs(
 
   const { userId } = await resolveAuth()
 
-  const rows = await sql<Array<EditSourceRef>>`
-    select id, storage_path, thumbnail_path, hidden
+  return sql<Array<EditSourceRef>>`
+    select id, storage_path, thumbnail_path
     from user_images
     where user_id = ${userId} and id in ${sql(ids)} and deleted_at is null
   `
-
-  return rows.map((row) => ({
-    id: row.id,
-    storage_path: row.storage_path,
-    thumbnail_path: row.thumbnail_path,
-    hidden: !!row.hidden,
-  }))
 }
 
 export type GenerationResultRow = Pick<
@@ -227,9 +120,12 @@ export async function listGenerationResultRows({
   return data.filter((row) => {
     const meta = row.generation_metadata as Record<string, unknown> | null
     if (chain) {
-      // Group membership is `parent_id` (mutable), not `source_image_id`
-      // (immutable generation history).
-      return typeof meta?.parent_id === 'string' && chain.has(meta.parent_id)
+      // Everything generated from one of these images. This used to filter on
+      // `parent_id`, the mutable grouping parent, which went with #204.
+      return (
+        typeof meta?.source_image_id === 'string' &&
+        chain.has(meta.source_image_id)
+      )
     }
     return (
       typeof meta?.generation_type === 'string' &&

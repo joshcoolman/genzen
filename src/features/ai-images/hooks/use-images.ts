@@ -6,13 +6,9 @@ import { retryGeneration } from '#/features/ai-images/server/retry-generation.se
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
 import { createImageStorage } from '#/lib/image-storage'
-import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
 import {
   deleteGalleryImage,
-  deleteGalleryImageDetachingChildren,
-  deleteGalleryImageWithDescendants,
   listGalleryImages,
-  restoreHiddenRootImage,
 } from '#/features/ai-images/server/gallery.actions'
 
 interface UseImagesOptions {
@@ -25,69 +21,23 @@ interface RefreshOptions {
 }
 
 function sortByOrder(images: Array<SavedAiImage>): Array<SavedAiImage> {
-  // Map each root/parent to its newest descendant's created_at
-  const newestDescendant = new Map<string, number>()
-  for (const img of images) {
-    const meta = img.generation_metadata
-    const rootId = meta?.root_image_id ?? meta?.source_image_id
-    if (rootId) {
-      const t = new Date(img.created_at).getTime() / 1000
-      const current = newestDescendant.get(rootId) ?? 0
-      if (t > current) newestDescendant.set(rootId, t)
-    }
-  }
-
   return [...images].sort((a, b) => {
-    const aOwn = a.sort_order ?? new Date(a.created_at).getTime() / 1000
-    const bOwn = b.sort_order ?? new Date(b.created_at).getTime() / 1000
-    const aEffective = Math.max(aOwn, newestDescendant.get(a.id) ?? 0)
-    const bEffective = Math.max(bOwn, newestDescendant.get(b.id) ?? 0)
-    return bEffective - aEffective
+    const aOrder = a.sort_order ?? new Date(a.created_at).getTime() / 1000
+    const bOrder = b.sort_order ?? new Date(b.created_at).getTime() / 1000
+    return bOrder - aOrder
   })
-}
-
-/** Ids of `imageId` and everything grouped beneath it, walking `parent_id`. */
-function collectSubtree(
-  imageId: string,
-  images: Array<SavedAiImage>,
-): Set<string> {
-  const childrenOf = new Map<string, Array<string>>()
-  for (const img of images) {
-    const parentId = img.generation_metadata?.parent_id
-    if (!parentId) continue
-    const siblings = childrenOf.get(parentId) ?? []
-    siblings.push(img.id)
-    childrenOf.set(parentId, siblings)
-  }
-
-  const ids = new Set<string>([imageId])
-  const queue = [imageId]
-  while (queue.length > 0) {
-    const current = queue.shift()!
-    for (const childId of childrenOf.get(current) ?? []) {
-      if (ids.has(childId)) continue
-      ids.add(childId)
-      queue.push(childId)
-    }
-  }
-  return ids
 }
 
 export interface GalleryState {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
-  rootImageMeta: Record<string, { hidden: boolean }>
   loadingGallery: boolean
   deleteImage: (img: SavedAiImage) => Promise<void>
-  deleteImageWithDescendants: (img: SavedAiImage) => Promise<void>
-  deleteAndDetachChildren: (img: SavedAiImage) => Promise<void>
-  restoreRootImage: (rootId: string) => Promise<void>
   addOptimisticCard: (card: SavedAiImage) => void
   replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
   removeOptimisticCard: (optimisticId: string) => void
   setImageUrl: (id: string, url: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
-  ungroupChildren: (img: SavedAiImage) => Promise<void>
   retryImage: (img: SavedAiImage) => Promise<void>
   refresh: (options?: RefreshOptions) => Promise<void>
 }
@@ -95,9 +45,6 @@ export interface GalleryState {
 export function useImages({ userId }: UseImagesOptions): GalleryState {
   const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>([])
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
-  const [rootImageMeta, setRootImageMeta] = useState<
-    Record<string, { hidden: boolean }>
-  >({})
   const [loadingGallery, setLoadingGallery] = useState(true)
 
   const loadSavedImages = useCallback(
@@ -107,8 +54,7 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
       try {
         if (!options?.silent) setLoadingGallery(true)
 
-        const { images: rows, rootImages } = await listGalleryImages()
-        const images = sortByOrder(rows)
+        const images = sortByOrder(await listGalleryImages())
         setSavedImages(images)
         setLoadingGallery(false)
 
@@ -128,26 +74,7 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
           if (entry) urls[entry[0]] = entry[1]
         }
 
-        // Source images for edits and variations, which may be hidden and so
-        // absent from the list above.
-        const rootUrlEntries = await Promise.all(
-          rootImages.map(async (r) => {
-            if (!r.storage_path) return null
-            const path = r.thumbnail_path ?? r.storage_path
-            const url = await createImageStorage().getUrl(path)
-            return url ? ([r.id, url] as const) : null
-          }),
-        )
-        for (const entry of rootUrlEntries) {
-          if (entry) urls[entry[0]] = entry[1]
-        }
-
         setImageUrls(urls)
-        setRootImageMeta(
-          Object.fromEntries(
-            rootImages.map((r) => [r.id, { hidden: r.hidden }]),
-          ),
-        )
       } catch {
         console.error('Failed to load saved AI images')
       } finally {
@@ -234,63 +161,9 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     forgetImages(new Set([img.id]))
 
     try {
-      // Hide-vs-delete, and cleaning up an orphaned hidden root, are decided
-      // server-side now -- they were four browser round trips reading each
-      // other's results.
       await deleteGalleryImage(img.id)
     } catch {
       await loadSavedImages({ silent: true })
-    }
-  }
-
-  async function deleteImageWithDescendants(img: SavedAiImage) {
-    // Remove the subtree optimistically from what's on screen; the server
-    // walks it again authoritatively and returns what it actually deleted.
-    forgetImages(collectSubtree(img.id, savedImages))
-
-    try {
-      const deletedIds = await deleteGalleryImageWithDescendants(img.id)
-      forgetImages(new Set(deletedIds))
-    } catch {
-      await loadSavedImages({ silent: true })
-    }
-  }
-
-  async function deleteAndDetachChildren(img: SavedAiImage) {
-    // Optimistic: remove parent from view, clear parent_id on children
-    setSavedImages((prev) =>
-      prev
-        .filter((i) => i.id !== img.id)
-        .map((i) => {
-          if (i.generation_metadata?.parent_id !== img.id) return i
-          return {
-            ...i,
-            generation_metadata: {
-              ...i.generation_metadata,
-              parent_id: undefined,
-            },
-          }
-        }),
-    )
-
-    try {
-      await deleteGalleryImageDetachingChildren(img.id)
-    } catch {
-      await loadSavedImages({ silent: true })
-    }
-  }
-
-  async function restoreRootImage(rootId: string) {
-    try {
-      await restoreHiddenRootImage(rootId)
-      setRootImageMeta((prev) => {
-        const next = { ...prev }
-        delete next[rootId]
-        return next
-      })
-      await loadSavedImages({ silent: true })
-    } catch {
-      // Leave the badge in place -- the root is still hidden.
     }
   }
 
@@ -313,25 +186,6 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
     }
   }
 
-  async function ungroupChildren(img: SavedAiImage) {
-    // Optimistic: clear parent_id on children in local state
-    setSavedImages((prev) =>
-      prev.map((i) => {
-        if (i.generation_metadata?.parent_id !== img.id) return i
-        return {
-          ...i,
-          generation_metadata: {
-            ...i.generation_metadata,
-            parent_id: undefined,
-          },
-        }
-      }),
-    )
-
-    // Detach all children via server function
-    await ungroupImages({ parentId: img.id })
-  }
-
   async function reorderImages(draggedId: string, newSortOrder: number) {
     const prev = savedImages
     setSavedImages((current) =>
@@ -352,13 +206,8 @@ export function useImages({ userId }: UseImagesOptions): GalleryState {
   return {
     images: savedImages,
     imageUrls,
-    rootImageMeta,
     loadingGallery,
     deleteImage,
-    deleteImageWithDescendants,
-    deleteAndDetachChildren,
-    ungroupChildren,
-    restoreRootImage,
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,

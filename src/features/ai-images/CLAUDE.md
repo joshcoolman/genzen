@@ -1,6 +1,6 @@
 # Images
 
-Multi-model image generation with edit, variation, and reparenting workflows via FAL AI.
+Multi-model image generation with edit and variation workflows via FAL AI.
 
 ## Key Files
 
@@ -19,8 +19,8 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 
 ## Server
 
-- `edit.actions.ts` -- the edit page's reads, user-scoped by `resolveAuth()`: `getEditSourceImage`, `listDescendantIds` and `listEditChildren` (both BFS over `generation_metadata.parent_id`, server-side), `listEditSourceRefs`, `listGenerationResultRows`, `trashGenerationResult`
-- `gallery.actions.ts` -- the gallery's reads and deletes, user-scoped by `resolveAuth()`: `listGalleryImages` (rows + the source images derived cards need), `deleteGalleryImage` (decides hide-vs-soft-delete and cleans up an orphaned hidden root), `deleteGalleryImageWithDescendants`, `deleteGalleryImageDetachingChildren`, `restoreHiddenRootImage`, `listSubtreeStoragePaths` (download-as-zip)
+- `edit.actions.ts` -- the edit page's reads, user-scoped by `resolveAuth()`: `getEditSourceImage`, `listEditSourceRefs`, `listGenerationResultRows`, `trashGenerationResult`
+- `gallery.actions.ts` -- the gallery's reads and deletes, user-scoped by `resolveAuth()`: `listGalleryImages`, `deleteGalleryImage` (soft-delete; a failed row is destroyed outright)
 - `generate-image.server.ts` -- TanStack server fn wrapper for generation
 - `generate-image-internal.server.ts` -- core async implementation for text-to-image and image-to-image (FAL + Google providers); called directly by other server fns to avoid TanStack RPC stub corruption; computes `estimated_cost_cents` via `computeFalCostCents` before FAL submit
 - `edit-image.server.ts` -- TanStack server fn wrapper for editing
@@ -28,15 +28,12 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `generate-variation.server.ts` -- Claude Sonnet rewrites prompt, generates via edit model
 - `generate-variation-prompts.server.ts` -- Claude Sonnet generates variation prompts from root image
 - `submit-variations.server.ts` -- batch submit variation prompts for generation
-- `reparent-image.server.ts` -- move image under new parent or detach from parent
 - `retry-generation.server.ts` -- resubmit a failed generation **on the same row**: back to `pending`, error cleared, `retry_count` bumped. Retry means "try that again", not "make another" -- inserting a new row left the original failure behind as a second card to clean up
 - `caption-image.server.ts` -- vision API image captioning
 - `generate-shot-list.server.ts` -- vision-based shot list prompt generation (Gemini Flash)
 - `describe-image-json.server.ts` -- JSON structural description for reference DNA sheets
 - `fal-params.server.ts` -- `buildFalInput()` resolves size/safety/image params per model schema
 - `fal-schema.server.ts` -- fetches + caches FAL OpenAPI schemas at runtime
-- `group-images.server.ts` -- group selected images under a new or existing parent
-- `ungroup-images.server.ts` -- ungroup images by removing parent association
 - `update-image-order.server.ts` -- reorder images via sort_order
 - `enhance-prompt.server.ts` -- LLM-powered prompt enhancement via Claude Sonnet; its system prompt is `src/lib/prompts/enhance-prompt.md`, imported as raw text
 
@@ -46,9 +43,7 @@ Multi-model image generation with edit, variation, and reparenting workflows via
 - `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`
 - `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards. No database access and no realtime: it calls `gallery.actions.ts`, and the 5s poll is what tells it anything changed
 - `use-variations.ts` -- variation prompt generation and submission with ref image support
-- `use-lightbox.ts` -- fullscreen viewer with merged parent+child item list
-- `use-edit-children.ts` -- edit children nested under parent cards. No database access and no realtime: the descendant walk is `edit.actions.ts`'s, and the parent list comes from the gallery, so a newly completed child appears when the gallery's poll picks it up
-- `use-reparent.ts` -- adopt/detach images between parents
+- `use-lightbox.ts` -- fullscreen viewer over the completed images
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets
 
 The edit route's own state is **not here**. It has one consumer, so it lives
@@ -86,7 +81,5 @@ lives in `app/(authenticated)/_components/` -- `generator-panel/`, `image-galler
 - A model with `withImages` set can do image-to-image; `supportsImageInput` and `imageInputModelId` are the derived legacy view of that
 - FAL submissions use async queue (`fal.queue.submit`) -- results polled by gallery hook. The poll is also the gallery's only update signal: a submit refreshes once via `onAfterSubmit` so the pending cards appear, and each poll that settles a row refreshes again. Nothing pushes.
 - Some models (GPT Image 1.5, GPT Image 2) use resolution enum strings, others use width/height objects -- handled by `buildFalInput()`
-- Edit children are displayed as nested thumbnails under parent cards in the gallery, with a dedicated lightbox that flattens the parent+children list
-- Reparenting allows moving images between parent groups or detaching from a parent entirely
 - **Failed generations are deleted outright, not soft-deleted.** There is no image to restore, so Trash has nothing to offer for one -- restoring it just puts an error card back. Everything else still soft-deletes.
 - A row is titled `Generating...` while reserved; success renames it to the model and so does failure (`failureTitle`). Before that, a failure kept the placeholder forever, so Trash filled with rows that all read "Generating..."

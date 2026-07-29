@@ -9,7 +9,6 @@ import {
   LayoutGrid,
   Plus,
   RotateCcw,
-  Unlink,
 } from 'lucide-react'
 import { CircularIconButton } from '../circular-icon-button/circular-icon-button'
 import { THUMB_LABELS } from '../../_hooks/use-prefs'
@@ -24,8 +23,6 @@ export interface ToolbarProps {
   onOpenPanel: () => void
   isChained: boolean
   onReset: () => void
-  hasParent: boolean
-  onDetach: () => void
 }
 
 export function Toolbar({
@@ -35,8 +32,6 @@ export function Toolbar({
   onOpenPanel,
   isChained,
   onReset,
-  hasParent,
-  onDetach,
 }: ToolbarProps) {
   const openPanelButton = !panelOpen && (
     <button
@@ -102,12 +97,6 @@ export function Toolbar({
             <button onClick={onReset} className={styles.textAction}>
               <RotateCcw className={styles.smallIcon} />
               Reset
-            </button>
-          )}
-          {hasParent && (
-            <button onClick={onDetach} className={styles.textAction}>
-              <Unlink className={styles.smallIcon} />
-              Detach
             </button>
           )}
           {openPanelButton}

@@ -20,6 +20,5 @@ export interface SavedAiImage {
     root_image_id?: string
     aspect_ratio?: string
     reference_image_ids?: Array<string>
-    parent_id?: string
   } | null
 }

@@ -1,9 +1,8 @@
 # GenZen
 
 A personal workspace for working with AI image models. Fan one prompt across
-several models and compare side by side, run non-destructive edit / variation
-flows that track parent→child genealogy, arrange results on an infinite canvas,
-and ask an in-app assistant about your library.
+several models and compare side by side, run non-destructive edit and variation
+flows, and arrange results on an infinite canvas.
 
 This is a tool I built for myself and use. It is public because there's no reason
 for it not to be — not because it's a product. There's no signup, no billing, no

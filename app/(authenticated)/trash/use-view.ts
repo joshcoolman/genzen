@@ -33,9 +33,6 @@ export function useView(initial: TrashPayload) {
   const [linkedImageIds, setLinkedImageIds] = useState<Set<string>>(
     () => new Set(initial.links.ids),
   )
-  const [linkedCounts, setLinkedCounts] = useState<Record<string, number>>(
-    initial.links.counts,
-  )
   const [canvasLinkedIds, setCanvasLinkedIds] = useState<Set<string>>(
     () => new Set(initial.links.canvasIds),
   )
@@ -69,7 +66,6 @@ export function useView(initial: TrashPayload) {
       const { images: rows, links } = await listTrashedImages()
       setImages(rows)
       setLinkedImageIds(new Set(links.ids))
-      setLinkedCounts(links.counts)
       setCanvasLinkedIds(new Set(links.canvasIds))
       signInBackground(rows)
     } catch {
@@ -218,7 +214,6 @@ export function useView(initial: TrashPayload) {
     imageUrls,
     linkedCount: linkedImageIds.size,
     deletableCount,
-    linkedCounts,
     canvasLinkedIds,
     busyId,
     isEmptying,

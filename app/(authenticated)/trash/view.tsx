@@ -14,7 +14,6 @@ export function View({ initial }: { initial: TrashPayload }) {
     imageUrls,
     linkedCount,
     deletableCount,
-    linkedCounts,
     canvasLinkedIds,
     busyId,
     isEmptying,
@@ -68,7 +67,6 @@ export function View({ initial }: { initial: TrashPayload }) {
           hasSelection={selection.count > 0}
           busyId={busyId}
           canvasLinkedIds={canvasLinkedIds}
-          linkedCounts={linkedCounts}
           onToggle={selection.toggle}
           onRestore={restore}
           onDelete={permanentDelete}

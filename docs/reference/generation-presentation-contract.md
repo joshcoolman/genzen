@@ -154,15 +154,16 @@ ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
 - [ ] **Extract inline pure logic:** `spatialSort` and the placeholder collision
       geometry (`rectsOverlap` + relocate-below decision) — same move as the already
       extracted `mapOutcomesToPlaceholders` / `layoutMasonry`.
-- [ ] **Deletion semantics differ** — Images delete is genealogy-aware;
-      Canvas trash is a plain `deleted_at`. Decide consciously rather than by accident.
+- [x] **Deletion semantics differ** — settled by #204: Images delete is a plain
+      `deleted_at` now too, the same as Canvas trash.
 
 ### Explicitly NOT drift (don't "fix" these)
 
 Correct sibling-view separations, recorded so they aren't mistaken for debt:
-reorder (`sort_order`) vs spatial position; grouping (genealogical `parent_id`
-tree) vs canvas spatial groups; model label hover-only on canvas (substrate
-difference, contract still met); upload already shares `useUserImages`.
+reorder (`sort_order`) vs spatial position; model label hover-only on canvas
+(substrate difference, contract still met); upload already shares
+`useUserImages`. Canvas groups are a Canvas-local spatial idea and survived the
+removal of library grouping (#204) on purpose.
 
 ---
 

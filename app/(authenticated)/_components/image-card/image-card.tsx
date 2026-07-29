@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import {
-  ArrowUpRight,
   CheckCircle2,
   Circle,
   Download,
@@ -11,11 +10,9 @@ import {
   MessageSquare,
   MoreHorizontal,
   Trash2,
-  Unlink,
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import { cx } from '#/lib/utils'
 import {
   DropdownMenu,
@@ -31,24 +28,15 @@ interface ImageCardProps {
   img: SavedAiImage
   imageUrl: string | undefined
   objectFit?: 'contain' | 'cover'
-  rootImageUrl?: string
-  rootIsHidden?: boolean
-  editChildren?: EditChildrenMap[string]
   compact?: boolean
   showInfo?: boolean
-  onRestore?: () => void
   onDelete?: (img: SavedAiImage) => void
-  onStartAdopt?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  onUngroup?: (img: SavedAiImage) => void
-  onUnlink?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
   /** Override default navigate-to-edit behavior on card click */
   onOpen?: (img: SavedAiImage) => void
-  /** Override default navigate-to-edit behavior on child thumbnail click */
-  onChildOpen?: (childId: string, parentImg: SavedAiImage) => void
   selected?: boolean
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
@@ -59,30 +47,20 @@ export function ImageCard({
   img,
   imageUrl,
   objectFit,
-  rootImageUrl,
-  rootIsHidden,
-  editChildren,
   compact = false,
   showInfo = true,
-  onRestore,
   onDelete,
-  onStartAdopt,
   onDownload,
-  onUngroup,
-  onUnlink,
   onDescribe,
   onGenerateVariations,
   onGallery,
   onOpen,
-  onChildOpen,
   selected,
   selectionActive,
   onSelect,
   active,
 }: ImageCardProps) {
   const router = useRouter()
-
-  const hasChildren = (editChildren?.length ?? 0) > 0
 
   const moreButton = (
     <DropdownMenu>
@@ -101,26 +79,6 @@ export function ImageCard({
             Download
           </DropdownMenuItem>
         )}
-        {onStartAdopt && (
-          <DropdownMenuItem onClick={() => onStartAdopt(img)}>
-            <ArrowUpRight className={styles.menuItemIcon} />
-            Move
-          </DropdownMenuItem>
-        )}
-        {hasChildren && onUngroup && (
-          <DropdownMenuItem onClick={() => onUngroup(img)}>
-            <Unlink className={styles.menuItemIcon} />
-            Ungroup
-          </DropdownMenuItem>
-        )}
-        {onUnlink &&
-          typeof (img.generation_metadata as Record<string, unknown> | null)
-            ?.parent_id === 'string' && (
-            <DropdownMenuItem onClick={() => onUnlink(img)}>
-              <Unlink className={styles.menuItemIcon} />
-              Unlink
-            </DropdownMenuItem>
-          )}
         {onDescribe && (
           <DropdownMenuItem onClick={() => onDescribe(img)}>
             <MessageSquare className={styles.menuItemIcon} />
@@ -220,41 +178,6 @@ export function ImageCard({
                 }
               />
             </>
-          )}
-          {rootImageUrl && (
-            <div className={styles.original}>
-              <img
-                src={rootImageUrl}
-                className={styles.originalThumb}
-                alt="Original"
-              />
-              <span className={styles.originalLabel}>Original</span>
-              {rootIsHidden && onRestore && (
-                <button onClick={onRestore} className={styles.restore}>
-                  Restore
-                </button>
-              )}
-            </div>
-          )}
-          {editChildren && editChildren.length > 0 && (
-            <div className={styles.children}>
-              {editChildren.map((child) => (
-                <button
-                  key={child.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (onChildOpen) {
-                      onChildOpen(child.id, img)
-                    } else {
-                      router.push(`/edit/${img.id}?sourceId=${child.id}`)
-                    }
-                  }}
-                  className={styles.child}
-                >
-                  <img src={child.url} alt="" className={styles.childImage} />
-                </button>
-              ))}
-            </div>
           )}
         </>
       )}

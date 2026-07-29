@@ -45,28 +45,21 @@ export function View() {
           onOpenPanel={() => v.panel.setOpen(true)}
           isChained={page.isChained}
           onReset={page.resetToOriginal}
-          hasParent={page.hasParent}
-          onDetach={() => void page.detachFromParent()}
         />
 
         {/* The Images gallery, scoped to this edit chain. */}
         <ImageGallery
           images={v.images}
           imageUrls={page.chainImageUrls}
-          rootImageMeta={page.rootImageMeta}
-          editChildrenMap={{}}
           loadingGallery={false}
           thumbSize={v.prefs.thumbSize}
           showInfo={v.prefs.showInfo}
           onDelete={v.remove}
           onRetry={page.retryImage}
-          onRestoreRoot={() => {}}
           onDownload={v.downloadOne}
-          onUnlink={v.unlink}
           onDescribe={v.setDescribeTarget}
           onGallery={v.openLightbox}
           onOpen={v.open}
-          onChildOpen={v.openChild}
           selectionActive={v.selectionActive}
           isSelected={v.selection.isSelected}
           onSelect={(id, shiftKey) => v.selection.toggle(id, shiftKey)}
@@ -95,7 +88,6 @@ export function View() {
       <SelectionActions
         count={v.selection.count}
         onClear={v.selection.clearSelection}
-        onUnlink={() => void v.unlinkSelected()}
         onDownload={() => void v.downloadSelected()}
         onDelete={() => void v.deleteSelected()}
       />
