@@ -6,9 +6,9 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import styles from './download-dialog.module.css'
 import type { UserImage } from '#/features/user-images/types'
+import { Button } from '#/components/button/button'
 import {
   ActionButton,
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -133,7 +133,7 @@ export function DownloadDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="secondary" size="sm">
           <Download className={styles.triggerIcon} />
           Download
         </Button>

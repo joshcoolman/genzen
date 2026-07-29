@@ -2,7 +2,8 @@
 
 import { Trash2 } from 'lucide-react'
 import styles from './empty-dialog.module.css'
-import { Button, ConfirmDialog } from '#/components'
+import { ConfirmDialog } from '#/components'
+import { Button } from '#/components/button/button'
 
 interface EmptyDialogProps {
   /** Everything in the trash, linked or not -- the number the copy quotes when
@@ -45,11 +46,7 @@ export function EmptyDialog({
       confirmLabel={kept > 0 ? `Delete ${deletable} Items` : 'Delete All'}
       onConfirm={onConfirm}
     >
-      <Button
-        variant="destructive"
-        size="sm"
-        disabled={busy || deletable === 0}
-      >
+      <Button variant="danger" size="sm" disabled={busy || deletable === 0}>
         <Trash2 className={styles.icon} />
         Empty Trash
       </Button>

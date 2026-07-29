@@ -1,4 +1,6 @@
-/* Margin only -- the button variant sizes its own svg. */
+/* The ported Button does not size children's svgs; the call site does. */
 .icon {
   margin-right: var(--space-4);
+  width: 1rem;
+  height: 1rem;
 }

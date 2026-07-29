@@ -2,7 +2,8 @@
 
 import { RotateCcw, Trash2 } from 'lucide-react'
 import styles from './selection-bar.module.css'
-import { Button, ConfirmDialog, SelectionDrawer } from '#/components'
+import { ConfirmDialog, SelectionDrawer } from '#/components'
+import { Button } from '#/components/button/button'
 
 interface SelectionBarProps {
   count: number
@@ -37,7 +38,7 @@ export function SelectionBar({
         confirmLabel="Delete Forever"
         onConfirm={onDelete}
       >
-        <Button variant="destructive" size="sm" disabled={busy}>
+        <Button variant="danger" size="sm" disabled={busy}>
           <Trash2 className={styles.icon} />
           Delete ({count})
         </Button>

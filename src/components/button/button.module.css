@@ -1,0 +1,119 @@
+/*
+ * Button — ported from ~/repos/bootsy, kept as close to byte-identical as the
+ * token vocabularies allow, so the two can be re-synced by diff rather than by
+ * reading. Bootsy's own note on why these four variants:
+ *
+ *   Before this primitive there were 61 hand-rolled `<button>` elements across
+ *   19 files with no shared class, which had drifted into ~7 near-identical
+ *   variants, three different disabled treatments, and two disagreeing danger
+ *   styles. The variants below are the ones that had actually converged in the
+ *   codebase, not an invented set.
+ *
+ * State is driven off Base UI's data-attributes ([data-disabled],
+ * [data-focus-visible]) rather than CSS pseudo-classes or utility variants.
+ *
+ * TWO DELTAS from the bootsy original, both forced by token names that mean
+ * different things in the two repos. Anything else diverging is a mistake:
+ *   - `.primary` reads --accent-brand; bootsy's --accent is a grey here.
+ *   - --danger is genzen's, a more saturated red than bootsy's.
+ */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.375rem;
+  border: var(--border-width) solid transparent;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 150ms,
+    background-color 150ms,
+    border-color 150ms,
+    opacity 150ms;
+}
+
+/* One canonical disabled treatment, replacing the three that had diverged
+   (opacity-60, opacity-40 + pointer-events-none, and cursor-default). */
+.root[data-disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.root[data-focus-visible] {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+/* Sizes */
+
+.md {
+  padding: 0.5rem 1rem;
+  font-size: var(--text-sm);
+}
+
+.sm {
+  padding: 0.375rem 0.75rem;
+  font-size: var(--text-xs);
+}
+
+/* Variants */
+
+.primary {
+  background: var(--accent-brand);
+  color: var(--accent-contrast);
+}
+
+.primary:not([data-disabled]):hover {
+  opacity: 0.9;
+}
+
+.secondary {
+  border-color: var(--border);
+  color: var(--text-body);
+}
+
+.secondary:not([data-disabled]):hover {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.ghost {
+  color: var(--text-muted);
+}
+
+.ghost:not([data-disabled]):hover {
+  color: var(--text);
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  color: var(--danger);
+}
+
+.danger:not([data-disabled]):hover {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+/* Loading */
+
+.spinner {
+  width: 0.875em;
+  height: 0.875em;
+  flex-shrink: 0;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

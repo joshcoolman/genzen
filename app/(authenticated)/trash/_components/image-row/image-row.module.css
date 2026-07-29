@@ -86,10 +86,13 @@
   gap: var(--space-4);
 }
 
-/* Margin only. The button variant sizes its own svg, and a module rule is
-   unlayered, so stating a size here would silently override it. */
+/* The ported Button does not size its children's svgs -- that is the call
+   site's job, deliberately, after the shadcn one's invisible
+   `[&_svg:not([class*='size-'])]` rule made every h-3 w-3 here dead. */
 .buttonIcon {
   margin-right: var(--space-4);
+  width: 1rem;
+  height: 1rem;
 }
 
 .deleteButton,
