@@ -48,11 +48,18 @@ export function useView() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   // Sort the chain -- the parent always stays at position 0.
-  const images = prefs.sortAsc
-    ? page.chainImages.length > 1
-      ? [page.chainImages[0], ...[...page.chainImages.slice(1)].reverse()]
-      : page.chainImages
-    : page.chainImages
+  //
+  // Memoised because an effect below mirrors this into selection state. Sorting
+  // ascending builds a new array, so without this the effect saw a new
+  // dependency on every render and set state on every render: "Maximum update
+  // depth exceeded", but only once you had pressed the sort button.
+  const images = useMemo(
+    () =>
+      prefs.sortAsc && page.chainImages.length > 1
+        ? [page.chainImages[0], ...[...page.chainImages.slice(1)].reverse()]
+        : page.chainImages,
+    [page.chainImages, prefs.sortAsc],
+  )
 
   useEffect(() => {
     setSelectionItems(images.map((img) => img.id))
@@ -134,13 +141,18 @@ export function useView() {
   }, [selection, imageId, page])
 
   // The lightbox shows completed images only, always at full resolution.
-  const lightboxImages: Array<LightboxImage> = images
-    .filter((img) => img.status === 'completed' && img.storage_path)
-    .map((img) => ({
-      id: img.id,
-      url: getR2PublicUrl(img.storage_path!),
-      title: img.title,
-    }))
+  // Memoised for the same reason: everything downstream depends on it.
+  const lightboxImages: Array<LightboxImage> = useMemo(
+    () =>
+      images
+        .filter((img) => img.status === 'completed' && img.storage_path)
+        .map((img) => ({
+          id: img.id,
+          url: getR2PublicUrl(img.storage_path!),
+          title: img.title,
+        })),
+    [images],
+  )
 
   const lightboxImageUrls = useMemo(() => {
     const urls: Record<string, string> = {}
