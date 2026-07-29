@@ -120,8 +120,20 @@ to the browser.
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow `~/repos/project-standard`.
 
-**Last shipped** (2026-07-28)
+**Last shipped** (2026-07-29)
 
+- **Trash is at zero shadcn, Tailwind and Radix (#191).** Dialog, Input, Badge
+  and Tooltip are ours on Base UI; `SelectionDrawer` and `ImageGrid` moved off
+  utilities. The parts keep shadcn's names (`DialogContent`, not
+  `DialogPopup`), and `DialogHeader`/`DialogFooter` — which Base UI does not
+  have — are supplied rather than pushed onto call sites, so the other 16
+  Dialog consumers convert by changing an import.
+- **Module-vs-module is decided by bundle order, and that is the new hazard.**
+  A utility used to lose to a CSS module by layer; two modules each setting
+  `color` on one class just race. The Canvas badge lost and rendered white
+  instead of blue. `Badge` now takes colour through `--badge-color` /
+  `--badge-border` — a custom property has no fight to lose. Prefer that over
+  `composes:` when a component is coloured by its call site.
 - **Button and ConfirmDialog are ported from `~/repos/bootsy`, on Base UI.** No
   shadcn, no Radix, CSS Modules. The Button brings a real `loading` state with
   `aria-busy` and drives state off Base UI's `[data-disabled]`; the dialog gets
@@ -149,22 +161,12 @@ Conventions follow `~/repos/project-standard`.
   component that runs the read and hands the payload to `view.tsx` as `initial`.
   The loading state stopped existing along with the empty first paint. The
   407-line `TrashDisplay` became six subject-named parts.
-- **Icons come from `lucide-react`** — rule now in `~/repos/project-standard`.
-  Five inline `<svg>` blocks turned out to be lucide path data pasted by hand.
-  One survives, and it is why the rule is worded as it is: a rectangle drawn at
-  the chosen aspect ratio, which no icon library has.
 
 **Up next**
 
-- **#191 — Trash to zero shadcn/Tailwind.** Dialog, Input, Tooltip, Badge, and
-  two of our own components still styled with utilities. Trash's own `.tsx`
-  files already carry no raw Tailwind — all of it is inherited through
-  `src/components/`. The issue carries the traps already paid for; read it
-  before starting rather than rediscovering them.
 - **#185 — Pass 2: styling.** Login, Settings, Account, Activity and Trash are
-  done. 52 files still carry utility classes, and the shared list components
-  (`Thumbnail`, `ImageGrid`, `SelectionDrawer`) are the knot in the middle:
-  four routes render them.
+  done, and `ImageGrid` and `SelectionDrawer` went with Trash. `Thumbnail` is
+  the shared component still on utilities.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
