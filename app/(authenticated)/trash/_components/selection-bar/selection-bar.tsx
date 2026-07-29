@@ -2,7 +2,7 @@
 
 import { RotateCcw, Trash2 } from 'lucide-react'
 import styles from './selection-bar.module.css'
-import { ConfirmDialog, SelectionDrawer } from '#/components'
+import { ConfirmDialog, SelectionDrawer, useConfirm } from '#/components'
 import { Button } from '#/components/button/button'
 
 interface SelectionBarProps {
@@ -20,29 +20,36 @@ export function SelectionBar({
   onRestore,
   onDelete,
 }: SelectionBarProps) {
+  const { confirm, dialogProps } = useConfirm()
+  const noun = count === 1 ? 'item' : 'items'
+
+  async function ask() {
+    const ok = await confirm({
+      title: `Delete ${count} ${noun}?`,
+      message: `This will permanently delete ${count} ${noun} and their files. Linked items will be skipped. This action cannot be undone.`,
+      confirmLabel: 'Delete Forever',
+    })
+    if (ok) onDelete()
+  }
+
   return (
-    <SelectionDrawer count={count} onClear={onClear}>
-      <Button variant="ghost" size="sm" disabled={busy} onClick={onRestore}>
-        <RotateCcw className={styles.icon} />
-        Restore ({count})
-      </Button>
-      <ConfirmDialog
-        title={`Delete ${count} ${count === 1 ? 'item' : 'items'}?`}
-        description={
-          <>
-            This will permanently delete {count}{' '}
-            {count === 1 ? 'item' : 'items'} and their files. Linked items will
-            be skipped. This action cannot be undone.
-          </>
-        }
-        confirmLabel="Delete Forever"
-        onConfirm={onDelete}
-      >
-        <Button variant="danger" size="sm" disabled={busy}>
+    <>
+      <SelectionDrawer count={count} onClear={onClear}>
+        <Button variant="ghost" size="sm" disabled={busy} onClick={onRestore}>
+          <RotateCcw className={styles.icon} />
+          Restore ({count})
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          disabled={busy}
+          onClick={() => void ask()}
+        >
           <Trash2 className={styles.icon} />
           Delete ({count})
         </Button>
-      </ConfirmDialog>
-    </SelectionDrawer>
+      </SelectionDrawer>
+      <ConfirmDialog {...dialogProps} />
+    </>
   )
 }

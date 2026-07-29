@@ -193,6 +193,15 @@
      ======================================== */
 
   --surface-raised: hsl(0 0% 13%);
+  /* The surface of a floating layer. Bootsy's note on why it is not
+     `--surface`: it must separate from the page on sight, because it overlaps
+     content rather than sitting in the flow. Visibly lighter and more neutral
+     than genzen's `--card`, which is where dialogs used to sit. */
+  --surface-overlay: hsl(0 0% 20%);
+  /* The scrim behind one. Theme-independent in bootsy, and 50% where genzen's
+     own `--scrim` is 60% -- kept at bootsy's value so a ported dialog is not
+     subtly darker than the one it came from. */
+  --overlay: hsl(0 0% 0% / 50%);
   --text: hsl(0 0% 100%);
   --text-body: hsl(0 0% 100%);
   --text-muted: hsl(0 0% 56%);

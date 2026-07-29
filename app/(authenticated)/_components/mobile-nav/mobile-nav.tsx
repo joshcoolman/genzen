@@ -11,6 +11,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  useConfirm,
 } from '#/components'
 import { navItems } from '#/lib/nav-items'
 import { cn } from '#/lib/utils'
@@ -23,8 +24,16 @@ export function MobileNav({ className }: { className?: string }) {
 
   const mainItems = navItems.filter((item) => item.id !== 'account')
 
-  const handleSignOut = () => {
-    void logout()
+  const { confirm, dialogProps } = useConfirm()
+
+  async function askThenSignOut() {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: "You'll need to sign in again to access your account.",
+      confirmLabel: 'Log out',
+      destructive: false,
+    })
+    if (ok) void logout()
   }
 
   // Close sheet on route change
@@ -89,17 +98,14 @@ export function MobileNav({ className }: { className?: string }) {
                 {item.label}
               </Link>
             ))}
-            <ConfirmDialog
-              title="Log out?"
-              description="You'll need to sign in again to access your account."
-              confirmLabel="Log out"
-              onConfirm={handleSignOut}
+            <button
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors"
+              onClick={() => void askThenSignOut()}
             >
-              <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors">
-                <LogOut className="h-4 w-4" />
-                Log out
-              </button>
-            </ConfirmDialog>
+              <LogOut className="h-4 w-4" />
+              Log out
+            </button>
+            <ConfirmDialog {...dialogProps} />
           </nav>
         </SheetContent>
       </Sheet>

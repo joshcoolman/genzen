@@ -1,0 +1,72 @@
+/*
+ * Confirm dialog -- ported from ~/repos/bootsy.
+ *
+ * The spacing tokens are the one thing NOT copied verbatim, and the reason is
+ * worth stating where the next porter will read it: bootsy's --space-* scale is
+ * keyed by index (--space-2 is the 2nd step, 8px). Genzen's is keyed by pixel
+ * (--space-2 IS 2px). The names collide, the meanings do not, and a verbatim
+ * copy compiles and renders at a quarter size with nothing to catch it. The
+ * translation applied here is 2->8, 3->12, 4->16, 5->24.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--overlay);
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-24);
+}
+
+.popup {
+  display: flex;
+  width: 100%;
+  max-width: 28rem;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-20);
+  background: var(--surface-overlay);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.textCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Bootsy's `.house-eyebrow`, inlined. There it is a global typography class;
+   genzen has no global layer for it, so it lands here. Kept as their treatment
+   rather than translated into genzen's title style -- one less delta, and the
+   ported component should look like the ported component until a design pass
+   says otherwise. */
+.title {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.description {
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-16);
+}

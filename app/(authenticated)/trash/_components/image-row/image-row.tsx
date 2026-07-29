@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
 import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { ConfirmDialog, ImageBox } from '#/components'
+import { ConfirmDialog, ImageBox, useConfirm } from '#/components'
 // Trial: Trash uses our own Button while the rest of the app is still on the
 // shadcn one. Two exports cannot both be `Button` in the root barrel, so this
 // import is a deliberate temporary deviation from the one-barrel rule. It goes
@@ -56,6 +56,16 @@ export function ImageRow({
   onDelete,
 }: ImageRowProps) {
   const isLinked = onCanvas || dependents > 0
+  const { confirm, dialogProps } = useConfirm()
+
+  async function askThenDelete() {
+    const ok = await confirm({
+      title: 'Delete forever?',
+      message: `“${image.title}” will be permanently deleted. This action cannot be undone.`,
+      confirmLabel: 'Delete Forever',
+    })
+    if (ok) onDelete(image.id)
+  }
 
   return (
     <div
@@ -106,32 +116,25 @@ export function ImageRow({
               Restore
             </Button>
             {!isLinked && (
-              <ConfirmDialog
-                title="Delete forever?"
-                description={
-                  <>
-                    &ldquo;{image.title}&rdquo; will be permanently deleted.
-                    This action cannot be undone.
-                  </>
-                }
-                confirmLabel="Delete Forever"
-                onConfirm={() => onDelete(image.id)}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={styles.deleteButton}
+                disabled={busy}
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation()
+                  void askThenDelete()
+                }}
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={styles.deleteButton}
-                  disabled={busy}
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                >
-                  <X className={styles.buttonIcon} />
-                  Delete
-                </Button>
-              </ConfirmDialog>
+                <X className={styles.buttonIcon} />
+                Delete
+              </Button>
             )}
           </div>
         )}
       </div>
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   )
 }

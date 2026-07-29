@@ -13,6 +13,7 @@ export {
   ConfirmDialog,
   type ConfirmDialogProps,
 } from './confirm-dialog/confirm-dialog'
+export { useConfirm, type UseConfirm } from './confirm-dialog/use-confirm'
 export { CopyButton } from './copy-button/copy-button'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
