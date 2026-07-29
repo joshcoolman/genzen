@@ -2,7 +2,7 @@
 
 import { AppChrome } from '../app-chrome/app-chrome'
 import { SpotlightNav } from '../spotlight-nav/spotlight-nav'
-import { MissingKeyProvider } from '#/components'
+import { MissingKeyProvider, Toaster } from '#/components'
 import { useRouteMemory } from '#/lib/use-route-memory'
 
 // The client half of the dashboard layout: the chrome that needs hooks.
@@ -15,6 +15,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <MissingKeyProvider>
       <SpotlightNav />
       <AppChrome>{children}</AppChrome>
+      {/* Every `toast(...)` in the app renders here. It lives inside
+          MissingKeyProvider because that provider's error fallback is one of
+          the callers. */}
+      <Toaster />
     </MissingKeyProvider>
   )
 }

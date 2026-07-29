@@ -1,11 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import styles from './toast.module.css'
 
 /**
  * Minimal self-contained toast. Avoids a third-party toast lib (sonner) whose
  * CJS React interop breaks under this TanStack Start / Vite optimizeDeps setup.
  * Mount <Toaster /> once at the app root; call `toast(...)` from anywhere.
+ * It is mounted in `app/(authenticated)/_components/app-shell/app-shell.tsx` --
+ * for a long time it was mounted nowhere, so every `toast(...)` in the app ran
+ * correctly and painted nothing (#192).
+ *
+ * The two halves are decoupled on purpose: `toast()` is called from hooks and
+ * async callbacks that have no JSX, so it pushes onto a module-level array that
+ * <Toaster /> subscribes to. The cost of that is exactly the bug above -- the
+ * caller cannot tell whether anything is listening.
  */
 
 type ToastVariant = 'default' | 'success' | 'error'
@@ -75,12 +84,6 @@ toast.success = (message, opts) => add(message, { ...opts, variant: 'success' })
 toast.error = (message, opts) => add(message, { ...opts, variant: 'error' })
 toast.dismiss = (id) => remove(id)
 
-const ACCENT: Record<ToastVariant, string> = {
-  default: '#2a2a2a',
-  success: '#1f7a3d',
-  error: '#a33',
-}
-
 export function Toaster() {
   const [items, setItems] = useState<Array<ToastItem>>([])
 
@@ -94,52 +97,20 @@ export function Toaster() {
   }, [])
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        zIndex: 100,
-        pointerEvents: 'none',
-      }}
-    >
+    <div className={styles.viewport}>
       {items.map((t) => (
         <div
           key={t.id}
-          style={{
-            pointerEvents: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            minWidth: 280,
-            maxWidth: 420,
-            background: '#141414',
-            border: `1px solid ${ACCENT[t.variant]}`,
-            borderRadius: 10,
-            padding: '12px 14px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
-            color: '#eee',
-            fontSize: 13,
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-          }}
+          className={`${styles.toast} ${t.variant === 'default' ? '' : styles[t.variant]}`}
+          role={t.variant === 'error' ? 'alert' : 'status'}
         >
-          <span style={{ flex: 1 }}>{t.message}</span>
+          <span className={styles.message}>{t.message}</span>
           {(t.cancel || t.action) && (
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <div className={styles.buttons}>
               {t.cancel && (
                 <button
-                  style={{
-                    background: '#222',
-                    border: '1px solid #333',
-                    borderRadius: 6,
-                    color: '#bbb',
-                    fontSize: 12,
-                    padding: '5px 10px',
-                    cursor: 'pointer',
-                  }}
+                  type="button"
+                  className={styles.cancel}
                   onClick={() => {
                     t.cancel!.onClick()
                     remove(t.id)
@@ -150,16 +121,8 @@ export function Toaster() {
               )}
               {t.action && (
                 <button
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #fff',
-                    borderRadius: 6,
-                    color: '#111',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    padding: '5px 10px',
-                    cursor: 'pointer',
-                  }}
+                  type="button"
+                  className={styles.action}
                   onClick={() => {
                     t.action!.onClick()
                     remove(t.id)

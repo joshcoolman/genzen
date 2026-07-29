@@ -1,0 +1,90 @@
+/*
+ * Toaster. Was 60 lines of inline `style` with hardcoded hex -- #141414, #eee,
+ * a system-ui stack and a bare z-index of 100 that sat above every named layer.
+ * It predates the token file; nothing was wrong with it except that it could
+ * not follow a reskin. Same pixels, token-sourced.
+ */
+
+.viewport {
+  position: fixed;
+  right: var(--space-24);
+  bottom: var(--space-24);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+  /* The stack spans the corner but must not eat clicks between toasts; each
+     toast turns pointer events back on for itself. */
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  min-width: 280px;
+  max-width: 420px;
+  padding: var(--space-12) var(--space-14);
+  background: var(--surface-raised);
+  color: var(--text-body);
+  border: var(--border-width) solid var(--toast-accent, var(--border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}
+
+/* The variant sets one custom property rather than its own border rule, so the
+   base border declaration stays single and unbeatable by stylesheet order --
+   the hazard the Canvas badge found. */
+.success {
+  --toast-accent: var(--success-text);
+}
+
+.error {
+  --toast-accent: var(--danger);
+}
+
+.message {
+  flex: 1;
+}
+
+.buttons {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-6);
+}
+
+.cancel,
+.action {
+  padding: var(--space-6) var(--space-10);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.cancel {
+  background: var(--surface-overlay);
+  color: var(--text-muted);
+  border: var(--border-width) solid var(--border);
+}
+
+.cancel:hover {
+  color: var(--text);
+}
+
+/* The one high-contrast control in the app that is not the brand colour. It is
+   deliberate: Undo has seconds to be noticed before the toast expires, and a
+   green button here would read as "success", which is the message, not the
+   verb. */
+.action {
+  background: var(--on-dark);
+  color: var(--accent-contrast);
+  border: var(--border-width) solid var(--on-dark);
+  font-weight: var(--weight-semibold);
+}
+
+.action:hover {
+  opacity: 0.9;
+}

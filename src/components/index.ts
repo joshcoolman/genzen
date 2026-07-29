@@ -54,6 +54,7 @@ export {
 export { SourceImagePreview } from './source-image-preview/source-image-preview'
 export { Stack, type StackProps } from './stack/stack'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'
+export { toast, Toaster } from './toast/toast'
 
 // shadcn primitives (#185 replaces these with Base UI, one component at a time)
 export * from './ui/alert-dialog/alert-dialog'
@@ -69,5 +70,4 @@ export * from './ui/select/select'
 export * from './ui/sheet/sheet'
 export * from './ui/skeleton/skeleton'
 export * from './ui/textarea/textarea'
-export * from './ui/toast/toast'
 export * from './ui/tooltip/tooltip'

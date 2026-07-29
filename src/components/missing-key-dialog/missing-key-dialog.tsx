@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '../ui/dialog/dialog'
 import { Button } from '../ui/button/button'
-import { toast } from '../ui/toast/toast'
+import { toast } from '../toast/toast'
 import type { ReactNode } from 'react'
 import type { MissingKeyInfo } from '#/lib/ai-keys'
 import { parseMissingKey } from '#/lib/ai-keys'
