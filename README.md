@@ -154,18 +154,22 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- **#189 — Images and Canvas still have no route shape.** Edit is done and is
-  the proof the shape survives a complex view. Images is next (1025 lines);
-  Canvas is last at 1760, because it splits, converts off Tailwind and conforms
-  in one go.
-- **#186 — remove Tailwind.** Blocked only by canvas above and by
-  `src/styles.css` itself, which still owns Preflight and the `@theme` map.
+- **#202 — strip back to generating images.** The epic that came out of
+  converting Edit and then reading the result. Three removals, in order:
+  **#203** the AD assistant and BYOK, **#204** grouping and genealogy, then
+  **#205** the `/edit` route, replaced by a highlight on /images that makes an
+  image the reference for the next prompt. About a quarter of the codebase, and
+  the quarter that raises structural questions rather than generating images.
+- **#189 — route shape for Images and Canvas.** Edit is out of scope now; it is
+  being deleted rather than converted. Do the removals first.
+- **#186 — remove Tailwind.** Blocked by canvas and by `src/styles.css`, which
+  still owns Preflight and the `@theme` map.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
-  not take, and `undo()` never reverses the server write. Wants #189 first.
+  not take, and `undo()` never reverses the server write.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
-- **#195 — Spotlight offers a Docs route that was deleted.** One line.
 
-The app is now five surfaces and nothing else: Images, Canvas, Activity, Trash,
-Account — plus the AD assistant panel. If something does not serve generating
-and keeping images, it was cut on purpose.
+The app is heading for four surfaces and nothing else: Images, Canvas,
+Activity, Trash — plus Account. No assistant, no grouping, no separate edit
+page. If something does not serve generating and keeping images, it is being
+cut on purpose.
