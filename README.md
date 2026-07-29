@@ -47,26 +47,25 @@ about it — that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                             | Purpose                                     |
-| ----------------------------------- | ------------------------------------------- |
-| `pnpm local:up`                     | Start the local stack, write `.env.local`   |
-| `pnpm local:down`                   | Stop it (data kept)                         |
-| `pnpm local:reset`                  | Stop it and delete the volumes              |
-| `pnpm dev`                          | Next dev server on :3000                    |
-| `pnpm build`                        | Production build                            |
-| `pnpm test`                         | Vitest                                      |
-| `pnpm check`                        | Prettier + ESLint --fix (run before commit) |
-| `pnpm typecheck`                    | `tsc --noEmit` (the build typechecks too)   |
-| `pnpm db:migrate`                   | Apply pending `migrations/*.sql`            |
-| `pnpm auth:create-user`             | Create a user, or reset one's password      |
-| `npx shadcn@latest add <component>` | Add a shadcn component                      |
+| Command                 | Purpose                                     |
+| ----------------------- | ------------------------------------------- |
+| `pnpm local:up`         | Start the local stack, write `.env.local`   |
+| `pnpm local:down`       | Stop it (data kept)                         |
+| `pnpm local:reset`      | Stop it and delete the volumes              |
+| `pnpm dev`              | Next dev server on :3000                    |
+| `pnpm build`            | Production build                            |
+| `pnpm test`             | Vitest                                      |
+| `pnpm check`            | Prettier + ESLint --fix (run before commit) |
+| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)   |
+| `pnpm db:migrate`       | Apply pending `migrations/*.sql`            |
+| `pnpm auth:create-user` | Create a user, or reset one's password      |
 
 ## Stack
 
 | Layer       | Tech                                                       |
 | ----------- | ---------------------------------------------------------- |
 | App         | Next.js App Router (React 19 + Turbopack)                  |
-| UI          | CSS Modules + Base UI, migrating off Tailwind v4 / shadcn  |
+| UI          | CSS Modules + Base UI; Tailwind v4 still on routes         |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
 | Storage     | S3 — MinIO locally, Cloudflare R2 in prod                  |
@@ -122,66 +121,48 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-28)
 
-- **The component lane (#185) is done: `src/components/ui/` is 15 → 5.**
-  `skeleton`, `textarea`, `popover` and `dropdown-menu` joined `badge`, `input`
-  and `tooltip`; Radix is down to four files, three of them the dialog family.
-  What's left is `dialog`, `button`, `alert-dialog`, `sheet` and `command` (cmdk,
-  not Radix). Two rules came out of it: **a default that a call site will always
-  override is a liability, not a convenience** — Popover ships with no width and
-  no padding because a utility loses to an unlayered module and a module merely
-  races it — and **a shared component that spreads `{...rest}` after its own
-  `className` is a landmine**, since Base UI's `render` passes one where Radix's
+- **shadcn and Radix are out of the app (#193).** `src/components/ui/` is one
+  folder — `command`, which is cmdk. Dialog, Sheet, AlertDialog and Button are
+  ours on Base UI, and `radix-ui` is uninstalled. `ui/command` was never the
+  blocker it was filed as: cmdk is not Radix, and its only tie to the old
+  primitive was one `DialogContent` import.
+- **The rule the whole conversion came down to: a property the call site sets is
+  a custom property, not a class it re-declares.** Two CSS modules setting
+  `max-width` on one element race on bundle order. `DialogContent` takes
+  `--dialog-max-width` / `--dialog-max-height` / `--dialog-overflow` /
+  `--dialog-padding` / `--dialog-title-color`; Sheet takes `--sheet-*`. Repeated
+  _shapes_ became props rather than components — `size="wide"`,
+  `size="fullscreen"`, and `ConfirmDialog`'s `choices`.
+- **The inner-scroll recipe, used five times:** `--dialog-overflow: hidden` on
+  the popup, then `overflow-y: auto` **and `min-height: 0`** on the scrolling
+  child. Without the min-height a flex item's minimum size is its content, so
+  the popup grows past its own max-height instead of the list scrolling.
+- **`autoFocus` inside a focus trap is a silent no-op.** The download-name field
+  would have come up unfocused with its Enter-to-download path unreachable.
+  Base UI wants the control named by ref (`initialFocus`).
+- **The component lane (#185) is done: `src/components/ui/` went 15 → 1.**
+  `skeleton`, `textarea`, `popover`, `dropdown-menu`, `badge`, `input`,
+  `tooltip`. A shared component that spreads `{...rest}` after its own
+  `className` is a landmine: Base UI's `render` passes one where Radix's
   `asChild` never did.
-- **`src/components/ui/` needed a component-first pass to shrink at all.** A
-  route-driven pass never reaches the point where a shared component's file can
-  be deleted, since "every consumer converted" is not a route's finish line —
-  and both names cannot sit in the root barrel at once, so route-first quietly
-  accumulates deep imports. Chasing a component's consumers is what flips the
-  barrel. Dialog stays route-first for the opposite reason: its consumers hold
-  all the hazards.
-- **Mixed-library composition has a right nesting and a wrong one.** Radix
-  `asChild` outside, Base UI `render` inside, one real element at the bottom —
-  then both merge onto _it_ rather than onto each other's wrapper. The sidebar's
-  Log out button is the worked example, and the sheet and alert-dialog clusters
-  will hit it again.
-- **#193 clusters 1-2 done, 6 of 19 dialog files.** The survey had
-  `mobile-dialog-header` as the blocking leaf; the dependency runs the other way
-  — `DialogTitle` wires `aria-labelledby`, so it must come from whichever
-  library owns the surrounding Dialog, and its consumers are cluster 5. It flips
-  with them, not before.
 - **Every toast in the app was invisible, and now isn't (#192).** `<Toaster />`
   was mounted nowhere, so six `toast(...)` calls ran correctly and painted
-  nothing — including the canvas Undo affordance. Probably lost in the TanStack
-  → Next port. `toast/` also left `ui/`: it was never shadcn, and its 60 lines
-  of inline hex became a CSS module on tokens. Mounting it exposed a second bug
-  the silence had been hiding, #194 — that Undo does not restore.
-- **Module-vs-module is decided by bundle order, and that is the new hazard.**
-  A utility used to lose to a CSS module by layer; two modules each setting
-  `color` on one class just race. The Canvas badge lost and rendered white
-  instead of blue. `Badge` now takes colour through `--badge-color` /
-  `--badge-border` — a custom property has no fight to lose. Prefer that over
-  `composes:` when a component is coloured by its call site.
+  nothing — including the canvas Undo affordance. Mounting it exposed a second
+  bug the silence had been hiding, #194 — that Undo does not restore.
 
 **Up next**
 
-The component-first sub-lane is finished. #185 stays open for the routes that
-still carry utility classes; #193 owns what is left of shadcn and Radix.
-
-- **#193 — the dialog lane.** Route-first, because the hazards live in the call
-  sites. Cluster 3 next — `generate-prompts`, `variation-prompts`,
-  `failed-image-card` — which settles the inner-scroll recipe. No consumer
-  anywhere uses a Radix escape hatch our `DialogContent` lacks. `sheet` and
-  `alert-dialog` are the other two Radix files and belong to the same lane.
-- **`Button` is the one to be careful with.** Its 12 call sites can flip any
-  time, but `ui/button` cannot be deleted until `ui/dialog` and
-  `ui/alert-dialog` stop importing it. Converting call sites and deleting the
-  file are separate unlocks.
+- **#185 — what's left of the styling pass is routes, not components.** 60-odd
+  `.tsx` files still carry utility classes; the primitives underneath them are
+  all ours now. `ui/command` and `Thumbnail` are the two that convert with their
+  own consumers rather than ahead of them.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write. Wants #189 first.
 - **#189 — the oversized files**, `InfiniteCanvas.tsx` chief among them at 1764
   lines. A real refactor; deliberately after the mechanical pass.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
+- **#195 — Spotlight offers a Docs route that was deleted.** One line.
 
 The app is now five surfaces and nothing else: Images, Canvas, Activity, Trash,
 Account — plus the AD assistant panel. If something does not serve generating

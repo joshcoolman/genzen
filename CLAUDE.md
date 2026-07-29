@@ -1,11 +1,10 @@
-Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), Tailwind v4, shadcn/ui
+Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Modules + Base UI (Tailwind v4 still on routes)
 
 ## Commands
 
 - `pnpm check` -- prettier + eslint fix (run before commit)
 - `pnpm build` -- production build (run after check, before commit)
 - `pnpm test` -- vitest
-- `npx shadcn@latest add <component>` -- add UI components
 
 ## Structure
 
@@ -16,7 +15,8 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), Tailwin
 - `src/features/` -- headless domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
 - `src/lib/server/` -- server-only code uses `.server.ts` suffix
 - `src/components/` -- primitives, one folder per component, imported from the
-  single root barrel `#/components` (which also re-exports `ui/`, the shadcn set)
+  single root barrel `#/components`. Hand-rolled or on Base UI; there is no
+  shadcn set left, and no Radix. `ui/command` is the one holdout (cmdk)
 - `migrations/` -- numbered SQL migrations, applied by `pnpm db:migrate`
 
 ## Services
