@@ -117,8 +117,9 @@ the conformance pass (#187) is still in flight.
 
 **How a route is built: `docs/reference/route-shape.md`.** `page.tsx` renders
 `view.tsx`, which composes components and carries no styles; `use-view.ts` holds
-the state. `app/(authenticated)/activity/` is the worked example — copy it, not
-an older route.
+the state. Copy `app/(authenticated)/trash/`, not an older route: Activity
+established the shape but still fetches from the client, and Trash settled the
+seam — `page.tsx` reads on the server and seeds the view.
 
 ## Gotchas
 
