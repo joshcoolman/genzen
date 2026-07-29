@@ -1,4 +1,4 @@
-Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Modules + Base UI (Tailwind is gone from components; #186 removes the dependency)
+Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Modules + Base UI (no Tailwind, no CSS framework)
 
 ## Commands
 
@@ -124,5 +124,5 @@ seam — `page.tsx` reads on the server and seeds the view.
 
 - Route protection is deny-by-default in `proxy.ts`; a new public path must be
   added to its `PUBLIC_PATHS`, or it redirects to /login
-- Tailwind v4 config is CSS-based in `src/styles.css` -- there is no `tailwind.config` file. No `.tsx` uses a utility class any more except `infinite-canvas.tsx`; styling is CSS Modules beside the component, on the tokens in `src/styles/tokens.css`
+- There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone
 - FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.server.ts`

@@ -184,8 +184,9 @@ it has caught are on #185; two that bear repeating:
 - When a column is genuinely unstable, mask it and say so. "Excluding the
   thumbnail column, max delta 0" is a stronger and more honest claim than one
   number over the whole image.
-- **A module class is unlayered, so it beats every utility it replaces.**
-  Tailwind's output sits in `@layer utilities`; an unlayered rule wins whatever
+- **A module class is unlayered, so it beat every utility it replaced.** (Historical
+  — Tailwind is gone as of #186, but this is why the conversion diffs came out clean.)
+  Tailwind's output sat in `@layer utilities`; an unlayered rule wins whatever
   the specificity. Convenient for `hover:` pairs — `.deleteButton { color }` no
   longer needs a hover twin to outrank `hover:text-accent-foreground`. Dangerous
   for anything a shadcn variant sizes: `Button` sets its own svg via

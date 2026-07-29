@@ -65,7 +65,7 @@ about it — that's the usual reason generation 401s.
 | Layer       | Tech                                                       |
 | ----------- | ---------------------------------------------------------- |
 | App         | Next.js App Router (React 19 + Turbopack)                  |
-| UI          | CSS Modules + Base UI (Tailwind v4 on its way out, #186)   |
+| UI          | CSS Modules + Base UI, on the tokens in `src/styles/`      |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
 | Storage     | S3 — MinIO locally, Cloudflare R2 in prod                  |
@@ -106,7 +106,9 @@ to the browser.
 ## Conventions / gotchas
 
 - Route protection is deny-by-default in `proxy.ts` — a new public path must be listed in its `PUBLIC_PATHS`.
-- Tailwind v4 has no `tailwind.config.*`; theme lives in `src/styles.css`.
+- No Tailwind and no CSS framework. `src/styles/tokens.css` is the token layer,
+  `src/styles/base.css` the reset; everything else is a `.module.css` beside its
+  component. `src/styles.css` only imports those two.
 - Server-only code uses the `.server.ts` suffix; do not import it from client code.
 - FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.server.ts`. Webhooks are optional and gated by env.
 - S3 public URLs do not expire — safe to persist in DB rows.
