@@ -1,0 +1,13 @@
+/* The sidebar is otherwise still on utilities -- it is part of the alert-dialog
+   and sheet clusters, not this one. This file exists so the tooltip's own
+   styling is fully off them, and is where the rest lands when the sidebar
+   converts. */
+
+/* When the sidebar is expanded the labels are already visible on desktop, so
+   the tooltip would just repeat them. It stays for the narrow layout, where the
+   rail is icons only. Was `md:hidden`. */
+@media (min-width: 768px) {
+  .hideOnDesktop {
+    display: none;
+  }
+}

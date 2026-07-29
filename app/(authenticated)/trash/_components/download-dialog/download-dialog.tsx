@@ -6,12 +6,10 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import styles from './download-dialog.module.css'
 import type { UserImage } from '#/features/user-images/types'
-// Trash is the pilot route for the Base UI set, so these come from the folders
-// rather than the root barrel: the shadcn `Dialog` and `Input` still occupy
-// those names there for the other 16 consumers. The deep imports go the moment
-// the barrel flips.
+import { Input } from '#/components'
+// Deep imports while the shadcn `Dialog` and `Button` still hold those names in
+// the barrel for their remaining consumers. They go when the barrel flips.
 import { Button } from '#/components/button/button'
-import { Input } from '#/components/input/input'
 import {
   Dialog,
   DialogContent,

@@ -7,6 +7,7 @@ export {
   getRatioOptions,
   flipOrientation,
 } from './aspect-ratio-select/aspect-ratio-constants'
+export { Badge, type BadgeProps } from './badge/badge'
 export { ClipboardPasteButton } from './clipboard-paste-button/clipboard-paste-button'
 export { useClipboardPaste } from './clipboard-paste-button/use-clipboard-paste'
 export {
@@ -19,6 +20,7 @@ export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-b
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'
 export { ImageBox, type ImageBoxProps } from './image-box/image-box'
+export { Input, type InputProps } from './input/input'
 export { ImageGrid, ImageGridSkeleton } from './image-grid/image-grid'
 export { ImageSourceButtons } from './image-source-buttons/image-source-buttons'
 export {
@@ -54,18 +56,21 @@ export {
 export { SourceImagePreview } from './source-image-preview/source-image-preview'
 export { Stack, type StackProps } from './stack/stack'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './tooltip/tooltip'
 export { toast, Toaster } from './toast/toast'
 
 // shadcn primitives (#185 replaces these with Base UI, one component at a time)
 export * from './ui/alert-dialog/alert-dialog'
-export * from './ui/badge/badge'
 export * from './ui/button/button'
 export * from './ui/command/command'
 export * from './ui/dialog/dialog'
 export * from './ui/dropdown-menu/dropdown-menu'
-export * from './ui/input/input'
 export * from './ui/popover/popover'
 export * from './ui/sheet/sheet'
 export * from './ui/skeleton/skeleton'
 export * from './ui/textarea/textarea'
-export * from './ui/tooltip/tooltip'

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import styles from './sidebar.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
   AlertDialog,
@@ -50,7 +51,7 @@ export function Sidebar({ className }: { className?: string }) {
       )}
     >
       {/* Navigation */}
-      <TooltipProvider delayDuration={0}>
+      <TooltipProvider delay={0}>
         <nav className="flex-1 space-y-1 p-4">
           {mainItems.map((item) => {
             const active = isActive(item)
@@ -60,35 +61,33 @@ export function Sidebar({ className }: { className?: string }) {
                   <div className="my-2 border-t border-border" />
                 )}
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
-                        'gap-3',
-                        isCollapsed
-                          ? 'justify-center'
-                          : 'justify-center md:justify-start',
-                        active
-                          ? cn(
-                              'bg-sidebar-selected text-sidebar-selected-text',
-                              !isCollapsed &&
-                                'md:border-l-2 md:border-accent-brand',
-                            )
-                          : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
-                      )}
-                    >
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      {!isCollapsed && (
-                        <span className="hidden flex-1 md:inline">
-                          {item.label}
-                        </span>
-                      )}
-                    </Link>
+                  <TooltipTrigger
+                    render={<Link href={item.href} />}
+                    className={cn(
+                      'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                      'gap-3',
+                      isCollapsed
+                        ? 'justify-center'
+                        : 'justify-center md:justify-start',
+                      active
+                        ? cn(
+                            'bg-sidebar-selected text-sidebar-selected-text',
+                            !isCollapsed &&
+                              'md:border-l-2 md:border-accent-brand',
+                          )
+                        : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!isCollapsed && (
+                      <span className="hidden flex-1 md:inline">
+                        {item.label}
+                      </span>
+                    )}
                   </TooltipTrigger>
                   <TooltipContent
                     side="right"
-                    className={cn('text-xs', !isCollapsed && 'md:hidden')}
+                    className={isCollapsed ? undefined : styles.hideOnDesktop}
                     sideOffset={8}
                   >
                     {item.label}
@@ -100,35 +99,30 @@ export function Sidebar({ className }: { className?: string }) {
           <div className="my-2 border-t border-border" />
           {[accountItem].map((item) => (
             <Tooltip key={item.id}>
-              <TooltipTrigger asChild>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
-                    'gap-3',
-                    isCollapsed
-                      ? 'justify-center'
-                      : 'justify-center md:justify-start',
-                    isActive(item)
-                      ? cn(
-                          'bg-sidebar-selected text-sidebar-selected-text',
-                          !isCollapsed &&
-                            'md:border-l-2 md:border-accent-brand',
-                        )
-                      : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {!isCollapsed && (
-                    <span className="hidden flex-1 md:inline">
-                      {item.label}
-                    </span>
-                  )}
-                </Link>
+              <TooltipTrigger
+                render={<Link href={item.href} />}
+                className={cn(
+                  'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                  'gap-3',
+                  isCollapsed
+                    ? 'justify-center'
+                    : 'justify-center md:justify-start',
+                  isActive(item)
+                    ? cn(
+                        'bg-sidebar-selected text-sidebar-selected-text',
+                        !isCollapsed && 'md:border-l-2 md:border-accent-brand',
+                      )
+                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text',
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                {!isCollapsed && (
+                  <span className="hidden flex-1 md:inline">{item.label}</span>
+                )}
               </TooltipTrigger>
               <TooltipContent
                 side="right"
-                className={cn('text-xs', !isCollapsed && 'md:hidden')}
+                className={isCollapsed ? undefined : styles.hideOnDesktop}
                 sideOffset={8}
               >
                 {item.label}
@@ -137,26 +131,30 @@ export function Sidebar({ className }: { className?: string }) {
           ))}
           <AlertDialog>
             <Tooltip>
-              <TooltipTrigger asChild>
-                <AlertDialogTrigger asChild>
-                  <button
-                    className={cn(
-                      'flex w-full items-center rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors gap-3',
-                      isCollapsed
-                        ? 'justify-center'
-                        : 'justify-center md:justify-start',
-                    )}
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" />
-                    {!isCollapsed && (
-                      <span className="hidden md:inline">Log out</span>
-                    )}
-                  </button>
-                </AlertDialogTrigger>
-              </TooltipTrigger>
+              {/* Radix's `asChild` on the outside, Base UI's `render` on the
+                  inside, one real <button> at the bottom -- both libraries
+                  merge onto the same element rather than onto each other. The
+                  one mixed-library composition left in this file; it unwinds
+                  when the AlertDialog cluster lands. */}
+              <AlertDialogTrigger asChild>
+                <TooltipTrigger
+                  render={<button type="button" />}
+                  className={cn(
+                    'flex w-full items-center rounded-md px-3 py-2 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-hover-text transition-colors gap-3',
+                    isCollapsed
+                      ? 'justify-center'
+                      : 'justify-center md:justify-start',
+                  )}
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && (
+                    <span className="hidden md:inline">Log out</span>
+                  )}
+                </TooltipTrigger>
+              </AlertDialogTrigger>
               <TooltipContent
                 side="right"
-                className={cn('text-xs', !isCollapsed && 'md:hidden')}
+                className={isCollapsed ? undefined : styles.hideOnDesktop}
                 sideOffset={8}
               >
                 Log out

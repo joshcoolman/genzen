@@ -1,13 +1,6 @@
 import { LayoutDashboard, Link2 } from 'lucide-react'
 import styles from './link-badge.module.css'
-// Deep imports for the same reason as download-dialog: the shadcn `Badge` and
-// `Tooltip` still hold those names in the root barrel for the rest of the app.
-import { Badge } from '#/components/badge/badge'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/tooltip/tooltip'
+import { Badge, Tooltip, TooltipContent, TooltipTrigger } from '#/components'
 
 /** Why a trashed image cannot be deleted. `canvas` is a placement on the
  *  canvas; `linked` is `dependents` living images that still point at it. The

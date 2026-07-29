@@ -6,8 +6,7 @@ import { ImageList } from './_components/image-list/image-list'
 import { SelectionBar } from './_components/selection-bar/selection-bar'
 import { useView } from './use-view'
 import type { TrashPayload } from './_actions/trash'
-import { PageHeader, Stack } from '#/components'
-import { TooltipProvider } from '#/components/tooltip/tooltip'
+import { PageHeader, Stack, TooltipProvider } from '#/components'
 
 export function View({ initial }: { initial: TrashPayload }) {
   const {
