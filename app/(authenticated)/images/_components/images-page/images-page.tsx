@@ -26,6 +26,7 @@ import { DescribeDialog } from '../../../_components/describe-dialog/describe-di
 import { ImageLightbox } from '../image-lightbox/image-lightbox'
 import { ParentPickerDialog } from '../parent-picker-dialog/parent-picker-dialog'
 import { GroupPickerDialog } from '../group-picker-dialog/group-picker-dialog'
+import styles from './images-page.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
@@ -39,15 +40,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
+  Input,
+  MobileDialogHeader,
+  SelectionDrawer,
+} from '#/components'
+// Deep import while the barrel still holds the shadcn Dialog for AlertDialog's
+// and Command's use of it -- see #193.
+import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
-  MobileDialogHeader,
-  SelectionDrawer,
-} from '#/components'
+} from '#/components/dialog/dialog'
 import { useImagesPage } from '#/features/ai-images/index'
 import { groupImages } from '#/features/ai-images/server/group-images.server'
 import { ungroupImages } from '#/features/ai-images/server/ungroup-images.server'
@@ -455,6 +460,10 @@ export function ImagesPage() {
     null,
   )
   const [downloadName, setDownloadName] = useState('')
+  // Base UI focuses the popup itself on open, so the name field has to be named
+  // explicitly -- `autoFocus` on the Input is a no-op inside a focus trap, and
+  // silently so: the Enter-to-download path would just be unreachable.
+  const downloadNameRef = useRef<HTMLInputElement>(null)
   const [downloading, setDownloading] = useState(false)
 
   const handleDownload = useCallback((img: SavedAiImage) => {
@@ -729,12 +738,12 @@ export function ImagesPage() {
       {/* Generator panel — full-screen dialog on mobile, right sidebar on desktop */}
       {isMobile ? (
         <Dialog open={generatorOpen} onOpenChange={setGeneratorOpen}>
-          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+          <DialogContent size="fullscreen" showCloseButton={false}>
             <MobileDialogHeader
               title="Generate"
               onClose={() => setGeneratorOpen(false)}
             />
-            <div className="flex-1 overflow-y-auto px-3 py-2">
+            <div className={styles.mobilePanelBody}>
               <GeneratorPanel
                 generator={page.generator}
                 modelSelector={page.modelSelector}
@@ -909,15 +918,18 @@ export function ImagesPage() {
           if (!open) setDownloadTarget(null)
         }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent
+          className={styles.downloadPopup}
+          initialFocus={downloadNameRef}
+        >
           <DialogHeader>
             <DialogTitle>Download</DialogTitle>
           </DialogHeader>
           <Input
+            ref={downloadNameRef}
             value={downloadName}
             onChange={(e) => setDownloadName(e.target.value)}
             placeholder="Name..."
-            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter' && downloadName.trim()) {
                 void executeDownload()

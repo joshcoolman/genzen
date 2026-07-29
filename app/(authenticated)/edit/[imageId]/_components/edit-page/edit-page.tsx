@@ -25,17 +25,19 @@ import { DescribeDialog } from '../../../../_components/describe-dialog/describe
 import { VariationPromptsDialog } from '../../../../_components/variation-prompts-dialog/variation-prompts-dialog'
 import { ExistingImagePicker } from '../../../../_components/existing-image-picker/existing-image-picker'
 import { CircularIconButton } from '../circular-icon-button/circular-icon-button'
+import styles from './edit-page.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import {
-  ActionButton,
   Button,
-  Dialog,
-  DialogContent,
   Lightbox,
   MobileDialogHeader,
   SelectionDrawer,
 } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button as HouseButton } from '#/components/button/button'
+import { Dialog, DialogContent } from '#/components/dialog/dialog'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { useSelection } from '#/lib/use-selection'
 import { useEditPage } from '#/features/ai-images/hooks/use-edit-page'
@@ -477,12 +479,12 @@ export function EditPage() {
       {/* Edit panel — full-screen dialog on mobile, right sidebar on desktop */}
       {isMobile ? (
         <Dialog open={panelOpen} onOpenChange={setPanelOpen}>
-          <DialogContent className="sm:max-w-full h-screen max-h-screen p-0 m-0 rounded-none border-0 flex flex-col">
+          <DialogContent size="fullscreen" showCloseButton={false}>
             <MobileDialogHeader
               title="Edit"
               onClose={() => setPanelOpen(false)}
             />
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            <div className={styles.mobilePanelBody}>
               <GeneratorPanel
                 generator={page.generator}
                 modelSelector={page.modelSelector}
@@ -496,15 +498,16 @@ export function EditPage() {
               />
 
               {/* Variations button */}
-              <ActionButton
-                variant="outline"
+              <HouseButton
+                variant="secondary"
                 onClick={page.handleOpenVariationDialog}
                 loading={page.variationPromptsLoading}
-                loadingText="Generating..."
-                className="w-full"
+                className={styles.variations}
               >
-                Generate Variations
-              </ActionButton>
+                {page.variationPromptsLoading
+                  ? 'Generating...'
+                  : 'Generate Variations'}
+              </HouseButton>
             </div>
           </DialogContent>
         </Dialog>
@@ -544,15 +547,16 @@ export function EditPage() {
             />
 
             {/* Variations button */}
-            <ActionButton
-              variant="outline"
+            <HouseButton
+              variant="secondary"
               onClick={page.handleOpenVariationDialog}
               loading={page.variationPromptsLoading}
-              loadingText="Generating..."
-              className="w-full"
+              className={styles.variations}
             >
-              Generate Variations
-            </ActionButton>
+              {page.variationPromptsLoading
+                ? 'Generating...'
+                : 'Generate Variations'}
+            </HouseButton>
           </div>
         </div>
       )}

@@ -1,0 +1,17 @@
+/* Dialog-scoped only. The rest of this page is still on utilities and converts
+   with the route in #185 -- this file exists because cluster 5 of #193 needed
+   somewhere for the two dialogs' classes to land. */
+
+/* The scrolling body of the full-screen mobile generator. The popup itself is
+   `--dialog-overflow: hidden` via size="fullscreen", so this is the part that
+   moves. */
+.mobilePanelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-12);
+}
+
+.downloadPopup {
+  --dialog-max-width: 24rem;
+}

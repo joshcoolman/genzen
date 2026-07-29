@@ -57,6 +57,26 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* `size="fullscreen"`. The mobile shape: the dialog *is* the screen, so the
+   popup drops its rounding, border and padding and the viewport drops its
+   inset -- a padded viewport would leave a 24px gutter of backdrop around a
+   "full" screen. Both consumers pair it with MobileDialogHeader, which brings
+   its own close button. */
+.viewportFlush {
+  padding: 0;
+}
+
+.fullscreen {
+  --dialog-max-width: 100%;
+  --dialog-max-height: 100vh;
+  --dialog-overflow: hidden;
+  height: 100vh;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  gap: 0;
+}
+
 /* `size="wide"`. A picker is sized off the viewport rather than off its content
    -- it is a grid of thumbnails, and 32rem shows two of them. Both pickers had
    this as an inline `style`, which the new DialogContent rejects at the type

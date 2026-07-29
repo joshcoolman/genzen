@@ -1,0 +1,16 @@
+/* Dialog-scoped only -- the rest of this page is still on utilities and
+   converts with the route in #185. Deliberately the same body as images-page's
+   mobile panel, plus the gap its extra button needs. */
+.mobilePanelBody {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-8);
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-12);
+}
+
+.variations {
+  width: 100%;
+}

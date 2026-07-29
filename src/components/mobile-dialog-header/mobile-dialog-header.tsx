@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { DialogTitle } from '../ui/dialog/dialog'
+import { DialogTitle } from '../dialog/dialog'
 import styles from './mobile-dialog-header.module.css'
 
 interface MobileDialogHeaderProps {
@@ -17,12 +17,11 @@ interface MobileDialogHeaderProps {
  * ordering fight that made the Canvas badge render the wrong colour. A plain
  * div wins by not entering it.
  *
- * The `DialogTitle` import still points at the shadcn dialog, and has to: that
- * part is what wires the dialog's `aria-labelledby`, so it must come from
- * whichever library owns the surrounding Dialog. Both consumers (images-page,
- * edit-page) are still on the shadcn one, and a Base UI `Dialog.Title` inside a
- * Radix Dialog has no context to attach to. That one line flips with them, in
- * one commit, as cluster 5 of #193. Nothing else here depends on either library.
+ * `DialogTitle` is what wires the dialog's `aria-labelledby`, so it has to come
+ * from whichever library owns the surrounding Dialog -- a Base UI `Dialog.Title`
+ * inside a Radix Dialog has no context to attach to. That is why this line
+ * flipped in the same commit as both consumers (images-page, edit-page) rather
+ * than ahead of them.
  */
 export function MobileDialogHeader({
   title,

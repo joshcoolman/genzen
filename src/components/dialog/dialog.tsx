@@ -58,9 +58,11 @@ export interface DialogContentProps {
   /**
    * `wide` sizes off the viewport (66vw x 80vh) instead of off content -- for
    * dialogs that are a grid, where the default 32rem shows two thumbnails.
+   * `fullscreen` is the mobile shape: edge to edge, no rounding or padding,
+   * paired with `MobileDialogHeader` and `showCloseButton={false}`.
    * @default 'default'
    */
-  size?: 'default' | 'wide'
+  size?: 'default' | 'wide' | 'fullscreen'
   /**
    * Where focus lands on open. Point it at the safe control when the dialog
    * can destroy something -- `ConfirmDialog` focuses Cancel for exactly that.
@@ -78,10 +80,12 @@ export function DialogContent({
   return (
     <BaseDialog.Portal>
       <BaseDialog.Backdrop className={styles.backdrop} />
-      <BaseDialog.Viewport className={styles.viewport}>
+      <BaseDialog.Viewport
+        className={`${styles.viewport} ${size === 'fullscreen' ? styles.viewportFlush : ''}`}
+      >
         <BaseDialog.Popup
           initialFocus={initialFocus}
-          className={`${styles.popup} ${size === 'wide' ? styles.wide : ''} ${className ?? ''}`}
+          className={`${styles.popup} ${size !== 'default' ? styles[size] : ''} ${className ?? ''}`}
         >
           {children}
           {showCloseButton && (
