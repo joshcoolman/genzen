@@ -105,6 +105,3 @@ export {
   TooltipTrigger,
 } from './tooltip/tooltip'
 export { toast, Toaster } from './toast/toast'
-
-// shadcn primitives (#185 replaces these with Base UI, one component at a time)
-export * from './ui/command/command'

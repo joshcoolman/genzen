@@ -3,31 +3,16 @@
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { skills } from '#/features/ad/skills/registry'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#/components'
+import { Popover, PopoverContent, PopoverTrigger } from '#/components'
 
 interface SkillLauncherProps {
   onLaunch: (text: string) => void
   disabled?: boolean
 }
 
-// Show the search input once there are enough skills to make scrolling annoying.
-const SEARCH_THRESHOLD = 6
-
 export function SkillChipRow({ onLaunch, disabled }: SkillLauncherProps) {
   const [open, setOpen] = useState(false)
   if (skills.length === 0) return null
-
-  const showSearch = skills.length >= SEARCH_THRESHOLD
 
   return (
     <div className="border-t border-border px-3 py-1.5">
@@ -49,32 +34,24 @@ export function SkillChipRow({ onLaunch, disabled }: SkillLauncherProps) {
           sideOffset={6}
           className="w-[calc(20rem-1.5rem)]"
         >
-          <Command>
-            {showSearch && (
-              <CommandInput placeholder="Search skills…" className="h-9" />
-            )}
-            <CommandList className="max-h-[320px]">
-              <CommandEmpty>No skills match.</CommandEmpty>
-              <CommandGroup>
-                {skills.map((skill) => (
-                  <CommandItem
-                    key={skill.name}
-                    value={`${skill.label} ${skill.name} ${skill.description}`}
-                    onSelect={() => {
-                      setOpen(false)
-                      onLaunch(skill.launch)
-                    }}
-                    className="flex flex-col items-start gap-0.5 py-2"
-                  >
-                    <span className="text-sm font-medium">{skill.label}</span>
-                    <span className="line-clamp-2 text-[11px] text-muted-foreground">
-                      {skill.description}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+          <div className="max-h-[320px] overflow-y-auto p-1">
+            {skills.map((skill) => (
+              <button
+                key={skill.name}
+                type="button"
+                onClick={() => {
+                  setOpen(false)
+                  onLaunch(skill.launch)
+                }}
+                className="flex w-full select-none flex-col items-start gap-0.5 rounded-sm px-2 py-2 text-left outline-hidden hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+              >
+                <span className="text-sm font-medium">{skill.label}</span>
+                <span className="line-clamp-2 text-[11px] text-muted-foreground">
+                  {skill.description}
+                </span>
+              </button>
+            ))}
+          </div>
         </PopoverContent>
       </Popover>
     </div>
