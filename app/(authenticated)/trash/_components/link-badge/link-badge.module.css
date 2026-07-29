@@ -1,19 +1,16 @@
-/* Only the parts `Badge` does not already carry: it supplies the pill, the
-   border, the padding and the type. Colour, the gap around the icon and
-   "never shrink" are this badge's own. */
-.badge {
-  flex-shrink: 0;
-  gap: var(--space-4);
-}
+/* Only the colour: `Badge` supplies the pill, the border, the padding, the type,
+   the gap around the icon and "never shrink".
+
+   Colour is handed in through the two custom properties Badge reads rather than
+   as plain `color` / `border-color` declarations -- see the note at the top of
+   badge.module.css for why a class here cannot win that fight reliably. */
 
 .canvas {
-  composes: badge;
-  border-color: color-mix(in oklab, var(--info-text) 50%, transparent);
-  color: var(--info-text);
+  --badge-color: var(--info-text);
+  --badge-border: color-mix(in oklab, var(--info-text) 50%, transparent);
 }
 
 .linked {
-  composes: badge;
-  border-color: color-mix(in oklab, var(--caution-text) 50%, transparent);
-  color: var(--caution-text);
+  --badge-color: var(--caution-text);
+  --badge-border: color-mix(in oklab, var(--caution-text) 50%, transparent);
 }

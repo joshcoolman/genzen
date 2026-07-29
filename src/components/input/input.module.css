@@ -1,0 +1,33 @@
+.root {
+  display: flex;
+  width: 100%;
+  height: 2.25rem;
+  padding: var(--space-4) var(--space-12);
+  background: transparent;
+  color: var(--text);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  transition: border-color var(--duration-normal) var(--ease-out);
+}
+
+.root::placeholder {
+  color: var(--text-muted);
+}
+
+.root[data-focus-visible],
+.root:focus-visible {
+  outline: none;
+  border-color: var(--accent-brand);
+}
+
+.root:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Base UI marks an invalid Field control; the old shadcn input had no such
+   state, so nothing regresses by adding it. */
+.root[data-invalid] {
+  border-color: var(--danger);
+}

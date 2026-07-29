@@ -1,3 +1,4 @@
+import styles from './image-grid.module.css'
 import type { ReactNode } from 'react'
 
 interface ImageGridProps {
@@ -20,24 +21,19 @@ export function ImageGridSkeleton({
   return (
     <ImageGrid size={size} className={className}>
       {Array.from({ length: count }, (_, i) => (
-        <div
-          key={i}
-          className={`overflow-hidden border border-border bg-card ${compact ? 'rounded-md' : 'rounded-lg'}`}
-        >
-          <div className="aspect-square bg-black" />
+        <div key={i} className={compact ? styles.cardCompact : styles.card}>
+          <div className={styles.image} />
           {!compact && (
             <>
-              <div className="px-4 pt-3 pb-1">
-                <div className="h-[10px] w-1/3 rounded bg-muted/30" />
+              <div className={styles.titleLine}>
+                <div className={styles.titleBar} />
               </div>
-              <div className="px-4 pt-1 pb-2" style={{ minHeight: '3.875rem' }}>
-                <span className="text-[10px] text-muted-foreground/30">--</span>
+              <div className={styles.body}>
+                <span>--</span>
               </div>
-              <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground/30">
-                <div className="flex justify-between">
-                  <span>--</span>
-                  <span>--</span>
-                </div>
+              <div className={styles.footer}>
+                <span>--</span>
+                <span>--</span>
               </div>
             </>
           )}
@@ -54,7 +50,9 @@ export function ImageGrid({
   layout = 'grid',
 }: ImageGridProps) {
   if (layout === 'list') {
-    return <div className={`flex flex-col gap-2 ${className}`}>{children}</div>
+    return (
+      <div className={`${styles.list} ${className}`.trim()}>{children}</div>
+    )
   }
 
   const minWidth = size === 'sm' ? '80px' : size === 'md' ? '120px' : '220px'
@@ -62,11 +60,9 @@ export function ImageGrid({
 
   return (
     <div
-      className={className}
+      className={`${styles.grid} ${className}`.trim()}
       style={{
-        display: 'grid',
         gridTemplateColumns: `repeat(auto-fill, minmax(${minWidth}, 1fr))`,
-        alignItems: 'start',
         gap,
       }}
     >

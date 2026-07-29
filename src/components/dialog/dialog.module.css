@@ -1,0 +1,117 @@
+/*
+ * Dialog -- the general shell, sibling to confirm-dialog's specialised one.
+ * The backdrop/viewport/popup block is deliberately kept identical to
+ * confirm-dialog.module.css so the two dialogs are the same object on screen;
+ * if one moves, move both.
+ *
+ * Deltas from the shadcn dialog this replaces, all deliberate:
+ *   - the surface is --surface-overlay, not --background. A floating layer has
+ *     to separate from the page on sight; sitting on the page colour it did not.
+ *   - centering is flex on the viewport, not top/left 50% + translate. Base UI
+ *     supplies the viewport; a tall dialog now shrinks instead of overflowing
+ *     off both ends.
+ *   - no enter/exit animation yet. shadcn's came from tw-animate utilities that
+ *     have no module equivalent, and a half-ported animation reads worse than
+ *     none. Add it here when the app gets a motion pass.
+ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--overlay);
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-24);
+}
+
+.popup {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 32rem;
+  max-height: calc(100vh - var(--space-48));
+  flex-direction: column;
+  gap: var(--space-16);
+  overflow-y: auto;
+  padding: var(--space-24);
+  background: var(--surface-overlay);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.title {
+  color: var(--text);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-none);
+}
+
+.description {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+/* The X. Not a Button: it is an icon-only hit target sitting over content,
+   which button.tsx's own note excludes on purpose. */
+.closeButton {
+  position: absolute;
+  top: var(--space-16);
+  right: var(--space-16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-out);
+}
+
+.closeButton:hover {
+  color: var(--text);
+}
+
+.closeButton[data-focus-visible] {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+.closeIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}

@@ -6,7 +6,8 @@ import { ImageList } from './_components/image-list/image-list'
 import { SelectionBar } from './_components/selection-bar/selection-bar'
 import { useView } from './use-view'
 import type { TrashPayload } from './_actions/trash'
-import { PageHeader, Stack, TooltipProvider } from '#/components'
+import { PageHeader, Stack } from '#/components'
+import { TooltipProvider } from '#/components/tooltip/tooltip'
 
 export function View({ initial }: { initial: TrashPayload }) {
   const {
@@ -31,7 +32,8 @@ export function View({ initial }: { initial: TrashPayload }) {
   const hasImages = images.length > 0
 
   return (
-    <TooltipProvider delayDuration={300}>
+    // Base UI names this `delay`, not shadcn's `delayDuration`.
+    <TooltipProvider delay={300}>
       <Stack gap={24}>
         <PageHeader
           title="Trash"

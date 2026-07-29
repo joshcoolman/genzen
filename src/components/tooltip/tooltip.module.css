@@ -1,0 +1,43 @@
+/*
+ * Tooltip. The surface is the inverse of the page -- light chip, dark text --
+ * carried over from the shadcn tooltip so nothing shifts; it is the one place
+ * in a dark UI that inverts on purpose, because a dark chip on a dark page has
+ * nothing to separate it.
+ */
+
+.popup {
+  position: relative;
+  z-index: var(--z-dialog);
+  width: fit-content;
+  max-width: 18rem;
+  padding: var(--space-6) var(--space-12);
+  background: var(--foreground);
+  color: var(--background);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  text-wrap: balance;
+}
+
+/* A rotated square rather than an svg: Base UI positions the element and this
+   only has to be the right colour on the right edge. */
+.arrow {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--foreground);
+  border-radius: 1px;
+  rotate: 45deg;
+}
+
+.arrow[data-side='top'] {
+  bottom: -0.25rem;
+}
+.arrow[data-side='bottom'] {
+  top: -0.25rem;
+}
+.arrow[data-side='left'] {
+  right: -0.25rem;
+}
+.arrow[data-side='right'] {
+  left: -0.25rem;
+}

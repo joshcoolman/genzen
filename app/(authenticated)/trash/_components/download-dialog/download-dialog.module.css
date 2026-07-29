@@ -5,6 +5,12 @@
   height: 1rem;
 }
 
+/* No margin: the footer button's own gap already separates icon from label. */
+.footerIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
 .body {
   padding-block: var(--space-16);
 }

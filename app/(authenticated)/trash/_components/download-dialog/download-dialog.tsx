@@ -6,9 +6,13 @@ import JSZip from 'jszip'
 import { saveAs } from 'file-saver'
 import styles from './download-dialog.module.css'
 import type { UserImage } from '#/features/user-images/types'
+// Trash is the pilot route for the Base UI set, so these come from the folders
+// rather than the root barrel: the shadcn `Dialog` and `Input` still occupy
+// those names there for the other 16 consumers. The deep imports go the moment
+// the barrel flips.
 import { Button } from '#/components/button/button'
+import { Input } from '#/components/input/input'
 import {
-  ActionButton,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -16,8 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  Input,
-} from '#/components'
+} from '#/components/dialog/dialog'
 
 const CONCURRENCY = 4
 
@@ -132,11 +135,9 @@ export function DownloadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
-      <DialogTrigger asChild>
-        <Button variant="secondary" size="sm">
-          <Download className={styles.triggerIcon} />
-          Download
-        </Button>
+      <DialogTrigger render={<Button variant="secondary" size="sm" />}>
+        <Download className={styles.triggerIcon} />
+        Download
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -178,17 +179,22 @@ export function DownloadDialog({
           {error && <p className={styles.error}>{error}</p>}
         </div>
         <DialogFooter>
-          <ActionButton
+          {/* Was `ActionButton`, which existed only because shadcn's Button had
+              no loading state. The ported one does, so the label swap that
+              `loadingText` used to own lives here instead. */}
+          <Button
+            variant="primary"
             onClick={handleDownload}
             disabled={!zipName.trim()}
             loading={isDownloading}
-            loadingText={
-              progress > 0 ? `Downloading ${progress}%` : 'Preparing...'
-            }
-            icon={<Download />}
           >
-            Download
-          </ActionButton>
+            {!isDownloading && <Download className={styles.footerIcon} />}
+            {isDownloading
+              ? progress > 0
+                ? `Downloading ${progress}%`
+                : 'Preparing...'
+              : 'Download'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

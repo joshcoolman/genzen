@@ -1,6 +1,6 @@
-import { Button } from '../ui/button/button'
+import { Button } from '../button/button'
+import styles from './selection-drawer.module.css'
 import type { ReactNode } from 'react'
-import { cn } from '#/lib/utils'
 
 interface SelectionDrawerProps {
   count: number
@@ -8,25 +8,24 @@ interface SelectionDrawerProps {
   children: ReactNode
 }
 
+/**
+ * The bar that slides up when a list has a selection: a count, the verbs the
+ * route supplies, and one way out.
+ *
+ * It sits on --z-drawer, which is below --z-dialog. It used to be `z-50`, the
+ * same layer as a dialog, and only stayed under the confirm dialog it opens
+ * because that renders later in the tree. Now it is under it by name.
+ */
 export function SelectionDrawer({
   count,
   onClear,
   children,
 }: SelectionDrawerProps) {
   return (
-    <div
-      className={cn(
-        'fixed inset-x-0 bottom-0 z-50 flex justify-center p-4 transition-all duration-200',
-        count > 0
-          ? 'translate-y-0 opacity-100'
-          : 'pointer-events-none translate-y-4 opacity-0',
-      )}
-    >
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-background/95 px-5 py-3 shadow-lg backdrop-blur-sm">
-        <span className="text-sm font-medium text-muted-foreground">
-          {count} selected
-        </span>
-        <div className="flex items-center gap-2">{children}</div>
+    <div className={count > 0 ? styles.visible : styles.hidden}>
+      <div className={styles.bar}>
+        <span className={styles.count}>{count} selected</span>
+        <div className={styles.actions}>{children}</div>
         <Button variant="ghost" size="sm" onClick={onClear}>
           Deselect all
         </Button>
