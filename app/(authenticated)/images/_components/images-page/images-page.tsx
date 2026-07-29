@@ -688,7 +688,7 @@ export function ImagesPage() {
               disabled={isGrouping}
               onClick={() => setGroupOpen(true)}
             >
-              <Group className="mr-1 h-3 w-3" />
+              <Group className={styles.actionIcon} />
               {isGrouping ? 'Grouping...' : 'Group'}
             </Button>
           )}
@@ -699,7 +699,7 @@ export function ImagesPage() {
               disabled={isBatchUngrouping}
               onClick={() => void handleBatchUngroup()}
             >
-              <Ungroup className="mr-1 h-3 w-3" />
+              <Ungroup className={styles.actionIcon} />
               {isBatchUngrouping ? 'Ungrouping...' : 'Ungroup'}
             </Button>
           )}
@@ -709,16 +709,16 @@ export function ImagesPage() {
             disabled={isBatchMoving}
             onClick={() => setBatchMoveOpen(true)}
           >
-            <FolderInput className="mr-1 h-3 w-3" />
+            <FolderInput className={styles.actionIcon} />
             {isBatchMoving ? 'Moving...' : `Move (${selection.count})`}
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             size="sm"
             disabled={isBatchDeleting}
             onClick={handleBatchDelete}
           >
-            <Trash2 className="mr-1 h-3 w-3" />
+            <Trash2 className={styles.actionIcon} />
             {isBatchDeleting ? 'Deleting...' : `Delete (${selection.count})`}
           </Button>
         </SelectionDrawer>
@@ -934,6 +934,7 @@ export function ImagesPage() {
               Cancel
             </Button>
             <Button
+              variant="primary"
               onClick={() => void executeDownload()}
               disabled={!downloadName.trim() || downloading}
             >

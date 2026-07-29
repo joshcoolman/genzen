@@ -6,6 +6,7 @@ import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
 import { processAndUploadFiles } from '#/features/user-images/lib/process-files'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -14,9 +15,6 @@ import {
   ImageGrid,
   Thumbnail,
 } from '#/components'
-// Button is still deep-imported: the barrel's `Button` is shadcn's until its
-// last consumer flips -- see #193.
-import { Button } from '#/components/button/button'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 

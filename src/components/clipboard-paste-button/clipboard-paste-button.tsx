@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPaste } from 'lucide-react'
-import { Button } from '../ui/button/button'
+import { IconButton } from '../icon-button/icon-button'
 import { Popover, PopoverContent, PopoverTrigger } from '../popover/popover'
 import { useClipboardPaste } from './use-clipboard-paste'
 import styles from './clipboard-paste-button.module.css'
@@ -56,9 +56,9 @@ export function ClipboardPasteButton({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="icon" className={className}>
+          <IconButton className={className} aria-label="Paste from clipboard">
             <ClipboardPaste />
-          </Button>
+          </IconButton>
         }
       />
       <PopoverContent className={styles.popover}>

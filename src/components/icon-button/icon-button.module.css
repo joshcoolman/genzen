@@ -1,0 +1,40 @@
+/* The square, bordered icon button -- the shape Button's own note excludes on
+   purpose ("icon-only buttons are a different problem"). Three call sites had
+   it as shadcn's `variant="outline" size="icon"`, identically. */
+.root {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+  color: var(--foreground);
+  border: var(--border-width) solid var(--input);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-out),
+    background-color var(--duration-normal) var(--ease-out);
+}
+
+.root:hover:not(:disabled) {
+  background: var(--accent);
+}
+
+.root:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.root:focus-visible {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+/* Sized here, unlike Button, which leaves child SVGs to the call site. There is
+   nothing else in an icon button to set the scale against. */
+.root > svg {
+  width: 1rem;
+  height: 1rem;
+}

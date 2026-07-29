@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { BookOpen } from 'lucide-react'
-import { Button } from '../ui/button/button'
+import { IconButton } from '../icon-button/icon-button'
 import { LibraryPickerDialog } from './library-picker-dialog'
 
 export interface SelectedImage {
@@ -51,14 +51,13 @@ export function LibraryPickerButton({
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="icon"
+      <IconButton
         className={className}
         onClick={handleOpen}
+        aria-label="Open library"
       >
         <BookOpen />
-      </Button>
+      </IconButton>
 
       <LibraryPickerDialog
         open={open}

@@ -3,15 +3,13 @@
 import { useState } from 'react'
 import styles from './paste-prompts-dialog.module.css'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   Textarea,
 } from '#/components'
-// Button is still deep-imported: the barrel's `Button` is shadcn's until its
-// last consumer flips -- see #193.
-import { Button } from '#/components/button/button'
 
 interface PastePromptsDialogProps {
   open: boolean

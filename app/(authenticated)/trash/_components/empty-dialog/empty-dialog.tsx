@@ -2,8 +2,7 @@
 
 import { Trash2 } from 'lucide-react'
 import styles from './empty-dialog.module.css'
-import { ConfirmDialog, useConfirm } from '#/components'
-import { Button } from '#/components/button/button'
+import { Button, ConfirmDialog, useConfirm } from '#/components'
 
 interface EmptyDialogProps {
   /** Everything in the trash, linked or not -- the number the copy quotes when

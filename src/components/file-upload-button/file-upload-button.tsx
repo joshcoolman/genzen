@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { Upload } from 'lucide-react'
-import { Button } from '../ui/button/button'
+import { IconButton } from '../icon-button/icon-button'
 
 interface FileUploadButtonProps {
   onFilesSelected: (files: Array<File>) => void
@@ -34,14 +34,13 @@ export function FileUploadButton({
           }
         }}
       />
-      <Button
-        variant="outline"
-        size="icon"
+      <IconButton
         className={className}
         onClick={() => inputRef.current?.click()}
+        aria-label="Upload image"
       >
         <Upload />
-      </Button>
+      </IconButton>
     </>
   )
 }

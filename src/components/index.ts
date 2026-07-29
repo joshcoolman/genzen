@@ -8,6 +8,12 @@ export {
   flipOrientation,
 } from './aspect-ratio-select/aspect-ratio-constants'
 export { Badge, type BadgeProps } from './badge/badge'
+export {
+  Button,
+  type ButtonProps,
+  type ButtonSize,
+  type ButtonVariant,
+} from './button/button'
 export { ClipboardPasteButton } from './clipboard-paste-button/clipboard-paste-button'
 export { useClipboardPaste } from './clipboard-paste-button/use-clipboard-paste'
 export {
@@ -38,6 +44,7 @@ export {
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'
+export { IconButton, type IconButtonProps } from './icon-button/icon-button'
 export { ImageBox, type ImageBoxProps } from './image-box/image-box'
 export { Input, type InputProps } from './input/input'
 export { ImageGrid, ImageGridSkeleton } from './image-grid/image-grid'
@@ -100,5 +107,4 @@ export {
 export { toast, Toaster } from './toast/toast'
 
 // shadcn primitives (#185 replaces these with Base UI, one component at a time)
-export * from './ui/button/button'
 export * from './ui/command/command'

@@ -36,9 +36,6 @@ import {
   MobileDialogHeader,
   SelectionDrawer,
 } from '#/components'
-// Button is still deep-imported: the barrel's `Button` is shadcn's until its
-// last consumer flips -- see #193.
-import { Button as HouseButton } from '#/components/button/button'
 import { useIsMobile } from '#/lib/hooks/use-is-mobile'
 import { useSelection } from '#/lib/use-selection'
 import { useEditPage } from '#/features/ai-images/hooks/use-edit-page'
@@ -499,7 +496,7 @@ export function EditPage() {
               />
 
               {/* Variations button */}
-              <HouseButton
+              <Button
                 variant="secondary"
                 onClick={page.handleOpenVariationDialog}
                 loading={page.variationPromptsLoading}
@@ -508,7 +505,7 @@ export function EditPage() {
                 {page.variationPromptsLoading
                   ? 'Generating...'
                   : 'Generate Variations'}
-              </HouseButton>
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -548,7 +545,7 @@ export function EditPage() {
             />
 
             {/* Variations button */}
-            <HouseButton
+            <Button
               variant="secondary"
               onClick={page.handleOpenVariationDialog}
               loading={page.variationPromptsLoading}
@@ -557,7 +554,7 @@ export function EditPage() {
               {page.variationPromptsLoading
                 ? 'Generating...'
                 : 'Generate Variations'}
-            </HouseButton>
+            </Button>
           </div>
         </div>
       )}
@@ -568,27 +565,27 @@ export function EditPage() {
         onClear={selection.clearSelection}
       >
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => void handleUnlinkSelected()}
         >
-          <Unlink className="h-4 w-4 mr-1.5" />
+          <Unlink className={styles.actionIcon} />
           Unlink
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => void handleDownloadSelected()}
         >
-          <Download className="h-4 w-4 mr-1.5" />
+          <Download className={styles.actionIcon} />
           Download
         </Button>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => void handleDeleteSelected()}
         >
-          <Trash2 className="h-4 w-4 mr-1.5" />
+          <Trash2 className={styles.actionIcon} />
           Delete
         </Button>
       </SelectionDrawer>

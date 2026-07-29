@@ -4,12 +4,11 @@ import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
 import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { ConfirmDialog, ImageBox, useConfirm } from '#/components'
+import { Button, ConfirmDialog, ImageBox, useConfirm } from '#/components'
 // Trial: Trash uses our own Button while the rest of the app is still on the
 // shadcn one. Two exports cannot both be `Button` in the root barrel, so this
 // import is a deliberate temporary deviation from the one-barrel rule. It goes
 // the moment the barrel flips.
-import { Button } from '#/components/button/button'
 import { formatFileSize } from '#/lib/format'
 
 const THUMB_SIZE = 96

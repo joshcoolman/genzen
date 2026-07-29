@@ -8,15 +8,13 @@ import { clsx } from 'clsx'
 import styles from './mobile-nav.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
+  Button,
   ConfirmDialog,
   Sheet,
   SheetContent,
   SheetTrigger,
   useConfirm,
 } from '#/components'
-// Button is still deep-imported: the barrel's `Button` is shadcn's until its
-// last consumer flips -- see #193.
-import { Button } from '#/components/button/button'
 import { navItems } from '#/lib/nav-items'
 
 export function MobileNav({ className }: { className?: string }) {

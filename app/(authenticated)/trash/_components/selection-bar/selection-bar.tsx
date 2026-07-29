@@ -2,8 +2,12 @@
 
 import { RotateCcw, Trash2 } from 'lucide-react'
 import styles from './selection-bar.module.css'
-import { ConfirmDialog, SelectionDrawer, useConfirm } from '#/components'
-import { Button } from '#/components/button/button'
+import {
+  Button,
+  ConfirmDialog,
+  SelectionDrawer,
+  useConfirm,
+} from '#/components'
 
 interface SelectionBarProps {
   count: number

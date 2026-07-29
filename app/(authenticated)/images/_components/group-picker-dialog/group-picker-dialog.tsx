@@ -5,6 +5,7 @@ import styles from './group-picker-dialog.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -12,7 +13,6 @@ import {
   ImageGrid,
   Thumbnail,
 } from '#/components'
-import { Button } from '#/components/button/button'
 
 interface GroupPickerDialogProps {
   open: boolean

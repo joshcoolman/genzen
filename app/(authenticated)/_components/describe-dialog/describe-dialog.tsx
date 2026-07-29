@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import styles from './describe-dialog.module.css'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -11,7 +12,6 @@ import {
   DialogTitle,
   Textarea,
 } from '#/components'
-import { Button } from '#/components/button/button'
 import { updateImageDescription } from '#/features/user-images/server/images.actions'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
 

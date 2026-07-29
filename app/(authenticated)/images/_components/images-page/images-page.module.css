@@ -15,3 +15,10 @@
 .downloadPopup {
   --dialog-max-width: 24rem;
 }
+
+/* The selection drawer's action icons. Button supplies the 0.5rem gap that the
+   old `mr-1` was doing by hand; only the size is left. */
+.actionIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
