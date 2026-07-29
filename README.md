@@ -120,17 +120,25 @@ to the browser.
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow `~/repos/project-standard`.
 
-**Last shipped** (2026-07-29)
+**Last shipped** (2026-07-28)
 
-- **`src/components/ui/` is 15 → 9, because deleting needs a component-first
-  pass.** `badge`, `input` and `tooltip` are ours now and shadcn's are gone;
-  `select` and `checkbox` went as dead code. The lesson worth carrying: a
+- **The component lane (#185) is done: `src/components/ui/` is 15 → 5.**
+  `skeleton`, `textarea`, `popover` and `dropdown-menu` joined `badge`, `input`
+  and `tooltip`; Radix is down to four files, three of them the dialog family.
+  What's left is `dialog`, `button`, `alert-dialog`, `sheet` and `command` (cmdk,
+  not Radix). Two rules came out of it: **a default that a call site will always
+  override is a liability, not a convenience** — Popover ships with no width and
+  no padding because a utility loses to an unlayered module and a module merely
+  races it — and **a shared component that spreads `{...rest}` after its own
+  `className` is a landmine**, since Base UI's `render` passes one where Radix's
+  `asChild` never did.
+- **`src/components/ui/` needed a component-first pass to shrink at all.** A
   route-driven pass never reaches the point where a shared component's file can
   be deleted, since "every consumer converted" is not a route's finish line —
   and both names cannot sit in the root barrel at once, so route-first quietly
   accumulates deep imports. Chasing a component's consumers is what flips the
-  barrel. Dialog stays route-first for the opposite reason: its nine remaining
-  consumers hold all the hazards.
+  barrel. Dialog stays route-first for the opposite reason: its consumers hold
+  all the hazards.
 - **Mixed-library composition has a right nesting and a wrong one.** Radix
   `asChild` outside, Base UI `render` inside, one real element at the bottom —
   then both merge onto _it_ rather than onto each other's wrapper. The sidebar's
@@ -147,12 +155,6 @@ Conventions follow `~/repos/project-standard`.
   → Next port. `toast/` also left `ui/`: it was never shadcn, and its 60 lines
   of inline hex became a CSS module on tokens. Mounting it exposed a second bug
   the silence had been hiding, #194 — that Undo does not restore.
-- **Trash is at zero shadcn, Tailwind and Radix (#191).** Dialog, Input, Badge
-  and Tooltip are ours on Base UI; `SelectionDrawer` and `ImageGrid` moved off
-  utilities. The parts keep shadcn's names (`DialogContent`, not
-  `DialogPopup`), and `DialogHeader`/`DialogFooter` — which Base UI does not
-  have — are supplied rather than pushed onto call sites, so the other 16
-  Dialog consumers convert by changing an import.
 - **Module-vs-module is decided by bundle order, and that is the new hazard.**
   A utility used to lose to a CSS module by layer; two modules each setting
   `color` on one class just race. The Canvas badge lost and rendered white
@@ -162,17 +164,13 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-There are two lanes running, deliberately. Pick either; they do not conflict.
+The component lane is finished, so #193 is the whole migration now.
 
-- **#185 — the component lane.** Chase a shared component's consumers until its
-  shadcn file can be deleted and the barrel flipped. Ordered and ready to start:
-  `skeleton` (2 sites) → `textarea` (5) → `popover` (3) → `dropdown-menu` (1).
-  Eleven call sites, four files deleted, Radix down from 8 files to 4. The issue
-  comment carries the per-component detail.
 - **#193 — the dialog lane.** Route-first, because the hazards live in the call
   sites. Cluster 3 next — `generate-prompts`, `variation-prompts`,
   `failed-image-card` — which settles the inner-scroll recipe. No consumer
-  anywhere uses a Radix escape hatch our `DialogContent` lacks.
+  anywhere uses a Radix escape hatch our `DialogContent` lacks. `sheet` and
+  `alert-dialog` are the other two Radix files and belong to the same lane.
 - **`Button` is the one to be careful with.** Its 12 call sites can flip any
   time, but `ui/button` cannot be deleted until `ui/dialog` and
   `ui/alert-dialog` stop importing it. Converting call sites and deleting the
