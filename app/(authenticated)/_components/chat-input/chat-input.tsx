@@ -2,11 +2,13 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { ImagePlus, Send, Square, X } from 'lucide-react'
+import styles from './chat-input.module.css'
 import type { ADImage } from '#/features/ad/hooks/useADChat'
 import type { ImageSourceResult } from '#/components'
 import { ImageSourceDialog } from '#/components'
 import { useAuth } from '#/lib/auth'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
+import { cx } from '#/lib/utils'
 
 interface ChatInputProps {
   onSend: (text: string, images?: Array<ADImage>) => void
@@ -68,36 +70,36 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
   }
 
   return (
-    <div className="border-t border-border p-3">
+    <div className={styles.root}>
       {pendingImages.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className={styles.attachments}>
           {pendingImages.map((img, i) => (
-            <div key={img.id} className="group relative">
+            <div key={img.id} className={styles.attachment}>
               <img
                 src={img.url}
                 alt={img.title ?? `Attached ${i + 1}`}
-                className="h-16 w-16 rounded-md border border-border object-cover"
+                className={styles.attachmentImage}
               />
               <button
                 onClick={() => removeImage(i)}
-                className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                className={styles.attachmentRemove}
                 aria-label="Remove image"
               >
-                <X className="h-2.5 w-2.5" />
+                <X className={styles.attachmentRemoveIcon} />
               </button>
             </div>
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2">
+      <div className={styles.composer}>
         <button
           onClick={() => setPickerOpen(true)}
           disabled={isStreaming}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          className={cx(styles.square, styles.attach)}
           aria-label="Attach image from library"
           title="Attach image from library"
         >
-          <ImagePlus className="h-4 w-4" />
+          <ImagePlus className={styles.attachIcon} />
         </button>
         <textarea
           ref={textareaRef}
@@ -111,24 +113,24 @@ export function ChatInput({ onSend, onAbort, isStreaming }: ChatInputProps) {
           }
           disabled={isStreaming}
           rows={1}
-          className="flex-1 resize-none rounded-md border border-border bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+          className={styles.textarea}
         />
         {isStreaming ? (
           <button
             onClick={onAbort}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+            className={cx(styles.square, styles.stop)}
             aria-label="Stop generating"
           >
-            <Square className="h-3.5 w-3.5" />
+            <Square className={styles.sendIcon} />
           </button>
         ) : (
           <button
             onClick={handleSubmit}
             disabled={!value.trim() && pendingImages.length === 0}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className={cx(styles.square, styles.send)}
             aria-label="Send message"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className={styles.sendIcon} />
           </button>
         )}
       </div>

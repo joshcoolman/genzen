@@ -9,10 +9,12 @@ import {
   Plus,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import styles from './model-selector.module.css'
 import type {
   SelectionMode,
   UnifiedModel,
 } from '#/features/ai-images/model-selector/types'
+import { cx } from '#/lib/utils'
 
 export type DisplayMode = 'inline' | 'dropdown' | 'panel'
 
@@ -59,28 +61,26 @@ export function ModelSelector({
 
   if (visibleModels.length <= 1) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">
+      <div className={styles.row}>
+        <span className={styles.singleName}>
           {visibleModels[0]?.name ?? 'No models'}
         </span>
         {showGensPerModel && gensPerModel !== undefined && onAdjustGens && (
-          <div className="flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 shadow-xs dark:bg-input/30">
+          <div className={styles.gens}>
             <button
               onClick={() => onAdjustGens(-1)}
               disabled={gensPerModel <= 1}
-              className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+              className={styles.gensStep}
             >
-              <Minus className="h-3 w-3" />
+              <Minus className={styles.gensStepIcon} />
             </button>
-            <span className="w-4 text-center text-sm font-medium">
-              {gensPerModel}
-            </span>
+            <span className={styles.gensValue}>{gensPerModel}</span>
             <button
               onClick={() => onAdjustGens(1)}
               disabled={gensPerModel >= 5}
-              className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+              className={styles.gensStep}
             >
-              <Plus className="h-3 w-3" />
+              <Plus className={styles.gensStepIcon} />
             </button>
           </div>
         )}
@@ -91,30 +91,28 @@ export function ModelSelector({
   const gensControl = showGensPerModel &&
     gensPerModel !== undefined &&
     onAdjustGens && (
-      <div className="flex h-9 items-center gap-1.5 rounded-md border border-input bg-transparent px-3 shadow-xs dark:bg-input/30">
+      <div className={styles.gens}>
         <button
           onClick={() => onAdjustGens(-1)}
           disabled={gensPerModel <= 1}
-          className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+          className={styles.gensStep}
         >
-          <Minus className="h-3 w-3" />
+          <Minus className={styles.gensStepIcon} />
         </button>
-        <span className="w-4 text-center text-sm font-medium">
-          {gensPerModel}
-        </span>
+        <span className={styles.gensValue}>{gensPerModel}</span>
         <button
           onClick={() => onAdjustGens(1)}
           disabled={gensPerModel >= 5}
-          className="rounded p-0.5 hover:bg-muted disabled:opacity-30"
+          className={styles.gensStep}
         >
-          <Plus className="h-3 w-3" />
+          <Plus className={styles.gensStepIcon} />
         </button>
       </div>
     )
 
   if (display === 'dropdown') {
     return (
-      <div className="flex items-center gap-2">
+      <div className={styles.row}>
         <DropdownModels
           models={visibleModels}
           selectedIds={selectedIds}
@@ -138,35 +136,32 @@ export function ModelSelector({
 
     return (
       <div>
-        <button
-          onClick={() => toggleExpanded()}
-          className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-left text-sm shadow-xs transition-colors dark:bg-input/30 dark:hover:bg-input/50"
-        >
-          <span className="text-sm truncate">{label}</span>
+        <button onClick={() => toggleExpanded()} className={styles.field}>
+          <span className={styles.fieldLabel}>{label}</span>
           <ChevronDown
-            className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${expanded ? 'rotate-180' : ''}`}
+            className={cx(styles.chevron, expanded && styles.chevronOpen)}
           />
         </button>
         {expanded && (
-          <div className="mt-1 rounded-md border border-border bg-card p-1">
+          <div className={styles.list}>
             {visibleModels.map((model) => {
               const isSelected = selectedIds.includes(model.id)
               return (
                 <button
                   key={model.id}
                   onClick={() => onToggleSelected(model.id)}
-                  className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left transition-colors hover:bg-muted/50"
+                  className={styles.item}
                 >
                   {isSelected ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-accent-brand" />
+                    <CheckCircle2
+                      className={cx(styles.itemIcon, styles.itemIconOn)}
+                    />
                   ) : (
-                    <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+                    <Circle className={styles.itemIcon} />
                   )}
-                  <span className="text-xs font-medium flex-1">
-                    {model.name}
-                  </span>
+                  <span className={styles.itemName}>{model.name}</span>
                   {model.displayPrice && (
-                    <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                    <span className={styles.itemPrice}>
                       {model.displayPrice}
                     </span>
                   )}
@@ -181,23 +176,21 @@ export function ModelSelector({
 
   // Inline mode with expand/collapse
   return (
-    <div className="space-y-3">
+    <div className={styles.inline}>
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className={styles.inlineHeader}>
         <button
           onClick={() => toggleExpanded()}
-          className="flex items-center gap-1.5 text-left"
+          className={styles.inlineToggle}
         >
           {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronDown className={styles.inlineToggleIcon} />
           ) : (
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronRight className={styles.inlineToggleIcon} />
           )}
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Models
-          </span>
+          <span className={styles.inlineTitle}>Models</span>
           {mode === 'multi' && (
-            <span className="text-xs text-muted-foreground/60">
+            <span className={styles.inlineCount}>
               ({selectedIds.length} selected)
             </span>
           )}
@@ -207,7 +200,7 @@ export function ModelSelector({
 
       {/* Expanded pills */}
       {expanded && (
-        <div className="flex flex-wrap gap-1">
+        <div className={styles.pills}>
           {visibleModels.map((model) => {
             const isSelected = selectedIds.includes(model.id)
             return (
@@ -219,22 +212,18 @@ export function ModelSelector({
                     ? `${model.description} — ${model.displayPrice}`
                     : model.description
                 }
-                className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-left transition-colors ${
-                  isSelected
-                    ? 'border-accent-brand bg-accent-brand/10'
-                    : 'border-border bg-card hover:border-accent-brand/50'
-                }`}
+                className={cx(styles.pill, isSelected && styles.pillSelected)}
               >
                 {isSelected ? (
-                  <CheckCircle2 className="h-3 w-3 shrink-0 text-accent-brand" />
+                  <CheckCircle2
+                    className={cx(styles.pillIcon, styles.pillIconOn)}
+                  />
                 ) : (
-                  <Circle className="h-3 w-3 shrink-0 text-muted-foreground/40" />
+                  <Circle className={styles.pillIcon} />
                 )}
-                <span className="text-xs font-medium">{model.name}</span>
+                <span className={styles.pillName}>{model.name}</span>
                 {model.displayPrice && (
-                  <span className="text-[10px] text-muted-foreground/60 tabular-nums">
-                    {model.displayPrice}
-                  </span>
+                  <span className={styles.pillPrice}>{model.displayPrice}</span>
                 )}
               </button>
             )
@@ -282,19 +271,19 @@ function DropdownModels({
         : `Multiple (${selectedCount} models)`
 
   return (
-    <div ref={ref} className="relative flex-1">
+    <div ref={ref} className={styles.dropdownRoot}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 w-full min-w-[11rem] items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 text-left text-sm shadow-xs transition-colors dark:bg-input/30 dark:hover:bg-input/50"
+        className={cx(styles.field, styles.fieldWide)}
       >
-        <span className="text-sm truncate">{label}</span>
+        <span className={styles.fieldLabel}>{label}</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+          className={cx(styles.chevron, open && styles.chevronOpen)}
         />
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
-          <div className="max-h-64 overflow-y-auto p-1">
+        <div className={cx(styles.list, styles.listFloating)}>
+          <div className={styles.listScroll}>
             {models.map((model) => {
               const isSelected = selectedIds.includes(model.id)
               return (
@@ -304,18 +293,18 @@ function DropdownModels({
                     onToggle(model.id)
                     if (mode === 'single') setOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-left transition-colors hover:bg-muted/50"
+                  className={styles.item}
                 >
                   {isSelected ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-accent-brand" />
+                    <CheckCircle2
+                      className={cx(styles.itemIcon, styles.itemIconOn)}
+                    />
                   ) : (
-                    <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+                    <Circle className={styles.itemIcon} />
                   )}
-                  <span className="text-xs font-medium flex-1">
-                    {model.name}
-                  </span>
+                  <span className={styles.itemName}>{model.name}</span>
                   {model.displayPrice && (
-                    <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+                    <span className={styles.itemPrice}>
                       {model.displayPrice}
                     </span>
                   )}

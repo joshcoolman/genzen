@@ -1,0 +1,386 @@
+/* The AD transcript: user bubbles, assistant markdown, and the two cards the
+   assistant can emit as tool calls (a prompt to copy, a clarifying question). */
+
+.root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-12);
+  overflow-y: auto;
+  padding: var(--space-16);
+}
+
+.emptyState {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-16);
+}
+
+.emptyStateText {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--muted-foreground);
+}
+
+/* ---- assistant markdown ----
+   The inner HTML comes from `marked`, so only the wrapper's class is ours --
+   everything below it has to be reached by element selector. That is why this
+   block is tag-based where the rest of the file is class-based. */
+
+.prose {
+  max-width: 85%;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
+.prose p {
+  margin-bottom: var(--space-8);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose pre {
+  margin-block: var(--space-8);
+  padding: var(--space-8);
+  border-radius: 0.25rem;
+  background: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.prose code {
+  padding-inline: var(--space-4);
+  border-radius: 0.25rem;
+  background: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.prose ul,
+.prose ol {
+  margin-block: var(--space-4);
+  padding-left: var(--space-16);
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+/* ---- bubbles ---- */
+
+.userRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.userBubble {
+  max-width: 85%;
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-lg);
+  background: var(--primary);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--primary-foreground);
+}
+
+.userImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.userImage {
+  width: var(--space-80);
+  height: var(--space-80);
+  border: 1px solid
+    color-mix(in oklab, var(--primary-foreground) 20%, transparent);
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+.assistant {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.skills {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.assistantBody {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.toolCalls {
+  width: 100%;
+}
+
+/* ---- typing indicator ---- */
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.typingDot {
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+  animation: bounce 1s infinite;
+}
+
+.typingDot:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: -0.15s;
+}
+
+/* Tailwind's `animate-bounce`, verbatim. */
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+/* ---- copy-message button ---- */
+
+.copy {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transition:
+    opacity var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.assistantBody:hover .copy {
+  opacity: 1;
+}
+
+.copy:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.smallIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* ---- cards ---- */
+
+.card {
+  margin-block: var(--space-12);
+  padding: var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.cardTitle {
+  margin-bottom: var(--space-8);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.promptBody {
+  margin-bottom: var(--space-12);
+  padding: var(--space-12);
+  border-radius: 0.25rem;
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-bottom: var(--space-12);
+}
+
+.tag {
+  padding: var(--space-2) var(--space-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--primary);
+}
+
+.cardActions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.cardButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: inherit;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.cardButton:hover {
+  background: var(--muted);
+}
+
+/* ---- clarifying card ---- */
+
+.interpretation {
+  margin-bottom: var(--space-12);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-style: italic;
+  color: var(--muted-foreground);
+}
+
+.question {
+  margin-bottom: var(--space-12);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-align: left;
+  color: inherit;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.option:hover {
+  background: var(--muted);
+}
+
+/* Once an option is picked the card is inert: the chosen one goes brand, the
+   rest fade rather than disappear, so the question stays readable in the
+   transcript. */
+.optionSelected,
+.optionSelected:hover {
+  border-color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.optionDimmed,
+.optionDimmed:hover {
+  background: var(--background);
+  color: var(--muted-foreground);
+  opacity: 0.4;
+}
+
+.optionIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.freeTextToggle {
+  border: none;
+  background: transparent;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  text-align: left;
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.freeTextToggle:hover {
+  color: var(--foreground);
+}
+
+.freeTextRow {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.freeTextInput {
+  flex: 1;
+  padding: var(--space-6) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: inherit;
+  outline: none;
+}
+
+.freeTextInput:focus {
+  box-shadow: 0 0 0 1px var(--ring);
+}
+
+.freeTextSend {
+  padding: var(--space-6) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: inherit;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.freeTextSend:hover {
+  background: var(--muted);
+}
+
+.freeTextSend:disabled {
+  opacity: 0.4;
+}

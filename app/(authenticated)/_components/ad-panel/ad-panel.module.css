@@ -1,0 +1,160 @@
+/* The assistant sidebar: a fixed 20rem column that slides in from the right.
+   It is desktop-only -- below 768px there is nowhere for it to go. */
+
+.root {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--z-drawer);
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  width: 20rem;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  transform: translateX(100%);
+  transition: transform var(--duration-slow) var(--ease-in-out);
+}
+
+.rootOpen {
+  transform: translateX(0);
+}
+
+@media (min-width: 48rem) {
+  .root {
+    display: flex;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-12) var(--space-16);
+  border-bottom: 1px solid var(--border);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.name {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.role {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.iconButton {
+  padding: var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.iconButton:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.iconButtonIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ---- error strip ---- */
+
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border-top: 1px solid color-mix(in oklab, var(--danger) 30%, transparent);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+}
+
+.errorIcon {
+  margin-top: var(--space-2);
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: var(--danger);
+}
+
+.errorText {
+  flex: 1;
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+  color: var(--danger);
+}
+
+.errorDismiss {
+  flex-shrink: 0;
+  padding: var(--space-2);
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: color-mix(in oklab, var(--danger) 70%, transparent);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.errorDismiss:hover {
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  color: var(--danger);
+}
+
+/* ---- transcript footer ---- */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-16);
+  border-top: 1px solid var(--border);
+}
+
+.footerButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-8);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.footerButton:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.smallIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}

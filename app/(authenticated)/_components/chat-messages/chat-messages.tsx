@@ -5,12 +5,13 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { Check, Copy } from 'lucide-react'
 import { SkillLoadedCard } from '../skill-loaded-card/skill-loaded-card'
+import styles from './chat-messages.module.css'
 import type {
   ADMessage,
   ClarifyingCardTool,
   PromptCardTool,
 } from '#/features/ad/hooks/useADChat'
-import { cn } from '#/lib/utils'
+import { cx } from '#/lib/utils'
 
 interface PromptCardProps extends PromptCardTool {
   onCopy: (prompt: string) => void
@@ -26,23 +27,18 @@ function PromptCard({ prompt, title, tags, onCopy }: PromptCardProps) {
   }
 
   return (
-    <div className="my-3 rounded-lg border border-border bg-card p-4">
+    <div className={styles.card}>
       {/* Title */}
-      {title && <div className="mb-2 text-sm font-medium">{title}</div>}
+      {title && <div className={styles.cardTitle}>{title}</div>}
 
       {/* Prompt content */}
-      <div className="mb-3 whitespace-pre-wrap rounded bg-muted/50 p-3 font-mono text-sm leading-relaxed">
-        {prompt}
-      </div>
+      <div className={styles.promptBody}>{prompt}</div>
 
       {/* Tags */}
       {tags && tags.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <div className={styles.tags}>
           {tags.map((tag, i) => (
-            <span
-              key={`${tag}-${i}`}
-              className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
-            >
+            <span key={`${tag}-${i}`} className={styles.tag}>
               {tag}
             </span>
           ))}
@@ -50,19 +46,16 @@ function PromptCard({ prompt, title, tags, onCopy }: PromptCardProps) {
       )}
 
       {/* Actions */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-        >
+      <div className={styles.cardActions}>
+        <button onClick={handleCopy} className={styles.cardButton}>
           {copied ? (
             <>
-              <Check className="h-3 w-3" />
+              <Check className={styles.smallIcon} />
               Copied
             </>
           ) : (
             <>
-              <Copy className="h-3 w-3" />
+              <Copy className={styles.smallIcon} />
               Copy
             </>
           )}
@@ -101,17 +94,15 @@ function ClarifyingCard({
   }
 
   return (
-    <div className="my-3 rounded-lg border border-border bg-card p-4">
+    <div className={styles.card}>
       {/* Interpretation */}
-      <p className="mb-3 text-xs italic text-muted-foreground">
-        {interpretation}
-      </p>
+      <p className={styles.interpretation}>{interpretation}</p>
 
       {/* Question */}
-      <p className="mb-3 text-sm font-medium">{question}</p>
+      <p className={styles.question}>{question}</p>
 
       {/* Options */}
-      <div className="flex flex-col gap-2">
+      <div className={styles.options}>
         {options.map((option, i) => {
           const isSelected = selectedOption === option
           const isDimmed = isInert && !isSelected
@@ -120,16 +111,13 @@ function ClarifyingCard({
               key={`${option}-${i}`}
               onClick={() => handleSelect(option)}
               disabled={isInert}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm transition-colors',
-                isSelected
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : isDimmed
-                    ? 'border-border bg-background text-muted-foreground opacity-40'
-                    : 'border-border bg-background hover:bg-muted',
+              className={cx(
+                styles.option,
+                isSelected && styles.optionSelected,
+                isDimmed && styles.optionDimmed,
               )}
             >
-              {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
+              {isSelected && <Check className={styles.optionIcon} />}
               {option}
             </button>
           )
@@ -139,13 +127,13 @@ function ClarifyingCard({
         {!isInert && !showFreeText && (
           <button
             onClick={() => setShowFreeText(true)}
-            className="text-left text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className={styles.freeTextToggle}
           >
             Tell me more...
           </button>
         )}
         {!isInert && showFreeText && (
-          <div className="flex gap-2">
+          <div className={styles.freeTextRow}>
             <input
               autoFocus
               value={freeText}
@@ -155,12 +143,12 @@ function ClarifyingCard({
                 if (e.key === 'Escape') setShowFreeText(false)
               }}
               placeholder="Type your answer..."
-              className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className={styles.freeTextInput}
             />
             <button
               onClick={handleFreeTextSubmit}
               disabled={!freeText.trim()}
-              className="rounded-md border border-border bg-background px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-40 transition-colors"
+              className={styles.freeTextSend}
             >
               Send
             </button>
@@ -183,10 +171,14 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="mt-1 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+      className={styles.copy}
       aria-label="Copy message"
     >
-      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+      {copied ? (
+        <Check className={styles.smallIcon} />
+      ) : (
+        <Copy className={styles.smallIcon} />
+      )}
     </button>
   )
 }
@@ -204,16 +196,16 @@ function MessageBubble({
 
   if (isUser) {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground">
+      <div className={styles.userRow}>
+        <div className={styles.userBubble}>
           {message.images && message.images.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-1.5">
+            <div className={styles.userImages}>
               {message.images.map((img, i) => (
                 <img
                   key={`img-${message.id}-${i}`}
                   src={img.url}
                   alt={img.title ?? `Attached ${i + 1}`}
-                  className="h-20 w-20 rounded border border-primary-foreground/20 object-cover"
+                  className={styles.userImage}
                 />
               ))}
             </div>
@@ -234,9 +226,9 @@ function MessageBubble({
     (!message.skillsLoaded || message.skillsLoaded.length === 0)
 
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div className={styles.assistant}>
       {message.skillsLoaded && message.skillsLoaded.length > 0 && (
-        <div className="flex w-full flex-col gap-1">
+        <div className={styles.skills}>
           {message.skillsLoaded.map((skill) => (
             <SkillLoadedCard
               key={skill.id}
@@ -247,23 +239,23 @@ function MessageBubble({
         </div>
       )}
       {isEmpty && (
-        <div className="flex items-center gap-1 px-1 py-1">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+        <div className={styles.typing}>
+          <span className={styles.typingDot} />
+          <span className={styles.typingDot} />
+          <span className={styles.typingDot} />
         </div>
       )}
       {message.content && (
-        <div className="group flex gap-1">
+        <div className={styles.assistantBody}>
           <div
-            className="ad-prose max-w-[85%] text-sm"
+            className={styles.prose}
             dangerouslySetInnerHTML={{ __html: html }}
           />
           <CopyButton text={message.content} />
         </div>
       )}
       {message.toolCalls && message.toolCalls.length > 0 && (
-        <div className="w-full">
+        <div className={styles.toolCalls}>
           {message.toolCalls.map((toolCall) =>
             toolCall.name === 'create_clarifying_card' ? (
               <ClarifyingCard
@@ -315,8 +307,8 @@ export function ChatMessages({
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center p-4">
-        <p className="text-sm text-muted-foreground">
+      <div className={styles.emptyState}>
+        <p className={styles.emptyStateText}>
           Ready to chat. Paste images or send a message below.
         </p>
       </div>
@@ -324,19 +316,7 @@ export function ChatMessages({
   }
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className={cn(
-        'flex flex-1 flex-col gap-3 overflow-y-auto p-4',
-        // Minimal prose styling for assistant markdown
-        '[&_.ad-prose_p]:mb-2 [&_.ad-prose_p:last-child]:mb-0',
-        '[&_.ad-prose_pre]:my-2 [&_.ad-prose_pre]:rounded [&_.ad-prose_pre]:bg-muted [&_.ad-prose_pre]:p-2 [&_.ad-prose_pre]:text-xs',
-        '[&_.ad-prose_code]:rounded [&_.ad-prose_code]:bg-muted [&_.ad-prose_code]:px-1 [&_.ad-prose_code]:text-xs',
-        '[&_.ad-prose_ul]:my-1 [&_.ad-prose_ul]:list-disc [&_.ad-prose_ul]:pl-4',
-        '[&_.ad-prose_ol]:my-1 [&_.ad-prose_ol]:list-decimal [&_.ad-prose_ol]:pl-4',
-      )}
-    >
+    <div ref={containerRef} onScroll={handleScroll} className={styles.root}>
       {messages.map((msg) => (
         <MessageBubble
           key={msg.id}
