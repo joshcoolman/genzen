@@ -57,8 +57,13 @@ live with the one route that renders them:
 | Surface    | Where                                                                   |
 | ---------- | ----------------------------------------------------------------------- |
 | Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                       |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                       |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                        |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav |
+
+`(authenticated)/_components/` also holds the generation UI Images and Canvas
+share (`generator-panel/` and what it composes). Anything one route renders
+lives with that route — #189 moved six folders out of there on that rule.
 
 ## Git workflow
 

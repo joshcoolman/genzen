@@ -1,8 +1,8 @@
 'use client'
 
-import { DescribeDialog } from '../_components/describe-dialog/describe-dialog'
-import { ImageGallery } from '../_components/image-gallery/image-gallery'
-import { VariationPromptsDialog } from '../_components/variation-prompts-dialog/variation-prompts-dialog'
+import { DescribeDialog } from './_components/describe-dialog/describe-dialog'
+import { ImageGallery } from './_components/image-gallery/image-gallery'
+import { VariationPromptsDialog } from './_components/variation-prompts-dialog/variation-prompts-dialog'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { ImageLightbox } from './_components/image-lightbox/image-lightbox'

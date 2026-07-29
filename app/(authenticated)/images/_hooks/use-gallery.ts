@@ -56,7 +56,10 @@ function urlsFor(images: Array<SavedAiImage>): Record<string, string> {
   return urls
 }
 
-export function useImages({ userId, initial }: UseImagesOptions): GalleryState {
+export function useGallery({
+  userId,
+  initial,
+}: UseImagesOptions): GalleryState {
   const [savedImages, setSavedImages] = useState<Array<SavedAiImage>>(() =>
     sortByOrder(initial),
   )

@@ -15,7 +15,7 @@ Multi-model image generation with edit and variation workflows via FAL AI.
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
-- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`, `useImagesPage`
+- `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`
 
 ## Server
 
@@ -36,25 +36,25 @@ Multi-model image generation with edit and variation workflows via FAL AI.
 
 ## Hooks
 
-- `use-images-page.ts` -- master hook composing all sub-hooks for the main page, and the owner of `selectedImageId` -- the highlight that makes an image the next prompt's primary reference
-- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`
-- `use-images.ts` -- gallery fetch, polling, deletion, reordering, optimistic cards. No database access and no realtime: it calls `gallery.actions.ts`, and the 5s poll is what tells it anything changed
-- `use-variations.ts` -- variation prompt generation and submission with ref image support
-- `use-lightbox.ts` -- fullscreen viewer over the completed images
-- `use-describe-json.ts` -- JSON structural description for reference DNA sheets
+Two, because two routes use them. Everything else this feature used to hold
+moved to `app/(authenticated)/images/_hooks/` in #189 -- Images was the only
+consumer, and `features/` is earned by two.
+
+- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`. Shared with canvas
+- `use-describe-json.ts` -- JSON structural description for reference DNA sheets. Only Images calls it, but the shared `generator-panel` takes its return value as a prop, so it stays here with the panel's other dependencies
 
 ## Routes and UI
 
-- `app/(authenticated)/images/page.tsx` -- the gallery and the generator. There
-  is no edit route: a highlighted image is the next prompt's primary reference
-  (#205), so an edit is a generation with a source, not a place you go
+- `app/(authenticated)/images/` -- the gallery and the generator, built to
+  `docs/reference/route-shape.md` (#189). There is no edit route: a highlighted
+  image is the next prompt's primary reference (#205), so an edit is a
+  generation with a source, not a place you go
 
-This feature is headless. The generation UI it shares with canvas lives in
-`app/(authenticated)/_components/` -- `generator-panel/`, `image-gallery/`,
-`image-card/`, `pending-image-card/`, `failed-image-card/`, `describe-dialog/`,
-`variation-prompts-dialog/`, `generate-prompts-dialog/`, `paste-prompts-dialog/`,
-`prompt-list/`. `image-lightbox/` is gallery-only and lives in
-`app/(authenticated)/images/_components/`.
+This feature is headless. The generation UI **shared with canvas** lives in
+`app/(authenticated)/_components/` -- `generator-panel/` and what it composes:
+`model-selector/`, `existing-image-picker/`, `prompt-list/`,
+`generate-prompts-dialog/`, `paste-prompts-dialog/`. Everything Images alone
+renders is in `app/(authenticated)/images/_components/`.
 
 ## Shared Dependencies
 

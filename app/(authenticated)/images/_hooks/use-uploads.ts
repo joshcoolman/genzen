@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
-import type { GalleryState } from '#/features/ai-images/hooks/use-images'
+import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
 

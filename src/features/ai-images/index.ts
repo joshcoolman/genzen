@@ -7,5 +7,3 @@ export { getModelName } from './models'
 
 // Normalizer
 export { normalizeGeneration } from './normalize-generation'
-
-// Hooks

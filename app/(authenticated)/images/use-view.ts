@@ -5,14 +5,14 @@ import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
+import { useGallery } from './_hooks/use-gallery'
+import { useLightbox } from './_hooks/use-lightbox'
+import { useVariations } from './_hooks/use-variations'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { getR2PublicUrl } from '#/lib/image-storage'
-import { useImages } from '#/features/ai-images/hooks/use-images'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
-import { useLightbox } from '#/features/ai-images/hooks/use-lightbox'
-import { useVariations } from '#/features/ai-images/hooks/use-variations'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import { useSelection } from '#/lib/use-selection'
@@ -22,13 +22,13 @@ import { useSelection } from '#/lib/use-selection'
  *
  * The first read is the server component's -- `page.tsx` runs
  * `listGalleryImages()` and hands the rows in as `initial`, so there is no
- * loading state and no empty first paint. `useImages` owns every read after
+ * loading state and no empty first paint. `useGallery` owns every read after
  * that, and its 5s poll is the only signal that anything changed.
  */
 export function useView(initial: Array<SavedAiImage>) {
   const { user } = useAuth()
 
-  const gallery = useImages({ userId: user.id, initial })
+  const gallery = useGallery({ userId: user.id, initial })
   const userImages = useUserImages(user.id)
   const prefs = usePrefs()
   const dock = useDock()

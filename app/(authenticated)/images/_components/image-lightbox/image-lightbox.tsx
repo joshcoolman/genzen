@@ -1,4 +1,4 @@
-import type { LightboxItem } from '#/features/ai-images/hooks/use-lightbox'
+import type { LightboxItem } from '../../_hooks/use-lightbox'
 import type { LightboxImage } from '#/components'
 import { Lightbox } from '#/components'
 
