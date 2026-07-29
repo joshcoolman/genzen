@@ -1,0 +1,5 @@
+/* Narrower than the 32rem default: this is the generator panel, which is a
+   sidebar's width by design and looks lost in a full-width dialog. */
+.popup {
+  --dialog-max-width: 23.75rem;
+}

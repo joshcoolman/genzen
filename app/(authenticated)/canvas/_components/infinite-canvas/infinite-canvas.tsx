@@ -35,16 +35,18 @@ import type {
 } from '../../_lib/types'
 import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
+import { toast } from '#/components'
+// Deep imports while the barrel still holds the shadcn Dialog and Button for
+// their remaining consumers -- see #193.
+import { Button } from '#/components/button/button'
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  toast,
-} from '#/components'
+} from '#/components/dialog/dialog'
 import { useAuth } from '#/lib/auth'
 import { useExistingImages } from '#/features/user-images'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
@@ -1696,22 +1698,22 @@ export function InfiniteCanvas({
         open={!!deleteConfirm}
         onOpenChange={(open) => !open && setDeleteConfirm(null)}
       >
-        <DialogContent className="w-[360px] sm:max-w-[360px]">
+        <DialogContent className={styles.confirmPopup}>
           <DialogHeader>
-            <DialogTitle className="text-sm font-medium text-zinc-200">
+            <DialogTitle>
               {deleteConfirm && deleteConfirm.ids.length > 1
                 ? `Delete ${deleteConfirm.ids.length} images?`
                 : 'Delete this image?'}
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription>
               Remove it from the canvas (it stays in your library), or move it
               to Trash.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+          <DialogFooter className={styles.confirmFooter}>
             <Button
               variant="secondary"
-              className="w-full"
+              className={styles.confirmAction}
               onClick={() => {
                 if (deleteConfirm) removeFromCanvas(deleteConfirm.ids)
                 setDeleteConfirm(null)
@@ -1720,8 +1722,8 @@ export function InfiniteCanvas({
               Remove from Canvas
             </Button>
             <Button
-              variant="destructive"
-              className="w-full"
+              variant="danger"
+              className={styles.confirmAction}
               onClick={() => {
                 if (deleteConfirm) moveSelectionToTrash(deleteConfirm.ids)
                 setDeleteConfirm(null)
@@ -1731,7 +1733,7 @@ export function InfiniteCanvas({
             </Button>
             <Button
               variant="ghost"
-              className="w-full"
+              className={styles.confirmAction}
               onClick={() => setDeleteConfirm(null)}
             >
               Cancel

@@ -1,7 +1,15 @@
 import { useMemo } from 'react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
+import styles from './canvas-generate-dialog.module.css'
 import type { useCanvasGenerate } from './use-canvas-generate'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '#/components'
+// Deep import while the barrel still holds the shadcn Dialog for its remaining
+// consumers -- see #193.
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/dialog/dialog'
 
 interface CanvasGenerateDialogProps {
   canvasGen: ReturnType<typeof useCanvasGenerate>
@@ -24,14 +32,9 @@ export function CanvasGenerateDialog({ canvasGen }: CanvasGenerateDialogProps) {
       open={canvasGen.isOpen}
       onOpenChange={(open) => !open && canvasGen.close()}
     >
-      <DialogContent
-        className="w-[380px] sm:max-w-[380px]"
-        showCloseButton={false}
-      >
+      <DialogContent className={styles.popup} showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle className="text-sm font-medium text-zinc-300">
-            Generate from Image
-          </DialogTitle>
+          <DialogTitle>Generate from Image</DialogTitle>
         </DialogHeader>
 
         <GeneratorPanel
