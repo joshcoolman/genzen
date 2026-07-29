@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import styles from './source-image-preview.module.css'
 
 interface SourceImagePreviewProps {
   src: string
@@ -15,15 +16,15 @@ export function SourceImagePreview({
 }: SourceImagePreviewProps) {
   if (variant === 'square') {
     return (
-      <div className="relative aspect-square w-full rounded-lg border border-input bg-black overflow-hidden">
-        <img src={src} alt={name} className="h-full w-full object-contain" />
+      <div className={styles.square}>
+        <img src={src} alt={name} className={styles.squareImage} />
         {onRemove && (
           <button
             onClick={onRemove}
-            className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className={styles.squareRemove}
             title="Remove source image"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className={styles.removeIcon} />
           </button>
         )}
       </div>
@@ -31,22 +32,16 @@ export function SourceImagePreview({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded border border-input bg-muted/50 px-2.5 py-1.5">
-      <img
-        src={src}
-        alt="Source"
-        className="h-10 w-10 rounded object-cover shrink-0"
-      />
-      <span className="text-xs text-muted-foreground truncate flex-1">
-        {name}
-      </span>
+    <div className={styles.compact}>
+      <img src={src} alt="Source" className={styles.compactImage} />
+      <span className={styles.compactName}>{name}</span>
       {onRemove && (
         <button
           onClick={onRemove}
-          className="flex h-6 w-6 items-center justify-center shrink-0 rounded-md text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className={styles.compactRemove}
           title="Remove source image"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className={styles.removeIcon} />
         </button>
       )}
     </div>

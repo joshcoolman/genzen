@@ -55,10 +55,10 @@ earned; see `docs/CODE-STANDARDS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                                          |
-| ---------- | ---------------------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                              |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                               |
+| Surface    | Where                                                                               |
+| ---------- | ----------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                   |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                    |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, status bar |
 
 ## Git workflow

@@ -1,9 +1,248 @@
-/* The image placeholder is dimmer than the app-wide skeleton -- it sits inside
-   an already-dark, clipped tile, where `--accent` reads as a bright grey block.
-   Half-strength `--muted`, exactly what `bg-muted/50` compiled to. Square,
-   because the tile does the rounding and an inner radius would show a sliver of
-   card at the top corners. */
+/* The tile every image in the app is drawn in: library grids, pickers, the
+   gallery, the canvas' side rails. It owns the frame, the four overlay
+   clusters and the three statuses; the caller owns only what goes in them.
+   `selectedClassName` is the one styling seam left open, because "selected"
+   means a different border in a picker than it does in the gallery. */
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+}
+
+.rootCompact {
+  border-radius: var(--radius-md);
+}
+
+.rootClickable {
+  cursor: pointer;
+}
+
+.rootDimmed {
+  opacity: 0.5;
+}
+
+/* Every picker wanted the same thing: brand at half strength on hover, so a
+   tile reads as choosable before it is chosen. It was three call sites passing
+   the same utility string through a `hoverBorder` prop. */
+.rootPickable:hover {
+  border-color: color-mix(in oklab, var(--accent-brand) 50%, transparent);
+}
+
+/* The default when a caller sets `selected` and nothing else. */
+.rootSelected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.frame {
+  position: relative;
+}
+
+.canvas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+}
+
+/* `contain` letterboxes, so the tile needs a mat behind the image or the
+   padding reads as a layout fault. `cover` fills and gets neither. */
+.canvasContain {
+  padding: var(--space-10);
+  background: var(--image-backing);
+}
+
 .skeleton {
+  /* Dimmer than the app-wide skeleton -- it sits inside an already-dark,
+     clipped tile, where `--accent` reads as a bright grey block. Half-strength
+     `--muted`. Square, because the tile does the rounding and an inner radius
+     would show a sliver of card at the top corners. */
   --skeleton-bg: color-mix(in oklab, var(--muted) 50%, transparent);
   --skeleton-radius: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.skeletonOverlay {
+  position: absolute;
+  inset: 0;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  transition: opacity var(--duration-slow) var(--ease-in-out);
+}
+
+.imageLoading {
+  opacity: 0;
+}
+
+.imageContain {
+  object-fit: contain;
+}
+
+.imageCover {
+  object-fit: cover;
+}
+
+/* ---- pending / failed ---- */
+
+.state {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--card);
+}
+
+.stateFailed {
+  gap: var(--space-4);
+}
+
+/* The image being edited or varied, behind its own pending tile. Desaturated
+   and faint so it reads as context rather than as the result. */
+.stateBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(100%);
+  opacity: 0.3;
+}
+
+.stateBackdropFailed {
+  opacity: 0.2;
+}
+
+/* Deliberately unpositioned, matching what it converted from: the pending body
+   carried `z-10` with no `position`, so the z-index never applied and the
+   absolutely-positioned backdrop paints over the spinner. At 30% opacity it
+   does not read as broken, and a conversion is the wrong place to change it.
+   The failed body below is `relative` and does sit above its backdrop. */
+.stateBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.stateBodyFailed {
+  position: relative;
+  z-index: 1;
+  gap: var(--space-4);
+  padding-inline: var(--space-16);
+}
+
+.spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-brand);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stateLabel {
+  font-size: var(--text-3xs);
+  color: var(--muted-foreground);
+}
+
+.failedTitle {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--danger);
+}
+
+.failedMessage {
+  margin-top: var(--space-10);
+  padding: var(--space-2) var(--space-10);
+  border: 1px solid color-mix(in oklab, var(--foreground) 30%, transparent);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: color-mix(in oklab, var(--foreground) 50%, transparent);
+}
+
+/* ---- badges ---- */
+
+.badge {
+  position: absolute;
+  padding: var(--space-2) var(--space-6);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: var(--text-3xs);
+  color: var(--muted-foreground);
+}
+
+.badgeTopLeft {
+  top: var(--space-8);
+  left: var(--space-8);
+}
+
+.badgeBottomLeft {
+  bottom: var(--space-8);
+  left: var(--space-8);
+}
+
+/* ---- overlay action clusters ---- */
+
+.actions {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+.actionsTopLeft {
+  top: var(--space-6);
+  left: var(--space-6);
+}
+
+.actionsTopRight {
+  top: var(--space-6);
+  right: var(--space-6);
+}
+
+.actionsBottomLeft {
+  bottom: var(--space-6);
+  left: var(--space-6);
+}
+
+.actionsBottomRight {
+  bottom: var(--space-6);
+  right: var(--space-6);
+}
+
+/* Hidden until the tile is hovered. A failed tile and `alwaysShowOverlay` opt
+   out, because a Retry the user cannot see is a card with no way out. */
+.actionsOnHover {
+  opacity: 0;
+}
+
+.root:hover .actionsOnHover {
+  opacity: 1;
+}
+
+.deleteIcon {
+  width: 0.875rem;
+  height: 0.875rem;
 }

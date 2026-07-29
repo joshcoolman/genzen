@@ -218,8 +218,6 @@ export function ImageCard({
                   img.generation_metadata?.prompt ??
                   img.title
                 }
-                className="px-3 pt-0.5 pb-3"
-                textClassName="text-xs text-muted-foreground"
               />
             </>
           )}

@@ -237,11 +237,9 @@ export function ExistingImagePicker({
                       alt={image.title}
                       onClick={() => toggleSelect(image.id)}
                       compact
-                      hoverBorder={
-                        isSelected
-                          ? 'border-accent-brand'
-                          : 'hover:border-accent-brand/50'
-                      }
+                      pickable
+                      selected={isSelected}
+                      selectedClassName={styles.thumbSelected}
                       imageOverlay={
                         isSelected ? (
                           <div className={styles.check}>

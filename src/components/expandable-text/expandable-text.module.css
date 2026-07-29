@@ -1,0 +1,40 @@
+/* A prompt or description that clamps to a few lines and expands on click,
+   with copy / add-to-sidebar actions beside it. */
+
+.root {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-2) var(--space-12) var(--space-12);
+}
+
+.text {
+  flex: 1;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}
+
+/* The utility form was `line-clamp-${lines}` -- an interpolated class name,
+   which Tailwind's scanner cannot see, so no clamp rule was ever generated and
+   the inline `WebkitLineClamp` had no box to clamp. The text did not truncate.
+   These three lines are what it was always meant to do; `-webkit-line-clamp`
+   still comes from the element's inline style, since the count is a prop. */
+.clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-start;
+  flex-shrink: 0;
+  gap: var(--space-4);
+}
+
+.actionIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

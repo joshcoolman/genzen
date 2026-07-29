@@ -1,5 +1,7 @@
 import { forwardRef } from 'react'
+import styles from './expandable-icon-button.module.css'
 import type { ReactNode } from 'react'
+import { cx } from '#/lib/utils'
 
 interface ExpandableIconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: ReactNode
@@ -26,14 +28,13 @@ export const ExpandableIconButton = forwardRef<
       // Merged, not spread over: `{...rest}` used to sit after this, so any
       // caller className -- including the undefined one a Base UI `render`
       // passes down -- silently erased the button's own layout.
-      className={`group/eib flex items-center justify-center p-2.5 -m-1 cursor-pointer ${className ?? ''}`}
+      className={cx(styles.root, className)}
     >
       <span
-        className={`flex items-center justify-center rounded bg-background/80 backdrop-blur-sm p-1 text-muted-foreground transition-all duration-150 group-hover/eib:bg-sidebar-selected group-hover/eib:scale-[1.75] group-hover/eib:shadow-sm ${
-          variant === 'destructive'
-            ? 'group-hover/eib:text-destructive'
-            : 'group-hover/eib:text-sidebar-selected-text'
-        }`}
+        className={cx(
+          styles.pill,
+          variant === 'destructive' && styles.pillDestructive,
+        )}
       >
         {icon}
       </span>

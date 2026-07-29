@@ -175,11 +175,9 @@ export function LibraryPickerDialog({
                         : handleSingleSelect(image)
                     }
                     compact
-                    hoverBorder={
-                      isSelected
-                        ? 'border-accent-brand'
-                        : 'hover:border-accent-brand/50'
-                    }
+                    pickable
+                    selected={isSelected}
+                    selectedClassName={styles.thumbSelected}
                     imageOverlay={
                       multiple ? (
                         <div

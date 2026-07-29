@@ -1,0 +1,95 @@
+/* The image an edit or variation is working from. Two shapes: a full-width
+   square in a panel, and a one-line chip in a form row. */
+
+/* ---- square ---- */
+
+.square {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  background: var(--image-backing);
+}
+
+.squareImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.squareRemove {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--background) 80%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out);
+}
+
+/* ---- compact ---- */
+
+.compact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-10);
+  border: 1px solid var(--input);
+  border-radius: 0.25rem;
+  background: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+
+.compactImage {
+  flex-shrink: 0;
+  width: var(--space-40);
+  height: var(--space-40);
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+.compactName {
+  flex: 1;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compactRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.squareRemove:hover,
+.compactRemove:hover {
+  color: var(--foreground);
+}
+
+.removeIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

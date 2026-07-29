@@ -1,6 +1,7 @@
 import { LibraryPickerButton } from '../library-picker-button/library-picker-button'
 import { FileUploadButton } from '../file-upload-button/file-upload-button'
 import { ClipboardPasteButton } from '../clipboard-paste-button/clipboard-paste-button'
+import styles from './image-source-buttons.module.css'
 import type { SelectedImage } from '../library-picker-button/library-picker-button'
 
 interface UserImageRow {
@@ -44,7 +45,7 @@ export function ImageSourceButtons({
           onSelectMultiple={library.onSelectMultiple}
           multiple={multiple}
           onOpen={library.onOpen}
-          className="shrink-0"
+          className={styles.button}
         />
       )}
       <FileUploadButton
@@ -56,12 +57,12 @@ export function ImageSourceButtons({
           }
         }}
         multiple={multiple}
-        className="shrink-0"
+        className={styles.button}
       />
       {showPaste && (
         <ClipboardPasteButton
           onImagePasted={onFileSelected}
-          className="shrink-0"
+          className={styles.button}
         />
       )}
     </div>

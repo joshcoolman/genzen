@@ -4,14 +4,14 @@ import { useState } from 'react'
 import { CirclePlus } from 'lucide-react'
 import { CopyButton } from '../copy-button/copy-button'
 import { ExpandableIconButton } from '../expandable-icon-button/expandable-icon-button'
+import styles from './expandable-text.module.css'
+import { cx } from '#/lib/utils'
 
 interface ExpandableTextProps {
   text: string
   lines?: number
   copyable?: boolean
   onAddPrompt?: (text: string) => void
-  className?: string
-  textClassName?: string
 }
 
 export function ExpandableText({
@@ -19,15 +19,13 @@ export function ExpandableText({
   lines = 3,
   copyable = true,
   onAddPrompt,
-  className = 'px-4 pt-2 pb-1',
-  textClassName = 'text-[11px] text-muted-foreground',
 }: ExpandableTextProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className={`flex gap-1.5 ${className}`}>
+    <div className={styles.root}>
       <p
-        className={`flex-1 cursor-pointer ${textClassName} ${expanded ? '' : `line-clamp-${lines}`}`}
+        className={cx(styles.text, !expanded && styles.clamped)}
         style={!expanded ? { WebkitLineClamp: lines } : undefined}
         onClick={(e) => {
           e.stopPropagation()
@@ -37,11 +35,11 @@ export function ExpandableText({
         {text}
       </p>
       {(copyable || onAddPrompt) && (
-        <div className="flex flex-col gap-1 shrink-0 self-start">
+        <div className={styles.actions}>
           {copyable && <CopyButton text={text} />}
           {onAddPrompt && (
             <ExpandableIconButton
-              icon={<CirclePlus className="h-3.5 w-3.5" />}
+              icon={<CirclePlus className={styles.actionIcon} />}
               label="Add prompt to sidebar"
               onClick={() => onAddPrompt(text)}
             />

@@ -97,3 +97,9 @@
   width: 0.75rem;
   height: 0.75rem;
 }
+
+/* A chosen tile in the picker grid: solid brand border, no ring. Thumbnail
+   handles the hover half via `pickable`. */
+.thumbSelected {
+  border-color: var(--accent-brand);
+}

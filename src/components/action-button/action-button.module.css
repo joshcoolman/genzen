@@ -1,0 +1,75 @@
+/* The primary CTA. Distinct from `Button`: it owns the loading state (spinner
+   plus swapped label) rather than leaving it to the call site. */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--duration-normal) var(--ease-in-out);
+}
+
+/* The utility form guarded this with `:not([class*='size-'])` so a caller could
+   opt out. No caller ever did -- the one icon in the app passed `h-4 w-4`,
+   which is what this sets -- so the escape hatch is gone rather than
+   reproduced. Bring it back as a prop if a call site needs a different size. */
+.root svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.default {
+  background: var(--accent-brand);
+  color: var(--accent-contrast);
+}
+
+.default:hover {
+  background: var(--accent-brand-hover);
+}
+
+.outline {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--muted-foreground);
+  box-shadow: var(--shadow-xs);
+}
+
+.outline:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.disabled {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.root:focus-visible {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

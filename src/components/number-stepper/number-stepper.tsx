@@ -1,5 +1,6 @@
 import { Minus, Plus } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import styles from './number-stepper.module.css'
+import { cx } from '#/lib/utils'
 
 interface NumberStepperProps {
   value: number
@@ -20,28 +21,22 @@ export function NumberStepper({
 }: NumberStepperProps) {
   return (
     <div
-      className={cn(
-        'flex h-9 items-center gap-1 rounded-md border border-input bg-transparent px-2 shadow-xs',
-        disabled && 'cursor-not-allowed opacity-50',
-        className,
-      )}
+      className={cx(styles.root, disabled && styles.rootDisabled, className)}
     >
       <button
         onClick={() => onAdjust(-1)}
         disabled={disabled || value <= min}
-        className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+        className={styles.step}
       >
-        <Minus className="size-3.5" />
+        <Minus className={styles.stepIcon} />
       </button>
-      <span className="text-sm font-medium w-4 text-center tabular-nums select-none">
-        {value}
-      </span>
+      <span className={styles.value}>{value}</span>
       <button
         onClick={() => onAdjust(1)}
         disabled={disabled || value >= max}
-        className="size-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:pointer-events-none"
+        className={styles.step}
       >
-        <Plus className="size-3.5" />
+        <Plus className={styles.stepIcon} />
       </button>
     </div>
   )

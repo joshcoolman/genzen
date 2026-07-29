@@ -6,6 +6,7 @@ import { ExpandableIconButton } from '../expandable-icon-button/expandable-icon-
 import { Skeleton } from '../skeleton/skeleton'
 import styles from './thumbnail.module.css'
 import type { ReactNode } from 'react'
+import { cx } from '#/lib/utils'
 
 export interface ThumbnailProps {
   url?: string | null
@@ -36,7 +37,8 @@ export interface ThumbnailProps {
   alwaysShowOverlay?: boolean
   compact?: boolean
   dimmed?: boolean
-  hoverBorder?: string
+  /** Brand border on hover -- the tile is one of a set the user is choosing from. */
+  pickable?: boolean
   objectFit?: 'contain' | 'cover'
   asButton?: boolean
   fallback?: ReactNode
@@ -68,7 +70,7 @@ export function Thumbnail({
   alwaysShowOverlay = false,
   compact = false,
   dimmed = false,
-  hoverBorder,
+  pickable = false,
   objectFit = 'contain',
   asButton = false,
   fallback,
@@ -84,31 +86,39 @@ export function Thumbnail({
     [url],
   )
   const El = asButton ? 'button' : 'div'
-  const bgClass = objectFit === 'contain' ? 'bg-black p-2.5' : ''
-  const cursorClass = onClick ? 'cursor-pointer' : ''
 
-  // Grid layout
-  const rounding = compact ? 'rounded-md' : 'rounded-lg'
+  // A failed tile always shows its actions -- a Retry the user cannot see is a
+  // card with no way out.
+  const pinned = status === 'failed' || alwaysShowOverlay
+  const reveal = pinned ? '' : styles.actionsOnHover
 
   return (
     <El
-      className={`group relative overflow-hidden ${rounding} border bg-card flex flex-col ${
+      className={cx(
+        styles.root,
+        compact && styles.rootCompact,
+        onClick && styles.rootClickable,
+        dimmed && styles.rootDimmed,
         selected
-          ? (selectedClassName ?? 'border-primary ring-1 ring-primary')
-          : `border-border ${hoverBorder ?? ''}`
-      } ${dimmed ? 'opacity-50' : ''} ${cursorClass} ${className ?? ''}`}
+          ? (selectedClassName ?? styles.rootSelected)
+          : pickable && styles.rootPickable,
+        className,
+      )}
       onClick={asButton ? onClick : undefined}
     >
-      <div className="relative">
+      <div className={styles.frame}>
         <div
-          className={`aspect-square w-full ${bgClass} flex items-center justify-center`}
+          className={cx(
+            styles.canvas,
+            objectFit === 'contain' && styles.canvasContain,
+          )}
           onClick={!asButton ? onClick : undefined}
         >
           {status === 'complete' && url ? (
             <>
               {!loaded && (
                 <Skeleton
-                  className={`${styles.skeleton} absolute inset-0 h-full w-full`}
+                  className={cx(styles.skeleton, styles.skeletonOverlay)}
                 />
               )}
               <img
@@ -118,51 +128,52 @@ export function Thumbnail({
                 loading="lazy"
                 decoding="async"
                 onLoad={() => setLoaded(true)}
-                className={`w-full h-full transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${objectFit === 'cover' ? 'object-cover' : 'object-contain'}`}
+                className={cx(
+                  styles.image,
+                  !loaded && styles.imageLoading,
+                  objectFit === 'cover'
+                    ? styles.imageCover
+                    : styles.imageContain,
+                )}
               />
             </>
           ) : status === 'complete' && !url ? (
-            (fallback ?? (
-              <Skeleton className={`${styles.skeleton} h-full w-full`} />
-            ))
+            (fallback ?? <Skeleton className={styles.skeleton} />)
           ) : status === 'pending' ? (
-            <div className="relative flex h-full w-full items-center justify-center bg-card">
+            <div className={styles.state}>
               {pendingBackgroundUrl ? (
                 <img
                   src={pendingBackgroundUrl}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover grayscale opacity-30"
+                  className={styles.stateBackdrop}
                 />
               ) : null}
-              <div className="z-10 flex flex-col items-center gap-2">
-                <div className="size-5 animate-spin rounded-full border-2 border-border border-t-accent-brand" />
+              <div className={styles.stateBody}>
+                <div className={styles.spinner} />
                 {pendingLabel && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {pendingLabel}
-                  </span>
+                  <span className={styles.stateLabel}>{pendingLabel}</span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="relative flex h-full w-full flex-col items-center justify-center gap-1 bg-card">
+            <div className={cx(styles.state, styles.stateFailed)}>
               {failedBackgroundUrl ? (
                 <img
                   src={failedBackgroundUrl}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover grayscale opacity-20"
+                  className={cx(
+                    styles.stateBackdrop,
+                    styles.stateBackdropFailed,
+                  )}
                 />
               ) : null}
-              <div className="relative z-10 flex flex-col items-center gap-1 px-4">
-                <span className="text-xs text-destructive">Failed</span>
+              <div className={cx(styles.stateBody, styles.stateBodyFailed)}>
+                <span className={styles.failedTitle}>Failed</span>
                 {failedLabel && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {failedLabel}
-                  </span>
+                  <span className={styles.stateLabel}>{failedLabel}</span>
                 )}
                 {failedMessage && (
-                  <span className="text-xs text-foreground/50 border border-foreground/30 rounded-full px-2.5 py-0.5 mt-2.5">
-                    {failedMessage}
-                  </span>
+                  <span className={styles.failedMessage}>{failedMessage}</span>
                 )}
               </div>
             </div>
@@ -172,41 +183,29 @@ export function Thumbnail({
         </div>
 
         {topLeftBadge && (
-          <span className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+          <span className={cx(styles.badge, styles.badgeTopLeft)}>
             {topLeftBadge}
           </span>
         )}
 
         {status === 'complete' && label && (
-          <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full">
+          <span className={cx(styles.badge, styles.badgeBottomLeft)}>
             {label}
           </span>
         )}
 
         {overlayActionsLeft && (
-          <div
-            className={`absolute top-1.5 left-1.5 flex items-center gap-1 transition-all ${
-              status === 'failed' || alwaysShowOverlay
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100'
-            }`}
-          >
+          <div className={cx(styles.actions, styles.actionsTopLeft, reveal)}>
             {overlayActionsLeft}
           </div>
         )}
 
         {(onDelete || overlayActions) && (
-          <div
-            className={`absolute top-1.5 right-1.5 flex items-center gap-1 transition-all ${
-              status === 'failed' || alwaysShowOverlay
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100'
-            }`}
-          >
+          <div className={cx(styles.actions, styles.actionsTopRight, reveal)}>
             {overlayActions}
             {onDelete && (
               <ExpandableIconButton
-                icon={<Trash2 className="h-3.5 w-3.5" />}
+                icon={<Trash2 className={styles.deleteIcon} />}
                 label="Delete"
                 variant="destructive"
                 onClick={onDelete}
@@ -216,18 +215,14 @@ export function Thumbnail({
         )}
 
         {overlayActionsBottomLeft && (
-          <div className="absolute bottom-1.5 left-1.5 flex items-center gap-1">
+          <div className={cx(styles.actions, styles.actionsBottomLeft)}>
             {overlayActionsBottomLeft}
           </div>
         )}
 
         {overlayActionsBottomRight && (
           <div
-            className={`absolute bottom-1.5 right-1.5 flex items-center gap-1 transition-all ${
-              status === 'failed' || alwaysShowOverlay
-                ? 'opacity-100'
-                : 'opacity-0 group-hover:opacity-100'
-            }`}
+            className={cx(styles.actions, styles.actionsBottomRight, reveal)}
           >
             {overlayActionsBottomRight}
           </div>

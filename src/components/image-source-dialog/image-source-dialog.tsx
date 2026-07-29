@@ -214,7 +214,7 @@ export function ImageSourceDialog({
                   alt={image.title}
                   onClick={() => handleLibrarySelect(image)}
                   compact
-                  hoverBorder="hover:border-accent-brand/50"
+                  pickable
                 />
               ))}
             </ImageGrid>
