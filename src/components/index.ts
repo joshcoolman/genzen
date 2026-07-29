@@ -1,25 +1,3 @@
-// Staging folder -- see primitives/README.md. These move up into src/components/
-// before #185 closes; the import path for consumers never changes.
-export { Stack, type StackProps } from './primitives/stack/stack'
-export {
-  PageHeader,
-  type PageHeaderProps,
-} from './primitives/page-header/page-header'
-export {
-  Pagination,
-  type PaginationProps,
-} from './primitives/pagination/pagination'
-export {
-  SingleSelect,
-  type SingleSelectProps,
-  type SingleSelectOption,
-} from './primitives/single-select/single-select'
-export {
-  MultiSelect,
-  type MultiSelectProps,
-  type MultiSelectOption,
-} from './primitives/multi-select/multi-select'
-
 export { ActionButton } from './action-button/action-button'
 export { AspectRatioSelect } from './aspect-ratio-select/aspect-ratio-select'
 export {
@@ -57,10 +35,23 @@ export {
   useReportError,
 } from './missing-key-dialog/missing-key-dialog'
 export { MobileDialogHeader } from './mobile-dialog-header/mobile-dialog-header'
+export {
+  MultiSelect,
+  type MultiSelectProps,
+  type MultiSelectOption,
+} from './multi-select/multi-select'
 export { NumberStepper } from './number-stepper/number-stepper'
+export { PageHeader, type PageHeaderProps } from './page-header/page-header'
+export { Pagination, type PaginationProps } from './pagination/pagination'
 export { RefImageStrip } from './ref-image-strip/ref-image-strip'
 export { SelectionDrawer } from './selection-drawer/selection-drawer'
+export {
+  SingleSelect,
+  type SingleSelectProps,
+  type SingleSelectOption,
+} from './single-select/single-select'
 export { SourceImagePreview } from './source-image-preview/source-image-preview'
+export { Stack, type StackProps } from './stack/stack'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'
 
 // shadcn primitives (#185 replaces these with Base UI, one component at a time)

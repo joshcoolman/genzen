@@ -144,7 +144,7 @@ Conventions follow `~/repos/project-standard`.
   `listImageClassName`) deleted, 31 props down to 28. Activity's two thumbnails
   took it next, at 48px and 64px: four hand-rolled image boxes down to two call
   sites, and three copies of a raw `hsl(0 0% 0%)` replaced by `--image-backing`.
-  Activity's reference strip wants a *fluid* square and did not fit, which is
+  Activity's reference strip wants a _fluid_ square and did not fit, which is
   the primitive holding its shape rather than a gap to close.
 - **`ConfirmDialog` (#185).** Nine imports and ~28 lines of `AlertDialog`
   nesting were repeated verbatim at five call sites, varying only in their
@@ -162,8 +162,8 @@ Conventions follow `~/repos/project-standard`.
   which composes components and carries no styles of its own; `use-view.ts`
   holds the state. Parts are named by subject (`run-row`, `totals`, `filters`),
   never by route. Written down once in `docs/reference/route-shape.md` — copy
-  Activity, not an older route. Six primitives fell out of doing it, staged in
-  `src/components/primitives/`.
+  Activity, not an older route. Five primitives fell out of doing it, now flat
+  in `src/components/` alongside everything else.
 - **Activity is also simpler.** Model chips, the date filters, the stat grid and
   the cost badge are gone; the log is windowed to the last three days that
   produced runs, so the 5,000-row totals query went with them. What is left is a

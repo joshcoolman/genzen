@@ -2,11 +2,7 @@
 
 import { CheckCircle2, ChevronDown, Circle } from 'lucide-react'
 import { clsx } from 'clsx'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '../../ui/popover/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover/popover'
 import styles from './multi-select.module.css'
 
 export interface MultiSelectOption {

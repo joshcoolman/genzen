@@ -73,30 +73,30 @@ styling decision creeping back into the view.
 
 ## Primitives
 
-Staged in `src/components/primitives/` — a temporary folder with its own README,
-flattened into `src/components/` before #185 closes. All exported from the single
-root barrel, so the import path never changes.
+They live flat in `src/components/`, one folder each, all exported from the
+single root barrel.
 
-| built          | why it exists                                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Stack`        | the view has to compose spacing without styling                                                            |
-| `PageHeader`   | title + optional description, and an `aside` slot so "put a stat opposite the title" stays out of the view |
-| `Pagination`   | domain wording behind an `itemNoun` prop                                                                   |
-| `MultiSelect`  | trigger with count, grow-to-fit panel, pinned "Clear all", brand-green check                               |
-| `SingleSelect` | segmented pills, one at a time; choosing the chosen one clears it                                          |
+They spent a while in a `primitives/` subfolder, which was staging and is now
+gone. It is worth knowing why, because the name kept inviting people to treat it
+as the design system forming: **`src/components/` already is that**, and a
+subfolder inside it only asks a question with no stable answer — is `ImageBox` a
+primitive or a component? `ConfirmDialog`? `Thumbnail`? Files land by mood,
+and the folder stops meaning anything. #181 flattened this directory once
+already; the standard's rule is "the folder listing _is_ the catalogue."
+
+| built           | why it exists                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ConfirmDialog` | nine imports of `AlertDialog` repeated at five call sites, varying only in their strings                   |
+| `ImageBox`      | a square that shows an image, and owns the four states it can be in                                        |
+| `MultiSelect`   | trigger with count, grow-to-fit panel, pinned "Clear all", brand-green check                               |
+| `PageHeader`    | title + optional description, and an `aside` slot so "put a stat opposite the title" stays out of the view |
+| `Pagination`    | domain wording behind an `itemNoun` prop                                                                   |
+| `SingleSelect`  | segmented pills, one at a time; choosing the chosen one clears it                                          |
+| `Stack`         | the view has to compose spacing without styling                                                            |
 
 Candidates, seen two or more times and waiting for the next sighting to fix
 their shape: `EmptyState`, `Card`, `Label`, `StatusBadge`. `EmptyState` picked
 up its third sighting on Trash and is the next one to build.
-
-Two more landed reviewing the Trash conversion, both flat in `src/components/`
-rather than staged — they came out of reading the code, not out of converting
-it, and neither is provisional:
-
-| built           | why it exists                                                                            |
-| --------------- | ---------------------------------------------------------------------------------------- |
-| `ConfirmDialog` | nine imports of `AlertDialog` repeated at five call sites, varying only in their strings |
-| `ImageBox`      | a square that shows an image, and owns the four states it can be in                      |
 
 `StatBadge` was built and deleted the same day when its only consumer went
 (`git show adf67e8`). An unused primitive is worse than a missing one — it gets
