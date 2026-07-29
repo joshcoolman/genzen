@@ -68,9 +68,14 @@ export function useImagesPage() {
       }
       if (!img.storage_path) return
       setSelectedImageId(img.id)
-      // A public URL, not base64: the generator forwards a non-`data:` source
-      // to the server as `sourceImageUrl`.
-      generator.setSourceFromBase64(getR2PublicUrl(img.storage_path), img.title)
+      // The URL is for the panel's preview only. The submit sends the id, and
+      // the server resolves the object and uploads the bytes to FAL -- handing
+      // FAL a URL to fetch cannot work locally, where it is `localhost:9010`.
+      generator.setSourceFromLibrary(
+        img.id,
+        getR2PublicUrl(img.storage_path),
+        img.title,
+      )
     },
     [selectedImageId, clearHighlight, generator],
   )

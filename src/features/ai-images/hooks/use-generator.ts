@@ -62,7 +62,7 @@ export interface GeneratorState {
   aspectRatio: string
   setAspectRatio: (ratio: string) => void
   loading: boolean
-  sourceImage: { base64: string; name: string } | null
+  sourceImage: { base64: string; name: string; id?: string } | null
   describingImage: boolean
   totalImages: number
   canGenerate: boolean
@@ -78,6 +78,9 @@ export interface GeneratorState {
     images: Array<{ id: string; url: string; title: string }>,
   ) => void
   setSourceFromBase64: (base64: string, name: string) => void
+  /** Use a library row as the primary reference: keeps the prompt, and the
+   *  submit sends the id rather than a URL. */
+  setSourceFromLibrary: (id: string, url: string, name: string) => void
   handleClearSourceImage: () => void
   handleClear: () => void
   handleCaption: () => Promise<void>
@@ -160,6 +163,9 @@ export function useGenerator({
   const [sourceImage, setSourceImage] = useState<{
     base64: string
     name: string
+    /** Set when the source is a library row (the /images highlight). The
+     *  submit sends the id and the server resolves the object. */
+    id?: string
   } | null>(null)
   const [describingImage, setDescribingImage] = useState(false)
   const [enhancingPromptIndex, setEnhancingPromptIndex] = useState<
@@ -319,9 +325,11 @@ export function useGenerator({
             aspectRatio,
             idempotencyKey: crypto.randomUUID(),
             ...(sourceImage
-              ? sourceImage.base64.startsWith('data:')
-                ? { sourceImageBase64: sourceImage.base64 }
-                : { sourceImageUrl: sourceImage.base64 }
+              ? sourceImage.id
+                ? { sourceImageId: sourceImage.id }
+                : sourceImage.base64.startsWith('data:')
+                  ? { sourceImageBase64: sourceImage.base64 }
+                  : { sourceImageUrl: sourceImage.base64 }
               : {}),
             ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
             ...(referenceImageIds ? { referenceImageIds } : {}),
@@ -372,9 +380,15 @@ export function useGenerator({
     }
   }
 
-  function applySourceBase64(base64: string, name: string) {
-    setSourceImage({ base64, name })
-    setPrompt('')
+  function applySourceBase64(
+    base64: string,
+    name: string,
+    options?: { id?: string; keepPrompt?: boolean },
+  ) {
+    setSourceImage({ base64, name, ...(options?.id ? { id: options.id } : {}) })
+    // Highlighting an image must not touch what you have typed (#205). An
+    // upload still clears, because that is a fresh subject.
+    if (!options?.keepPrompt) setPrompt('')
 
     const img = new Image()
     img.onload = () => {
@@ -518,6 +532,8 @@ export function useGenerator({
     setSourceFile,
     setSourceFromUrl,
     setSourceFromBase64: applySourceBase64,
+    setSourceFromLibrary: (id: string, url: string, name: string) =>
+      applySourceBase64(url, name, { id, keepPrompt: true }),
     handleClearSourceImage,
     handleClear,
     handleCaption,

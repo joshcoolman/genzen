@@ -24,6 +24,9 @@ export interface GenerateImageInput {
   aspectRatio?: string
   sourceImageBase64?: string
   sourceImageUrl?: string
+  /** A library row to use as the primary reference -- the /images highlight.
+   *  Resolved to its object server-side, so the caller never names a URL. */
+  sourceImageId?: string
   isRefine?: boolean
   referenceImageIds?: Array<string>
   parentImageId?: string
@@ -31,6 +34,22 @@ export interface GenerateImageInput {
   sourceClient?: string
   /** Mark the created row as living on the canvas, so it's reclaimable on load */
   onCanvas?: boolean
+}
+
+/** The object behind a library row, scoped to its owner -- the caller passes an
+ *  id, so a client cannot name someone else's row or an arbitrary URL. */
+async function resolveSourceUrl(
+  imageId: string,
+  userId: string,
+): Promise<string | null> {
+  const row = first(
+    await sql<Array<{ storage_path: string | null }>>`
+      select storage_path from user_images
+      where id = ${imageId} and user_id = ${userId} and deleted_at is null
+    `,
+  )
+  if (!row?.storage_path) return null
+  return createImageStorage().getUrl(row.storage_path)
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -60,10 +79,16 @@ export async function generateImageInternal(
     aspectRatio,
     sourceImageBase64,
     sourceImageUrl,
+    sourceImageId,
     isRefine,
   } = data
 
-  if (!sourceImageBase64 && !sourceImageUrl && !prompt.trim()) {
+  if (
+    !sourceImageBase64 &&
+    !sourceImageUrl &&
+    !sourceImageId &&
+    !prompt.trim()
+  ) {
     throw new Error('Prompt is required')
   }
 
@@ -109,6 +134,7 @@ export async function generateImageInternal(
     extraMetadata: {
       ...(sourceImageBase64 ? { has_source_image: true } : {}),
       ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
+      ...(sourceImageId ? { source_image_id: sourceImageId } : {}),
       ...(data.referenceImageIds?.length
         ? { reference_image_ids: data.referenceImageIds }
         : {}),
@@ -148,8 +174,19 @@ export async function generateImageInternal(
     let effectivePrompt = prompt.trim()
     let imageUrl: string | null = null
 
-    if (sourceImageUrl) {
-      imageUrl = sourceImageUrl
+    // A source is uploaded to FAL as bytes, never handed over as a URL for FAL
+    // to fetch. Passing the public URL through worked in prod and could never
+    // work locally, where the object lives on `localhost:9010` -- FAL answered
+    // "Could not generate images with the given prompts and images", the same
+    // way a reference image would have if it took this path.
+    if (sourceImageId || sourceImageUrl) {
+      const fetchUrl = sourceImageId
+        ? await resolveSourceUrl(sourceImageId, userId)
+        : sourceImageUrl!
+      if (!fetchUrl) throw new Error('Source image not found')
+      const res = await fetch(fetchUrl)
+      if (!res.ok) throw new Error('Could not read the source image')
+      imageUrl = await uploadBufferToFal(await res.arrayBuffer())
       falModelId = endpointFor(model, true)
     } else if (sourceImageBase64) {
       // Strip data URL prefix and decode to buffer
@@ -192,7 +229,7 @@ export async function generateImageInternal(
     const metadataPrompt = effectivePrompt
 
     // Apply refine wrapping for FAL only
-    if (sourceImageUrl && isRefine) {
+    if (imageUrl && isRefine) {
       effectivePrompt = buildRefinePrompt(effectivePrompt)
     }
 
