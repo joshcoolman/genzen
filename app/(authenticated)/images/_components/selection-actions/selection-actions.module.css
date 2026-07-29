@@ -1,0 +1,6 @@
+/* Button supplies the 0.5rem gap that the old `mr-1` was doing by hand; only
+   the size is left. */
+.icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}

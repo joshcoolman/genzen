@@ -1,0 +1,14 @@
+/* The gallery side of the route. It shifts left for the docked generator --
+   20rem is the panel's own width, not spacing, so no token goes that far. */
+
+.workspace {
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+.pushed {
+  margin-right: 20rem;
+}
+
+.body > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-16);
+}

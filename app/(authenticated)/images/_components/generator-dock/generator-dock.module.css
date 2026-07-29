@@ -1,0 +1,79 @@
+/* The scrolling body of the full-screen mobile generator. The popup itself is
+   `--dialog-overflow: hidden` via size="fullscreen", so this is the part that
+   moves. */
+.mobileBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-12);
+}
+
+/* Click-away target when the panel is floating rather than pinned. */
+.dismissLayer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+}
+
+.panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--z-canvas-hud);
+  height: 100vh;
+  width: 20rem;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: hsl(0 0% 0% / 0.9);
+  backdrop-filter: blur(40px);
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+.panelFloating {
+  box-shadow: var(--shadow-xl);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-16) var(--space-8);
+}
+
+.title {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.headerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.headerButton:hover {
+  color: var(--foreground);
+}
+
+.body {
+  padding: 0 var(--space-16) var(--space-16);
+}
+
+.icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

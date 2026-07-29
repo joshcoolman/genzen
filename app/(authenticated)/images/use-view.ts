@@ -1,7 +1,10 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
-
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useDock } from './_hooks/use-dock'
+import { useDownload } from './_hooks/use-download'
+import { usePrefs } from './_hooks/use-prefs'
+import { useUploads } from './_hooks/use-uploads'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { getR2PublicUrl } from '#/lib/image-storage'
@@ -12,16 +15,25 @@ import { useLightbox } from '#/features/ai-images/hooks/use-lightbox'
 import { useVariations } from '#/features/ai-images/hooks/use-variations'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
+import { useSelection } from '#/lib/use-selection'
 
-export function useImagesPage(initialImages: Array<SavedAiImage>) {
+/**
+ * The state `view.tsx` renders.
+ *
+ * The first read is the server component's -- `page.tsx` runs
+ * `listGalleryImages()` and hands the rows in as `initial`, so there is no
+ * loading state and no empty first paint. `useImages` owns every read after
+ * that, and its 5s poll is the only signal that anything changed.
+ */
+export function useView(initial: Array<SavedAiImage>) {
   const { user } = useAuth()
 
-  const gallery = useImages({
-    userId: user.id,
-    initial: initialImages,
-  })
-
+  const gallery = useImages({ userId: user.id, initial })
   const userImages = useUserImages(user.id)
+  const prefs = usePrefs()
+  const dock = useDock()
+  const download = useDownload()
+  const { uploadFiles } = useUploads(user.id, gallery)
 
   const modelSelector = useModelSelector({
     capability: 'sidebar',
@@ -45,6 +57,8 @@ export function useImagesPage(initialImages: Array<SavedAiImage>) {
   const completedImages = gallery.images.filter(
     (img) => img.status === 'completed',
   )
+
+  const images = prefs.sortAsc ? [...gallery.images].reverse() : gallery.images
 
   // The highlight (#205). A highlighted image is the primary reference for
   // whatever you prompt next; clicking it again takes the highlight off and
@@ -89,13 +103,11 @@ export function useImagesPage(initialImages: Array<SavedAiImage>) {
   )
 
   const lightbox = useLightbox(completedImages, gallery.deleteImage)
-
   const variations = useVariations({ setError })
 
   // Describe JSON for the generator's source image -- appends to prompt
-  const sourceImageUrl = generator.sourceImage?.base64
   const describe = useDescribeJson({
-    imageUrl: sourceImageUrl,
+    imageUrl: generator.sourceImage?.base64,
     onResult: useCallback(
       (json: string) => {
         generator.setPrompt((prev: string) =>
@@ -106,32 +118,78 @@ export function useImagesPage(initialImages: Array<SavedAiImage>) {
     ),
   })
 
-  function handleLoadPrompt(img: SavedAiImage) {
-    if (!img.generation_metadata?.prompt) return
-    generator.setPrompt(img.generation_metadata.prompt)
-  }
+  const selection = useSelection({ items: images.map((img) => img.id) })
 
-  function handleLoadPromptAndModel(img: SavedAiImage) {
-    if (!img.generation_metadata) return
-    const { prompt } = img.generation_metadata
-    generator.setPrompt(prompt)
-  }
+  // A selected completed image is an automatic reference for the next prompt.
+  useEffect(() => {
+    const ids = Array.from(selection.selectedIds).filter(
+      (id) => gallery.images.find((i) => i.id === id)?.status === 'completed',
+    )
+    generator.setAutoRefImageIds(ids)
+  }, [selection.selectedIds, gallery.images])
+
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false)
+
+  const deleteSelected = useCallback(async () => {
+    const targets = images.filter((img) => selection.selectedIds.has(img.id))
+    setIsBatchDeleting(true)
+    try {
+      for (const img of targets) await gallery.deleteImage(img)
+      selection.clearSelection()
+    } finally {
+      setIsBatchDeleting(false)
+    }
+  }, [images, selection, gallery])
+
+  const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
+    null,
+  )
+
+  const loadPrompt = useCallback(
+    (img: SavedAiImage) => {
+      const prompt = img.generation_metadata?.prompt
+      if (prompt) generator.setPrompt(prompt)
+    },
+    [generator],
+  )
+
+  /** The lightbox's Edit: close it, and highlight what was on screen. */
+  const highlightFromLightbox = useCallback(() => {
+    const item = lightbox.items[lightbox.index!]
+    const img = completedImages.find((i) => i.id === item.id)
+    lightbox.close()
+    if (img) toggleHighlight(img)
+  }, [lightbox, completedImages, toggleHighlight])
+
+  /** The source image's URL, for the variation dialog's preview. */
+  const variationSourceUrl = variations.pendingSourceImage
+    ? gallery.imageUrls[variations.pendingSourceImage.id]
+    : undefined
 
   return {
-    userId: user.id,
+    images,
     gallery,
     userImages,
     modelSelector,
     generator: generatorWithHighlight,
+    prefs,
+    dock,
+    download,
+    uploadFiles,
+    selection,
+    isBatchDeleting,
+    deleteSelected,
     selectedImageId,
     toggleHighlight,
     lightbox,
+    highlightFromLightbox,
     variations,
-    completedImages,
+    variationSourceUrl,
+    describe,
+    describeTarget,
+    setDescribeTarget,
+    loadPrompt,
     error,
     setError,
-    describe,
-    handleLoadPrompt,
-    handleLoadPromptAndModel,
   }
 }

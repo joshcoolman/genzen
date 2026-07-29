@@ -1,0 +1,93 @@
+'use client'
+
+import { useCallback, useEffect } from 'react'
+import type { GalleryState } from '#/features/ai-images/hooks/use-images'
+import type { SavedAiImage } from '#/features/ai-images/types'
+import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
+
+/** The placeholder a card shows while its bytes are still in flight. */
+function skeletonCard(id: string, title: string): SavedAiImage {
+  return {
+    id,
+    title,
+    storage_path: null,
+    created_at: new Date().toISOString(),
+    status: 'completed',
+    generation_error: null,
+    generation_metadata: null,
+  }
+}
+
+/**
+ * Getting an image into the gallery, from the file picker or from a paste.
+ *
+ * Both paths are the same three steps -- optimistic card, upload, swap for the
+ * real row -- and differ only in the preview. A paste is one image the user is
+ * holding in mind, so it gets a blob preview immediately. The picker takes many
+ * at once and shows none: previews would land in upload order and the cards
+ * would appear to shuffle.
+ *
+ * The swap is by the upload's own return value. It used to match on title
+ * against a realtime INSERT (#174), which two files of the same name broke.
+ */
+export function useUploads(userId: string | undefined, gallery: GalleryState) {
+  const { upload } = useImageUpload(userId)
+
+  const ingest = useCallback(
+    (file: File, { preview }: { preview: boolean }) => {
+      const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
+      gallery.addOptimisticCard(skeletonCard(tempId, file.name))
+
+      const previewUrl = preview ? URL.createObjectURL(file) : null
+      if (previewUrl) gallery.setImageUrl(tempId, previewUrl)
+
+      void (async () => {
+        try {
+          const created = await upload({
+            file,
+            title: file.name,
+            description: null,
+          })
+          gallery.replaceOptimisticCard(
+            tempId,
+            skeletonCard(created.id, created.title),
+          )
+          // Hold the blob preview until the refresh brings a real URL --
+          // swapping to nothing would blink the card empty.
+          const url = created.url || previewUrl
+          if (url) gallery.setImageUrl(created.id, url)
+          void gallery.refresh({ silent: true })
+        } catch {
+          gallery.removeOptimisticCard(tempId)
+        }
+      })()
+    },
+    [upload, gallery],
+  )
+
+  const uploadFiles = useCallback(
+    (files: Array<File>) => {
+      for (const file of files) ingest(file, { preview: false })
+    },
+    [ingest],
+  )
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of Array.from(items)) {
+        if (!item.type.startsWith('image/')) continue
+        const file = item.getAsFile()
+        if (!file) continue
+        e.preventDefault()
+        ingest(file, { preview: true })
+        return
+      }
+    }
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [ingest])
+
+  return { uploadFiles }
+}
