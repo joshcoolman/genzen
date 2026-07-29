@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardPaste } from 'lucide-react'
 import { Button } from '../ui/button/button'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '../popover/popover'
 import { useClipboardPaste } from './use-clipboard-paste'
+import styles from './clipboard-paste-button.module.css'
 
 interface ClipboardPasteButtonProps {
   onImagePasted: (file: File) => void
@@ -53,16 +54,18 @@ export function ClipboardPasteButton({
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className={className}>
-          <ClipboardPaste />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto">
-        <p className="text-sm">
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="icon" className={className}>
+            <ClipboardPaste />
+          </Button>
+        }
+      />
+      <PopoverContent className={styles.popover}>
+        <p className={styles.message}>
           {state === 'received' && 'Image captured'}
           {state === 'error' && (
-            <span className="text-destructive">{errorMessage}</span>
+            <span className={styles.error}>{errorMessage}</span>
           )}
           {(state === 'ready' || state === 'idle') && 'Paste your image'}
         </p>

@@ -2,7 +2,7 @@
 
 import { CheckCircle2, ChevronDown, Circle } from 'lucide-react'
 import { clsx } from 'clsx'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '../popover/popover'
 import styles from './multi-select.module.css'
 
 export interface MultiSelectOption {
@@ -28,22 +28,19 @@ export function MultiSelect({
 }: MultiSelectProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={clsx(
-            styles.trigger,
-            selected.length > 0 && styles.triggerActive,
+      <PopoverTrigger
+        className={clsx(
+          styles.trigger,
+          selected.length > 0 && styles.triggerActive,
+        )}
+      >
+        <span>
+          {label}
+          {selected.length > 0 && (
+            <span className={styles.count}>({selected.length})</span>
           )}
-        >
-          <span>
-            {label}
-            {selected.length > 0 && (
-              <span className={styles.count}>({selected.length})</span>
-            )}
-          </span>
-          <ChevronDown className={styles.chevron} />
-        </button>
+        </span>
+        <ChevronDown className={styles.chevron} />
       </PopoverTrigger>
       <PopoverContent
         align="start"

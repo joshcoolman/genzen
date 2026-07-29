@@ -30,16 +30,17 @@
   height: var(--space-12);
 }
 
-/* Grow to fit the list, and only scroll once the viewport runs out. Radix
+/* Grow to fit the list, and only scroll once the viewport runs out. Base UI
    measures the space between the trigger and the viewport edge and publishes it
-   here; the fallback is for a render where the var is not set yet.
+   on the positioner as --available-height, which inherits down to here; the
+   fallback is for a render where the var is not set yet.
    The panel itself does not scroll -- the option list inside it does, so
    "Clear all" stays put at the top. */
 .popover {
   display: flex;
   flex-direction: column;
   width: 18rem;
-  max-height: var(--radix-popover-content-available-height, 20rem);
+  max-height: var(--available-height, 20rem);
   padding: var(--space-8);
   overflow: hidden;
 }

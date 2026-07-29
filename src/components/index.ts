@@ -46,6 +46,12 @@ export {
 export { NumberStepper } from './number-stepper/number-stepper'
 export { PageHeader, type PageHeaderProps } from './page-header/page-header'
 export { Pagination, type PaginationProps } from './pagination/pagination'
+export {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  type PopoverContentProps,
+} from './popover/popover'
 export { RefImageStrip } from './ref-image-strip/ref-image-strip'
 export { SelectionDrawer } from './selection-drawer/selection-drawer'
 export {
@@ -72,5 +78,4 @@ export * from './ui/button/button'
 export * from './ui/command/command'
 export * from './ui/dialog/dialog'
 export * from './ui/dropdown-menu/dropdown-menu'
-export * from './ui/popover/popover'
 export * from './ui/sheet/sheet'

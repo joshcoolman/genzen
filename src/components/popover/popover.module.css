@@ -1,0 +1,27 @@
+/*
+ * Surface only. No width and no padding, unlike the shadcn popover's `w-72 p-4`
+ * default -- all three consumers set their own, and a default here would be
+ * unwinnable: a utility (`w-auto`, `p-0`) loses to an unlayered module, and a
+ * module (`multi-select`'s) merely races it on bundle order.
+ *
+ * Stays on --popover rather than following Dialog to --surface-overlay. The
+ * lighter surface would put the option-row hover (--accent, 16.9%) *below* its
+ * own background, so the hover would read as a dip rather than a lift.
+ *
+ * No enter/exit animation, same as Dialog: shadcn's came from tw-animate
+ * utilities with no module equivalent, and a half-ported one reads worse than
+ * none. Base UI publishes --transform-origin here for whenever the motion pass
+ * happens.
+ */
+.positioner {
+  z-index: var(--z-dialog);
+}
+
+.popup {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  outline: none;
+}
