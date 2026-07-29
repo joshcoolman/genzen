@@ -1,17 +1,16 @@
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock4,
-  Image as ImageIcon,
-} from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock4 } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './run-row.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
+import { ImageBox } from '#/components'
 import {
   formatAbsolute,
   formatDurationMs,
   formatRelativeOrDate,
 } from '#/lib/time-format'
+
+/** Matches the 48px the column was sized at by hand. */
+const THUMB_SIZE = 48
 
 interface RunRowProps {
   entry: ActivityEntry
@@ -65,21 +64,7 @@ export function RunRow({ entry, thumbnailUrl, onSelect }: RunRowProps) {
       className={clsx(styles.row, entry.isDeleted && styles.rowDeleted)}
     >
       {/* Thumbnail */}
-      <div className={styles.thumb}>
-        {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className={styles.thumbImage}
-          />
-        ) : (
-          <div className={styles.thumbFallback}>
-            <ImageIcon className={styles.thumbIcon} />
-          </div>
-        )}
-      </div>
+      <ImageBox src={thumbnailUrl} alt="" size={THUMB_SIZE} fit="cover" />
 
       {/* Model + provider + deleted badge */}
       <div className={styles.model}>

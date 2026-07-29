@@ -141,7 +141,11 @@ Conventions follow `~/repos/project-standard`.
   object has gone away used to show a skeleton that pulsed forever, because
   nothing handled `onError`. Trash's row uses it, which made `Thumbnail`'s
   `layout="list"` branch dead — 45 lines and three props (`layout`, `footer`,
-  `listImageClassName`) deleted, 31 props down to 28.
+  `listImageClassName`) deleted, 31 props down to 28. Activity's two thumbnails
+  took it next, at 48px and 64px: four hand-rolled image boxes down to two call
+  sites, and three copies of a raw `hsl(0 0% 0%)` replaced by `--image-backing`.
+  Activity's reference strip wants a *fluid* square and did not fit, which is
+  the primitive holding its shape rather than a gap to close.
 - **`ConfirmDialog` (#185).** Nine imports and ~28 lines of `AlertDialog`
   nesting were repeated verbatim at five call sites, varying only in their
   strings — three of them written during the Trash conversion itself. Now five

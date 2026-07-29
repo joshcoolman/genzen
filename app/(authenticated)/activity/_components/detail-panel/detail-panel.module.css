@@ -63,37 +63,6 @@
   gap: var(--space-12);
 }
 
-.thumb {
-  position: relative;
-  flex-shrink: 0;
-  width: var(--space-64);
-  height: var(--space-64);
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  background: hsl(0 0% 0%);
-}
-
-.thumbImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.thumbFallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background: color-mix(in oklab, var(--muted) 50%, transparent);
-}
-
-.thumbIcon {
-  width: var(--space-20);
-  height: var(--space-20);
-  color: var(--muted-foreground);
-}
-
 .summaryBody {
   flex: 1 1 0%;
   min-width: 0;

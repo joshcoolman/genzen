@@ -1,24 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import {
-  AlertCircle,
-  Check,
-  CheckCircle2,
-  Clock4,
-  Copy,
-  Image as ImageIcon,
-} from 'lucide-react'
+import { AlertCircle, Check, CheckCircle2, Clock4, Copy } from 'lucide-react'
 import { clsx } from 'clsx'
 import { getActivityEntry } from '../../_actions/get-entry'
 import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '#/components'
+import {
+  ImageBox,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '#/components'
 import {
   formatAbsolute,
   formatDurationMs,
   formatRelativeOrDate,
 } from '#/lib/time-format'
+
+/** Matches the 64px the summary block was sized at by hand. */
+const SUMMARY_THUMB_SIZE = 64
 
 interface DetailPanelProps {
   entryId: string | null
@@ -242,15 +244,12 @@ export function DetailPanel({
             <SheetTitle className={styles.sheetTitle}>Generation</SheetTitle>
             {detail && (
               <div className={styles.summary}>
-                <div className={styles.thumb}>
-                  {thumbUrl ? (
-                    <img src={thumbUrl} alt="" className={styles.thumbImage} />
-                  ) : (
-                    <div className={styles.thumbFallback}>
-                      <ImageIcon className={styles.thumbIcon} />
-                    </div>
-                  )}
-                </div>
+                <ImageBox
+                  src={thumbUrl}
+                  alt=""
+                  size={SUMMARY_THUMB_SIZE}
+                  fit="cover"
+                />
                 <div className={styles.summaryBody}>
                   <div className={styles.summaryName}>{detail.modelName}</div>
                   <div className={styles.summaryMeta}>
