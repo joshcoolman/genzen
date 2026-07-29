@@ -122,6 +122,16 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **Two data losses closed (#210).** Enhancing a prompt overwrote the one thing
+  that cannot be re-derived: what you typed. It is now kept beside the enhanced
+  text and written to `generation_metadata.original_prompt`, keyed by the
+  enhanced string rather than by prompt index so editing the text invalidates the
+  pair instead of attributing a stale original. Canvas's auto-prefixed submit
+  records `typed_prompt` too, so the sent prompt and the typed prompt are both
+  recoverable. A pasted source image was recorded as `has_source_image: true`; it
+  now carries a sha256 and a byte count, and the buffer is decoded once for both
+  the hash and the FAL upload. `docs/CODE-STANDARDS.md` states the rule behind
+  it: unused code rots, unused data accrues.
 - **Images has the route shape (#189, half).** Three commits, one job each:
   `page.tsx` reads on the server and seeds the view, killing the skeleton and
   the empty first paint; the 628-line `images-page.tsx` split into `view.tsx` +
@@ -152,13 +162,8 @@ Conventions follow `~/repos/project-standard`.
   job: dropping `@import 'tailwindcss'` took Preflight, so `styles/base.css`
   switched on in the same commit. `src/styles.css` is two imports now. Also out:
   `postcss.config.mjs`, `components.json`, `.cta.json`, and `cn()`.
-- **A render loop on Edit that predated its refactor.** Sorting ascending
-  rebuilt the chain array every render, and an effect mirroring it into
-  selection state set state every render — forever. The page rendered correctly
-  while looping, which is why only the console caught it.
-
-**Up next — #209, the data model conformance pass.** A deliberate pivot on
-2026-07-29. Canvas work is paused behind it.
+  **Up next — #209, the data model conformance pass.** A deliberate pivot on
+  2026-07-29. Canvas work is paused behind it.
 
 The component pass (#186, #187, #189) settled how the app is _built_. This is
 the same pass one layer down: how it **records what an image is**. Four facts
@@ -176,16 +181,12 @@ additive-then-subtractive and the drop is always its own late commit.
 before starting — it is what the data work is _for_, and knowing that stops the
 schema from drifting toward elegance.
 
-Ordered:
+Ordered (#210 done):
 
-1. **#210 — two active data losses.** Enhancing a prompt overwrites the
-   original (`use-generator.ts:476`); a base64 source image is recorded as
-   `has_source_image: true`, a boolean where an id belongs. Everything else in
-   the pass is absent data — these are data being deleted. Start here.
-2. **#211 — the insert-path inventory.** Read-only audit of every path that
+1. **#211 — the insert-path inventory.** Read-only audit of every path that
    creates a `user_images` row, and what each records. #207, #208 and #212 all
    depend on it; none is estimable until it exists.
-3. **#207 — origin as a column.** `upload | images | canvas`, three values by
+2. **#207 — origin as a column.** `upload | images | canvas`, three values by
    declaration — an upload is an upload, but a canvas _generation_ is different
    because the canvas supplied the request. Plus the browse filter (default to
    generations) and the unpinned-generator toolbar bug. **Talk this one through
@@ -193,13 +194,13 @@ Ordered:
    scope moved three times and whether `canvas` carries a canvas id is still
    open. See the check-in note on the issue. The rest of the pass is
    unambiguous enough to just execute.
-4. **#212 — canvas is a container, not a view.** `canvases` +
+3. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
    than handling it, and makes the Trash-eviction bug undefinable instead of
    unfixed. **The library owns everything** — membership is an _arrangement over
    library images_, never exile. Nothing exists only inside a canvas.
-5. **#189 — the canvas half of the route split**, last, with the reconcile
+4. **#189 — the canvas half of the route split**, last, with the reconcile
    already gone rather than carefully extracted and then deleted.
    `docs/reference/route-shape.md` is the contract and **Images is now the
    closest worked example of it**; Trash is still the reference for the server
@@ -216,8 +217,8 @@ section) and the reason was that it was a place you had to go — which breaks
 flow by construction. Images stays a place to generate.
 
 It is a front door, not a subsystem: all three of its actions already exist as
-capabilities. Its two common ones only need #210, so it is buildable early; only
-"take me there" waits on #212.
+capabilities. Its two common ones only needed #210, which is done, so it is
+buildable now; only "take me there" waits on #212.
 
 Deferred by decision, not oversight: **#208** (`image_edges`), a prompts table,
 any `collections` generalization, a keep/favourite signal, and anything that

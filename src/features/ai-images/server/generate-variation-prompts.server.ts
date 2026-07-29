@@ -50,11 +50,11 @@ export async function generateVariationPrompts(
   )
 
   const sourceMetadata = sourceImage?.generation_metadata ?? null
-  const rootPrompt =
-    sourceMetadata?.generation_type === 'variation' &&
-    typeof sourceMetadata.original_prompt === 'string'
-      ? sourceMetadata.original_prompt
-      : prompt
+  // Was `original_prompt` when the row was a variation, but nothing writes
+  // `generation_type: 'variation'` since the variation generator was removed,
+  // and `original_prompt` now means the pre-enhance text (#210) -- the same key
+  // for two facts. The dead branch went rather than the key.
+  const rootPrompt = prompt
 
   const rootImageId =
     typeof sourceMetadata?.root_image_id === 'string'

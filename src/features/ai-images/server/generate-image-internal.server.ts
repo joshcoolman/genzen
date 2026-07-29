@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -18,7 +19,15 @@ import {
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateImageInput {
+  /** The string sent to the provider. Retry replays this one. */
   prompt: string
+  /** What the user typed before the enhancer rewrote it, when it did (#210).
+   *  Recorded, not read: the enhanced prompt is re-derivable from this, the
+   *  reverse is not, so the typed one is the fact worth keeping. */
+  originalPrompt?: string
+  /** The textarea contents at submit, when `prompt` is not that -- canvas
+   *  prepends auto-generated `[Image 1, ...]` labels. Absent when identical. */
+  typedPrompt?: string
   model: string
   userId?: string
   aspectRatio?: string
@@ -75,6 +84,8 @@ export async function generateImageInternal(
 
   const {
     prompt,
+    originalPrompt,
+    typedPrompt,
     model,
     aspectRatio,
     sourceImageBase64,
@@ -117,6 +128,22 @@ export async function generateImageInternal(
     }
   }
 
+  // A pasted or dropped source has no library row, so it used to be recorded as
+  // `has_source_image: true` -- a boolean where an identity belongs, which made
+  // every generation down this path permanently unreproducible while the row
+  // looked complete (#210). Decoded here rather than inside runGenerate so the
+  // hash is on the row from the moment it is reserved, and the same buffer is
+  // what gets uploaded below.
+  const sourceBuffer = sourceImageBase64
+    ? Buffer.from(
+        sourceImageBase64.replace(/^data:image\/\w+;base64,/, ''),
+        'base64',
+      )
+    : null
+  const sourceSha256 = sourceBuffer
+    ? createHash('sha256').update(sourceBuffer).digest('hex')
+    : null
+
   // Reserve the row BEFORE anything that can fail. Unlike the edit path this
   // one used to write its row with an inline insert *after* FAL accepted the
   // job, so every earlier failure — a bad key, an unreachable source image, a
@@ -132,7 +159,19 @@ export async function generateImageInternal(
     idempotencyKey: data.idempotencyKey,
     onCanvas: data.onCanvas,
     extraMetadata: {
-      ...(sourceImageBase64 ? { has_source_image: true } : {}),
+      // Captured with no reader today, deliberately: unused *code* rots, unused
+      // *data* accrues, and a UI can be built over a captured fact at any time
+      // while an uncaptured one is gone. See docs/CODE-STANDARDS.md.
+      ...(originalPrompt ? { original_prompt: originalPrompt } : {}),
+      ...(typedPrompt && typedPrompt !== prompt.trim()
+        ? { typed_prompt: typedPrompt }
+        : {}),
+      ...(sourceSha256
+        ? {
+            source_image_sha256: sourceSha256,
+            source_image_bytes: sourceBuffer!.length,
+          }
+        : {}),
       ...(sourceImageUrl ? { source_image_url: sourceImageUrl } : {}),
       ...(sourceImageId ? { source_image_id: sourceImageId } : {}),
       ...(data.referenceImageIds?.length
@@ -173,6 +212,10 @@ export async function generateImageInternal(
     let falModelId = model
     let effectivePrompt = prompt.trim()
     let imageUrl: string | null = null
+    // Set when the prompt was written by the describer rather than the user, so
+    // an absent `typed_prompt` is never ambiguous between "identical to what was
+    // sent" and "nobody typed anything".
+    let promptDerivedFromSource = false
 
     // A source is uploaded to FAL as bytes, never handed over as a URL for FAL
     // to fetch. Passing the public URL through worked in prod and could never
@@ -188,13 +231,8 @@ export async function generateImageInternal(
       if (!res.ok) throw new Error('Could not read the source image')
       imageUrl = await uploadBufferToFal(await res.arrayBuffer())
       falModelId = endpointFor(model, true)
-    } else if (sourceImageBase64) {
-      // Strip data URL prefix and decode to buffer
-      const base64Data = sourceImageBase64.replace(
-        /^data:image\/\w+;base64,/,
-        '',
-      )
-      const buffer = Buffer.from(base64Data, 'base64')
+    } else if (sourceBuffer) {
+      const buffer = sourceBuffer
 
       // Detect mime type from magic bytes
       let mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' =
@@ -210,8 +248,12 @@ export async function generateImageInternal(
 
       // If no user prompt, ask Haiku for a plain factual description of the image
       if (!effectivePrompt) {
+        promptDerivedFromSource = true
         try {
-          effectivePrompt = await describeImage(base64Data, 'anchor')
+          effectivePrompt = await describeImage(
+            buffer.toString('base64'),
+            'anchor',
+          )
         } catch {
           effectivePrompt = 'image'
         }
@@ -291,6 +333,7 @@ export async function generateImageInternal(
     await markGenerationSubmitted(recordId, request_id, {
       fal_model_id: falModelId,
       prompt: metadataPrompt,
+      ...(promptDerivedFromSource ? { prompt_derived_from_source: true } : {}),
       ...(estimatedCostCents != null
         ? { estimated_cost_cents: estimatedCostCents }
         : {}),

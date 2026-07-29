@@ -23,6 +23,17 @@ is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, Cloudflare R2
 in production. The names were kept rather than churned across `.env.local`,
 `scripts/local-up.mjs` and the deploy config.
 
+**Unused code rots; unused data accrues.** A field with readers and no writers
+is a bug (it reports a fact nobody records); a field with writers and no readers
+is fine, and often correct. A surface can be built over a captured fact whenever
+someone wants it — a fact not captured at the moment it existed is gone. So
+capture the irreplaceable half of any pair and say in the comment that nothing
+reads it yet: `original_prompt` and `source_image_sha256` in
+`generation_metadata` are both that, from #210.
+
+_The asymmetry that decides it:_ an enhanced prompt can be re-derived from the
+text you typed; your intent cannot be re-derived from an enhanced prompt.
+
 ## Settled: what earns a `features/` folder
 
 The standard says `src/features/` holds domain code shared beyond one route. It

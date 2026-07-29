@@ -15,6 +15,10 @@ Multi-model image generation with edit and variation workflows via FAL AI.
 - `types.ts` -- `SavedAiImage` interface (status, generation_metadata with parent/root tracking)
 - `constants.ts` -- aspect ratio utilities (`RATIO_TO_SIZE`, `detectAspectRatio`)
 - `error-classification.ts` -- `classifyError()` categorizes FAL errors as retryable vs permanent
+- `prompt-origins.ts` -- enhanced prompt text -> what the user typed before the
+  enhancer replaced it. Keyed by the enhanced string so it self-invalidates when
+  the text is edited. Read once at submit, written into
+  `generation_metadata.original_prompt` (#210)
 - `index.ts` -- barrel exports: `SavedAiImage`, `getModelName`, `normalizeGeneration`
 
 ## Server

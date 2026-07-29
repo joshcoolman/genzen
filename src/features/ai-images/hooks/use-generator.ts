@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { PromptOrigins } from '#/features/ai-images/prompt-origins'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { generateImage } from '#/features/ai-images/server/generate-image.server'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
@@ -14,8 +15,13 @@ import {
   getRatioOptions,
 } from '#/features/ai-images/constants'
 import { endpointFor, maxRefsFor } from '#/features/ai-images/models'
+import { recordPromptOrigin } from '#/features/ai-images/prompt-origins'
 
 const EMPTY_PROMPTS: Array<string> = ['']
+
+/** How many enhance pairs to keep in localStorage. Only the ones still sitting
+ *  in the textarea can ever be read, so this is a cap, not a policy. */
+const MAX_PROMPT_ORIGINS = 20
 
 export interface RefImage {
   id: string
@@ -122,12 +128,40 @@ export function useGenerator({
   promptPrefixRef.current = promptPrefix ?? ''
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
+  const promptOriginsKey = `${storagePrefix}:prompt-origins`
   const orientationKey = `${storagePrefix}:orientation`
   const aspectRatioKey = `${storagePrefix}:aspect-ratio`
 
   function persistPrompts(next: Array<string>) {
     localStorage.setItem(promptsKey, JSON.stringify(next))
     localStorage.removeItem(legacyPromptKey)
+  }
+
+  // Enhance overwrites the textarea, and the typed prompt is the irreplaceable
+  // one: an enhanced prompt can be re-derived from it, intent cannot be
+  // re-derived from an enhanced prompt (#210). Written on enhance, read at
+  // submit; no render reads it, hence a ref. See `prompt-origins.ts`.
+  const promptOriginsRef = useRef<PromptOrigins>({})
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(promptOriginsKey)
+      if (stored) promptOriginsRef.current = JSON.parse(stored)
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  function rememberPromptOrigin(enhanced: string, previous: string) {
+    const next = recordPromptOrigin(
+      promptOriginsRef.current,
+      enhanced,
+      previous,
+      MAX_PROMPT_ORIGINS,
+    )
+    if (next === promptOriginsRef.current) return
+    promptOriginsRef.current = next
+    localStorage.setItem(promptOriginsKey, JSON.stringify(next))
   }
 
   const [prompts, setPromptsRaw] = usePersistedState<Array<string>>(() => {
@@ -317,10 +351,18 @@ export function useGenerator({
         modelsToUse.map((m) => m.base),
       )
       const allCalls = promptsToRun.flatMap((promptText) => {
-        const finalPrompt = `${promptPrefixRef.current}${promptText.trim()}`
+        // Three distinct facts, and the row has room for one: what was typed,
+        // what the enhancer made of it, and what was sent. `prompt` stays the
+        // sent string (retry replays it); the other two ride along so a past
+        // generation's inputs are recoverable (#210).
+        const typedPrompt = promptText.trim()
+        const finalPrompt = `${promptPrefixRef.current}${typedPrompt}`
+        const originalPrompt = promptOriginsRef.current[typedPrompt]
         return modelsToUse.map((m) =>
           generateImage({
             prompt: finalPrompt,
+            ...(originalPrompt ? { originalPrompt } : {}),
+            ...(typedPrompt !== finalPrompt ? { typedPrompt } : {}),
             model: m.resolved,
             aspectRatio,
             idempotencyKey: crypto.randomUUID(),
@@ -471,6 +513,7 @@ export function useGenerator({
       setEnhancingPromptIndex(index)
       try {
         const { enhancedPrompt } = await enhancePrompt({ prompt: current })
+        rememberPromptOrigin(enhancedPrompt, current)
         setPromptsRaw((prev) => {
           const next = [...prev]
           next[index] = enhancedPrompt
