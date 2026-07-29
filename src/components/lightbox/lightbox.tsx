@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from 'lucide-react'
+import styles from './lightbox.module.css'
+import { cx } from '#/lib/utils'
 
 export interface LightboxImage {
   id: string
@@ -64,90 +66,84 @@ export function Lightbox({
   useHotkey('Backspace', () => onDelete?.())
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-      onClick={onClose}
-    >
+    <div className={styles.root} onClick={onClose}>
       {/* Close */}
       <button
-        className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+        className={cx(styles.control, styles.close)}
         onClick={onClose}
         aria-label="Close"
       >
-        <X className="h-6 w-6" />
+        <X className={styles.closeIcon} />
       </button>
 
       {/* Prev */}
       {images.length > 1 && (
         <button
-          className="absolute left-4 text-white/70 hover:text-white transition-colors p-2"
+          className={cx(styles.control, styles.prev)}
           onClick={(e) => {
             e.stopPropagation()
             onPrev()
           }}
           aria-label="Previous"
         >
-          <ChevronLeft className="h-8 w-8" />
+          <ChevronLeft className={styles.arrowIcon} />
         </button>
       )}
 
       {/* Image with title + action overlays */}
-      <div
-        className="relative flex flex-col items-center max-h-[90vh] max-w-[85vw]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative flex items-center justify-center">
+      <div className={styles.stage} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.frame}>
           {imageUrl ? (
-            <div className="relative">
+            <div className={styles.imageWrap}>
               {!loaded && (
-                <div className="absolute inset-0 min-w-32 min-h-32 bg-muted animate-pulse rounded" />
+                <div
+                  className={cx(styles.placeholder, styles.placeholderOverlay)}
+                />
               )}
               <img
                 key={imageUrl}
                 src={imageUrl}
                 alt={img.title}
-                className={`max-h-[82vh] max-w-[85vw] object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                className={cx(styles.image, !loaded && styles.imageLoading)}
                 onLoad={() => setLoaded(true)}
               />
             </div>
           ) : (
-            <div className="w-64 h-64 bg-muted animate-pulse rounded" />
+            <div className={cx(styles.placeholder, styles.placeholderEmpty)} />
           )}
           {onEdit && (
             <button
-              className="absolute bottom-3 left-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-white hover:bg-black/70 transition-colors"
+              className={cx(styles.action, styles.edit)}
               onClick={onEdit}
               aria-label="Edit"
             >
-              <Pencil className="h-4 w-4" />
+              <Pencil className={styles.actionIcon} />
             </button>
           )}
           {onDelete && (
             <button
-              className="absolute bottom-3 right-3 p-2 rounded-full bg-black/50 text-white/60 hover:text-red-400 hover:bg-black/70 transition-colors"
+              className={cx(styles.action, styles.delete)}
               onClick={onDelete}
               aria-label="Delete"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className={styles.actionIcon} />
             </button>
           )}
         </div>
-        {img.title && (
-          <p className="mt-2 text-xs text-white/50 text-center">{img.title}</p>
-        )}
+        {img.title && <p className={styles.title}>{img.title}</p>}
       </div>
 
       {/* Next */}
       {images.length > 1 && (
         <button
-          className="absolute right-4 text-white/70 hover:text-white transition-colors p-2"
+          className={cx(styles.control, styles.next)}
           onClick={(e) => {
             e.stopPropagation()
             onNext()
           }}
           aria-label="Next"
         >
-          <ChevronRight className="h-8 w-8" />
+          <ChevronRight className={styles.arrowIcon} />
         </button>
       )}
     </div>

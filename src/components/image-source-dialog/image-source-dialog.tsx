@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { Thumbnail } from '../thumbnail/thumbnail'
 import { ImageGrid } from '../image-grid/image-grid'
+import styles from './image-source-dialog.module.css'
+import { cx } from '#/lib/utils'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 
@@ -130,78 +132,70 @@ export function ImageSourceDialog({
   return createPortal(
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50 animate-in fade-in-0"
-        onClick={() => onOpenChange(false)}
-      />
+      <div className={styles.overlay} onClick={() => onOpenChange(false)} />
 
       {/* Content */}
       <div
         ref={contentRef}
-        className="fixed top-[50%] left-[50%] z-50 translate-x-[-50%] translate-y-[-50%] flex flex-col gap-4 rounded-lg border bg-background p-6 shadow-lg animate-in fade-in-0 zoom-in-95"
+        className={styles.content}
         style={{ width: '66vw', maxWidth: '66vw', maxHeight: '80vh' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg leading-none font-semibold">{title}</h2>
-          <div className="flex items-center gap-2">
-            {uploading && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            )}
+        <div className={styles.header}>
+          <h2 className={styles.title}>{title}</h2>
+          <div className={styles.headerActions}>
+            {uploading && <Loader2 className={styles.uploadSpinner} />}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
+              className={styles.fileInput}
               onChange={handleFileUpload}
             />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              className={styles.upload}
             >
-              <Upload className="h-3.5 w-3.5" />
+              <Upload className={styles.uploadIcon} />
               Upload
             </button>
             <button
               onClick={() => onOpenChange(false)}
-              className="rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+              className={styles.close}
             >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
+              <X className={styles.closeIcon} />
+              <span className={styles.srOnly}>Close</span>
             </button>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className={styles.hint}>
           Select from library, or upload / paste to add images
         </p>
 
-        <div className="flex gap-2">
+        <div className={styles.filters}>
           {filterButtons.map((btn) => (
             <button
               key={btn.value}
               onClick={() => setSourceFilter(btn.value)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                sourceFilter === btn.value
-                  ? 'bg-accent-brand text-black'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
+              className={cx(
+                styles.filter,
+                sourceFilter === btn.value && styles.filterActive,
+              )}
             >
               {btn.label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+        <div className={styles.body}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              Loading images...
-            </div>
+            <div className={styles.placeholder}>Loading images...</div>
           ) : filteredImages.length === 0 ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
-              <div className="text-center space-y-2">
-                <ImageIcon className="size-8 mx-auto opacity-50" />
+            <div className={styles.placeholder}>
+              <div className={styles.empty}>
+                <ImageIcon className={styles.emptyIcon} />
                 <p>No images in your library yet</p>
               </div>
             </div>

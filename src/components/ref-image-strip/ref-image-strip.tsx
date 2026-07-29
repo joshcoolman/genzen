@@ -1,4 +1,6 @@
 import { Plus, X } from 'lucide-react'
+import styles from './ref-image-strip.module.css'
+import { cx } from '#/lib/utils'
 
 interface RefImageStripProps {
   images: Array<{ id: string; url: string; title: string }>
@@ -21,17 +23,17 @@ export function RefImageStrip({
   showLabels,
 }: RefImageStripProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={cx(styles.root, showLabels && styles.rootLabelled)}>
       {images.map((img) => (
-        <div
-          key={img.id}
-          className={`relative shrink-0 ${showLabels ? 'w-14' : 'w-12'}`}
-        >
-          <div className={`relative ${showLabels ? 'h-14 w-14' : 'h-12 w-12'}`}>
+        <div key={img.id} className={styles.item}>
+          <div className={styles.frame}>
             <img
               src={img.url}
               alt={img.title}
-              className={`h-full w-full rounded object-cover ${onImageClick && !disabled ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+              className={cx(
+                styles.image,
+                onImageClick && !disabled && styles.imageClickable,
+              )}
               onClick={onImageClick && !disabled ? onImageClick : undefined}
             />
             {!disabled && onRemove && (
@@ -40,32 +42,24 @@ export function RefImageStrip({
                   e.stopPropagation()
                   onRemove(img.id)
                 }}
-                className="absolute -top-1.5 -right-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground hover:bg-destructive/80"
+                className={styles.remove}
               >
-                <X className="size-3" />
+                <X className={styles.removeIcon} />
               </button>
             )}
           </div>
-          {showLabels && (
-            <p className="mt-0.5 truncate text-center text-[10px] text-muted-foreground">
-              {img.title}
-            </p>
-          )}
+          {showLabels && <p className={styles.label}>{img.title}</p>}
         </div>
       ))}
       {images.length < max && onAdd && (
-        <div className={`shrink-0 ${showLabels ? 'w-14' : 'w-12'}`}>
-          <button
-            onClick={onAdd}
-            disabled={disabled}
-            className={`flex w-full items-center justify-center rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:border-foreground hover:text-foreground disabled:opacity-50 ${showLabels ? 'h-14' : 'h-12'}`}
-          >
-            <Plus className="size-4" />
+        <div className={styles.item}>
+          <button onClick={onAdd} disabled={disabled} className={styles.add}>
+            <Plus className={styles.addIcon} />
           </button>
-          {showLabels && <p className="mt-0.5 text-[10px]">&nbsp;</p>}
+          {showLabels && <p className={styles.addSpacer}>&nbsp;</p>}
         </div>
       )}
-      <span className="text-xs text-muted-foreground">
+      <span className={styles.count}>
         {images.length}/{max}
       </span>
     </div>

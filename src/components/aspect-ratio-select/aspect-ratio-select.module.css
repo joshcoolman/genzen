@@ -1,0 +1,101 @@
+/* Aspect-ratio picker: a trigger showing the current ratio as a small outlined
+   rectangle, and a grouped list of the ratios the chosen model allows.
+   Floating UI positions the list; this file only styles it. */
+
+.root {
+  position: relative;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  height: 2.25rem;
+  padding-inline: var(--space-12);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  /* Was `bg-transparent dark:bg-input/30` -- the only OS-scheme-conditional
+     rule left in the app, in an app that is dark-only by design (tokens.css).
+     Unconditional now: the tinted field is the intended look, and a user on a
+     light OS was seeing an untinted one against the same dark chrome. */
+  background: color-mix(in oklab, var(--input) 30%, transparent);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: inherit;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.trigger:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.triggerDisabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.list {
+  z-index: var(--z-dialog);
+  min-width: 10rem;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--popover);
+  box-shadow: var(--shadow-md);
+  animation: enter var(--duration-normal) var(--ease-out);
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.groupLabel {
+  padding: var(--space-6) var(--space-8);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-weight: var(--weight-medium);
+  color: var(--muted-foreground);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-6) var(--space-8);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: inherit;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.option:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.optionSelected {
+  background: var(--accent);
+}
+
+.optionLabel {
+  flex: 1;
+  text-align: left;
+}

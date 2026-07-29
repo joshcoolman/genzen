@@ -9,7 +9,8 @@ import {
   shift,
   useFloating,
 } from '@floating-ui/react-dom'
-import { cn } from '#/lib/utils'
+import styles from './aspect-ratio-select.module.css'
+import { cx } from '#/lib/utils'
 
 interface AspectRatioSelectProps {
   orientation: 'landscape' | 'portrait'
@@ -156,16 +157,11 @@ export function AspectRatioSelect({
   }
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cx(styles.root, className)}>
       <button
         type="button"
         ref={refs.setReference}
-        className={cn(
-          'flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-sm dark:bg-input/30',
-          'hover:bg-accent hover:text-accent-foreground transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          disabled && 'pointer-events-none opacity-50',
-        )}
+        className={cx(styles.trigger, disabled && styles.triggerDisabled)}
         onClick={() => setIsOpen(!isOpen)}
         disabled={disabled}
         aria-expanded={isOpen}
@@ -178,29 +174,23 @@ export function AspectRatioSelect({
         <div
           ref={refs.setFloating}
           style={floatingStyles}
-          className={cn(
-            'z-50 min-w-[160px] rounded-md border border-border bg-popover p-1 shadow-md',
-            'animate-in fade-in-0 zoom-in-95',
-          )}
+          className={styles.list}
         >
           {groups.map((group) => (
             <div key={group.name}>
-              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                {group.name}
-              </div>
+              <div className={styles.groupLabel}>{group.name}</div>
               {group.items.map((opt) => (
                 <button
                   key={opt.label}
                   type="button"
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm',
-                    'hover:bg-accent hover:text-accent-foreground transition-colors',
-                    opt.label === aspectRatio && 'bg-accent',
+                  className={cx(
+                    styles.option,
+                    opt.label === aspectRatio && styles.optionSelected,
                   )}
                   onClick={() => handleSelect(opt.label)}
                 >
                   <RatioIcon w={opt.w} h={opt.h} />
-                  <span className="flex-1 text-left">{opt.label}</span>
+                  <span className={styles.optionLabel}>{opt.label}</span>
                   {opt.label === aspectRatio && <Check size={16} />}
                 </button>
               ))}
