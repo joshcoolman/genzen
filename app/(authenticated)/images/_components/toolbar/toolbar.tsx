@@ -9,15 +9,24 @@ import {
   Plus,
   Upload,
 } from 'lucide-react'
-import { THUMB_LABELS } from '../../_hooks/use-prefs'
+import {
+  ORIGIN_FILTERS,
+  ORIGIN_FILTER_LABELS,
+  THUMB_LABELS,
+} from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
+import { SingleSelect } from '#/components'
 import { cx } from '#/lib/utils'
 
 interface ToolbarProps {
   prefs: PrefsState
   /** Hidden while the generator is already showing. */
   showGenerateButton: boolean
+  /** The generator is open but unpinned, so it floats over this row's right
+   *  edge. Without the reserved space the tools sit under it -- the defect
+   *  `images/CLAUDE.md` carried as known. */
+  panelFloating: boolean
   onUpload: (files: Array<File>) => void
   onGenerate: () => void
 }
@@ -25,14 +34,27 @@ interface ToolbarProps {
 export function Toolbar({
   prefs,
   showGenerateButton,
+  panelFloating,
   onUpload,
   onGenerate,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
-    <div className={styles.toolbar}>
-      <span className={styles.heading}>Images</span>
+    <div className={cx(styles.toolbar, panelFloating && styles.inset)}>
+      <div className={styles.scope}>
+        <span className={styles.heading}>Images</span>
+        <SingleSelect
+          options={ORIGIN_FILTERS.map((value) => ({
+            value,
+            label: ORIGIN_FILTER_LABELS[value],
+          }))}
+          value={prefs.originFilter}
+          // SingleSelect clears on re-click; here "no scope" is `all`, so a
+          // second click on the active pill widens rather than doing nothing.
+          onChange={(value) => prefs.setOriginFilter(value ?? 'all')}
+        />
+      </div>
       <div className={styles.tools}>
         <button
           onClick={prefs.cycleThumbSize}

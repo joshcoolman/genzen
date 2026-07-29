@@ -122,6 +122,18 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **Origin is a column, and Images is scoped by it (#207).** `migrations/0003`
+  adds `origin` — `upload | images | canvas` — `not null` with **no default**,
+  so an insert that omits it fails instead of quietly meaning `images`; the
+  required arg on `useGenerator` means the two hosts could not have compiled
+  without declaring theirs. Backfilled from `source_client`, which one caller
+  wrote and nothing read, and is no longer written. Origin records the surface
+  only where the surface **authored** the thing, so a paste is an `upload`
+  wherever it happened. Images now filters on it — Generations / Uploads /
+  Canvas / All, default Generations, client-side because the route already holds
+  every row — and making something widens the scope to where it landed. Also
+  fixed the unpinned-generator toolbar defect that had been sitting in
+  `images/CLAUDE.md`. **Scoping is not finding: #213 is.**
 - **The insert-path inventory is written (#211).**
   `docs/reference/insert-paths.md`. **There are exactly two insert statements in
   the app** — one for generations, one for uploads — so every hole is a caller
@@ -165,9 +177,6 @@ Conventions follow `~/repos/project-standard`.
   the hidden row later. Cards render one image. Trash's "N linked" is gone;
   canvas membership is the only living dependency left. Migration 0002 drops
   `hidden` and strips `parent_id`.
-- **The AD assistant and BYOK are out (#203).** Never used, and making it
-  useful was a rabbit hole. The status bar went with it -- its only control was
-  the chat toggle. Server-side Anthropic stays for prompt work. Closed #201 too.
   **Up next — #209, the data model conformance pass.** A deliberate pivot on
   2026-07-29. Canvas work is paused behind it.
 
@@ -187,24 +196,16 @@ additive-then-subtractive and the drop is always its own late commit.
 before starting — it is what the data work is _for_, and knowing that stops the
 schema from drifting toward elegance.
 
-Ordered (#210 and #211 done — the inventory the rest depends on is
+Ordered (#210, #211 and #207 done — the inventory the rest builds on is
 `docs/reference/insert-paths.md`):
 
-1. **#207 — origin as a column.** `upload | images | canvas`, three values by
-   declaration — an upload is an upload, but a canvas _generation_ is different
-   because the canvas supplied the request. Plus the browse filter (default to
-   generations) and the unpinned-generator toolbar bug. **Talk this one through
-   before starting** — the column and backfill are settled, but the filter's
-   scope moved three times and whether `canvas` carries a canvas id is still
-   open. See the check-in note on the issue. The rest of the pass is
-   unambiguous enough to just execute.
-2. **#212 — canvas is a container, not a view.** `canvases` +
+1. **#212 — canvas is a container, not a view.** `canvases` +
    `canvas_images` with foreign keys, superseding #178. Ownership needs a
    container; integrity needs the FK. Deletes the mount-time reconcile rather
    than handling it, and makes the Trash-eviction bug undefinable instead of
    unfixed. **The library owns everything** — membership is an _arrangement over
    library images_, never exile. Nothing exists only inside a canvas.
-3. **#189 — the canvas half of the route split**, last, with the reconcile
+2. **#189 — the canvas half of the route split**, last, with the reconcile
    already gone rather than carefully extracted and then deleted.
    `docs/reference/route-shape.md` is the contract and **Images is now the
    closest worked example of it**; Trash is still the reference for the server

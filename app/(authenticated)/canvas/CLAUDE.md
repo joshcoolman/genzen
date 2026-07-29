@@ -12,7 +12,7 @@ On every canvas mount, a reconcile pass (`InfiniteCanvas.tsx`) queries `on_canva
 
 1. Paste/drop/upload -> file uploaded to S3 via `useUserImages.create()` -> `recordId` + `storagePath` stored in canvas state; `setOnCanvas(true)` fired eagerly
 2. Library pick -> existing `recordId` + `storagePath`; `setOnCanvas(true)` eagerly
-3. AI generation -> pending placeholder (persisted with `recordId`) -> poll for completion. Rows are tagged `on_canvas = true` + `source_client: 'genzen-canvas'` **at the server insert** (`onCanvas` flag through `generateImage`/`submitGeneration`), so a generation is reclaimable even if the client navigates/refreshes before it finishes
+3. AI generation -> pending placeholder (persisted with `recordId`) -> poll for completion. Rows are tagged `on_canvas = true` **at the server insert** (`onCanvas` flag through `generateImage`), so a generation is reclaimable even if the client navigates/refreshes before it finishes. They also carry `origin = 'canvas'` (#207) -- the canvas authored the request, so it is the origin. That column replaced `generation_metadata.source_client`, which was written here and read nowhere
 4. Image combination -> same as generation, multiple source images + prompt
 5. Display -> R2 public URL fetched on canvas load (no expiry, not persisted)
 6. Remove-from-canvas -> `setOnCanvas(false)` eagerly (the row is _not_ deleted; it stays in the library)

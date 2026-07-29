@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
+import type { GenerationOrigin } from '#/lib/types/db'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
@@ -29,6 +30,9 @@ export interface GenerateImageInput {
    *  prepends auto-generated `[Image 1, ...]` labels. Absent when identical. */
   typedPrompt?: string
   model: string
+  /** Which surface authored this request (#207). Required: a generation with no
+   *  origin is the absence-of-evidence the column exists to end. */
+  origin: GenerationOrigin
   userId?: string
   aspectRatio?: string
   sourceImageBase64?: string
@@ -40,7 +44,6 @@ export interface GenerateImageInput {
   referenceImageIds?: Array<string>
   parentImageId?: string
   idempotencyKey?: string
-  sourceClient?: string
   /** Mark the created row as living on the canvas, so it's reclaimable on load */
   onCanvas?: boolean
 }
@@ -152,6 +155,7 @@ export async function generateImageInternal(
   // the source image, the cost estimate) are patched on at submit.
   const { recordId } = await createPendingGeneration({
     userId,
+    origin: data.origin,
     generationType: data.parentImageId ? 'variation' : undefined,
     falModelId: model,
     prompt: prompt.trim(),
@@ -183,7 +187,6 @@ export async function generateImageInternal(
             parent_id: data.parentImageId, // Mutable: group parent (same initially)
           }
         : {}),
-      ...(data.sourceClient ? { source_client: data.sourceClient } : {}),
     },
   })
 

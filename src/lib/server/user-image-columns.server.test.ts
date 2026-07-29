@@ -16,7 +16,7 @@ const ROOT = new URL('../../../', import.meta.url)
 const read = (p: string) => readFileSync(new URL(p, ROOT), 'utf8')
 
 /** Columns `user_images` has after every migration has run: the `create table`
- *  block, less anything a later migration dropped. */
+ *  block, plus anything a later migration added, less anything it dropped. */
 function migrationColumns(): Array<string> {
   const files = readdirSync(new URL('migrations/', ROOT))
     .filter((f) => f.endsWith('.sql'))
@@ -39,6 +39,11 @@ function migrationColumns(): Array<string> {
 
   for (const file of files.slice(1)) {
     const sql = read(`migrations/${file}`)
+    for (const m of sql.matchAll(
+      /alter table user_images\s+add column (?:if not exists )?([a-z_]+)/g,
+    )) {
+      names.add(m[1])
+    }
     for (const m of sql.matchAll(
       /alter table user_images\s+drop column (?:if exists )?([a-z_]+)/g,
     )) {

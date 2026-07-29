@@ -1,4 +1,5 @@
 import { first, jsonb, sql } from './db.server'
+import type { GenerationOrigin } from '#/lib/types/db'
 import { getModelName } from '#/features/ai-images/models'
 
 /** Title a generation row carries between being reserved and settling. */
@@ -6,6 +7,9 @@ export const PENDING_TITLE = 'Generating...'
 
 interface CreatePendingGenerationOptions {
   userId: string
+  /** Required, and deliberately not defaulted: origin by omission is the defect
+   *  #207 exists to fix. */
+  origin: GenerationOrigin
   /**
    * FAL's id for the queued job. Optional on purpose: the row is reserved
    * *before* the provider is contacted so that every outcome -- including a
@@ -29,6 +33,7 @@ interface CreatePendingGenerationOptions {
 
 export async function createPendingGeneration({
   userId,
+  origin,
   requestId,
   generationType,
   falModelId,
@@ -47,6 +52,7 @@ export async function createPendingGeneration({
     ...(requestId ? { request_id: requestId } : {}),
     status: 'pending',
     source: 'ai_generated',
+    origin,
     title,
     sort_order: sortOrder ?? Date.now() / 1000,
     ...(onCanvas ? { on_canvas: true } : {}),

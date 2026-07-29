@@ -51,7 +51,7 @@ Uploads have one moment: the row is inserted after the object is in storage.
 | Fact                        | U1  | U2    | G1            | G2            |
 | --------------------------- | --- | ----- | ------------- | ------------- |
 | `source`                    | O   | O     | E (R)         | E (R)         |
-| origin surface              | N   | N     | **N**         | E (R)         |
+| `origin`                    | E⁵  | E⁵    | E (R)⁵        | E (R)⁵        |
 | canvas membership           | N   | E¹    | N             | E (R)         |
 | prompt sent                 | —   | —     | E (R)         | E (R)         |
 | prompt typed                | —   | —     | E (R)²        | E (R)²        |
@@ -80,15 +80,17 @@ then prunes it. #212 replaces the whole mechanism.
 at live rows: #208 failure mode 1.
 ⁴ `source_image_id` and `root_image_id` are recorded when present, but nothing
 derives a relationship from them (#204). A queryable graph is #208.
+⁵ Closed by #207 (`migrations/0003`). `origin` is `not null` with **no default**,
+so an insert that omits it fails rather than quietly meaning `images`. It
+superseded `generation_metadata.source_client`, which one caller wrote and
+nothing read; the key is no longer written but still sits on rows created before
+the migration, where it is harmless and can be stripped whenever something else
+touches the bag.
 
 ## Every N and O, filed or explained
 
 **Filed.**
 
-- **origin surface, G1 = N.** `source_client` is set by exactly one caller
-  (`use-canvas-generate.ts:356`), so "generated on Images" is the _absence_ of
-  evidence and is indistinguishable from a row predating the field. #207 makes
-  it a column with three declared values.
 - **`thumbnail_path`, U2 = N.** `useImageUpload.upload` fires `createThumbnail`;
   `useUserImages.create` does not. So an image pasted onto the canvas never gets
   a thumbnail and the gallery renders the full-size object for it — a difference
@@ -142,3 +144,10 @@ That is why #207 and #212 are additive-then-subtractive rather than
 speculative, and it is also the argument for doing them as columns and rows: a
 fact that only one of four callers bothers to send is a fact the schema never
 required.
+
+#207 shipped on exactly that reading, and the shape is the one to copy for
+#212: a `not null` column with **no default**, so the type system asks every
+caller for the fact and the database refuses the row if the caller does not
+answer. `origin` went from one caller out of four writing a JSONB key to four
+out of four writing a column, and the two that never sent it could not have
+compiled.

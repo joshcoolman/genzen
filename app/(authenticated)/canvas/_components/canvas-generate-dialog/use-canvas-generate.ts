@@ -347,13 +347,16 @@ export function useCanvasGenerate(
   )
 
   const generator = useGenerator({
+    // The canvas authored the request: the selection became source +
+    // references, the prompt was auto-labelled, and the model list was scoped
+    // by reference capacity. That is why it is its own origin (#207).
+    origin: 'canvas',
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     setError,
     storagePrefix: 'genzen-canvas',
     onAfterSubmit: handleAfterSubmit,
     onCanvas: true,
-    sourceClient: 'genzen-canvas',
     promptPrefix: labelPrefix,
   })
 

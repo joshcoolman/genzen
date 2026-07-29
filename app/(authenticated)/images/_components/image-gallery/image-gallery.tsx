@@ -32,6 +32,10 @@ interface ImageGalleryProps {
   onSelect?: (id: string, shiftKey: boolean) => void
   /** The highlighted image: the next prompt's primary reference. */
   activeId?: string
+  /** Set when the gallery is scoped to an origin (#207). An empty scope is not
+   *  an empty library, and telling someone to write their first prompt when they
+   *  have hundreds of images is the wrong sentence. */
+  emptyScopeLabel?: string
 }
 
 export function ImageGallery({
@@ -51,6 +55,7 @@ export function ImageGallery({
   isSelected,
   onSelect,
   activeId,
+  emptyScopeLabel,
 }: ImageGalleryProps) {
   const compact = thumbSize !== 'lg'
 
@@ -59,9 +64,14 @@ export function ImageGallery({
       {loadingGallery ? (
         <ImageGridSkeleton />
       ) : images.length === 0 ? (
-        <EmptyState title="No images yet">
-          Type a prompt in the panel below and hit Generate to create your first
-          image.
+        <EmptyState
+          title={
+            emptyScopeLabel ? `Nothing in ${emptyScopeLabel}` : 'No images yet'
+          }
+        >
+          {emptyScopeLabel
+            ? 'Nothing matches this filter. Switch to All to see everything.'
+            : 'Type a prompt in the panel below and hit Generate to create your first image.'}
         </EmptyState>
       ) : (
         <div

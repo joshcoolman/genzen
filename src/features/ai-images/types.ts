@@ -1,5 +1,9 @@
+import type { ImageOrigin } from '#/lib/types/db'
+
 export interface SavedAiImage {
   id: string
+  /** Which surface made it (#207). The gallery's filter reads this. */
+  origin: ImageOrigin
   title: string
   storage_path: string | null
   thumbnail_path?: string | null

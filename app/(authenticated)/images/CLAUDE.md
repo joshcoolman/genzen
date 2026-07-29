@@ -21,16 +21,22 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   has in mind, so it gets a blob preview immediately; the picker takes many at
   once and previews would land in upload order, so the cards would appear to
   shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
+- **The gallery is scoped, and scoping is not finding (#207).** Pills filter by
+  `origin`: Generations (made here) / Uploads / Canvas / All, defaulting to
+  Generations because this is where you generate. Filtering is client-side --
+  the route already holds every row. Making something widens the scope to where
+  it landed (`reveal()` in `use-view.ts`), or the card you just created would be
+  invisible in the view you made it in. Finding things is #213, an overlay; if
+  that lands and these pills go untouched, deleting them is the right outcome
 - **Two localStorage namespaces.** `genzen:ai-images-prefs` holds thumb size,
-  sort and info as one object; the generator's open and pinned flags are two
-  older single-value keys. Every write-through waits on `usePersistedState`'s
+  sort, info and the origin filter as one object; the generator's open and
+  pinned flags are two older single-value keys. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
-## Known defect
-
-Unpinning the generator hides the toolbar's own controls. `workspace` stops
-being pushed, so the toolbar spans the full page and its right-aligned tools
-end up under the floating panel. Predates #189 -- the same condition and the
-same CSS -- and is untouched by it.
+Unpinning the generator used to hide the toolbar's own controls -- `workspace`
+stops being pushed, so the row spanned the full page and its right-aligned tools
+landed under the floating panel. Fixed with #207: the toolbar reserves the
+panel's width (`.inset`) when it is open, unpinned and not mobile. The gallery
+below stays full width, which is the point of floating rather than pinning.

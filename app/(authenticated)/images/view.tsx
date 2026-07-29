@@ -9,6 +9,7 @@ import { ImageLightbox } from './_components/image-lightbox/image-lightbox'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
+import { ORIGIN_FILTER_LABELS } from './_hooks/use-prefs'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
 
@@ -44,6 +45,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         <Toolbar
           prefs={prefs}
           showGenerateButton={!dock.open}
+          panelFloating={dock.open && !dock.pinned && !prefs.isMobile}
           onUpload={uploadFiles}
           onGenerate={() => dock.setOpen(true)}
         />
@@ -64,6 +66,11 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onGallery={lightbox.open}
           onOpen={toggleHighlight}
           activeId={selectedImageId ?? undefined}
+          emptyScopeLabel={
+            prefs.originFilter === 'all'
+              ? undefined
+              : ORIGIN_FILTER_LABELS[prefs.originFilter]
+          }
           selectionActive={selection.count > 0}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}

@@ -10,6 +10,9 @@ function skeletonCard(id: string, title: string): SavedAiImage {
   return {
     id,
     title,
+    // An in-flight upload is already an upload, so the card sits in the same
+    // filter bucket the real row will land in and does not vanish on swap.
+    origin: 'upload',
     storage_path: null,
     created_at: new Date().toISOString(),
     status: 'completed',
@@ -30,11 +33,22 @@ function skeletonCard(id: string, title: string): SavedAiImage {
  * The swap is by the upload's own return value. It used to match on title
  * against a realtime INSERT (#174), which two files of the same name broke.
  */
-export function useUploads(userId: string | undefined, gallery: GalleryState) {
+export function useUploads(
+  userId: string | undefined,
+  gallery: GalleryState,
+  /**
+   * Widen the gallery's scope so the upload is visible. The default scope is
+   * generations (#207), and an upload is an `upload` wherever it happened --
+   * so without this the card the user just created would be filtered out of the
+   * view they created it in. Uploading is an implicit request to see uploads.
+   */
+  revealUploads: () => void,
+) {
   const { upload } = useImageUpload(userId)
 
   const ingest = useCallback(
     (file: File, { preview }: { preview: boolean }) => {
+      revealUploads()
       const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
       gallery.addOptimisticCard(skeletonCard(tempId, file.name))
 
@@ -62,7 +76,7 @@ export function useUploads(userId: string | undefined, gallery: GalleryState) {
         }
       })()
     },
-    [upload, gallery],
+    [upload, gallery, revealUploads],
   )
 
   const uploadFiles = useCallback(

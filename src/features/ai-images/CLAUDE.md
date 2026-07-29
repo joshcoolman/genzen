@@ -44,7 +44,7 @@ Two, because two routes use them. Everything else this feature used to hold
 moved to `app/(authenticated)/images/_hooks/` in #189 -- Images was the only
 consumer, and `features/` is earned by two.
 
-- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`. Shared with canvas
+- `use-generator.ts` -- prompt state, model selection, source image, ref images, generation submission, per-prompt LLM enhancement via `handleEnhancePrompt(index)`. Shared with canvas. **Takes a required `origin`** (`images | canvas`), written to every row it creates -- a new host cannot be an unmarked generation source (#207)
 - `use-describe-json.ts` -- JSON structural description for reference DNA sheets. Only Images calls it, but the shared `generator-panel` takes its return value as a prop, so it stays here with the panel's other dependencies
 
 ## Routes and UI

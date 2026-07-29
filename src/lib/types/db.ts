@@ -10,6 +10,23 @@
 // `user-image-columns.server.ts` is the select list that produces exactly this
 // shape -- the two are a pair, and `db.server.test.ts` fails if they drift.
 
+/**
+ * Which surface an image was made on (#207) -- `user_images.origin`, and the
+ * `check` constraint in `migrations/0003_origin.sql` is the same three values.
+ *
+ * Not provenance (what it descends from) and not membership (where it sits):
+ * a canvas generation from an uploaded photo descends from an upload, may sit
+ * on a canvas, and its origin is `canvas`. Recorded only where the surface
+ * *authored* the thing, which is why a paste is `upload` wherever it happened.
+ *
+ * Lives here rather than beside the insert so client code can name it without
+ * importing a `.server` module.
+ */
+export type ImageOrigin = 'upload' | 'images' | 'canvas'
+
+/** The origins a *generation* can have: an upload is never generated. */
+export type GenerationOrigin = Exclude<ImageOrigin, 'upload'>
+
 export type Json =
   | string
   | number
@@ -37,6 +54,8 @@ export type UserImageRow = {
   width: number | null
   height: number | null
   source: string
+  /** Surface the image was made on: `upload | images | canvas` (#207). */
+  origin: string
   generation_metadata: Json | null
   request_id: string | null
   status: string

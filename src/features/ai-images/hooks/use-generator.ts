@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PromptOrigins } from '#/features/ai-images/prompt-origins'
+import type { GenerationOrigin } from '#/lib/types/db'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { generateImage } from '#/features/ai-images/server/generate-image.server'
 import { captionImage } from '#/features/ai-images/server/caption-image.server'
@@ -33,6 +34,9 @@ interface UseGeneratorOptions {
   selectedModels: Array<string>
   gensPerModel: number
   setError: (error: string | null) => void
+  /** The surface this generator belongs to, recorded on every row it creates
+   *  (#207). Required so a new host cannot be an unmarked generation source. */
+  origin: GenerationOrigin
   storagePrefix?: string
   // Ordered per-call outcomes (one per submitted generation, in submit order),
   // so callers can map each result to its placeholder and attribute failures.
@@ -46,9 +50,9 @@ interface UseGeneratorOptions {
     }>,
   ) => void
   autoRefImageIds?: Array<string>
-  /** Tag generations as canvas-owned: sets on_canvas + source_client at insert */
+  /** Tag generations as canvas-owned, so they are reclaimable on canvas load.
+   *  Membership only -- which surface made it is `origin` (#207). */
   onCanvas?: boolean
-  sourceClient?: string
   /**
    * Text prepended to every submitted prompt (not shown in the textarea). Used by
    * canvas multi-image generate to auto-label images ("[Image 1, Image 2, ...]")
@@ -111,11 +115,11 @@ export function useGenerator({
   selectedModels,
   gensPerModel,
   setError,
+  origin,
   storagePrefix = 'genzen',
   onAfterSubmit,
   autoRefImageIds: autoRefImageIdsProp,
   onCanvas,
-  sourceClient,
   promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
   // Surfaces failures the user can act on: a missing provider key opens the
@@ -360,6 +364,7 @@ export function useGenerator({
         const originalPrompt = promptOriginsRef.current[typedPrompt]
         return modelsToUse.map((m) =>
           generateImage({
+            origin,
             prompt: finalPrompt,
             ...(originalPrompt ? { originalPrompt } : {}),
             ...(typedPrompt !== finalPrompt ? { typedPrompt } : {}),
@@ -376,7 +381,6 @@ export function useGenerator({
             ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
             ...(referenceImageIds ? { referenceImageIds } : {}),
             ...(onCanvas ? { onCanvas: true } : {}),
-            ...(sourceClient ? { sourceClient } : {}),
           }),
         )
       })

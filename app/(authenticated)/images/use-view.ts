@@ -33,7 +33,22 @@ export function useView(initial: Array<SavedAiImage>) {
   const prefs = usePrefs()
   const dock = useDock()
   const download = useDownload()
-  const { uploadFiles } = useUploads(user.id, gallery)
+  // Making something is an implicit request to see it. The scope defaults to
+  // generations (#207), so without these a card the user just created lands in
+  // a bucket the current pill hides -- an upload while scoped to generations, a
+  // generation while scoped to uploads. Only widens; never narrows.
+  const reveal = useCallback(
+    (filter: 'uploads' | 'images') => {
+      if (prefs.originFilter !== filter && prefs.originFilter !== 'all') {
+        prefs.setOriginFilter(filter)
+      }
+    },
+    [prefs],
+  )
+
+  const revealUploads = useCallback(() => reveal('uploads'), [reveal])
+
+  const { uploadFiles } = useUploads(user.id, gallery, revealUploads)
 
   const modelSelector = useModelSelector({
     capability: 'sidebar',
@@ -43,6 +58,7 @@ export function useView(initial: Array<SavedAiImage>) {
   const [error, setError] = useState<string | null>(null)
 
   const generator = useGenerator({
+    origin: 'images',
     selectedModels: modelSelector.selectedIds,
     gensPerModel: modelSelector.gensPerModel,
     setError,
@@ -50,6 +66,7 @@ export function useView(initial: Array<SavedAiImage>) {
     // them on the realtime INSERT (#174); it now asks once the submits land,
     // and the 5s poll takes over from there until they settle.
     onAfterSubmit: () => {
+      reveal('images')
       void gallery.refresh({ silent: true })
     },
   })
@@ -58,7 +75,17 @@ export function useView(initial: Array<SavedAiImage>) {
     (img) => img.status === 'completed',
   )
 
-  const images = prefs.sortAsc ? [...gallery.images].reverse() : gallery.images
+  // Scope, then order. The filter is client-side on purpose: the gallery already
+  // holds every row, so switching pills is instant and costs no round trip --
+  // and `origin` is immutable, so a filtered-out row cannot become stale.
+  const scoped = useMemo(() => {
+    if (prefs.originFilter === 'all') return gallery.images
+    const origin =
+      prefs.originFilter === 'uploads' ? 'upload' : prefs.originFilter
+    return gallery.images.filter((img) => img.origin === origin)
+  }, [gallery.images, prefs.originFilter])
+
+  const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
   // The highlight (#205). A highlighted image is the primary reference for
   // whatever you prompt next; clicking it again takes the highlight off and

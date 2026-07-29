@@ -18,7 +18,7 @@ export async function listGalleryImages(): Promise<Array<SavedAiImage>> {
   const rows = await sql`
     select id, title, description, storage_path, thumbnail_path,
            to_json(created_at)#>>'{}' as created_at,
-           sort_order, status, generation_error, generation_metadata
+           sort_order, status, origin, generation_error, generation_metadata
     from user_images
     where user_id = ${userId}
       and source in ('upload', 'ai_generated')

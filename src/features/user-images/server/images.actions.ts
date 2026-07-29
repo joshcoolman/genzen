@@ -68,15 +68,20 @@ export async function createImageRecord(
     throw new Error('Storage path must be scoped to the authenticated user')
   }
 
+  // `origin` is written here rather than taken from the caller: this is the
+  // only insert an upload can come through, and paste-on-canvas and
+  // paste-on-Images produce identical bytes, so the surface authored nothing
+  // (#207). `source` still relies on its column default, which cannot be wrong
+  // for the same reason.
   const row = first(
     await sql<Array<UserImage>>`
     insert into user_images
       (user_id, title, description, storage_path, file_name, file_size,
-       mime_type, file_hash)
+       mime_type, file_hash, origin)
     values
       (${userId}, ${input.title}, ${input.description ?? null},
        ${input.storagePath}, ${input.fileName}, ${input.fileSize},
-       ${input.mimeType}, ${input.fileHash ?? null})
+       ${input.mimeType}, ${input.fileHash ?? null}, 'upload')
     returning ${userImageColumns()}
   `,
   )
