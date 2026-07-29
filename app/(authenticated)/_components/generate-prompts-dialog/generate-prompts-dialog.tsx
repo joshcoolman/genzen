@@ -117,7 +117,6 @@ export function GeneratePromptsDialog({
               onChange={(e) => setGuidance(e.target.value)}
               disabled={loading}
               rows={2}
-              className="text-xs"
             />
             {error && <p className="text-xs text-destructive">{error}</p>}
             <ActionButton
@@ -137,7 +136,7 @@ export function GeneratePromptsDialog({
                   <Textarea
                     value={prompt}
                     onChange={(e) => handleUpdatePrompt(index, e.target.value)}
-                    className="text-xs pr-7 resize-none"
+                    className="pr-7 resize-none"
                     rows={Math.max(2, Math.ceil(prompt.length / 45))}
                   />
                   <button

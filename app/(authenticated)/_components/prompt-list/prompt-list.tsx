@@ -84,7 +84,7 @@ export function PromptList({
               onChange={(e) => onUpdatePrompt(index, e.target.value)}
               disabled={disabled || isEnhancing}
               rows={index === 0 ? 4 : 3}
-              className="text-xs pr-7"
+              className="pr-7"
             />
             {index === 0 ? (
               canClear && (

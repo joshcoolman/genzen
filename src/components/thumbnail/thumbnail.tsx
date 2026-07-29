@@ -3,16 +3,9 @@
 import { Trash2 } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { ExpandableIconButton } from '../expandable-icon-button/expandable-icon-button'
+import { Skeleton } from '../skeleton/skeleton'
+import styles from './thumbnail.module.css'
 import type { ReactNode } from 'react'
-
-function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div
-      className={`animate-pulse bg-muted/50 ${className}`}
-      aria-hidden="true"
-    />
-  )
-}
 
 export interface ThumbnailProps {
   url?: string | null
@@ -114,7 +107,9 @@ export function Thumbnail({
           {status === 'complete' && url ? (
             <>
               {!loaded && (
-                <Skeleton className="absolute inset-0 h-full w-full" />
+                <Skeleton
+                  className={`${styles.skeleton} absolute inset-0 h-full w-full`}
+                />
               )}
               <img
                 ref={imgRef}
@@ -127,7 +122,9 @@ export function Thumbnail({
               />
             </>
           ) : status === 'complete' && !url ? (
-            (fallback ?? <Skeleton className="h-full w-full" />)
+            (fallback ?? (
+              <Skeleton className={`${styles.skeleton} h-full w-full`} />
+            ))
           ) : status === 'pending' ? (
             <div className="relative flex h-full w-full items-center justify-center bg-card">
               {pendingBackgroundUrl ? (

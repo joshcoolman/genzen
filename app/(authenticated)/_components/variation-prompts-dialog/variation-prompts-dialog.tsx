@@ -163,7 +163,7 @@ export function VariationPromptsDialog({
                   value={guidance}
                   onChange={(e) => setGuidance(e.target.value)}
                   rows={2}
-                  className="text-sm resize-none"
+                  className="resize-none"
                   placeholder="Describe a direction or mood..."
                 />
               </div>
@@ -208,7 +208,7 @@ export function VariationPromptsDialog({
                     onChange={(e) => updatePrompt(i, e.target.value)}
                     onPaste={(e) => handlePaste(i, e)}
                     rows={2}
-                    className="flex-1 text-sm resize-none"
+                    className="flex-1 resize-none"
                     placeholder="Describe a variation..."
                   />
                   <button

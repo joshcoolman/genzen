@@ -1,0 +1,9 @@
+/* The image placeholder is dimmer than the app-wide skeleton -- it sits inside
+   an already-dark, clipped tile, where `--accent` reads as a bright grey block.
+   Half-strength `--muted`, exactly what `bg-muted/50` compiled to. Square,
+   because the tile does the rounding and an inner radius would show a sliver of
+   card at the top corners. */
+.skeleton {
+  --skeleton-bg: color-mix(in oklab, var(--muted) 50%, transparent);
+  --skeleton-radius: 0;
+}

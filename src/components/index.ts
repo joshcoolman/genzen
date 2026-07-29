@@ -53,8 +53,10 @@ export {
   type SingleSelectProps,
   type SingleSelectOption,
 } from './single-select/single-select'
+export { Skeleton } from './skeleton/skeleton'
 export { SourceImagePreview } from './source-image-preview/source-image-preview'
 export { Stack, type StackProps } from './stack/stack'
+export { Textarea, type TextareaProps } from './textarea/textarea'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'
 export {
   Tooltip,
@@ -72,5 +74,3 @@ export * from './ui/dialog/dialog'
 export * from './ui/dropdown-menu/dropdown-menu'
 export * from './ui/popover/popover'
 export * from './ui/sheet/sheet'
-export * from './ui/skeleton/skeleton'
-export * from './ui/textarea/textarea'

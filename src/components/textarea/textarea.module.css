@@ -1,0 +1,38 @@
+/*
+ * Deliberately the same look as Input, down to the focus treatment: a brand
+ * border rather than shadcn's 1px ring. They are one control family and the
+ * Input conversion already settled it.
+ *
+ * shadcn's size was `text-base md:text-sm` -- 16px on mobile to stop iOS
+ * zooming the page on focus. Not reproduced, because it was already defeated:
+ * four of the five call sites forced `text-xs` below 768px, so the guard only
+ * ever applied to one textarea. One size, 14px, which is what every one of them
+ * already rendered at on desktop.
+ */
+.root {
+  display: flex;
+  width: 100%;
+  min-height: 3.75rem;
+  padding: var(--space-8) var(--space-12);
+  background: transparent;
+  color: var(--text);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  transition: border-color var(--duration-normal) var(--ease-out);
+}
+
+.root::placeholder {
+  color: var(--text-muted);
+}
+
+.root:focus-visible {
+  outline: none;
+  border-color: var(--accent-brand);
+}
+
+.root:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

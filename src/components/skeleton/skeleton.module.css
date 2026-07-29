@@ -1,0 +1,26 @@
+/*
+ * Colour and radius come in as custom properties, not as classes the call site
+ * adds -- same reasoning as Badge: two CSS modules each setting `background`
+ * race on bundle order, and a custom property has no fight to lose.
+ *
+ *   .thumb { --skeleton-bg: ...; --skeleton-radius: 0; }
+ */
+.root {
+  background: var(--skeleton-bg, var(--accent));
+  border-radius: var(--skeleton-radius, var(--radius-md));
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Tailwind's animate-pulse, kept exactly: opacity dips to half at the midpoint
+   and eases back, rather than a linear fade in and out. */
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    animation: none;
+  }
+}
