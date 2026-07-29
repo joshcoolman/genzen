@@ -1,0 +1,116 @@
+/*
+ * Everything a call site changes is a custom property, not a re-declared
+ * property: two modules setting `width` or `background` on one element race on
+ * bundle order. `--sheet-width`, `--sheet-max-width`, `--sheet-background`,
+ * `--sheet-padding`, `--sheet-gap`.
+ */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  background: var(--overlay);
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.backdrop[data-starting-style],
+.backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+.popup {
+  position: fixed;
+  z-index: var(--z-dialog);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sheet-gap, var(--space-16));
+  padding: var(--sheet-padding, 0);
+  background: var(--sheet-background, var(--background));
+  box-shadow: var(--shadow-lg);
+  /* Unlike Dialog, a sheet without motion reads as a glitch -- it arrives from
+     off-screen, so the travel *is* the affordance. Base UI marks the two ends
+     of the transition with data-starting-style / data-ending-style. */
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.right,
+.left {
+  inset-block: 0;
+  width: var(--sheet-width, 75%);
+  max-width: var(--sheet-max-width, 24rem);
+  height: 100%;
+}
+
+.right {
+  right: 0;
+  border-left: var(--border-width) solid var(--border);
+}
+
+.left {
+  left: 0;
+  border-right: var(--border-width) solid var(--border);
+}
+
+.right[data-starting-style],
+.right[data-ending-style] {
+  transform: translateX(100%);
+}
+
+.left[data-starting-style],
+.left[data-ending-style] {
+  transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup,
+  .backdrop {
+    transition: none;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-16);
+}
+
+.title {
+  color: var(--foreground);
+  font-weight: var(--weight-semibold);
+}
+
+.closeButton {
+  position: absolute;
+  top: var(--space-16);
+  right: var(--space-16);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-out);
+}
+
+.closeButton:hover {
+  color: var(--text);
+}
+
+.closeButton[data-focus-visible] {
+  outline: 2px solid var(--accent-brand);
+  outline-offset: 2px;
+}
+
+.closeIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}

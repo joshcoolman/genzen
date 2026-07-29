@@ -28,18 +28,19 @@
   box-shadow: var(--shadow-2xl);
 }
 
+/* Size and spacing through Sheet's custom properties -- re-declaring `width` or
+   `gap` here would race sheet.module.css on bundle order. Full-bleed below
+   640px, where 28rem would be wider than the screen anyway. */
 .sheet {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
+  --sheet-width: 100%;
+  --sheet-max-width: none;
+  --sheet-gap: 0;
   overflow: hidden;
-  padding: 0;
 }
 
 @media (width >= 640px) {
   .sheet {
-    max-width: 28rem;
+    --sheet-max-width: 28rem;
   }
 }
 

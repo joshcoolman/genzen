@@ -4,17 +4,20 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut, Menu } from 'lucide-react'
+import { clsx } from 'clsx'
+import styles from './mobile-nav.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
-  Button,
   ConfirmDialog,
   Sheet,
   SheetContent,
   SheetTrigger,
   useConfirm,
 } from '#/components'
+// Button is still deep-imported: the barrel's `Button` is shadcn's until its
+// last consumer flips -- see #193.
+import { Button } from '#/components/button/button'
 import { navItems } from '#/lib/nav-items'
-import { cn } from '#/lib/utils'
 
 export function MobileNav({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
@@ -47,62 +50,53 @@ export function MobileNav({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn('fixed left-4 top-4 z-50', className)}>
+    <div className={clsx(styles.root, className)}>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="icon" className="bg-card">
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="left"
-          className="flex w-64 flex-col bg-card p-0 top-0 h-screen"
-        >
+        <SheetTrigger
+          render={
+            <Button variant="secondary" className={styles.trigger}>
+              <Menu />
+            </Button>
+          }
+        />
+        <SheetContent side="left" className={styles.sheet}>
           {/* Nav items */}
-          <nav className="space-y-1 p-4">
+          <nav className={styles.nav}>
             {mainItems.map((item) => {
               const active = isActive(item)
               return (
                 <div key={item.href}>
-                  {item.dividerBefore && (
-                    <div className="my-2 border-t border-border" />
-                  )}
+                  {item.dividerBefore && <div className={styles.divider} />}
                   <Link
                     href={item.href}
-                    className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                      active
-                        ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
-                        : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
-                    )}
+                    className={clsx(styles.item, active && styles.itemActive)}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon />
                     {item.label}
                   </Link>
                 </div>
               )
             })}
-            <div className="my-2 border-t border-border" />
+            <div className={styles.divider} />
             {[accountItem].map((item) => (
               <Link
                 key={item.id}
                 href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                  isActive(item)
-                    ? 'border-l-2 border-accent-brand bg-sidebar-hover text-foreground'
-                    : 'text-muted-foreground hover:bg-sidebar-hover hover:text-foreground',
+                className={clsx(
+                  styles.item,
+                  isActive(item) && styles.itemActive,
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon />
                 {item.label}
               </Link>
             ))}
             <button
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-hover hover:text-foreground transition-colors"
+              type="button"
+              className={styles.item}
               onClick={() => void askThenSignOut()}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut />
               Log out
             </button>
             <ConfirmDialog {...dialogProps} />

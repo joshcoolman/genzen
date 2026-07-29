@@ -78,6 +78,14 @@ export {
   type SingleSelectOption,
 } from './single-select/single-select'
 export { Skeleton } from './skeleton/skeleton'
+export {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  type SheetContentProps,
+} from './sheet/sheet'
 export { SourceImagePreview } from './source-image-preview/source-image-preview'
 export { Stack, type StackProps } from './stack/stack'
 export { Textarea, type TextareaProps } from './textarea/textarea'
@@ -94,4 +102,3 @@ export { toast, Toaster } from './toast/toast'
 export * from './ui/alert-dialog/alert-dialog'
 export * from './ui/button/button'
 export * from './ui/command/command'
-export * from './ui/sheet/sheet'
