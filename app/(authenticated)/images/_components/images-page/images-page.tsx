@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowDown,
@@ -84,7 +83,6 @@ function storePrefs(partial: Partial<ImagesPrefs>) {
 
 export function ImagesPage() {
   const page = useImagesPage()
-  const router = useRouter()
   const { upload } = useImageUpload(page.userId)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -427,6 +425,8 @@ export function ImagesPage() {
           onDescribe={handleDescribe}
           onGenerateVariations={page.variations.openVariationDialog}
           onGallery={page.lightbox.open}
+          onOpen={page.toggleHighlight}
+          activeId={page.selectedImageId ?? undefined}
           selectionActive={selection.count > 0}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}
@@ -559,8 +559,9 @@ export function ImagesPage() {
           onDelete={page.lightbox.deleteAndAdvance}
           onEdit={() => {
             const item = page.lightbox.items[page.lightbox.index!]
+            const img = page.completedImages.find((i) => i.id === item.id)
             page.lightbox.close()
-            router.push(`/edit/${item.id}`)
+            if (img) page.toggleHighlight(img)
           }}
         />
       )}

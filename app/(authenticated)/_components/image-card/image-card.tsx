@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
   Circle,
@@ -35,12 +34,13 @@ interface ImageCardProps {
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onGallery?: (img: SavedAiImage) => void
-  /** Override default navigate-to-edit behavior on card click */
+  /** Card click. Nothing happens without it -- clicking used to navigate to
+   *  /edit, and that route is gone (#205). */
   onOpen?: (img: SavedAiImage) => void
   selected?: boolean
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
-  active?: boolean // Active source in edit view
+  active?: boolean // Highlighted as the next prompt's reference
 }
 
 export function ImageCard({
@@ -60,8 +60,6 @@ export function ImageCard({
   onSelect,
   active,
 }: ImageCardProps) {
-  const router = useRouter()
-
   const moreButton = (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -156,13 +154,7 @@ export function ImageCard({
         ) : undefined
       }
       onClick={() => {
-        if (!selectionActive) {
-          if (onOpen) {
-            onOpen(img)
-          } else {
-            router.push(`/edit/${img.id}`)
-          }
-        }
+        if (!selectionActive) onOpen?.(img)
       }}
     >
       {!compact && (

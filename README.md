@@ -122,59 +122,44 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **The `/edit` route is gone, replaced by a highlight (#205).** Clicking a
+  gallery image toggles a highlight; a highlighted image is the primary
+  reference for whatever you prompt next. The prompt box is untouched by
+  selecting. The generator already resolved the model's image-input endpoint
+  from `!!sourceImage`, so "edit" stayed a detail of building the request
+  rather than becoming a mode. 2,158 lines of route out, plus the whole
+  `edit-image` server path and `useGenerationResults`; one flag in.
+- **Grouping and genealogy are out (#204).** Deleting an image deletes that
+  image -- it used to be a decision about a subtree, hiding a row rather than
+  soft-deleting it so its variations kept an origin thumbnail, then destroying
+  the hidden row later. Cards render one image. Trash's "N linked" is gone;
+  canvas membership is the only living dependency left. Migration 0002 drops
+  `hidden` and strips `parent_id`.
+- **The AD assistant and BYOK are out (#203).** Never used, and making it
+  useful was a rabbit hole. The status bar went with it -- its only control was
+  the chat toggle. Server-side Anthropic stays for prompt work. Closed #201 too.
 - **Tailwind is gone, and #187 closed with it.** The reset swap was the whole
   job: dropping `@import 'tailwindcss'` took Preflight, so `styles/base.css`
   switched on in the same commit. `src/styles.css` is two imports now. Also out:
-  `postcss.config.mjs`, `components.json`, `.cta.json`, and `cn()`. One utility
-  line had survived #185 — the canvas spinner — and is converted; the tree is
-  genuinely at zero.
-- **The Edit route has the route shape (#189).** `page.tsx` → `view.tsx` +
-  `use-view.ts`, and the 677-line `edit-page.tsx` is five components and three
-  subject-named hooks. The generator dock is the concrete win: the mobile
-  dialog and the desktop sidebar rendered the same panel from two copies of the
-  markup. Chrome is byte-identical to the old build, pixel for pixel, with
-  image content masked.
-- **A render loop on Edit that predated the refactor.** Sorting ascending
+  `postcss.config.mjs`, `components.json`, `.cta.json`, and `cn()`.
+- **A render loop on Edit that predated its refactor.** Sorting ascending
   rebuilt the chain array every render, and an effect mirroring it into
-  selection state set state every render — forever. Reproduced on the commit
-  before the conversion, so it was there all along; the sort toggle persists,
-  so anyone who had pressed it once kept it. The page renders correctly while
-  looping, which is why only the console caught it.
-- **`EmptyState` is the seventh primitive.** Edit's "Image not found" and the
-  gallery's "No images yet" were byte-identical CSS — the bar `route-shape.md`
-  sets for extracting one.
-- **No `.tsx` in the app carries a utility class (#185)**, except
-  `infinite-canvas.tsx`, which is left for #189 rather than converted twice.
-  35 files: every `src/components/` primitive, all of the app chrome, the AD
-  panel, and the Images and Edit routes. Each area was diffed against a stashed
-  baseline at 1440×1600 — the largest surviving difference is 11 pixels of
-  antialiasing on /edit.
-- **Two bugs the conversion surfaced.** `ExpandableText` never clamped —
-  `line-clamp-${lines}` is an interpolated class Tailwind's scanner cannot see,
-  so no rule existed and every description rendered full-length. And
-  `space-y-*` is emitted inside `:where()`, so a child's own margin beats it;
-  converting it to a plain child selector inverts that and moved the sidebar.
-- **`src/components/ui/` is gone entirely.** The Cmd+K Spotlight was never used,
-  so deleting it took `cmdk` — the last thing in `ui/` — with it. The AD panel's
-  Agent Skills popover used the command primitives for nothing (four skills, and
-  the search input only mounts at six), so it is four buttons now. Closes #195.
+  selection state set state every render — forever. The page rendered correctly
+  while looping, which is why only the console caught it.
+- **`EmptyState` is the seventh primitive.** Two byte-identical empty states —
+  the bar `route-shape.md` sets for extracting one.
 
 **Up next**
 
-- **#202 — strip back to generating images.** The epic that came out of
-  converting Edit and then reading the result. Three removals, in order:
-  **#203** the AD assistant and BYOK, **#204** grouping and genealogy, then
-  **#205** the `/edit` route, replaced by a highlight on /images that makes an
-  image the reference for the next prompt. About a quarter of the codebase, and
-  the quarter that raises structural questions rather than generating images.
-- **#189 — route shape for Images and Canvas.** Edit is out of scope now; it is
-  being deleted rather than converted. Do the removals first.
+- **#189 — route shape for Images and Canvas.** Edit is deleted rather than
+  converted, so this is what is left of it.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
+- **#188 — rewrite `docs/reference/architecture.md`.** It was waiting on #202,
+  which is done.
 
-The app is heading for four surfaces and nothing else: Images, Canvas,
-Activity, Trash — plus Account. No assistant, no grouping, no separate edit
-page. If something does not serve generating and keeping images, it is being
-cut on purpose.
+The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
+plus Account. No assistant, no grouping, no separate edit page. If something
+does not serve generating and keeping images, it was cut on purpose.

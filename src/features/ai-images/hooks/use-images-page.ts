@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
+import { getR2PublicUrl } from '#/lib/image-storage'
 import { useImages } from '#/features/ai-images/hooks/use-images'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
@@ -44,6 +45,43 @@ export function useImagesPage() {
     (img) => img.status === 'completed',
   )
 
+  // The highlight (#205). A highlighted image is the primary reference for
+  // whatever you prompt next; clicking it again takes the highlight off and
+  // you are back to plain generation. This replaced the /edit route, which
+  // answered "which image is the source" -- state wearing a URL as a costume.
+  //
+  // It is one flag. The generator already knows what to do with a source
+  // image, including picking the model's image-input endpoint, so "edit" vs
+  // "generate" stays a detail of building the request.
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
+
+  const clearHighlight = useCallback(() => {
+    setSelectedImageId(null)
+    generator.handleClearSourceImage()
+  }, [generator])
+
+  const toggleHighlight = useCallback(
+    (img: SavedAiImage) => {
+      if (img.id === selectedImageId) {
+        clearHighlight()
+        return
+      }
+      if (!img.storage_path) return
+      setSelectedImageId(img.id)
+      // A public URL, not base64: the generator forwards a non-`data:` source
+      // to the server as `sourceImageUrl`.
+      generator.setSourceFromBase64(getR2PublicUrl(img.storage_path), img.title)
+    },
+    [selectedImageId, clearHighlight, generator],
+  )
+
+  // The panel's own clear button has to take the highlight with it, or the
+  // border would outlive the reference it stands for.
+  const generatorWithHighlight = useMemo(
+    () => ({ ...generator, handleClearSourceImage: clearHighlight }),
+    [generator, clearHighlight],
+  )
+
   const lightbox = useLightbox(completedImages, gallery.deleteImage)
 
   const variations = useVariations({ setError })
@@ -78,7 +116,9 @@ export function useImagesPage() {
     gallery,
     userImages,
     modelSelector,
-    generator,
+    generator: generatorWithHighlight,
+    selectedImageId,
+    toggleHighlight,
     lightbox,
     variations,
     completedImages,

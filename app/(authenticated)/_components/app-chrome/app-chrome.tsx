@@ -9,18 +9,15 @@ import { cx } from '#/lib/utils'
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
-  // Pages with fixed sidebars manage their own right margin
-  const isEditPage = pathname.startsWith('/edit/')
-  const isImagesPage = pathname === '/images'
-  const hasOwnSidebar = isEditPage || isImagesPage
+  // Images runs its own fixed generator sidebar, so it owns the right edge.
+  const hasOwnSidebar = pathname === '/images'
 
   return (
     <div className={styles.shell}>
       {/* Desktop sidebar - collapsed on md+, always icons-only on sm */}
       <Sidebar className={styles.sidebar} />
 
-      {/* Mobile nav trigger (hidden on edit pages) */}
-      {!isEditPage && <MobileNav className={styles.mobileNav} />}
+      <MobileNav className={styles.mobileNav} />
 
       <main className={cx(styles.main, hasOwnSidebar && styles.mainFlush)}>
         {children}

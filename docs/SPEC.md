@@ -13,8 +13,12 @@ Everything else in the app serves that loop.
 
 **Images** — the primary surface. Multi-prompt, multi-model generation: select
 several models and a per-model count, submit once, get every result back into one
-board. Reference images can be attached. Edit and variation flows work from an
-existing image rather than a blank prompt.
+board. Reference images can be attached.
+
+Clicking a gallery image highlights it, and a highlighted image is the primary
+reference for whatever you prompt next. Clicking it again takes the highlight
+off. Whether the resulting call is an edit or a generation is a detail of
+building the request -- there is no edit mode and no edit route.
 
 **Canvas** — a spatial arrangement of images from the library, where generation
 happens in place. Removing an image from the canvas is non-destructive; it stays
