@@ -16,6 +16,13 @@ export {
 } from './confirm-dialog/confirm-dialog'
 export { useConfirm, type UseConfirm } from './confirm-dialog/use-confirm'
 export { CopyButton } from './copy-button/copy-button'
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  type DropdownMenuContentProps,
+} from './dropdown-menu/dropdown-menu'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'
@@ -77,5 +84,4 @@ export * from './ui/alert-dialog/alert-dialog'
 export * from './ui/button/button'
 export * from './ui/command/command'
 export * from './ui/dialog/dialog'
-export * from './ui/dropdown-menu/dropdown-menu'
 export * from './ui/sheet/sheet'

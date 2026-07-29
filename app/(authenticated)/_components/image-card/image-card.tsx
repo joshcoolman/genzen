@@ -84,12 +84,14 @@ export function ImageCard({
 
   const moreButton = (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <ExpandableIconButton
-          icon={<MoreHorizontal className="h-3.5 w-3.5" />}
-          label="More actions"
-        />
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <ExpandableIconButton
+            icon={<MoreHorizontal className="h-3.5 w-3.5" />}
+            label="More actions"
+          />
+        }
+      />
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         {onDownload && (
           <DropdownMenuItem onClick={() => onDownload(img)}>

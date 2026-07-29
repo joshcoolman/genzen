@@ -1,0 +1,62 @@
+/*
+ * Same surface as Popover, and for the same reasons -- see popover.module.css
+ * for why it stays on --popover and why there is no enter/exit animation.
+ *
+ * Unlike Popover this one keeps its padding and min-width: a menu is a fixed
+ * shape rather than a panel the call site fills, and its one consumer sets
+ * neither.
+ */
+.positioner {
+  z-index: var(--z-dialog);
+}
+
+.popup {
+  min-width: 8rem;
+  max-height: var(--available-height);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--space-4);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  outline: none;
+}
+
+/* Keyboard and pointer land on the same state here. Radix highlighted the item
+   with :focus, Base UI with [data-highlighted]; the pointer path is the same
+   attribute, so there is no separate :hover rule. */
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  cursor: default;
+  user-select: none;
+  outline: none;
+}
+
+.item[data-highlighted] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.item[data-disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* The menu sizes its own icons: every item is `<Icon /> Label`. The icon stays
+   muted even when the row is highlighted -- shadcn's behaviour, kept. */
+.item > svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
