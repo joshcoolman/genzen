@@ -1,5 +1,5 @@
-import { EditPage } from './_components/edit-page/edit-page'
+import { View } from './view'
 
 export default function Edit() {
-  return <EditPage />
+  return <View />
 }

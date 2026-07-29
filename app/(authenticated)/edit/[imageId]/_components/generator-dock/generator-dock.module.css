@@ -1,0 +1,88 @@
+.root {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--z-canvas-hud);
+  height: 100vh;
+  width: 20rem;
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: hsl(0 0% 0% / 0.9);
+  backdrop-filter: blur(40px);
+  transition: all var(--duration-slow) var(--ease-in-out);
+}
+
+/* The AD owns the rightmost 20rem when it is open, so the dock slides inboard
+   of it rather than under it. */
+.besideAD {
+  right: 20rem;
+}
+
+.floating {
+  box-shadow: var(--shadow-xl);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-16) var(--space-16) var(--space-8);
+}
+
+.title {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--muted-foreground);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.headerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-foreground);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.headerButton:hover {
+  color: var(--foreground);
+}
+
+.body {
+  padding: 0 var(--space-16) var(--space-16);
+}
+
+.body > :where(*:not(:last-child)) {
+  margin-bottom: var(--space-12);
+}
+
+/* Deliberately the same body as images-page's mobile panel, plus the gap its
+   extra button needs. */
+.mobileBody {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: var(--space-8);
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-12);
+}
+
+.variations {
+  width: 100%;
+}
+
+.smallIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

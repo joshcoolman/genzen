@@ -41,6 +41,7 @@ export {
   DialogTrigger,
   type DialogContentProps,
 } from './dialog/dialog'
+export { EmptyState, type EmptyStateProps } from './empty-state/empty-state'
 export { ExpandableIconButton } from './expandable-icon-button/expandable-icon-button'
 export { ExpandableText } from './expandable-text/expandable-text'
 export { FileUploadButton } from './file-upload-button/file-upload-button'

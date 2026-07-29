@@ -6,7 +6,7 @@ import styles from './image-gallery.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { EditChildrenMap } from '#/features/ai-images/hooks/use-edit-children'
 import { getModelName } from '#/features/ai-images/models'
-import { ImageGridSkeleton } from '#/components'
+import { EmptyState, ImageGridSkeleton } from '#/components'
 
 const GRID_MIN_WIDTH: Record<string, string> = {
   lg: '200px',
@@ -87,13 +87,10 @@ export function ImageGallery({
       {loadingGallery ? (
         <ImageGridSkeleton />
       ) : images.length === 0 ? (
-        <div className={styles.empty}>
-          <h3 className={styles.emptyTitle}>No images yet</h3>
-          <p className={styles.emptyBody}>
-            Type a prompt in the panel below and hit Generate to create your
-            first image.
-          </p>
-        </div>
+        <EmptyState title="No images yet">
+          Type a prompt in the panel below and hit Generate to create your first
+          image.
+        </EmptyState>
       ) : (
         <div
           className={styles.grid}
