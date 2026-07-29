@@ -128,7 +128,9 @@ Conventions follow `~/repos/project-standard`.
   selecting. The generator already resolved the model's image-input endpoint
   from `!!sourceImage`, so "edit" stayed a detail of building the request
   rather than becoming a mode. 2,158 lines of route out, plus the whole
-  `edit-image` server path and `useGenerationResults`; one flag in.
+  `edit-image` server path and `useGenerationResults`; one flag in. A follow-up
+  fixed the submit: a source image uploads to FAL as bytes like every other
+  image, because handing FAL a URL to fetch cannot work against `localhost`.
 - **Grouping and genealogy are out (#204).** Deleting an image deletes that
   image -- it used to be a decision about a subtree, hiding a row rather than
   soft-deleting it so its variations kept an origin thumbnail, then destroying
@@ -151,14 +153,34 @@ Conventions follow `~/repos/project-standard`.
 
 **Up next**
 
-- **#189 — route shape for Images and Canvas.** Edit is deleted rather than
-  converted, so this is what is left of it.
+**#189 — the route shape, Images first, then Canvas.** This is the whole
+priority; everything below it waits.
+
+`docs/reference/route-shape.md` is the contract, and **Trash is the canonical
+one — copy it, not an older route.** Activity established the shape but still
+fetches from the client; Trash settled the seam, so `page.tsx` reads on the
+server and seeds the view. Naming and folder layout follow it too.
+
+1. **Images.** `page.tsx` renders a 628-line `_components/images-page/`
+   client component that holds the entire route, and nothing reads on the
+   server. The smaller of the two, and ~400 lines lighter after #202 — do it
+   first, against the template, rather than learning the pattern on Canvas.
+2. **Canvas.** `infinite-canvas.tsx` is 1,760 lines and `use-canvas-generate.ts`
+   is 577. This is the actual monolith, and the reason to arrive with the
+   pattern already in hand.
+
+Then, in no fixed order:
+
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
   not take, and `undo()` never reverses the server write.
 - **#178 — canvas arrangement is not user data.** It still lives in IndexedDB;
   it belongs in Postgres now that there is a database the browser cannot reach.
 - **#188 — rewrite `docs/reference/architecture.md`.** It was waiting on #202,
   which is done.
+- **#207 / #208 — image origin and provenance.** Filed, not triaged. #208 is
+  not a reversal of #204: `source_image_id` and `root_image_id` are still
+  recorded on every generation, so it builds a graph over facts already there.
+  What #204 removed was `parent_id`, the mutable grouping parent.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
 plus Account. No assistant, no grouping, no separate edit page. If something
