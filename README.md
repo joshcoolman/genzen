@@ -134,6 +134,8 @@ to the browser.
 
 Orientation lives here and in open issues — there is no continuation or plan file.
 Conventions follow [project-standard](https://github.com/joshcoolman/project-standard).
+GenZen is public-and-messy on purpose: the exploration home where ideas are tried
+in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-29)
 
@@ -144,22 +146,22 @@ Conventions follow [project-standard](https://github.com/joshcoolman/project-sta
 - **Images has the route shape (#189, half).** Server read, `view.tsx` + `use-view.ts`, six component folders came home. Canvas is the other half.
 - **The `/edit` route is gone, replaced by a highlight (#205).** A highlighted image is the next prompt's primary reference; 2,158 lines of route out.
 
-**Up next** — **#209**, the data model conformance pass, then **#189**, the canvas
-half of the route split. **#213** is the payoff both are for; read it before
-starting #209, because knowing what the data work is _for_ stops the schema
-drifting toward elegance. #209 holds the four rules, the verification contract,
-and what is deferred by decision — none of it is `git revert`-able, so every
-change is additive-then-subtractive.
+**Up next** — the finish state agreed in **#222**: a short close-out list, then one
+live exploration. **#189** first — the canvas half of the route split, which closes
+epic **#209**. Then the close-out list, small items in any order:
 
-Also open, unsequenced:
-
-- **#216** — trashing an image that is on a canvas is a silent surprise. Deliberately deferred until the canvas has been lived on; it is a judgement call about feel.
-- **#214** — Retry drops the focus image: it ignores `source_image_id` and hands FAL a URL, which cannot work locally.
+- **#214** — Retry drops the focus image: replay the whole request, not the prompt.
 - **#215** — three upload implementations, one thumbnail. Canvas paste/drop skips `createThumbnail`.
-- **#219** — `user_id` scoping is enforced by memory and fails silently. No live leak; no mechanism either. Cheapest fixed inside #209, which already touches every call site.
-- **#194** — canvas Undo does not restore: the client restore does not take, and `undo()` never reverses the server write.
+- **#219** — `user_id` scoping: add the lint/ast-grep mechanism, close. Skip the RLS debate.
+- **#216** — ship the passive "on canvas" marker only; the confirm-dialog half stays deferred.
 - **#188** — rewrite `docs/reference/architecture.md`.
-- **#208 / #221** — the agent-shaped pair, both parked: genealogy as queryable provenance, and the MCP learnings + agent-as-future-user principle. Neither moves until a concrete agent use case pulls.
+- **#194** — canvas Undo does not restore. After #189; refresh its stale pre-#212 body first.
+
+**#213** is the live exploration the close-out clears room for — the ephemeral
+search overlay, the payoff of #209's data work. A grouping spike (loose, ephemeral,
+focus-not-taxonomy — explicitly not #204's grouping) is the exploration after; it
+gets filed when #213 makes room. Agent-facing designs (provenance graph, MCP
+learnings) are parked as prose in `docs/reference/agent-substrate.md`.
 - **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
