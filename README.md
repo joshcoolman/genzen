@@ -87,17 +87,17 @@ about it — that's the usual reason generation 401s.
 
 ## Repo map
 
-| Path                     | What's there                                                                           |
-| ------------------------ | -------------------------------------------------------------------------------------- |
-| `src/features/<name>/`   | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.** |
-| `src/lib/server/`        | Server-only helpers (files use `.server.ts` suffix).                                   |
-| `src/components/`        | Primitives, one folder each, imported from the root barrel `#/components`.             |
-| `app/api/`               | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                  |
-| `migrations/`            | Numbered SQL migrations, applied by `pnpm db:migrate`.                                 |
-| `CLAUDE.md`              | Feature catalog + service / convention notes.                                          |
-| `docs/SPEC.md`           | What the app does and the rules that must hold.                                        |
-| `docs/OVERVIEW.md`       | What genzen is, and what it deliberately is not.                                       |
-| `docs/CODE-STANDARDS.md` | genzen's deltas from `~/repos/project-standard`.                                       |
+| Path                     | What's there                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| `src/features/<name>/`   | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.**    |
+| `src/lib/server/`        | Server-only helpers (files use `.server.ts` suffix).                                      |
+| `src/components/`        | Primitives, one folder each, imported from the root barrel `#/components`.                |
+| `app/api/`               | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                     |
+| `migrations/`            | Numbered SQL migrations, applied by `pnpm db:migrate`.                                    |
+| `CLAUDE.md`              | Feature catalog + service / convention notes.                                             |
+| `docs/SPEC.md`           | What the app does and the rules that must hold.                                           |
+| `docs/OVERVIEW.md`       | What genzen is, and what it deliberately is not.                                          |
+| `docs/CODE-STANDARDS.md` | genzen's deltas from [project-standard](https://github.com/joshcoolman/project-standard). |
 
 ## Env
 
@@ -132,7 +132,7 @@ to the browser.
 ## Status
 
 Orientation lives here and in open issues — there is no continuation or plan file.
-Conventions follow `~/repos/project-standard`.
+Conventions follow [project-standard](https://github.com/joshcoolman/project-standard).
 
 **Last shipped** (2026-07-29)
 

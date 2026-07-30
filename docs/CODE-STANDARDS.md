@@ -1,4 +1,4 @@
-genzen follows `~/repos/project-standard/README.md`. This file states only where
+genzen follows [project-standard](https://github.com/joshcoolman/project-standard). This file states only where
 it **differs**, and the one rule the standard leaves open that genzen has
 settled. Everything not listed here, the standard decides — do not restate it.
 
