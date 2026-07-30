@@ -156,10 +156,10 @@ Also open, unsequenced:
 - **#216** — trashing an image that is on a canvas is a silent surprise. Deliberately deferred until the canvas has been lived on; it is a judgement call about feel.
 - **#214** — Retry drops the focus image: it ignores `source_image_id` and hands FAL a URL, which cannot work locally.
 - **#215** — three upload implementations, one thumbnail. Canvas paste/drop skips `createThumbnail`.
-- **#219** — `user_id` scoping is enforced by memory and fails silently. No live leak; no mechanism either.
+- **#219** — `user_id` scoping is enforced by memory and fails silently. No live leak; no mechanism either. Cheapest fixed inside #209, which already touches every call site.
 - **#194** — canvas Undo does not restore: the client restore does not take, and `undo()` never reverses the server write.
-- **#217** — the README repo map restates the tree and goes stale.
 - **#188** — rewrite `docs/reference/architecture.md`.
+- **#208 / #221** — the agent-shaped pair, both parked: genealogy as queryable provenance, and the MCP learnings + agent-as-future-user principle. Neither moves until a concrete agent use case pulls.
 - **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
