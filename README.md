@@ -11,7 +11,7 @@ support, no roadmap. MIT licensed; fork it and make it yours.
 **Up next** — the finish state agreed in #222, in execution order (1–5 are small
 and order-flexible; the issues hold the detail):
 
-1. **#215** — Consolidate uploads; canvas paste gets thumbnails (**#224** rides with it)
+1. **#215** — Consolidate uploads; canvas paste gets thumbnails
 2. **#219** — Mechanical check for `user_id` scoping
 3. **#216** — Passive "on canvas" marker in library
 4. **#188** — Rewrite the architecture doc
@@ -147,12 +147,12 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-30)
 
+- **An attached source image is saved on arrival (#224).** Uploading into the generator used to hold the bytes in memory, so its generation could never be retried. Settled the rule: aggressive on bytes, submit-only on prompt text.
 - **Retry replays the whole request (#214).** Source and references both re-sent; the endpoint is derived rather than read from a row that may predate it. Three call sites were dropping a library id they already had, which made every library pick look like an unreplayable paste.
 - **Canvas conforms to the route shape (#189).** A 1698-line component became `page.tsx` → `view.tsx` + `use-view.ts`, eight concern hooks and twelve component folders; the route shape is now the house standard's, not provisional.
 - **`/readme` renders this file in-app.** One server component + one stylesheet on the tokens; `marked` was already a dep. A pattern worth porting to every repo.
 - **A canvas is a container, not a view (#212).** Membership as rows in `canvas_images`; arrangement left IndexedDB, and trashing no longer evicts from a canvas.
 - **Origin is a column, and Images is scoped by it (#207).** `upload | images | canvas`, `not null` with no default, so an unmarked generation source cannot compile.
-- **The insert-path inventory is written (#211).** `docs/reference/insert-paths.md` — exactly two insert statements in the app. Filed #215 out of it.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
 carries it. It is the eight open issues, in execution order.
