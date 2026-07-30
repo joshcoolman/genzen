@@ -13,6 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { computeFileHash } from '../lib/file-hash'
+import { fileToBase64, saveFileToLibrary } from '../lib/save-to-library'
 import { uploadImage } from '../server/upload-image.server'
 import { removeImages } from '../server/remove-images.server'
 import {
@@ -27,16 +28,6 @@ import type {
   UserImageFilters,
 } from '../types'
 import { createImageStorage } from '#/lib/image-storage'
-
-async function fileToBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer()
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary)
-}
 
 export interface OptimisticImage {
   tempId: string
@@ -183,46 +174,18 @@ export function useUserImages(
   const create = useCallback(
     async (input: CreateUserImageInput): Promise<UserImage> => {
       if (!userId) throw new Error('User not authenticated')
+      const ownerId = userId
 
       try {
         setState((prev) => ({ ...prev, isCreating: true, error: null }))
 
-        // Generate storage path
-        const timestamp = Date.now()
-        const uuid = crypto.randomUUID()
-        const sanitizedFileName = input.file.name.replace(
-          /[^a-zA-Z0-9.-]/g,
-          '_',
-        )
-        const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
-
-        // Upload file via server function
-        const base64Data = await fileToBase64(input.file)
-        await uploadImage({
-          storagePath,
-          base64Data,
-          contentType: input.file.type,
+        const newImage = await saveFileToLibrary({
+          userId: ownerId,
+          file: input.file,
+          title: input.title,
+          description: input.description ?? null,
+          fileHash: input.file_hash,
         })
-
-        // Create database record
-        let newImage: UserImage
-        try {
-          newImage = await createImageRecord({
-            title: input.title,
-            description: input.description ?? null,
-            storagePath,
-            fileName: input.file.name,
-            fileSize: input.file.size,
-            mimeType: input.file.type,
-            fileHash: input.file_hash,
-          })
-        } catch (insertError) {
-          // Rollback: delete the uploaded file, or it is orphaned in storage.
-          await removeImages({ storagePaths: [storagePath] }).catch(() => {})
-          throw new Error(
-            `Failed to create image record: ${(insertError as Error).message}`,
-          )
-        }
 
         // Get URL for new image
         if (!newImage.storage_path) {

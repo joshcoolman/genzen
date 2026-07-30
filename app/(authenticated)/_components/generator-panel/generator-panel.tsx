@@ -187,13 +187,17 @@ export function GeneratorPanel({
       <div className={styles.row}>
         <ActionButton
           onClick={() => generator.handleGenerate()}
-          loading={generator.loading}
+          loading={generator.loading || generator.savingSource}
           loadingText={
-            generator.totalImages > 1
-              ? `Generating ${generator.totalImages} images...`
-              : isEdit
-                ? 'Generating edit...'
-                : 'Generating...'
+            // Saving an attached source blocks Generate (#224). Say so, or the
+            // button just looks inert for however long the upload takes.
+            generator.savingSource
+              ? 'Saving image...'
+              : generator.totalImages > 1
+                ? `Generating ${generator.totalImages} images...`
+                : isEdit
+                  ? 'Generating edit...'
+                  : 'Generating...'
           }
           disabled={!generator.canGenerate}
           className={styles.fill}

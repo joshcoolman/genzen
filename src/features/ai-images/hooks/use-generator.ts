@@ -17,6 +17,9 @@ import {
 } from '#/features/ai-images/constants'
 import { endpointFor, maxRefsFor } from '#/features/ai-images/models'
 import { recordPromptOrigin } from '#/features/ai-images/prompt-origins'
+import { computeFileHash } from '#/features/user-images/lib/file-hash'
+import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { useAuth } from '#/lib/auth'
 
 const EMPTY_PROMPTS: Array<string> = ['']
 
@@ -83,6 +86,9 @@ export interface GeneratorState {
   handleOrientationToggle: () => void
   handleGenerate: () => Promise<void>
   setSourceFile: (file: File) => void
+  /** True while an attached file is being saved to the library. Generate is
+   *  disabled meanwhile -- see the note on the state. */
+  savingSource: boolean
   /** `id` is the library row this came from. Pass it wherever it is known --
    *  a source with an id survives Retry, one without it cannot (#214). */
   setSourceFromUrl: (url: string, name: string, id?: string) => void
@@ -128,6 +134,12 @@ export function useGenerator({
   // key dialog, anything else toasts. `setError` alone was not enough — the AI
   // Images page never rendered it, so enhance failures vanished entirely.
   const reportError = useReportError()
+
+  // An attached file becomes a library row immediately (#224). Written through
+  // the standalone writer rather than `useUserImages`, which fetches the whole
+  // library on mount -- both hosts already mount it once, and a second copy
+  // just to call `create` would double that query on every page load.
+  const { user } = useAuth()
 
   // Read the latest prefix at submit time without re-creating handleGenerate.
   const promptPrefixRef = useRef(promptPrefix ?? '')
@@ -207,6 +219,12 @@ export function useGenerator({
      *  submit sends the id and the server resolves the object. */
     id?: string
   } | null>(null)
+  /** An attached file is uploaded the moment it arrives, so it exists as a
+   *  library row before anything can go wrong with the generation (#224).
+   *  Generate is gated on this: submitting mid-save would send bytes with no
+   *  id, which is exactly the unreproducible source the upload exists to
+   *  prevent. */
+  const [savingSource, setSavingSource] = useState(false)
   const [describingImage, setDescribingImage] = useState(false)
   const [enhancingPromptIndex, setEnhancingPromptIndex] = useState<
     number | null
@@ -310,7 +328,9 @@ export function useGenerator({
     selectedModels.length *
     gensPerModel
   const canGenerate =
-    (activePromptCount > 0 || !!sourceImage) && selectedModels.length > 0
+    (activePromptCount > 0 || !!sourceImage) &&
+    selectedModels.length > 0 &&
+    !savingSource
 
   const ratioOptions = getRatioOptions(orientation)
 
@@ -461,14 +481,53 @@ export function useGenerator({
     img.src = base64
   }
 
-  const setSourceFile = useCallback((file: File) => {
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string
-      applySourceBase64(base64, file.name)
-    }
-    reader.readAsDataURL(file)
-  }, [])
+  /** Attach a file: preview it immediately, and save it to the library in the
+   *  background so it has an identity.
+   *
+   *  An image is a complete artifact the moment it arrives -- unlike a
+   *  half-typed prompt -- so it is worth keeping whether or not a generation
+   *  ever follows. Without the row the bytes exist only in this closure, and a
+   *  failed generation can never be retried because there is nothing to send
+   *  again (#224). Canvas has always uploaded on paste; this is the one slot
+   *  that did not.
+   *
+   *  If the save fails the preview stays and generation still works -- it just
+   *  falls back to sending the bytes inline, and a later Retry will say plainly
+   *  that the source was never saved. */
+  const setSourceFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string
+        applySourceBase64(base64, file.name)
+
+        setSavingSource(true)
+        void (async () => {
+          try {
+            const record = await saveFileToLibrary({
+              userId: user.id,
+              file,
+              title: file.name || 'Source Image',
+              fileHash: await computeFileHash(file),
+            })
+            // Guard against a second attach landing first: only adopt the id if
+            // this is still the source on screen.
+            setSourceImage((prev) =>
+              prev && prev.base64 === base64
+                ? { ...prev, id: record.id }
+                : prev,
+            )
+          } catch (err) {
+            reportError(err, 'Could not save that image to your library')
+          } finally {
+            setSavingSource(false)
+          }
+        })()
+      }
+      reader.readAsDataURL(file)
+    },
+    [user.id, reportError],
+  )
 
   /** `id` is the library row this came from, when there is one. Pass it: a
    *  source carrying an id is reproducible on Retry, and one carrying only
@@ -577,6 +636,7 @@ export function useGenerator({
     describingImage,
     totalImages,
     canGenerate,
+    savingSource,
     ratioOptions,
     selectedStyleId,
     setSelectedStyleId,
