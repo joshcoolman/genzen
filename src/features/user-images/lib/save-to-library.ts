@@ -1,12 +1,12 @@
 'use client'
 
+import { createThumbnail } from '../server/create-thumbnail.server'
 import { createImageRecord } from '../server/images.actions'
 import { removeImages } from '../server/remove-images.server'
 import { uploadImage } from '../server/upload-image.server'
 import type { UserImage } from '../types'
 
-/** Exported for the other upload path in this feature, which #215 folds in. */
-export async function fileToBase64(file: File): Promise<string> {
+async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
   const bytes = new Uint8Array(buffer)
   let binary = ''
@@ -25,7 +25,12 @@ export interface SaveToLibraryInput {
   fileHash?: string
 }
 
-/** Put a file in the library: object to storage, then the row.
+/** Put a file in the library: object to storage, then the row, then a thumbnail.
+ *
+ *  **The only way a file enters the library.** There were three of these and
+ *  only one made a thumbnail (#215), so whether a grid downloaded full-size
+ *  objects came down to which caller you happened to go through. A thumbnail is
+ *  not a caller's decision, so it lives here.
  *
  *  Standalone rather than a hook so a caller that only needs to *write* one
  *  image does not have to mount `useUserImages`, which fetches the whole
@@ -52,7 +57,7 @@ export async function saveFileToLibrary({
   })
 
   try {
-    return await createImageRecord({
+    const image = await createImageRecord({
       title,
       description,
       storagePath,
@@ -61,6 +66,12 @@ export async function saveFileToLibrary({
       mimeType: file.type,
       fileHash,
     })
+
+    // Background, and failure is tolerated: reads fall back to the full-size
+    // object, so a missing thumbnail is slower, never broken.
+    void createThumbnail({ imageId: image.id, storagePath }).catch(() => {})
+
+    return image
   } catch (insertError) {
     // Rollback, or the object is orphaned in storage with nothing pointing at it.
     await removeImages({ storagePaths: [storagePath] }).catch(() => {})

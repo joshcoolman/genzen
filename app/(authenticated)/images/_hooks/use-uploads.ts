@@ -3,7 +3,8 @@
 import { useCallback, useEffect } from 'react'
 import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { useImageUpload } from '#/features/user-images/hooks/useImageUpload'
+import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { createImageStorage } from '#/lib/image-storage'
 
 /** The placeholder a card shows while its bytes are still in flight. */
 function skeletonCard(id: string, title: string): SavedAiImage {
@@ -44,10 +45,9 @@ export function useUploads(
    */
   revealUploads: () => void,
 ) {
-  const { upload } = useImageUpload(userId)
-
   const ingest = useCallback(
     (file: File, { preview }: { preview: boolean }) => {
+      if (!userId) return
       revealUploads()
       const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
       gallery.addOptimisticCard(skeletonCard(tempId, file.name))
@@ -57,10 +57,10 @@ export function useUploads(
 
       void (async () => {
         try {
-          const created = await upload({
+          const created = await saveFileToLibrary({
+            userId,
             file,
             title: file.name,
-            description: null,
           })
           gallery.replaceOptimisticCard(
             tempId,
@@ -68,7 +68,10 @@ export function useUploads(
           )
           // Hold the blob preview until the refresh brings a real URL --
           // swapping to nothing would blink the card empty.
-          const url = created.url || previewUrl
+          const url =
+            (created.storage_path
+              ? await createImageStorage().getUrl(created.storage_path)
+              : null) || previewUrl
           if (url) gallery.setImageUrl(created.id, url)
           void gallery.refresh({ silent: true })
         } catch {
@@ -76,7 +79,7 @@ export function useUploads(
         }
       })()
     },
-    [upload, gallery, revealUploads],
+    [userId, gallery, revealUploads],
   )
 
   const uploadFiles = useCallback(

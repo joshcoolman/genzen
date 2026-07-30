@@ -12,12 +12,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { computeFileHash } from '../lib/file-hash'
-import { fileToBase64, saveFileToLibrary } from '../lib/save-to-library'
-import { uploadImage } from '../server/upload-image.server'
-import { removeImages } from '../server/remove-images.server'
+import { saveFileToLibrary } from '../lib/save-to-library'
 import {
-  createImageRecord,
   listImages,
   softDeleteImage,
   updateImageMeta,
@@ -29,17 +25,10 @@ import type {
 } from '../types'
 import { createImageStorage } from '#/lib/image-storage'
 
-export interface OptimisticImage {
-  tempId: string
-  title: string
-  previewUrl: string
-}
-
 interface UseUserImagesState {
   images: Array<UserImage>
   imageUrls: Record<string, string>
   originalUrls: Record<string, string>
-  optimisticImages: Array<OptimisticImage>
   isLoading: boolean
   isCreating: boolean
   isDeleting: string | null
@@ -47,17 +36,8 @@ interface UseUserImagesState {
   error: string | null
 }
 
-interface CreateOptimisticInput {
-  file: File
-  title: string
-  description?: string | null
-  tempId: string
-  previewUrl: string
-}
-
 interface UseUserImagesReturn extends UseUserImagesState {
   create: (input: CreateUserImageInput) => Promise<UserImage>
-  createOptimistic: (input: CreateOptimisticInput) => Promise<void>
   update: (
     id: string,
     title: string,
@@ -66,17 +46,6 @@ interface UseUserImagesReturn extends UseUserImagesState {
   deleteImage: (id: string) => Promise<void>
   refresh: () => Promise<void>
   clearError: () => void
-  addOptimisticImage: (
-    tempId: string,
-    title: string,
-    previewUrl: string,
-  ) => void
-  resolveOptimisticImage: (
-    tempId: string,
-    realImage: UserImage,
-    realUrl: string | null,
-  ) => void
-  removeOptimisticImage: (tempId: string) => void
 }
 
 /**
@@ -90,7 +59,6 @@ export function useUserImages(
     images: [],
     imageUrls: {},
     originalUrls: {},
-    optimisticImages: [],
     isLoading: true,
     isCreating: false,
     isDeleting: null,
@@ -309,106 +277,12 @@ export function useUserImages(
     setState((prev) => ({ ...prev, error: null }))
   }, [])
 
-  const addOptimisticImage = useCallback(
-    (tempId: string, title: string, previewUrl: string) => {
-      setState((prev) => ({
-        ...prev,
-        optimisticImages: [
-          { tempId, title, previewUrl },
-          ...prev.optimisticImages,
-        ],
-      }))
-    },
-    [],
-  )
-
-  const resolveOptimisticImage = useCallback(
-    (tempId: string, realImage: UserImage, realUrl: string | null) => {
-      setState((prev) => ({
-        ...prev,
-        optimisticImages: prev.optimisticImages.filter(
-          (o) => o.tempId !== tempId,
-        ),
-        images: [realImage, ...prev.images],
-        imageUrls: realUrl
-          ? { ...prev.imageUrls, [realImage.id]: realUrl }
-          : prev.imageUrls,
-      }))
-    },
-    [],
-  )
-
-  const removeOptimisticImage = useCallback((tempId: string) => {
-    setState((prev) => {
-      const opt = prev.optimisticImages.find((o) => o.tempId === tempId)
-      if (opt) URL.revokeObjectURL(opt.previewUrl)
-      return {
-        ...prev,
-        optimisticImages: prev.optimisticImages.filter(
-          (o) => o.tempId !== tempId,
-        ),
-      }
-    })
-  }, [])
-
-  /**
-   * Upload with parallel hash computation and seamless optimistic resolution.
-   * Hash + storage upload run concurrently; signed URL fetch is skipped
-   * (the object URL from the optimistic entry is used for display).
-   */
-  const createOptimistic = useCallback(
-    async (input: CreateOptimisticInput): Promise<void> => {
-      if (!userId) throw new Error('User not authenticated')
-
-      const { file, title, description, tempId, previewUrl } = input
-
-      const timestamp = Date.now()
-      const uuid = crypto.randomUUID()
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const storagePath = `${userId}/${timestamp}_${uuid}_${sanitizedFileName}`
-
-      // Run server upload and hash computation in parallel
-      const base64Data = await fileToBase64(file)
-      const [, hashResult] = await Promise.all([
-        uploadImage({ storagePath, base64Data, contentType: file.type }),
-        computeFileHash(file).catch(() => undefined),
-      ])
-
-      // Insert DB record (hash may be undefined if computation failed)
-      let newImage: UserImage
-      try {
-        newImage = await createImageRecord({
-          title,
-          description: description ?? null,
-          storagePath,
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-          fileHash: hashResult,
-        })
-      } catch (insertError) {
-        await removeImages({ storagePaths: [storagePath] }).catch(() => {})
-        throw new Error(
-          `Failed to create image record: ${(insertError as Error).message}`,
-        )
-      }
-
-      // Atomically swap optimistic card for real image, keeping the object URL
-      resolveOptimisticImage(tempId, newImage, previewUrl)
-    },
-    [userId, resolveOptimisticImage],
-  )
-
   return {
     ...state,
     create,
-    createOptimistic,
     update,
     deleteImage: deleteImageFn,
     refresh: fetchImages,
     clearError,
-    addOptimisticImage,
-    resolveOptimisticImage,
-    removeOptimisticImage,
   }
 }
