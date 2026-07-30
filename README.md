@@ -146,22 +146,20 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 - **Images has the route shape (#189, half).** Server read, `view.tsx` + `use-view.ts`, six component folders came home. Canvas is the other half.
 - **The `/edit` route is gone, replaced by a highlight (#205).** A highlighted image is the next prompt's primary reference; 2,158 lines of route out.
 
-**Up next** — the finish state agreed in **#222**: a short close-out list, then one
-live exploration. **#189** first — the canvas half of the route split, which closes
-epic **#209**. Then the close-out list, small items in any order:
+**Up next** — the finish state agreed in **#222**, in execution order (2–7 are
+small and order-flexible; the issues hold the detail):
 
-- **#214** — Retry drops the focus image: replay the whole request, not the prompt.
-- **#215** — three upload implementations, one thumbnail. Canvas paste/drop skips `createThumbnail`.
-- **#219** — `user_id` scoping: add the lint/ast-grep mechanism, close. Skip the RLS debate.
-- **#216** — ship the passive "on canvas" marker only; the confirm-dialog half stays deferred.
-- **#188** — rewrite `docs/reference/architecture.md`.
-- **#194** — canvas Undo does not restore. After #189; refresh its stale pre-#212 body first.
+1. **#189** — Canvas conformance: route shape split (closes epic #209)
+2. **#214** — Retry replays the whole request, not just the prompt
+3. **#215** — Consolidate uploads; canvas paste gets thumbnails
+4. **#219** — Mechanical check for `user_id` scoping
+5. **#216** — Passive "on canvas" marker in library
+6. **#188** — Rewrite the architecture doc
+7. **#194** — Fix Canvas Undo (after #189)
+8. **#213** — Search overlay: where's my stuff, fast, without breaking flow — the payoff
 
-**#213** is the live exploration the close-out clears room for — the ephemeral
-search overlay, the payoff of #209's data work. A grouping spike (loose, ephemeral,
-focus-not-taxonomy — explicitly not #204's grouping) is the exploration after; it
-gets filed when #213 makes room. Agent-facing designs (provenance graph, MCP
-learnings) are parked as prose in `docs/reference/agent-substrate.md`.
+After #213: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
+designs are parked as prose in `docs/reference/agent-substrate.md`.
 - **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
