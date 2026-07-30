@@ -35,6 +35,19 @@ anything one route renders lives with that route.
   `retry_count` bumped. Retry means "try that again", not "make another":
   inserting a new row left the original failure behind as a second card to clean
   up.
+- **Retry replays the whole request, source and references included** (#214).
+  `retry-plan.ts` reads the plan out of `generation_metadata` — pure, so it is
+  unit-tested — and **refuses rather than sending a partial request**. A retry
+  that quietly drops the source looks like it worked and generates something
+  else, which is the failure this closed. A source that was pasted rather than
+  saved has no bytes to replay and is the one honest refusal left (#224).
+- **The retry endpoint is derived, never read from the row.** `fal_model_id` is
+  written at reserve time as the base model and only patched to the resolved
+  endpoint at submit, so a generation that failed _before_ submit kept the
+  text-to-image endpoint — exactly the rows that get retried.
+- **A source image carries its library id wherever one exists.** An id makes a
+  generation reproducible; bytes alone do not. Three call sites had the id and
+  dropped it, which silently turned library picks into unreplayable pastes.
 - **Failed generations are deleted outright, not soft-deleted.** There is no image
   to restore, so Trash has nothing to offer for one — restoring it just puts an
   error card back. Everything else still soft-deletes.
@@ -52,7 +65,10 @@ anything one route renders lives with that route.
   refreshes once via `onAfterSubmit` so pending cards appear, and each poll that
   settles a row refreshes again. FAL runs through the async queue
   (`fal.queue.submit`).
-- **Library sources are fetched server-side to base64**, never handed to FAL as a
-  URL — a URL cannot work against `localhost`, and it sidesteps bucket CORS.
+- **Every image FAL is given is uploaded as bytes**, never handed over as a URL
+  for FAL to fetch — a URL cannot work against `localhost`, and it sidesteps
+  bucket CORS. `#/lib/server/fal-image-inputs.server.ts` is the one seam for
+  this; generate and retry both go through it, and it preserves caller order
+  because models read the image list positionally.
 - **FAL is the only image provider.** Anthropic is prompt work (enhancement,
   variation prompts), Gemini is vision only (describe, caption, shot lists).
