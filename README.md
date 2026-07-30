@@ -8,6 +8,13 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
+**Up next** — the ordered detail is in [Status](#status) at the bottom.
+
+1. **#209** — the data model conformance pass. Four facts, four mutabilities,
+   currently collapsed into one JSONB bag and a boolean.
+2. **#189** — the canvas half of the route split, now unblocked.
+3. **#213** — the ephemeral search overlay. The payoff #209 is for.
+
 ## Run it locally
 
 You need Docker, pnpm, and **one real API key: `FAL_KEY`**. No cloud account is
@@ -23,16 +30,23 @@ That is the whole setup, and Docker plus pnpm are the only prerequisites --
 there is no global CLI to install and no env file to copy or edit. `local:up`
 starts Postgres and MinIO (S3-compatible storage) from `docker-compose.yml`,
 writes `.env.local` for you, applies any migrations the database has not seen,
-provisions the dev login, and prompts for the FAL key. Re-run it any time: it is
-idempotent, it keeps your key, and it never resets a database you have been
-working in. `pnpm local:reset` is the deliberate way to start over.
+generates and provisions a login, and prompts for the FAL key. Re-run it any
+time: it is idempotent, it keeps your key, and it never resets a database you
+have been working in. `pnpm local:reset` is the deliberate way to start over.
 
 | Thing         | Where                                               |
 | ------------- | --------------------------------------------------- |
 | App           | http://localhost:3000                               |
-| Sign in as    | `testuser@gmail.com` / `supa!1QAwsEDrf`             |
+| Sign in as    | printed by `local:up`, kept in `.env.local`         |
 | MinIO console | http://localhost:9011 (`genzenlocal`/`genzenlocal`) |
 | Postgres      | `postgres://genzen:genzen@localhost:5434/genzen`    |
+
+There is no shipped account. `local:up` generates a password on first run,
+creates the user, and prints the login; it lands in `.env.local` as
+`LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD`. Edit either one and re-run to change
+it — the file is the source of truth and the password is re-synced from it,
+which is also the whole password-reset story. `pnpm auth:create-user` is the
+path for an additional or non-local account.
 
 FAL is not mocked — generation calls fal.ai for real and costs real money. The
 app boots and everything else works without a key. Every generation's cost lands
