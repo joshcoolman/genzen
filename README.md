@@ -272,5 +272,7 @@ Also open, unsequenced:
 - **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash —
-plus Account. No assistant, no grouping, no separate edit page. If something
-does not serve generating and keeping images, it was cut on purpose.
+plus Account. No assistant, no image grouping, no separate edit page. If
+something does not serve generating and keeping images, it was cut on purpose.
+(Canvas's spatial groups are a different thing and are alive — "grouping" in the
+library sense, parent/child genealogy over images, is what was removed.)

@@ -76,9 +76,11 @@ export interface GenerateImageResult {
 }
 
 /**
- * Plain async implementation. Use this from server-to-server callers
- * (MCP tools, other server fns) — calling the createServerFn wrapper
- * goes through TanStack's RPC stub and corrupts the response shape.
+ * Plain async implementation, and the one every other server caller should use.
+ * `generate-image.server.ts` is a thin `'use server'` action over it, kept as the
+ * client entry point only. (It used to be a TanStack `createServerFn` whose RPC
+ * stub corrupted the response shape for server-to-server callers; that framework
+ * is gone, and the split now just separates the action boundary from the logic.)
  */
 export async function generateImageInternal(
   data: GenerateImageInput,
