@@ -61,16 +61,40 @@ interface CanvasImage {
 }
 ```
 
-## Key Files
+## Shape
 
-- `types.ts` -- `CanvasImage`, `Transform`, `CanvasGroup`, `DragMode`
-- `index.ts` -- barrel export of `InfiniteCanvas` component
+The route has the standard shape (`docs/reference/route-shape.md`): `page.tsx`
+reads on the server, `view.tsx` composes and carries no styles, `use-view.ts`
+holds the state. #189 split the 1698-line `infinite-canvas.tsx` into that,
+plus `_hooks/` and one folder per component; the file and its 412-line
+stylesheet are gone.
+
+**Two coordinate systems meet at `canvas-surface`, and which one a thing
+belongs to is the load-bearing decision.** Its `plane` prop renders inside the
+transform, in canvas coordinates, and scales with the zoom -- cards and group
+slabs. Its `children` render over the plane in screen coordinates at a fixed
+size -- model labels, pending spinners, the selection box, the Generate pill,
+the marquee. Anything that must stay legible when zoomed out is a child.
 
 ## Components
 
-- `infinite-canvas.tsx` -- main canvas component (~1750 lines; the view/hook split is #189): pan/zoom, drag-move, marquee selection, grouping, undo/redo, paste/drop (upload to S3), context menu, library picker
-- `SelectionActions.tsx` -- fixed bottom toolbar: upload, library, arrange, group/ungroup, zoom display
-- `CanvasGenerateDialog.tsx` -- dialog wrapping `GeneratorPanel` from ai-images; overrides `handleGenerate` with optimistic placeholder flow. Handles both single-image and multi-image (group) generation.
+Each owns its own `.module.css`. `canvas-surface` is the frame (fixed
+full-bleed surface, pan cursor, the transformed plane) -- a named component
+rather than a module on the view, the same call route-shape records for
+Login's `centered-panel`.
+
+- `canvas-surface` -- the frame and the plane/overlay boundary above
+- `image-card` -- one card, in one of three states: pending, failed, image
+- `group-background` -- the slab behind a group; carries `data-group-id`
+- `model-label`, `pending-overlay`, `selection-bounds`, `generate-pill`,
+  `marquee-box` -- the screen-space overlays
+- `empty-prompt` -- the nothing-here-yet copy (teaches the interaction model,
+  which is why it is not `EmptyState`)
+- `context-menu`, `delete-confirm`, `drop-notice`
+- `selection-actions` -- fixed bottom toolbar: upload, library, arrange,
+  group/ungroup, zoom display
+- `canvas-generate-dialog` -- wraps `GeneratorPanel` from ai-images; overrides
+  `handleGenerate` with the optimistic placeholder flow, single and group
 
 ## Generate flow (single + multi unified)
 
@@ -88,10 +112,30 @@ There is no separate "Combine" feature anymore (retired into this flow).
 
 ## Hooks
 
+`_hooks/` holds one hook per concern; `use-view.ts` composes them and owns only
+the shared image/group state plus the pointer handlers that arbitrate between
+them.
+
+- `use-viewport.ts` -- transform, screen<->canvas conversion, zoom/fit/focus,
+  wheel zoom, space-to-pan. Owns `tRef`.
+- `use-selection.ts` -- selection, marquee, and the group operations. Owns
+  `sRef`. **Change the selection only through `select()`** -- it writes the
+  state and the ref together, and twelve hand-written pairs of those is what
+  #189 replaced.
+- `use-history.ts` -- undo/redo stacks, capped at 50.
+- `use-ingest.ts` -- paste, drop, file picker, library picker.
+- `use-removal.ts` -- remove-from-canvas vs move-to-trash, and the confirm modal.
+- `use-reconcile.ts` -- place-what-is-unplaced, once per mount.
+- `use-autosave.ts` -- the 500ms debounce and its unload flush.
+- `use-canvas-hotkeys.ts` -- the thirteen bindings.
+
 - `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
 ## Lib
 
+- `geometry.ts` -- `getBounds`, `spatialSort`, `scaleToFit`, `centerOn` and the
+  zoom range. Pure and unit-tested.
+- `types.ts` -- `CanvasImage`, `Transform`, `CanvasGroup`, `DragMode`
 - `masonry.ts` -- `layoutMasonry()`: column-based masonry algorithm using median input width as default column width
 - `persistence.ts` -- the pure mapping between a membership row and a card
   (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus

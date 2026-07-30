@@ -16,7 +16,7 @@ handed down, not a second insert that forgot it.
 | #   | Path               | Chain                                                                                                  |
 | --- | ------------------ | ------------------------------------------------------------------------------------------------------ |
 | U1  | Upload, Images     | `images/_hooks/use-uploads.ts` → `useImageUpload.upload` → `createImageRecord`                         |
-| U2  | Upload, canvas     | `infinite-canvas.tsx:723` (paste/drop) → `useUserImages.create` → `createImageRecord`                  |
+| U2  | Upload, canvas     | `canvas/_hooks/use-ingest.ts` (paste/drop/picker) → `useUserImages.create` → `createImageRecord`       |
 | G1  | Generation, Images | `use-generator.handleGenerate` → `generateImage` → `generateImageInternal` → `createPendingGeneration` |
 | G2  | Generation, canvas | `use-canvas-generate.ts` → same chain, with `onCanvas: true` and `sourceClient: 'genzen-canvas'`       |
 

@@ -153,10 +153,12 @@ ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
 ### Tier 3 — cleanups
 
 - [ ] **`boundsOf` (use-canvas-generate) duplicates `getBounds`
-      (InfiniteCanvas)** — same function twice.
-- [ ] **Extract inline pure logic:** `spatialSort` and the placeholder collision
-      geometry (`rectsOverlap` + relocate-below decision) — same move as the already
-      extracted `mapOutcomesToPlaceholders` / `layoutMasonry`.
+      (`canvas/_lib/geometry.ts`)** — same function twice. #189 gave `getBounds` a
+      home and tests, so this one is now a straight deletion.
+- [x] **Extract inline pure logic:** `spatialSort` moved to
+      `canvas/_lib/geometry.ts` with tests in #189. The placeholder collision
+      geometry (`rectsOverlap` + relocate-below decision) is still inline in
+      `use-canvas-generate.ts`.
 - [x] **Deletion semantics differ** — settled by #204: Images delete is a plain
       `deleted_at` now too, the same as Canvas trash.
 
