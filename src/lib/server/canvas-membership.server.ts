@@ -6,10 +6,9 @@ import { first, sql } from './db.server'
 // insert path -- which tags a row the moment it is reserved so a canvas
 // generation is reclaimable after navigating away.
 //
-// Dual-writes `user_images.on_canvas` alongside the rows for now. That column is
-// still what every read uses; it is dropped in its own migration once reads have
-// moved, and `canvas-membership.server.test.ts` is what proves the two agree
-// until then.
+// This is the whole of membership. `user_images.on_canvas` -- a boolean that
+// could not name *which* canvas, hold a position, or carry a foreign key -- was
+// dropped in `migrations/0005`.
 
 /** The single canvas a user has today, created on first need. */
 export async function ensureDefaultCanvas(userId: string): Promise<string> {
@@ -102,8 +101,8 @@ export async function removeCanvasMembers(
 }
 
 /**
- * Membership as the rows say it, for the user's default canvas. The equality
- * test compares this against the `on_canvas` set; nothing else reads it yet.
+ * Which images are on a canvas. Filters trashed images rather than removing
+ * their rows, which is what makes a restore put the card back in place (#212).
  */
 export async function listCanvasMemberIds(
   userId: string,

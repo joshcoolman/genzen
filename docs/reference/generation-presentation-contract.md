@@ -127,8 +127,11 @@ ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
 - [ ] **Completed-but-no-signedURL silently drops the tile** —
       `use-canvas-generate.ts` completed branch `filter`s instead of failing.
       Violates invariant #3. → [#165](https://github.com/joshcoolman/genzen/issues/165)
-- [ ] **Failed-tile Dismiss is UI-only** — leaves a stale `on_canvas=true`
-      failed row in the DB. → [#166](https://github.com/joshcoolman/genzen/issues/166)
+- [x] **Failed-tile Dismiss is UI-only** — left a stale `on_canvas=true` failed
+      row in the DB. Membership is a row now (#212) and Dismiss deletes it. The
+      failed `user_images` row still stays, on purpose: Activity is the log of
+      every generation including the ones that died.
+      → [#166](https://github.com/joshcoolman/genzen/issues/166)
 
 ### Tier 2 — structural drift
 

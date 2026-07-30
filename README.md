@@ -122,6 +122,19 @@ Conventions follow `~/repos/project-standard`.
 
 **Last shipped** (2026-07-29)
 
+- **A canvas is a container, not a view (#212).** `canvases` + `canvas_images`,
+  membership as rows with foreign keys, in four commits: add the tables, prove
+  the two representations agreed, move the reads, drop `on_canvas`. Arrangement
+  left IndexedDB, so it survives a different browser and a different machine.
+  **The library owns everything** — a membership row is an arrangement over a
+  library image, never exile. So **trashing no longer evicts from a canvas**:
+  membership survives, the read filters `deleted_at`, and a restore returns the
+  card to the same coordinates. The mount reconcile is gone, replaced by one
+  rule — _place what is unplaced_ — because reclaim, prune and dedupe each became
+  impossible rather than handled (`on delete cascade`,
+  `unique (canvas_id, image_id)`). `page.tsx` reads on the server: no loading
+  gate, no empty first paint. Deferred by decision: a guard for trashing an image
+  that is on a canvas is **#216**, wanted only after living on the real canvas.
 - **Origin is a column, and Images is scoped by it (#207).** `migrations/0003`
   adds `origin` — `upload | images | canvas` — `not null` with **no default**,
   so an insert that omits it fails instead of quietly meaning `images`; the
@@ -171,14 +184,9 @@ Conventions follow `~/repos/project-standard`.
   `edit-image` server path and `useGenerationResults`; one flag in. A follow-up
   fixed the submit: a source image uploads to FAL as bytes like every other
   image, because handing FAL a URL to fetch cannot work against `localhost`.
-- **Grouping and genealogy are out (#204).** Deleting an image deletes that
-  image -- it used to be a decision about a subtree, hiding a row rather than
-  soft-deleting it so its variations kept an origin thumbnail, then destroying
-  the hidden row later. Cards render one image. Trash's "N linked" is gone;
-  canvas membership is the only living dependency left. Migration 0002 drops
-  `hidden` and strips `parent_id`.
-  **Up next — #209, the data model conformance pass.** A deliberate pivot on
-  2026-07-29. Canvas work is paused behind it.
+
+**Up next — #209, the data model conformance pass.** A deliberate pivot on
+2026-07-29.
 
 The component pass (#186, #187, #189) settled how the app is _built_. This is
 the same pass one layer down: how it **records what an image is**. Four facts
@@ -196,20 +204,15 @@ additive-then-subtractive and the drop is always its own late commit.
 before starting — it is what the data work is _for_, and knowing that stops the
 schema from drifting toward elegance.
 
-Ordered (#210, #211 and #207 done — the inventory the rest builds on is
-`docs/reference/insert-paths.md`):
+Ordered (#210, #211, #207 and #212 done — the inventory the rest builds on is
+`docs/reference/insert-paths.md`; #178 is superseded by #212 and can be closed):
 
-1. **#212 — canvas is a container, not a view.** `canvases` +
-   `canvas_images` with foreign keys, superseding #178. Ownership needs a
-   container; integrity needs the FK. Deletes the mount-time reconcile rather
-   than handling it, and makes the Trash-eviction bug undefinable instead of
-   unfixed. **The library owns everything** — membership is an _arrangement over
-   library images_, never exile. Nothing exists only inside a canvas.
-2. **#189 — the canvas half of the route split**, last, with the reconcile
-   already gone rather than carefully extracted and then deleted.
-   `docs/reference/route-shape.md` is the contract and **Images is now the
-   closest worked example of it**; Trash is still the reference for the server
-   seam.
+1. **#189 — the canvas half of the route split**, now unblocked: the reconcile
+   is already gone rather than carefully extracted and then deleted, and
+   `page.tsx` already reads on the server. What is left is `view.tsx` +
+   `use-view.ts` out of a 1,750-line component.
+   `docs/reference/route-shape.md` is the contract and **Images is the closest
+   worked example of it**; Trash is still the reference for the server seam.
 
 **#213 — the ephemeral search overlay.** Command-F from anywhere, live filter
 over prompts, take the prompt or the image, Escape and you are exactly where you
@@ -222,8 +225,8 @@ section) and the reason was that it was a place you had to go — which breaks
 flow by construction. Images stays a place to generate.
 
 It is a front door, not a subsystem: all three of its actions already exist as
-capabilities. Its two common ones only needed #210, which is done, so it is
-buildable now; only "take me there" waits on #212.
+capabilities. Nothing blocks it any more — #210 gave it the prompt data and #212
+gave "take me there" an address.
 
 Deferred by decision, not oversight: **#208** (`image_edges`), a prompts table,
 any `collections` generalization, a keep/favourite signal, and anything that
@@ -232,18 +235,23 @@ waiting. The prompts table gets pulled forward when #213 needs a real index.
 
 Also open, unsequenced:
 
+- **#216 — trashing an image that is on the canvas is a silent surprise.** The
+  arrangement is safe (#212 made restore lossless), but a card vanishes from a
+  surface you were not looking at. A per-card "on canvas" marker is the
+  load-bearing half; a confirm with deselect-by-default on batches is the rest.
+  **Deliberately deferred until the canvas has been used for a while** — it is a
+  judgement call about feel.
 - **#214 — Retry drops the focus image.** A failed generation should re-send
   exactly what was sent; retry ignores `source_image_id` entirely and hands
   `source_image_url` to FAL as a URL, which cannot work locally. References
   already replay correctly. The pasted-source case is a decision (persist the
-  bytes as a library row, or refuse honestly), so this may land **behind** #207
-  and #212 rather than before them.
+  bytes as a library row, or refuse honestly).
 - **#215 — three upload implementations, one thumbnail.** Canvas paste/drop
   reaches the one that skips `createThumbnail`, so those rows render full-size
   in the gallery forever. From the #211 inventory.
 - **#194 — canvas Undo does not restore.** Two faults: the client restore does
-  not take, and `undo()` never reverses the server write. Downstream of #212,
-  which changes what the server write is.
+  not take, and `undo()` never reverses the server write. #212 settled what that
+  write is — membership rows and positions — so this is now well-defined.
 - **#188 — rewrite `docs/reference/architecture.md`.** It was waiting on #202,
   which is done.
 - **#200** — hybrid Vercel/Railway topology exploration.

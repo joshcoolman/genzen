@@ -8,16 +8,13 @@ import {
 } from './canvas-membership.server'
 import { sql } from './db.server'
 
-// Step 2 of #212, and the reason the migration could be additive: while both
-// representations exist, the set of images on the canvas must be identical from
-// either source. Membership-as-rows is not allowed to be *nearly* the same as
-// the `on_canvas` boolean it replaces, because the read flip is a silent
-// change -- a divergence would show up as a card that quietly stopped coming
-// back, which is exactly the class of bug this epic exists to end.
+// Membership is now rows (#212), so these are the guarantees the canvas reads
+// depend on: one card per image, position that survives being written to twice,
+// and membership that outlives a trip through Trash.
 //
 // Runs against the local Postgres from docker-compose (DATABASE_URL), like
 // `credentials.server.test.ts`. A real database rather than a mock is the whole
-// point here: the two facts being compared are foreign keys and a cascade.
+// point: every claim here is a constraint, a cascade or a filter.
 
 const EMAIL = `${randomUUID()}@example.com`
 let userId: string
@@ -31,15 +28,6 @@ async function makeImage(title: string): Promise<string> {
     returning id
   `
   return row.id
-}
-
-/** Membership as the boolean says it -- what every read still used at step 2. */
-async function onCanvasIds(): Promise<Array<string>> {
-  const rows = await sql<Array<{ id: string }>>`
-    select id from user_images
-    where user_id = ${userId} and on_canvas = true and deleted_at is null
-  `
-  return rows.map((r) => r.id).sort()
 }
 
 async function memberIds(): Promise<Array<string>> {
@@ -73,49 +61,44 @@ describe('ensureDefaultCanvas', () => {
   })
 })
 
-describe('membership rows and the on_canvas boolean agree', () => {
-  it('holds through add, re-add and remove', async () => {
+describe('membership', () => {
+  it('adds, re-adds without duplicating, and removes', async () => {
     const a = await makeImage('a')
     const b = await makeImage('b')
 
-    // The dual-write both representations go through in the app is
-    // `setImagesOnCanvas`, which is a server action and needs a session. Its two
-    // halves are written here directly, in the same order.
-    await sql`update user_images set on_canvas = true where id in ${sql([a, b])}`
     await addCanvasMembers(userId, canvasId, [{ imageId: a }, { imageId: b }])
-
-    expect(await memberIds()).toEqual(await onCanvasIds())
     expect(await memberIds()).toEqual([a, b].sort())
 
-    // Re-adding is idempotent: one card per image per canvas, so the sets stay
-    // equal rather than the rows gaining a duplicate the boolean cannot have.
+    // `unique (canvas_id, image_id)` -- one card per image per canvas, which is
+    // what makes the old mount-time dedupe undefinable rather than fixed.
     await addCanvasMembers(userId, canvasId, [{ imageId: a }])
-    expect(await memberIds()).toEqual(await onCanvasIds())
+    expect(await memberIds()).toEqual([a, b].sort())
 
-    await sql`update user_images set on_canvas = false where id = ${a}`
     await removeCanvasMembers(userId, canvasId, [a])
-
-    expect(await memberIds()).toEqual(await onCanvasIds())
     expect(await memberIds()).toEqual([b])
   })
 
-  it('holds when an image is trashed -- from either side', async () => {
+  it('survives a trip through Trash, so a restore puts the card back', async () => {
     const c = await makeImage('c')
-    await sql`update user_images set on_canvas = true where id = ${c}`
-    await addCanvasMembers(userId, canvasId, [{ imageId: c }])
+    await addCanvasMembers(userId, canvasId, [
+      { imageId: c, x: 40, y: 50, width: 200, height: 300 },
+    ])
 
-    // Trashing is a library operation and touches neither representation's
-    // membership (#212). Both hide the image because both filter `deleted_at`.
+    // Trashing is a library operation and does not touch membership (#212). The
+    // read filters `deleted_at`, so the card stops rendering on its own.
     await sql`update user_images set deleted_at = now() where id = ${c}`
-
     expect(await memberIds()).not.toContain(c)
-    expect(await memberIds()).toEqual(await onCanvasIds())
 
-    // The membership row survived, so restoring returns the card. This is the
-    // behaviour `deleted_at = now(), on_canvas = false` used to destroy.
+    // The row -- and the position -- survived. This is what
+    // `deleted_at = now(), on_canvas = false` used to destroy.
     await sql`update user_images set deleted_at = null where id = ${c}`
     expect(await memberIds()).toContain(c)
-    expect(await memberIds()).toEqual(await onCanvasIds())
+
+    const [row] = await sql<Array<{ x: number; y: number }>>`
+      select x, y from canvas_images
+      where canvas_id = ${canvasId} and image_id = ${c}
+    `
+    expect(row).toMatchObject({ x: 40, y: 50 })
   })
 })
 

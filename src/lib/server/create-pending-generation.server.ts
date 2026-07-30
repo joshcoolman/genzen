@@ -29,7 +29,7 @@ interface CreatePendingGenerationOptions {
   extraMetadata?: Record<string, unknown>
   title?: string
   idempotencyKey?: string
-  /** Mark the row as living on the canvas, so it's reclaimable on canvas load */
+  /** Put the row on the canvas, so the generation is reclaimable on canvas load */
   onCanvas?: boolean
   /** Overrides the default `Date.now() / 1000`, for ordering a batch */
   sortOrder?: number
@@ -59,7 +59,6 @@ export async function createPendingGeneration({
     origin,
     title,
     sort_order: sortOrder ?? Date.now() / 1000,
-    ...(onCanvas ? { on_canvas: true } : {}),
     ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
     generation_metadata: jsonb({
       prompt,

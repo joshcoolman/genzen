@@ -1,46 +1,74 @@
 # Canvas
 
-Spatial moodboard with infinite pan-and-zoom canvas for organizing images. Supports grouping, masonry layout, AI generation, image combination/remixing, and IndexedDB persistence for layout state.
+Spatial moodboard: infinite pan-and-zoom canvas for arranging images, with
+grouping, masonry layout, and AI generation from the selection.
 
-## Architecture: DB is source of truth for membership, IndexedDB caches layout
+## Architecture: a canvas is a container (#212)
 
-All canvas images are `user_images` rows (S3 storage via `createImageStorage()`). The DB is authoritative for **which** images are on the canvas via the `on_canvas` flag; IndexedDB is a best-effort cache for **where** they sit (positions, groups, transform) plus `recordId`/`storagePath` per image -- never image data. This mirrors why Images survives restarts: a canvas image _is_ the same `user_images` row.
+`canvases` holds the viewport and the groupings; `canvas_images` holds
+**membership and position**, one row per card, with foreign keys to both the
+canvas and the image. Arrangement is user data and lives in Postgres, so it
+survives a different browser and a different machine. There is no IndexedDB and
+no `on_canvas` boolean -- both are gone.
 
-On every canvas mount, a reconcile pass (`InfiniteCanvas.tsx`) queries `on_canvas = true` rows and: reclaims any the local cache lost (a missed write, a generation that finished while away, a wiped cache -- completed ones placed via masonry, pending/queued ones resumed), and prunes cached images whose row is genuinely deleted. So anything the DB says is on the canvas always comes back, even if IndexedDB is stale.
+**The library owns everything.** A membership row is an _arrangement over a
+library image_, never exile: nothing exists only inside a canvas. So trashing is
+a library operation that leaves membership alone -- the read filters
+`deleted_at`, the card stops rendering, and a restore puts it back at the same
+coordinates. `deleted_at = now(), on_canvas = false` was the bug this replaced.
+
+**One reconcile rule: place what is unplaced.** A membership row may arrive with
+no position, because a generation's row is written server-side the moment it is
+reserved -- which is what makes it reclaimable if the client navigates away
+before FAL answers. Nothing else needs reconciling, and that is structural
+rather than tidy: reclaim is meaningless (the rows _are_ the membership), prune
+is impossible (`on delete cascade`), dedupe is impossible
+(`unique (canvas_id, image_id)`).
+
+`page.tsx` reads on the server and seeds the view, so there is no loading gate
+and no empty first paint. A save writes positions, viewport and groupings and
+**never** membership -- otherwise a client that had not heard about a new
+generation could evict it.
 
 **Image lifecycle:**
 
-1. Paste/drop/upload -> file uploaded to S3 via `useUserImages.create()` -> `recordId` + `storagePath` stored in canvas state; `setOnCanvas(true)` fired eagerly
-2. Library pick -> existing `recordId` + `storagePath`; `setOnCanvas(true)` eagerly
-3. AI generation -> pending placeholder (persisted with `recordId`) -> poll for completion. Rows are tagged `on_canvas = true` **at the server insert** (`onCanvas` flag through `generateImage`), so a generation is reclaimable even if the client navigates/refreshes before it finishes. They also carry `origin = 'canvas'` (#207) -- the canvas authored the request, so it is the origin. That column replaced `generation_metadata.source_client`, which was written here and read nowhere
-4. Image combination -> same as generation, multiple source images + prompt
-5. Display -> R2 public URL fetched on canvas load (no expiry, not persisted)
-6. Remove-from-canvas -> `setOnCanvas(false)` eagerly (the row is _not_ deleted; it stays in the library)
+1. Paste / drop / upload -> file to S3 via `useUserImages.create()` ->
+   `addToCanvas` with the placeholder's position, eagerly
+2. Library pick -> `addToCanvas` with the masonry position, eagerly
+3. AI generation -> the `canvas_images` row is written _at the insert_
+   (`createPendingGeneration`'s `onCanvas`), unplaced; the client places it on
+   load. Rows also carry `origin = 'canvas'` (#207) -- the canvas authored the
+   request
+4. Display -> the public R2 URL, resolved server-side by `loadCanvasState()`
+5. Remove from canvas -> the membership row is deleted; the image is untouched
+   in the library
+6. Move to Trash -> `deleted_at` only; membership survives so Undo restores the
+   card in place
 
 **Key type:**
 
 ```ts
 interface CanvasImage {
-  id: string // canvas-local UUID
+  id: string // = recordId, from `unique (canvas_id, image_id)`
   recordId: string // user_images.id (required)
-  storagePath: string // S3 storage path (persisted)
+  storagePath: string // S3 storage path
   x
   y
   width
   height
-  pending?: boolean // true during upload/generation
-  signedUrl?: string // runtime only, not persisted
+  pending?: boolean // derived from user_images.status
+  signedUrl?: string // the public URL (legacy name)
 }
 ```
 
 ## Key Files
 
-- `types.ts` -- `CanvasImage`, `Transform`, `CanvasGroup`, `PersistedState`, `DragMode`
+- `types.ts` -- `CanvasImage`, `Transform`, `CanvasGroup`, `DragMode`
 - `index.ts` -- barrel export of `InfiniteCanvas` component
 
 ## Components
 
-- `InfiniteCanvas.tsx` -- main canvas component (~1243 lines): pan/zoom, drag-move, marquee selection, grouping, undo/redo, paste/drop (upload to S3), context menu, library picker
+- `infinite-canvas.tsx` -- main canvas component (~1750 lines; the view/hook split is #189): pan/zoom, drag-move, marquee selection, grouping, undo/redo, paste/drop (upload to S3), context menu, library picker
 - `SelectionActions.tsx` -- fixed bottom toolbar: upload, library, arrange, group/ungroup, zoom display
 - `CanvasGenerateDialog.tsx` -- dialog wrapping `GeneratorPanel` from ai-images; overrides `handleGenerate` with optimistic placeholder flow. Handles both single-image and multi-image (group) generation.
 
@@ -65,11 +93,29 @@ There is no separate "Combine" feature anymore (retired into this flow).
 ## Lib
 
 - `masonry.ts` -- `layoutMasonry()`: column-based masonry algorithm using median input width as default column width
-- `persistence.ts` -- IndexedDB read/write + URL/dimension helpers, plus fail-safe wrappers over `server/canvas.actions.ts`: `getSignedUrl()` (R2 public URL), `resolveSignedUrls()`, `getImageDimensions()`, `getUrlDimensions()` (URL-based, for reclaimed images), `syncCanvasFlags()`, `setOnCanvas(ids, value)` (eager membership write), `fetchOnCanvasRecords()` (membership source of truth), `fetchDeadRecordIds(ids)` (deleted-row detection for safe pruning). The wrappers swallow failures on purpose: a reconcile that cannot reach the server must never prune a live image, and a failed membership write is reconciled on the next save. Save/load keep any image with a `recordId` (including in-flight pending placeholders); only `signedUrl` is stripped.
+- `persistence.ts` -- the pure mapping between a membership row and a card
+  (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus
+  fail-safe wrappers over `_actions/canvas.ts`: `saveCanvas()`, `addToCanvas()`,
+  `removeFromCanvas()`, `moveToTrash()`, `restoreFromTrash()`, `getSignedUrl()`,
+  `getImageDimensions()`, `getUrlDimensions()`. The wrappers swallow failures on
+  purpose: a write that cannot reach the server must never take a card off the
+  screen. `groupsForSave` is the one non-obvious piece -- a group formed over
+  freshly-uploaded cards still holds local placeholder ids, and saving those
+  would name images that do not exist on the next load.
 
 ## Server
 
-- `server/canvas.actions.ts` -- the canvas's database access, user-scoped by `resolveAuth()`: `listOnCanvasRecords`, `listDeadRecordIds`, `setImagesOnCanvas`, `trashCanvasImages`, `restoreCanvasImages`, `getCanvasGenerationRecord`, `getImagePrompt`. Membership and trash used to be id-only queries from the browser, so an id from anywhere flipped or trashed a row (#173).
+- `_actions/canvas.ts` -- the canvas's database access, user-scoped by
+  `resolveAuth()`: `loadCanvasState` (the whole canvas, read by `page.tsx`),
+  `saveCanvasState` (positions / viewport / groupings, never membership),
+  `addImagesToCanvas`, `removeImagesFromCanvas`, `trashCanvasImages`,
+  `restoreCanvasImages`, `getCanvasGenerationRecord`, `getImagePrompt`.
+  Membership and trash used to be id-only queries from the browser, so an id
+  from anywhere flipped or trashed a row (#173).
+- `#/lib/server/canvas-membership.server.ts` -- `ensureDefaultCanvas`,
+  `addCanvasMembers`, `removeCanvasMembers`, `listCanvasMemberIds`. Shared,
+  because the generation insert path writes membership too. One canvas per user
+  today; `canvases.id` is the seam for more.
 
 ## Shared Dependencies
 
@@ -83,14 +129,22 @@ There is no separate "Combine" feature anymore (retired into this flow).
 
 ## Quirks / Notes
 
-- All layout state persists to IndexedDB, debounced at 500ms, and flushed on unmount + `pagehide`/`visibilitychange`. Image data lives in Postgres and S3 only.
-- IndexedDB save/load keep any image with a `recordId` -- including pending generation placeholders (recordId set, no `storagePath` yet) so in-flight work survives navigation/refresh. Only `signedUrl` (runtime) is stripped; the `pending` flag is retained so mount-time recovery knows to resume polling. Images without a `recordId` (old `src`-data-URL format, or a placeholder before its record returns) are dropped.
-- IndexedDB persistence on `pagehide` is best-effort (async writes may not commit on unload); the mount reconcile against `on_canvas` rows is the real durability backstop.
-- Generation polling uses one shared interval per hook that drains accumulated record refs, so concurrent batches (or a fresh submit during a mount-time resume) don't drop each other's tracking.
-- Image URLs are R2 public URLs (no expiry); re-fetched on canvas load via `resolveSignedUrls()` (legacy name)
-- High-frequency events (drag, wheel) update refs directly to avoid React re-renders
-- Undo/redo stack capped at 50 entries
+- Arrangement saves to Postgres, debounced at 500ms, and flushes on unmount +
+  `pagehide`/`visibilitychange`. Best-effort on unload -- but nothing is cached
+  locally, so the worst case is losing the last drag, not the arrangement.
+- A card's `id` **is** its `user_images.id`, which is only sound because of
+  `unique (canvas_id, image_id)`. That is what keeps a card's identity stable
+  across loads, so a saved group still names the right images.
+- Generation polling uses one shared interval per hook that drains accumulated
+  record refs, so concurrent batches (or a fresh submit during a mount-time
+  resume) don't drop each other's tracking.
+- Image URLs are R2 public URLs (no expiry), resolved server-side in
+  `loadCanvasState()`. `signedUrl` and `getSignedUrl()` are legacy names.
+- High-frequency events (drag, wheel) update refs directly to avoid React
+  re-renders
+- Undo/redo stack capped at 50 entries. **Undo does not reverse the server
+  write** -- #194, downstream of #212
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
-- Paste/drop uploads files to S3 immediately, shows pending placeholders with correct dimensions
-- Combine feature requires 2-4 selected images; supports 1-2 run iterations per model
-- `syncCanvasFlags()` reconciles the `on_canvas` boolean on `user_images` on each debounced save (diff-based); `setOnCanvas()` writes it eagerly the moment an image joins/leaves the canvas so the DB is accurate for recovery before the next save
+- Paste/drop uploads files to S3 immediately, shows pending placeholders with
+  correct dimensions. Canvas paste reaches the upload path that skips
+  `createThumbnail` -- #215

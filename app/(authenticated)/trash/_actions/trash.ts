@@ -17,7 +17,8 @@ import { removeImages } from '#/features/user-images/server/remove-images.server
 //
 // Being a generation's source used to count as a link too, because the derived
 // card rendered this row as its origin thumbnail. Genealogy is gone (#204), so
-// canvas membership is the only living dependency left.
+// canvas membership is the only living dependency left -- and since #212 it is a
+// `canvas_images` row rather than a boolean on the image.
 
 export interface TrashLinks {
   /** Trashed ids that something living still depends on -- not deletable. */
@@ -50,20 +51,29 @@ export async function listTrashedImages(): Promise<TrashPayload> {
   return { images, links }
 }
 
-/** Which trashed ids are still depended on by something living: placed on the
- *  canvas. */
+/**
+ * Which trashed ids are still depended on by something living: placed on a
+ * canvas.
+ *
+ * A membership row, not a flag (#212). The guard is now a *policy* rather than a
+ * necessity -- `canvas_images.image_id` cascades, so a permanent delete would
+ * take the card with it rather than leaving a dangling reference. It stays
+ * because that is exactly what makes it worth blocking: an irreversible delete
+ * would silently change a canvas the user is not looking at, and trashing was
+ * already deliberately made not to.
+ */
 async function computeLinks(
   userId: string,
   trashedIds: Array<string>,
 ): Promise<TrashLinks> {
   if (trashedIds.length === 0) return { ids: [], canvasIds: [] }
 
-  const onCanvasRows = await sql<Array<{ id: string }>>`
-    select id from user_images
-    where user_id = ${userId} and id in ${sql(trashedIds)} and on_canvas = true
+  const rows = await sql<Array<{ image_id: string }>>`
+    select distinct image_id from canvas_images
+    where user_id = ${userId} and image_id in ${sql(trashedIds)}
   `
 
-  const canvasIds = onCanvasRows.map((r) => r.id)
+  const canvasIds = rows.map((r) => r.image_id)
   return { ids: canvasIds, canvasIds }
 }
 
