@@ -1,0 +1,131 @@
+/* Readable markdown typography for the /readme route. Values come from
+ * tokens.css; nothing here names a raw color except the code-block tint. */
+
+.markdown {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 6rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 2em 0 0.6em;
+}
+
+.markdown h1 {
+  font-size: 1.75rem;
+  margin-top: 0;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown h2 {
+  font-size: 1.35rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--border);
+}
+
+.markdown h3 {
+  font-size: 1.1rem;
+}
+
+.markdown h4 {
+  font-size: 1rem;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown blockquote,
+.markdown table,
+.markdown pre {
+  margin: 0 0 1em;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.5rem;
+}
+
+.markdown li + li {
+  margin-top: 0.25em;
+}
+
+.markdown a {
+  color: var(--accent-brand);
+  text-decoration: none;
+}
+
+.markdown a:hover {
+  text-decoration: underline;
+}
+
+.markdown code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.875em;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) / 2);
+  padding: 0.15em 0.4em;
+}
+
+.markdown pre {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.markdown pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.markdown blockquote {
+  border-left: 3px solid var(--border);
+  padding: 0.25em 0 0.25em 1rem;
+  color: var(--muted-foreground);
+}
+
+.markdown table {
+  border-collapse: collapse;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.75em;
+  text-align: left;
+}
+
+.markdown th {
+  font-weight: 600;
+  background: var(--card);
+}
+
+.markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+.markdown img {
+  max-width: 100%;
+  border-radius: var(--radius);
+}

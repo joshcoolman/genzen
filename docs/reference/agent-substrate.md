@@ -75,7 +75,7 @@ Three failure modes, all demonstrated in this repo:
 
 1. **A JSONB key cannot have a foreign key.** Failed generations are
    hard-deleted, so a text `source_image_id` can dangle today. This is the one
-   that matters for the agent case, because of *how* it fails: a recursive
+   that matters for the agent case, because of _how_ it fails: a recursive
    walk that hits a dangling id stops early, and a recursion that ends early
    is indistinguishable from one that reached the root. The agent gets a
    three-hop history for a five-hop image with nothing marking it incomplete,
@@ -100,8 +100,8 @@ amplification); not needed at this scale.
 
 ### Origin is not derivable from provenance
 
-Provenance is what an image descends *from*; origin is which surface it was
-*made on* — a property of the creation event (now the `origin` column, #207).
+Provenance is what an image descends _from_; origin is which surface it was
+_made on_ — a property of the creation event (now the `origin` column, #207).
 Walking a canvas generation made from an upload terminates at the upload; its
 origin is still canvas. Two images with identical ancestry can have different
 origins. They share a principle, not data: first-class facts get columns
@@ -134,7 +134,7 @@ focus. The code is one `git show 2b567fc^` away; this is the part that was
 expensive to learn:
 
 - **Stateless transport.** Streamable HTTP with `sessionIdGenerator:
-  undefined` and JSON responses — a fresh `McpServer` per request with
+undefined` and JSON responses — a fresh `McpServer` per request with
   `userId` closed over, closed in a `finally`. No SSE, no session store.
   Cheap because tool registration is pure.
 - **Reuse the app's generation path, not a parallel one.** Tools called the
@@ -142,10 +142,10 @@ expensive to learn:
   same pricing. An agent surface that forks the pipeline is how invariants
   drift.
 - **Auth failures as JSON-RPC envelopes.** 401 as `{jsonrpc, error: {code:
-  -32001}}` plus `WWW-Authenticate: Bearer`, so MCP clients show an auth
+-32001}}` plus `WWW-Authenticate: Bearer`, so MCP clients show an auth
   prompt instead of a generic transport error.
 - **Key design.** `gz_live_` + 32 random bytes base64url; stored as bare
-  SHA-256 hex — defensible *only* because the key is 256 bits of entropy, not
+  SHA-256 hex — defensible _only_ because the key is 256 bits of entropy, not
   a password — unique index for O(1) lookup, 12-char plaintext prefix for
   display, `last_used_at` bumped on verify.
 - **Explicit user_id on every read and write** from any credential that

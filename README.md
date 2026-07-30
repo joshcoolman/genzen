@@ -137,15 +137,14 @@ Conventions follow [project-standard](https://github.com/joshcoolman/project-sta
 GenZen is public-and-messy on purpose: the exploration home where ideas are tried
 in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
-**Last shipped** (2026-07-29)
+**Last shipped** (2026-07-30)
 
+- **`/readme` renders this file in-app.** One server component + one stylesheet on the tokens; `marked` was already a dep. A pattern worth porting to every repo.
 - **A canvas is a container, not a view (#212).** Membership as rows in `canvas_images`; arrangement left IndexedDB, and trashing no longer evicts from a canvas.
 - **Origin is a column, and Images is scoped by it (#207).** `upload | images | canvas`, `not null` with no default, so an unmarked generation source cannot compile.
 - **The insert-path inventory is written (#211).** `docs/reference/insert-paths.md` — exactly two insert statements in the app. Filed #215 out of it.
 - **Two data losses closed (#210).** The typed prompt survives enhancement, and a pasted source carries a sha256 instead of a boolean.
 - **Images has the route shape (#189, half).** Server read, `view.tsx` + `use-view.ts`, six component folders came home. Canvas is the other half.
-- **The `/edit` route is gone, replaced by a highlight (#205).** A highlighted image is the next prompt's primary reference; 2,158 lines of route out.
-
 **Up next** — the finish state agreed in **#222**, in execution order (2–7 are
 small and order-flexible; the issues hold the detail):
 
@@ -160,6 +159,7 @@ small and order-flexible; the issues hold the detail):
 
 After #213: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
 designs are parked as prose in `docs/reference/agent-substrate.md`.
+
 - **#200** — hybrid Vercel/Railway topology exploration.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
