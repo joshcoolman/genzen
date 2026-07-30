@@ -1,101 +1,193 @@
 'use server'
 
+import type { CanvasGroup, Transform } from '../_lib/types'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { first, sql } from '#/lib/server/db.server'
+import { first, jsonb, sql } from '#/lib/server/db.server'
 import {
   addCanvasMembers,
   ensureDefaultCanvas,
   removeCanvasMembers,
 } from '#/lib/server/canvas-membership.server'
+import { createImageStorage } from '#/lib/image-storage'
 
-// The canvas's reads and writes, which the browser used to run directly against
-// Supabase (#173). As elsewhere, `user_id` comes from `resolveAuth()` -- which
-// is the real change here: `setOnCanvas`, `moveToTrash` and the membership read
-// were all id-only queries, so an id from anywhere flipped or trashed a row.
+// The canvas's database access, user-scoped by `resolveAuth()`. Membership and
+// trash used to be id-only queries from the browser, so an id from anywhere
+// flipped or trashed a row (#173).
 //
-// Everything here is user-scoped and returns plain data; the fail-safe
-// behaviour the canvas relies on (a failed reconcile must never prune a live
-// image) stays in `lib/persistence.ts`, which wraps these calls.
+// Since #212 a canvas is a container: `canvases` holds the viewport and the
+// groupings, `canvas_images` holds membership *and position*. Two consequences
+// worth knowing before changing anything here:
+//
+//   * Membership changes go through `addImagesToCanvas` / `removeImagesFromCanvas`
+//     only. `saveCanvasState` updates positions and never adds or deletes a
+//     member -- a stale client must not be able to evict a generation whose
+//     membership row was written server-side while it was away.
+//   * There is no reconcile and nothing to prune. A membership row cannot
+//     outlive its image (`on delete cascade`) and cannot be duplicated
+//     (`unique (canvas_id, image_id)`).
 
-export interface CanvasDbRecord {
-  id: string
+/** One member of a canvas: the image, and where it sits. */
+export interface CanvasMemberRecord {
+  image_id: string
   storage_path: string | null
   status: string | null
+  generation_error: string | null
   generation_metadata: Record<string, unknown> | null
+  /** The public URL, resolved server-side so the first paint has the image. */
+  url: string | null
+  /** NULL together means unplaced -- the client lays it out on load. */
+  x: number | null
+  y: number | null
+  width: number | null
+  height: number | null
 }
 
-/** Every image the DB considers on-canvas -- the membership source of truth. */
-export async function listOnCanvasRecords(): Promise<Array<CanvasDbRecord>> {
-  const { userId } = await resolveAuth()
-
-  return sql<Array<CanvasDbRecord>>`
-    select id, storage_path, status, generation_metadata
-    from user_images
-    where user_id = ${userId} and on_canvas = true and deleted_at is null
-  `
-}
-
-/**
- * Of the given record ids, those that are gone -- hard-deleted (row missing) or
- * soft-deleted (`deleted_at` set). The canvas prunes on this, so it is stated
- * as "not proven alive": anything the query does return without a `deleted_at`
- * is live and is never in the result.
- */
-export async function listDeadRecordIds(
-  ids: Array<string>,
-): Promise<Array<string>> {
-  const list = ids.filter(Boolean)
-  if (list.length === 0) return []
-
-  const { userId } = await resolveAuth()
-
-  const alive = await sql<Array<{ id: string }>>`
-    select id from user_images
-    where user_id = ${userId} and id in ${sql(list)} and deleted_at is null
-  `
-
-  const aliveIds = new Set(alive.map((r) => r.id))
-  return list.filter((id) => !aliveIds.has(id))
+export interface CanvasState {
+  canvasId: string
+  /** NULL for a canvas nobody has panned yet; the client supplies its default. */
+  transform: Transform | null
+  groups: Array<CanvasGroup>
+  images: Array<CanvasMemberRecord>
 }
 
 /**
- * Flip canvas membership for the given records.
+ * The whole canvas, in one query pair. Read on the server by `page.tsx` and
+ * handed to the view as its initial state, so there is no loading gate and no
+ * empty first paint.
  *
- * Writes both representations while #212 is in flight: the `on_canvas` boolean,
- * which every read still uses, and the `canvas_images` rows that replace it. The
- * rows are written unplaced -- position still lives in IndexedDB until reads
- * move -- and `canvas-membership.server.test.ts` asserts the two sets agree.
+ * Creates the canvas row on first call. That is a write on a read path, which is
+ * worth it to keep every later call trivial: it happens once per account, and
+ * concurrent first loads converge because `ensureDefaultCanvas` reads oldest-first.
  */
-export async function setImagesOnCanvas(
-  ids: Array<string>,
-  value: boolean,
-): Promise<void> {
-  const list = ids.filter(Boolean)
-  if (list.length === 0) return
-
+export async function loadCanvasState(): Promise<CanvasState> {
   const { userId } = await resolveAuth()
+  const canvasId = await ensureDefaultCanvas(userId)
 
-  await sql`
-    update user_images set on_canvas = ${value}
-    where user_id = ${userId} and id in ${sql(list)}
+  const canvas = first(
+    await sql<
+      Array<{ transform: Transform | null; groups: Array<CanvasGroup> | null }>
+    >`
+      select transform, groups from canvases
+      where id = ${canvasId} and user_id = ${userId}
+    `,
+  )
+
+  const rows = await sql<Array<Omit<CanvasMemberRecord, 'url'>>>`
+    select
+      ci.image_id, ci.x, ci.y, ci.width, ci.height,
+      ui.storage_path, ui.status, ui.generation_error, ui.generation_metadata
+    from canvas_images ci
+    join user_images ui on ui.id = ci.image_id
+    where ci.user_id = ${userId}
+      and ci.canvas_id = ${canvasId}
+      and ui.deleted_at is null
+    order by ci.created_at
   `
 
-  const canvasId = await ensureDefaultCanvas(userId)
-  if (value) {
-    await addCanvasMembers(
-      userId,
-      canvasId,
-      list.map((imageId) => ({ imageId })),
-    )
-  } else {
-    await removeCanvasMembers(userId, canvasId, list)
+  // A trashed image is filtered above rather than removed, which is the whole
+  // point of #212's trash decision: the membership row survives, so restoring
+  // the image brings the card back exactly where it was.
+  const storage = createImageStorage()
+  const images = await Promise.all(
+    rows.map(async (row) => ({
+      ...row,
+      url: row.storage_path ? await storage.getUrl(row.storage_path) : null,
+    })),
+  )
+
+  return {
+    canvasId,
+    transform: canvas?.transform ?? null,
+    groups: canvas?.groups ?? [],
+    images,
   }
 }
 
+export interface CanvasPosition {
+  imageId: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface SaveCanvasStateInput {
+  canvasId: string
+  transform: Transform
+  groups: Array<CanvasGroup>
+  positions: Array<CanvasPosition>
+}
+
 /**
- * Soft-delete (move to Trash) the given rows. Callers must already have taken
- * the images off the canvas (`on_canvas = false`) so Trash's linked-image
- * protection doesn't apply. Only affects rows not already trashed.
+ * Persist the arrangement: viewport, groupings, and every member's position.
+ *
+ * Deliberately not a membership write. The set of images on a canvas is changed
+ * only by an explicit add or remove, so this cannot delete a member the client
+ * has not heard about yet -- which is what the old diff-based `syncCanvasFlags`
+ * could do to a generation that landed while the tab was in the background.
+ */
+export async function saveCanvasState({
+  canvasId,
+  transform,
+  groups,
+  positions,
+}: SaveCanvasStateInput): Promise<void> {
+  const { userId } = await resolveAuth()
+
+  await sql`
+    update canvases
+    set transform = ${jsonb(transform)}, groups = ${jsonb(groups)}
+    where id = ${canvasId} and user_id = ${userId}
+  `
+
+  if (positions.length === 0) return
+
+  // One statement for every position: a per-row update turns a 200-image canvas
+  // into 200 round trips on every debounce tick.
+  await sql`
+    update canvas_images ci
+    set x = v.x, y = v.y, width = v.w, height = v.h
+    from unnest(
+      ${positions.map((p) => p.imageId)}::uuid[],
+      ${positions.map((p) => p.x)}::float8[],
+      ${positions.map((p) => p.y)}::float8[],
+      ${positions.map((p) => p.width)}::float8[],
+      ${positions.map((p) => p.height)}::float8[]
+    ) as v(image_id, x, y, w, h)
+    where ci.canvas_id = ${canvasId}
+      and ci.user_id = ${userId}
+      and ci.image_id = v.image_id
+  `
+}
+
+/**
+ * Add library images to the canvas, optionally already placed. Idempotent: an
+ * image already on the canvas keeps its position rather than gaining a duplicate.
+ */
+export async function addImagesToCanvas(
+  canvasId: string,
+  members: Array<
+    { imageId: string } & Partial<Omit<CanvasPosition, 'imageId'>>
+  >,
+): Promise<void> {
+  const { userId } = await resolveAuth()
+  await addCanvasMembers(userId, canvasId, members)
+}
+
+/** Take images off the canvas. The `user_images` rows are untouched. */
+export async function removeImagesFromCanvas(
+  canvasId: string,
+  imageIds: Array<string>,
+): Promise<void> {
+  const { userId } = await resolveAuth()
+  await removeCanvasMembers(userId, canvasId, imageIds)
+}
+
+/**
+ * Soft-delete (move to Trash) the given rows. Membership is deliberately left
+ * alone (#212): trashing is a library operation, the canvas read filters
+ * `deleted_at`, and the surviving membership row is what makes a restore put the
+ * card back where it was.
  */
 export async function trashCanvasImages(ids: Array<string>): Promise<void> {
   const list = ids.filter(Boolean)
@@ -109,7 +201,7 @@ export async function trashCanvasImages(ids: Array<string>): Promise<void> {
   `
 }
 
-/** Undo a `trashCanvasImages`: clear `deleted_at` and re-mark the rows on-canvas. */
+/** Undo a `trashCanvasImages`. Membership never went away, so this is enough. */
 export async function restoreCanvasImages(ids: Array<string>): Promise<void> {
   const list = ids.filter(Boolean)
   if (list.length === 0) return
@@ -117,19 +209,16 @@ export async function restoreCanvasImages(ids: Array<string>): Promise<void> {
   const { userId } = await resolveAuth()
 
   await sql`
-    update user_images set deleted_at = null, on_canvas = true
+    update user_images set deleted_at = null
     where user_id = ${userId} and id in ${sql(list)}
   `
-
-  const canvasId = await ensureDefaultCanvas(userId)
-  await addCanvasMembers(
-    userId,
-    canvasId,
-    list.map((imageId) => ({ imageId })),
-  )
 }
 
-export interface CanvasGenerationRecord extends CanvasDbRecord {
+export interface CanvasGenerationRecord {
+  id: string
+  storage_path: string | null
+  status: string | null
+  generation_metadata: Record<string, unknown> | null
   generation_error: string | null
 }
 

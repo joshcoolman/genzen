@@ -1,23 +1,32 @@
 import {
-  listDeadRecordIds,
-  listOnCanvasRecords,
+  addImagesToCanvas,
+  removeImagesFromCanvas,
   restoreCanvasImages,
-  setImagesOnCanvas,
+  saveCanvasState,
   trashCanvasImages,
 } from '../_actions/canvas'
-import type { CanvasImage, PersistedState } from './types'
-import type { CanvasDbRecord } from '../_actions/canvas'
+import type { CanvasGroup, CanvasImage, Transform } from './types'
+import type { CanvasMemberRecord, CanvasState } from '../_actions/canvas'
 import { createImageStorage } from '#/lib/image-storage'
 
-const DEFAULT_DB = 'moodboard'
-const STORE_NAME = 'state'
-const DEFAULT_KEY = 'canvas'
+// Fail-safe wrappers over `_actions/canvas.ts`, plus the pure mapping between a
+// membership row and a canvas card.
+//
+// There is no IndexedDB here any more (#212). Arrangement is user data: it now
+// lives in `canvas_images`, which is why it survives a different browser and a
+// different machine. Nothing in this file caches -- the server read seeds the
+// view and the debounced save writes back.
+//
+// The wrappers swallow failures on purpose, for the same reason they always did:
+// a membership write that cannot reach the server must not take the card off the
+// screen. What is gone is the reconcile that failure used to feed -- with a
+// foreign key and a uniqueness constraint there is nothing left to prune or
+// dedupe, only *place what is unplaced*.
 
 /**
- * Images worth loading back: anything with a `recordId`. Completed images carry
- * a storagePath; in-flight generations are pending placeholders (recordId set,
- * no storagePath); failed tiles carry failed/errorMessage/model. Old-format
- * images (src data URL, no recordId) are dropped. Pure -- unit-tested.
+ * Images worth keeping: anything with a `recordId`. A card without one is a
+ * local upload placeholder whose `user_images` row has not returned yet, so
+ * there is no membership row to write a position to.
  */
 export function filterLoadedImages(
   images: Array<CanvasImage>,
@@ -26,117 +35,166 @@ export function filterLoadedImages(
 }
 
 /**
- * Images worth persisting + their persisted shape. Same membership rule as
- * {@link filterLoadedImages}; only the runtime-only `signedUrl` is stripped, so
- * pending placeholders and failed tiles (with model + error) survive reload.
- * Pure -- unit-tested. This is the durability contract: changing what's kept
- * here can silently lose in-flight or failed generations on navigation.
+ * A membership row as a canvas card. `id` is the image id: `unique (canvas_id,
+ * image_id)` makes it a stable canvas-local identity, so a card keeps the same
+ * id across loads and a saved group still names the right images.
+ *
+ * Position may be absent -- an unplaced row, which the caller lays out. Width
+ * and height are 0 in that case rather than guessed here, so the placement pass
+ * is the only thing that decides size. Pure -- unit-tested.
  */
-export function cleanImagesForSave(
-  images: Array<CanvasImage>,
-): Array<CanvasImage> {
-  return filterLoadedImages(images).map(
-    ({ signedUrl: _signedUrl, ...rest }) => rest,
-  )
-}
+export function memberToImage(row: CanvasMemberRecord): CanvasImage {
+  const meta = row.generation_metadata ?? {}
+  const failed = row.status === 'failed'
 
-function openDB(dbName: string): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(dbName, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME)
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-export async function loadPersistedState(
-  storageKey = DEFAULT_KEY,
-  dbName = DEFAULT_DB,
-): Promise<PersistedState | null> {
-  try {
-    const db = await openDB(dbName)
-    const raw = await new Promise<PersistedState | null>((resolve) => {
-      const tx = db.transaction(STORE_NAME, 'readonly')
-      const req = tx.objectStore(STORE_NAME).get(storageKey)
-      req.onsuccess = () => resolve(req.result ?? null)
-      req.onerror = () => resolve(null)
-    })
-    if (!raw) return null
-
-    return {
-      ...raw,
-      images: filterLoadedImages(raw.images),
-    }
-  } catch {
-    return null
+  return {
+    id: row.image_id,
+    recordId: row.image_id,
+    storagePath: row.storage_path ?? '',
+    x: row.x ?? 0,
+    y: row.y ?? 0,
+    width: row.width ?? 0,
+    height: row.height ?? 0,
+    ...(row.status === 'pending' ? { pending: true } : {}),
+    ...(failed ? { failed: true } : {}),
+    ...(failed && row.generation_error
+      ? { errorMessage: row.generation_error }
+      : {}),
+    ...(typeof meta.model === 'string' ? { model: meta.model } : {}),
+    ...(row.url ? { signedUrl: row.url } : {}),
   }
 }
 
-export async function savePersistedState(
-  state: PersistedState,
-  storageKey = DEFAULT_KEY,
-  dbName = DEFAULT_DB,
-) {
-  try {
-    const db = await openDB(dbName)
-    const tx = db.transaction(STORE_NAME, 'readwrite')
+/** Whether a row arrived without a position and needs laying out. */
+export function isUnplaced(row: CanvasMemberRecord): boolean {
+  return row.x === null || row.width === null
+}
 
-    tx.objectStore(STORE_NAME).put(
-      { ...state, images: cleanImagesForSave(state.images) },
-      storageKey,
-    )
+/** The whole canvas as cards, plus which of them still need a position. */
+export function stateToImages(state: CanvasState): {
+  images: Array<CanvasImage>
+  unplacedIds: Set<string>
+} {
+  return {
+    images: state.images.map(memberToImage),
+    unplacedIds: new Set(
+      state.images.filter(isUnplaced).map((row) => row.image_id),
+    ),
+  }
+}
+
+/**
+ * Groups, with their image ids translated to record ids for storage.
+ *
+ * Almost always the identity mapping, because a loaded card's `id` *is* its
+ * record id. The exception is the one that matters: a group formed in this
+ * session over freshly-uploaded cards still holds local placeholder ids, and
+ * saving those would produce a group naming images that do not exist on the
+ * next load. Members that cannot be resolved are dropped, and a group left with
+ * fewer than two goes with them. Pure -- unit-tested.
+ */
+export function groupsForSave(
+  images: Array<CanvasImage>,
+  groups: Array<CanvasGroup>,
+): Array<CanvasGroup> {
+  const recordIdFor = new Map(
+    images.filter((img) => img.recordId).map((img) => [img.id, img.recordId]),
+  )
+
+  return groups
+    .map((group) => ({
+      ...group,
+      imageIds: group.imageIds
+        .map((id) => recordIdFor.get(id))
+        .filter((id): id is string => !!id),
+    }))
+    .filter((group) => group.imageIds.length >= 2)
+}
+
+/** Positions worth writing: placed cards whose row exists. */
+export function positionsForSave(images: Array<CanvasImage>) {
+  return filterLoadedImages(images)
+    .filter((img) => img.width > 0 && img.height > 0)
+    .map((img) => ({
+      imageId: img.recordId,
+      x: img.x,
+      y: img.y,
+      width: img.width,
+      height: img.height,
+    }))
+}
+
+/**
+ * Persist the arrangement. Never a membership write: the set of images on the
+ * canvas is changed only by an explicit add or remove, so a save cannot evict a
+ * generation that landed server-side while this tab was in the background.
+ */
+export async function saveCanvas(
+  canvasId: string,
+  state: {
+    images: Array<CanvasImage>
+    transform: Transform
+    groups: Array<CanvasGroup>
+  },
+): Promise<void> {
+  try {
+    await saveCanvasState({
+      canvasId,
+      transform: state.transform,
+      groups: groupsForSave(state.images, state.groups),
+      positions: positionsForSave(state.images),
+    })
+  } catch {
+    /* silent fail -- the next debounce tick writes the same state again */
+  }
+}
+
+/**
+ * Put images on the canvas, with their position when it is already known.
+ * Fire-and-forget; never throws.
+ */
+export async function addToCanvas(
+  canvasId: string,
+  members: Array<{
+    imageId: string
+    x?: number
+    y?: number
+    width?: number
+    height?: number
+  }>,
+): Promise<void> {
+  const list = members.filter((m) => m.imageId)
+  if (list.length === 0) return
+  try {
+    await addImagesToCanvas(canvasId, list)
+  } catch {
+    /* silent fail -- the card stays on screen; the next save rewrites position */
+  }
+}
+
+/** Take images off the canvas. The rows stay in the library. */
+export async function removeFromCanvas(
+  canvasId: string,
+  imageIds: Array<string>,
+): Promise<void> {
+  const ids = imageIds.filter(Boolean)
+  if (ids.length === 0) return
+  try {
+    await removeImagesFromCanvas(canvasId, ids)
   } catch {
     /* silent fail */
   }
 }
 
-/** Fetch a full-res signed URL for a Supabase storage path (24h TTL) */
+/**
+ * The public URL for a storage path. Still needed for images that appear *after*
+ * the server read -- a fresh upload, a generation that just settled -- which the
+ * seeded state could not have carried.
+ */
 export async function getSignedUrl(
   storagePath: string,
 ): Promise<string | null> {
   return createImageStorage().getUrl(storagePath)
-}
-
-/** Batch-fetch signed URLs for canvas images that need them */
-export async function resolveSignedUrls(
-  images: Array<CanvasImage>,
-): Promise<Array<CanvasImage>> {
-  return Promise.all(
-    images.map(async (img) => {
-      if (img.signedUrl || !img.storagePath) return img
-      const signedUrl = await getSignedUrl(img.storagePath)
-      return signedUrl ? { ...img, signedUrl } : img
-    }),
-  )
-}
-
-/**
- * Sync on_canvas flags to Supabase.
- * Compares the current canvas recordIds against what Supabase thinks is on canvas,
- * then flips only the changed rows. Runs in the background alongside IndexedDB saves.
- */
-let lastSyncedIds: Set<string> = new Set()
-
-export async function syncCanvasFlags(canvasImages: Array<CanvasImage>) {
-  const currentIds = new Set(
-    canvasImages
-      .filter((img) => img.recordId && !img.pending)
-      .map((img) => img.recordId),
-  )
-
-  // Diff against last synced state to avoid redundant writes
-  const toAdd = [...currentIds].filter((id) => !lastSyncedIds.has(id))
-  const toRemove = [...lastSyncedIds].filter((id) => !currentIds.has(id))
-
-  if (toAdd.length === 0 && toRemove.length === 0) return
-
-  const promises: Array<Promise<unknown>> = []
-
-  if (toAdd.length > 0) promises.push(setImagesOnCanvas(toAdd, true))
-  if (toRemove.length > 0) promises.push(setImagesOnCanvas(toRemove, false))
-
-  await Promise.allSettled(promises)
-  lastSyncedIds = currentIds
 }
 
 /** Get image dimensions from a File using an object URL (fast, no base64) */
@@ -158,9 +216,9 @@ export function getImageDimensions(
   })
 }
 
-/** Get natural dimensions of an already-hosted image URL (for DB reconciliation).
- *  Falls back to a default after a timeout so a hung load can't stall the
- *  reconcile's Promise.all indefinitely. */
+/** Natural dimensions of an already-hosted image URL, for placing an unplaced
+ *  row. Falls back after a timeout so one hung load cannot stall the placement
+ *  pass's `Promise.all` indefinitely. */
 export function getUrlDimensions(
   url: string,
 ): Promise<{ w: number; h: number }> {
@@ -181,66 +239,18 @@ export function getUrlDimensions(
 }
 
 /**
- * Eagerly flip the on_canvas membership flag for specific records. Used the moment
- * an image joins (true) or leaves (false) the canvas so the DB is always an
- * accurate basis for recovery -- not waiting on the debounced syncCanvasFlags.
- * Fire-and-forget; never throws.
- */
-export async function setOnCanvas(recordIds: Array<string>, value: boolean) {
-  const ids = recordIds.filter(Boolean)
-  if (ids.length === 0) return
-  try {
-    await setImagesOnCanvas(ids, value)
-  } catch {
-    /* silent fail -- syncCanvasFlags will reconcile on the next save */
-  }
-}
-
-/**
- * Soft-delete (move to Trash) the given user_images rows by setting `deleted_at`.
- * Callers must already have removed the images from the canvas (`on_canvas = false`)
- * so Trash's linked-image protection doesn't apply. Only affects rows not already
- * trashed. Returns the ids that were trashed (for optimistic UI / undo messaging).
+ * Soft-delete (move to Trash) the given `user_images` rows. Membership is left
+ * alone -- restoring puts the card back where it was (#212).
  */
 export async function moveToTrash(recordIds: Array<string>): Promise<void> {
   await trashCanvasImages(recordIds)
 }
 
-/**
- * Undo a `moveToTrash`: clear `deleted_at` and re-mark the rows on-canvas.
- * Pairs with the "Move to Trash" Undo action so a deliberate trash is reversible.
- */
+/** Undo a `moveToTrash`: clear `deleted_at`. Membership never went away. */
 export async function restoreFromTrash(
   recordIds: Array<string>,
 ): Promise<void> {
   await restoreCanvasImages(recordIds)
 }
 
-export type { CanvasDbRecord }
-
-/** Fetch every image the DB considers on-canvas (source of truth for membership) */
-export async function fetchOnCanvasRecords(): Promise<Array<CanvasDbRecord>> {
-  try {
-    return await listOnCanvasRecords()
-  } catch {
-    return []
-  }
-}
-
-/**
- * Of the given record ids, return those that are gone -- hard-deleted (row
- * missing) or soft-deleted (deleted_at set). Used to prune dead images from the
- * canvas without ever dropping a live one (e.g. an arrangement whose on_canvas
- * flag was never written).
- */
-export async function fetchDeadRecordIds(
-  ids: Array<string>,
-): Promise<Set<string>> {
-  const list = ids.filter(Boolean)
-  if (list.length === 0) return new Set()
-  try {
-    return new Set(await listDeadRecordIds(list))
-  } catch {
-    return new Set()
-  }
-}
+export type { CanvasMemberRecord, CanvasState }

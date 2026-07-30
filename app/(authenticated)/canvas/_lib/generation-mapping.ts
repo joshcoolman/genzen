@@ -35,8 +35,6 @@ export interface PlaceholderUpdate {
 export interface MappedOutcomes {
   /** recordId -> placeholderId for the poll loop (successes only). */
   recordToPlaceholder: Map<string, string>
-  /** recordIds to eagerly flag on_canvas (successes only). */
-  onCanvasRecordIds: Array<string>
   /** Per-placeholder updates to apply to canvas state, keyed by placeholderId. */
   updates: Array<PlaceholderUpdate>
 }
@@ -51,7 +49,6 @@ export function mapOutcomesToPlaceholders(
   placeholderIds: Array<string>,
 ): MappedOutcomes {
   const recordToPlaceholder = new Map<string, string>()
-  const onCanvasRecordIds: Array<string> = []
   const updates: Array<PlaceholderUpdate> = []
 
   outcomes.forEach((o, i) => {
@@ -59,7 +56,6 @@ export function mapOutcomesToPlaceholders(
     if (!placeholderId) return
     if (o.recordId) {
       recordToPlaceholder.set(o.recordId, placeholderId)
-      onCanvasRecordIds.push(o.recordId)
       updates.push({ placeholderId, recordId: o.recordId, model: o.model })
     } else {
       updates.push({
@@ -71,5 +67,5 @@ export function mapOutcomesToPlaceholders(
     }
   })
 
-  return { recordToPlaceholder, onCanvasRecordIds, updates }
+  return { recordToPlaceholder, updates }
 }

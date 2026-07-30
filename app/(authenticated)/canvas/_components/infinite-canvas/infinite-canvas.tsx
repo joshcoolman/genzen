@@ -4,18 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import hotkeys from 'hotkeys-js'
 import { Sparkles } from 'lucide-react'
 import {
-  fetchDeadRecordIds,
-  fetchOnCanvasRecords,
+  addToCanvas,
   getImageDimensions,
   getSignedUrl,
   getUrlDimensions,
-  loadPersistedState,
   moveToTrash,
-  resolveSignedUrls,
+  removeFromCanvas,
   restoreFromTrash,
-  savePersistedState,
-  setOnCanvas,
-  syncCanvasFlags,
+  saveCanvas,
+  stateToImages,
 } from '../../_lib/persistence'
 import { layoutMasonry } from '../../_lib/masonry'
 import {
@@ -33,6 +30,9 @@ import type {
   DragMode,
   Transform,
 } from '../../_lib/types'
+// Explicitly imported: `CanvasState` is also a lib.dom global, so without this
+// the props type silently resolves to the DOM one.
+import type { CanvasState } from '../../_lib/persistence'
 import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
 import {
@@ -50,7 +50,9 @@ import { useExistingImages } from '#/features/user-images'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
 
 interface InfiniteCanvasProps {
-  storageKey?: string
+  /** The canvas as the server read it. Seeds the first render, so there is no
+   *  loading gate and no empty first paint (#212). */
+  initial: CanvasState
   className?: string
 }
 
@@ -97,18 +99,18 @@ function getBounds(imgs: Array<CanvasImage>) {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
 }
 
-export function InfiniteCanvas({
-  storageKey = 'canvas',
-  className,
-}: InfiniteCanvasProps) {
-  const [images, setImages] = useState<Array<CanvasImage>>([])
-  const [groups, setGroups] = useState<Array<CanvasGroup>>([])
+export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
+  // Seeded, not fetched. The server read already resolved every member's URL and
+  // position, so the first render is the real canvas.
+  const seed = useMemo(() => stateToImages(initial), [initial])
+  const canvasId = initial.canvasId
+
+  const [images, setImages] = useState<Array<CanvasImage>>(seed.images)
+  const [groups, setGroups] = useState<Array<CanvasGroup>>(initial.groups)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [transform, setTransform] = useState<Transform>({
-    x: 0,
-    y: 0,
-    scale: DEFAULT_SCALE,
-  })
+  const [transform, setTransform] = useState<Transform>(
+    initial.transform ?? { x: 0, y: 0, scale: DEFAULT_SCALE },
+  )
   const [marquee, setMarquee] = useState<{
     x1: number
     y1: number
@@ -116,7 +118,6 @@ export function InfiniteCanvas({
     y2: number
   } | null>(null)
   const [spaceHeld, setSpaceHeld] = useState(false)
-  const [loaded, setLoaded] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [dropNotice, setDropNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{
@@ -239,7 +240,7 @@ export function InfiniteCanvas({
   }, [])
 
   // Strip images off the canvas locally (images, groups, selection). Does not
-  // touch the DB or undo stack -- callers handle on_canvas / deleted_at + undo.
+  // touch the DB or undo stack -- callers handle membership / deleted_at + undo.
   const stripFromCanvas = useCallback((idSet: Set<string>) => {
     setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
     setGroups((prev) =>
@@ -259,7 +260,7 @@ export function InfiniteCanvas({
   }, [])
 
   // "Remove from Canvas": canvas-only removal (row kept in the library).
-  const removeFromCanvas = useCallback(
+  const removeSelectionFromCanvas = useCallback(
     (ids: Array<string>) => {
       if (ids.length === 0) return
       const idSet = new Set(ids)
@@ -267,7 +268,7 @@ export function InfiniteCanvas({
         .filter((img) => idSet.has(img.id) && img.recordId)
         .map((img) => img.recordId)
       pushUndo()
-      void setOnCanvas(recordIds, false)
+      void removeFromCanvas(canvasId, recordIds)
       stripFromCanvas(idSet)
       toast(
         ids.length === 1
@@ -276,11 +277,13 @@ export function InfiniteCanvas({
         { duration: 6000, action: { label: 'Undo', onClick: () => undo() } },
       )
     },
-    [pushUndo, undo, stripFromCanvas],
+    [pushUndo, undo, stripFromCanvas, canvasId],
   )
 
-  // "Move to Trash": remove from canvas, then soft-delete (recoverable). Undo
-  // un-trashes and re-adds the images to the canvas.
+  // "Move to Trash": soft-delete, which is a library operation. Membership is
+  // deliberately kept (#212) -- the card comes off screen because the canvas read
+  // filters `deleted_at`, and restoring puts it back at the same position instead
+  // of making the user re-arrange it.
   const moveSelectionToTrash = useCallback(
     (ids: Array<string>) => {
       if (ids.length === 0) return
@@ -290,7 +293,6 @@ export function InfiniteCanvas({
         .filter((img) => img.recordId)
         .map((img) => img.recordId)
       pushUndo()
-      void setOnCanvas(recordIds, false)
       stripFromCanvas(idSet)
       void moveToTrash(recordIds)
         .then(() =>
@@ -334,162 +336,81 @@ export function InfiniteCanvas({
     dialogOpenRef.current = canvasGen.isOpen || libraryOpen
   }, [canvasGen.isOpen, libraryOpen])
 
-  /* -- Load persisted state -- */
+  /* -- Place what is unplaced --
+     The only reconcile rule left. A membership row can arrive without a
+     position -- a generation's row is written the moment it is reserved,
+     server-side, before any client has decided where the card goes -- and this
+     lays those out beside whatever is already placed. There is nothing to
+     reclaim (the rows *are* the membership) and nothing to prune (a row cannot
+     outlive its image), which is what the foreign key bought. */
 
+  const placedRef = useRef(false)
   useEffect(() => {
-    loadPersistedState(storageKey).then(async (state) => {
-      if (state) {
-        setImages(state.images)
-        setTransform(state.transform)
-        setGroups(state.groups ?? [])
-        tRef.current = state.transform
-        iRef.current = state.images
-        gRef.current = state.groups ?? []
+    if (placedRef.current) return
+    placedRef.current = true
 
-        // Resolve signed URLs for persisted images (they expire and aren't stored)
-        if (state.images.length > 0) {
-          const resolved = await resolveSignedUrls(state.images)
-          setImages(resolved)
-          iRef.current = resolved
-        }
-      }
-      setLoaded(true)
-    })
-  }, [storageKey])
+    const unplaced = initial.images.filter((row) =>
+      seed.unplacedIds.has(row.image_id),
+    )
+    const pending = initial.images
+      .filter((row) => row.status === 'pending')
+      .map((row) => ({ id: row.image_id, recordId: row.image_id }))
 
-  /* -- Reconcile against the DB (source of truth for canvas membership) --
-     Runs once after load, when authenticated. The DB's on_canvas flag is
-     authoritative for *which* images belong on the canvas; IndexedDB only caches
-     *where* they sit. So: reclaim any on_canvas image the local cache lost (a
-     missed write, a generation that finished while away, a wiped cache), drop any
-     cached image the DB no longer considers a member, and resume polling for every
-     pending placeholder. Mirrors how Images survives restarts -- because canvas
-     images *are* the same user_images rows. */
-
-  const reconciledRef = useRef(false)
-  useEffect(() => {
-    if (!loaded || reconciledRef.current) return
-    if (!user.id) return
-    reconciledRef.current = true
+    if (unplaced.length === 0) {
+      if (pending.length > 0) canvasGen.resumePending(pending)
+      return
+    }
 
     void (async () => {
-      const dbRecords = await fetchOnCanvasRecords()
-
-      const snapshot = iRef.current
-      const cachedRecordIds = new Set(
-        snapshot.filter((i) => i.recordId).map((i) => i.recordId),
+      // Beside the existing arrangement, so a reclaimed generation never lands
+      // on top of work already on the canvas.
+      const placedImages = seed.images.filter(
+        (img) => !seed.unplacedIds.has(img.id),
       )
-      const toReclaim = dbRecords.filter((r) => !cachedRecordIds.has(r.id))
-
-      // Prune only cached images whose row is genuinely gone (deleted in the
-      // library/trash) -- never an image merely missing its on_canvas flag, so an
-      // existing arrangement is never wrongly emptied. syncCanvasFlags back-fills
-      // on_canvas for surviving cached images on the next save.
-      const deadIds = await fetchDeadRecordIds([...cachedRecordIds])
-
-      // Position reclaimed images beside existing content (approximate is fine).
       let originX = 0
       let originY = 0
-      if (snapshot.length > 0) {
-        originX = Math.max(...snapshot.map((i) => i.x + i.width)) + 400
-        originY = Math.min(...snapshot.map((i) => i.y))
+      if (placedImages.length > 0) {
+        originX = Math.max(...placedImages.map((i) => i.x + i.width)) + 400
+        originY = Math.min(...placedImages.map((i) => i.y))
       }
 
-      const reclaimed: Array<CanvasImage> = []
-      const newPending: Array<{ id: string; recordId: string }> = []
-
-      // Completed reclaims: resolve URL + natural dimensions, then masonry-place.
-      const completed = toReclaim.filter(
-        (r) => r.status === 'completed' && r.storage_path,
+      // Real dimensions for anything with an image; the declared aspect ratio
+      // for a generation that has not produced one yet.
+      const sized = await Promise.all(
+        unplaced.map(async (row) => {
+          if (row.url) {
+            const dims = await getUrlDimensions(row.url)
+            return { id: row.image_id, width: dims.w, height: dims.h }
+          }
+          const ratio =
+            (row.generation_metadata?.aspect_ratio as string | undefined) ??
+            '1:1'
+          const [w, h] = ratio.split(':').map(Number)
+          const height = 300
+          return {
+            id: row.image_id,
+            width: Math.round(height * (w && h ? w / h : 1)),
+            height,
+          }
+        }),
       )
-      const resolved = (
-        await Promise.all(
-          completed.map(async (r) => {
-            const url = await getSignedUrl(r.storage_path!)
-            if (!url) return null
-            const dims = await getUrlDimensions(url)
-            return { rec: r, url, dims }
-          }),
-        )
-      ).filter((x): x is NonNullable<typeof x> => x !== null)
 
-      const placed = layoutMasonry(
-        resolved.map((c) => ({
-          id: c.rec.id,
-          width: c.dims.w,
-          height: c.dims.h,
-        })),
-        6,
-        originX,
-        originY,
-        300,
+      const placed = new Map(
+        layoutMasonry(sized, 6, originX, originY, 300).map((p) => [p.id, p]),
       )
-      const placedById = new Map(placed.map((p) => [p.id, p]))
-      for (const c of resolved) {
-        const p = placedById.get(c.rec.id)
-        if (!p) continue
-        reclaimed.push({
-          id: crypto.randomUUID(),
-          recordId: c.rec.id,
-          storagePath: c.rec.storage_path!,
-          signedUrl: c.url,
-          x: p.x,
-          y: p.y,
-          width: p.width,
-          height: p.height,
-        })
-      }
 
-      // Pending reclaims: add placeholders (sized from aspect_ratio) + resume.
-      let px = originX
-      const py = originY + 600
-      for (const r of toReclaim) {
-        if (r.status === 'completed' || r.status === 'failed') continue
-        const id = crypto.randomUUID()
-        const ar =
-          (r.generation_metadata?.aspect_ratio as string | undefined) ?? '1:1'
-        const [w, h] = ar.split(':').map(Number)
-        const ratio = w && h ? w / h : 1
-        const height = 300
-        const width = Math.round(height * ratio)
-        reclaimed.push({
-          id,
-          recordId: r.id,
-          storagePath: '',
-          x: px,
-          y: py,
-          width,
-          height,
-          pending: true,
-        })
-        newPending.push({ id, recordId: r.id })
-        px += width + 40
-      }
+      setImages((prev) =>
+        prev.map((img) => {
+          const p = placed.get(img.id)
+          return p
+            ? { ...img, x: p.x, y: p.y, width: p.width, height: p.height }
+            : img
+        }),
+      )
 
-      // Merge against the latest state (not the snapshot) to avoid clobbering any
-      // images added during the awaits. Drop only deleted rows; append reclaimed
-      // images deduped by recordId.
-      setImages((prev) => {
-        const prevRecordIds = new Set(
-          prev.filter((i) => i.recordId).map((i) => i.recordId),
-        )
-        const pruned = prev.filter(
-          (img) => !img.recordId || !deadIds.has(img.recordId),
-        )
-        const additions = reclaimed.filter(
-          (ri) => !ri.recordId || !prevRecordIds.has(ri.recordId),
-        )
-        return [...pruned, ...additions]
-      })
-
-      // Resume polling for every pending placeholder (cache + reclaimed).
-      const cachePending = snapshot
-        .filter((img) => img.pending && img.recordId && !img.storagePath)
-        .map((img) => ({ id: img.id, recordId: img.recordId }))
-      const allPending = [...cachePending, ...newPending]
-      if (allPending.length > 0) canvasGen.resumePending(allPending)
+      if (pending.length > 0) canvasGen.resumePending(pending)
     })()
-  }, [loaded, user.id, canvasGen])
+  }, [initial.images, seed, canvasGen])
 
   /* -- Save state (debounced) -- */
 
@@ -498,25 +419,27 @@ export function InfiniteCanvas({
       clearTimeout(saveTimerRef.current)
       saveTimerRef.current = null
     }
-    savePersistedState(
-      { images: iRef.current, transform: tRef.current, groups: gRef.current },
-      storageKey,
-    )
-  }, [storageKey])
+    void saveCanvas(canvasId, {
+      images: iRef.current,
+      transform: tRef.current,
+      groups: gRef.current,
+    })
+  }, [canvasId])
 
+  // Positions, viewport and groupings only. Membership is never inferred from
+  // this state, so a save cannot evict a generation whose row was written while
+  // the tab was in the background -- which is what the diff-based
+  // `syncCanvasFlags` it replaces could do.
   useEffect(() => {
-    if (!loaded) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
-      savePersistedState({ images, transform, groups }, storageKey)
-      syncCanvasFlags(images)
+      void saveCanvas(canvasId, { images, transform, groups })
     }, 500)
-  }, [images, transform, groups, loaded, storageKey])
+  }, [images, transform, groups, canvasId])
 
   // Flush the pending save on navigation (unmount) and page unload (reload, tab
   // close, app switch) so a debounce window never loses the latest layout.
   useEffect(() => {
-    if (!loaded) return
     const onHide = () => flushSave()
     const onVis = () => {
       if (document.visibilityState === 'hidden') flushSave()
@@ -528,7 +451,7 @@ export function InfiniteCanvas({
       document.removeEventListener('visibilitychange', onVis)
       flushSave()
     }
-  }, [loaded, flushSave])
+  }, [flushSave])
 
   /* -- Coordinates -- */
 
@@ -746,16 +669,25 @@ export function InfiniteCanvas({
                   : ci,
               ),
             )
-            // Eagerly mark on-canvas so an upload is reclaimable from the DB even
-            // if the page reloads before the debounced save runs.
-            void setOnCanvas([record.id], true)
+            // Membership *and* position, eagerly: the placeholder was already
+            // laid out, so the card is reclaimable at the right spot even if the
+            // page reloads before the debounced save runs.
+            void addToCanvas(canvasId, [
+              {
+                imageId: record.id,
+                x: placeholder.x,
+                y: placeholder.y,
+                width: placeholder.width,
+                height: placeholder.height,
+              },
+            ])
           } catch {
             setImages((prev) => prev.filter((ci) => ci.id !== placeholder.id))
           }
         }),
       )
     },
-    [pushUndo, canvasGen.userImages],
+    [pushUndo, canvasGen.userImages, canvasId],
   )
 
   /* -- Library picker confirm -- */
@@ -830,12 +762,18 @@ export function InfiniteCanvas({
       setImages((prev) => [...prev, ...newImages])
       setSelected(newIds)
       sRef.current = newIds
-      void setOnCanvas(
-        newImages.map((img) => img.recordId),
-        true,
+      void addToCanvas(
+        canvasId,
+        newImages.map((img) => ({
+          imageId: img.recordId,
+          x: img.x,
+          y: img.y,
+          width: img.width,
+          height: img.height,
+        })),
       )
     },
-    [pushUndo, getPasteTarget, libraryImages],
+    [pushUndo, getPasteTarget, libraryImages, canvasId],
   )
 
   /* -- Zoom -- */
@@ -1487,7 +1425,7 @@ export function InfiniteCanvas({
                         onClick={(e) => {
                           e.stopPropagation()
                           if (img.recordId)
-                            void setOnCanvas([img.recordId], false)
+                            void removeFromCanvas(canvasId, [img.recordId])
                           setImages((prev) =>
                             prev.filter((ci) => ci.id !== img.id),
                           )
@@ -1713,7 +1651,7 @@ export function InfiniteCanvas({
               variant="secondary"
               className={styles.confirmAction}
               onClick={() => {
-                if (deleteConfirm) removeFromCanvas(deleteConfirm.ids)
+                if (deleteConfirm) removeSelectionFromCanvas(deleteConfirm.ids)
                 setDeleteConfirm(null)
               }}
             >

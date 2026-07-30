@@ -1,154 +1,214 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { listDeadRecordIds, setImagesOnCanvas } from '../_actions/canvas'
+import { addImagesToCanvas, saveCanvasState } from '../_actions/canvas'
 import {
-  cleanImagesForSave,
-  fetchDeadRecordIds,
+  addToCanvas,
   filterLoadedImages,
-  setOnCanvas,
+  groupsForSave,
+  memberToImage,
+  positionsForSave,
+  saveCanvas,
+  stateToImages,
 } from './persistence'
+import type { CanvasMemberRecord } from '../_actions/canvas'
 import type { CanvasImage } from './types'
 
-const completed: CanvasImage = {
-  id: 'c1',
-  recordId: 'rec-c1',
-  storagePath: 'path/c1.png',
-  x: 0,
-  y: 0,
-  width: 100,
-  height: 100,
-  signedUrl: 'https://example.com/c1.png',
-  model: 'fal-ai/nano-banana-2/edit',
-}
-
-const pending: CanvasImage = {
-  id: 'p1',
-  recordId: 'rec-p1',
-  storagePath: '',
-  x: 0,
-  y: 0,
-  width: 100,
-  height: 100,
-  pending: true,
-}
-
-const failed: CanvasImage = {
-  id: 'f1',
-  recordId: 'rec-f1',
-  storagePath: '',
-  x: 0,
-  y: 0,
-  width: 100,
-  height: 100,
-  failed: true,
-  errorMessage: 'NSFW content blocked',
-  model: 'fal-ai/nano-banana-2',
-  signedUrl: 'https://example.com/stale.png',
-}
-
-// Legacy / not-yet-submitted: no recordId -> not durable, must be dropped.
-const noRecord: CanvasImage = {
-  id: 'n1',
-  recordId: '',
-  storagePath: '',
-  x: 0,
-  y: 0,
-  width: 100,
-  height: 100,
-}
-
-describe('persistence durability contract', () => {
-  it('filterLoadedImages keeps anything with a recordId, drops the rest', () => {
-    const kept = filterLoadedImages([completed, pending, failed, noRecord])
-    expect(kept.map((i) => i.id)).toEqual(['c1', 'p1', 'f1'])
-  })
-
-  it('cleanImagesForSave drops no-recordId images and strips signedUrl', () => {
-    const saved = cleanImagesForSave([completed, pending, failed, noRecord])
-    expect(saved.map((i) => i.id)).toEqual(['c1', 'p1', 'f1'])
-    for (const img of saved) {
-      expect('signedUrl' in img).toBe(false)
-    }
-  })
-
-  it('cleanImagesForSave preserves pending placeholders so in-flight work resumes', () => {
-    const saved = cleanImagesForSave([pending])
-    expect(saved[0]).toMatchObject({ recordId: 'rec-p1', pending: true })
-  })
-
-  it('cleanImagesForSave preserves failed tiles with model + error (no silent loss on reload)', () => {
-    const saved = cleanImagesForSave([failed])
-    expect(saved[0]).toMatchObject({
-      recordId: 'rec-f1',
-      failed: true,
-      errorMessage: 'NSFW content blocked',
-      model: 'fal-ai/nano-banana-2',
-    })
-    expect('signedUrl' in saved[0]).toBe(false)
-  })
-})
-
-// vi.mock is hoisted — keep factories self-contained
+// vi.mock is hoisted -- keep factories self-contained
 vi.mock('../_actions/canvas', () => ({
-  listDeadRecordIds: vi.fn(),
-  listOnCanvasRecords: vi.fn(),
+  addImagesToCanvas: vi.fn(),
+  removeImagesFromCanvas: vi.fn(),
   restoreCanvasImages: vi.fn(),
-  setImagesOnCanvas: vi.fn(),
+  saveCanvasState: vi.fn(),
   trashCanvasImages: vi.fn(),
 }))
 vi.mock('#/lib/image-storage', () => ({
   createImageStorage: vi.fn(),
 }))
 
-// These two wrap the server actions and are the canvas's fail-safes: a failed
-// reconcile must never prune a live image, and a failed membership write must
-// never throw into a drag/drop handler.
-describe('fetchDeadRecordIds', () => {
-  beforeEach(() => vi.clearAllMocks())
+function member(over: Partial<CanvasMemberRecord> = {}): CanvasMemberRecord {
+  return {
+    image_id: 'img-1',
+    storage_path: 'path/1.png',
+    status: 'completed',
+    generation_error: null,
+    generation_metadata: null,
+    url: 'https://example.com/1.png',
+    x: 10,
+    y: 20,
+    width: 300,
+    height: 400,
+    ...over,
+  }
+}
 
-  it('passes through what the server reports as dead', async () => {
-    vi.mocked(listDeadRecordIds).mockResolvedValue(['a2', 'a3'])
-
-    const dead = await fetchDeadRecordIds(['a1', 'a2', 'a3'])
-
-    // The invariant that protects user arrangements: a live row is NEVER pruned.
-    expect(dead.has('a1')).toBe(false)
-    expect(dead.has('a2')).toBe(true)
-    expect(dead.has('a3')).toBe(true)
+describe('memberToImage', () => {
+  it('uses the image id as the card id, so groups survive a reload', () => {
+    const img = memberToImage(member({ image_id: 'abc' }))
+    expect(img.id).toBe('abc')
+    expect(img.recordId).toBe('abc')
   })
 
-  it('returns an empty set for empty input without querying', async () => {
-    const dead = await fetchDeadRecordIds([])
-    expect(dead.size).toBe(0)
-    expect(listDeadRecordIds).not.toHaveBeenCalled()
+  it('carries a pending generation through as a placeholder', () => {
+    const img = memberToImage(
+      member({ status: 'pending', storage_path: null, url: null }),
+    )
+    expect(img).toMatchObject({ pending: true, storagePath: '' })
+    expect(img.failed).toBeUndefined()
   })
 
-  it('fails safe (empty set) when the call throws', async () => {
-    vi.mocked(listDeadRecordIds).mockRejectedValue(new Error('network'))
-    const dead = await fetchDeadRecordIds(['a1'])
-    expect(dead.size).toBe(0)
+  it('carries a failure through with its reason and model', () => {
+    const img = memberToImage(
+      member({
+        status: 'failed',
+        storage_path: null,
+        url: null,
+        generation_error: 'NSFW content blocked',
+        generation_metadata: { model: 'fal-ai/nano-banana-2' },
+      }),
+    )
+    expect(img).toMatchObject({
+      failed: true,
+      errorMessage: 'NSFW content blocked',
+      model: 'fal-ai/nano-banana-2',
+    })
+  })
+
+  it('leaves an unplaced row sized zero for the placement pass to fill', () => {
+    const img = memberToImage(
+      member({ x: null, y: null, width: null, height: null }),
+    )
+    expect(img).toMatchObject({ x: 0, y: 0, width: 0, height: 0 })
   })
 })
 
-describe('setOnCanvas', () => {
+describe('stateToImages', () => {
+  it('reports which members still need a position', () => {
+    const { images, unplacedIds } = stateToImages({
+      canvasId: 'c',
+      transform: null,
+      groups: [],
+      images: [
+        member({ image_id: 'placed' }),
+        member({
+          image_id: 'fresh',
+          x: null,
+          y: null,
+          width: null,
+          height: null,
+        }),
+      ],
+    })
+
+    expect(images.map((i) => i.id)).toEqual(['placed', 'fresh'])
+    expect([...unplacedIds]).toEqual(['fresh'])
+  })
+})
+
+const card = (over: Partial<CanvasImage> = {}): CanvasImage => ({
+  id: 'a',
+  recordId: 'rec-a',
+  storagePath: 'path/a.png',
+  x: 0,
+  y: 0,
+  width: 100,
+  height: 100,
+  ...over,
+})
+
+describe('filterLoadedImages', () => {
+  it('drops a card whose user_images row has not returned yet', () => {
+    const kept = filterLoadedImages([
+      card({ id: 'a' }),
+      card({ id: 'b', recordId: '' }),
+    ])
+    expect(kept.map((i) => i.id)).toEqual(['a'])
+  })
+})
+
+describe('positionsForSave', () => {
+  it('skips cards with no row and cards with no size', () => {
+    const positions = positionsForSave([
+      card({ id: 'a', recordId: 'rec-a', x: 5, y: 6 }),
+      card({ id: 'b', recordId: '' }),
+      card({ id: 'c', recordId: 'rec-c', width: 0, height: 0 }),
+    ])
+
+    expect(positions).toEqual([
+      { imageId: 'rec-a', x: 5, y: 6, width: 100, height: 100 },
+    ])
+  })
+})
+
+describe('groupsForSave', () => {
+  // The failure this prevents: a group formed over freshly-uploaded cards holds
+  // local placeholder ids, and saving those would name images that do not exist
+  // on the next load -- a group that quietly loses its members.
+  it('translates local placeholder ids to record ids', () => {
+    const images = [
+      card({ id: 'local-1', recordId: 'rec-1' }),
+      card({ id: 'local-2', recordId: 'rec-2' }),
+    ]
+    const saved = groupsForSave(images, [
+      { id: 'g1', imageIds: ['local-1', 'local-2'], columns: 2, padding: 24 },
+    ])
+
+    expect(saved[0].imageIds).toEqual(['rec-1', 'rec-2'])
+  })
+
+  it('drops members with no row, and a group left under two', () => {
+    const images = [
+      card({ id: 'local-1', recordId: 'rec-1' }),
+      card({ id: 'local-2', recordId: '' }),
+    ]
+    const saved = groupsForSave(images, [
+      { id: 'g1', imageIds: ['local-1', 'local-2'], columns: 2, padding: 24 },
+    ])
+
+    expect(saved).toEqual([])
+  })
+
+  it('is the identity mapping for loaded cards', () => {
+    const images = [
+      card({ id: 'rec-1', recordId: 'rec-1' }),
+      card({ id: 'rec-2', recordId: 'rec-2' }),
+    ]
+    const groups = [
+      { id: 'g1', imageIds: ['rec-1', 'rec-2'], columns: 2, padding: 24 },
+    ]
+    expect(groupsForSave(images, groups)).toEqual(groups)
+  })
+})
+
+// The wrappers swallow failures so a write that cannot reach the server never
+// takes a card off the screen or throws into a drag handler.
+describe('fail-safe wrappers', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('no-ops on empty / falsy ids without touching the DB', async () => {
-    await setOnCanvas([], true)
-    await setOnCanvas(['', ''], true)
-    expect(setImagesOnCanvas).not.toHaveBeenCalled()
+  it('saveCanvas swallows a failed write', async () => {
+    vi.mocked(saveCanvasState).mockRejectedValue(new Error('network'))
+    await expect(
+      saveCanvas('c1', {
+        images: [card()],
+        transform: { x: 0, y: 0, scale: 0.5 },
+        groups: [],
+      }),
+    ).resolves.toBeUndefined()
   })
 
-  it('writes the on_canvas flag for the given ids', async () => {
-    vi.mocked(setImagesOnCanvas).mockResolvedValue(undefined)
-
-    await setOnCanvas(['x', 'y'], false)
-
-    expect(setImagesOnCanvas).toHaveBeenCalledWith(['x', 'y'], false)
+  it('addToCanvas no-ops on empty / falsy ids without touching the DB', async () => {
+    await addToCanvas('c1', [])
+    await addToCanvas('c1', [{ imageId: '' }])
+    expect(addImagesToCanvas).not.toHaveBeenCalled()
   })
 
-  it('swallows a failed write -- syncCanvasFlags reconciles on the next save', async () => {
-    vi.mocked(setImagesOnCanvas).mockRejectedValue(new Error('network'))
-    await expect(setOnCanvas(['x'], true)).resolves.toBeUndefined()
+  it('addToCanvas passes members through, and swallows a failure', async () => {
+    vi.mocked(addImagesToCanvas).mockResolvedValue(undefined)
+    await addToCanvas('c1', [{ imageId: 'x', x: 1, y: 2 }])
+    expect(addImagesToCanvas).toHaveBeenCalledWith('c1', [
+      { imageId: 'x', x: 1, y: 2 },
+    ])
+
+    vi.mocked(addImagesToCanvas).mockRejectedValue(new Error('network'))
+    await expect(addToCanvas('c1', [{ imageId: 'y' }])).resolves.toBeUndefined()
   })
 })

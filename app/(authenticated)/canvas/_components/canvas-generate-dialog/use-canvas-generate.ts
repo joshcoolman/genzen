@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { getSignedUrl, setOnCanvas } from '../../_lib/persistence'
+import { getSignedUrl } from '../../_lib/persistence'
 import {
   getCanvasGenerationRecord,
   getImagePrompt,
@@ -260,13 +260,17 @@ export function useCanvasGenerate(
       }
       pendingPlaceholdersRef.current = placeholderIds
 
-      const { recordToPlaceholder, onCanvasRecordIds, updates } =
-        mapOutcomesToPlaceholders(outcomes, placeholderIds)
+      const { recordToPlaceholder, updates } = mapOutcomesToPlaceholders(
+        outcomes,
+        placeholderIds,
+      )
       const updateById = new Map(updates.map((u) => [u.placeholderId, u]))
 
-      // Apply per-placeholder updates in one pass: successes get recordId+model
-      // (persisted to IndexedDB so in-flight work survives navigation); failures
-      // (submit rejected, no DB record) become failed tiles with model + error.
+      // Apply per-placeholder updates in one pass: successes get recordId+model;
+      // failures (submit rejected, no DB record) become failed tiles with model +
+      // error. A success needs no membership write here -- the generation insert
+      // wrote its `canvas_images` row unplaced at reserve time (#212), which is
+      // what makes it reclaimable if the tab goes away before FAL answers.
       setImages((prev) =>
         prev.map((ci) => {
           const u = updateById.get(ci.id)
@@ -283,10 +287,6 @@ export function useCanvasGenerate(
           }
         }),
       )
-
-      // Eagerly mark successful rows on-canvas so they're reclaimable from the DB
-      // even if the user navigates/restarts before any local save.
-      void setOnCanvas(onCanvasRecordIds, true)
 
       startPolling(recordToPlaceholder)
     },
@@ -305,8 +305,9 @@ export function useCanvasGenerate(
     [startPolling],
   )
 
-  // Retry a failed FAL tile: resubmit via retryGeneration (creates a fresh
-  // record), repoint the tile to it, mark it on-canvas, and resume polling.
+  // Retry a failed FAL tile: resubmit via retryGeneration, repoint the tile to
+  // the row it returns, and resume polling. Retry reuses the same row, so its
+  // membership is already there and needs no write.
   const retryFailed = useCallback(
     async (canvasImageId: string) => {
       const img = getImages().find((ci) => ci.id === canvasImageId)
@@ -328,7 +329,6 @@ export function useCanvasGenerate(
             ci.id === canvasImageId ? { ...ci, recordId } : ci,
           ),
         )
-        void setOnCanvas([recordId], true)
         const map = new Map<string, string>()
         map.set(recordId, canvasImageId)
         startPolling(map)
