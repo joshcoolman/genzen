@@ -146,10 +146,10 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-30)
 
+- **A canvas paste draws before it uploads.** The clipboard already handed over the bytes, so the card renders from them at ~30ms — right size, right place — and the upload runs underneath. `uploading` is a distinct state from `pending`: one has a picture, the other has nothing to show.
 - **One way into the library (#215).** Three near-identical upload functions, one of them dead, and only one made a thumbnail — so whether the grid downloaded full-size objects came down to which caller you went through. `saveFileToLibrary` is now the single writer and owns the thumbnail.
 - **An attached source image is saved on arrival (#224).** Uploading into the generator used to hold the bytes in memory, so its generation could never be retried. Settled the rule: aggressive on bytes, submit-only on prompt text.
 - **Retry replays the whole request (#214).** Source and references both re-sent; the endpoint is derived rather than read from a row that may predate it. Three call sites were dropping a library id they already had, which made every library pick look like an unreplayable paste.
-- **Canvas conforms to the route shape (#189).** A 1698-line component became `page.tsx` → `view.tsx` + `use-view.ts`, eight concern hooks and twelve component folders; the route shape is now the house standard's, not provisional.
 - **`/readme` renders this file in-app.** One server component + one stylesheet on the tokens; `marked` was already a dep. A pattern worth porting to every repo.
 - **A canvas is a container, not a view (#212).** Membership as rows in `canvas_images`; arrangement left IndexedDB, and trashing no longer evicts from a canvas.
 

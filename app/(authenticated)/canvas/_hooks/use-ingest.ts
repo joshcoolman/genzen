@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { layoutMasonry } from '../_lib/masonry'
 import {
   addToCanvas,
-  getImageDimensions,
   getSignedUrl,
+  preloadUrl,
+  readLocalImage,
 } from '../_lib/persistence'
 import type { CollectedImage, UserImage } from '#/features/user-images'
 import type { CanvasImage } from '../_lib/types'
@@ -64,41 +65,44 @@ export function useIngest({
       )
       if (imageFiles.length === 0) return
 
-      // Dimensions come from object URLs -- instant, no upload needed, so the
-      // placeholder is already the right shape.
-      const withDims = await Promise.all(
+      // Dimensions *and* the bytes come from object URLs -- instant, no upload
+      // needed -- so the card lands at the right size showing the actual image.
+      const local = await Promise.all(
         imageFiles.map(async (file) => ({
           file,
-          dims: await getImageDimensions(file),
+          ...(await readLocalImage(file)),
         })),
       )
 
-      const items = withDims.map(({ dims }) => ({
+      const items = local.map(({ w, h }) => ({
         id: crypto.randomUUID(),
-        width: dims.w,
-        height: dims.h,
+        width: w,
+        height: h,
       }))
-      const pendingImages: Array<CanvasImage> = layoutMasonry(
+      const placedImages: Array<CanvasImage> = layoutMasonry(
         items,
         COLUMNS,
         cx,
         cy,
         items.length === 1 ? undefined : MULTI_COLUMN_WIDTH,
-      ).map((r) => ({
+      ).map((r, i) => ({
         ...r,
         recordId: '',
         storagePath: '',
-        pending: true,
+        // Not `pending`: pending means there is nothing to show. Here the image
+        // is already in memory, so the upload happens under a real card.
+        uploading: true,
+        signedUrl: local[i].url,
       }))
 
       pushUndo()
-      setImages((prev) => [...prev, ...pendingImages])
-      select(new Set(pendingImages.map((img) => img.id)))
+      setImages((prev) => [...prev, ...placedImages])
+      select(new Set(placedImages.map((img) => img.id)))
 
-      // Upload in parallel, replacing each placeholder as it completes.
+      // Upload in parallel, settling each card as it completes.
       await Promise.all(
-        withDims.map(async ({ file }, i) => {
-          const placeholder = pendingImages[i]
+        local.map(async ({ file, url: objectUrl }, i) => {
+          const placeholder = placedImages[i]
           try {
             const record = await createImage({
               title: file.name || 'Canvas Image',
@@ -112,6 +116,10 @@ export function useIngest({
             const signedUrl = await getSignedUrl(storagePath)
             if (!signedUrl) throw new Error('Failed to get signed URL')
 
+            // Decode the hosted image before swapping `src`, or the card blinks
+            // empty at the exact moment it is supposed to be settling.
+            await preloadUrl(signedUrl)
+
             setImages((prev) =>
               prev.map((ci) =>
                 ci.id === placeholder.id
@@ -120,11 +128,12 @@ export function useIngest({
                       recordId: record.id,
                       storagePath,
                       signedUrl,
-                      pending: false,
+                      uploading: false,
                     }
                   : ci,
               ),
             )
+            URL.revokeObjectURL(objectUrl)
             void addToCanvas(canvasId, [
               {
                 imageId: record.id,
@@ -135,6 +144,7 @@ export function useIngest({
               },
             ])
           } catch {
+            URL.revokeObjectURL(objectUrl)
             setImages((prev) => prev.filter((ci) => ci.id !== placeholder.id))
           }
         }),

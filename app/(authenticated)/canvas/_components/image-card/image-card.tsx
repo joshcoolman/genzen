@@ -22,6 +22,11 @@ interface ImageCardProps {
 /** One card on the canvas plane, in one of three states: pending placeholder,
  *  failed tile, or the image itself.
  *
+ *  A card whose upload is still in flight is in the *third* state, not the
+ *  first: the bytes came off the clipboard, so it draws immediately from a local
+ *  object URL and only dims slightly. Pending is for a generation, where there
+ *  is genuinely nothing to draw yet.
+ *
  *  `data-image-id` is what the surface's pointer handlers hit-test against, so
  *  it has to stay on the outer element. */
 export function ImageCard({
@@ -38,6 +43,7 @@ export function ImageCard({
         styles.image,
         dimmed && styles.dimmed,
         image.pending && styles.pending,
+        image.uploading && styles.uploading,
         image.failed && styles.failed,
       )}
       style={{

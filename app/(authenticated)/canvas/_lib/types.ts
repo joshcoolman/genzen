@@ -9,6 +9,10 @@ export interface CanvasImage {
   width: number
   height: number
   pending?: boolean
+  /** Bytes are on screen from a local object URL, but the `user_images` row has
+   *  not come back yet. Distinct from `pending`, which means there is genuinely
+   *  nothing to show. Runtime only. */
+  uploading?: boolean
   /** Generation failed -- the tile persists (model + error) instead of vanishing. */
   failed?: boolean
   /** Failure reason shown on the failed tile. */

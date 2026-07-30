@@ -201,17 +201,37 @@ export async function getSignedUrl(
 export function getImageDimensions(
   file: File,
 ): Promise<{ w: number; h: number }> {
+  return readLocalImage(file).then(({ w, h, url }) => {
+    URL.revokeObjectURL(url)
+    return { w, h }
+  })
+}
+
+/**
+ * Dimensions *and* the object URL that produced them, so a dropped file can be
+ * drawn from local bytes while its upload is still in flight. The caller owns
+ * the URL and must revoke it -- `getImageDimensions` is the throwaway variant.
+ */
+export function readLocalImage(
+  file: File,
+): Promise<{ w: number; h: number; url: string }> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      resolve({ w: img.naturalWidth, h: img.naturalHeight })
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve({ w: 300, h: 300 })
-    }
+    img.onload = () =>
+      resolve({ w: img.naturalWidth, h: img.naturalHeight, url })
+    img.onerror = () => resolve({ w: 300, h: 300, url })
+    img.src = url
+  })
+}
+
+/** Resolve once a URL is actually decodable, so swapping a card's `src` from a
+ *  local object URL to the hosted one cannot flash an empty frame. */
+export function preloadUrl(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve()
+    img.onerror = () => resolve()
     img.src = url
   })
 }

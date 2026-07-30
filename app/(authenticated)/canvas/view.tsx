@@ -100,15 +100,16 @@ export function View({ initial }: ViewProps) {
     img.y + img.height >= selectionBounds.y &&
     img.y <= selectionBounds.y + selectionBounds.h
 
-  // The pill needs a settled, fully-loaded selection: no pending tiles, and
-  // small enough that some model can hold every image as a reference.
+  // The pill needs a settled, fully-loaded selection: nothing still pending or
+  // uploading (an uploading card has no row to send yet, even though it draws),
+  // and small enough that some model can hold every image as a reference.
   const pillImages = images.filter((img) => selected.has(img.id))
   const showPill =
     selected.size >= 1 &&
     selected.size <= CANVAS_MAX_GROUP_SELECTION &&
     !canvasGen.isOpen &&
     pillImages.length === selected.size &&
-    !pillImages.some((img) => img.pending)
+    !pillImages.some((img) => img.pending || img.uploading)
 
   const containerRect = containerRef.current?.getBoundingClientRect()
 

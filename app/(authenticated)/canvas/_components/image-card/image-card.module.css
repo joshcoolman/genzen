@@ -52,6 +52,14 @@
   }
 }
 
+/* Upload still in flight. The image is already drawn from local bytes, so this
+   is only an honesty signal -- the card is not yours to act on until its row
+   exists. Deliberately not a loading state: the whole point is that pasting
+   feels instant. `.image`'s opacity transition carries it back to full. */
+.uploading {
+  opacity: 0.72;
+}
+
 /* Failed generation tile -- persists with model + error instead of vanishing */
 .failed {
   cursor: default;

@@ -56,8 +56,9 @@ interface CanvasImage {
   y
   width
   height
-  pending?: boolean // derived from user_images.status
-  signedUrl?: string // the public URL (legacy name)
+  pending?: boolean // derived from user_images.status -- nothing to draw yet
+  uploading?: boolean // drawn from local bytes; the row has not returned
+  signedUrl?: string // the public URL (legacy name), or a local object URL
 }
 ```
 
@@ -189,6 +190,13 @@ them.
 - Undo/redo stack capped at 50 entries. **Undo does not reverse the server
   write** -- #194, downstream of #212
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
-- Paste/drop uploads files to S3 immediately, shows pending placeholders with
-  correct dimensions. Canvas paste reaches the upload path that skips
-  `createThumbnail` -- #215
+- **A paste draws before it uploads.** The clipboard hands over the bytes, so
+  the card renders from a local object URL at ~30ms, at its real dimensions and
+  in its final position, and the upload runs underneath it. `uploading` is a
+  separate flag from `pending` on purpose: `pending` means there is genuinely
+  nothing to draw (a generation in flight) and gets the spinner; `uploading`
+  means the picture is already there and only the row is missing, so it gets
+  0.72 opacity and no pill. On settle the hosted URL is decoded before the
+  `src` swap (`preloadUrl`), or the card blinks empty exactly as it finishes.
+  Placing something spatially and watching a grey box is the version that felt
+  wrong
