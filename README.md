@@ -8,17 +8,16 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
-**Up next** — the finish state agreed in #222, in execution order (2–7 are small
+**Up next** — the finish state agreed in #222, in execution order (1–6 are small
 and order-flexible; the issues hold the detail):
 
-1. **#189** — Canvas conformance: the route-shape split, now unblocked
-2. **#214** — Retry replays the whole request, not just the prompt
-3. **#215** — Consolidate uploads; canvas paste gets thumbnails
-4. **#219** — Mechanical check for `user_id` scoping
-5. **#216** — Passive "on canvas" marker in library
-6. **#188** — Rewrite the architecture doc
-7. **#194** — Fix Canvas Undo (after #189)
-8. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+1. **#214** — Retry replays the whole request, not just the prompt
+2. **#215** — Consolidate uploads; canvas paste gets thumbnails
+3. **#219** — Mechanical check for `user_id` scoping
+4. **#216** — Passive "on canvas" marker in library
+5. **#188** — Rewrite the architecture doc
+6. **#194** — Fix Canvas Undo (now unblocked: #189 landed)
+7. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
 
 ## Run it locally
 
@@ -144,12 +143,12 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-30)
 
+- **Canvas conforms to the route shape (#189).** A 1698-line component became `page.tsx` → `view.tsx` + `use-view.ts`, eight concern hooks and twelve component folders; the route shape is now the house standard's, not provisional.
 - **`/readme` renders this file in-app.** One server component + one stylesheet on the tokens; `marked` was already a dep. A pattern worth porting to every repo.
 - **A canvas is a container, not a view (#212).** Membership as rows in `canvas_images`; arrangement left IndexedDB, and trashing no longer evicts from a canvas.
 - **Origin is a column, and Images is scoped by it (#207).** `upload | images | canvas`, `not null` with no default, so an unmarked generation source cannot compile.
 - **The insert-path inventory is written (#211).** `docs/reference/insert-paths.md` — exactly two insert statements in the app. Filed #215 out of it.
 - **Two data losses closed (#210).** The typed prompt survives enhancement, and a pasted source carries a sha256 instead of a boolean.
-- **Images has the route shape (#189, half).** Server read, `view.tsx` + `use-view.ts`, six component folders came home. Canvas is the other half.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
 carries it. It is the eight open issues, in execution order.

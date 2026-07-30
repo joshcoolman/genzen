@@ -120,11 +120,15 @@ Where the standard applies, prefer it over an older pattern found in the
 codebase — an existing file is not evidence of the current convention, because
 the conformance pass (#187) is still in flight.
 
-**How a route is built: `docs/reference/route-shape.md`.** `page.tsx` renders
-`view.tsx`, which composes components and carries no styles; `use-view.ts` holds
-the state. Copy `app/(authenticated)/trash/`, not an older route: Activity
-established the shape but still fetches from the client, and Trash settled the
-seam — `page.tsx` reads on the server and seeds the view.
+**How a route is built:** the shape lives in the house standard
+(`project-standard`, "Route shape") — `page.tsx` renders `view.tsx`, which
+composes components and carries no styles; `use-view.ts` holds the state.
+`docs/reference/route-shape.md` keeps only genzen's own evidence and its
+primitives catalogue.
+
+Copy `app/(authenticated)/trash/` for a simple route or `canvas/` for one with
+real state; not Activity, which established the shape but still fetches from the
+client. Every route now conforms (#189).
 
 ## Gotchas
 
