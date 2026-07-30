@@ -32,9 +32,6 @@ with its cost and duration.
 
 **Trash** — soft delete with recovery. Nothing is destroyed on the first action.
 
-**MCP** — the same generation capability exposed to external Claude clients over
-`POST /api/mcp`, authenticated by a personal `gz_live_*` key.
-
 ## Rules that must hold
 
 - **A click always leaves an artifact.** Every generate path reserves its row
