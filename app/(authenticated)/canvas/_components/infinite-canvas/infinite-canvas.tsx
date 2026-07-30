@@ -1,24 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import hotkeys from 'hotkeys-js'
 import { Sparkles } from 'lucide-react'
-import {
-  addToCanvas,
-  getImageDimensions,
-  getSignedUrl,
-  getUrlDimensions,
-  moveToTrash,
-  removeFromCanvas,
-  restoreFromTrash,
-  saveCanvas,
-  stateToImages,
-} from '../../_lib/persistence'
-import { layoutMasonry } from '../../_lib/masonry'
+import { stateToImages } from '../../_lib/persistence'
 import { getBounds } from '../../_lib/geometry'
 import { useHistory } from '../../_hooks/use-history'
 import { useViewport } from '../../_hooks/use-viewport'
 import { useSelection } from '../../_hooks/use-selection'
+import { useRemoval } from '../../_hooks/use-removal'
+import { useIngest } from '../../_hooks/use-ingest'
+import { useAutosave } from '../../_hooks/use-autosave'
+import { useReconcile } from '../../_hooks/use-reconcile'
+import { useCanvasHotkeys } from '../../_hooks/use-canvas-hotkeys'
 import {
   canRetryFailure,
   useCanvasGenerate,
@@ -32,7 +25,6 @@ import type { CanvasGroup, CanvasImage, DragMode } from '../../_lib/types'
 // Explicitly imported: `CanvasState` is also a lib.dom global, so without this
 // the props type silently resolves to the DOM one.
 import type { CanvasState } from '../../_lib/persistence'
-import type { CollectedImage } from '#/features/user-images'
 import { getModelName } from '#/features/ai-images/models'
 import {
   Button,
@@ -42,11 +34,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  toast,
 } from '#/components'
 import { useAuth } from '#/lib/auth'
 import { useExistingImages } from '#/features/user-images'
-import { computeFileHash } from '#/features/user-images/lib/file-hash'
 
 interface InfiniteCanvasProps {
   /** The canvas as the server read it. Seeds the first render, so there is no
@@ -64,15 +54,10 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
   const [images, setImages] = useState<Array<CanvasImage>>(seed.images)
   const [groups, setGroups] = useState<Array<CanvasGroup>>(initial.groups)
   const [libraryOpen, setLibraryOpen] = useState(false)
-  const [dropNotice, setDropNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
     imageId: string
-  } | null>(null)
-  // Pending delete awaiting the confirm modal's choice.
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    ids: Array<string>
   } | null>(null)
   const dialogOpenRef = useRef(false)
 
@@ -93,7 +78,6 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
   const rightPanRef = useRef(false)
   const suppressContextRef = useRef(false)
   const pasteTargetRef = useRef<{ x: number; y: number } | null>(null)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragRef = useRef<{
     mode: DragMode
     sx: number
@@ -152,88 +136,47 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     groupImages,
   )
 
-  // Strip images off the canvas locally (images, groups, selection). Does not
-  // touch the DB or undo stack -- callers handle membership / deleted_at + undo.
-  const stripFromCanvas = useCallback(
-    (idSet: Set<string>) => {
-      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
-      setGroups((prev) =>
-        prev
-          .map((g) => ({
-            ...g,
-            imageIds: g.imageIds.filter((id) => !idSet.has(id)),
-          }))
-          .filter((g) => g.imageIds.length >= 2),
-      )
-      select((prev) => {
-        const next = new Set(prev)
-        for (const id of idSet) next.delete(id)
-        return next
-      })
-    },
-    [select],
+  const {
+    deleteConfirm,
+    setDeleteConfirm,
+    removeSelectionFromCanvas,
+    moveSelectionToTrash,
+    dismissFailed,
+  } = useRemoval({
+    canvasId,
+    iRef,
+    setImages,
+    setGroups,
+    select,
+    pushUndo,
+    undo,
+  })
+
+  const getPasteTarget = useCallback(
+    () => pasteTargetRef.current ?? viewport.viewportCenter(),
+    [viewport],
   )
 
-  // "Remove from Canvas": canvas-only removal (row kept in the library).
-  const removeSelectionFromCanvas = useCallback(
-    (ids: Array<string>) => {
-      if (ids.length === 0) return
-      const idSet = new Set(ids)
-      const recordIds = iRef.current
-        .filter((img) => idSet.has(img.id) && img.recordId)
-        .map((img) => img.recordId)
-      pushUndo()
-      void removeFromCanvas(canvasId, recordIds)
-      stripFromCanvas(idSet)
-      toast(
-        ids.length === 1
-          ? 'Removed from canvas'
-          : `Removed ${ids.length} from canvas`,
-        { duration: 6000, action: { label: 'Undo', onClick: () => undo() } },
-      )
-    },
-    [pushUndo, undo, stripFromCanvas, canvasId],
-  )
+  const { dropNotice, onDragOver, onDrop, onFileChange, onLibraryConfirm } =
+    useIngest({
+      canvasId,
+      setImages,
+      select,
+      pushUndo,
+      getPasteTarget,
+      screenToCanvas,
+      createImage: canvasGen.userImages.create,
+      libraryImages,
+    })
 
-  // "Move to Trash": soft-delete, which is a library operation. Membership is
-  // deliberately kept (#212) -- the card comes off screen because the canvas read
-  // filters `deleted_at`, and restoring puts it back at the same position instead
-  // of making the user re-arrange it.
-  const moveSelectionToTrash = useCallback(
-    (ids: Array<string>) => {
-      if (ids.length === 0) return
-      const idSet = new Set(ids)
-      const removed = iRef.current.filter((img) => idSet.has(img.id))
-      const recordIds = removed
-        .filter((img) => img.recordId)
-        .map((img) => img.recordId)
-      pushUndo()
-      stripFromCanvas(idSet)
-      void moveToTrash(recordIds)
-        .then(() =>
-          toast.success(
-            ids.length === 1
-              ? 'Moved to Trash'
-              : `Moved ${ids.length} to Trash`,
-            {
-              duration: 6000,
-              action: {
-                label: 'Undo',
-                onClick: () => {
-                  setImages((prev) => [
-                    ...prev,
-                    ...removed.filter((r) => !prev.some((p) => p.id === r.id)),
-                  ])
-                  void restoreFromTrash(recordIds)
-                },
-              },
-            },
-          ),
-        )
-        .catch(() => toast.error('Failed to move to Trash'))
-    },
-    [pushUndo, stripFromCanvas],
-  )
+  useAutosave({ canvasId, images, groups, transform, iRef, gRef, tRef })
+
+  useReconcile({
+    initial,
+    seed,
+    setImages,
+    resumePending: canvasGen.resumePending,
+  })
 
   useEffect(() => {
     iRef.current = images
@@ -244,390 +187,6 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
   useEffect(() => {
     dialogOpenRef.current = canvasGen.isOpen || libraryOpen
   }, [canvasGen.isOpen, libraryOpen])
-
-  /* -- Place what is unplaced --
-     The only reconcile rule left. A membership row can arrive without a
-     position -- a generation's row is written the moment it is reserved,
-     server-side, before any client has decided where the card goes -- and this
-     lays those out beside whatever is already placed. There is nothing to
-     reclaim (the rows *are* the membership) and nothing to prune (a row cannot
-     outlive its image), which is what the foreign key bought. */
-
-  const placedRef = useRef(false)
-  useEffect(() => {
-    if (placedRef.current) return
-    placedRef.current = true
-
-    const unplaced = initial.images.filter((row) =>
-      seed.unplacedIds.has(row.image_id),
-    )
-    const pending = initial.images
-      .filter((row) => row.status === 'pending')
-      .map((row) => ({ id: row.image_id, recordId: row.image_id }))
-
-    if (unplaced.length === 0) {
-      if (pending.length > 0) canvasGen.resumePending(pending)
-      return
-    }
-
-    void (async () => {
-      // Beside the existing arrangement, so a reclaimed generation never lands
-      // on top of work already on the canvas.
-      const placedImages = seed.images.filter(
-        (img) => !seed.unplacedIds.has(img.id),
-      )
-      let originX = 0
-      let originY = 0
-      if (placedImages.length > 0) {
-        originX = Math.max(...placedImages.map((i) => i.x + i.width)) + 400
-        originY = Math.min(...placedImages.map((i) => i.y))
-      }
-
-      // Real dimensions for anything with an image; the declared aspect ratio
-      // for a generation that has not produced one yet.
-      const sized = await Promise.all(
-        unplaced.map(async (row) => {
-          if (row.url) {
-            const dims = await getUrlDimensions(row.url)
-            return { id: row.image_id, width: dims.w, height: dims.h }
-          }
-          const ratio =
-            (row.generation_metadata?.aspect_ratio as string | undefined) ??
-            '1:1'
-          const [w, h] = ratio.split(':').map(Number)
-          const height = 300
-          return {
-            id: row.image_id,
-            width: Math.round(height * (w && h ? w / h : 1)),
-            height,
-          }
-        }),
-      )
-
-      const placed = new Map(
-        layoutMasonry(sized, 6, originX, originY, 300).map((p) => [p.id, p]),
-      )
-
-      setImages((prev) =>
-        prev.map((img) => {
-          const p = placed.get(img.id)
-          return p
-            ? { ...img, x: p.x, y: p.y, width: p.width, height: p.height }
-            : img
-        }),
-      )
-
-      if (pending.length > 0) canvasGen.resumePending(pending)
-    })()
-  }, [initial.images, seed, canvasGen])
-
-  /* -- Save state (debounced) -- */
-
-  const flushSave = useCallback(() => {
-    if (saveTimerRef.current) {
-      clearTimeout(saveTimerRef.current)
-      saveTimerRef.current = null
-    }
-    void saveCanvas(canvasId, {
-      images: iRef.current,
-      transform: tRef.current,
-      groups: gRef.current,
-    })
-  }, [canvasId])
-
-  // Positions, viewport and groupings only. Membership is never inferred from
-  // this state, so a save cannot evict a generation whose row was written while
-  // the tab was in the background -- which is what the diff-based
-  // `syncCanvasFlags` it replaces could do.
-  useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
-      void saveCanvas(canvasId, { images, transform, groups })
-    }, 500)
-  }, [images, transform, groups, canvasId])
-
-  // Flush the pending save on navigation (unmount) and page unload (reload, tab
-  // close, app switch) so a debounce window never loses the latest layout.
-  useEffect(() => {
-    const onHide = () => flushSave()
-    const onVis = () => {
-      if (document.visibilityState === 'hidden') flushSave()
-    }
-    window.addEventListener('pagehide', onHide)
-    document.addEventListener('visibilitychange', onVis)
-    return () => {
-      window.removeEventListener('pagehide', onHide)
-      document.removeEventListener('visibilitychange', onVis)
-      flushSave()
-    }
-  }, [flushSave])
-
-  const getPasteTarget = useCallback(() => {
-    return pasteTargetRef.current ?? viewport.viewportCenter()
-  }, [viewport])
-
-  /* -- Image loading -- */
-
-  const addImagesFromFiles = useCallback(
-    async (files: FileList | Array<File>, cx: number, cy: number) => {
-      const imageFiles = Array.from(files).filter((f) =>
-        f.type.startsWith('image/'),
-      )
-      if (imageFiles.length === 0) return
-
-      // Get dimensions from object URLs (instant, no upload needed)
-      const withDims = await Promise.all(
-        imageFiles.map(async (file) => ({
-          file,
-          dims: await getImageDimensions(file),
-        })),
-      )
-
-      // Create pending placeholders with proper masonry layout
-      const items = withDims.map(({ dims }) => ({
-        id: crypto.randomUUID(),
-        width: dims.w,
-        height: dims.h,
-      }))
-      const layoutResults = layoutMasonry(
-        items,
-        6,
-        cx,
-        cy,
-        items.length === 1 ? undefined : 300,
-      )
-      const pendingImages: Array<CanvasImage> = layoutResults.map((r) => ({
-        ...r,
-        recordId: '',
-        storagePath: '',
-        pending: true,
-      }))
-
-      pushUndo()
-      setImages((prev) => [...prev, ...pendingImages])
-      const newIds = new Set(pendingImages.map((img) => img.id))
-      select(newIds)
-
-      // Upload all files in parallel, replacing placeholders as they complete
-      await Promise.all(
-        withDims.map(async ({ file }, i) => {
-          const placeholder = pendingImages[i]
-          try {
-            const fileHash = await computeFileHash(file)
-            const record = await canvasGen.userImages.create({
-              title: file.name || 'Canvas Image',
-              file,
-              file_hash: fileHash,
-            })
-            if (!record.storage_path) {
-              throw new Error('Created image is missing a storage path')
-            }
-            const storagePath = record.storage_path
-
-            const signedUrl = await getSignedUrl(storagePath)
-            if (!signedUrl) throw new Error('Failed to get signed URL')
-
-            setImages((prev) =>
-              prev.map((ci) =>
-                ci.id === placeholder.id
-                  ? {
-                      ...ci,
-                      recordId: record.id,
-                      storagePath,
-                      signedUrl,
-                      pending: false,
-                    }
-                  : ci,
-              ),
-            )
-            // Membership *and* position, eagerly: the placeholder was already
-            // laid out, so the card is reclaimable at the right spot even if the
-            // page reloads before the debounced save runs.
-            void addToCanvas(canvasId, [
-              {
-                imageId: record.id,
-                x: placeholder.x,
-                y: placeholder.y,
-                width: placeholder.width,
-                height: placeholder.height,
-              },
-            ])
-          } catch {
-            setImages((prev) => prev.filter((ci) => ci.id !== placeholder.id))
-          }
-        }),
-      )
-    },
-    [pushUndo, canvasGen.userImages, canvasId],
-  )
-
-  /* -- Library picker confirm -- */
-
-  const onLibraryConfirm = useCallback(
-    async (selectedImages: Array<CollectedImage>) => {
-      if (selectedImages.length === 0) return
-      const c = getPasteTarget()
-
-      // Look up storage_path from libraryImages and get full-res signed URLs
-      const resolved = await Promise.all(
-        selectedImages.map(async (item) => {
-          const record = libraryImages.find((img) => img.id === item.id)
-          if (!record?.storage_path) return null
-          const signedUrl = await getSignedUrl(record.storage_path)
-          if (!signedUrl) return null
-
-          // Get dimensions from the full-res URL
-          const dims = await new Promise<{ w: number; h: number }>(
-            (resolve) => {
-              const img = new Image()
-              img.onload = () =>
-                resolve({ w: img.naturalWidth, h: img.naturalHeight })
-              img.onerror = () => resolve({ w: 300, h: 300 })
-              img.src = signedUrl
-            },
-          )
-          return {
-            recordId: record.id,
-            storagePath: record.storage_path,
-            signedUrl,
-            ...dims,
-          }
-        }),
-      )
-
-      const valid = resolved.filter(
-        (
-          r,
-        ): r is {
-          recordId: string
-          storagePath: string
-          signedUrl: string
-          w: number
-          h: number
-        } => r !== null,
-      )
-      if (valid.length === 0) return
-
-      const items = valid.map(({ w, h }) => ({
-        id: crypto.randomUUID(),
-        width: w,
-        height: h,
-      }))
-      const results = layoutMasonry(
-        items,
-        6,
-        c.x,
-        c.y,
-        items.length === 1 ? undefined : 300,
-      )
-
-      const newImages: Array<CanvasImage> = results.map((r, i) => ({
-        ...r,
-        recordId: valid[i].recordId,
-        storagePath: valid[i].storagePath,
-        signedUrl: valid[i].signedUrl,
-      }))
-
-      const newIds = new Set(newImages.map((img) => img.id))
-      pushUndo()
-      setImages((prev) => [...prev, ...newImages])
-      select(newIds)
-      void addToCanvas(
-        canvasId,
-        newImages.map((img) => ({
-          imageId: img.recordId,
-          x: img.x,
-          y: img.y,
-          width: img.width,
-          height: img.height,
-        })),
-      )
-    },
-    [pushUndo, getPasteTarget, libraryImages, canvasId],
-  )
-
-  /* -- Paste -- */
-
-  useEffect(() => {
-    const onPaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items
-      if (!items) return
-
-      // Extract clipboard image file (works for screenshots, copies, HTML img pastes)
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (!file) continue
-          e.preventDefault()
-          const c = getPasteTarget()
-          addImagesFromFiles([file], c.x, c.y)
-          return
-        }
-      }
-
-      // Fall back to pasted URL text -- fetch and upload as file
-      const text = e.clipboardData.getData('text/plain')
-      if (text.match(/\.(png|jpg|jpeg|gif|webp|svg|bmp)(\?.*)?$/i)) {
-        e.preventDefault()
-        const c = getPasteTarget()
-        fetch(text)
-          .then((r) => r.blob())
-          .then((blob) => {
-            const file = new File([blob], 'pasted-image.png', {
-              type: blob.type || 'image/png',
-            })
-            addImagesFromFiles([file], c.x, c.y)
-          })
-          .catch(() => {
-            /* URL not fetchable -- skip */
-          })
-      }
-    }
-    document.addEventListener('paste', onPaste)
-    return () => document.removeEventListener('paste', onPaste)
-  }, [addImagesFromFiles, getPasteTarget])
-
-  /* -- Drop -- */
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-  }, [])
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      const pos = screenToCanvas(e.clientX, e.clientY)
-
-      if (e.dataTransfer.files.length > 0) {
-        addImagesFromFiles(e.dataTransfer.files, pos.x, pos.y)
-        return
-      }
-
-      // Try to fetch dropped URL as a file and upload
-      const html = e.dataTransfer.getData('text/html')
-      const urlMatch = html.match(/<img[^>]+src="([^"]+)"/)
-      const url = urlMatch?.[1] || e.dataTransfer.getData('text/plain') || ''
-
-      if (url.startsWith('http')) {
-        fetch(url)
-          .then((r) => r.blob())
-          .then((blob) => {
-            const file = new File([blob], 'dropped-image.png', {
-              type: blob.type || 'image/png',
-            })
-            addImagesFromFiles([file], pos.x, pos.y)
-          })
-          .catch(() => {
-            setDropNotice(
-              "Couldn't load that image. Try copying it and pasting instead.",
-            )
-            setTimeout(() => setDropNotice(null), 3000)
-          })
-      }
-    },
-    [screenToCanvas, addImagesFromFiles],
-  )
 
   /* -- Pointer events -- */
 
@@ -819,124 +378,22 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     [screenToCanvas],
   )
 
-  /* -- Hotkeys -- */
-
-  useEffect(() => {
-    hotkeys.filter = () => !dialogOpenRef.current
-
-    hotkeys('command+=,command+plus', (e) => {
-      e.preventDefault()
-      zoomCenter(tRef.current.scale * 1.25)
-    })
-    hotkeys('command+-', (e) => {
-      e.preventDefault()
-      zoomCenter(tRef.current.scale / 1.25)
-    })
-
-    hotkeys('command+0', (e) => {
-      e.preventDefault()
-      const sel = sRef.current,
-        imgs = iRef.current
-      const targets = sel.size > 0 ? imgs.filter((i) => sel.has(i.id)) : imgs
-      if (targets.length === 0) return
-      // Fit selection to 75% of viewport (comfortable focus, not edge-to-edge)
-      viewport.focusBounds(getBounds(targets))
-    })
-
-    hotkeys('command+shift+0', (e) => {
-      e.preventDefault()
-      if (iRef.current.length === 0) return
-      fitBounds(getBounds(iRef.current))
-    })
-
-    hotkeys('command+1', (e) => {
-      e.preventDefault()
-      zoomCenter(1.0)
-    })
-
-    hotkeys('command+2', (e) => {
-      e.preventDefault()
-      const sel = sRef.current,
-        imgs = iRef.current
-      const targets = sel.size > 0 ? imgs.filter((i) => sel.has(i.id)) : imgs
-      if (targets.length === 0) return
-      fitBounds(getBounds(targets))
-    })
-
-    hotkeys('backspace,delete', (e) => {
-      e.preventDefault()
-      if (sRef.current.size === 0) return
-      // Surface an explicit choice instead of silently removing (the toast was
-      // too easy to miss). The modal offers remove-from-canvas vs move-to-trash.
-      setDeleteConfirm({ ids: [...sRef.current] })
-    })
-
-    hotkeys('command+a', (e) => {
-      e.preventDefault()
-      const all = new Set(iRef.current.map((i) => i.id))
-      select(all)
-    })
-
-    hotkeys('escape', () => {
-      clearSelection()
-    })
-
-    hotkeys('command+z', (e) => {
-      e.preventDefault()
-      undo()
-    })
-
-    hotkeys('command+shift+z', (e) => {
-      e.preventDefault()
-      redo()
-    })
-
-    hotkeys('command+g', (e) => {
-      e.preventDefault()
-      if (sRef.current.size >= 2) groupSelected(4)
-    })
-
-    hotkeys('command+shift+g', (e) => {
-      e.preventDefault()
-      ungroupSelected()
-    })
-
-    return () => {
-      hotkeys.unbind('command+=,command+plus')
-      hotkeys.unbind('command+-')
-      hotkeys.unbind('command+0')
-      hotkeys.unbind('command+1')
-      hotkeys.unbind('command+2')
-      hotkeys.unbind('command+shift+0')
-      hotkeys.unbind('backspace,delete')
-      hotkeys.unbind('command+a')
-      hotkeys.unbind('escape')
-      hotkeys.unbind('command+z')
-      hotkeys.unbind('command+shift+z')
-      hotkeys.unbind('command+g')
-      hotkeys.unbind('command+shift+g')
-    }
-  }, [
+  useCanvasHotkeys({
+    iRef,
+    sRef,
+    tRef,
+    dialogOpenRef,
     zoomCenter,
     fitBounds,
+    focusBounds: viewport.focusBounds,
+    select,
+    clearSelection,
     groupSelected,
     ungroupSelected,
     undo,
     redo,
-    pushUndo,
-  ])
-
-  /* -- File input -- */
-
-  const onFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!e.target.files?.length) return
-      const c = getPasteTarget()
-      addImagesFromFiles(e.target.files, c.x, c.y)
-      e.target.value = ''
-    },
-    [addImagesFromFiles, getPasteTarget],
-  )
+    onDeleteRequest: (ids) => setDeleteConfirm({ ids }),
+  })
 
   /* -- Render -- */
 
@@ -1061,11 +518,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={(e) => {
                           e.stopPropagation()
-                          if (img.recordId)
-                            void removeFromCanvas(canvasId, [img.recordId])
-                          setImages((prev) =>
-                            prev.filter((ci) => ci.id !== img.id),
-                          )
+                          dismissFailed(img.id, img.recordId)
                         }}
                       >
                         Dismiss
