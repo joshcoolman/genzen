@@ -89,7 +89,7 @@ export function GeneratorPanel({
               imageUrls: userImages.imageUrls,
               isLoading: userImages.isLoading,
               onSelect: (image) =>
-                generator.setSourceFromUrl(image.url, image.title),
+                generator.setSourceFromUrl(image.url, image.title, image.id),
               onSelectMultiple:
                 isEdit && generator.setSourceFromUrls
                   ? (images) => generator.setSourceFromUrls?.(images)

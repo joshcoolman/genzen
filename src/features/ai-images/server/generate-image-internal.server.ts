@@ -7,8 +7,11 @@ import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
 import { endpointFor } from '#/features/ai-images/models'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
+import {
+  resolveLibraryImageUrl,
+  uploadLibraryImagesToFal,
+} from '#/lib/server/fal-image-inputs.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
-import { createImageStorage } from '#/lib/image-storage'
 import { computeFalCostCents } from '#/lib/server/compute-cost.server'
 import {
   createPendingGeneration,
@@ -50,20 +53,6 @@ export interface GenerateImageInput {
 
 /** The object behind a library row, scoped to its owner -- the caller passes an
  *  id, so a client cannot name someone else's row or an arbitrary URL. */
-async function resolveSourceUrl(
-  imageId: string,
-  userId: string,
-): Promise<string | null> {
-  const row = first(
-    await sql<Array<{ storage_path: string | null }>>`
-      select storage_path from user_images
-      where id = ${imageId} and user_id = ${userId} and deleted_at is null
-    `,
-  )
-  if (!row?.storage_path) return null
-  return createImageStorage().getUrl(row.storage_path)
-}
-
 function buildRefinePrompt(userPrompt: string): string {
   return `Re-imagine this: ${userPrompt}`
 }
@@ -229,7 +218,7 @@ export async function generateImageInternal(
     // way a reference image would have if it took this path.
     if (sourceImageId || sourceImageUrl) {
       const fetchUrl = sourceImageId
-        ? await resolveSourceUrl(sourceImageId, userId)
+        ? await resolveLibraryImageUrl(sourceImageId, userId)
         : sourceImageUrl!
       if (!fetchUrl) throw new Error('Source image not found')
       const res = await fetch(fetchUrl)
@@ -280,35 +269,15 @@ export async function generateImageInternal(
       effectivePrompt = buildRefinePrompt(effectivePrompt)
     }
 
-    // Fetch reference images and upload them to FAL storage
-    let referenceUrls: Array<string> = []
-    if (data.referenceImageIds?.length) {
-      const refImages = await sql<
-        Array<{ id: string; storage_path: string | null }>
-      >`
-        select id, storage_path from user_images
-        where id in ${sql(data.referenceImageIds)} and user_id = ${userId}
-      `
-
-      if (refImages.length) {
-        const storage = createImageStorage()
-        const uploads = await Promise.all(
-          refImages.map(async (ref) => {
-            if (!ref.storage_path) return null
-            const signedUrl = await storage.getUrl(ref.storage_path)
-            if (!signedUrl) return null
-            const res = await fetch(signedUrl)
-            const buf = await res.arrayBuffer()
-            return uploadBufferToFal(buf)
-          }),
-        )
-        referenceUrls = uploads.filter((u): u is string => u !== null)
-      }
-
-      // Reference images require image-input model variant
-      if (referenceUrls.length > 0 && !imageUrl) {
-        falModelId = endpointFor(model, true)
-      }
+    // Reference images go to FAL as bytes, same as the source. Shared with the
+    // retry path so the two cannot drift (#214).
+    const referenceUrls = await uploadLibraryImagesToFal(
+      data.referenceImageIds ?? [],
+      userId,
+    )
+    // Reference images require the image-input model variant
+    if (referenceUrls.length > 0 && !imageUrl) {
+      falModelId = endpointFor(model, true)
     }
 
     // Combine source image + ref images + style refs into imageUrls

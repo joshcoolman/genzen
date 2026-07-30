@@ -1,12 +1,18 @@
 'use server'
 
 import { fal } from '@fal-ai/client'
+import { endpointFor } from '../models'
+import { RetryNotReproducible, planHasImages, planRetry } from '../retry-plan'
 import { buildFalInput } from './fal-params.server'
+import type { RetryMetadata } from '../retry-plan'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
-import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { fetchAndUploadToFal } from '#/lib/server/fal-image-upload.server'
+import {
+  resolveLibraryImageUrl,
+  uploadLibraryImagesToFal,
+} from '#/lib/server/fal-image-inputs.server'
 import { computeFalCostCents } from '#/lib/server/compute-cost.server'
 import {
   describeGenerationError,
@@ -42,64 +48,16 @@ export async function retryGeneration(data: RetryGenerationInput) {
     throw new Error('Record not found or not in failed state')
   }
 
-  const meta = record.generation_metadata as {
-    prompt?: string
-    model?: string
-    fal_model_id?: string
-    aspect_ratio?: string
-    source_image_url?: string
-    reference_image_ids?: Array<string>
-  }
+  // Pure, and before the row is touched: an unreproducible retry must leave the
+  // card exactly as it was, showing its original error rather than a fresh one.
+  const plan = planRetry(record.generation_metadata as RetryMetadata)
+  const meta = record.generation_metadata as RetryMetadata
 
-  if (!meta.prompt || !meta.model) {
-    throw new Error('Missing generation metadata — cannot retry')
-  }
-
-  // Capture after guard so TS knows these are defined inside the closure
-  const prompt = meta.prompt
-  const falModelId = meta.fal_model_id ?? meta.model
-
-  const referenceUrls: Array<string> = []
-  if (meta.reference_image_ids?.length) {
-    const refImages = await sql<
-      Array<{ id: string; storage_path: string | null }>
-    >`
-      select id, storage_path from user_images
-      where id in ${sql(meta.reference_image_ids)} and user_id = ${userId}
-    `
-
-    if (refImages.length) {
-      const storage = createImageStorage()
-      const uploads = await Promise.all(
-        refImages.map(async (ref) => {
-          if (!ref.storage_path) return null
-          const refUrl = await storage.getUrl(ref.storage_path)
-          if (!refUrl) return null
-          const res = await fetch(refUrl)
-          const buf = await res.arrayBuffer()
-          return uploadBufferToFal(buf)
-        }),
-      )
-      referenceUrls.push(...uploads.filter((u): u is string => u !== null))
-    }
-  }
-
-  const falInput = await buildFalInput({
-    modelId: falModelId,
-    prompt,
-    aspectRatio: meta.aspect_ratio,
-    ...(referenceUrls.length > 0
-      ? {
-          imageUrls: [
-            ...(meta.source_image_url ? [meta.source_image_url] : []),
-            ...referenceUrls,
-          ],
-        }
-      : meta.source_image_url
-        ? { imageUrl: meta.source_image_url }
-        : {}),
-    safetyLevel: 'permissive',
-  })
+  // Derived, never read from the row. `fal_model_id` is written at reserve time
+  // as the base model and only patched to the resolved endpoint at submit, so a
+  // generation that failed *before* submit kept the text-to-image endpoint --
+  // and those are exactly the rows a user retries.
+  const falModelId = endpointFor(plan.model, planHasImages(plan))
 
   // A retry reuses the failed row rather than inserting a new one. Retrying is
   // "try that again", not "make another" -- a new row left the original behind
@@ -139,21 +97,61 @@ export async function retryGeneration(data: RetryGenerationInput) {
         'FAL_KEY is not set — add it to .env.local and restart the dev server',
       )
     }
+
+    // Every image goes to FAL as bytes. The source used to be handed over as a
+    // URL (unfetchable locally) or, for a library source, dropped entirely --
+    // so the most common retry in the app silently went out text-only against
+    // an image endpoint (#214).
+    const sourceUrl =
+      plan.source.kind === 'library'
+        ? await resolveLibraryImageUrl(plan.source.imageId, userId)
+        : plan.source.kind === 'url'
+          ? plan.source.url
+          : null
+
+    if (plan.source.kind !== 'none' && !sourceUrl) {
+      throw new RetryNotReproducible(
+        'The source image for this generation is no longer available, so it cannot be sent again.',
+      )
+    }
+
+    const [uploadedSource, referenceUrls] = await Promise.all([
+      sourceUrl ? fetchAndUploadToFal(sourceUrl) : Promise.resolve(null),
+      uploadLibraryImagesToFal(plan.referenceImageIds, userId),
+    ])
+
+    // Source first, then references: models read the list positionally and the
+    // prompt labels them "[Image 1, Image 2, ...]".
+    const imageUrls = [
+      ...(uploadedSource ? [uploadedSource] : []),
+      ...referenceUrls,
+    ]
+
+    const falInput = await buildFalInput({
+      modelId: falModelId,
+      prompt: plan.prompt,
+      aspectRatio: plan.aspectRatio,
+      ...(imageUrls.length > 0 ? { imageUrls } : {}),
+      safetyLevel: 'permissive',
+    })
+
     const webhookUrl = getFalWebhookUrl()
     const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
       ...(webhookUrl ? { webhookUrl } : {}),
     })
     const estimatedCostCents = await computeFalCostCents(falModelId, {
-      aspectRatio: meta.aspect_ratio,
+      aspectRatio: plan.aspectRatio,
     }).catch(() => null)
-    await markGenerationSubmitted(
-      newRecord.id,
-      request_id,
-      estimatedCostCents != null
+    await markGenerationSubmitted(newRecord.id, request_id, {
+      // Record the endpoint actually used, the way generate does. The stored
+      // one can be the base model (see the derivation above), so without this
+      // the row keeps claiming a text-only endpoint for a run that sent images.
+      fal_model_id: falModelId,
+      ...(estimatedCostCents != null
         ? { estimated_cost_cents: estimatedCostCents }
-        : undefined,
-    )
+        : {}),
+    })
   } catch (err) {
     console.error('[retry] generation failed', newRecord.id, err)
     await markGenerationFailed(

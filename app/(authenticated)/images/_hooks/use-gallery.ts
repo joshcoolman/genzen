@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { toast } from '#/components'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
@@ -186,9 +187,14 @@ export function useGallery({
     )
     try {
       await retryGeneration({ recordId: img.id })
-    } catch {
+    } catch (err) {
       // Put the failed state back -- the retry never reached FAL.
       setSavedImages((prev) => prev.map((i) => (i.id === img.id ? img : i)))
+      // And say why. A retry can refuse for a reason the user can act on --
+      // a source that was pasted rather than saved cannot be sent again -- and
+      // swallowing it left the card looking like it had simply failed twice
+      // with the original error (#214).
+      toast.error(err instanceof Error ? err.message : 'Retry failed')
     }
   }
 

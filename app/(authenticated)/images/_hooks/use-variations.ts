@@ -19,7 +19,7 @@ export interface VariationsState {
     prompts: Array<string>,
     applyFn: (prompts: Array<string>) => void,
     sourceImageUrl?: string,
-    setSourceFn?: (url: string, name: string) => void,
+    setSourceFn?: (url: string, name: string, id?: string) => void,
   ) => void
   cancelVariationPreview: () => void
 }
@@ -67,10 +67,16 @@ export function useVariations({
     prompts: Array<string>,
     applyFn: (prompts: Array<string>) => void,
     sourceImageUrl?: string,
-    setSourceFn?: (url: string, name: string) => void,
+    setSourceFn?: (url: string, name: string, id?: string) => void,
   ) {
     if (sourceImageUrl && setSourceFn && pendingSourceImage) {
-      void setSourceFn(sourceImageUrl, pendingSourceImage.id)
+      // The id goes in the id slot, not just the name slot: a variation's
+      // source is a library row, so Retry can send it again (#214).
+      void setSourceFn(
+        sourceImageUrl,
+        pendingSourceImage.title || pendingSourceImage.id,
+        pendingSourceImage.id,
+      )
     }
     applyFn(prompts)
     cancelVariationPreview()

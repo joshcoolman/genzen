@@ -521,9 +521,17 @@ export function useCanvasGenerate(
           : '',
       )
 
-      // Primary image (Image 1) -> source slot. Signed URL is CORS-safe.
+      // Primary image (Image 1) -> source slot. Signed URL is CORS-safe, and
+      // the recordId rides along for the same reason the references below carry
+      // theirs: without it the source is bytes with no identity, and Retry
+      // cannot send it again (#214).
       const url = source.signedUrl ?? (await getSignedUrl(source.storagePath))
-      if (url) generator.setSourceFromUrl(url, 'canvas-image')
+      if (url)
+        generator.setSourceFromUrl(
+          url,
+          'canvas-image',
+          source.recordId || undefined,
+        )
 
       // Remaining images (Image 2..N) -> reference strip, by recordId so they
       // flow through as referenceImageIds (metadata parity). replaceRefImages

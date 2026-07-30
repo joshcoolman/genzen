@@ -83,7 +83,9 @@ export interface GeneratorState {
   handleOrientationToggle: () => void
   handleGenerate: () => Promise<void>
   setSourceFile: (file: File) => void
-  setSourceFromUrl: (url: string, name: string) => void
+  /** `id` is the library row this came from. Pass it wherever it is known --
+   *  a source with an id survives Retry, one without it cannot (#214). */
+  setSourceFromUrl: (url: string, name: string, id?: string) => void
   setSourceFromUrls?: (
     images: Array<{ id: string; url: string; title: string }>,
   ) => void
@@ -468,11 +470,15 @@ export function useGenerator({
     reader.readAsDataURL(file)
   }, [])
 
+  /** `id` is the library row this came from, when there is one. Pass it: a
+   *  source carrying an id is reproducible on Retry, and one carrying only
+   *  bytes is not (#214). The picker has always known the id -- it just was not
+   *  handed down, so every library pick became an unreplayable paste. */
   const setSourceFromUrl = useCallback(
-    async (url: string, name: string) => {
+    async (url: string, name: string, id?: string) => {
       try {
         const { base64 } = await fetchImageAsBase64({ url })
-        applySourceBase64(base64, name)
+        applySourceBase64(base64, name, id ? { id } : undefined)
       } catch (err) {
         console.error('Failed to load image from library:', err)
       }
