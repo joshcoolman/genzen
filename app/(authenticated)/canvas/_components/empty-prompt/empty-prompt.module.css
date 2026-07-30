@@ -1,0 +1,26 @@
+.empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #444;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.emptyHint {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #2a2a2a;
+}

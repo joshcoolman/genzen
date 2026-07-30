@@ -1,0 +1,35 @@
+.canvas {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #0a0a0a;
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .canvas {
+    left: 4rem;
+  }
+}
+
+.panMode {
+  cursor: grab;
+}
+
+.panMode:active {
+  cursor: grabbing;
+}
+
+.inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}

@@ -1,0 +1,36 @@
+.dropNotice {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  color: #999;
+  font-size: 13px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  padding: 8px 16px;
+  border-radius: 8px;
+  z-index: 50;
+  pointer-events: none;
+  animation: fadeInOut 3s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

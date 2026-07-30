@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Sparkles } from 'lucide-react'
 import { stateToImages } from '../../_lib/persistence'
 import { getBounds } from '../../_lib/geometry'
 import { useHistory } from '../../_hooks/use-history'
@@ -12,40 +11,47 @@ import { useIngest } from '../../_hooks/use-ingest'
 import { useAutosave } from '../../_hooks/use-autosave'
 import { useReconcile } from '../../_hooks/use-reconcile'
 import { useCanvasHotkeys } from '../../_hooks/use-canvas-hotkeys'
-import {
-  canRetryFailure,
-  useCanvasGenerate,
-} from '../canvas-generate-dialog/use-canvas-generate'
+import { useCanvasGenerate } from '../canvas-generate-dialog/use-canvas-generate'
 import { CANVAS_MAX_GROUP_SELECTION } from '../../_lib/canvas-models'
 import { SelectionActions } from '../selection-actions/selection-actions'
+import { CanvasSurface } from '../canvas-surface/canvas-surface'
+import { ImageCard } from '../image-card/image-card'
+import { GroupBackground } from '../group-background/group-background'
+import { ModelLabel } from '../model-label/model-label'
+import { PendingOverlay } from '../pending-overlay/pending-overlay'
+import { SelectionBounds } from '../selection-bounds/selection-bounds'
+import { GeneratePill } from '../generate-pill/generate-pill'
+import { MarqueeBox } from '../marquee-box/marquee-box'
+import { EmptyPrompt } from '../empty-prompt/empty-prompt'
+import { ContextMenu } from '../context-menu/context-menu'
+import { DeleteConfirm } from '../delete-confirm/delete-confirm'
+import { DropNotice } from '../drop-notice/drop-notice'
 import { CanvasGenerateDialog } from '../canvas-generate-dialog/canvas-generate-dialog'
 import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
-import styles from './infinite-canvas.module.css'
 import type { CanvasGroup, CanvasImage, DragMode } from '../../_lib/types'
 // Explicitly imported: `CanvasState` is also a lib.dom global, so without this
 // the props type silently resolves to the DOM one.
 import type { CanvasState } from '../../_lib/persistence'
 import { getModelName } from '#/features/ai-images/models'
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#/components'
 import { useAuth } from '#/lib/auth'
 import { useExistingImages } from '#/features/user-images'
+
+/** Below this zoom the screen-space labels are noise, so they are dropped. */
+const MODEL_LABEL_MIN_SCALE = 0.1
+/** Label sits this far above its card, in screen pixels. */
+const MODEL_LABEL_OFFSET = 22
+/** The selection box is drawn slightly outside the content it wraps. */
+const SELECTION_INSET = 6
+/** Gap between the selection box and the Generate pill below it. */
+const PILL_GAP = 10
 
 interface InfiniteCanvasProps {
   /** The canvas as the server read it. Seeds the first render, so there is no
    *  loading gate and no empty first paint (#212). */
   initial: CanvasState
-  className?: string
 }
 
-export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
+export function InfiniteCanvas({ initial }: InfiniteCanvasProps) {
   // Seeded, not fetched. The server read already resolved every member's URL and
   // position, so the first render is the real canvas.
   const seed = useMemo(() => stateToImages(initial), [initial])
@@ -395,29 +401,66 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     onDeleteRequest: (ids) => setDeleteConfirm({ ids }),
   })
 
+  /** Right-click opens the menu on a card. A right-drag that panned has
+   *  already set the suppress flag, so it does not also pop the menu. */
+  const onContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    if (suppressContextRef.current) {
+      suppressContextRef.current = false
+      return
+    }
+    const target = (e.target as HTMLElement).closest('[data-image-id]')
+    const imageId = target?.getAttribute('data-image-id')
+    if (imageId) setContextMenu({ x: e.clientX, y: e.clientY, imageId })
+  }, [])
+
   /* -- Render -- */
 
-  const zoomPct = Math.round(transform.scale * 100)
-  const rootClass = [styles.canvas, spaceHeld && styles.panMode, className]
-    .filter(Boolean)
-    .join(' ')
-  // Bounding box for any selection (single or multi)
+  // Nothing is ever "already collected" on the canvas -- a library image can be
+  // placed more than once.
+  const emptySet = useMemo(() => new Set<string>(), [])
+
   const selectionBounds =
     selected.size >= 1
       ? getBounds(images.filter((img) => selected.has(img.id)))
       : null
 
-  // Detect if current selection is exactly a group
-  const selectedGroup = getSelectedGroup()
-  const emptySet = useMemo(() => new Set<string>(), [])
+  /** Canvas point -> screen point, for the overlays outside the plane. */
+  const toScreen = (x: number, y: number) => ({
+    left: transform.x + x * transform.scale,
+    top: transform.y + y * transform.scale,
+  })
+
+  /** Inside a live multi-selection's box but not in it -- about to be left
+   *  behind by the drag, so the card dims. */
+  const isDimmed = (img: CanvasImage) =>
+    selected.size >= 2 &&
+    !!selectionBounds &&
+    !selected.has(img.id) &&
+    img.x + img.width >= selectionBounds.x &&
+    img.x <= selectionBounds.x + selectionBounds.w &&
+    img.y + img.height >= selectionBounds.y &&
+    img.y <= selectionBounds.y + selectionBounds.h
+
+  // The pill needs a settled, fully-loaded selection: no pending tiles, and
+  // small enough that some model can hold every image as a reference.
+  const pillImages = images.filter((img) => selected.has(img.id))
+  const showPill =
+    selected.size >= 1 &&
+    selected.size <= CANVAS_MAX_GROUP_SELECTION &&
+    !canvasGen.isOpen &&
+    pillImages.length === selected.size &&
+    !pillImages.some((img) => img.pending)
+
+  const containerRect = containerRef.current?.getBoundingClientRect()
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className={rootClass}
+      <CanvasSurface
+        containerRef={containerRef}
+        transform={transform}
+        panMode={spaceHeld}
         onPointerDown={(e) => {
-          // Close context menu on any click
           if (contextMenu) setContextMenu(null)
           onPointerDown(e)
         }}
@@ -425,253 +468,125 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
         onPointerUp={onPointerUp}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        onContextMenu={(e) => {
-          e.preventDefault()
-          // A right-drag pan just ended -- don't pop the menu.
-          if (suppressContextRef.current) {
-            suppressContextRef.current = false
-            return
-          }
-          const target = (e.target as HTMLElement).closest('[data-image-id]')
-          const imageId = target?.getAttribute('data-image-id')
-          if (imageId) {
-            setContextMenu({ x: e.clientX, y: e.clientY, imageId })
-          }
-        }}
-        tabIndex={0}
-      >
-        <div
-          className={styles.inner}
-          style={{
-            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-            transformOrigin: '0 0',
-          }}
-        >
-          {/* Group backgrounds (rendered behind images) */}
-          {groups.map((group) => {
-            const memberImgs = images.filter((img) =>
-              group.imageIds.includes(img.id),
-            )
-            if (memberImgs.length < 2) return null
-            const bounds = getBounds(memberImgs)
-            const pad = group.padding
-            return (
-              <div
-                key={group.id}
-                data-group-id={group.id}
-                className={styles.groupBackground}
-                style={{
-                  left: bounds.x - pad,
-                  top: bounds.y - pad,
-                  width: bounds.w + pad * 2,
-                  height: bounds.h + pad * 2,
-                }}
+        onContextMenu={onContextMenu}
+        plane={
+          <>
+            {groups.map((group) => {
+              const members = images.filter((img) =>
+                group.imageIds.includes(img.id),
+              )
+              if (members.length < 2) return null
+              return (
+                <GroupBackground
+                  key={group.id}
+                  groupId={group.id}
+                  bounds={getBounds(members)}
+                  padding={group.padding}
+                />
+              )
+            })}
+            {images.map((img) => (
+              <ImageCard
+                key={img.id}
+                image={img}
+                dimmed={isDimmed(img)}
+                scale={transform.scale}
+                onRetry={(id) => void canvasGen.retryFailed(id)}
+                onDismiss={dismissFailed}
               />
-            )
-          })}
-
-          {images.map((img) => (
-            <div
-              key={img.id}
-              data-image-id={img.id}
-              className={`${styles.image}${selected.size >= 2 && selectionBounds && !selected.has(img.id) && img.x + img.width >= selectionBounds.x && img.x <= selectionBounds.x + selectionBounds.w && img.y + img.height >= selectionBounds.y && img.y <= selectionBounds.y + selectionBounds.h ? ` ${styles.dimmed}` : ''}${img.pending ? ` ${styles.pending}` : ''}${img.failed ? ` ${styles.failed}` : ''}${selected.has(img.id) ? ` ${styles.selected}` : ''}`}
-              style={{
-                left: img.x,
-                top: img.y,
-                width: img.width,
-                height: img.height,
-              }}
-            >
-              {img.pending ? (
-                <div className={styles.pendingInner} />
-              ) : img.failed ? (
-                <div className={styles.failedInner}>
-                  <div
-                    className={styles.failedContent}
-                    style={{
-                      transform: `scale(${Math.min(3, 1 / transform.scale)})`,
-                    }}
-                  >
-                    <span className={styles.failedModel}>
-                      {getModelName(img.model ?? '')}
-                    </span>
-                    <span className={styles.failedMsg}>
-                      {img.errorMessage ?? 'Generation failed'}
-                    </span>
-                    <div className={styles.failedActions}>
-                      {canRetryFailure(img) && (
-                        <button
-                          type="button"
-                          className={styles.failedBtn}
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            void canvasGen.retryFailed(img.id)
-                          }}
-                        >
-                          Retry
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.failedBtnGhost}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          dismissFailed(img.id, img.recordId)
-                        }}
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <img src={img.signedUrl} alt="" draggable={false} />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Model labels — screen-space overlay, same coordinate system as the
-            Generate pill. Fixed screen size so they stay readable at any zoom. */}
+            ))}
+          </>
+        }
+      >
         {images
           .filter(
             (img) =>
-              transform.scale >= 0.1 &&
+              transform.scale >= MODEL_LABEL_MIN_SCALE &&
               !img.pending &&
               !img.failed &&
               img.model,
           )
-          .map((img) => (
-            <span
-              key={`label-${img.id}`}
-              className={styles.imageLabelOverlay}
-              style={{
-                left: transform.x + img.x * transform.scale,
-                top: transform.y + img.y * transform.scale - 22,
-              }}
-            >
-              {getModelName(img.model!)}
-            </span>
-          ))}
+          .map((img) => {
+            const at = toScreen(img.x, img.y)
+            return (
+              <ModelLabel
+                key={`label-${img.id}`}
+                name={getModelName(img.model!)}
+                left={at.left}
+                top={at.top - MODEL_LABEL_OFFSET}
+              />
+            )
+          })}
 
-        {/* Loading indicator — screen-space overlay centered on each pending
-            tile. Fixed readable size at any zoom (matches the labels + Generate
-            pill); the gray placeholder stays in-plane and scales with the tile. */}
         {images
           .filter((img) => img.pending)
-          .map((img) => (
-            <div
-              key={`loading-${img.id}`}
-              className={styles.pendingOverlay}
-              style={{
-                left: transform.x + (img.x + img.width / 2) * transform.scale,
-                top: transform.y + (img.y + img.height / 2) * transform.scale,
-              }}
-            >
-              <div className={styles.pendingSpinner} />
-              {img.model && transform.scale > 0.1 && (
-                <span className={styles.pendingModel}>
-                  {getModelName(img.model)}
-                </span>
-              )}
-            </div>
-          ))}
+          .map((img) => {
+            const at = toScreen(img.x + img.width / 2, img.y + img.height / 2)
+            return (
+              <PendingOverlay
+                key={`loading-${img.id}`}
+                left={at.left}
+                top={at.top}
+                modelName={
+                  img.model && transform.scale > MODEL_LABEL_MIN_SCALE
+                    ? getModelName(img.model)
+                    : undefined
+                }
+              />
+            )
+          })}
 
         {selectionBounds && (
-          <div
-            className={styles.groupBounds}
-            style={{
-              left: transform.x + selectionBounds.x * transform.scale - 6,
-              top: transform.y + selectionBounds.y * transform.scale - 6,
-              width: selectionBounds.w * transform.scale + 12,
-              height: selectionBounds.h * transform.scale + 12,
-            }}
+          <SelectionBounds
+            left={
+              transform.x +
+              selectionBounds.x * transform.scale -
+              SELECTION_INSET
+            }
+            top={
+              transform.y +
+              selectionBounds.y * transform.scale -
+              SELECTION_INSET
+            }
+            width={selectionBounds.w * transform.scale + SELECTION_INSET * 2}
+            height={selectionBounds.h * transform.scale + SELECTION_INSET * 2}
           />
         )}
 
-        {/* Generate affordance: appears below the selection when 1..GROUP_MAX
-            non-pending images are selected. One image -> single Generate dialog;
-            a group -> the multi-image Generate dialog (all images as references).
-            More than GROUP_MAX selected -> no pill (no model can hold the group). */}
-        {selected.size >= 1 &&
-          selected.size <= CANVAS_MAX_GROUP_SELECTION &&
-          selectionBounds &&
-          !canvasGen.isOpen &&
-          (() => {
-            const selectedImgs = images.filter((img) => selected.has(img.id))
-            if (
-              selectedImgs.length !== selected.size ||
-              selectedImgs.some((img) => img.pending)
-            )
-              return null
-            const isGroup = selectedImgs.length > 1
-            return (
-              <button
-                className={styles.onImageGenerate}
-                style={{
-                  left:
-                    transform.x +
-                    (selectionBounds.x + selectionBounds.w / 2) *
-                      transform.scale,
-                  top:
-                    transform.y +
-                    (selectionBounds.y + selectionBounds.h) * transform.scale +
-                    10,
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  void canvasGen.open(selectedImgs)
-                }}
-                title={
-                  isGroup
-                    ? `Generate from ${selectedImgs.length} images`
-                    : 'Generate from image'
-                }
-              >
-                <Sparkles size={15} />
-                <span>Generate</span>
-              </button>
-            )
-          })()}
-
-        {marquee &&
-          (() => {
-            const rect = containerRef.current?.getBoundingClientRect()
-            const ox = rect?.left ?? 0
-            const oy = rect?.top ?? 0
-            return (
-              <div
-                className={styles.marquee}
-                style={{
-                  left: Math.min(marquee.x1, marquee.x2) - ox,
-                  top: Math.min(marquee.y1, marquee.y2) - oy,
-                  width: Math.abs(marquee.x2 - marquee.x1),
-                  height: Math.abs(marquee.y2 - marquee.y1),
-                }}
-              />
-            )
-          })()}
-
-        {images.length === 0 && (
-          <div className={styles.empty}>
-            <p>Drop images here, paste from clipboard, or use the + button</p>
-            <p className={styles.emptyHint}>
-              Click to set paste target &middot; Scroll to zoom &middot;
-              Space+drag to pan
-            </p>
-          </div>
+        {showPill && selectionBounds && (
+          <GeneratePill
+            left={
+              transform.x +
+              (selectionBounds.x + selectionBounds.w / 2) * transform.scale
+            }
+            top={
+              transform.y +
+              (selectionBounds.y + selectionBounds.h) * transform.scale +
+              PILL_GAP
+            }
+            count={pillImages.length}
+            onClick={() => void canvasGen.open(pillImages)}
+          />
         )}
+
+        {marquee && (
+          <MarqueeBox
+            left={Math.min(marquee.x1, marquee.x2) - (containerRect?.left ?? 0)}
+            top={Math.min(marquee.y1, marquee.y2) - (containerRect?.top ?? 0)}
+            width={Math.abs(marquee.x2 - marquee.x1)}
+            height={Math.abs(marquee.y2 - marquee.y1)}
+          />
+        )}
+
+        {images.length === 0 && <EmptyPrompt />}
 
         <SelectionActions
           count={selected.size}
-          isGrouped={!!selectedGroup}
+          isGrouped={!!getSelectedGroup()}
           onArrange={arrangeSelected}
           onGroup={groupSelected}
           onUngroup={ungroupSelected}
-          zoomPct={zoomPct}
+          zoomPct={Math.round(transform.scale * 100)}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
         />
@@ -684,89 +599,33 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
           onChange={onFileChange}
           hidden
         />
-      </div>
+      </CanvasSurface>
 
-      {/* Right-click context menu */}
       {contextMenu && (
-        <div
-          className={styles.contextMenu}
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <button
-            className={styles.contextMenuItem}
-            onClick={() => {
-              const sourceImage = images.find(
-                (img) => img.id === contextMenu.imageId,
-              )
-              if (sourceImage) void canvasGen.open([sourceImage])
-              setContextMenu(null)
-            }}
-          >
-            Generate
-          </button>
-          <button
-            className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`}
-            onClick={() => {
-              const id = contextMenu.imageId
-              setContextMenu(null)
-              moveSelectionToTrash([id])
-            }}
-          >
-            Move to Trash
-          </button>
-        </div>
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onGenerate={() => {
+            const source = images.find((img) => img.id === contextMenu.imageId)
+            if (source) void canvasGen.open([source])
+            setContextMenu(null)
+          }}
+          onTrash={() => {
+            const id = contextMenu.imageId
+            setContextMenu(null)
+            moveSelectionToTrash([id])
+          }}
+        />
       )}
 
       <CanvasGenerateDialog canvasGen={canvasGen} />
 
-      <Dialog
-        open={!!deleteConfirm}
-        onOpenChange={(open) => !open && setDeleteConfirm(null)}
-      >
-        <DialogContent className={styles.confirmPopup}>
-          <DialogHeader>
-            <DialogTitle>
-              {deleteConfirm && deleteConfirm.ids.length > 1
-                ? `Delete ${deleteConfirm.ids.length} images?`
-                : 'Delete this image?'}
-            </DialogTitle>
-            <DialogDescription>
-              Remove it from the canvas (it stays in your library), or move it
-              to Trash.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className={styles.confirmFooter}>
-            <Button
-              variant="secondary"
-              className={styles.confirmAction}
-              onClick={() => {
-                if (deleteConfirm) removeSelectionFromCanvas(deleteConfirm.ids)
-                setDeleteConfirm(null)
-              }}
-            >
-              Remove from Canvas
-            </Button>
-            <Button
-              variant="danger"
-              className={styles.confirmAction}
-              onClick={() => {
-                if (deleteConfirm) moveSelectionToTrash(deleteConfirm.ids)
-                setDeleteConfirm(null)
-              }}
-            >
-              Move to Trash
-            </Button>
-            <Button
-              variant="ghost"
-              className={styles.confirmAction}
-              onClick={() => setDeleteConfirm(null)}
-            >
-              Cancel
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirm
+        pending={deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onRemoveFromCanvas={removeSelectionFromCanvas}
+        onMoveToTrash={moveSelectionToTrash}
+      />
 
       <ExistingImagePicker
         open={libraryOpen}
@@ -778,11 +637,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
         onConfirm={onLibraryConfirm}
       />
 
-      {dropNotice && (
-        <div key={dropNotice} className={styles.dropNotice}>
-          {dropNotice}
-        </div>
-      )}
+      {dropNotice && <DropNotice message={dropNotice} />}
     </>
   )
 }

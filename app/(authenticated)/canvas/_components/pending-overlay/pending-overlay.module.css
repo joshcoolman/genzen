@@ -1,0 +1,42 @@
+.pendingOverlay {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* The last Tailwind utility line in the app lived here (#186):
+   `size-6 animate-spin rounded-full border-2 border-border border-t-accent-brand` */
+.pendingSpinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-brand);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pendingModel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8c8c8;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  text-align: center;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

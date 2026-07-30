@@ -1,0 +1,15 @@
+/* Three actions stacked full width, not the usual right-aligned row -- they are
+   three different outcomes rather than a confirm/cancel pair, which is also why
+   this is not ConfirmDialog. */
+.confirmPopup {
+  --dialog-max-width: 22.5rem;
+}
+
+.confirmFooter {
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.confirmAction {
+  width: 100%;
+}

@@ -1,0 +1,44 @@
+.contextMenu {
+  position: fixed;
+  z-index: 50;
+  min-width: 160px;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.contextMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 13px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition:
+    color 0.1s,
+    background 0.1s;
+}
+
+.contextMenuItem:hover {
+  color: #fff;
+  background: #2a2a2a;
+}
+
+.contextMenuItemDanger {
+  color: #e06c6c;
+}
+
+.contextMenuItemDanger:hover {
+  color: #fff;
+  background: #5c2222;
+}
