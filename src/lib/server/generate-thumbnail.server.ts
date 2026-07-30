@@ -60,7 +60,7 @@ export function generateThumbnailInBackground(
         await sql`
           update user_images
           set thumbnail_path = ${thumbnailPath}
-          where id = ${recordId}
+          where id = ${recordId} and user_id = ${userId}
         `
       }
     })

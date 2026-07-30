@@ -63,7 +63,8 @@ export async function processImageResult(
   // written between these two statements survives.
   const record = first(
     await sql<Array<{ generation_metadata: Record<string, unknown> | null }>>`
-    select generation_metadata from user_images where id = ${recordId}
+    select generation_metadata from user_images
+    where id = ${recordId} and user_id = ${userId}
   `,
   )
 
@@ -110,7 +111,7 @@ export async function processImageResult(
                 provider_cost_is_estimate: providerCostIsEstimate,
               }),
             })}
-      where id = ${recordId}
+      where id = ${recordId} and user_id = ${userId}
     `
   } catch (err) {
     // The file landed in storage before the row could point at it. Without
@@ -126,6 +127,9 @@ export async function processImageResult(
 }
 
 export async function markGenerationFailed(recordId: string, errorMsg: string) {
+  // sql-scope-exempt: `recordId` comes from the poll scan (its own
+  // `user_id`-filtered select) or the webhook's signature-verified lookup by
+  // request_id. Neither is a caller naming a row.
   await sql`
     update user_images
     set status = 'failed', generation_error = ${errorMsg}
@@ -146,6 +150,8 @@ export async function markGenerationFailedWithBlob(
 ) {
   const title = await failureTitle(recordId)
 
+  // sql-scope-exempt: same provenance as markGenerationFailed above -- the poll
+  // scan or the signature-verified webhook lookup.
   await sql`
     update user_images
     set status = 'failed',

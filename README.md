@@ -8,14 +8,13 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
-**Up next** — the finish state agreed in #222, in execution order (1–5 are small
+**Up next** — the finish state agreed in #222, in execution order (1–3 are small
 and order-flexible; the issues hold the detail):
 
-1. **#219** — Mechanical check for `user_id` scoping
-2. **#216** — Passive "on canvas" marker in library
-3. **#188** — Rewrite the architecture doc
-4. **#194** — Fix Canvas Undo (unblocked: #189 landed)
-5. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+1. **#216** — Passive "on canvas" marker in library
+2. **#188** — Rewrite the architecture doc
+3. **#194** — Fix Canvas Undo (unblocked: #189 landed)
+4. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
 
 Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
 Worth a read before it ages — it documents a real hole (the model id is a bare
@@ -146,12 +145,12 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-30)
 
+- **`user_id` scoping is checked, not remembered (#219).** An ESLint rule fails any `sql` statement naming a user-scoped table without a `user_id`; the table list comes from the migrations, so a new table is covered the day it lands. Found 10 unscoped statements — all legitimate, three of which now carry a real filter anyway.
 - **A canvas paste draws before it uploads.** The clipboard already handed over the bytes, so the card renders from them at ~30ms — right size, right place — and the upload runs underneath. `uploading` is a distinct state from `pending`: one has a picture, the other has nothing to show.
 - **One way into the library (#215).** Three near-identical upload functions, one of them dead, and only one made a thumbnail — so whether the grid downloaded full-size objects came down to which caller you went through. `saveFileToLibrary` is now the single writer and owns the thumbnail.
 - **An attached source image is saved on arrival (#224).** Uploading into the generator used to hold the bytes in memory, so its generation could never be retried. Settled the rule: aggressive on bytes, submit-only on prompt text.
 - **Retry replays the whole request (#214).** Source and references both re-sent; the endpoint is derived rather than read from a row that may predate it. Three call sites were dropping a library id they already had, which made every library pick look like an unreplayable paste.
 - **`/readme` renders this file in-app.** One server component + one stylesheet on the tokens; `marked` was already a dep. A pattern worth porting to every repo.
-- **A canvas is a container, not a view (#212).** Membership as rows in `canvas_images`; arrangement left IndexedDB, and trashing no longer evicts from a canvas.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
 carries it. It is the open issues, in execution order.

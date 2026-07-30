@@ -72,6 +72,8 @@ export async function createPendingGeneration({
   }
 
   const record = first(
+    // sql-scope-exempt: an insert scopes by what it writes, and `row` carries
+    // user_id from resolveAuth(). There is no filter to add.
     await sql<Array<{ id: string }>>`
     insert into user_images ${sql(row)} returning id
   `,
@@ -113,6 +115,9 @@ export async function markGenerationSubmitted(
       ? metadataPatch
       : null
 
+  // sql-scope-exempt: `recordId` is never caller-supplied. Both callers pass a
+  // row this server just inserted -- generate-image-internal its reservation,
+  // retry-generation the row it re-selected under `user_id = ${userId}`.
   await sql`
     update user_images
     set request_id = ${requestId}
@@ -186,6 +191,8 @@ export async function markGenerationFailed(
 ): Promise<void> {
   try {
     const title = await failureTitle(recordId)
+    // sql-scope-exempt: `recordId` is never caller-supplied -- see
+    // markGenerationSubmitted above; the callers are the same two paths.
     await sql`
       update user_images
       set status = 'failed',
@@ -206,6 +213,8 @@ export async function markGenerationFailed(
  */
 export async function failureTitle(recordId: string): Promise<string | null> {
   const record = first(
+    // sql-scope-exempt: reached only from the two mark-failed paths, each
+    // already holding a row it created or re-selected under its own user_id.
     await sql<
       Array<{
         title: string

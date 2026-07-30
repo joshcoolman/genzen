@@ -73,6 +73,8 @@ export async function addCanvasMembers(
     height: m.height ?? null,
   }))
 
+  // sql-scope-exempt: an insert scopes by what it writes, and every row carries
+  // user_id from the caller's resolveAuth(). There is no filter to add.
   await sql`
     insert into canvas_images ${sql(rows)}
     on conflict (canvas_id, image_id) do update set
