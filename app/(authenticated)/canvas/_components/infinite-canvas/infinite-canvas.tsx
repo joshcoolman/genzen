@@ -15,15 +15,10 @@ import {
   stateToImages,
 } from '../../_lib/persistence'
 import { layoutMasonry } from '../../_lib/masonry'
-import {
-  DEFAULT_SCALE,
-  MAX_SCALE,
-  MIN_SCALE,
-  centerOn,
-  getBounds,
-  scaleToFit,
-  spatialSort,
-} from '../../_lib/geometry'
+import { getBounds } from '../../_lib/geometry'
+import { useHistory } from '../../_hooks/use-history'
+import { useViewport } from '../../_hooks/use-viewport'
+import { useSelection } from '../../_hooks/use-selection'
 import {
   canRetryFailure,
   useCanvasGenerate,
@@ -33,12 +28,7 @@ import { SelectionActions } from '../selection-actions/selection-actions'
 import { CanvasGenerateDialog } from '../canvas-generate-dialog/canvas-generate-dialog'
 import { ExistingImagePicker } from '../../../_components/existing-image-picker/existing-image-picker'
 import styles from './infinite-canvas.module.css'
-import type {
-  CanvasGroup,
-  CanvasImage,
-  DragMode,
-  Transform,
-} from '../../_lib/types'
+import type { CanvasGroup, CanvasImage, DragMode } from '../../_lib/types'
 // Explicitly imported: `CanvasState` is also a lib.dom global, so without this
 // the props type silently resolves to the DOM one.
 import type { CanvasState } from '../../_lib/persistence'
@@ -73,17 +63,6 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
 
   const [images, setImages] = useState<Array<CanvasImage>>(seed.images)
   const [groups, setGroups] = useState<Array<CanvasGroup>>(initial.groups)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [transform, setTransform] = useState<Transform>(
-    initial.transform ?? { x: 0, y: 0, scale: DEFAULT_SCALE },
-  )
-  const [marquee, setMarquee] = useState<{
-    x1: number
-    y1: number
-    x2: number
-    y2: number
-  } | null>(null)
-  const [spaceHeld, setSpaceHeld] = useState(false)
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [dropNotice, setDropNotice] = useState<string | null>(null)
   const [contextMenu, setContextMenu] = useState<{
@@ -107,11 +86,8 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const tRef = useRef(transform)
   const iRef = useRef(images)
-  const sRef = useRef(selected)
   const gRef = useRef(groups)
-  const spaceRef = useRef(false)
   // Right-button drag pans the canvas. Track it so a right-drag suppresses the
   // context menu while a plain right-click still opens it.
   const rightPanRef = useRef(false)
@@ -130,100 +106,73 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     moved: false,
   })
 
-  /* -- Undo / Redo -- */
-  const undoStack = useRef<
-    Array<{ images: Array<CanvasImage>; groups: Array<CanvasGroup> }>
-  >([])
-  const redoStack = useRef<
-    Array<{ images: Array<CanvasImage>; groups: Array<CanvasGroup> }>
-  >([])
-  const MAX_UNDO = 50
+  const { pushUndo, undo, redo } = useHistory({
+    iRef,
+    gRef,
+    setImages,
+    setGroups,
+  })
 
-  const pushUndo = useCallback(() => {
-    undoStack.current.push({ images: iRef.current, groups: gRef.current })
-    if (undoStack.current.length > MAX_UNDO) undoStack.current.shift()
-    redoStack.current = []
-  }, [])
+  const viewport = useViewport({
+    initial: initial.transform,
+    containerRef,
+    dialogOpenRef,
+  })
+  const {
+    transform,
+    tRef,
+    spaceHeld,
+    spaceRef,
+    screenToCanvas,
+    zoomCenter,
+    fitBounds,
+  } = viewport
 
-  // Bridge: fitBounds is defined later in the component, but useCanvasGenerate
-  // needs to reveal newly-placed previews. Route through a ref set below.
-  const fitBoundsRef = useRef<
-    ((b: { x: number; y: number; w: number; h: number }) => void) | null
-  >(null)
-  const revealBounds = useCallback(
-    (b: { x: number; y: number; w: number; h: number }) =>
-      fitBoundsRef.current?.(b),
-    [],
-  )
+  const {
+    selected,
+    sRef,
+    select,
+    clearSelection,
+    marquee,
+    setMarquee,
+    getSelectedGroup,
+    arrangeSelected,
+    groupSelected,
+    ungroupSelected,
+    groupImages,
+  } = useSelection({ iRef, gRef, setImages, setGroups, pushUndo })
+
   const getImages = useCallback(() => iRef.current, [])
-
-  // Wrap already-positioned images in a group without re-arranging them (unlike
-  // groupSelected, which masonry-arranges). Used to auto-group a generation's
-  // origin with its previews.
-  const groupImages = useCallback(
-    (imageIds: Array<string>, columns: number) => {
-      if (imageIds.length < 2) return
-      const idSet = new Set(imageIds)
-      setGroups((prev) => [
-        ...prev
-          .map((g) => ({
-            ...g,
-            imageIds: g.imageIds.filter((id) => !idSet.has(id)),
-          }))
-          .filter((g) => g.imageIds.length >= 2),
-        { id: crypto.randomUUID(), imageIds, columns, padding: 24 },
-      ])
-    },
-    [],
-  )
 
   const canvasGen = useCanvasGenerate(
     setImages,
     pushUndo,
     getImages,
-    revealBounds,
+    viewport.fitBounds,
     groupImages,
   )
 
-  const undo = useCallback(() => {
-    const entry = undoStack.current.pop()
-    if (!entry) return
-    redoStack.current.push({ images: iRef.current, groups: gRef.current })
-    setImages(entry.images)
-    setGroups(entry.groups)
-    iRef.current = entry.images
-    gRef.current = entry.groups
-  }, [])
-
-  const redo = useCallback(() => {
-    const entry = redoStack.current.pop()
-    if (!entry) return
-    undoStack.current.push({ images: iRef.current, groups: gRef.current })
-    setImages(entry.images)
-    setGroups(entry.groups)
-    iRef.current = entry.images
-    gRef.current = entry.groups
-  }, [])
-
   // Strip images off the canvas locally (images, groups, selection). Does not
   // touch the DB or undo stack -- callers handle membership / deleted_at + undo.
-  const stripFromCanvas = useCallback((idSet: Set<string>) => {
-    setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
-    setGroups((prev) =>
-      prev
-        .map((g) => ({
-          ...g,
-          imageIds: g.imageIds.filter((id) => !idSet.has(id)),
-        }))
-        .filter((g) => g.imageIds.length >= 2),
-    )
-    setSelected((prev) => {
-      const next = new Set(prev)
-      for (const id of idSet) next.delete(id)
-      sRef.current = next
-      return next
-    })
-  }, [])
+  const stripFromCanvas = useCallback(
+    (idSet: Set<string>) => {
+      setImages((prev) => prev.filter((img) => !idSet.has(img.id)))
+      setGroups((prev) =>
+        prev
+          .map((g) => ({
+            ...g,
+            imageIds: g.imageIds.filter((id) => !idSet.has(id)),
+          }))
+          .filter((g) => g.imageIds.length >= 2),
+      )
+      select((prev) => {
+        const next = new Set(prev)
+        for (const id of idSet) next.delete(id)
+        return next
+      })
+    },
+    [select],
+  )
 
   // "Remove from Canvas": canvas-only removal (row kept in the library).
   const removeSelectionFromCanvas = useCallback(
@@ -287,14 +236,8 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
   )
 
   useEffect(() => {
-    tRef.current = transform
-  }, [transform])
-  useEffect(() => {
     iRef.current = images
   }, [images])
-  useEffect(() => {
-    sRef.current = selected
-  }, [selected])
   useEffect(() => {
     gRef.current = groups
   }, [groups])
@@ -419,146 +362,9 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     }
   }, [flushSave])
 
-  /* -- Coordinates -- */
-
-  const screenToCanvas = useCallback((sx: number, sy: number) => {
-    const r = containerRef.current?.getBoundingClientRect()
-    if (!r) return { x: 0, y: 0 }
-    const t = tRef.current
-    return { x: (sx - r.left - t.x) / t.scale, y: (sy - r.top - t.y) / t.scale }
-  }, [])
-
-  const viewportCenter = useCallback(() => {
-    const r = containerRef.current?.getBoundingClientRect()
-    if (!r) return { x: 0, y: 0 }
-    return screenToCanvas(r.left + r.width / 2, r.top + r.height / 2)
-  }, [screenToCanvas])
-
   const getPasteTarget = useCallback(() => {
-    return pasteTargetRef.current ?? viewportCenter()
-  }, [viewportCenter])
-
-  /* -- Group helpers -- */
-
-  const getSelectedGroup = useCallback(() => {
-    const sel = sRef.current
-    if (sel.size < 2) return null
-    const selArr = [...sel]
-    return (
-      gRef.current.find(
-        (g) =>
-          g.imageIds.length === selArr.length &&
-          selArr.every((id) => g.imageIds.includes(id)),
-      ) ?? null
-    )
-  }, [])
-
-  const arrangeSelected = useCallback(
-    (columns: number) => {
-      const sel = sRef.current
-      if (sel.size < 2) return
-      pushUndo()
-      const selImgs = iRef.current.filter((img) => sel.has(img.id))
-      const sorted = spatialSort(selImgs)
-      const bounds = getBounds(selImgs)
-      const centerX = bounds.x + bounds.w / 2
-      const originY = bounds.y
-
-      const items = sorted.map((img) => ({
-        id: img.id,
-        width: img.width,
-        height: img.height,
-      }))
-      const results = layoutMasonry(items, columns, centerX, originY)
-
-      const posMap = new Map(results.map((r) => [r.id, r]))
-      setImages((prev) =>
-        prev.map((img) => {
-          const pos = posMap.get(img.id)
-          return pos
-            ? {
-                ...img,
-                x: pos.x,
-                y: pos.y,
-                width: pos.width,
-                height: pos.height,
-              }
-            : img
-        }),
-      )
-    },
-    [pushUndo],
-  )
-
-  const groupSelected = useCallback(
-    (columns: number) => {
-      const sel = sRef.current
-      if (sel.size < 2) return
-      pushUndo()
-
-      // Remove selected images from any existing groups first
-      const selArr = [...sel]
-      setGroups((prev) => {
-        let next = prev
-          .map((g) => ({
-            ...g,
-            imageIds: g.imageIds.filter((id) => !sel.has(id)),
-          }))
-          .filter((g) => g.imageIds.length >= 2)
-
-        // Arrange first (spatial sort to preserve rough layout order)
-        const selImgs = spatialSort(
-          iRef.current.filter((img) => sel.has(img.id)),
-        )
-        const bounds = getBounds(selImgs)
-        const centerX = bounds.x + bounds.w / 2
-        const originY = bounds.y
-        const items = selImgs.map((img) => ({
-          id: img.id,
-          width: img.width,
-          height: img.height,
-        }))
-        const results = layoutMasonry(items, columns, centerX, originY)
-        const posMap = new Map(results.map((r) => [r.id, r]))
-
-        setImages((currentImages) =>
-          currentImages.map((img) => {
-            const pos = posMap.get(img.id)
-            return pos
-              ? {
-                  ...img,
-                  x: pos.x,
-                  y: pos.y,
-                  width: pos.width,
-                  height: pos.height,
-                }
-              : img
-          }),
-        )
-
-        next = [
-          ...next,
-          {
-            id: crypto.randomUUID(),
-            imageIds: selArr,
-            columns,
-            padding: 24,
-          },
-        ]
-        return next
-      })
-    },
-    [pushUndo],
-  )
-
-  const ungroupSelected = useCallback(() => {
-    const sel = sRef.current
-    pushUndo()
-    // Remove any groups that overlap with the selection
-    setGroups((prev) =>
-      prev.filter((g) => !g.imageIds.some((id) => sel.has(id))),
-    )
-  }, [pushUndo])
+    return pasteTargetRef.current ?? viewport.viewportCenter()
+  }, [viewport])
 
   /* -- Image loading -- */
 
@@ -600,8 +406,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       pushUndo()
       setImages((prev) => [...prev, ...pendingImages])
       const newIds = new Set(pendingImages.map((img) => img.id))
-      setSelected(newIds)
-      sRef.current = newIds
+      select(newIds)
 
       // Upload all files in parallel, replacing placeholders as they complete
       await Promise.all(
@@ -726,8 +531,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       const newIds = new Set(newImages.map((img) => img.id))
       pushUndo()
       setImages((prev) => [...prev, ...newImages])
-      setSelected(newIds)
-      sRef.current = newIds
+      select(newIds)
       void addToCanvas(
         canvasId,
         newImages.map((img) => ({
@@ -741,92 +545,6 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     },
     [pushUndo, getPasteTarget, libraryImages, canvasId],
   )
-
-  /* -- Zoom -- */
-
-  const zoomAt = useCallback((newScale: number, sx: number, sy: number) => {
-    setTransform((prev) => {
-      const s = Math.min(MAX_SCALE, Math.max(MIN_SCALE, newScale))
-      const r = s / prev.scale
-      return { x: sx - (sx - prev.x) * r, y: sy - (sy - prev.y) * r, scale: s }
-    })
-  }, [])
-
-  const zoomCenter = useCallback(
-    (newScale: number) => {
-      const r = containerRef.current?.getBoundingClientRect()
-      if (!r) return
-      zoomAt(newScale, r.left + r.width / 2, r.top + r.height / 2)
-    },
-    [zoomAt],
-  )
-
-  const fitBounds = useCallback(
-    (bounds: { x: number; y: number; w: number; h: number }) => {
-      const r = containerRef.current?.getBoundingClientRect()
-      if (!r || bounds.w === 0 || bounds.h === 0) return
-      setTransform(centerOn(bounds, r, scaleToFit(bounds, r, { pad: 60 })))
-    },
-    [],
-  )
-  // Let useCanvasGenerate reveal newly-placed previews (see revealBounds above).
-  fitBoundsRef.current = fitBounds
-
-  /* -- Wheel zoom -- */
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const t = tRef.current
-      const sensitivity = e.ctrlKey ? 0.01 : 0.002
-      const delta = -e.deltaY * sensitivity
-      const ns = Math.min(MAX_SCALE, Math.max(MIN_SCALE, t.scale * (1 + delta)))
-      const r = ns / t.scale
-      const nt = {
-        x: e.clientX - (e.clientX - t.x) * r,
-        y: e.clientY - (e.clientY - t.y) * r,
-        scale: ns,
-      }
-      tRef.current = nt
-      setTransform(nt)
-    }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [])
-
-  /* -- Space key for pan mode -- */
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName
-      if (
-        dialogOpenRef.current ||
-        tag === 'INPUT' ||
-        tag === 'TEXTAREA' ||
-        tag === 'SELECT'
-      )
-        return
-      if (e.code === 'Space' && !e.repeat) {
-        e.preventDefault()
-        spaceRef.current = true
-        setSpaceHeld(true)
-      }
-    }
-    const up = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        spaceRef.current = false
-        setSpaceHeld(false)
-      }
-    }
-    document.addEventListener('keydown', down)
-    document.addEventListener('keyup', up)
-    return () => {
-      document.removeEventListener('keydown', down)
-      document.removeEventListener('keyup', up)
-    }
-  }, [])
 
   /* -- Paste -- */
 
@@ -937,8 +655,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       const group = gRef.current.find((g) => g.id === groupId)
       if (group) {
         const next = new Set(group.imageIds)
-        setSelected(next)
-        sRef.current = next
+        select(next)
         dragRef.current = {
           mode: 'move',
           sx: e.clientX,
@@ -960,7 +677,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       if (e.shiftKey) {
         if (group) {
           // Shift+click on grouped image: toggle entire group
-          setSelected((prev) => {
+          select((prev) => {
             const next = new Set(prev)
             const allIn = group.imageIds.every((id) => next.has(id))
             if (allIn) {
@@ -968,14 +685,12 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
             } else {
               group.imageIds.forEach((id) => next.add(id))
             }
-            sRef.current = next
             return next
           })
         } else {
-          setSelected((prev) => {
+          select((prev) => {
             const next = new Set(prev)
             next.has(imageId) ? next.delete(imageId) : next.add(imageId)
-            sRef.current = next
             return next
           })
         }
@@ -983,13 +698,11 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
         // Click on grouped image: select entire group
         if (!group.imageIds.every((id) => sRef.current.has(id))) {
           const next = new Set(group.imageIds)
-          setSelected(next)
-          sRef.current = next
+          select(next)
         }
       } else if (!sRef.current.has(imageId)) {
         const next = new Set([imageId])
-        setSelected(next)
-        sRef.current = next
+        select(next)
       }
       dragRef.current = {
         mode: 'move',
@@ -1030,14 +743,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       if (!d.moved) return
 
       if (d.mode === 'pan') {
-        const t = tRef.current
-        const nt = {
-          x: t.x + e.clientX - d.sx,
-          y: t.y + e.clientY - d.sy,
-          scale: t.scale,
-        }
-        tRef.current = nt
-        setTransform(nt)
+        viewport.panBy(e.clientX - d.sx, e.clientY - d.sy)
         d.sx = e.clientX
         d.sy = e.clientY
       } else if (d.mode === 'move') {
@@ -1094,21 +800,18 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
           }
         }
         if (e.shiftKey) {
-          setSelected((prev) => {
+          select((prev) => {
             const m = new Set(prev)
             hit.forEach((id) => m.add(id))
-            sRef.current = m
             return m
           })
         } else {
-          setSelected(hit)
-          sRef.current = hit
+          select(hit)
         }
         setMarquee(null)
       } else if (d.mode === 'marquee' && !d.moved) {
         pasteTargetRef.current = screenToCanvas(e.clientX, e.clientY)
-        setSelected(new Set())
-        sRef.current = new Set()
+        clearSelection()
         setMarquee(null)
       }
       dragRef.current = { mode: null, sx: 0, sy: 0, moved: false }
@@ -1137,10 +840,7 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
       const targets = sel.size > 0 ? imgs.filter((i) => sel.has(i.id)) : imgs
       if (targets.length === 0) return
       // Fit selection to 75% of viewport (comfortable focus, not edge-to-edge)
-      const b = getBounds(targets)
-      const r = containerRef.current?.getBoundingClientRect()
-      if (!r) return
-      setTransform(centerOn(b, r, scaleToFit(b, r, { fill: 0.75 })))
+      viewport.focusBounds(getBounds(targets))
     })
 
     hotkeys('command+shift+0', (e) => {
@@ -1174,13 +874,11 @@ export function InfiniteCanvas({ initial, className }: InfiniteCanvasProps) {
     hotkeys('command+a', (e) => {
       e.preventDefault()
       const all = new Set(iRef.current.map((i) => i.id))
-      setSelected(all)
-      sRef.current = all
+      select(all)
     })
 
     hotkeys('escape', () => {
-      setSelected(new Set())
-      sRef.current = new Set()
+      clearSelection()
     })
 
     hotkeys('command+z', (e) => {
