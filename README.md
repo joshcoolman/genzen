@@ -72,6 +72,7 @@ about it — that's the usual reason generation 401s.
 | `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)   |
 | `pnpm db:migrate`       | Apply pending `migrations/*.sql`            |
 | `pnpm auth:create-user` | Create a user, or reset one's password      |
+| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)  |
 
 ## Stack
 

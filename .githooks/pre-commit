@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Tracked hook, activated by `core.hooksPath=.githooks` (set by `pnpm prepare`,
+# which runs on install). Living in the repo rather than .git/hooks is what makes
+# it survive a fresh clone on another machine.
+#
+# Advisory only: it prints and lets the commit through. SKIP_CLAUDE_MD_CHECK=1
+# silences it.
+[ -n "$SKIP_CLAUDE_MD_CHECK" ] && exit 0
+exec node "$(git rev-parse --show-toplevel)/scripts/check-claude-md.mjs"

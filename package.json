@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "dev": "node scripts/check-env-shadow.mjs && next dev --port 3000",
     "build": "next build",
     "test": "vitest run",
@@ -15,7 +16,8 @@
     "local:up": "node scripts/local-up.mjs",
     "local:down": "docker compose down",
     "local:reset": "docker compose down -v",
-    "start": "next start --port 3000"
+    "start": "next start --port 3000",
+    "check:claude-md": "node scripts/check-claude-md.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
