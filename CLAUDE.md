@@ -54,12 +54,13 @@ earned; see `docs/CODE-STANDARDS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                   |
-| ---------- | ----------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                       |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                       |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                        |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav |
+| Surface    | Where                                                                      |
+| ---------- | -------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                          |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                          |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                           |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav    |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else |
 
 `(authenticated)/_components/` also holds the generation UI Images and Canvas
 share (`generator-panel/` and what it composes). Anything one route renders
