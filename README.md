@@ -15,6 +15,7 @@ and order-flexible; the issues hold the detail):
 2. **#188** — Rewrite the architecture doc
 3. **#194** — Fix Canvas Undo (unblocked: #189 landed)
 4. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+5. **#225** — Remove the stale stack signals (the repo advertises tech it does not use)
 
 Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
 Worth a read before it ages — it documents a real hole (the model id is a bare
@@ -158,7 +159,11 @@ carries it. It is the open issues, in execution order.
 After #213: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
 designs are parked as prose in `docs/reference/agent-substrate.md`.
 
-- **#200** — hybrid Vercel/Railway topology exploration.
+**Deployment is undecided in scope, decided in provider.** genzen has never been
+deployed; MinIO and Docker Postgres are the only environment it has run in, and
+the `R2_*` env names describe an intention rather than an account. The hybrid
+Vercel/Railway split explored in #200 is dead — one provider, Railway, when it
+ships. Its provisioning is fully agent-drivable, which is the whole reason.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
 Account. No assistant, no image grouping (canvas's spatial groups are a different
