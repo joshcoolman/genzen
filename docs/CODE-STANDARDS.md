@@ -5,7 +5,8 @@ settled. Everything not listed here, the standard decides — do not restate it.
 ## Deltas
 
 **No delta on git any more.** This repo used to commit straight to `main`; as
-of 2026-07-31 it follows the standard — branch, PR, merge. The exception earned
+of 2026-07-31 it follows the standard — branch, PR, merge, one issue per
+branch. The exception earned
 its keep through the structural conversion (#168 → #229), a long run of
 mechanical passes where a PR per commit bought nothing.
 
