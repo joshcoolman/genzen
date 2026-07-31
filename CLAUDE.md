@@ -53,7 +53,7 @@ than assume it's there.
 ## Features
 
 **`src/features/` — domain code two or more routes need.** A folder here is
-earned; see `docs/CODE-STANDARDS.md`.
+earned; see `docs/DELTAS.md`.
 
 | Feature     | Description                                                    | CLAUDE.md                            |
 | ----------- | -------------------------------------------------------------- | ------------------------------------ |
@@ -131,23 +131,24 @@ deliberately. Update the README `## Status` block at natural beats so the front
 door always reflects the current state.
 
 `docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
-does and must do), `CODE-STANDARDS.md` (the deltas from the house standard) and
+does and must do), `DELTAS.md` (the deltas from the house standard) and
 `reference/` (prompt-craft material, the generation presentation contract,
 framework notes). Never a plan. There is no in-app docs viewer — that route and
 `src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled content.
 
 ## Project standard
 
-`~/repos/project-standard/README.md` is the house standard — folder layout,
-component organization, styling, docs shape, naming.
+[project-standard](https://github.com/joshcoolman/project-standard) is the house
+standard — folder layout, component organization, styling, docs shape, naming.
+Follow it as closely as this repo can.
 
-**`docs/CODE-STANDARDS.md` states genzen's deltas from it, and nothing else.**
+**`docs/DELTAS.md` holds what genzen decides differently, and nothing else.**
 Read that file rather than re-deriving them; it is the only place they live.
-Two that come up constantly:
+The two that come up constantly:
 
-- **Commit straight to `main`** (see Git workflow above).
 - **`features/` is headless and earned by 2+ consumers.** No `.tsx` under
   `src/features/`. One consumer means it belongs to that route.
+- **Server-only code carries a `.server.ts` suffix.**
 
 Where the standard applies, prefer it over an older pattern found in the
 codebase — an existing file is not evidence of the current convention, because
