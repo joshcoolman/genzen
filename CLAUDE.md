@@ -65,13 +65,13 @@ earned; see `docs/CODE-STANDARDS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                      |
-| ---------- | -------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                          |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                          |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                           |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav    |
-| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else |
+| Surface    | Where                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                       |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                       |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                        |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, search overlay |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else              |
 
 `(authenticated)/_components/` also holds the generation UI Images and Canvas
 share (`generator-panel/` and what it composes). Anything one route renders
@@ -172,3 +172,11 @@ silent exception, because the value of "copy a neighbour" is that it is safe.
   added to its `PUBLIC_PATHS`, or it redirects to /login
 - There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone
 - FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.server.ts`
+- **Copying an image inside the app puts its record id on the clipboard, never
+  its bytes** (`src/lib/image-clipboard.ts`, #213). Both paste handlers accept
+  bytes and turn them into a new upload, so bytes would duplicate a row you
+  already own. A new paste target checks `readImageRef` before it looks for files
+- **A global overlay must take the keyboard, not share it**
+  (`src/lib/keyboard-capture.ts`). Canvas replaces hotkeys-js's default
+  text-field exemption with its own dialog check, so anything floating over a
+  route sets the capture flag or Backspace in its input reaches the canvas

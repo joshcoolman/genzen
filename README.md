@@ -152,20 +152,17 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-31)
 
+- **Cmd-F finds your stuff, and gets out of the way (#213).** An overlay over whatever you were doing: everything, newest first, the prompt you typed shown whole beside its thumbnail, live filtering and All / Generations / Uploads. Two things come out — the prompt to the clipboard, and the image as a _reference_: the clipboard carries the record id, so pasting it on Images adds it to the reference strip and on Canvas drops a card, with no upload and no second row. Escape leaves nothing behind. It is deliberately not a place: no route, no location on a row, nothing to navigate into.
 - **Canvas Undo actually undoes (#194).** It restored the cards on screen and left the membership rows deleted, so it looked like it worked and the next load dropped them for good. A toast Undo now reverses its own server write; the local stack stays local, and neither path pops it, because six seconds is long enough to do something else first.
 - **The token core collapsed: 153 properties to 97, and 47 colors to 18 (#229).** Ten names resolved to four values, so a divider and a panel fill were the same variable. Now three surfaces, two inks, one accent — the number you get if you squint at the app and count. `pnpm check:colors` keeps it there.
 - **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
 - **The repo stopped advertising a stack it does not have (#225).** trigger.dev's MCP server, a `Dockerfile` that built green and could not boot, and a reset header claiming Tailwind still owned it. A cold read now lands on the truth: Next, Postgres, MinIO, and no deployment anywhere.
-- **`user_id` scoping is checked, not remembered (#219).** An ESLint rule fails any `sql` statement naming a user-scoped table without a `user_id`; the table list comes from the migrations, so a new table is covered the day it lands. Found 10 unscoped statements — all legitimate, three of which now carry a real filter anyway.
-- **A canvas paste draws before it uploads.** The clipboard already handed over the bytes, so the card renders from them at ~30ms — right size, right place — and the upload runs underneath. `uploading` is a distinct state from `pending`: one has a picture, the other has nothing to show.
-- **One way into the library (#215).** Three near-identical upload functions, one of them dead, and only one made a thumbnail — so whether the grid downloaded full-size objects came down to which caller you went through. `saveFileToLibrary` is now the single writer and owns the thumbnail.
-- **An attached source image is saved on arrival (#224).** Uploading into the generator used to hold the bytes in memory, so its generation could never be retried. Settled the rule: aggressive on bytes, submit-only on prompt text.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
 carries it. It is the open issues, in execution order.
 
-After #213: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
+Next: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
 designs are parked as prose in `docs/reference/agent-substrate.md`.
 
 **Deployment is undecided in scope, decided in provider.** genzen has never been

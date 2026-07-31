@@ -1,6 +1,7 @@
 'use client'
 
 import { AppChrome } from '../app-chrome/app-chrome'
+import { SearchOverlay } from '../search-overlay/search-overlay'
 import { MissingKeyProvider, Toaster } from '#/components'
 import { useRouteMemory } from '#/lib/use-route-memory'
 
@@ -11,6 +12,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <MissingKeyProvider>
       <AppChrome>{children}</AppChrome>
+      {/* Cmd-F, from any surface (#213). Mounted here because "from anywhere"
+          is the feature -- a per-route copy would be four copies and a fifth
+          route where it silently does not exist. */}
+      <SearchOverlay />
       {/* Every `toast(...)` in the app renders here. It lives inside
           MissingKeyProvider because that provider's error fallback is one of
           the callers. */}

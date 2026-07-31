@@ -19,6 +19,11 @@ longer talks to the database.
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
 - `server/images.actions.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
+- `server/library-index.actions.ts` -- the two reads behind the Cmd-F overlay
+  (#213): the whole library as lean rows (id, title, origin, typed prompt) and
+  one row by id for a paste that carries a reference. No search parameter
+  reaches the database -- filtering is a substring match in the browser, so
+  typing costs nothing
 - `server/upload-image.server.ts` -- server action wrapper for image upload
 - `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement
 - `server/remove-images.server.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)

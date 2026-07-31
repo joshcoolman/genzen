@@ -26,8 +26,16 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   Generations because this is where you generate. Filtering is client-side --
   the route already holds every row. Making something widens the scope to where
   it landed (`reveal()` in `use-view.ts`), or the card you just created would be
-  invisible in the view you made it in. Finding things is #213, an overlay; if
-  that lands and these pills go untouched, deleting them is the right outcome
+  invisible in the view you made it in. Finding things is the Cmd-F overlay
+  (#213), which shipped with its own All / Generations / Uploads filter; if
+  these pills go untouched now, deleting them is the right outcome
+- **A pasted image can be a reference rather than an upload (#213).**
+  `_hooks/use-paste-reference.ts` claims the clipboard first, in the capture
+  phase, when it holds one of our record ids — the image joins the generator's
+  reference strip with no upload and no new row. It refuses out loud when the
+  selected model takes no references, because `addRefImages` caps silently at
+  `maxRefImages` and a paste that reports success and adds nothing is worse
+  than one that says no. Bytes from outside still go to `use-uploads.ts`
 - **Two localStorage namespaces.** `genzen:ai-images-prefs` holds thumb size,
   sort, info and the origin filter as one object; the generator's open and
   pinned flags are two older single-value keys. Every write-through waits on `usePersistedState`'s

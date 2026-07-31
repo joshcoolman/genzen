@@ -5,6 +5,7 @@ import hotkeys from 'hotkeys-js'
 import { getBounds } from '../_lib/geometry'
 import type { Bounds } from '../_lib/geometry'
 import type { CanvasImage, Transform } from '../_lib/types'
+import { isKeyboardCaptured } from '#/lib/keyboard-capture'
 
 interface UseCanvasHotkeysArgs {
   iRef: React.RefObject<Array<CanvasImage>>
@@ -60,7 +61,10 @@ export function useCanvasHotkeys({
   onDeleteRequest,
 }: UseCanvasHotkeysArgs) {
   useEffect(() => {
-    hotkeys.filter = () => !dialogOpenRef.current
+    // The canvas stands down for its own dialogs and for anything global that
+    // has taken the keyboard -- the search overlay is mounted outside this
+    // route and cannot reach `dialogOpenRef` (#213).
+    hotkeys.filter = () => !dialogOpenRef.current && !isKeyboardCaptured()
 
     /** The selection if there is one, else the whole canvas. */
     const targets = () => {
