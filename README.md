@@ -11,8 +11,8 @@ support, no roadmap. MIT licensed; fork it and make it yours.
 **Up next.** Substrate first, then the finish state agreed in #222. This one is
 ahead of the feature work on purpose: its cost grows with every commit.
 
-1. **#227** — Deployability becomes a checked property. There is no CI; that is
-   why the `Dockerfile` rotted unnoticed.
+1. **#227** — the rest of it: write down what a deployment needs, and state the
+   local-must-not-diverge rule where it binds. CI landed; the docs half has not.
 
 Then the finish state (2–4 are small and order-flexible; the issues hold the detail):
 
@@ -150,6 +150,7 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-30)
 
+- **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
 - **The repo stopped advertising a stack it does not have (#225).** trigger.dev's MCP server, a `Dockerfile` that built green and could not boot, and a reset header claiming Tailwind still owned it. A cold read now lands on the truth: Next, Postgres, MinIO, and no deployment anywhere.
 - **`user_id` scoping is checked, not remembered (#219).** An ESLint rule fails any `sql` statement naming a user-scoped table without a `user_id`; the table list comes from the migrations, so a new table is covered the day it lands. Found 10 unscoped statements — all legitimate, three of which now carry a real filter anyway.

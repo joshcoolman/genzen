@@ -1,0 +1,88 @@
+# Intention did not survive local-first development; a check will (#227).
+#
+# The Dockerfile sat broken from the Next conversion until #225 deleted it,
+# because nothing ever tried to build it. This runs the same commands a human
+# runs before committing, plus the one nobody runs: booting the production
+# server. `pnpm build` passing is not the same claim as "it starts".
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # `--check` rather than `--write`: CI reports, it does not edit.
+      - run: pnpm prettier --check .
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  # The production path, which nothing exercised before this. Railpack builds a
+  # Next app with `pnpm build` and runs it with `pnpm start`, so that is what is
+  # asserted here -- not a Dockerfile, which no longer exists and which the
+  # platform does not need.
+  boot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # A build needs no real services. These are the shapes the app parses at
+      # boot, not credentials -- nothing here reaches a network.
+      - run: pnpm build
+        env:
+          DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+          AUTH_SESSION_SECRET: ci-not-a-real-secret
+          R2_ENDPOINT: http://localhost:9010
+          R2_BUCKET_NAME: genzen-images
+          R2_ACCESS_KEY_ID: ci
+          R2_SECRET_ACCESS_KEY: ci
+
+      # Boot far enough to fail on a bad entrypoint or a module that explodes on
+      # import. /login is the assertion because it is the one page that renders
+      # without a session or a database round trip -- a 200 here means the
+      # server started and can serve, which is exactly what was never checked.
+      - name: Boot the production server
+        run: |
+          pnpm start &
+          echo $! > /tmp/server.pid
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/login || true)
+            if [ "$code" = "200" ]; then
+              echo "server up, /login -> 200"
+              kill "$(cat /tmp/server.pid)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not serve /login within 60s"
+          kill "$(cat /tmp/server.pid)" 2>/dev/null || true
+          exit 1
+        env:
+          DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+          AUTH_SESSION_SECRET: ci-not-a-real-secret
+          R2_ENDPOINT: http://localhost:9010
+          R2_BUCKET_NAME: genzen-images
+          R2_ACCESS_KEY_ID: ci
+          R2_SECRET_ACCESS_KEY: ci
