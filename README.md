@@ -8,14 +8,26 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
-**Up next** — the finish state agreed in #222, in execution order (1–3 are small
-and order-flexible; the issues hold the detail):
+**Up next.** Substrate first, then the finish state agreed in #222. The first
+three are ahead of the feature work on purpose: their cost grows with every
+commit, because each one is something the next feature would be built on top of.
 
-1. **#216** — Passive "on canvas" marker in library
-2. **#188** — Rewrite the architecture doc
-3. **#194** — Fix Canvas Undo (unblocked: #189 landed)
-4. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
-5. **#225** — Remove the stale stack signals (the repo advertises tech it does not use)
+1. **#225** — Remove the stale stack signals. The repo advertises trigger.dev,
+   Vite, TanStack Start, Tailwind and Supabase, uses none of them, and ships a
+   `Dockerfile` that builds green and cannot boot. Every session starts by
+   believing it.
+2. **#226** — Storage goes private; the app serves its own images. Today every
+   image is at an unauthenticated URL, which is both wrong for a multi-user app
+   and the reason genzen cannot deploy to one provider.
+3. **#227** — Deployability becomes a checked property. There is no CI; that is
+   why the `Dockerfile` rotted unnoticed.
+
+Then the finish state (4–6 are small and order-flexible; the issues hold the detail):
+
+4. **#216** — Passive "on canvas" marker in library
+5. **#188** — Rewrite the architecture doc
+6. **#194** — Fix Canvas Undo (unblocked: #189 landed)
+7. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
 
 Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
 Worth a read before it ages — it documents a real hole (the model id is a bare
