@@ -8,23 +8,33 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
-**Up next.** The substrate work is done; what is left is the finish state
-agreed in #222, in execution order.
+**Up next.** The substrate work is done, and so is the finish state agreed in
+#222 — #216 and #213 both shipped. What is left is three pieces of hygiene, in
+the order they will be done.
 
-1. **#216** — Passive "on canvas" marker in library
-2. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
-3. **#227** — the rest of it: write down what a deployment needs, and state the
-   local-must-not-diverge rule where it binds. CI landed; the docs half has not.
-4. **#188** — Rewrite the architecture doc, and absorb #228's two stale
-   reference docs while you are in there.
-5. **#229 step 3** — de-hex the canvas subtree, the last 60 raw colors. Its own
-   visual pass; the rule allowlists those files by name so the debt is visible
-   and can only shrink.
+1. **#229 step 3 + 4** — finish the token collapse. The core landed (153
+   properties to 97, 47 colors to 18) and `pnpm check:colors` holds the line,
+   but the canvas subtree is still allowlisted by name in
+   `eslint-rules/no-raw-color.js`: 60 raw colors across 12 modules, plus 11
+   local font stacks. Then re-author the two shadows against a 5% background.
+   **A design system that a whole subtree ignores is not one yet.**
+2. **#227** — the rest of deployability. CI landed and boots the production
+   server; what has not is deployment-as-code. `pnpm start` hardcodes
+   `--port 3000` while the platform injects `PORT`, so today the config would
+   have to live in a Railway setting instead of the repo — the exact shape of
+   rot this issue exists to stop. Write the env contract and the
+   local-must-not-diverge list, then **deploy once to prove it**, and tear it
+   down. Railway is the provider; `bootsy` is already there as a worked example.
+3. **#228** — the audit: the places where prose claims drifted from the code.
+   Deliberately last. Its own finding is that everything with a check held and
+   everything asserted only in prose drifted, so it is worth doing after the two
+   passes above have added their checks.
 
-Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
-Worth a read before it ages — it documents a real hole (the model id is a bare
-client string and `endpointFor` passes an unknown one straight through), so it
-is a decision rather than an idea.
+Also open: **#234**, canvas arrival sizing — an observation, not a diagnosis,
+and it needs reproducing before anyone picks a rule. **#223** is parked outside
+all of this: a proposal for an AI policy seam, worth a read before it ages
+because it documents a real hole (the model id is a bare client string and
+`endpointFor` passes an unknown one straight through).
 
 ## Run it locally
 
@@ -160,16 +170,21 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 - **The repo stopped advertising a stack it does not have (#225).** trigger.dev's MCP server, a `Dockerfile` that built green and could not boot, and a reset header claiming Tailwind still owned it. A cold read now lands on the truth: Next, Postgres, MinIO, and no deployment anywhere.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
-carries it. It is the open issues, in execution order.
+carries it. It is the open issues, in execution order: finish the token collapse
+(#229), then make deployability a checked property and deploy once to prove it
+(#227), then the drift audit (#228).
 
-Next: the grouping spike (focus, not taxonomy — not #204's grouping). Agent-facing
-designs are parked as prose in `docs/reference/agent-substrate.md`.
+Agent-facing designs are parked as prose in `docs/reference/agent-substrate.md`;
+the grouping spike (focus, not taxonomy — not #204's grouping) has no issue yet.
 
-**Deployment is undecided in scope, decided in provider.** genzen has never been
+**Deployment: decided in provider, scheduled as #227.** genzen has never been
 deployed; MinIO and Docker Postgres are the only environment it has run in, and
 the `R2_*` env names describe an intention rather than an account. The hybrid
-Vercel/Railway split explored in #200 is dead — one provider, Railway, when it
-ships. Its provisioning is fully agent-drivable, which is the whole reason.
+Vercel/Railway split explored in #200 is dead — one provider, Railway, and its
+provisioning is fully agent-drivable, which is the whole reason. The goal is not
+to run it in the cloud: it is that deploying, tearing down and redeploying stays
+cheap, and that a local run does not behave differently from a deployed one.
+Building features without that property is how it quietly stops being true.
 
 The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
 Account. No assistant, no image grouping (canvas's spatial groups are a different
