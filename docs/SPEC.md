@@ -46,6 +46,15 @@ with its cost and duration.
 - **Results appear as they complete.** Never batch-wait for the slowest model in a
   multi-model submit.
 - **Deletion is recoverable.** Soft delete, with Trash as the recovery path.
+- **Throwing things away stays cheap.** Generation is exploratory and most of
+  what it produces is disposable — the work depends on being able to trash a
+  batch and start over without hesitating. So the app must never accumulate
+  enough weight to make that feel expensive: no confirmation in front of a
+  reversible action, no organisation that has to be maintained, no state whose
+  loss you would have to weigh first. Recoverability is what buys this, which is
+  why Trash exists and why it is the only thing that interrupts (#236). A
+  feature that makes deleting feel consequential is working against the core
+  loop, however tidy it looks.
 - **A user only ever sees their own data.** Server code holding a service-role
   credential filters by user id explicitly rather than relying on row-level
   policy.
