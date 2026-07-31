@@ -139,7 +139,10 @@ primitives catalogue.
 
 Copy `app/(authenticated)/trash/` for a simple route or `canvas/` for one with
 real state; not Activity, which established the shape but still fetches from the
-client. Every route now conforms (#189).
+client. Every route conforms except `readme/`, which is a page and a
+stylesheet: it renders one file and has no state, so `view.tsx` and
+`use-view.ts` would both be empty indirection. Named here rather than left as a
+silent exception, because the value of "copy a neighbour" is that it is safe.
 
 ## Gotchas
 

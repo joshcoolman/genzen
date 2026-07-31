@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { isLocalEndpoint, resolveStorageEndpoint } from './image-storage'
 
-// The one thing that must not regress when local dev gained MinIO support:
-// with R2_ENDPOINT unset, production still resolves to Cloudflare's endpoint
-// derived from the account id, exactly as it did before.
+// The endpoint fork, which is the one branch in the storage layer a deployment
+// would hit differently from local dev. Cloudflare is a convenience path here,
+// not where genzen runs -- it runs nowhere; MinIO in Docker is the only
+// environment it has had (#228).
 describe('resolveStorageEndpoint', () => {
   it('derives the Cloudflare R2 endpoint when R2_ENDPOINT is unset', () => {
     expect(resolveStorageEndpoint(undefined, 'abc123')).toBe(

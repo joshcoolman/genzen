@@ -110,9 +110,9 @@ class S3ImageStorage implements ImageStorage {
 
 /**
  * Resolve the S3 API endpoint. `R2_ENDPOINT` is the explicit form and is what
- * local dev sets (MinIO, `http://localhost:9010`); when it is unset we derive
- * Cloudflare R2's endpoint from the account id exactly as before, so an
- * existing production config keeps working untouched.
+ * local dev sets (MinIO, `http://localhost:9010`). With it unset, an account id
+ * derives Cloudflare R2's endpoint -- a convenience for one provider, not a
+ * statement that genzen runs there. It has never been deployed anywhere.
  */
 export function resolveStorageEndpoint(
   endpoint = process.env['R2_ENDPOINT'],

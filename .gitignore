@@ -19,3 +19,6 @@ todos.json
 
 # Next build output (#168 port)
 .next/
+
+# TypeScript incremental build cache -- dirties the tree on every typecheck
+tsconfig.tsbuildinfo

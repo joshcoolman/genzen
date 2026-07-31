@@ -97,7 +97,7 @@ about it — that's the usual reason generation 401s.
 | UI          | CSS Modules + Base UI, on the tokens in `src/styles/`      |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
-| Storage     | S3 — MinIO locally, Cloudflare R2 in prod                  |
+| Storage     | S3 — MinIO locally; no deployment, so no provider chosen   |
 | Images      | FAL                                                        |
 | Text/vision | Anthropic (assistant, prompt work), Google Gemini (vision) |
 
@@ -124,20 +124,21 @@ itself and prompts you for the one value that is actually yours, the FAL key.
 URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, Gemini, FAL
 webhooks).
 
-One note if you deploy: the `R2_*` names are historical. The storage layer is
-plain S3 and points wherever `R2_ENDPOINT` says — MinIO locally, any provider in
-production. Leave `R2_ENDPOINT` unset and set `R2_ACCOUNT_ID` to derive
-Cloudflare R2's endpoint.
+One note if you deploy: the `R2_*` names are historical and the storage layer
+is plain S3, pointing wherever `R2_ENDPOINT` says. **The bucket must be private**
+(#226) — the app serves images itself. Leave `R2_ENDPOINT` unset and set
+`R2_ACCOUNT_ID` only if you want Cloudflare R2's endpoint derived.
 
-Service-role and provider keys are server-only. Anything prefixed `VITE_` ships
-to the browser.
+Provider keys are server-only. Only `NEXT_PUBLIC_*` reaches the browser — Next
+inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Conventions / gotchas
 
 - Route protection is deny-by-default in `proxy.ts` — a new public path must be listed in its `PUBLIC_PATHS`.
 - No Tailwind and no CSS framework. `src/styles/tokens.css` is the token layer,
   `src/styles/base.css` the reset; everything else is a `.module.css` beside its
-  component. `src/styles.css` only imports those two.
+  component. `src/styles.css` imports those two and nothing else. Colors live
+  in `tokens.css` alone — `pnpm check:colors` enforces it (#229).
 - Server-only code uses the `.server.ts` suffix; do not import it from client code.
 - FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.server.ts`. Webhooks are optional and gated by env.
 - S3 public URLs do not expire — safe to persist in DB rows.

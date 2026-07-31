@@ -101,9 +101,6 @@ importers:
       '@types/file-saver':
         specifier: ^2.0.7
         version: 2.0.7
-      '@types/marked':
-        specifier: ^5.0.2
-        version: 5.0.2
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.8
@@ -1484,9 +1481,6 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
-
-  '@types/marked@5.0.2':
-    resolution: {integrity: sha512-OucS4KMHhFzhz27KxmWg7J+kIYqyqoW5kdIEI319hqARQQUTqhao3M/F+uFnDXD0Rg72iDDZxZNxq5gvctmLlg==}
 
   '@types/node@22.19.8':
     resolution: {integrity: sha512-ebO/Yl+EAvVe8DnMfi+iaAyIqYdK0q/q0y0rw82INWEKJOBe6b/P3YWE8NW7oOlF/nXFNrHwhARrN/hdgDkraA==}
@@ -4579,8 +4573,6 @@ snapshots:
   '@types/file-saver@2.0.7': {}
 
   '@types/json-schema@7.0.15': {}
-
-  '@types/marked@5.0.2': {}
 
   '@types/node@22.19.8':
     dependencies:

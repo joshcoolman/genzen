@@ -1,5 +1,12 @@
-Read-only inventory for #211: every path that creates a `user_images` row, and
-what each one records. No behaviour changed to produce it.
+**A dated snapshot, not current guidance.** Read-only inventory taken for #211
+(2026-07): every path that creates a `user_images` row, and what each one
+records. No behaviour changed to produce it.
+
+Since then #215 collapsed the three upload functions into one --
+`saveFileToLibrary` is now the only write path into the library and it owns
+thumbnail generation -- and #224 made an attached source image save on arrival.
+The _shape_ of the analysis below still holds; the symbol names in the upload
+rows do not. Read it for the argument, not the call chains.
 
 **There are exactly two insert statements in the app.** Everything else is a
 caller of one of them:
@@ -13,12 +20,12 @@ handed down, not a second insert that forgot it.
 
 ## The four live creation paths
 
-| #   | Path               | Chain                                                                                                  |
-| --- | ------------------ | ------------------------------------------------------------------------------------------------------ |
-| U1  | Upload, Images     | `images/_hooks/use-uploads.ts` → `useImageUpload.upload` → `createImageRecord`                         |
-| U2  | Upload, canvas     | `canvas/_hooks/use-ingest.ts` (paste/drop/picker) → `useUserImages.create` → `createImageRecord`       |
-| G1  | Generation, Images | `use-generator.handleGenerate` → `generateImage` → `generateImageInternal` → `createPendingGeneration` |
-| G2  | Generation, canvas | `use-canvas-generate.ts` → same chain, with `onCanvas: true` and `sourceClient: 'genzen-canvas'`       |
+| #   | Path               | Chain                                                                                                                  |
+| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| U1  | Upload, Images     | `images/_hooks/use-uploads.ts` → `saveFileToLibrary` → `createImageRecord` _(was `useImageUpload.upload`)_             |
+| U2  | Upload, canvas     | `canvas/_hooks/use-ingest.ts` (paste/drop/picker) → `useUserImages.create` → `saveFileToLibrary` → `createImageRecord` |
+| G1  | Generation, Images | `use-generator.handleGenerate` → `generateImage` → `generateImageInternal` → `createPendingGeneration`                 |
+| G2  | Generation, canvas | `use-canvas-generate.ts` → same chain, with `onCanvas: true` and `sourceClient: 'genzen-canvas'`                       |
 
 Not creation paths, listed because they look like ones:
 
@@ -28,7 +35,7 @@ Not creation paths, listed because they look like ones:
   #214.
 - **Library picker** (canvas) — membership only, no insert.
 - **`useUserImages.createOptimistic`** — a third upload implementation with **no
-  caller**. Dead.
+  caller**. Dead, and deleted in #215.
 
 ## Two moments, not one
 
@@ -91,11 +98,11 @@ touches the bag.
 
 **Filed.**
 
-- **`thumbnail_path`, U2 = N.** `useImageUpload.upload` fires `createThumbnail`;
-  `useUserImages.create` does not. So an image pasted onto the canvas never gets
-  a thumbnail and the gallery renders the full-size object for it — a difference
-  that comes from which of three near-identical upload functions the caller
-  happened to reach for, not from any decision. Filed: #215.
+- **`thumbnail_path`, U2 = N.** One of the three upload functions fired
+  `createThumbnail` and the others did not, so an image pasted onto the canvas
+  never got a thumbnail and the gallery rendered the full-size object for it — a
+  difference that came from which function the caller happened to reach for, not
+  from any decision. **Fixed in #215**: one writer, and it owns the thumbnail.
 - **provenance edges = N** everywhere. #208.
 - **canvas membership, all four = N-at-insert** except G2. #212.
 
