@@ -154,7 +154,7 @@ export async function generateImageInternal(
     extraMetadata: {
       // Captured with no reader today, deliberately: unused *code* rots, unused
       // *data* accrues, and a UI can be built over a captured fact at any time
-      // while an uncaptured one is gone. See docs/CODE-STANDARDS.md.
+      // while an uncaptured one is gone. See docs/DELTAS.md.
       ...(originalPrompt ? { original_prompt: originalPrompt } : {}),
       ...(typedPrompt && typedPrompt !== prompt.trim()
         ? { typed_prompt: typedPrompt }
