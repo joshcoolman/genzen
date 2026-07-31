@@ -19,3 +19,15 @@ if (existsSync(ENV_LOCAL)) {
     process.env[key] = line.slice(separator + 1).trim()
   }
 }
+
+// Placeholders where `.env.local` did not supply one -- a fresh clone, or CI,
+// which has no such file. `db.server.ts` throws at *import* time without a
+// DATABASE_URL, so a suite that only mocks `sql` still fails to load.
+//
+// This is a real defect CI found on its first run (#227): the tests passed
+// locally only because a developer's `.env.local` happened to be sitting there.
+// A value is enough -- nothing in the suite opens a connection, and one that
+// tried would fail loudly against this host rather than silently reach a real
+// database.
+process.env.DATABASE_URL ??= 'postgres://vitest:vitest@127.0.0.1:1/vitest'
+process.env.AUTH_SESSION_SECRET ??= 'vitest-not-a-real-secret'

@@ -18,6 +18,27 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    # Two suites (auth credentials, canvas membership) run against a real
+    # Postgres on purpose -- a password hash the verifier cannot read is a
+    # failure that only shows up end to end. Skipping them in CI would leave
+    # the check weaker than the local run, which is the whole rot vector.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: genzen
+          POSTGRES_PASSWORD: genzen
+          POSTGRES_DB: genzen
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U genzen -d genzen"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://genzen:genzen@localhost:5432/genzen
+      AUTH_SESSION_SECRET: ci-not-a-real-secret
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,6 +47,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # Also the deploy-path check: migrations are the pre-deploy step, so a
+      # migration that cannot apply to an empty database fails here.
+      - run: pnpm db:migrate
 
       # `--check` rather than `--write`: CI reports, it does not edit.
       - run: pnpm prettier --check .
