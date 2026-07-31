@@ -85,6 +85,14 @@ commit-straight-to-`main` through the structural conversion (#168 → #229), whi
 was the right call for a long run of mechanical passes and is no longer the
 shape of the work.
 
+**One issue per branch.** Finish the ticket, close the issue, PR, merge, delete
+the branch local and remote, then cut the next one. A branch covering two issues
+is allowed but is not the habit. The PR is not a review gate — there is no
+reviewer — so open it and merge it in the same breath; do not wait to be told.
+The value is the buckets: the branch name and the PR are what say _what this
+work was_ when you come back to it, and what stop everything blurring into one
+`main` history.
+
 **A branch may outlive a session — that is part of what it is for.** Work that
 runs over a day or two keeps its own branch, and the branch name plus the PR are
 the orientation surface when you come back: where you were, and what is done so
