@@ -5,10 +5,6 @@
 #   pnpm local:down   stop (data kept)
 #   pnpm local:reset  stop and delete the volumes
 #
-# The Supabase CLI stack (Postgres, auth, Studio on 54321-54324) still runs
-# alongside this during the #168 migration and is torn down at the end of it.
-# The two databases do not share a port and do not talk to each other.
-#
 # FAL is not mocked: image generation still calls fal.ai, so FAL_KEY is
 # required even here.
 

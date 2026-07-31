@@ -98,8 +98,8 @@ export function sessionCookieOptions() {
 }
 
 // Reads the session out of a raw `Cookie` header. Framework-agnostic on
-// purpose: it works from a Nitro h3 route today and from a Next middleware or
-// route handler after the port, so nothing here has to be rewritten twice.
+// purpose, and it earned it: written under Nitro h3, it moved to Next's proxy
+// and route handlers without a line changing.
 export async function verifySessionFromCookieHeader(
   cookieHeader: string | null | undefined,
 ): Promise<Session | null> {

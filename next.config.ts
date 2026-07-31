@@ -1,15 +1,16 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Next only inlines browser-visible env vars behind a NEXT_PUBLIC_ prefix.
-  // These kept their VITE_ names -- the same way R2_* kept its name after the
-  // storage client stopped being Cloudflare-specific -- so they are listed
-  // explicitly rather than renamed across .env.local, scripts/local-up.mjs and
-  // the deploy config. The two Supabase entries left in #173: with the browser
-  // client gone, the URL is server-only and the anon key is used nowhere.
+  // Next only inlines browser-visible env vars behind a NEXT_PUBLIC_ prefix, so
+  // a `VITE_` name has to be forwarded by hand. The webhook flag was renamed to
+  // NEXT_PUBLIC_ instead (#225) -- it is genuinely client-read, and a Vite
+  // prefix in a Next app reads as a bug even when it works.
+  //
+  // VITE_R2_PUBLIC_URL is the last one, and it is on its way out rather than
+  // being renamed: #226 serves images through the app, after which no browser
+  // needs the bucket's address at all.
   env: {
     VITE_R2_PUBLIC_URL: process.env.VITE_R2_PUBLIC_URL,
-    VITE_ENABLE_FAL_WEBHOOKS: process.env.VITE_ENABLE_FAL_WEBHOOKS,
   },
   // Prompt-craft in src/lib/prompts/ is authored as markdown and imported as
   // text. Vite did this with import.meta.glob('*.md', { query: '?raw' });

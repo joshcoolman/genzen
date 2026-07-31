@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import styles from './toast.module.css'
 
 /**
- * Minimal self-contained toast. Avoids a third-party toast lib (sonner) whose
- * CJS React interop breaks under this TanStack Start / Vite optimizeDeps setup.
+ * Minimal self-contained toast, in place of a third-party lib (sonner). It
+ * started as a workaround -- sonner's CJS interop broke under the old TanStack
+ * Start / Vite setup -- and stayed because it is forty lines and owes nothing.
  * Mount <Toaster /> once at the app root; call `toast(...)` from anywhere.
  * It is mounted in `app/(authenticated)/_components/app-shell/app-shell.tsx` --
  * for a long time it was mounted nowhere, so every `toast(...)` in the app ran

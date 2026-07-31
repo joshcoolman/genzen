@@ -17,8 +17,6 @@ import {
   DialogTrigger,
   Input,
 } from '#/components'
-// Deep imports while the shadcn `Dialog` and `Button` still hold those names in
-// the barrel for their remaining consumers. They go when the barrel flips.
 
 const CONCURRENCY = 4
 

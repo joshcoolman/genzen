@@ -2,7 +2,7 @@ export interface CanvasImage {
   id: string
   /** Required link to user_images record */
   recordId: string
-  /** Supabase storage path (persisted for signed URL generation) */
+  /** S3 storage path; the URL is derived from it at read time. */
   storagePath: string
   x: number
   y: number

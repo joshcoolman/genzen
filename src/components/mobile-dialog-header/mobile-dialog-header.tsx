@@ -18,10 +18,10 @@ interface MobileDialogHeaderProps {
  * div wins by not entering it.
  *
  * `DialogTitle` is what wires the dialog's `aria-labelledby`, so it has to come
- * from whichever library owns the surrounding Dialog -- a Base UI `Dialog.Title`
- * inside a Radix Dialog has no context to attach to. That is why this line
- * flipped in the same commit as both consumers (images-page, edit-page) rather
- * than ahead of them.
+ * from whichever library owns the surrounding Dialog -- during the Radix-to-Base
+ * UI move, a Base UI `Dialog.Title` inside a Radix Dialog had no context to
+ * attach to. That is why this line had to flip in the same commit as its
+ * consumers rather than ahead of them.
  */
 export function MobileDialogHeader({
   title,

@@ -138,7 +138,9 @@
   --info-text: oklch(0.623 0.214 259.815);
   --caution-text: oklch(0.769 0.188 70.08);
 
-  /* shadcn's name for --danger; kept until the last shadcn primitive goes */
+  /* An alias for --danger under shadcn's name. The shadcn primitives are long
+     gone, but eight modules reference this one, so it is a live token now
+     rather than a leftover -- prefer --danger in new code. */
   --destructive: var(--danger);
 
   /* ========================================

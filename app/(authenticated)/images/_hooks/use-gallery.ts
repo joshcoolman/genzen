@@ -103,7 +103,7 @@ export function useGallery({
   // session since #171, so it had already stopped delivering anything.
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
-    if (process.env.VITE_ENABLE_FAL_WEBHOOKS === 'true') return
+    if (process.env.NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS === 'true') return
 
     const hasPending = savedImages.some((img) => img.status === 'pending')
 

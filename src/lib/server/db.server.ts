@@ -1,9 +1,10 @@
 import postgres from 'postgres'
 
-// The Postgres client for the post-#168 data layer. Server-only: the `.server`
-// suffix keeps it out of any browser bundle, which is the whole point of the
-// migration -- today 54 queries run in the browser against Supabase, guarded
-// only by RLS.
+// The Postgres client. Server-only: the `.server` suffix keeps it out of any
+// browser bundle, which was the whole point of #168 -- 54 queries used to run
+// in the browser against Supabase, guarded only by RLS. Nothing does now, and
+// there is no RLS to fall back on, so every query carries its own `user_id`
+// (checked by `eslint-rules/sql-user-scoping.js`).
 //
 // No `transform`, on purpose. #172 planned for `postgres.camel` on the theory
 // that it would keep call sites close to their supabase-js shape. The opposite

@@ -1,16 +1,11 @@
-/* L1 -- reset + bare-tag floor.
- *
- * NOT IMPORTED YET. Tailwind's Preflight is still active and owns the reset;
- * two resets at once would fight. This file is authored now so the removal of
- * Tailwind (#186) is a swap, not a write. #186 adds the @import to
- * src/styles.css, deletes the now-duplicated @layer base block there, and
- * verifies each screen against it.
+/* L1 -- reset + bare-tag floor. This is the app's only reset, imported by
+ * src/styles.css. There is no Tailwind and no Preflight behind it (#186).
  *
  * Deliberately minimal. In a leaf-styled system the bare-tag floor carries less
  * than it looks like it should -- the real work is L2 component modules.
  *
- * Three places this intentionally differs from Preflight, all to be eyeballed
- * when it switches on:
+ * Three places this differs from the Preflight it replaced. They are choices,
+ * not omissions, and are the ones to check first if a bare tag looks wrong:
  *   - headings get real token sizes rather than Preflight's `font-size: inherit`
  *   - ::placeholder takes --muted-foreground rather than currentColor at 50%
  *   - button cursor is left at the browser default, matching Tailwind v4

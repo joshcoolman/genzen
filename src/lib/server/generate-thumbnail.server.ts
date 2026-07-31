@@ -6,7 +6,7 @@ const THUMBNAIL_WIDTH = 400
 const THUMBNAIL_QUALITY = 80
 
 /**
- * Downloads an image from Supabase storage, resizes it to a 400px-wide WebP
+ * Downloads an image from S3 storage, resizes it to a 400px-wide WebP
  * thumbnail, and uploads it to `{userId}/thumbs/{filename}.webp`.
  *
  * Returns the thumbnail storage path on success, or null on any failure.
