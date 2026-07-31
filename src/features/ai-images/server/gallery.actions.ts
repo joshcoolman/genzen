@@ -15,15 +15,28 @@ export async function listGalleryImages(): Promise<Array<SavedAiImage>> {
   // `created_at` goes through `to_json(...)#>>'{}'` rather than being selected
   // raw: `SavedAiImage.created_at` is an ISO string, and the driver would
   // otherwise hand back a `Date`.
+  // `on_canvas` is derived, never stored -- the boolean column of that name was
+  // deleted in #205 precisely because it drifted from the membership rows that
+  // are the truth. `exists` over `canvas_images_user_image_idx` (user_id,
+  // image_id), so it costs an index probe per row rather than a join.
+  //
+  // A boolean is enough while there is one canvas per user. The day there are
+  // several, this becomes the canvas name and the marker says which -- same
+  // query shape, one more column.
   const rows = await sql`
-    select id, title, description, storage_path, thumbnail_path,
-           to_json(created_at)#>>'{}' as created_at,
-           sort_order, status, origin, generation_error, generation_metadata
-    from user_images
-    where user_id = ${userId}
-      and source in ('upload', 'ai_generated')
-      and deleted_at is null
-    order by sort_order desc nulls last
+    select ui.id, ui.title, ui.description, ui.storage_path, ui.thumbnail_path,
+           to_json(ui.created_at)#>>'{}' as created_at,
+           ui.sort_order, ui.status, ui.origin, ui.generation_error,
+           ui.generation_metadata,
+           exists (
+             select 1 from canvas_images ci
+             where ci.image_id = ui.id and ci.user_id = ${userId}
+           ) as on_canvas
+    from user_images ui
+    where ui.user_id = ${userId}
+      and ui.source in ('upload', 'ai_generated')
+      and ui.deleted_at is null
+    order by ui.sort_order desc nulls last
   `
 
   return rows as unknown as Array<SavedAiImage>

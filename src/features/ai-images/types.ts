@@ -10,6 +10,10 @@ export interface SavedAiImage {
   created_at: string
   sort_order?: number | null
   status: 'pending' | 'completed' | 'failed'
+  /** On a canvas right now. Derived per read from `canvas_images` (#216), not a
+   *  column -- the stored boolean this replaces drifted from the rows that are
+   *  the truth. Absent on a card that has not come back from the server yet. */
+  on_canvas?: boolean
   deleted_at?: string | null
   description?: string | null
   generation_error: string | null

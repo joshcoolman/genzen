@@ -32,6 +32,15 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   sort, info and the origin filter as one object; the generator's open and
   pinned flags are two older single-value keys. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
+- **A card says when it is on the canvas (#216).** `on_canvas` is derived per
+  read with an `exists` over `canvas_images`, never stored -- the boolean column
+  of that name drifted from the membership rows that are the truth and went in
+  #205. The marker is passive on purpose: trashing an arranged image takes it
+  off a surface you are not looking at, and saying so up front prevents the
+  surprise rather than interrupting to explain it. It sits bottom-centre because
+  this card pins its overlay, so all four corners are permanently occupied, and
+  it never hides on hover -- a marker that vanishes as you reach for Delete
+  fails at the only moment it matters
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
