@@ -126,11 +126,11 @@ export function useView(initial: CanvasState) {
   } = useRemoval({
     canvasId,
     iRef,
+    gRef,
     setImages,
     setGroups,
     select,
     pushUndo,
-    undo,
   })
 
   const getPasteTarget = useCallback(

@@ -17,10 +17,13 @@ interface UseHistoryArgs {
 
 const MAX_UNDO = 50
 
-/** Undo/redo over arrangement -- positions and groupings.
+/** Undo/redo over arrangement -- positions and groupings. Keyboard only.
  *
- *  Local only: it does not reverse the server write, so undoing a Move to Trash
- *  puts the card back on screen without restoring the row (#194). */
+ *  **Local by design, not by omission.** It rewinds what is on screen and never
+ *  touches the server, so anything that also wrote to the database reverses its
+ *  own write -- see the two toast actions in `use-removal.ts`. Leaving that to
+ *  `undo()` is what made Remove-from-Canvas look undone while the membership row
+ *  stayed deleted (#194). */
 export function useHistory({
   iRef,
   gRef,

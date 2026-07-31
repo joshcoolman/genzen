@@ -32,8 +32,8 @@ generation could evict it.
 
 **Image lifecycle:**
 
-1. Paste / drop / upload -> file to S3 via `useUserImages.create()` ->
-   `addToCanvas` with the placeholder's position, eagerly
+1. Paste / drop / upload -> `saveFileToLibrary` (via `useUserImages.create()`)
+   -> `addToCanvas` with the placeholder's position, eagerly
 2. Library pick -> `addToCanvas` with the masonry position, eagerly
 3. AI generation -> the `canvas_images` row is written _at the insert_
    (`createPendingGeneration`'s `onCanvas`), unplaced; the client places it on
@@ -141,7 +141,8 @@ them.
 - `persistence.ts` -- the pure mapping between a membership row and a card
   (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus
   fail-safe wrappers over `_actions/canvas.ts`: `saveCanvas()`, `addToCanvas()`,
-  `removeFromCanvas()`, `moveToTrash()`, `restoreFromTrash()`, `getSignedUrl()`,
+  `removeFromCanvas()`, `moveToTrash()`, `restoreFromTrash()`,
+  `membersForRestore()`, `readLocalImage()`, `preloadUrl()`,
   `getImageDimensions()`, `getUrlDimensions()`. The wrappers swallow failures on
   purpose: a write that cannot reach the server must never take a card off the
   screen. `groupsForSave` is the one non-obvious piece -- a group formed over
@@ -183,12 +184,18 @@ them.
 - Generation polling uses one shared interval per hook that drains accumulated
   record refs, so concurrent batches (or a fresh submit during a mount-time
   resume) don't drop each other's tracking.
-- Image URLs are R2 public URLs (no expiry), resolved server-side in
-  `loadCanvasState()`. `signedUrl` and `getSignedUrl()` are legacy names.
+- Image URLs are `/img/[id]` -- app-served and session-checked since #226, not
+  bucket URLs. `loadCanvasState()` derives them with `imageUrl()`; `getSignedUrl()`
+  is gone and the `signedUrl` field name is a leftover.
 - High-frequency events (drag, wheel) update refs directly to avoid React
   re-renders
-- Undo/redo stack capped at 50 entries. **Undo does not reverse the server
-  write** -- #194, downstream of #212
+- Undo/redo stack capped at 50 entries, and it is **local only**: it rewinds
+  positions and groupings, nothing else. A toast Undo must therefore reverse the
+  server write itself -- `removeSelectionFromCanvas` re-adds membership with
+  `membersForRestore`, `moveSelectionToTrash` clears `deleted_at`. Neither goes
+  through `undo()`: the toast lives six seconds, and anything the user does in
+  those six seconds pushes its own entry, so popping the stack could rewind a
+  drag instead of the thing the toast names (#194)
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
 - **A paste draws before it uploads.** The clipboard hands over the bytes, so
   the card renders from a local object URL at ~30ms, at its real dimensions and

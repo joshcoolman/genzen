@@ -8,21 +8,18 @@ This is a tool I built for myself and use. It is public because there's no reaso
 for it not to be — not because it's a product. There's no signup, no billing, no
 support, no roadmap. MIT licensed; fork it and make it yours.
 
-**Up next.** Substrate first, then the finish state agreed in #222. This one is
-ahead of the feature work on purpose: its cost grows with every commit.
+**Up next.** The substrate work is done; what is left is the finish state
+agreed in #222, in execution order.
 
-1. **#227** — the rest of it: write down what a deployment needs, and state the
+1. **#216** — Passive "on canvas" marker in library
+2. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+3. **#227** — the rest of it: write down what a deployment needs, and state the
    local-must-not-diverge rule where it binds. CI landed; the docs half has not.
-2. **#229 step 3** — de-hex the canvas subtree, the last 60 raw colors. Its own
-   visual pass, deliberately deferred; the rule allowlists those files by name
-   so the debt is visible and can only shrink.
-
-Then the finish state (3–5 are small and order-flexible; the issues hold the detail):
-
-3. **#216** — Passive "on canvas" marker in library
-4. **#188** — Rewrite the architecture doc
-5. **#194** — Fix Canvas Undo (unblocked: #189 landed)
-6. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+4. **#188** — Rewrite the architecture doc, and absorb #228's two stale
+   reference docs while you are in there.
+5. **#229 step 3** — de-hex the canvas subtree, the last 60 raw colors. Its own
+   visual pass; the rule allowlists those files by name so the debt is visible
+   and can only shrink.
 
 Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
 Worth a read before it ages — it documents a real hole (the model id is a bare
@@ -155,6 +152,7 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
 **Last shipped** (2026-07-31)
 
+- **Canvas Undo actually undoes (#194).** It restored the cards on screen and left the membership rows deleted, so it looked like it worked and the next load dropped them for good. A toast Undo now reverses its own server write; the local stack stays local, and neither path pops it, because six seconds is long enough to do something else first.
 - **The token core collapsed: 153 properties to 97, and 47 colors to 18 (#229).** Ten names resolved to four values, so a divider and a panel fill were the same variable. Now three surfaces, two inks, one accent — the number you get if you squint at the app and count. `pnpm check:colors` keeps it there.
 - **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
