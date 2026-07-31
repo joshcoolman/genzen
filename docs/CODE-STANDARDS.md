@@ -4,14 +4,14 @@ settled. Everything not listed here, the standard decides — do not restate it.
 
 ## Deltas
 
-**Commit straight to `main`.** No PR, no branch for ordinary work. The standard
-says never commit to `main`; the global `~/.claude/CLAUDE.md` says branch before
-non-trivial work. Both are overridden here and only here.
+**No delta on git any more.** This repo used to commit straight to `main`; as
+of 2026-07-31 it follows the standard — branch, PR, merge. The exception earned
+its keep through the structural conversion (#168 → #229), a long run of
+mechanical passes where a PR per commit bought nothing.
 
-_Why:_ one person, one machine at a time, and `main` is how work moves between
-three Macs. A branch left open is a machine that cannot continue. Feature
-branches are justified only for genuinely risky or experimental work, and are
-merged and deleted before the session ends.
+_The one thing to carry forward:_ a branch must not survive the session. `main`
+is how work moves between three Macs, and a branch left open on one is work the
+next machine cannot see — that produced duplicated work once already.
 
 **Server-only code carries a `.server.ts` suffix.** The standard has no such
 convention. It exists because a server-only module imported from a client

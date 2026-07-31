@@ -79,22 +79,27 @@ lives with that route — #189 moved six folders out of there on that rule.
 
 ## Git workflow
 
-**This repo, and this repo alone: commit and push straight to `main`, freely.**
-Be aggressive about it — do not stop to ask, do not open a PR, do not cut a
-branch for ordinary work. This is a deliberate exception to `project-standard`
-("never commit to `main` directly") and to the global `~/.claude/CLAUDE.md` rule
-about branching before non-trivial work. Both still hold everywhere else; here
-they are overridden. Nothing in this repo needs the exception re-argued.
+**Branch, PR, merge — the house standard, as of 2026-07-31.** Cut a short
+kebab-case branch, do the work, open a PR, merge it. This repo ran on
+commit-straight-to-`main` through the structural conversion (#168 → #229), which
+was the right call for a long run of mechanical passes and is no longer the
+shape of the work.
 
-Feature branches are only justified for genuinely risky or experimental work where an escape hatch is needed.
+**The one rule that does not relax: a branch never survives the session.** Merge
+and delete before you stop. That is not tidiness — it is the whole reason the
+`main`-only exception existed. Work moves between three Macs through `main`, and
+a branch left open on one of them is work the next machine cannot see. That has
+already happened once: a feature branch cut off a stale `main` reproduced work
+another machine had already pushed.
 
-If a branch is used, merge it and delete it before the session's final commit — never leave branches open at end of session. The goal is that main always reflects the current working state of the app, so switching computers means pulling main and continuing seamlessly.
-
-At the end of any session, main should be:
+At the end of any session, `main` should be:
 
 - Up to date with all completed work
 - Pushed to remote
 - Free of stale local branches
+
+Trivial exceptions that stay direct-to-`main`: a README `## Status` touch-up, or
+a one-line fix to something already merged.
 
 ## Orientation and capture
 
