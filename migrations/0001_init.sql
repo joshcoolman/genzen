@@ -61,6 +61,14 @@ $$;
 -- has no storage_path, size, hash or dimensions yet. The status check is the
 -- contract behind that -- pending resolves to completed or failed, never
 -- disappears.
+--
+-- This table is one deliberately overloaded aggregate: a row is asset identity,
+-- generation lifecycle, canvas membership and trash at once, with
+-- generation_metadata as a bag of unmodeled value objects. That is a choice,
+-- not debt. **Split it when those concerns start fighting in the same code
+-- paths -- not on principle, and not because the row looks crowded.** Written
+-- here because it is the one part of the deleted docs/reference/architecture.md
+-- that nothing else in the repo said (#188).
 create table user_images (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references users (id) on delete cascade,
