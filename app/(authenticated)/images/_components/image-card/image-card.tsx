@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Circle,
   Download,
+  Frame,
   Layers,
   Maximize2,
   MessageSquare,
@@ -143,15 +144,28 @@ export function ImageCard({
         ) : undefined
       }
       imageOverlay={
-        selectionActive && onSelect ? (
-          <div
-            className={styles.selectOverlay}
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelect(img.id, e.shiftKey)
-            }}
-          />
-        ) : undefined
+        <>
+          {/* Passive, and that is the whole point (#216): trashing an image
+              that is arranged on the canvas takes it off a surface you are not
+              looking at. Saying so on the card prevents the surprise instead of
+              interrupting to explain it. Bottom-centre because all four corners
+              are permanently occupied -- this card pins its overlay. */}
+          {img.on_canvas && (
+            <span className={styles.onCanvas}>
+              <Frame className={styles.onCanvasIcon} aria-hidden="true" />
+              On canvas
+            </span>
+          )}
+          {selectionActive && onSelect && (
+            <div
+              className={styles.selectOverlay}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelect(img.id, e.shiftKey)
+              }}
+            />
+          )}
+        </>
       }
       onClick={() => {
         if (!selectionActive) onOpen?.(img)

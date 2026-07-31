@@ -53,3 +53,32 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* "On canvas" marker. Passive: it never intercepts a click, and it does not
+   move or hide on hover -- a marker that vanishes exactly when you reach for
+   Delete would fail at the only moment it matters (#216).
+
+   Bottom-centre is the one edge this card leaves free; `alwaysShowOverlay`
+   pins a button into all four corners. */
+.onCanvas {
+  position: absolute;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-2) var(--space-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.onCanvasIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
