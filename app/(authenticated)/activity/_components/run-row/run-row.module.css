@@ -11,7 +11,7 @@
   padding: var(--space-10) var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--card);
+  background: var(--surface);
   color: inherit;
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
@@ -23,13 +23,13 @@
 }
 
 .row:hover {
-  border-color: color-mix(in oklab, var(--primary) 40%, transparent);
-  background: color-mix(in oklab, var(--card) 80%, transparent);
+  border-color: color-mix(in oklab, var(--text) 40%, transparent);
+  background: color-mix(in oklab, var(--surface) 80%, transparent);
 }
 
 .row:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--primary) 40%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--text) 40%, transparent);
 }
 
 .rowDeleted {
@@ -45,7 +45,7 @@
 
 .modelName {
   overflow: hidden;
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
@@ -55,7 +55,7 @@
 
 .provider {
   overflow: hidden;
-  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+  color: color-mix(in oklab, var(--text-muted) 70%, transparent);
   font-size: var(--text-3xs);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -67,8 +67,8 @@
   width: fit-content;
   padding: var(--space-2) var(--space-6);
   border-radius: var(--radius-md);
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: var(--surface-raised);
+  color: var(--text-muted);
   font-size: var(--text-3xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -80,7 +80,7 @@
 
 .prompt {
   overflow: hidden;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   white-space: nowrap;
@@ -94,7 +94,7 @@
 .rowError {
   overflow: hidden;
   margin-top: var(--space-2);
-  color: color-mix(in oklab, var(--destructive) 80%, transparent);
+  color: color-mix(in oklab, var(--danger) 80%, transparent);
   font-size: var(--text-2xs);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -107,15 +107,15 @@
 }
 
 .statusCompleted {
-  color: var(--success-text);
+  color: var(--success);
 }
 
 .statusFailed {
-  color: var(--destructive);
+  color: var(--danger);
 }
 
 .statusPending {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .statusIcon {
@@ -128,21 +128,21 @@
 }
 
 .duration {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-variant-numeric: tabular-nums;
 }
 
 .cost {
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-variant-numeric: tabular-nums;
 }
 
 .time {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   text-align: right;

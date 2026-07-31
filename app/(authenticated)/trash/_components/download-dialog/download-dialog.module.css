@@ -31,7 +31,7 @@
 
 .suffix {
   flex-shrink: 0;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--accent-brand);
+  color: var(--accent);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
@@ -65,19 +65,19 @@
   height: 0.5rem;
   overflow: hidden;
   border-radius: var(--radius-full);
-  background: var(--muted);
+  background: var(--surface-raised);
 }
 
 .bar {
   height: 100%;
   border-radius: var(--radius-full);
-  background: var(--accent-brand);
+  background: var(--accent);
   transition: all var(--duration-slow) var(--ease-out);
 }
 
 .error {
   margin-top: var(--space-12);
-  color: var(--destructive);
+  color: var(--danger);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }

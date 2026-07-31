@@ -1,7 +1,7 @@
 .card {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--surface);
 }
 
 .header {
@@ -20,13 +20,13 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
 
 .viewAll:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .viewAllIcon {
@@ -36,7 +36,7 @@
 
 .empty {
   padding: var(--space-24);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   text-align: center;
@@ -66,8 +66,7 @@
   height: var(--space-32);
   overflow: hidden;
   border-radius: var(--radius-md);
-  /* Letterbox behind a thumbnail of unknown aspect -- not a surface token */
-  background: hsl(0 0% 0%);
+  background: var(--image-backing);
 }
 
 .thumbImage {
@@ -82,13 +81,13 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
 }
 
 .thumbIcon {
   width: var(--space-14);
   height: var(--space-14);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .meta {
@@ -100,7 +99,7 @@
 
 .modelName {
   overflow: hidden;
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
@@ -112,7 +111,7 @@
    line-height stays inherited from the row. */
 .prompt {
   overflow: hidden;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-2xs);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -120,21 +119,21 @@
 
 .duration {
   flex-shrink: 0;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
 .cost {
   flex-shrink: 0;
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
 .time {
   flex-shrink: 0;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-2xs);
   text-align: right;
 }

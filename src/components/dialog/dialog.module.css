@@ -19,7 +19,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  background: var(--overlay);
+  background: var(--scrim);
 }
 
 .viewport {
@@ -51,10 +51,10 @@
   gap: var(--space-16);
   overflow-y: var(--dialog-overflow, auto);
   padding: var(--dialog-padding, var(--space-24));
-  background: var(--surface-overlay);
+  background: var(--surface-raised);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-overlay);
 }
 
 /* `size="fullscreen"`. The mobile shape: the dialog *is* the screen, so the
@@ -134,7 +134,7 @@
 }
 
 .closeButton[data-focus-visible] {
-  outline: 2px solid var(--accent-brand);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

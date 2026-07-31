@@ -51,7 +51,7 @@
   border: none;
   border-radius: var(--radius-full);
   background: var(--danger);
-  color: var(--danger-foreground);
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -68,7 +68,7 @@
   margin-top: var(--space-2);
   text-align: center;
   font-size: var(--text-3xs);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -80,16 +80,15 @@
   justify-content: center;
   width: 100%;
   height: var(--tile);
-  border: 1px dashed
-    color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  border: 1px dashed color-mix(in oklab, var(--text-muted) 40%, transparent);
   border-radius: 0.25rem;
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .add:hover {
-  border-color: var(--foreground);
-  color: var(--foreground);
+  border-color: var(--text);
+  color: var(--text);
 }
 
 .add:disabled {
@@ -110,5 +109,5 @@
 .count {
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }

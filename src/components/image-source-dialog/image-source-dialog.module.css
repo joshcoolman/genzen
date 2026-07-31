@@ -6,7 +6,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  background: hsl(0 0% 0% / 0.5);
+  background: var(--scrim);
   animation: fade var(--duration-normal) var(--ease-out);
 }
 
@@ -22,8 +22,8 @@
   padding: var(--space-24);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--background);
-  box-shadow: var(--shadow-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-overlay);
   animation: enter var(--duration-normal) var(--ease-out);
 }
 
@@ -61,7 +61,7 @@
 .uploadSpinner {
   width: 0.875rem;
   height: 0.875rem;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   animation: spin 1s linear infinite;
 }
 
@@ -86,15 +86,15 @@
   background: transparent;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition:
     background-color var(--duration-normal) var(--ease-in-out),
     color var(--duration-normal) var(--ease-in-out);
 }
 
 .upload:hover {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .upload:disabled {
@@ -139,7 +139,7 @@
 .hint {
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .filters {
@@ -151,8 +151,8 @@
   padding: var(--space-6) var(--space-12);
   border: none;
   border-radius: var(--radius-md);
-  background: var(--secondary);
-  color: var(--secondary-foreground);
+  background: var(--surface-raised);
+  color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
@@ -162,12 +162,12 @@
 }
 
 .filter:hover {
-  background: color-mix(in oklab, var(--secondary) 80%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
 }
 
 .filterActive,
 .filterActive:hover {
-  background: var(--accent-brand);
+  background: var(--accent);
   color: var(--accent-contrast);
 }
 
@@ -188,7 +188,7 @@
   padding-block: var(--space-48);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .empty {

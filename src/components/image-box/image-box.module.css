@@ -39,7 +39,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
 }
 
 .fallbackIcon {

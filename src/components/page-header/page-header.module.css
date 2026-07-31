@@ -18,7 +18,7 @@
 }
 
 .description {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }

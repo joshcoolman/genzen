@@ -31,7 +31,7 @@
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-variant-numeric: tabular-nums;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .tools {
@@ -49,20 +49,20 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition:
     background-color var(--duration-normal) var(--ease-in-out),
     color var(--duration-normal) var(--ease-in-out);
 }
 
 .viewToggle:hover {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .viewToggleOn {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .thumbSizeToggle {
@@ -101,25 +101,25 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition:
     background-color var(--duration-normal) var(--ease-in-out),
     color var(--duration-normal) var(--ease-in-out);
 }
 
 .action:hover {
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .actionPrimary {
-  background: var(--accent-brand);
-  color: var(--on-dark);
+  background: var(--accent);
+  color: var(--text);
 }
 
 .actionPrimary:hover {
-  background: color-mix(in oklab, var(--accent-brand) 90%, transparent);
-  color: var(--on-dark);
+  background: color-mix(in oklab, var(--accent) 90%, transparent);
+  color: var(--text);
 }
 
 .icon {

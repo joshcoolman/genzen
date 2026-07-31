@@ -4,25 +4,25 @@
   gap: var(--space-6);
   height: var(--space-32);
   padding-inline: var(--space-12);
-  border: 1px solid var(--input);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
 
 .trigger:hover {
-  background: var(--accent);
+  background: var(--surface-raised);
 }
 
 .triggerActive {
-  border-color: color-mix(in oklab, var(--primary) 60%, transparent);
+  border-color: color-mix(in oklab, var(--text) 60%, transparent);
 }
 
 .count {
   margin-left: var(--space-4);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .chevron {
@@ -54,7 +54,7 @@
   padding: var(--space-6) var(--space-8);
   border-bottom: 1px solid var(--border);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   text-align: left;
@@ -62,8 +62,8 @@
 }
 
 .clearAll:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .clearAllCount {
@@ -91,7 +91,7 @@
 }
 
 .option:hover {
-  background: var(--accent);
+  background: var(--surface-raised);
 }
 
 /* The selected/unselected pair the model selector established: a brand-green
@@ -100,14 +100,14 @@
   flex-shrink: 0;
   width: var(--space-14);
   height: var(--space-14);
-  color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  color: color-mix(in oklab, var(--text-muted) 40%, transparent);
 }
 
 .optionIconSelected {
   flex-shrink: 0;
   width: var(--space-14);
   height: var(--space-14);
-  color: var(--accent-brand);
+  color: var(--accent);
 }
 
 .optionLabel {

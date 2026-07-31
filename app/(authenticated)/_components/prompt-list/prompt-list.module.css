@@ -9,12 +9,12 @@
   border: none;
   background: transparent;
   font-size: var(--text-2xs);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .clearAll:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .clearAll:disabled {
@@ -39,12 +39,12 @@
   border: none;
   border-radius: 0.25rem;
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .remove:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .enhance {
@@ -57,9 +57,9 @@
   padding: var(--space-2) var(--space-6);
   border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
   font-size: var(--text-3xs);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition:
     border-color var(--duration-normal) var(--ease-in-out),
     background-color var(--duration-normal) var(--ease-in-out),
@@ -68,8 +68,8 @@
 
 .enhance:hover {
   border-color: var(--border);
-  background: var(--muted);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .enhance:disabled {
@@ -107,12 +107,12 @@
   background: transparent;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .action:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .action:disabled {

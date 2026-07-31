@@ -7,7 +7,7 @@
 .label {
   display: block;
   margin-bottom: var(--space-4);
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
@@ -16,21 +16,21 @@
 .input {
   width: 100%;
   padding: var(--space-8) var(--space-12);
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--foreground);
+  color: var(--text);
   font: inherit;
 }
 
 .input::placeholder {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .input:focus {
   outline: none;
   border-color: transparent;
-  box-shadow: 0 0 0 2px var(--accent-brand);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* Room for the reveal toggle sitting on top of the field */
@@ -50,20 +50,20 @@
   padding: 0;
   background: none;
   border: 0;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   cursor: pointer;
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .reveal:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .error {
   padding: var(--space-12);
   border-radius: var(--radius-md);
-  background: var(--danger-surface);
-  color: var(--danger-text);
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }
@@ -71,10 +71,10 @@
 .submit {
   width: 100%;
   padding: var(--space-8) var(--space-16);
-  background: var(--accent-brand);
+  background: var(--accent);
   border: 0;
   border-radius: var(--radius-md);
-  color: var(--primary-foreground);
+  color: var(--bg);
   font: inherit;
   font-weight: var(--weight-medium);
   cursor: pointer;
@@ -82,7 +82,7 @@
 }
 
 .submit:hover {
-  background: var(--accent-brand-hover);
+  background: var(--accent-hover);
 }
 
 .submit:disabled {

@@ -13,13 +13,13 @@
   width: 100%;
   height: 2.25rem;
   padding-inline: var(--space-12);
-  border: 1px solid var(--input);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   /* Was `bg-transparent dark:bg-input/30` -- the only OS-scheme-conditional
      rule left in the app, in an app that is dark-only by design (tokens.css).
      Unconditional now: the tinted field is the intended look, and a user on a
      light OS was seeing an untinted one against the same dark chrome. */
-  background: color-mix(in oklab, var(--input) 30%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 30%, transparent);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   color: inherit;
@@ -29,13 +29,13 @@
 }
 
 .trigger:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .trigger:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--ring);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .triggerDisabled {
@@ -49,8 +49,8 @@
   padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--popover);
-  box-shadow: var(--shadow-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
   animation: enter var(--duration-normal) var(--ease-out);
 }
 
@@ -66,7 +66,7 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .option {
@@ -87,12 +87,12 @@
 }
 
 .option:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .optionSelected {
-  background: var(--accent);
+  background: var(--surface-raised);
 }
 
 .optionLabel {

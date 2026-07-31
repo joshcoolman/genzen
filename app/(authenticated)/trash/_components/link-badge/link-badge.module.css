@@ -6,11 +6,11 @@
    badge.module.css for why a class here cannot win that fight reliably. */
 
 .canvas {
-  --badge-color: var(--info-text);
-  --badge-border: color-mix(in oklab, var(--info-text) 50%, transparent);
+  --badge-color: var(--info);
+  --badge-border: color-mix(in oklab, var(--info) 50%, transparent);
 }
 
 .linked {
-  --badge-color: var(--caution-text);
-  --badge-border: color-mix(in oklab, var(--caution-text) 50%, transparent);
+  --badge-color: var(--warning);
+  --badge-border: color-mix(in oklab, var(--warning) 50%, transparent);
 }

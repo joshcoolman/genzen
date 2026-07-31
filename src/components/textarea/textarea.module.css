@@ -29,7 +29,7 @@
 
 .root:focus-visible {
   outline: none;
-  border-color: var(--accent-brand);
+  border-color: var(--accent);
 }
 
 .root:disabled {

@@ -9,7 +9,7 @@
   width: 2.5rem;
   height: 2.5rem;
   margin-bottom: var(--space-8);
-  background: var(--muted);
+  background: var(--surface-raised);
   border-radius: var(--radius-full);
 }
 
@@ -37,7 +37,7 @@
 .envVar {
   overflow-x: auto;
   padding: var(--space-8) var(--space-12);
-  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 40%, transparent);
   color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);

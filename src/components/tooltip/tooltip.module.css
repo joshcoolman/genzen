@@ -11,8 +11,8 @@
   width: fit-content;
   max-width: 18rem;
   padding: var(--space-6) var(--space-12);
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--text);
+  color: var(--bg);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
@@ -24,7 +24,7 @@
 .arrow {
   width: 0.5rem;
   height: 0.5rem;
-  background: var(--foreground);
+  background: var(--text);
   border-radius: 1px;
   rotate: 45deg;
 }

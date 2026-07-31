@@ -8,7 +8,7 @@
   aspect-ratio: 1 / 1;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--input);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--image-backing);
 }
@@ -30,9 +30,9 @@
   height: 1.5rem;
   border: none;
   border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
   backdrop-filter: blur(8px);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   cursor: pointer;
   transition:
     color var(--duration-normal) var(--ease-in-out),
@@ -46,9 +46,9 @@
   align-items: center;
   gap: var(--space-8);
   padding: var(--space-6) var(--space-10);
-  border: 1px solid var(--input);
+  border: 1px solid var(--border);
   border-radius: 0.25rem;
-  background: color-mix(in oklab, var(--muted) 50%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
 }
 
 .compactImage {
@@ -63,7 +63,7 @@
   flex: 1;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -79,14 +79,14 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   cursor: pointer;
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .squareRemove:hover,
 .compactRemove:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .removeIcon {

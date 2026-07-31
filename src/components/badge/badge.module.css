@@ -5,7 +5,7 @@
  * this badge lost the first time: the Canvas badge rendered white instead of
  * blue. A custom property has no such fight to lose.
  *
- *   .canvas { --badge-color: var(--info-text); --badge-border: ...; }
+ *   .canvas { --badge-color: var(--info); --badge-border: ...; }
  */
 .root {
   display: inline-flex;

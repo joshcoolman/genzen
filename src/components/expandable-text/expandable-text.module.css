@@ -12,7 +12,7 @@
   cursor: pointer;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 /* The utility form was `line-clamp-${lines}` -- an interpolated class name,

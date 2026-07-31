@@ -18,17 +18,17 @@
   justify-content: center;
   padding: var(--space-4);
   border-radius: 0.25rem;
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
   backdrop-filter: blur(8px);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition: all var(--duration-normal) var(--ease-in-out);
 }
 
 .root:hover .pill {
-  background: var(--sidebar-selected);
-  color: var(--sidebar-selected-text);
+  background: var(--accent-soft);
+  color: var(--text);
   transform: scale(1.75);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-raised);
 }
 
 .root:hover .pillDestructive {

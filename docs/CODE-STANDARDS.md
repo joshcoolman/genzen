@@ -19,9 +19,23 @@ component is a build error with a confusing message, and the suffix makes the
 mistake visible in the import line rather than in the build log.
 
 **`R2_*` env names are historical, not descriptive.** `src/lib/image-storage.ts`
-is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, Cloudflare R2
-in production. The names were kept rather than churned across `.env.local`,
-`scripts/local-up.mjs` and the deploy config.
+is a generic S3 client pointed by `R2_ENDPOINT` — MinIO locally, any
+S3-compatible bucket in a deployment. genzen has never been deployed and no
+storage provider is chosen. The names were kept rather than churned across
+`.env.local`, `scripts/local-up.mjs` and the deploy config.
+
+**Never a raw color outside `src/styles/tokens.css`.** Checked, not remembered:
+`pnpm check:colors` fails a `.module.css` that writes one. A deliberate
+exception carries `/* raw-color-exempt: <why> */`, which covers the file and
+requires a reason — `grep raw-color-exempt` is the whole list.
+
+_Why:_ the token file claims a reskin is one channel edit. That claim was false
+— 64 raw colors sat above it and the palette had drifted to 153 properties
+where ten names resolved to four values, so a divider and a panel fill were the
+same variable (#229). The bar for a token is the squint test: count the
+surfaces and text tones you can actually distinguish in the rendered app, and
+have that many. Three surfaces, two inks, one line, one accent. If a new token
+is within a few percent of an existing one, it is the existing one.
 
 **Unused code rots; unused data accrues.** A field with readers and no writers
 is a bug (it reports a fact nobody records); a field with writers and no readers

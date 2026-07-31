@@ -19,8 +19,8 @@
 
 .filter {
   padding: var(--space-6) var(--space-12);
-  background: var(--secondary);
-  color: var(--secondary-foreground);
+  background: var(--surface-raised);
+  color: var(--text);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
@@ -29,12 +29,12 @@
 }
 
 .filter:hover {
-  background: color-mix(in oklab, var(--secondary) 80%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
 }
 
 .filterSelected,
 .filterSelected:hover {
-  background: var(--accent-brand);
+  background: var(--accent);
   color: var(--accent-contrast);
 }
 
@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: center;
   padding-block: var(--space-48);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
 }
 
@@ -79,7 +79,7 @@
   height: var(--space-20);
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
   transition:
@@ -88,8 +88,8 @@
 }
 
 .checkboxSelected {
-  background: var(--accent-brand);
-  border-color: var(--accent-brand);
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-contrast);
 }
 
@@ -101,5 +101,5 @@
 /* A chosen tile in the picker grid: solid brand border, no ring. Thumbnail
    handles the hover half via `pickable`. */
 .thumbSelected {
-  border-color: var(--accent-brand);
+  border-color: var(--accent);
 }

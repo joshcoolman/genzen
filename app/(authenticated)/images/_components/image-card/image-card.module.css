@@ -5,16 +5,16 @@
    source image on the edit page -- a thicker ring and a lift; selected is a
    tile picked in selection mode, brand-coloured and flat. */
 .activeTile {
-  border-color: var(--primary);
+  border-color: var(--text);
   box-shadow:
-    0 0 0 2px var(--primary),
-    0 10px 15px -3px color-mix(in oklab, var(--primary) 20%, transparent),
-    0 4px 6px -4px color-mix(in oklab, var(--primary) 20%, transparent);
+    0 0 0 2px var(--text),
+    0 10px 15px -3px color-mix(in oklab, var(--text) 20%, transparent),
+    0 4px 6px -4px color-mix(in oklab, var(--text) 20%, transparent);
 }
 
 .selectedTile {
-  border-color: var(--accent-brand);
-  box-shadow: 0 0 0 1px var(--accent-brand);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 .menuIcon,
@@ -30,7 +30,7 @@
 }
 
 .selectIconOn {
-  color: var(--accent-brand);
+  color: var(--accent);
 }
 
 /* Selection mode: the whole tile becomes one target, so a click picks rather
@@ -48,7 +48,7 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
-  color: var(--foreground);
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

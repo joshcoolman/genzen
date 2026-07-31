@@ -55,6 +55,7 @@ jobs:
       # `--check` rather than `--write`: CI reports, it does not edit.
       - run: pnpm prettier --check .
       - run: pnpm lint
+      - run: pnpm check:colors
       - run: pnpm typecheck
       - run: pnpm test
 

@@ -17,12 +17,12 @@
 }
 
 .row:hover {
-  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 20%, transparent);
 }
 
 .rowSelected {
   composes: row;
-  background: color-mix(in oklab, var(--accent) 50%, transparent);
+  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
 }
 
 .checkOn,
@@ -34,11 +34,11 @@
 }
 
 .checkOn {
-  color: var(--accent-brand);
+  color: var(--accent);
 }
 
 .checkOff {
-  color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+  color: color-mix(in oklab, var(--text-muted) 50%, transparent);
 }
 
 .card {
@@ -51,7 +51,7 @@
   padding: var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--surface);
 }
 
 .text {
@@ -75,7 +75,7 @@
 }
 
 .meta {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
@@ -97,5 +97,5 @@
 
 .deleteButton,
 .deleteButton:hover {
-  color: var(--destructive);
+  color: var(--danger);
 }

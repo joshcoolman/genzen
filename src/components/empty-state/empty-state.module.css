@@ -14,11 +14,11 @@
   font-size: var(--text-lg);
   line-height: var(--text-lg-leading);
   font-weight: var(--weight-semibold);
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .body {
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }

@@ -9,20 +9,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: hsl(0 0% 0% / 0.9);
+  background: var(--scrim);
 }
 
 .control {
   position: absolute;
   border: none;
   background: transparent;
-  color: var(--on-dark-muted);
+  color: var(--text);
   cursor: pointer;
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .control:hover {
-  color: var(--on-dark);
+  color: var(--text);
 }
 
 .close {
@@ -83,7 +83,7 @@
 
 .placeholder {
   border-radius: 0.25rem;
-  background: var(--muted);
+  background: var(--surface-raised);
   animation: pulse 2s var(--ease-in-out) infinite;
 }
 
@@ -113,8 +113,8 @@
   padding: var(--space-8);
   border: none;
   border-radius: var(--radius-full);
-  background: hsl(0 0% 0% / 0.5);
-  color: color-mix(in oklab, var(--on-dark) 60%, transparent);
+  background: var(--scrim);
+  color: color-mix(in oklab, var(--text) 60%, transparent);
   cursor: pointer;
   transition:
     color var(--duration-normal) var(--ease-in-out),
@@ -122,7 +122,7 @@
 }
 
 .action:hover {
-  background: hsl(0 0% 0% / 0.7);
+  background: var(--surface-raised);
 }
 
 .edit {
@@ -130,7 +130,7 @@
 }
 
 .edit:hover {
-  color: var(--on-dark);
+  color: var(--text);
 }
 
 .delete {
@@ -138,7 +138,7 @@
 }
 
 .delete:hover {
-  color: var(--danger-text);
+  color: var(--danger);
 }
 
 .actionIcon {
@@ -151,5 +151,5 @@
   text-align: center;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: color-mix(in oklab, var(--on-dark) 50%, transparent);
+  color: color-mix(in oklab, var(--text) 50%, transparent);
 }

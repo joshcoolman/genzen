@@ -10,5 +10,5 @@
    exactly --accent-brand-hover. Tailwind v4 emits it as oklch, so expect the
    same sub-4/255 gamut gap this issue has recorded on every saturated colour. */
 .iconCopied {
-  color: var(--accent-brand-hover);
+  color: var(--accent-hover);
 }

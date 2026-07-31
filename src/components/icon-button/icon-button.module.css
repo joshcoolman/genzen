@@ -8,9 +8,9 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  background: var(--background);
-  color: var(--foreground);
-  border: var(--border-width) solid var(--input);
+  background: var(--bg);
+  color: var(--text);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition:
@@ -19,7 +19,7 @@
 }
 
 .root:hover:not(:disabled) {
-  background: var(--accent);
+  background: var(--surface-raised);
 }
 
 .root:disabled {
@@ -28,7 +28,7 @@
 }
 
 .root:focus-visible {
-  outline: 2px solid var(--accent-brand);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 

@@ -4,7 +4,7 @@
 .card {
   padding: var(--space-24);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--surface);
 }
 
 .card > :where(*:not(:last-child)) {
@@ -36,15 +36,15 @@
 }
 
 .fieldLabel {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .fieldValue {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .fieldValueMono {
-  color: var(--foreground);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);

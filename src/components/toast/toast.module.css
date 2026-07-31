@@ -27,10 +27,10 @@
   max-width: 420px;
   padding: var(--space-12) var(--space-14);
   background: var(--surface-raised);
-  color: var(--text-body);
+  color: var(--text);
   border: var(--border-width) solid var(--toast-accent, var(--border));
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-overlay);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
@@ -39,7 +39,7 @@
    base border declaration stays single and unbeatable by stylesheet order --
    the hazard the Canvas badge found. */
 .success {
-  --toast-accent: var(--success-text);
+  --toast-accent: var(--success);
 }
 
 .error {
@@ -65,7 +65,7 @@
 }
 
 .cancel {
-  background: var(--surface-overlay);
+  background: var(--surface-raised);
   color: var(--text-muted);
   border: var(--border-width) solid var(--border);
 }
@@ -79,9 +79,9 @@
    green button here would read as "success", which is the message, not the
    verb. */
 .action {
-  background: var(--on-dark);
+  background: var(--text);
   color: var(--accent-contrast);
-  border: var(--border-width) solid var(--on-dark);
+  border: var(--border-width) solid var(--text);
   font-weight: var(--weight-semibold);
 }
 

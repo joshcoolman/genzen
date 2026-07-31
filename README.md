@@ -13,13 +13,16 @@ ahead of the feature work on purpose: its cost grows with every commit.
 
 1. **#227** — the rest of it: write down what a deployment needs, and state the
    local-must-not-diverge rule where it binds. CI landed; the docs half has not.
+2. **#229 step 3** — de-hex the canvas subtree, the last 60 raw colors. Its own
+   visual pass, deliberately deferred; the rule allowlists those files by name
+   so the debt is visible and can only shrink.
 
-Then the finish state (2–4 are small and order-flexible; the issues hold the detail):
+Then the finish state (3–5 are small and order-flexible; the issues hold the detail):
 
-2. **#216** — Passive "on canvas" marker in library
-3. **#188** — Rewrite the architecture doc
-4. **#194** — Fix Canvas Undo (unblocked: #189 landed)
-5. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
+3. **#216** — Passive "on canvas" marker in library
+4. **#188** — Rewrite the architecture doc
+5. **#194** — Fix Canvas Undo (unblocked: #189 landed)
+6. **#213** — Ephemeral search overlay: my stuff, fast, without breaking flow — the payoff
 
 Parked, outside the finish state: **#223**, a proposal for an AI policy seam.
 Worth a read before it ages — it documents a real hole (the model id is a bare
@@ -71,19 +74,20 @@ about it — that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                 | Purpose                                     |
-| ----------------------- | ------------------------------------------- |
-| `pnpm local:up`         | Start the local stack, write `.env.local`   |
-| `pnpm local:down`       | Stop it (data kept)                         |
-| `pnpm local:reset`      | Stop it and delete the volumes              |
-| `pnpm dev`              | Next dev server on :3000                    |
-| `pnpm build`            | Production build                            |
-| `pnpm test`             | Vitest                                      |
-| `pnpm check`            | Prettier + ESLint --fix (run before commit) |
-| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)   |
-| `pnpm db:migrate`       | Apply pending `migrations/*.sql`            |
-| `pnpm auth:create-user` | Create a user, or reset one's password      |
-| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)  |
+| Command                 | Purpose                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `pnpm local:up`         | Start the local stack, write `.env.local`                 |
+| `pnpm local:down`       | Stop it (data kept)                                       |
+| `pnpm local:reset`      | Stop it and delete the volumes                            |
+| `pnpm dev`              | Next dev server on :3000                                  |
+| `pnpm build`            | Production build                                          |
+| `pnpm test`             | Vitest                                                    |
+| `pnpm check`            | Prettier + ESLint --fix + color check (run before commit) |
+| `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                  |
+| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                 |
+| `pnpm db:migrate`       | Apply pending `migrations/*.sql`                          |
+| `pnpm auth:create-user` | Create a user, or reset one's password                    |
+| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                |
 
 ## Stack
 
@@ -148,8 +152,9 @@ Conventions follow [project-standard](https://github.com/joshcoolman/project-sta
 GenZen is public-and-messy on purpose: the exploration home where ideas are tried
 in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
-**Last shipped** (2026-07-30)
+**Last shipped** (2026-07-31)
 
+- **The token core collapsed: 153 properties to 97, and 47 colors to 18 (#229).** Ten names resolved to four values, so a divider and a panel fill were the same variable. Now three surfaces, two inks, one accent — the number you get if you squint at the app and count. `pnpm check:colors` keeps it there.
 - **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
 - **The repo stopped advertising a stack it does not have (#225).** trigger.dev's MCP server, a `Dockerfile` that built green and could not boot, and a reset header claiming Tailwind still owned it. A cold read now lands on the truth: Next, Postgres, MinIO, and no deployment anywhere.

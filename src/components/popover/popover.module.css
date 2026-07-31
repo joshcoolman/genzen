@@ -18,10 +18,10 @@
 }
 
 .popup {
-  background: var(--popover);
-  color: var(--popover-foreground);
+  background: var(--surface);
+  color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-raised);
   outline: none;
 }

@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-8);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .emptyIcon {

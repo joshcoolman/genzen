@@ -31,35 +31,35 @@
 }
 
 .default {
-  background: var(--accent-brand);
+  background: var(--accent);
   color: var(--accent-contrast);
 }
 
 .default:hover {
-  background: var(--accent-brand-hover);
+  background: var(--accent-hover);
 }
 
 .outline {
-  border: 1px solid var(--input);
-  background: var(--background);
-  color: var(--muted-foreground);
-  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-raised);
 }
 
 .outline:hover {
-  background: var(--accent);
-  color: var(--foreground);
+  background: var(--surface-raised);
+  color: var(--text);
 }
 
 .disabled {
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: var(--surface-raised);
+  color: var(--text-muted);
   pointer-events: none;
 }
 
 .root:focus-visible {
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
 .spinner {

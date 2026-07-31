@@ -13,7 +13,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  background: var(--overlay);
+  background: var(--scrim);
 }
 
 .viewport {
@@ -33,7 +33,7 @@
   flex-direction: column;
   gap: var(--space-16);
   padding: var(--space-20);
-  background: var(--surface-overlay);
+  background: var(--surface-raised);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
 }

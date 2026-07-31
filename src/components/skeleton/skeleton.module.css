@@ -6,7 +6,7 @@
  *   .thumb { --skeleton-bg: ...; --skeleton-radius: 0; }
  */
 .root {
-  background: var(--skeleton-bg, var(--accent));
+  background: var(--skeleton-bg, var(--surface-raised));
   border-radius: var(--skeleton-radius, var(--radius-md));
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

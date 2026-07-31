@@ -11,7 +11,7 @@
 .card {
   padding: var(--space-24);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--surface);
 }
 
 .card > :where(*:not(:last-child)) {
@@ -19,7 +19,7 @@
 }
 
 .statusTitle {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
@@ -42,7 +42,7 @@
 }
 
 .statusLabel {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .statusMeta {
@@ -52,7 +52,7 @@
 }
 
 .statusDetail {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
 }
@@ -72,18 +72,18 @@
 }
 
 .badgeChecking {
-  background: var(--warning-surface);
-  color: var(--warning-text);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .badgeConnected {
   /* What `bg-accent-sage/20` compiled to. A tint this page happens to want,
      not a value another screen should reach for -- so it stays here. */
-  background: color-mix(in oklab, var(--accent-sage) 20%, transparent);
-  color: var(--accent-sage);
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  color: var(--accent);
 }
 
 .badgeError {
-  background: var(--danger-surface);
-  color: var(--danger-text);
+  background: var(--danger-soft);
+  color: var(--danger);
 }

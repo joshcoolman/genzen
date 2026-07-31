@@ -4,6 +4,18 @@
  * every value, opaque or translucent, so a reskin is a channel edit -- drop the
  * saturation, lift the lightness, take the opacity down 10%.
  *
+ * **Never a raw color above this file.** That is the rule that makes the claim
+ * above true, and it is checked rather than remembered:
+ * `eslint-rules/no-raw-color.js` fails a `.module.css` that writes one. The
+ * canvas subtree is allowlisted there and is the remaining debt (#229 step 3).
+ *
+ * Eighteen colors: three surfaces, two inks, one line, four accent, six
+ * status/elevation, two utility. Small enough to hold in your head, which is
+ * the property being bought. It was 153 properties across two competing
+ * vocabularies -- a flattened Tailwind palette rather than a system -- where
+ * ten names resolved to four values, so a divider and a panel fill were the
+ * same variable and neither could move without the other (#229).
+ *
  * Genzen is dark-only: there is no theme toggle and no light palette, so the
  * one palette lives in :root rather than under :root[data-theme="dark"]. If a
  * light theme is ever added, :root takes the light values and everything below
@@ -13,202 +25,79 @@
 
 :root {
   /* ========================================
-     DESIGN CONTROLS
-     Change these to affect the whole UI
+     SURFACES -- three steps, not a ramp.
+     Page, panel, and the thing that lifts off it. A fourth step existed and
+     sat 7% from this one, which is the kind of near-duplicate you cannot hold
+     in your head or choose between.
      ======================================== */
 
-  /* Shape -- controls all buttons, cards, inputs, dialogs */
-  --radius: 0.375rem;
-
-  /* Brand color -- active states, focus rings, links, highlights */
-  --accent-brand: hsl(141.9 69.2% 58%);
-  --accent-brand-hover: hsl(142.1 70.6% 45.3%);
-
-  /* Text -- main body text, headings, active sidebar links */
-  --foreground: hsl(0 0% 100%);
-
-  /* Text -- unselected sidebar links, placeholders, secondary text */
-  --muted-foreground: hsl(0 0% 45.1%);
-
-  /* Surfaces -- page background */
-  --background: hsl(0 0% 5.1%);
-
-  /* Surfaces -- cards, popovers, code blocks */
-  --card: var(--sidebar-bg);
-
-  /* Surfaces -- secondary buttons, muted areas, input backgrounds */
-  --secondary: var(--sidebar-border);
-
-  /* Lines -- borders on cards, inputs, dividers */
-  --border: var(--sidebar-border);
-
-  /* Sidebar -- background, text, hover, selected, dividers */
-  --sidebar-bg: hsl(180 6.7% 11.8%);
-  --sidebar-text: hsl(0 0% 63.1%);
-  --sidebar-hover-text: hsl(0 0% 97.6%);
-  --sidebar-hover: hsl(0 0% 0%);
-  --sidebar-selected: hsl(159.6 67.6% 14.5%);
-  --sidebar-selected-text: hsl(0 0% 100%);
-  --sidebar-border: hsl(0 0% 16.9%);
+  --bg: hsl(0 0% 5.1%);
+  --surface: hsl(180 6.7% 11.8%);
+  --surface-raised: hsl(0 0% 13%);
 
   /* ========================================
-     DERIVED / STRUCTURAL
-     These reference the controls above.
-     Usually no need to touch these directly.
+     INK -- two. There is no third: white at 70% for captions over images was
+     one name too many for the difference it made.
      ======================================== */
 
-  --card-foreground: var(--foreground);
-  --popover: var(--card);
-  --popover-foreground: var(--foreground);
-  --primary: var(--foreground);
-  --primary-foreground: var(--background);
-  --secondary-foreground: var(--foreground);
-  --muted: var(--secondary);
-  --accent: var(--secondary);
-  --accent-foreground: var(--foreground);
-  --input: var(--secondary);
-  --ring: var(--accent-brand);
-
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--accent-brand);
-  --sidebar-primary-foreground: hsl(0 0% 7.8%);
-  --sidebar-accent: var(--sidebar-hover);
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-ring: var(--accent-brand);
-
-  /* Additional accent colors */
-  /* Brand hue at a quarter of the saturation. Metadata that should read as
-     "part of the brand" without competing with it -- model descriptions, the
-     DEFAULT badge. Was a bare #7dac8e at four call sites. */
-  --accent-brand-muted: hsl(141.7 22.1% 58.2%);
-
-  --accent-sage: hsl(106.9 15.5% 59.6%);
-  --accent-sage-hover: hsl(106.9 18.4% 65.9%);
-  --warm-gold: hsl(39.5 60% 57.8%);
-  --primary-dark: hsl(157.5 57.1% 5.5%);
-  --primary-light: hsl(145.8 56.4% 67.6%);
-
-  /* Chart colors */
-  --chart-1: hsl(141.9 69.2% 58%);
-  --chart-2: hsl(106.9 15.5% 59.6%);
-  --chart-3: hsl(199.6 21.3% 52.2%);
-  --chart-4: hsl(274 14.7% 60%);
-  --chart-5: hsl(0 36% 66.3%);
+  --text: hsl(0 0% 100%);
+  --text-muted: hsl(0 0% 56%);
 
   /* ========================================
-     STATUS
-     Tailwind supplied these implicitly via its
-     palette; a hand-authored palette states them.
+     LINES
+     ======================================== */
+
+  --border: hsl(0 0% 16.9%);
+  --border-width: 1px;
+
+  /* ========================================
+     ACCENT -- the brand green, and the only hue that means "genzen".
+     Change this one value and the app changes.
+     ======================================== */
+
+  --accent: hsl(141.9 69.2% 58%);
+  --accent-hover: hsl(142.1 70.6% 45.3%);
+  /* Black, because the brand green is light enough that white fails on it. */
+  --accent-contrast: hsl(0 0% 0%);
+  /* The selected-row wash and the focus ring's tint. */
+  --accent-soft: hsl(159.6 67.6% 14.5%);
+
+  /* ========================================
+     STATUS -- three hues, each with a wash for tinted panels.
+     One red, one amber, one green: the split pairs (red-500 vs red-400,
+     yellow-500 vs amber-500, brand green vs emerald) were Tailwind's palette
+     showing through, and tokens.css deferred collapsing them to a design
+     pass. This is that pass.
      ======================================== */
 
   --danger: hsl(0 84.2% 60.2%);
-  --danger-foreground: hsl(0 0% 100%);
-  /* The inline-error pair: text on a tinted panel, not a solid danger fill.
-     Values are Tailwind's red-400 / red-900 at 30%, carried over so the
-     existing error banners do not shift. Fold into --danger if a design pass
-     ever decides the two reds should be one. */
-  --danger-text: hsl(358.8 100% 69.8%);
-  --danger-surface: hsl(358.9 68.8% 30.2% / 0.3);
-  /* Same pair for the in-progress state -- Tailwind's yellow-500 / yellow-900
-     at 30%, carried over so the badges do not shift. Distinct from --warning
-     below, which is the solid warm-gold fill. */
-  --warning-text: hsl(44.3 100% 47.1%);
-  --warning-surface: hsl(29.7 84% 24.5% / 0.3);
-  --success: var(--accent-brand);
-  /* Completing the text/surface trio. Tailwind's emerald-500, which the status
-     indicators used rather than --accent-brand -- a colder green that reads as
-     "state", not "brand". Kept distinct on purpose. */
-  --success-text: hsl(159.9 100% 36.9%);
-  --success-foreground: hsl(0 0% 7.8%);
-  --warning: var(--warm-gold);
-  --warning-foreground: hsl(0 0% 7.8%);
-  /* Two more text colors, on the badges that say why a trashed image cannot be
-     deleted: blue-500 for "it is on the canvas", amber-500 for "something
-     living still points at it". Tailwind's values verbatim.
-
-     The only two colors in this file not written as HSL. Their borders are
-     color-mix(... in oklab ...), and mixing from the HSL round-trip moved the
-     badge border by 6/255 -- small, but a conversion should move a color by
-     nothing. Rewrite them as HSL when the mix goes.
-
-     --caution-text is amber-500 and --warning-text above is yellow-500 -- two
-     ambers, which is a duplicate a design pass should collapse. They are kept
-     apart here because folding them shifts a badge's hue by 8 degrees, and a
-     conversion is the wrong commit to decide that in. */
-  --info-text: oklch(0.623 0.214 259.815);
-  --caution-text: oklch(0.769 0.188 70.08);
-
-  /* An alias for --danger under shadcn's name. The shadcn primitives are long
-     gone, but eight modules reference this one, so it is a live token now
-     rather than a leftover -- prefer --danger in new code. */
-  --destructive: var(--danger);
+  --danger-soft: hsl(358.9 68.8% 30.2% / 0.3);
+  --warning: hsl(39.5 60% 57.8%);
+  --warning-soft: hsl(29.7 84% 24.5% / 0.3);
+  --success: hsl(159.9 100% 36.9%);
+  /* Blue, and the only non-brand hue left: "this is on the canvas" on a trash
+     badge, where green would read as success and amber as a warning. */
+  --info: hsl(217.2 91.2% 59.8%);
 
   /* ========================================
-     OVERLAY / ELEVATION
+     ELEVATION -- two shadows, authored against a 5% background.
+     The old seven-step ladder was Tailwind's light-theme black-alpha ramp and
+     was very nearly invisible here. Shadow is for things that float; anything
+     in the flow separates with a border and a surface step.
      ======================================== */
 
-  /* Dialog and drawer backdrops */
+  --shadow-raised: 0 2px 8px hsl(0 0% 0% / 0.4);
+  --shadow-overlay: 0 12px 32px hsl(0 0% 0% / 0.55);
+
+  /* Dialog and drawer backdrops. */
   --scrim: hsl(0 0% 0% / 0.6);
-  --scrim-strong: hsl(0 0% 0% / 0.8);
 
   /* The mat behind a `contain`-fitted image, so the letterboxing reads as
      deliberate rather than as a layout fault. */
   --image-backing: hsl(0 0% 0%);
 
-  /* Text sitting on an image or a scrim, never on a surface token */
-  --on-dark: hsl(0 0% 100%);
-  --on-dark-muted: hsl(0 0% 100% / 0.7);
-
-  /* These names are also Tailwind v4 theme keys, so the values here are its
-     defaults verbatim -- restating them keeps the import additive and every
-     existing `shadow-*` utility pixel-identical. They are the right values to
-     re-tune for a dark UI once no utility reads them (#186). */
-  --shadow-2xs: 0 1px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
-  --shadow-sm:
-    0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-  --shadow-md:
-    0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
-  --shadow-lg:
-    0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
-  --shadow-xl:
-    0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
-  --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.25);
-
-  /* ========================================
-     FROM BOOTSY
-     ~/repos/bootsy is ahead of us on the component library, and its primitives
-     are written against its token names. These are the ones its `Button`
-     needed and genzen did not have, with bootsy's dark-theme values verbatim,
-     so a component can be copied across rather than translated by eye.
-
-     Two notes, because the vocabularies are not yet one:
-
-     - `--text` / `--text-body` duplicate `--foreground` exactly today, and
-       `--text-muted` is close to but NOT `--muted-foreground` (56% vs 45.1%).
-       Collapse them when the vocabularies merge; until then a bootsy component
-       reads bootsy names and a genzen one reads genzen names.
-     - `--accent` is the one that CANNOT come across. It means the brand colour
-       in bootsy and a muted grey surface here, and thirteen genzen call sites
-       depend on our meaning. A ported component wanting the brand reads
-       `--accent-brand`.
-     ======================================== */
-
-  --surface-raised: hsl(0 0% 13%);
-  /* The surface of a floating layer. Bootsy's note on why it is not
-     `--surface`: it must separate from the page on sight, because it overlaps
-     content rather than sitting in the flow. Visibly lighter and more neutral
-     than genzen's `--card`, which is where dialogs used to sit. */
-  --surface-overlay: hsl(0 0% 20%);
-  /* The scrim behind one. Theme-independent in bootsy, and 50% where genzen's
-     own `--scrim` is 60% -- kept at bootsy's value so a ported dialog is not
-     subtly darker than the one it came from. */
-  --overlay: hsl(0 0% 0% / 50%);
-  --text: hsl(0 0% 100%);
-  --text-body: hsl(0 0% 100%);
-  --text-muted: hsl(0 0% 56%);
-  --accent-contrast: hsl(0 0% 0%);
-  --border-width: 1px;
+  /* Shape -- controls all buttons, cards, inputs, dialogs */
+  --radius: 0.375rem;
 
   /* ========================================
      SPACING

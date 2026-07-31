@@ -9,7 +9,7 @@
   height: 100vh;
   width: var(--space-64);
   flex-direction: column;
-  background: var(--sidebar-bg);
+  background: var(--surface);
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
@@ -44,21 +44,21 @@
   background: transparent;
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
-  color: var(--sidebar-text);
+  color: var(--text-muted);
   transition:
     background-color var(--duration-normal) var(--ease-in-out),
     color var(--duration-normal) var(--ease-in-out);
 }
 
 .item:hover {
-  background: var(--sidebar-hover);
-  color: var(--sidebar-hover-text);
+  background: var(--bg);
+  color: var(--text);
 }
 
 .itemActive,
 .itemActive:hover {
-  background: var(--sidebar-selected);
-  color: var(--sidebar-selected-text);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 .label {
@@ -82,7 +82,7 @@
   }
 
   .itemActive.itemExpanded {
-    border-left: 2px solid var(--accent-brand);
+    border-left: 2px solid var(--accent);
   }
 
   .label {

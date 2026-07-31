@@ -8,7 +8,7 @@
 }
 
 .trigger {
-  background: var(--card);
+  background: var(--surface);
 }
 
 /* Size through the property, not by re-declaring `width`, which would race
@@ -16,7 +16,7 @@
 .sheet {
   --sheet-width: 16rem;
   --sheet-max-width: none;
-  --sheet-background: var(--card);
+  --sheet-background: var(--surface);
   --sheet-gap: 0;
 }
 
@@ -38,7 +38,7 @@
   align-items: center;
   gap: var(--space-12);
   padding: var(--space-8) var(--space-12);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
   cursor: pointer;
@@ -48,8 +48,8 @@
 }
 
 .item:hover {
-  background: var(--sidebar-hover);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* The active marker is a left border, so the row keeps its box: a 2px border
@@ -61,9 +61,9 @@
 
 .itemActive,
 .itemActive:hover {
-  background: var(--sidebar-hover);
-  color: var(--foreground);
-  border-left-color: var(--accent-brand);
+  background: var(--bg);
+  color: var(--text);
+  border-left-color: var(--accent);
 }
 
 .item > svg {

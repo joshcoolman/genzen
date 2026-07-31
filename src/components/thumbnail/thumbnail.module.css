@@ -11,7 +11,7 @@
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: var(--surface);
 }
 
 .rootCompact {
@@ -30,13 +30,13 @@
    tile reads as choosable before it is chosen. It was three call sites passing
    the same utility string through a `hoverBorder` prop. */
 .rootPickable:hover {
-  border-color: color-mix(in oklab, var(--accent-brand) 50%, transparent);
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
 }
 
 /* The default when a caller sets `selected` and nothing else. */
 .rootSelected {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
 }
 
 .frame {
@@ -63,7 +63,7 @@
      clipped tile, where `--accent` reads as a bright grey block. Half-strength
      `--muted`. Square, because the tile does the rounding and an inner radius
      would show a sliver of card at the top corners. */
-  --skeleton-bg: color-mix(in oklab, var(--muted) 50%, transparent);
+  --skeleton-bg: color-mix(in oklab, var(--surface-raised) 50%, transparent);
   --skeleton-radius: 0;
   width: 100%;
   height: 100%;
@@ -102,7 +102,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: var(--card);
+  background: var(--surface);
 }
 
 .stateFailed {
@@ -148,7 +148,7 @@
   width: 1.25rem;
   height: 1.25rem;
   border: 2px solid var(--border);
-  border-top-color: var(--accent-brand);
+  border-top-color: var(--accent);
   border-radius: var(--radius-full);
   animation: spin 1s linear infinite;
 }
@@ -161,7 +161,7 @@
 
 .stateLabel {
   font-size: var(--text-3xs);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .failedTitle {
@@ -173,11 +173,11 @@
 .failedMessage {
   margin-top: var(--space-10);
   padding: var(--space-2) var(--space-10);
-  border: 1px solid color-mix(in oklab, var(--foreground) 30%, transparent);
+  border: 1px solid color-mix(in oklab, var(--text) 30%, transparent);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: color-mix(in oklab, var(--foreground) 50%, transparent);
+  color: color-mix(in oklab, var(--text) 50%, transparent);
 }
 
 /* ---- badges ---- */
@@ -186,10 +186,10 @@
   position: absolute;
   padding: var(--space-2) var(--space-6);
   border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
   backdrop-filter: blur(8px);
   font-size: var(--text-3xs);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .badgeTopLeft {

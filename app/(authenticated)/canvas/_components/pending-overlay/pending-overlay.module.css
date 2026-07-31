@@ -16,7 +16,7 @@
   height: 24px;
   border-radius: 9999px;
   border: 2px solid var(--border);
-  border-top-color: var(--accent-brand);
+  border-top-color: var(--accent);
   animation: spin 1s linear infinite;
 }
 

@@ -24,13 +24,13 @@
   width: 20rem;
   overflow-y: auto;
   border-left: 1px solid var(--border);
-  background: hsl(0 0% 0% / 0.9);
+  background: var(--scrim);
   backdrop-filter: blur(40px);
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
 .panelFloating {
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-overlay);
 }
 
 .header {
@@ -43,7 +43,7 @@
 .title {
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .headerActions {
@@ -61,12 +61,12 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
 .headerButton:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .body {

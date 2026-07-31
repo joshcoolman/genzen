@@ -24,7 +24,7 @@
 }
 
 .label {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
@@ -57,8 +57,8 @@
 .count {
   width: 1.75rem;
   height: 1.75rem;
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: var(--surface-raised);
+  color: var(--text-muted);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
@@ -69,13 +69,13 @@
 }
 
 .count:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .countSelected,
 .countSelected:hover {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--text);
+  color: var(--bg);
 }
 
 .skeletons {
@@ -90,7 +90,7 @@
 }
 
 .loadingLabel {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   text-align: center;
@@ -109,13 +109,13 @@
 .remove {
   align-self: flex-start;
   padding: var(--space-6);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   cursor: pointer;
   transition: color var(--duration-normal) var(--ease-out);
 }
 
 .remove:hover {
-  color: var(--foreground);
+  color: var(--text);
 }
 
 .remove > svg {

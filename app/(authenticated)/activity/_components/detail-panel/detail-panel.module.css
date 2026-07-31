@@ -25,7 +25,7 @@
   max-height: 90vh;
   border-radius: var(--radius-md);
   object-fit: contain;
-  box-shadow: var(--shadow-2xl);
+  box-shadow: var(--shadow-overlay);
 }
 
 /* Size and spacing through Sheet's custom properties -- re-declaring `width` or
@@ -71,7 +71,7 @@
 
 .summaryName {
   overflow: hidden;
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
@@ -97,18 +97,18 @@
 }
 
 .badgeCompleted {
-  background: color-mix(in oklab, var(--success-text) 10%, transparent);
-  color: var(--success-text);
+  background: color-mix(in oklab, var(--success) 10%, transparent);
+  color: var(--success);
 }
 
 .badgeFailed {
-  background: color-mix(in oklab, var(--destructive) 10%, transparent);
-  color: var(--destructive);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  color: var(--danger);
 }
 
 .badgePending {
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: var(--surface-raised);
+  color: var(--text-muted);
 }
 
 .badgeIcon {
@@ -119,8 +119,8 @@
 .deletedTag {
   padding: var(--space-2) var(--space-6);
   border-radius: var(--radius-md);
-  background: var(--muted);
-  color: var(--muted-foreground);
+  background: var(--surface-raised);
+  color: var(--text-muted);
   font-size: var(--text-3xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -138,7 +138,7 @@
 
 .state {
   padding-block: var(--space-48);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   text-align: center;
@@ -146,10 +146,10 @@
 
 .error {
   padding: var(--space-8) var(--space-12);
-  border: 1px solid color-mix(in oklab, var(--destructive) 40%, transparent);
+  border: 1px solid color-mix(in oklab, var(--danger) 40%, transparent);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--destructive) 10%, transparent);
-  color: var(--destructive);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  color: var(--danger);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
@@ -159,7 +159,7 @@
 }
 
 .sectionTitle {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-3xs);
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
@@ -170,7 +170,7 @@
   padding: var(--space-8) var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--card) 40%, transparent);
+  background: color-mix(in oklab, var(--surface) 40%, transparent);
 }
 
 .copyWrap {
@@ -181,7 +181,7 @@
    scale on purpose -- two call sites in one file do not earn a --space-28. */
 .prompt {
   padding-right: 1.75rem;
-  color: var(--foreground);
+  color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--leading-relaxed);
   white-space: pre-wrap;
@@ -191,7 +191,7 @@
   max-height: 12rem;
   overflow: auto;
   padding-right: 1.75rem;
-  color: var(--destructive);
+  color: var(--danger);
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   line-height: var(--leading-relaxed);
@@ -205,7 +205,7 @@
   right: var(--space-6);
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   transition:
     color var(--duration-normal) var(--ease-in-out),
     background-color var(--duration-normal) var(--ease-in-out),
@@ -213,8 +213,8 @@
 }
 
 .copy:hover {
-  background: color-mix(in oklab, var(--muted) 60%, transparent);
-  color: var(--foreground);
+  background: color-mix(in oklab, var(--surface-raised) 60%, transparent);
+  color: var(--text);
 }
 
 .copyIcon {
@@ -223,7 +223,7 @@
 }
 
 .copyIconDone {
-  color: var(--success-text);
+  color: var(--success);
 }
 
 .detailRow {
@@ -237,12 +237,12 @@
 }
 
 .detailLabel {
-  color: var(--muted-foreground);
+  color: var(--text-muted);
 }
 
 .detailValue {
   min-width: 0;
-  color: var(--foreground);
+  color: var(--text);
   text-align: right;
   word-break: break-all;
 }
@@ -254,7 +254,7 @@
 
 .estimated {
   margin-left: var(--space-6);
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-2xs);
 }
 
@@ -269,7 +269,7 @@
   aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: var(--radius-md);
-  background: hsl(0 0% 0%);
+  background: var(--image-backing);
 }
 
 .refImage {
@@ -288,7 +288,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: var(--muted-foreground);
+  color: var(--text-muted);
   font-size: var(--text-3xs);
 }
 
@@ -298,8 +298,8 @@
   left: var(--space-2);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--background) 80%, transparent);
-  color: var(--muted-foreground);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  color: var(--text-muted);
   /* 9px, one call site -- below the 3xs floor, so it stays a literal */
   font-size: 0.5625rem;
   text-transform: uppercase;
@@ -311,8 +311,8 @@
   overflow: auto;
   padding: var(--space-8);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--muted) 40%, transparent);
-  color: var(--foreground);
+  background: color-mix(in oklab, var(--surface-raised) 40%, transparent);
+  color: var(--text);
   font-size: var(--text-2xs);
   line-height: var(--leading-relaxed);
 }
@@ -321,8 +321,10 @@
   font-family: var(--font-mono);
 }
 
-/* Syntax palette. Four values, one component -- promoting them to L0 would put
-   a code-highlighting decision in the global surface. */
+/* raw-color-exempt: a syntax palette is a code-highlighting decision, not UI
+   colour. Promoting four more hues to L0 for one component is exactly the token
+   sprawl #229 removed -- squint at the app and these are not among the colours
+   you would count. */
 .jsonKey {
   color: hsl(349.6 100% 69.4%);
 }
