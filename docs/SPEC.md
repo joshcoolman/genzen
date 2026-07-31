@@ -46,6 +46,15 @@ with its cost and duration.
 - **Results appear as they complete.** Never batch-wait for the slowest model in a
   multi-model submit.
 - **Deletion is recoverable.** Soft delete, with Trash as the recovery path.
+- **Moving things is cut and paste.** Most of the work is gathering and
+  re-placing: grab a few images, paste them in as references, take a prompt that
+  worked and try it somewhere else, paste, adjust, paste again. So the clipboard
+  is how things move through the app, not a convenience laid over some other
+  mechanism. What it forbids is the alternative: "move to…" pickers, destination
+  dialogs, a step that asks where something should go. You already know — you
+  are holding it. An internal copy carries a **reference** to the row, never its
+  bytes (`src/lib/image-clipboard.ts`), so pasting something you already own
+  never duplicates it.
 - **Throwing things away stays cheap.** Generation is exploratory and most of
   what it produces is disposable — the work depends on being able to trash a
   batch and start over without hesitating. So the app must never accumulate
