@@ -85,18 +85,27 @@ commit-straight-to-`main` through the structural conversion (#168 → #229), whi
 was the right call for a long run of mechanical passes and is no longer the
 shape of the work.
 
-**The one rule that does not relax: a branch never survives the session.** Merge
-and delete before you stop. That is not tidiness — it is the whole reason the
-`main`-only exception existed. Work moves between three Macs through `main`, and
-a branch left open on one of them is work the next machine cannot see. That has
-already happened once: a feature branch cut off a stale `main` reproduced work
-another machine had already pushed.
+**A branch may outlive a session — that is part of what it is for.** Work that
+runs over a day or two keeps its own branch, and the branch name plus the PR are
+the orientation surface when you come back: where you were, and what is done so
+far. Do not rush a merge to close the day.
 
-At the end of any session, `main` should be:
+**The rule that does not relax: push the branch.** Never leave it local-only.
+Three Macs pull from this remote, and work that exists on one machine's disk is
+work the next machine cannot see — that is the actual failure behind the June
+2026 tangle, where a branch was cut off a stale `main` and reproduced work that
+already existed. Pushing fixes it; merging early is not required.
 
-- Up to date with all completed work
-- Pushed to remote
-- Free of stale local branches
+Before assuming `main` is behind, check `git diff origin/main` rather than
+`git log origin/main..HEAD` — a squash merge makes a fully-landed branch look
+unmerged while every line is identical.
+
+At the end of any session:
+
+- Everything **finished** is merged to `main` and pushed
+- Everything **in progress** is committed and pushed on its branch
+- No work exists only on one machine's disk
+- Branches for work that is genuinely done are deleted
 
 Trivial exceptions that stay direct-to-`main`: a README `## Status` touch-up, or
 a one-line fix to something already merged.

@@ -9,9 +9,11 @@ of 2026-07-31 it follows the standard — branch, PR, merge. The exception earne
 its keep through the structural conversion (#168 → #229), a long run of
 mechanical passes where a PR per commit bought nothing.
 
-_The one thing to carry forward:_ a branch must not survive the session. `main`
-is how work moves between three Macs, and a branch left open on one is work the
-next machine cannot see — that produced duplicated work once already.
+_The one thing to carry forward:_ **push the branch.** Three Macs pull from
+this remote, and work sitting on one machine's disk is work the next machine
+cannot see — that produced duplicated work once already, on a branch cut off a
+stale `main`. A branch outliving a session is fine and often the point; a branch
+that was never pushed is not.
 
 **Server-only code carries a `.server.ts` suffix.** The standard has no such
 convention. It exists because a server-only module imported from a client
