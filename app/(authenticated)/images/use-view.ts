@@ -8,6 +8,7 @@ import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
 import { useLightbox } from './_hooks/use-lightbox'
 import { useVariations } from './_hooks/use-variations'
+import { usePasteReference } from './_hooks/use-paste-reference'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -124,6 +125,13 @@ export function useView(initial: Array<SavedAiImage>) {
     () => ({ ...generator, handleClearSourceImage: clearHighlight }),
     [generator, clearHighlight],
   )
+
+  // An image copied from the search overlay pastes in as a reference (#213).
+  usePasteReference({
+    addRefImages: generator.addRefImages,
+    maxRefImages: generator.maxRefImages,
+    refCount: generator.refImages.length,
+  })
 
   const lightbox = useLightbox(completedImages, gallery.deleteImage)
   const variations = useVariations({ setError })
