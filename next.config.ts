@@ -1,17 +1,6 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Next only inlines browser-visible env vars behind a NEXT_PUBLIC_ prefix, so
-  // a `VITE_` name has to be forwarded by hand. The webhook flag was renamed to
-  // NEXT_PUBLIC_ instead (#225) -- it is genuinely client-read, and a Vite
-  // prefix in a Next app reads as a bug even when it works.
-  //
-  // VITE_R2_PUBLIC_URL is the last one, and it is on its way out rather than
-  // being renamed: #226 serves images through the app, after which no browser
-  // needs the bucket's address at all.
-  env: {
-    VITE_R2_PUBLIC_URL: process.env.VITE_R2_PUBLIC_URL,
-  },
   // Prompt-craft in src/lib/prompts/ is authored as markdown and imported as
   // text. Vite did this with import.meta.glob('*.md', { query: '?raw' });
   // Turbopack needs an explicit loader. The .md files stay the source of

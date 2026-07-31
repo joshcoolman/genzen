@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, ActivityFilters } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
@@ -19,14 +19,6 @@ export function useView() {
   const [page, setPage] = useState(0)
   const [filters, setFiltersState] = useState<ActivityFilters>(EMPTY_FILTERS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  const getThumbUrl = useMemo(() => {
-    const base = process.env.VITE_R2_PUBLIC_URL?.replace(/\/$/, '') ?? ''
-    return (path: string | null): string | null => {
-      if (!base || !path) return null
-      return `${base}/${path}`
-    }
-  }, [])
 
   const fetchRef = useRef(0)
   const refetch = useCallback(
@@ -134,7 +126,6 @@ export function useView() {
     setFilters,
     clearFilters,
     hasActiveFilters,
-    getThumbUrl,
     selectedId,
     setSelectedId,
   }

@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { saveAs } from 'file-saver'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 /** The stored key keeps the original extension; fall back to png. */
 function extensionOf(path: string): string {
@@ -48,9 +48,10 @@ export function useDownload(): DownloadState {
 
     setBusy(true)
     try {
-      const url = await createImageStorage().getUrl(storagePath)
-      if (!url) return
-      const response = await fetch(url)
+      // Same-origin, so the session cookie rides along and the route
+      // authorises it -- there is no public object URL to fetch since #226.
+      const response = await fetch(imageUrl(target.id))
+      if (!response.ok) return
       saveAs(await response.blob(), `${baseName}${extensionOf(storagePath)}`)
     } finally {
       setBusy(false)

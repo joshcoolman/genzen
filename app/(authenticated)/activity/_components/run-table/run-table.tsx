@@ -1,12 +1,12 @@
 import { RunRow } from '../run-row/run-row'
 import styles from './run-table.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
+import { imageUrl } from '#/lib/image-url'
 
 interface RunTableProps {
   entries: Array<ActivityEntry>
   isLoading: boolean
   hasActiveFilters: boolean
-  getThumbUrl: (path: string | null) => string | null
   onSelect: (id: string) => void
 }
 
@@ -14,7 +14,6 @@ export function RunTable({
   entries,
   isLoading,
   hasActiveFilters,
-  getThumbUrl,
   onSelect,
 }: RunTableProps) {
   return (
@@ -43,7 +42,9 @@ export function RunTable({
             <RunRow
               key={entry.id}
               entry={entry}
-              thumbnailUrl={getThumbUrl(entry.thumbnailPath)}
+              thumbnailUrl={
+                entry.thumbnailPath ? imageUrl(entry.id, 'thumb') : null
+              }
               onSelect={onSelect}
             />
           ))}

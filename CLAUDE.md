@@ -43,6 +43,12 @@ than assume it's there.
   it. **MinIO in Docker is the only place genzen has ever run.** There is no
   production deployment and no storage provider chosen — if a doc, a comment or
   a memory says R2 is in production, it is wrong (#225).
+  **The bucket is private** (#226), locally too. Nothing reads an object without
+  credentials: the browser gets images from `/img/[id]`, which resolves identity
+  from the cookie and filters the row by `user_id`. `src/lib/image-url.ts` is the
+  only place a URL is built — two surfaces used to concatenate one by hand, so a
+  change to the scheme silently missed them. Server code that needs bytes
+  (FAL uploads, vision) calls `storage.download()` and never HTTP.
 
 ## Features
 

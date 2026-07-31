@@ -7,7 +7,6 @@ import {
 } from '../_actions/canvas'
 import type { CanvasGroup, CanvasImage, Transform } from './types'
 import type { CanvasMemberRecord, CanvasState } from '../_actions/canvas'
-import { createImageStorage } from '#/lib/image-storage'
 
 // Fail-safe wrappers over `_actions/canvas.ts`, plus the pure mapping between a
 // membership row and a canvas card.
@@ -184,17 +183,6 @@ export async function removeFromCanvas(
   } catch {
     /* silent fail */
   }
-}
-
-/**
- * The public URL for a storage path. Still needed for images that appear *after*
- * the server read -- a fresh upload, a generation that just settled -- which the
- * seeded state could not have carried.
- */
-export async function getSignedUrl(
-  storagePath: string,
-): Promise<string | null> {
-  return createImageStorage().getUrl(storagePath)
 }
 
 /** Get image dimensions from a File using an object URL (fast, no base64) */

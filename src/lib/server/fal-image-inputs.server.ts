@@ -1,19 +1,24 @@
 import 'server-only'
 import { first, sql } from './db.server'
-import { fetchAndUploadToFal } from './fal-image-upload.server'
+import { uploadBufferToFal } from './fal-image-upload.server'
 import { createImageStorage } from '#/lib/image-storage'
 
 /** Every image FAL is given is uploaded as **bytes**, never handed over as a URL
- *  for FAL to fetch. A public URL works in prod and can never work locally,
- *  where the object lives on `localhost:9010` -- FAL answers "Could not generate
- *  images with the given prompts and images", which reads as a model complaint
- *  rather than a plumbing failure. Generate learned this; retry had not (#214). */
+ *  for FAL to fetch. That was already true because a `localhost:9010` object is
+ *  unreachable from FAL -- it answers "Could not generate images with the given
+ *  prompts and images", which reads as a model complaint rather than a plumbing
+ *  failure. Generate learned this; retry had not (#214).
+ *
+ *  Since #226 it is also the only thing that *can* work: images are served by
+ *  an authenticated app route, so there is no URL a third party could fetch.
+ *  The bytes come straight out of the bucket, which the server has credentials
+ *  for -- nothing here goes over HTTP to our own app. */
 
-/** Resolve a library row to a readable URL, scoped to its owner. */
-export async function resolveLibraryImageUrl(
+/** Read a library object's bytes, scoped to its owner. */
+export async function readLibraryImageBytes(
   imageId: string,
   userId: string,
-): Promise<string | null> {
+): Promise<ArrayBuffer | null> {
   const row = first(
     await sql<Array<{ storage_path: string | null }>>`
       select storage_path from user_images
@@ -21,7 +26,12 @@ export async function resolveLibraryImageUrl(
     `,
   )
   if (!row?.storage_path) return null
-  return createImageStorage().getUrl(row.storage_path)
+  try {
+    const blob = await createImageStorage().download(row.storage_path)
+    return await blob.arrayBuffer()
+  } catch {
+    return null
+  }
 }
 
 /** Upload a set of library images to FAL, preserving the caller's order.
@@ -48,10 +58,9 @@ export async function uploadLibraryImagesToFal(
     imageIds.map(async (id) => {
       const storagePath = pathById.get(id)
       if (!storagePath) return null
-      const url = await storage.getUrl(storagePath)
-      if (!url) return null
       try {
-        return await fetchAndUploadToFal(url)
+        const blob = await storage.download(storagePath)
+        return await uploadBufferToFal(await blob.arrayBuffer())
       } catch {
         return null
       }

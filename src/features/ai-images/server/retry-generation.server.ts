@@ -8,9 +8,9 @@ import type { RetryMetadata } from '../retry-plan'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
-import { fetchAndUploadToFal } from '#/lib/server/fal-image-upload.server'
+import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
-  resolveLibraryImageUrl,
+  readLibraryImageBytes,
   uploadLibraryImagesToFal,
 } from '#/lib/server/fal-image-inputs.server'
 import { computeFalCostCents } from '#/lib/server/compute-cost.server'
@@ -101,22 +101,26 @@ export async function retryGeneration(data: RetryGenerationInput) {
     // Every image goes to FAL as bytes. The source used to be handed over as a
     // URL (unfetchable locally) or, for a library source, dropped entirely --
     // so the most common retry in the app silently went out text-only against
-    // an image endpoint (#214).
-    const sourceUrl =
+    // an image endpoint (#214). A library source now comes straight off the
+    // bucket; only a genuinely external URL is fetched, because since #226 our
+    // own images have no fetchable URL at all.
+    const sourceBytes =
       plan.source.kind === 'library'
-        ? await resolveLibraryImageUrl(plan.source.imageId, userId)
+        ? await readLibraryImageBytes(plan.source.imageId, userId)
         : plan.source.kind === 'url'
-          ? plan.source.url
+          ? await fetch(plan.source.url)
+              .then((r) => (r.ok ? r.arrayBuffer() : null))
+              .catch(() => null)
           : null
 
-    if (plan.source.kind !== 'none' && !sourceUrl) {
+    if (plan.source.kind !== 'none' && !sourceBytes) {
       throw new RetryNotReproducible(
         'The source image for this generation is no longer available, so it cannot be sent again.',
       )
     }
 
     const [uploadedSource, referenceUrls] = await Promise.all([
-      sourceUrl ? fetchAndUploadToFal(sourceUrl) : Promise.resolve(null),
+      sourceBytes ? uploadBufferToFal(sourceBytes) : Promise.resolve(null),
       uploadLibraryImagesToFal(plan.referenceImageIds, userId),
     ])
 

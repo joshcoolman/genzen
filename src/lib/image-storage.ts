@@ -20,8 +20,6 @@ export interface ImageStorage {
   ) => Promise<void>
   download: (key: string) => Promise<Blob>
   remove: (keys: Array<string>) => Promise<void>
-  getUrl: (key: string) => Promise<string | null>
-  invalidateUrl: (key: string) => void
 }
 
 /**
@@ -48,7 +46,6 @@ class S3ImageStorage implements ImageStorage {
 
   constructor(
     private bucket: string,
-    private publicUrl: string,
     endpoint?: string,
     accessKeyId?: string,
     secretAccessKey?: string,
@@ -109,22 +106,6 @@ class S3ImageStorage implements ImageStorage {
       }),
     )
   }
-
-  getUrl(key: string): Promise<string | null> {
-    return Promise.resolve(`${this.publicUrl}/${key}`)
-  }
-
-  invalidateUrl(_key: string): void {
-    // No-op for R2 public URLs
-  }
-}
-
-/** Synchronous URL builder for R2 public URLs -- no async needed */
-export function getR2PublicUrl(storagePath: string): string {
-  const publicUrl =
-    process.env.VITE_R2_PUBLIC_URL ?? process.env['R2_PUBLIC_URL']
-  if (!publicUrl) throw new Error('R2_PUBLIC_URL not configured')
-  return `${publicUrl.replace(/\/$/, '')}/${storagePath}`
 }
 
 /**
@@ -141,26 +122,17 @@ export function resolveStorageEndpoint(
   return accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined
 }
 
+/**
+ * The bucket is private and server-only (#226). There is no public URL to
+ * configure any more: the app serves its own images through `/img/[id]`, which
+ * is the only thing that can check who is asking. Credentials never reach the
+ * browser, and nothing here is client-callable.
+ */
 export function createImageStorage(): ImageStorage {
-  const publicUrl =
-    process.env.VITE_R2_PUBLIC_URL ?? process.env['R2_PUBLIC_URL']
-
-  if (!publicUrl) {
-    throw new Error(
-      'Image storage requires VITE_R2_PUBLIC_URL or R2_PUBLIC_URL',
-    )
-  }
-
-  // S3 credentials are only available server-side (no VITE_ prefix)
-  const accessKeyId = process.env['R2_ACCESS_KEY_ID']
-  const secretAccessKey = process.env['R2_SECRET_ACCESS_KEY']
-  const bucket = process.env['R2_BUCKET_NAME']
-
   return new S3ImageStorage(
-    bucket ?? 'genzen-images',
-    publicUrl.replace(/\/$/, ''),
+    process.env['R2_BUCKET_NAME'] ?? 'genzen-images',
     resolveStorageEndpoint(),
-    accessKeyId,
-    secretAccessKey,
+    process.env['R2_ACCESS_KEY_ID'],
+    process.env['R2_SECRET_ACCESS_KEY'],
   )
 }

@@ -58,16 +58,17 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-    # `anonymous set download` is the step bootsy doesn't need: genzen serves
-    # plain public URLs (`${VITE_R2_PUBLIC_URL}/${key}`) rather than presigned
-    # ones, so the browser fetches objects unauthenticated. Without it every
-    # image 403s locally while the app itself looks fine.
+    # The bucket is PRIVATE, and there is deliberately no `mc anonymous set
+    # download` here any more (#226). The app serves its own images through
+    # `/img/[id]`, which checks the session -- so nothing needs to read an
+    # object without credentials, and local must not differ from a deployment
+    # in exactly the dimension that changed. That step existing was how a
+    # deploy-time surprise would have been built.
     entrypoint: >
       /bin/sh -c "
       mc alias set local http://minio:9000 genzenlocal genzenlocal &&
       mc mb --ignore-existing local/genzen-images &&
-      mc anonymous set download local/genzen-images &&
-      echo 'bucket genzen-images ready (anonymous download)'
+      echo 'bucket genzen-images ready (private)'
       "
 
 volumes:

@@ -8,7 +8,7 @@ import {
 } from './_actions/trash'
 import type { TrashPayload } from './_actions/trash'
 import type { UserImage } from '#/features/user-images/types'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 import { useSelection } from '#/lib/use-selection'
 
 /**
@@ -42,19 +42,14 @@ export function useView(initial: TrashPayload) {
 
   const selection = useSelection({ items: images.map((img) => img.id) })
 
-  /** Public URLs arrive one at a time so the first row is not held up by the
-   *  last. Nothing on the page depends on the map being complete. */
+  /** A URL names the row, so this is a derivation rather than a fan-out of
+   *  storage calls that had to arrive one at a time (#226). */
   const signInBackground = useCallback((rows: Array<UserImage>) => {
-    const storage = createImageStorage()
+    const next: Record<string, string> = {}
     for (const image of rows) {
-      if (!image.storage_path) continue
-      storage
-        .getUrl(image.storage_path)
-        .then((url) => {
-          if (url) setImageUrls((prev) => ({ ...prev, [image.id]: url }))
-        })
-        .catch(() => {})
+      if (image.storage_path) next[image.id] = imageUrl(image.id, 'thumb')
     }
+    setImageUrls((prev) => ({ ...prev, ...next }))
   }, [])
 
   useEffect(() => {
@@ -183,20 +178,9 @@ export function useView(initial: TrashPayload) {
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
       const urls: Record<string, string> = {}
-      const storage = createImageStorage()
-      const BATCH = 10
-      for (let i = 0; i < imgs.length; i += BATCH) {
-        const batch = imgs.slice(i, i + BATCH)
-        const results = await Promise.all(
-          batch.map((img) =>
-            storage
-              .getUrl(img.storage_path ?? '')
-              .then((url) => ({ id: img.id, url }))
-              .catch(() => ({ id: img.id, url: null })),
-          ),
-        )
-        for (const { id, url } of results) {
-          if (url) urls[id] = url
+      {
+        for (const img of imgs) {
+          if (img.storage_path) urls[img.id] = imageUrl(img.id)
         }
       }
       return urls

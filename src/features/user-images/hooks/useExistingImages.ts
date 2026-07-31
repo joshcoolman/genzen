@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { listImages } from '../server/images.actions'
 import type { UserImage } from '../types'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 interface UseExistingImagesReturn {
   images: Array<UserImage>
@@ -21,21 +21,12 @@ export function useExistingImages(
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const loadImageUrls = useCallback(async (imgs: Array<UserImage>) => {
+  const loadImageUrls = useCallback((imgs: Array<UserImage>) => {
+    const next: Record<string, string> = {}
     for (const image of imgs) {
-      if (!image.storage_path) continue
-      try {
-        const path =
-          (image as { thumbnail_path?: string | null }).thumbnail_path ??
-          image.storage_path
-        const url = await createImageStorage().getUrl(path)
-        if (url) {
-          setImageUrls((prev) => ({ ...prev, [image.id]: url }))
-        }
-      } catch (err) {
-        console.error(`Failed to load URL for image ${image.id}:`, err)
-      }
+      if (image.storage_path) next[image.id] = imageUrl(image.id, 'thumb')
     }
+    setImageUrls((prev) => ({ ...prev, ...next }))
   }, [])
 
   const fetchImages = useCallback(async () => {

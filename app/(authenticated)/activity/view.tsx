@@ -18,7 +18,6 @@ export function View() {
     setFilters,
     clearFilters,
     hasActiveFilters,
-    getThumbUrl,
     selectedId,
     setSelectedId,
   } = useView()
@@ -38,15 +37,10 @@ export function View() {
         entries={entries}
         isLoading={isLoading}
         hasActiveFilters={hasActiveFilters}
-        getThumbUrl={getThumbUrl}
         onSelect={setSelectedId}
       />
 
-      <DetailPanel
-        entryId={selectedId}
-        onClose={() => setSelectedId(null)}
-        getThumbUrl={getThumbUrl}
-      />
+      <DetailPanel entryId={selectedId} onClose={() => setSelectedId(null)} />
 
       <Pagination
         page={page}

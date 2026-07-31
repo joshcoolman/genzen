@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, Image as ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
 import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.server'
+import { imageUrl } from '#/lib/image-url'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
 
 const PREVIEW_SIZE = 5
@@ -23,14 +24,6 @@ function formatCents(cents: number | null, isEstimate = false): string {
 export function ActivityPreview() {
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
   const [isLoading, setIsLoading] = useState(true)
-
-  const getThumbUrl = useMemo(() => {
-    const base = process.env.VITE_R2_PUBLIC_URL?.replace(/\/$/, '') ?? ''
-    return (path: string | null): string | null => {
-      if (!base || !path) return null
-      return `${base}/${path}`
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -70,7 +63,9 @@ export function ActivityPreview() {
       ) : (
         <ul className={styles.list}>
           {entries.map((entry) => {
-            const thumb = getThumbUrl(entry.thumbnailPath)
+            const thumb = entry.thumbnailPath
+              ? imageUrl(entry.id, 'thumb')
+              : null
             return (
               <li
                 key={entry.id}

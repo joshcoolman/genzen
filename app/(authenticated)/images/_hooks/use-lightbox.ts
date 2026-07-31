@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { getR2PublicUrl } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 export interface LightboxItem {
   id: string
@@ -34,9 +34,9 @@ export function useLightbox(
 
     for (const img of completedImages) {
       flatItems.push({ id: img.id, title: img.title })
-      // Always use storage_path (full-res) for lightbox
+      // Full-res in the lightbox, never the thumbnail.
       if (img.storage_path) {
-        urls[img.id] = getR2PublicUrl(img.storage_path)
+        urls[img.id] = imageUrl(img.id)
       }
     }
 

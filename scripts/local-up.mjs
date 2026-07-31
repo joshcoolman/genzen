@@ -42,8 +42,6 @@ const LOCAL_ENV = {
   R2_ACCESS_KEY_ID: 'genzenlocal',
   R2_SECRET_ACCESS_KEY: 'genzenlocal',
   R2_BUCKET_NAME: 'genzen-images',
-  R2_PUBLIC_URL: 'http://localhost:9010/genzen-images',
-  VITE_R2_PUBLIC_URL: 'http://localhost:9010/genzen-images',
   ENABLE_FAL_WEBHOOKS: 'false',
   NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS: 'false',
   // The `postgres` service in docker-compose.yml. Port 5434 because 5432 is

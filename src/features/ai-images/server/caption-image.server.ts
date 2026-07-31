@@ -27,9 +27,10 @@ export async function captionImage(data: CaptionImageInput) {
     `,
     )
     if (!row?.storage_path) throw new Error('Image not found')
-    const url = await createImageStorage().getUrl(row.storage_path)
-    if (!url) throw new Error('Could not resolve a URL for that image')
-    image = url
+    // Bytes, not a URL: since #226 the only URL is an authenticated app route,
+    // and this call is already server-side with bucket credentials in hand.
+    const blob = await createImageStorage().download(row.storage_path)
+    image = Buffer.from(await blob.arrayBuffer()).toString('base64')
   }
 
   const result = await describeImage(image, data.mode ?? 'anchor')

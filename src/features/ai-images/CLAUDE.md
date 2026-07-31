@@ -66,9 +66,12 @@ anything one route renders lives with that route.
   settles a row refreshes again. FAL runs through the async queue
   (`fal.queue.submit`).
 - **Every image FAL is given is uploaded as bytes**, never handed over as a URL
-  for FAL to fetch — a URL cannot work against `localhost`, and it sidesteps
-  bucket CORS. `#/lib/server/fal-image-inputs.server.ts` is the one seam for
-  this; generate and retry both go through it, and it preserves caller order
-  because models read the image list positionally.
+  for FAL to fetch. It was already the only thing that worked against
+  `localhost`; since #226 it is the only thing that works at all, because our
+  images have no URL a third party could fetch. The bytes come straight off the
+  bucket (`storage.download()`), never over HTTP to our own app.
+  `#/lib/server/fal-image-inputs.server.ts` is the one seam; generate and retry
+  both go through it, and it preserves caller order because models read the
+  image list positionally.
 - **FAL is the only image provider.** Anthropic is prompt work (enhancement,
   variation prompts), Gemini is vision only (describe, caption, shot lists).

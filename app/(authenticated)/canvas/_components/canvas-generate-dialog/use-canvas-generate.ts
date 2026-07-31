@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { getSignedUrl } from '../../_lib/persistence'
 import {
   getCanvasGenerationRecord,
   getImagePrompt,
@@ -9,6 +8,7 @@ import {
 import { canvasModelIdsForRefCount } from '../../_lib/canvas-models'
 import { mapOutcomesToPlaceholders } from '../../_lib/generation-mapping'
 import type { CanvasImage } from '../../_lib/types'
+import { imageUrl } from '#/lib/image-url'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useUserImages } from '#/features/user-images'
@@ -152,7 +152,7 @@ export function useCanvasGenerate(
             record.generation_metadata as { model?: string } | null
           )?.model
           const storagePath = record.storage_path
-          const signedUrl = storagePath ? await getSignedUrl(storagePath) : null
+          const signedUrl = storagePath ? imageUrl(recordId) : null
           const view = normalizeGeneration(record, signedUrl ?? undefined)
 
           if (view.status === 'completed' || view.status === 'failed') {
@@ -521,11 +521,11 @@ export function useCanvasGenerate(
           : '',
       )
 
-      // Primary image (Image 1) -> source slot. Signed URL is CORS-safe, and
-      // the recordId rides along for the same reason the references below carry
-      // theirs: without it the source is bytes with no identity, and Retry
-      // cannot send it again (#214).
-      const url = source.signedUrl ?? (await getSignedUrl(source.storagePath))
+      // Primary image (Image 1) -> source slot. The recordId rides along for
+      // the same reason the references below carry theirs: without it the
+      // source is bytes with no identity, and Retry cannot send it again
+      // (#214). The URL is only the panel's preview -- the submit sends the id.
+      const url = source.signedUrl ?? imageUrl(source.recordId)
       if (url)
         generator.setSourceFromUrl(
           url,
@@ -540,7 +540,7 @@ export function useCanvasGenerate(
         const refs = await Promise.all(
           extras.map(async (img) => ({
             id: img.recordId,
-            url: img.signedUrl ?? (await getSignedUrl(img.storagePath)) ?? '',
+            url: img.signedUrl ?? imageUrl(img.recordId),
             title: 'reference',
           })),
         )

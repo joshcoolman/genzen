@@ -23,7 +23,7 @@ import type {
   UserImage,
   UserImageFilters,
 } from '../types'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 interface UseUserImagesState {
   images: Array<UserImage>
@@ -67,32 +67,20 @@ export function useUserImages(
   })
 
   /**
-   * Load signed URLs for images, updating state incrementally so each URL
-   * is available as soon as it's ready rather than waiting for all of them.
+   * URLs for a page of rows. Synchronous and total since #226 -- a URL names
+   * the row, so there is nothing to resolve. This used to walk the list
+   * awaiting two storage calls per image and setting state on each, purely so
+   * the first card did not wait on the last.
    */
-  const loadImageUrls = useCallback(async (images: Array<UserImage>) => {
+  const loadImageUrls = useCallback((images: Array<UserImage>) => {
+    const imageUrls: Record<string, string> = {}
+    const originalUrls: Record<string, string> = {}
     for (const image of images) {
       if (!image.storage_path) continue
-      try {
-        const thumbnailPath =
-          (image as { thumbnail_path?: string | null }).thumbnail_path ??
-          image.storage_path
-        const storage = createImageStorage()
-        const url = await storage.getUrl(thumbnailPath)
-        const originalUrl = await storage.getUrl(image.storage_path)
-        if (url) {
-          setState((prev) => ({
-            ...prev,
-            imageUrls: { ...prev.imageUrls, [image.id]: url },
-            originalUrls: originalUrl
-              ? { ...prev.originalUrls, [image.id]: originalUrl }
-              : prev.originalUrls,
-          }))
-        }
-      } catch (err) {
-        console.error(`Failed to load URL for image ${image.id}:`, err)
-      }
+      imageUrls[image.id] = imageUrl(image.id, 'thumb')
+      originalUrls[image.id] = imageUrl(image.id)
     }
+    setState((prev) => ({ ...prev, imageUrls, originalUrls }))
   }, [])
 
   /**
@@ -160,15 +148,13 @@ export function useUserImages(
           throw new Error('Created image is missing a storage path')
         }
 
-        const newUrl = await createImageStorage().getUrl(newImage.storage_path)
-
-        // Update state
         setState((prev) => ({
           ...prev,
           images: [newImage, ...prev.images],
-          imageUrls: newUrl
-            ? { ...prev.imageUrls, [newImage.id]: newUrl }
-            : prev.imageUrls,
+          imageUrls: {
+            ...prev.imageUrls,
+            [newImage.id]: imageUrl(newImage.id, 'thumb'),
+          },
           isCreating: false,
         }))
 

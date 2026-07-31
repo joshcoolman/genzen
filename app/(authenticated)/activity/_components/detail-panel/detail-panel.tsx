@@ -6,6 +6,7 @@ import { clsx } from 'clsx'
 import { getActivityEntry } from '../../_actions/get-entry'
 import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
+import { imageUrl } from '#/lib/image-url'
 import {
   ImageBox,
   Sheet,
@@ -25,7 +26,6 @@ const SUMMARY_THUMB_SIZE = 64
 interface DetailPanelProps {
   entryId: string | null
   onClose: () => void
-  getThumbUrl: (path: string | null) => string | null
 }
 
 function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
@@ -191,11 +191,7 @@ function JsonBlock({ json }: { json: string }) {
   )
 }
 
-export function DetailPanel({
-  entryId,
-  onClose,
-  getThumbUrl,
-}: DetailPanelProps) {
+export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
   const [detail, setDetail] = useState<ActivityEntryDetail | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -227,7 +223,10 @@ export function DetailPanel({
     }
   }, [entryId])
 
-  const thumbUrl = detail ? getThumbUrl(detail.thumbnailPath) : null
+  const thumbUrl =
+    detail?.thumbnailPath || detail?.storagePath
+      ? imageUrl(detail.id, 'thumb')
+      : null
 
   return (
     <>
@@ -332,7 +331,9 @@ export function DetailPanel({
                   >
                     <div className={styles.refGrid}>
                       {detail.referenceImages.map((ref) => {
-                        const url = getThumbUrl(ref.storagePath)
+                        const url = ref.storagePath
+                          ? imageUrl(ref.id, 'thumb')
+                          : null
                         return (
                           <div
                             key={ref.id}

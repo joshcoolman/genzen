@@ -2,14 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { layoutMasonry } from '../_lib/masonry'
-import {
-  addToCanvas,
-  getSignedUrl,
-  preloadUrl,
-  readLocalImage,
-} from '../_lib/persistence'
+import { addToCanvas, preloadUrl, readLocalImage } from '../_lib/persistence'
 import type { CollectedImage, UserImage } from '#/features/user-images'
 import type { CanvasImage } from '../_lib/types'
+import { imageUrl } from '#/lib/image-url'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
 
 /** Column width used when more than one image arrives at once; a lone image
@@ -113,8 +109,7 @@ export function useIngest({
               throw new Error('Created image is missing a storage path')
             }
             const storagePath = record.storage_path
-            const signedUrl = await getSignedUrl(storagePath)
-            if (!signedUrl) throw new Error('Failed to get signed URL')
+            const signedUrl = imageUrl(record.id)
 
             // Decode the hosted image before swapping `src`, or the card blinks
             // empty at the exact moment it is supposed to be settling.
@@ -256,8 +251,7 @@ export function useIngest({
         selectedImages.map(async (item) => {
           const record = libraryImages.find((img) => img.id === item.id)
           if (!record?.storage_path) return null
-          const signedUrl = await getSignedUrl(record.storage_path)
-          if (!signedUrl) return null
+          const signedUrl = imageUrl(record.id)
 
           // Dimensions from the full-res URL, so the card is the right shape.
           const dims = await new Promise<{ w: number; h: number }>(

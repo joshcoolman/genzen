@@ -8,7 +8,7 @@ import {
   ensureDefaultCanvas,
   removeCanvasMembers,
 } from '#/lib/server/canvas-membership.server'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 // The canvas's database access, user-scoped by `resolveAuth()`. Membership and
 // trash used to be id-only queries from the browser, so an id from anywhere
@@ -87,13 +87,10 @@ export async function loadCanvasState(): Promise<CanvasState> {
   // A trashed image is filtered above rather than removed, which is the whole
   // point of #212's trash decision: the membership row survives, so restoring
   // the image brings the card back exactly where it was.
-  const storage = createImageStorage()
-  const images = await Promise.all(
-    rows.map(async (row) => ({
-      ...row,
-      url: row.storage_path ? await storage.getUrl(row.storage_path) : null,
-    })),
-  )
+  const images = rows.map((row) => ({
+    ...row,
+    url: row.storage_path ? imageUrl(row.image_id) : null,
+  }))
 
   return {
     canvasId,

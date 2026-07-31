@@ -78,10 +78,6 @@ export async function generateVariationPrompts(
     }
   }
 
-  const signedUrl = imageStoragePath
-    ? await createImageStorage().getUrl(imageStoragePath)
-    : undefined
-
   // Fetch image bytes for Claude vision + FAL upload
   let imageBase64:
     | {
@@ -90,10 +86,11 @@ export async function generateVariationPrompts(
       }
     | undefined
   let falImageUrl: string | undefined
-  if (signedUrl) {
+  if (imageStoragePath) {
     try {
-      const imageRes = await fetch(signedUrl)
-      const buffer = await imageRes.arrayBuffer()
+      // Straight from the bucket -- #226 left no URL for a fetch to use.
+      const blob = await createImageStorage().download(imageStoragePath)
+      const buffer = await blob.arrayBuffer()
       const bytes = new Uint8Array(buffer)
       let mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' =
         'image/jpeg'

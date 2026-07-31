@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react'
 import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
-import { createImageStorage } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 
 /** The placeholder a card shows while its bytes are still in flight. */
 function skeletonCard(id: string, title: string): SavedAiImage {
@@ -68,10 +68,9 @@ export function useUploads(
           )
           // Hold the blob preview until the refresh brings a real URL --
           // swapping to nothing would blink the card empty.
-          const url =
-            (created.storage_path
-              ? await createImageStorage().getUrl(created.storage_path)
-              : null) || previewUrl
+          const url = created.storage_path
+            ? imageUrl(created.id, 'thumb')
+            : previewUrl
           if (url) gallery.setImageUrl(created.id, url)
           void gallery.refresh({ silent: true })
         } catch {

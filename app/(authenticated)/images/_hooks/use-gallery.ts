@@ -6,7 +6,7 @@ import { toast } from '#/components'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
-import { createImageStorage, getR2PublicUrl } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 import {
   deleteGalleryImage,
   listGalleryImages,
@@ -46,13 +46,14 @@ export interface GalleryState {
   refresh: (options?: RefreshOptions) => Promise<void>
 }
 
-/** Public S3 URLs are built from the path, so the seed's map needs no request. */
+/** A URL names the row, so the seed's map needs no request and no storage
+ *  client. `?v=thumb` falls back to the original server-side when a thumbnail
+ *  was never generated, so the caller does not choose. */
 function urlsFor(images: Array<SavedAiImage>): Record<string, string> {
   const urls: Record<string, string> = {}
   for (const img of images) {
     if (img.status !== 'completed') continue
-    const path = img.thumbnail_path ?? img.storage_path
-    if (path) urls[img.id] = getR2PublicUrl(path)
+    if (img.storage_path) urls[img.id] = imageUrl(img.id, 'thumb')
   }
   return urls
 }
@@ -162,9 +163,6 @@ export function useGallery({
   }
 
   async function deleteImage(img: SavedAiImage) {
-    if (img.storage_path) createImageStorage().invalidateUrl(img.storage_path)
-    if (img.thumbnail_path)
-      createImageStorage().invalidateUrl(img.thumbnail_path)
     forgetImages(new Set([img.id]))
 
     try {

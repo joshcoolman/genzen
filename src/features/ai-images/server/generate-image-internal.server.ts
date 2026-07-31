@@ -8,7 +8,7 @@ import { describeImage } from '#/lib/server/describe-image.server'
 import { endpointFor } from '#/features/ai-images/models'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
-  resolveLibraryImageUrl,
+  readLibraryImageBytes,
   uploadLibraryImagesToFal,
 } from '#/lib/server/fal-image-inputs.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
@@ -51,8 +51,6 @@ export interface GenerateImageInput {
   onCanvas?: boolean
 }
 
-/** The object behind a library row, scoped to its owner -- the caller passes an
- *  id, so a client cannot name someone else's row or an arbitrary URL. */
 function buildRefinePrompt(userPrompt: string): string {
   return `Re-imagine this: ${userPrompt}`
 }
@@ -217,13 +215,16 @@ export async function generateImageInternal(
     // "Could not generate images with the given prompts and images", the same
     // way a reference image would have if it took this path.
     if (sourceImageId || sourceImageUrl) {
-      const fetchUrl = sourceImageId
-        ? await resolveLibraryImageUrl(sourceImageId, userId)
-        : sourceImageUrl!
-      if (!fetchUrl) throw new Error('Source image not found')
-      const res = await fetch(fetchUrl)
-      if (!res.ok) throw new Error('Could not read the source image')
-      imageUrl = await uploadBufferToFal(await res.arrayBuffer())
+      // A library source is read from the bucket; only a genuinely external
+      // URL is fetched. Since #226 our own images have no fetchable URL at all.
+      const buffer = sourceImageId
+        ? await readLibraryImageBytes(sourceImageId, userId)
+        : await fetch(sourceImageUrl!).then((res) => {
+            if (!res.ok) throw new Error('Could not read the source image')
+            return res.arrayBuffer()
+          })
+      if (!buffer) throw new Error('Source image not found')
+      imageUrl = await uploadBufferToFal(buffer)
       falModelId = endpointFor(model, true)
     } else if (sourceBuffer) {
       const buffer = sourceBuffer

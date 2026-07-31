@@ -10,7 +10,7 @@ import { useLightbox } from './_hooks/use-lightbox'
 import { useVariations } from './_hooks/use-variations'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
-import { getR2PublicUrl } from '#/lib/image-storage'
+import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/useUserImages'
@@ -112,12 +112,8 @@ export function useView(initial: Array<SavedAiImage>) {
       setSelectedImageId(img.id)
       // The URL is for the panel's preview only. The submit sends the id, and
       // the server resolves the object and uploads the bytes to FAL -- handing
-      // FAL a URL to fetch cannot work locally, where it is `localhost:9010`.
-      generator.setSourceFromLibrary(
-        img.id,
-        getR2PublicUrl(img.storage_path),
-        img.title,
-      )
+      // FAL an app URL to fetch could never work: it needs a session.
+      generator.setSourceFromLibrary(img.id, imageUrl(img.id), img.title)
     },
     [selectedImageId, clearHighlight, generator],
   )
