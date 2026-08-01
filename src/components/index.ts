@@ -58,7 +58,7 @@ export {
   LibraryPickerButton,
   type SelectedImage,
 } from './library-picker-button/library-picker-button'
-export { LibraryPickerDialog } from './library-picker-button/library-picker-dialog'
+export { LibraryPickerDialog } from './library-picker-dialog/library-picker-dialog'
 export { Lightbox, type LightboxImage } from './lightbox/lightbox'
 export {
   MissingKeyProvider,

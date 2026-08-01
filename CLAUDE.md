@@ -24,7 +24,9 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 Local dev is one command: **`pnpm local:up`** (Postgres + MinIO + schema + a
 populated `.env.local`), then `pnpm dev`. Docker and pnpm are the only
 prerequisites. It is idempotent and never resets a database you have been
-working in. The only key a human supplies is `FAL_KEY`; everything else is a
+working in. The only keys a human supplies are `FAL_KEY` and, if the AI-assisted
+features are wanted, `ANTHROPIC_API_KEY` -- `local:up` prompts for each that is
+missing and the app runs without the second. Everything else is a
 container or a fixed local value. See the README's Local Dev section.
 
 Assume server-side access to the services below unless a feature explicitly says

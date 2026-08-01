@@ -1,7 +1,7 @@
 'use client'
 
 import { usePersistedState } from '#/lib/use-persisted-state'
-import { useIsMobile } from '#/lib/hooks/use-is-mobile'
+import { useIsMobile } from '#/lib/use-is-mobile'
 
 export const THUMB_SIZES = ['lg', 'md', 'sm'] as const
 

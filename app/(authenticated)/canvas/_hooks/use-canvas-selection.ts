@@ -26,7 +26,7 @@ interface UseSelectionArgs {
  *  `sRef` mirrors `selected` for the same reason the viewport mirrors its
  *  transform: pointer handlers read the live selection mid-drag. Always change
  *  the selection through `select()` so the two cannot drift. */
-export function useSelection({
+export function useCanvasSelection({
   iRef,
   gRef,
   setImages,

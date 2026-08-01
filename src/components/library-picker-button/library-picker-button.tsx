@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { BookOpen } from 'lucide-react'
 import { IconButton } from '../icon-button/icon-button'
-import { LibraryPickerDialog } from './library-picker-dialog'
+import { LibraryPickerDialog } from '../library-picker-dialog/library-picker-dialog'
 
 export interface SelectedImage {
   id: string

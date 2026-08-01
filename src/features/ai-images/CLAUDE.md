@@ -12,9 +12,10 @@ anything one route renders lives with that route.
   model is one name over up to two FAL endpoints — `textToImage` (no references)
   and `withImages` (references attached) — picked by `endpointFor(id, hasRefs)`,
   with `maxRefs` capping how many are sent. `getModelName()` resolves either,
-  because `images.model` stores the resolved one. `ALL_IMAGE_MODELS`,
-  `IMAGE_INPUT_MODELS` and `EDIT_MODELS` are the legacy shape, still consumed,
-  being retired by #190.
+  because `images.model` stores the resolved one. The legacy
+  `ALL_IMAGE_MODELS` / `IMAGE_INPUT_MODELS` / `EDIT_MODELS` shape is gone (#190);
+  `models.test.ts` keeps their numbers as fixtures so a lineup edit cannot
+  quietly change a cap or a name that used to be pinned.
 - **`fal-params.server.ts` is the one param resolver.** `buildFalInput()` resolves
   size, safety and image params per model schema for every path — generate,
   variations, retry. Some models take resolution enum strings and others

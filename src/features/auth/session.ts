@@ -1,9 +1,9 @@
 // Signed session cookie: `userId.issuedAtMs.hmac`.
 //
-// Web Crypto only, no `node:*` imports, so this module stays usable from an
-// Edge-runtime middleware once #168 reaches the Next port. Anything that needs
-// `node:crypto` (password hashing) lives in `./server/credentials.server` and
-// must never be imported from here.
+// Web Crypto only, no `node:*` imports, which is what lets `proxy.ts` import it
+// -- route protection runs before the Node runtime is available. Anything that
+// needs `node:crypto` (password hashing) lives in `./server/credentials.server`
+// and must never be imported from here.
 //
 // Ported from ~/repos/bootsy/src/features/auth/session.ts.
 //

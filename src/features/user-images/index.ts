@@ -25,8 +25,8 @@ export {
 export { parseFilenameToTitle, sanitizeFilename } from './lib/filename-parser'
 
 // Hooks
-export { useUserImages } from './hooks/useUserImages'
-export { useExistingImages } from './hooks/useExistingImages'
+export { useUserImages } from './hooks/use-user-images'
+export { useExistingImages } from './hooks/use-existing-images'
 
 // The one write path into the library
 export { saveFileToLibrary } from './lib/save-to-library'

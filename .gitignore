@@ -1,21 +1,11 @@
 node_modules
 .DS_Store
-dist
-dist-ssr
 *.local
-count.txt
 .env
-.env.vercel
-.nitro
-.wrangler
-.output
-.vinxi
-todos.json
-.trigger
+.firecrawl/
+
 .claude/worktrees/
 .claude/launch.json
-.vercel
-.firecrawl/
 
 # Next build output (#168 port)
 .next/

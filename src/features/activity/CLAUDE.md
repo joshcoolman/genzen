@@ -27,9 +27,9 @@ Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted
 
 ## Shared Dependencies
 
-- `#/lib/auth` -- useAuth for access token
+- `#/lib/auth` -- useAuth for the current user (id and email; there is no token)
 - `#/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
-- `#/features/ai-images/models` -- `getModelName`, `ALL_IMAGE_MODELS` (filter options)
+- `#/features/ai-images/models` -- `getModelName`, `IMAGE_MODELS` (filter options)
 - `#/lib/server/auth.server` -- requireAuth
 - `#/lib/server/check-pending-generations.server` -- FAL polling for pending rows
 - `#/components` -- `Sheet`/`SheetContent` for the detail panel

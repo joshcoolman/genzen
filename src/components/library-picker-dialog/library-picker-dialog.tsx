@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '../dialog/dialog'
 import styles from './library-picker-dialog.module.css'
-import type { SelectedImage } from './library-picker-button'
+import type { SelectedImage } from '../library-picker-button/library-picker-button'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
 
