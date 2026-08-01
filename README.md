@@ -43,8 +43,9 @@ There is no shipped account. `local:up` generates a password on first run,
 creates the user, and prints the login; it lands in `.env.local` as
 `LOCAL_DEV_EMAIL` / `LOCAL_DEV_PASSWORD`. Edit either one and re-run to change
 it — the file is the source of truth and the password is re-synced from it,
-which is also the whole password-reset story. `pnpm auth:create-user` is the
-path for an additional or non-local account.
+which is also the whole password-reset story. `pnpm users` manages accounts on a
+deployed instance — list, add, delete — and takes `--local` to work on the
+docker stack instead.
 
 FAL is not mocked — generation calls fal.ai for real and costs real money. The
 app boots and everything else works without a key. Every generation's cost lands
@@ -70,6 +71,7 @@ about it — that's the usual reason generation 401s.
 | `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                  |
 | `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                 |
 | `pnpm db:migrate`       | Apply pending `migrations/*.sql`                          |
+| `pnpm users`            | List/add/delete logins; `-h` for usage, `--local` for docker |
 | `pnpm auth:create-user` | Create a user, or reset one's password                    |
 | `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                |
 
