@@ -180,6 +180,17 @@ try {
       process.exit(0)
     }
 
+    // Creating is additive; overwriting someone's password is not. Locally the
+    // remote prompt never fires, so without this an existing user's password
+    // would be reset with no confirmation at all.
+    if (existing && isLocal) {
+      const answer = await question(`${email} already exists. Reset their password? (y/N) `)
+      if (answer.trim().toLowerCase() !== 'y') {
+        console.log('User unchanged.')
+        process.exit(0)
+      }
+    }
+
     if (existing) {
       await sql`update users set password_hash = ${await hashPassword(password)} where id = ${existing.id}`
       console.log(`Reset password for ${email} (${existing.id}).`)

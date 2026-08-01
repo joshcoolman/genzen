@@ -12,7 +12,6 @@
     "format": "prettier --check .",
     "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs",
     "db:migrate": "node scripts/migrate.mjs",
-    "auth:create-user": "node scripts/create-user.mjs",
     "users": "node scripts/users.mjs",
     "local:up": "node scripts/local-up.mjs",
     "local:down": "docker compose down",

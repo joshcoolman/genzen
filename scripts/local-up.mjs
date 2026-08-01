@@ -186,8 +186,8 @@ run('node', ['scripts/migrate.mjs'])
 //    no way in without it. The password is re-synced on every run rather than
 //    skipped when the row exists, so `.env.local` stays the source of truth.
 //    Guarded by DATABASE_URL pointing at the local stack, which is a fixed
-//    constant in this script; `pnpm auth:create-user` is still the path for a
-//    real account, and it prompts before touching anything remote.
+//    constant in this script; `pnpm users add` is the path for any other
+//    account, and it prompts before touching anything remote.
 {
   const { default: postgres } = await import('postgres')
   const { hashPassword } = await import('./hash-lib.mjs')

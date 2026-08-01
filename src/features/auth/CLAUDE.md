@@ -22,8 +22,8 @@ barrel is how the Node half gets pulled into the Edge half by accident.
   `app/login/_actions/login.ts` and `logout.action.ts` do that.
 - Route protection. `proxy.ts` owns it: every path is private unless listed in
   its `PUBLIC_PATHS`.
-- User provisioning as a product flow. `scripts/create-user.mjs` is the only way
-  in, on purpose.
+- User provisioning as a product flow. `scripts/users.mjs` (`pnpm users`) is the
+  only way in, on purpose.
 
 ## Invariants that fail silently
 
