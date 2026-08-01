@@ -2,7 +2,9 @@
 
 A personal workspace for working with AI image models.
 
-**Up next.** The hygiene run is done — the token collapse (#229), the confirm
+## Up next
+
+The hygiene run is done — the token collapse (#229), the confirm
 removal (#236) and the drift audit (#228) all closed, so `no-raw-color.js` has
 no exemptions and no doc, config file or dependency names a tool this repo does
 not use. What is left is the deployment: two naming decisions taken while they
