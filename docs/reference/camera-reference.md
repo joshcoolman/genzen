@@ -1,6 +1,6 @@
 # Camera Reference
 
-Vocabulary and example prompts for framing, angles, movements, and cinematographic style. Used both in manual prompting and as the knowledge base for camera preset/move layers in the prompt compilation system (see `prompt-system.md`).
+Vocabulary and example prompts for framing, angles, movements, and cinematographic style. Reference material for writing prompts by hand.
 
 ## Shot Sizes (Framing)
 
