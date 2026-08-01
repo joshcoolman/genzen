@@ -1,7 +1,7 @@
 .marquee {
   position: absolute;
-  border: 1px solid rgba(74, 158, 255, 0.6);
-  background: rgba(74, 158, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   pointer-events: none;
   z-index: 10;
 }

@@ -6,8 +6,9 @@
  *
  * **Never a raw color above this file.** That is the rule that makes the claim
  * above true, and it is checked rather than remembered:
- * `eslint-rules/no-raw-color.js` fails a `.module.css` that writes one. The
- * canvas subtree is allowlisted there and is the remaining debt (#229 step 3).
+ * `eslint-rules/no-raw-color.js` fails a `.module.css` that writes one. Nothing
+ * is allowlisted any more: the canvas subtree was the last exception and #229
+ * step 3 closed it.
  *
  * Eighteen colors: three surfaces, two inks, one line, four accent, six
  * status/elevation, two utility. Small enough to hold in your head, which is

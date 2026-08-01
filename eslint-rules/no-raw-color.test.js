@@ -50,13 +50,19 @@ describe('leaves alone what it should', () => {
       findRawColors('.a { color: #fff; }', 'src/styles/tokens.css'),
     ).toHaveLength(0)
   })
-  it('the canvas subtree, which is #229 step 3', () => {
+})
+
+// The canvas was the last allowlisted subtree. #229 step 3 de-hexed it and took
+// the entry out, so it is now checked like anywhere else -- the test that used
+// to assert the exception now asserts there isn't one.
+describe('the canvas subtree, no longer allowlisted (#229 step 3)', () => {
+  it('fails like anywhere else', () => {
     expect(
       findRawColors(
         '.a { color: #2563eb; }',
         'app/(authenticated)/canvas/_components/image-card/image-card.module.css',
       ),
-    ).toHaveLength(0)
+    ).toHaveLength(1)
   })
 })
 
