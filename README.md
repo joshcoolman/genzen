@@ -11,14 +11,20 @@ support, no roadmap. MIT licensed; fork it and make it yours.
 **Up next.** The hygiene run is done — the token collapse (#229), the confirm
 removal (#236) and the drift audit (#228) all closed, so `no-raw-color.js` has
 no exemptions and no doc, config file or dependency names a tool this repo does
-not use. What is left is the deployment, in two steps that have to happen in
-this order.
+not use. What is left is the deployment: two naming decisions taken while they
+are still free, then the deploy itself. In this order.
 
 1. **#242** — rename `R2_*` to Railway's `BUCKET_*`. The prefix describes an
    intention rather than an account, and the rename is free only while nothing
-   is deployed. The day step 2 ships it becomes a dashboard edit, a deploy, and
+   is deployed. The day step 3 ships it becomes a dashboard edit, a deploy, and
    a window where two names disagree.
-2. **#227** — the rest of deployability. CI landed and boots the production
+2. **#241** — decide what `.server.ts` means. Today it means two opposite
+   things: `db.server.ts` cannot be imported from client code, and fourteen
+   client modules import `.server.ts` action files because that is the point.
+   The import line does not say which. Same reason as above for doing it now —
+   a mechanical rename is cheap until it is competing with a deploy for
+   attention.
+3. **#227** — the rest of deployability. CI landed and boots the production
    server; what has not is deployment-as-code. `pnpm start` hardcodes
    `--port 3000` while the platform injects `PORT`, so today the config would
    have to live in a Railway setting instead of the repo — the exact shape of
@@ -29,15 +35,14 @@ this order.
    without anyone remembering a step. Railway is the provider; `bootsy` is
    already there as a worked example.
 
-Also open, all captured rather than scheduled: **#234**, canvas arrival sizing —
-an observation, not a diagnosis, and it needs reproducing before anyone picks a
-rule. **#237**, a generated
-"recently changed" block for this file, which argues honestly against itself via
-#217 and may want to be a command rather than a document. **#241**, deciding what
-`.server.ts` means, since it currently means two opposite things. **#223** is parked outside
-all of this: a proposal for an AI policy seam, worth a read before it ages
-because it documents a real hole (the model id is a bare client string and
-`endpointFor` passes an unknown one straight through).
+**Not immediately** — captured, and worth reading before acting on any of them.
+**#234**, canvas arrival sizing: an observation, not a diagnosis, and it needs
+reproducing before anyone picks a rule. **#237**, a generated "recently changed"
+block for this file, which argues honestly against itself via #217 and may want
+to be a command rather than a document. **#223**, a proposal for an AI policy
+seam, worth a read before it ages because it documents a real hole — the model
+id is a bare client string and `endpointFor` passes an unknown one straight
+through.
 
 ## Run it locally
 
@@ -173,9 +178,9 @@ in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
-carries it. It is the open issues, in execution order: rename the storage env
-vars while it is still free (#242), then deploy once to prove it repeats
-(#227).
+carries it. It is the open issues, in execution order: the two naming decisions
+while they are still free (#242, #241), then deploy once to prove it repeats
+(#227). Everything else is captured, not scheduled.
 
 Agent-facing designs are parked as prose in `docs/reference/agent-substrate.md`;
 the grouping spike (focus, not taxonomy — not #204's grouping) has no issue yet.
