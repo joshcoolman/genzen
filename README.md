@@ -87,6 +87,9 @@ about it — that's the usual reason generation 401s.
 
 ## Repo map
 
+Checked by `src/lib/repo-map.test.ts` — a path named here that does not exist
+fails the build.
+
 | Path                   | What's there                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
 | `src/features/<name>/` | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.**    |
@@ -94,7 +97,6 @@ about it — that's the usual reason generation 401s.
 | `src/components/`      | Primitives, one folder each, imported from the root barrel `#/components`.                |
 | `app/api/`             | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                     |
 | `migrations/`          | Numbered SQL migrations, applied by `pnpm db:migrate`.                                    |
-| `CLAUDE.md`            | Feature catalog + service / convention notes.                                             |
 | `docs/SPEC.md`         | What the app does and the rules that must hold.                                           |
 | `docs/OVERVIEW.md`     | What genzen is, and what it deliberately is not.                                          |
 | `docs/DELTAS.md`       | genzen's deltas from [project-standard](https://github.com/joshcoolman/project-standard). |
@@ -130,40 +132,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   so a click always leaves a card behind — pending, completed, or failed with a
   reason and a Retry.
 
-## Status
+## Last shipped
 
-Orientation lives here and in open issues — there is no continuation or plan file.
-Conventions follow [project-standard](https://github.com/joshcoolman/project-standard).
-GenZen is public-and-messy on purpose: the exploration home where ideas are tried
-in the open, on a clean substrate; bootsy consolidates what proves out (#222).
+2026-08-01
 
-**Last shipped** (2026-08-01)
-
-- **The repo stopped claiming things that were not true (#228).** Five parallel audits found the pattern worth keeping: every claim something enforced held, and every claim only prose asserted had drifted. So a doc prescribing the inverse of the live rule is gone, nine unused dependencies and six config files describing removed toolchains are gone, the React logo a scaffold left in `public/` is gone, and four names that made `grep` lie were disambiguated.
-- **Nothing reversible asks first (#236).** Trash is a soft delete and a place you can visit tomorrow — that _is_ the confirmation, so the canvas delete dialog and the undo toasts went, and Remove from Canvas went with them rather than earn an exception. The only interruptions left are Trash's three permanent deletes, and nothing silences them. 332 lines deleted against 67 added.
-- **The token core is done, and nothing is exempt from it (#229).** Canvas was the last subtree authoring its own colors — 61 of them, 15 greys collapsing to 5 and four accents to one, so selection chrome is the app's green now. Its eleven `font-family` declarations went too, deleted rather than retokenised: `base.css` already sets the face on `html` and resets form controls, so the right count below it is zero. `eslint-rules/no-raw-color.js` has no allowlist left.
-- **Cmd-F finds your stuff, and gets out of the way (#213).** An overlay over whatever you were doing: everything, newest first, the prompt you typed shown whole beside its thumbnail, live filtering and All / Generations / Uploads. Two things come out — the prompt to the clipboard, and the image as a _reference_: the clipboard carries the record id, so pasting it on Images adds it to the reference strip and on Canvas drops a card, with no upload and no second row. Escape leaves nothing behind. It is deliberately not a place: no route, no location on a row, nothing to navigate into.
-- **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
-- **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
-
-**Up next** — the ordered list lives at the top of this file, so the front door
-carries it. It is the open issues, in execution order: the two naming decisions
-while they are still free (#242, #241), then deploy once to prove it repeats
-(#227). Everything else is captured, not scheduled.
-
-Agent-facing designs are parked as prose in `docs/reference/agent-substrate.md`;
-the grouping spike (focus, not taxonomy — not #204's grouping) has no issue yet.
-
-**Deployment: decided in provider, scheduled as #227.** genzen has never been
-deployed; MinIO and Docker Postgres are the only environment it has run in, and
-the `R2_*` env names describe an intention rather than an account. The hybrid
-Vercel/Railway split explored in #200 is dead — one provider, Railway, and its
-provisioning is fully agent-drivable, which is the whole reason. The goal is not
-to run it in the cloud: it is that deploying, tearing down and redeploying stays
-cheap, and that a local run does not behave differently from a deployed one.
-Building features without that property is how it quietly stops being true.
-
-The app is four surfaces and nothing else: Images, Canvas, Activity, Trash — plus
-Account. No assistant, no image grouping (canvas's spatial groups are a different
-thing and are alive), no separate edit page. If something does not serve
-generating and keeping images, it was cut on purpose.
+- Docs, config and dead dependencies stopped claiming things that were not true (#228)
+- Nothing reversible asks first; Remove from Canvas is gone (#236)
+- The token core is done, and no subtree is exempt from it (#229)
+- Cmd-F finds anything in the library and leaves nothing behind (#213)
+- CI runs on push and boots the production server (#227, part)
+- Storage went private; the app serves its own images (#226)
