@@ -134,8 +134,8 @@ door always reflects the current state.
 
 `docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
 does and must do), `DELTAS.md` (the deltas from the house standard) and
-`reference/` (prompt-craft material, the generation presentation contract,
-framework notes). Never a plan. There is no in-app docs viewer — that route and
+`reference/` (the generation presentation contract, prompt vocabulary, framework
+notes). Never a plan. There is no in-app docs viewer — that route and
 `src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled content.
 
 ## Project standard
