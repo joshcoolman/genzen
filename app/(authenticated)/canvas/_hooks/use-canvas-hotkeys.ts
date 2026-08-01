@@ -22,7 +22,7 @@ interface UseCanvasHotkeysArgs {
   ungroupSelected: () => void
   undo: () => void
   redo: () => void
-  onDeleteRequest: (ids: Array<string>) => void
+  onDelete: (ids: Array<string>) => void
 }
 
 const ZOOM_STEP = 1.25
@@ -58,7 +58,7 @@ export function useCanvasHotkeys({
   ungroupSelected,
   undo,
   redo,
-  onDeleteRequest,
+  onDelete,
 }: UseCanvasHotkeysArgs) {
   useEffect(() => {
     // The canvas stands down for its own dialogs and for anything global that
@@ -99,10 +99,10 @@ export function useCanvasHotkeys({
       if (iRef.current.length > 0) fitBounds(getBounds(iRef.current))
     })
 
-    // Surfaces an explicit choice instead of silently removing -- the toast was
-    // too easy to miss.
+    // Straight to Trash, with no modal and nothing to dismiss (#236). Trash is
+    // a place you can visit tomorrow, and that is the confirmation.
     bind('backspace,delete', () => {
-      if (sRef.current.size > 0) onDeleteRequest([...sRef.current])
+      if (sRef.current.size > 0) onDelete([...sRef.current])
     })
 
     bind('command+a', () => select(new Set(iRef.current.map((i) => i.id))))
@@ -132,6 +132,6 @@ export function useCanvasHotkeys({
     ungroupSelected,
     undo,
     redo,
-    onDeleteRequest,
+    onDelete,
   ])
 }

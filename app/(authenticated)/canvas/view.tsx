@@ -15,7 +15,6 @@ import { GeneratePill } from './_components/generate-pill/generate-pill'
 import { MarqueeBox } from './_components/marquee-box/marquee-box'
 import { EmptyPrompt } from './_components/empty-prompt/empty-prompt'
 import { ContextMenu } from './_components/context-menu/context-menu'
-import { DeleteConfirm } from './_components/delete-confirm/delete-confirm'
 import { DropNotice } from './_components/drop-notice/drop-notice'
 import { CanvasGenerateDialog } from './_components/canvas-generate-dialog/canvas-generate-dialog'
 import type { CanvasState } from './_lib/persistence'
@@ -50,8 +49,6 @@ export function View({ initial }: ViewProps) {
     spaceHeld,
     contextMenu,
     setContextMenu,
-    deleteConfirm,
-    setDeleteConfirm,
     dropNotice,
     containerRef,
     fileInputRef,
@@ -73,7 +70,6 @@ export function View({ initial }: ViewProps) {
     arrangeSelected,
     groupSelected,
     ungroupSelected,
-    removeSelectionFromCanvas,
     moveSelectionToTrash,
     dismissFailed,
   } = useView(initial)
@@ -278,13 +274,6 @@ export function View({ initial }: ViewProps) {
       )}
 
       <CanvasGenerateDialog canvasGen={canvasGen} />
-
-      <DeleteConfirm
-        pending={deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onRemoveFromCanvas={removeSelectionFromCanvas}
-        onMoveToTrash={moveSelectionToTrash}
-      />
 
       <ExistingImagePicker
         open={libraryOpen}

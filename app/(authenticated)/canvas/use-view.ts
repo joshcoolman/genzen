@@ -117,16 +117,9 @@ export function useView(initial: CanvasState) {
     groupImages,
   )
 
-  const {
-    deleteConfirm,
-    setDeleteConfirm,
-    removeSelectionFromCanvas,
-    moveSelectionToTrash,
-    dismissFailed,
-  } = useRemoval({
+  const { moveSelectionToTrash, dismissFailed } = useRemoval({
     canvasId,
     iRef,
-    gRef,
     setImages,
     setGroups,
     select,
@@ -373,7 +366,7 @@ export function useView(initial: CanvasState) {
     ungroupSelected,
     undo,
     redo,
-    onDeleteRequest: (ids) => setDeleteConfirm({ ids }),
+    onDelete: moveSelectionToTrash,
   })
 
   /** Right-click opens the menu on a card. A right-drag that panned has
@@ -399,8 +392,6 @@ export function useView(initial: CanvasState) {
     spaceHeld,
     contextMenu,
     setContextMenu,
-    deleteConfirm,
-    setDeleteConfirm,
     dropNotice,
     // refs
     containerRef,
@@ -427,7 +418,6 @@ export function useView(initial: CanvasState) {
     arrangeSelected,
     groupSelected,
     ungroupSelected,
-    removeSelectionFromCanvas,
     moveSelectionToTrash,
     dismissFailed,
   }
