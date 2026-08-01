@@ -6,7 +6,6 @@ import {
   filterLoadedImages,
   groupsForSave,
   memberToImage,
-  membersForRestore,
   positionsForSave,
   saveCanvas,
   stateToImages,
@@ -18,7 +17,6 @@ import type { CanvasImage } from './types'
 vi.mock('../_actions/canvas', () => ({
   addImagesToCanvas: vi.fn(),
   removeImagesFromCanvas: vi.fn(),
-  restoreCanvasImages: vi.fn(),
   saveCanvasState: vi.fn(),
   trashCanvasImages: vi.fn(),
 }))
@@ -211,40 +209,5 @@ describe('fail-safe wrappers', () => {
 
     vi.mocked(addImagesToCanvas).mockRejectedValue(new Error('network'))
     await expect(addToCanvas('c1', [{ imageId: 'y' }])).resolves.toBeUndefined()
-  })
-})
-
-describe('membersForRestore', () => {
-  const card = (over: Partial<CanvasImage> = {}): CanvasImage => ({
-    id: 'a',
-    recordId: 'rec-a',
-    storagePath: 'p',
-    x: 10,
-    y: 20,
-    width: 300,
-    height: 200,
-    ...over,
-  })
-
-  // The bug in #194: Undo put the cards back on screen and left the membership
-  // rows deleted, so the next load dropped them for good. Position has to be in
-  // the payload because `saveCanvasState` never writes membership -- there is no
-  // later save that would supply it.
-  it('carries the position, so the restored card lands where it was', () => {
-    expect(membersForRestore([card()])).toEqual([
-      { imageId: 'rec-a', x: 10, y: 20, width: 300, height: 200 },
-    ])
-  })
-
-  it('skips a card that never had a row', () => {
-    expect(membersForRestore([card({ recordId: '' })])).toEqual([])
-  })
-
-  it('restores every member of a multi-card removal', () => {
-    const out = membersForRestore([
-      card(),
-      card({ id: 'b', recordId: 'rec-b' }),
-    ])
-    expect(out.map((m) => m.imageId)).toEqual(['rec-a', 'rec-b'])
   })
 })

@@ -41,7 +41,13 @@ export async function listTrashedImages(): Promise<TrashPayload> {
     where user_id = ${userId}
       and deleted_at is not null
       and source in ('upload', 'ai_generated')
-    order by deleted_at desc
+    -- Most-recently-deleted first, and it is load-bearing: Trash is the only
+    -- safety net left now that nothing reversible asks first (#236). id breaks
+    -- the tie because a batch trash writes one now() across every row, and
+    -- without it those rows come back in whatever order Postgres feels like --
+    -- a different order on each visit, for exactly the images most likely to be
+    -- the mistake being looked for.
+    order by deleted_at desc, id desc
   `
 
   const links = await computeLinks(

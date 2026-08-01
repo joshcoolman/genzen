@@ -1,49 +1,41 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import {
-  addToCanvas,
-  membersForRestore,
-  moveToTrash,
-  removeFromCanvas,
-  restoreFromTrash,
-} from '../_lib/persistence'
+import { useCallback } from 'react'
+import { moveToTrash, removeFromCanvas } from '../_lib/persistence'
 import type { CanvasGroup, CanvasImage } from '../_lib/types'
 import { toast } from '#/components'
-
-const UNDO_TOAST_MS = 6000
 
 interface UseRemovalArgs {
   canvasId: string
   iRef: React.RefObject<Array<CanvasImage>>
-  gRef: React.RefObject<Array<CanvasGroup>>
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>
   setGroups: React.Dispatch<React.SetStateAction<Array<CanvasGroup>>>
   select: (next: Set<string> | ((prev: Set<string>) => Set<string>)) => void
   pushUndo: () => void
 }
 
-/** The two ways a card leaves the canvas, and the modal that makes the user
- *  choose between them.
+/** How a card leaves the canvas: it goes to Trash.
  *
- *  They are different operations on purpose (#212). Remove deletes the
- *  membership row and leaves the library untouched. Trash soft-deletes the
- *  library row and leaves membership alone, so a restore puts the card back at
- *  the same coordinates instead of making the user re-arrange it. */
+ *  There used to be two ways and a modal that made the user choose between them.
+ *  Remove-from-Canvas deleted the membership row and kept the library row, which
+ *  made it the one operation in the app that quietly destroyed work -- the
+ *  arrangement -- with no way back, since Trash only holds trashed images and a
+ *  re-added membership row comes back unplaced. Rather than keep an undo for the
+ *  single exception, #236 dropped the operation. Now everything reversible just
+ *  happens and only Trash's permanent deletes ask.
+ *
+ *  Trashing soft-deletes the library row and leaves membership alone (#212), so
+ *  a restore from Trash puts the card back at the same coordinates. That
+ *  recovery is the confirmation; there is no dialog and no Undo toast in front
+ *  of it. */
 export function useRemoval({
   canvasId,
   iRef,
-  gRef,
   setImages,
   setGroups,
   select,
   pushUndo,
 }: UseRemovalArgs) {
-  /** Pending delete awaiting the confirm modal's choice. */
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    ids: Array<string>
-  } | null>(null)
-
   /** Strip images off the canvas locally (images, groups, selection). Does not
    *  touch the DB or undo stack -- callers handle membership / deleted_at. */
   const stripFromCanvas = useCallback(
@@ -74,110 +66,34 @@ export function useRemoval({
     [iRef],
   )
 
-  /** "Remove from Canvas": canvas-only removal, the row stays in the library.
-   *
-   *  The Undo restores **both halves** -- the cards on screen and the membership
-   *  rows that back them. It used to call `undo()` alone, which only rewinds the
-   *  local arrangement, so the cards reappeared over a canvas the database no
-   *  longer had them on and the next load dropped them for good (#194). That is
-   *  the worst shape a bug can take: it looked like it worked.
-   *
-   *  Restoring from a captured snapshot rather than through `undo()` is
-   *  deliberate, and is the pattern Move to Trash already used. The toast lives
-   *  for six seconds, and anything the user does in those six seconds pushes its
-   *  own entry -- so popping the stack could rewind a drag instead of this
-   *  removal. A snapshot undoes the thing the toast is about. */
-  const removeSelectionFromCanvas = useCallback(
-    (ids: Array<string>) => {
-      if (ids.length === 0) return
-      const idSet = new Set(ids)
-      const removed = iRef.current.filter((img) => idSet.has(img.id))
-      const groupsBefore = gRef.current
-      const recordIds = recordIdsFor(idSet)
-
-      pushUndo()
-      void removeFromCanvas(canvasId, recordIds)
-      stripFromCanvas(idSet)
-
-      toast(
-        ids.length === 1
-          ? 'Removed from canvas'
-          : `Removed ${ids.length} from canvas`,
-        {
-          duration: UNDO_TOAST_MS,
-          action: {
-            label: 'Undo',
-            onClick: () => {
-              setImages((prev) => [
-                ...prev,
-                ...removed.filter((r) => !prev.some((p) => p.id === r.id)),
-              ])
-              // A removal empties the groups its members were in; put them back,
-              // or the cards return ungrouped and the slab is gone.
-              setGroups(groupsBefore)
-              // The durable half. Position rides along because `saveCanvasState`
-              // writes arrangement and never membership -- a row that does not
-              // exist cannot be given coordinates.
-              void addToCanvas(canvasId, membersForRestore(removed))
-            },
-          },
-        },
-      )
-    },
-    [
-      pushUndo,
-      stripFromCanvas,
-      recordIdsFor,
-      canvasId,
-      iRef,
-      gRef,
-      setImages,
-      setGroups,
-    ],
-  )
-
   /** "Move to Trash": soft-delete, which is a library operation. Membership is
    *  deliberately kept -- the card comes off screen because the canvas read
-   *  filters `deleted_at`. */
+   *  filters `deleted_at`.
+   *
+   *  Says nothing on success (#236). It used to raise a six-second toast with an
+   *  Undo that reversed its own server write; Trash recovers this whether or not
+   *  anyone caught the toast, so the toast was a shortcut over a recovery that
+   *  already exists. A failure still speaks -- silence there would be a lie,
+   *  because the cards have already left the screen.
+   *
+   *  `pushUndo` stays. The local stack rewinds arrangement and never touched
+   *  `deleted_at`, so removing the toast changes nothing about what Cmd-Z does
+   *  here -- and the toast deliberately never went through it (#194). */
   const moveSelectionToTrash = useCallback(
     (ids: Array<string>) => {
       if (ids.length === 0) return
       const idSet = new Set(ids)
-      const removed = iRef.current.filter((img) => idSet.has(img.id))
-      const groupsBefore = gRef.current
       const recordIds = recordIdsFor(idSet)
       pushUndo()
       stripFromCanvas(idSet)
-      void moveToTrash(recordIds)
-        .then(() =>
-          toast.success(
-            ids.length === 1
-              ? 'Moved to Trash'
-              : `Moved ${ids.length} to Trash`,
-            {
-              duration: UNDO_TOAST_MS,
-              action: {
-                label: 'Undo',
-                onClick: () => {
-                  setImages((prev) => [
-                    ...prev,
-                    ...removed.filter((r) => !prev.some((p) => p.id === r.id)),
-                  ])
-                  setGroups(groupsBefore)
-                  // Membership survived the trash (#212), so only `deleted_at`
-                  // has to be undone here -- no `addToCanvas`.
-                  void restoreFromTrash(recordIds)
-                },
-              },
-            },
-          ),
-        )
-        .catch(() => toast.error('Failed to move to Trash'))
+      void moveToTrash(recordIds).catch(() =>
+        toast.error('Failed to move to Trash'),
+      )
     },
-    [pushUndo, stripFromCanvas, recordIdsFor, setImages, setGroups, iRef, gRef],
+    [pushUndo, stripFromCanvas, recordIdsFor],
   )
 
-  /** Drop a single failed tile: no undo, no trash -- it never became an image. */
+  /** Drop a single failed tile: no trash -- it never became an image. */
   const dismissFailed = useCallback(
     (id: string, recordId: string | undefined) => {
       if (recordId) void removeFromCanvas(canvasId, [recordId])
@@ -187,9 +103,6 @@ export function useRemoval({
   )
 
   return {
-    deleteConfirm,
-    setDeleteConfirm,
-    removeSelectionFromCanvas,
     moveSelectionToTrash,
     dismissFailed,
   }

@@ -198,19 +198,6 @@ export async function trashCanvasImages(ids: Array<string>): Promise<void> {
   `
 }
 
-/** Undo a `trashCanvasImages`. Membership never went away, so this is enough. */
-export async function restoreCanvasImages(ids: Array<string>): Promise<void> {
-  const list = ids.filter(Boolean)
-  if (list.length === 0) return
-
-  const { userId } = await resolveAuth()
-
-  await sql`
-    update user_images set deleted_at = null
-    where user_id = ${userId} and id in ${sql(list)}
-  `
-}
-
 export interface CanvasGenerationRecord {
   id: string
   storage_path: string | null

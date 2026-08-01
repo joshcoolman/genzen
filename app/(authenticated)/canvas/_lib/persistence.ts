@@ -1,7 +1,6 @@
 import {
   addImagesToCanvas,
   removeImagesFromCanvas,
-  restoreCanvasImages,
   saveCanvasState,
   trashCanvasImages,
 } from '../_actions/canvas'
@@ -108,26 +107,6 @@ export function groupsForSave(
         .filter((id): id is string => !!id),
     }))
     .filter((group) => group.imageIds.length >= 2)
-}
-
-/**
- * The membership rows to write when a removal is undone.
- *
- * Position rides along rather than being left to the next autosave, because
- * `saveCanvasState` writes arrangement and *never* membership -- a row that
- * does not exist cannot be given coordinates, so a restore without these
- * numbers puts the card back unplaced and the load pass re-lays it somewhere
- * else. A card with no `recordId` never had a row to restore. Pure -- unit
- * tested, because the shape of this payload is what #194 got wrong.
- */
-export function membersForRestore(images: Array<CanvasImage>) {
-  return filterLoadedImages(images).map((img) => ({
-    imageId: img.recordId,
-    x: img.x,
-    y: img.y,
-    width: img.width,
-    height: img.height,
-  }))
 }
 
 /** Positions worth writing: placed cards whose row exists. */
@@ -272,13 +251,6 @@ export function getUrlDimensions(
  */
 export async function moveToTrash(recordIds: Array<string>): Promise<void> {
   await trashCanvasImages(recordIds)
-}
-
-/** Undo a `moveToTrash`: clear `deleted_at`. Membership never went away. */
-export async function restoreFromTrash(
-  recordIds: Array<string>,
-): Promise<void> {
-  await restoreCanvasImages(recordIds)
 }
 
 export type { CanvasMemberRecord, CanvasState }

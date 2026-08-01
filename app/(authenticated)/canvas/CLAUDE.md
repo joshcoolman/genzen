@@ -42,10 +42,13 @@ generation could evict it.
    load. Rows also carry `origin = 'canvas'` (#207) -- the canvas authored the
    request
 4. Display -> the public R2 URL, resolved server-side by `loadCanvasState()`
-5. Remove from canvas -> the membership row is deleted; the image is untouched
-   in the library
-6. Move to Trash -> `deleted_at` only; membership survives so Undo restores the
-   card in place
+5. Move to Trash -> `deleted_at` only; membership survives, so restoring from
+   Trash returns the card to its coordinates. **The only way a card leaves.**
+   Remove-from-canvas was the other one and #236 deleted it: it destroyed the
+   arrangement with no way back, which made it the single exception to "if it
+   can be undone, do it; if it cannot, ask". `removeFromCanvas()` still exists
+   and is used by one caller -- dismissing a failed tile, which never became an
+   image
 
 **Key type:**
 
@@ -93,7 +96,7 @@ Login's `centered-panel`.
   `marquee-box` -- the screen-space overlays
 - `empty-prompt` -- the nothing-here-yet copy (teaches the interaction model,
   which is why it is not `EmptyState`)
-- `context-menu`, `delete-confirm`, `drop-notice`
+- `context-menu`, `drop-notice`
 - `selection-actions` -- fixed bottom toolbar: upload, library, arrange,
   group/ungroup, zoom display
 - `canvas-generate-dialog` -- wraps `GeneratorPanel` from ai-images; overrides
@@ -111,7 +114,7 @@ There is no separate "Combine" feature anymore (retired into this flow).
 
 **Placement:** previews lay out to the right of the source; if that would overlap existing images they relocate to clear space below everything (single-image: the source moves with them; group: inputs stay put). The view `fitBounds`-zooms to the new previews. For a single-image generate the origin + its previews are auto-grouped (`groupImages`).
 
-**Delete:** Delete/Backspace opens a confirm modal (Remove from Canvas / Move to Trash / Cancel); each shows an Undo toast. Right-click context menu offers the same Generate + Move to Trash.
+**Delete:** Delete/Backspace moves the selection to Trash. No modal, no toast, nothing to dismiss (#236) -- Trash is a place you can visit tomorrow, and that is the confirmation. Right-click context menu offers Generate + Move to Trash. A failure still speaks: the cards have already left the screen, so silence there would be a lie.
 
 ## Hooks
 
@@ -127,7 +130,7 @@ them.
   #189 replaced.
 - `use-history.ts` -- undo/redo stacks, capped at 50.
 - `use-ingest.ts` -- paste, drop, file picker, library picker.
-- `use-removal.ts` -- remove-from-canvas vs move-to-trash, and the confirm modal.
+- `use-removal.ts` -- move-to-trash, and dismissing a failed tile.
 - `use-reconcile.ts` -- place-what-is-unplaced, once per mount.
 - `use-autosave.ts` -- the 500ms debounce and its unload flush.
 - `use-canvas-hotkeys.ts` -- the thirteen bindings.
@@ -143,8 +146,7 @@ them.
 - `persistence.ts` -- the pure mapping between a membership row and a card
   (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus
   fail-safe wrappers over `_actions/canvas.ts`: `saveCanvas()`, `addToCanvas()`,
-  `removeFromCanvas()`, `moveToTrash()`, `restoreFromTrash()`,
-  `membersForRestore()`, `readLocalImage()`, `preloadUrl()`,
+  `removeFromCanvas()`, `moveToTrash()`, `readLocalImage()`, `preloadUrl()`,
   `getImageDimensions()`, `getUrlDimensions()`. The wrappers swallow failures on
   purpose: a write that cannot reach the server must never take a card off the
   screen. `groupsForSave` is the one non-obvious piece -- a group formed over
@@ -157,7 +159,9 @@ them.
   `resolveAuth()`: `loadCanvasState` (the whole canvas, read by `page.tsx`),
   `saveCanvasState` (positions / viewport / groupings, never membership),
   `addImagesToCanvas`, `removeImagesFromCanvas`, `trashCanvasImages`,
-  `restoreCanvasImages`, `getCanvasGenerationRecord`, `getImagePrompt`.
+  `getCanvasGenerationRecord`, `getImagePrompt`. There is no un-trash here:
+  restoring is Trash's own `restoreImages` (#236 deleted the canvas copy along
+  with the Undo toast that was its only caller).
   Membership and trash used to be id-only queries from the browser, so an id
   from anywhere flipped or trashed a row (#173).
 - `#/lib/server/canvas-membership.server.ts` -- `ensureDefaultCanvas`,
@@ -192,12 +196,13 @@ them.
 - High-frequency events (drag, wheel) update refs directly to avoid React
   re-renders
 - Undo/redo stack capped at 50 entries, and it is **local only**: it rewinds
-  positions and groupings, nothing else. A toast Undo must therefore reverse the
-  server write itself -- `removeSelectionFromCanvas` re-adds membership with
-  `membersForRestore`, `moveSelectionToTrash` clears `deleted_at`. Neither goes
-  through `undo()`: the toast lives six seconds, and anything the user does in
-  those six seconds pushes its own entry, so popping the stack could rewind a
-  drag instead of the thing the toast names (#194)
+  positions and groupings, nothing else. It has never touched `deleted_at` or
+  membership, which is why the toast Undos that did could be deleted whole in
+  #236 without the stack noticing. **Keep it that way.** #194 was the shape of
+  the bug when something server-side leaned on `undo()`: cards came back on
+  screen, the rows stayed deleted, and the next load dropped them for good --
+  it looked like it worked. Anything that writes to the database and wants to be
+  reversible must reverse its own write, or leave the recovery to Trash
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
 - **A paste draws before it uploads.** The clipboard hands over the bytes, so
   the card renders from a local object URL at ~30ms, at its real dimensions and
