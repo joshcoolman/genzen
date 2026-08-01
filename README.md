@@ -71,7 +71,7 @@ about it — that's the usual reason generation 401s.
 | `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                  |
 | `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                 |
 | `pnpm db:migrate`       | Apply pending `migrations/*.sql`                          |
-| `pnpm users`            | List/add/delete logins; `-h` for usage, `--local` for docker |
+| `pnpm users`            | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a *deployed* database needs an authenticated Railway CLI |
 | `pnpm auth:create-user` | Create a user, or reset one's password                    |
 | `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                |
 
@@ -110,7 +110,8 @@ itself and prompts you for the one value that is actually yours, the FAL key.
 
 `.env.example` is the reference for deploying, split into Required (a Postgres
 URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, Gemini, FAL
-webhooks).
+webhooks). [`docs/deploying.md`](docs/deploying.md) covers the rest: what a
+deployment needs, the two non-default settings, and how the first user is made.
 
 One note if you deploy: the `R2_*` names are historical and the storage layer
 is plain S3, pointing wherever `R2_ENDPOINT` says. **The bucket must be private**
