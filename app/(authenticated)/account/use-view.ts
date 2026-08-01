@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { ConnectionState } from './_components/connection-status/connection-status'
 import { useAuth } from '#/lib/auth'
-import { checkConnections } from '#/lib/server/check-connections'
+import { checkConnections } from '#/lib/server/check-connections.action'
 
 export function useView() {
   const { user } = useAuth()

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { clsx } from 'clsx'
 import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
-import { listActivity } from '#/features/activity/server/list-activity.server'
+import { listActivity } from '#/features/activity/server/list-activity.action'
 import { imageUrl } from '#/lib/image-url'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
 

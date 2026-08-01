@@ -17,7 +17,7 @@ import {
   listImages,
   softDeleteImage,
   updateImageMeta,
-} from '../server/images.actions'
+} from '../server/images.action'
 import type {
   CreateUserImageInput,
   UserImage,

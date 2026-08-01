@@ -7,7 +7,7 @@ longer talks to the database.
 ## Key Files
 
 - `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
-- `hooks/use-user-images.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.actions`
+- `hooks/use-user-images.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.action`
 - `hooks/use-existing-images.ts` -- Fetch the user's existing library rows for the shared image picker (URLs come from `#/lib/image-url`, never the bucket)
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection
 - `lib/save-to-library.ts` -- `saveFileToLibrary()`: object to storage, then the
@@ -18,16 +18,16 @@ longer talks to the database.
   page doubles the query. `useUserImages.create` delegates to it
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
-- `server/images.actions.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
-- `server/library-index.actions.ts` -- the two reads behind the Cmd-F overlay
+- `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
+- `server/library-index.action.ts` -- the two reads behind the Cmd-F overlay
   (#213): the whole library as lean rows (id, title, origin, typed prompt) and
   one row by id for a paste that carries a reference. No search parameter
   reaches the database -- filtering is a substring match in the browser, so
   typing costs nothing
-- `server/upload-image.server.ts` -- server action wrapper for image upload
+- `server/upload-image.action.ts` -- server action wrapper for image upload
 - `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement
-- `server/remove-images.server.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
-- `server/create-thumbnail.server.ts` -- Server function for async thumbnail generation post-upload
+- `server/remove-images.action.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
+- `server/create-thumbnail.action.ts` -- Server function for async thumbnail generation post-upload
 
 ## Route and UI
 

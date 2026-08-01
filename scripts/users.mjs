@@ -107,15 +107,27 @@ function usage() {
   console.log(`${b}users${r} — list, add, and delete genzen logins\n`)
   console.log(`${d}Usage:${r}`)
   console.log(`  ${c}pnpm users${r}                            list every user`)
-  console.log(`  ${c}pnpm users add <email> <pass>${r}         create, or reset an existing password`)
-  console.log(`  ${c}pnpm users delete <email>${r}             delete the user and all their images`)
+  console.log(
+    `  ${c}pnpm users add <email> <pass>${r}         create, or reset an existing password`,
+  )
+  console.log(
+    `  ${c}pnpm users delete <email>${r}             delete the user and all their images`,
+  )
   console.log(`\n${d}Options:${r}`)
-  console.log(`  ${c}--local${r}                               use the docker stack instead of the deployed database`)
+  console.log(
+    `  ${c}--local${r}                               use the docker stack instead of the deployed database`,
+  )
   console.log(`  ${c}-h, --help${r}                            show this help`)
   console.log(`\n${d}Notes:${r}`)
-  console.log(`  ${d}Targets the DEPLOYED database by default; every run prints which host it hit.${r}`)
-  console.log(`  ${d}Writes to a non-local database ask for confirmation first.${r}`)
-  console.log(`  ${d}Passwords are 6+ chars. Deleting a user cascades to their images.${r}`)
+  console.log(
+    `  ${d}Targets the DEPLOYED database by default; every run prints which host it hit.${r}`,
+  )
+  console.log(
+    `  ${d}Writes to a non-local database ask for confirmation first.${r}`,
+  )
+  console.log(
+    `  ${d}Passwords are 6+ chars. Deleting a user cascades to their images.${r}`,
+  )
 }
 
 if (rest.includes('-h') || rest.includes('--help') || rest[0] === 'help') {
@@ -139,7 +151,9 @@ console.log(
 
 async function confirmRemote(action) {
   if (isLocal) return true
-  const answer = await question(`This is NOT localhost. ${action} on ${dbHost}? (y/N) `)
+  const answer = await question(
+    `This is NOT localhost. ${action} on ${dbHost}? (y/N) `,
+  )
   return answer.trim().toLowerCase() === 'y'
 }
 
@@ -169,12 +183,16 @@ try {
   } else if (command === 'add') {
     const [email, password] = args
     if (!email?.includes('@') || !password || password.length < 6) {
-      console.error("Usage: pnpm users add '<email>' '<password>'  (password min 6 chars)")
+      console.error(
+        "Usage: pnpm users add '<email>' '<password>'  (password min 6 chars)",
+      )
       process.exit(1)
     }
 
     const [existing] = await sql`select id from users where email = ${email}`
-    const action = existing ? `Reset the password for ${email}` : `Create ${email}`
+    const action = existing
+      ? `Reset the password for ${email}`
+      : `Create ${email}`
     if (!(await confirmRemote(action))) {
       console.log('Aborted.')
       process.exit(0)
@@ -184,7 +202,9 @@ try {
     // remote prompt never fires, so without this an existing user's password
     // would be reset with no confirmation at all.
     if (existing && isLocal) {
-      const answer = await question(`${email} already exists. Reset their password? (y/N) `)
+      const answer = await question(
+        `${email} already exists. Reset their password? (y/N) `,
+      )
       if (answer.trim().toLowerCase() !== 'y') {
         console.log('User unchanged.')
         process.exit(0)

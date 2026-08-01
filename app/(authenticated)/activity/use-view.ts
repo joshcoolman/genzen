@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, ActivityFilters } from '#/features/activity/types'
-import { listActivity } from '#/features/activity/server/list-activity.server'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { listActivity } from '#/features/activity/server/list-activity.action'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
 
 const PAGE_SIZE = 50
 

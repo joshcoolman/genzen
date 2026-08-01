@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { getLibraryImage } from '#/features/user-images/server/library-index.actions'
+import { getLibraryImage } from '#/features/user-images/server/library-index.action'
 import { readImageRef } from '#/lib/image-clipboard'
 import { imageUrl } from '#/lib/image-url'
 import { toast } from '#/components'
