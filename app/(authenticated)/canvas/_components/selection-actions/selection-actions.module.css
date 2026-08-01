@@ -6,16 +6,16 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #141414;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px 14px;
   z-index: 30;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-overlay);
 }
 
 .label {
-  color: #888;
+  color: var(--text-muted);
   font-size: 13px;
   font-family:
     system-ui,
@@ -27,7 +27,7 @@
 .divider {
   width: 1px;
   height: 24px;
-  background: #2a2a2a;
+  background: var(--border);
 }
 
 .actions {
@@ -35,12 +35,17 @@
   gap: 6px;
 }
 
+/* Transparent rather than the #1a1a1a chip it was: the chip sat one step above
+   the bar, and the collapsed core has no step between --surface and
+   --surface-raised to spend there. The border still draws the chip, and the
+   fill is freed to carry hover -- which is how Button's `.secondary` and
+   IconButton already work. */
 .actionBtn {
   padding: 7px 16px;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #bbb;
+  color: var(--text-muted);
   font-size: 13px;
   font-family:
     system-ui,
@@ -55,9 +60,8 @@
 }
 
 .actionBtn:hover {
-  color: #fff;
-  border-color: #555;
-  background: #222;
+  color: var(--text);
+  background: var(--surface-raised);
 }
 
 .iconBtn {
@@ -66,10 +70,10 @@
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #888;
+  color: var(--text-muted);
   cursor: pointer;
   transition:
     color 0.1s,
@@ -78,9 +82,8 @@
 }
 
 .iconBtn:hover {
-  color: #fff;
-  border-color: #555;
-  background: #222;
+  color: var(--text);
+  background: var(--surface-raised);
 }
 
 .zoom {
@@ -90,8 +93,8 @@
   min-width: 44px;
   height: 30px;
   padding: 0 10px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent);
+  color: var(--accent-contrast);
   font-size: 12px;
   font-family:
     system-ui,

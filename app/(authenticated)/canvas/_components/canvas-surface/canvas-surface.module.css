@@ -4,7 +4,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: #0a0a0a;
+  background: var(--bg);
   overflow: hidden;
   cursor: crosshair;
   user-select: none;

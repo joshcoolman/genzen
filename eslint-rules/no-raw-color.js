@@ -13,13 +13,10 @@ const COLOR =
 
 /** Where a raw color is still allowed, and why.
  *
- *  The canvas subtree was deliberately left out of #229's collapse: it is 60 of
- *  the repo's 64 raw colors and its own visual pass (#229 step 3). Listing the
- *  files rather than the directory is the point -- a NEW file under canvas/
- *  fails like anywhere else, and this list can only shrink. */
+ *  The canvas subtree used to be here -- 60 of the repo's 64 raw colors, held
+ *  back for its own visual pass. That pass is #229 step 3 and it has landed, so
+ *  the list is down to the one entry that is not debt. It can only shrink. */
 const ALLOWED = [
-  // #229 step 3 -- the canvas de-hex, not yet done.
-  'app/(authenticated)/canvas/_components/',
   // The token file is the one place a color is written.
   'src/styles/tokens.css',
 ]

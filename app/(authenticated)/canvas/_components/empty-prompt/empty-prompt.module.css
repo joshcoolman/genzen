@@ -4,7 +4,12 @@
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: #444;
+  /* Two tiers of near-invisible ghost text (#444 and #2a2a2a) sat far below
+     --text-muted, and there is no third ink to map them to. The opacity keeps
+     both at the lightness they were drawn at -- nesting multiplies, so the hint
+     stays the dimmer of the two -- while the color itself stays a token. */
+  color: var(--text-muted);
+  opacity: 0.42;
   font-family:
     system-ui,
     -apple-system,
@@ -22,5 +27,5 @@
 .emptyHint {
   margin-top: 12px;
   font-size: 11px;
-  color: #2a2a2a;
+  opacity: 0.55;
 }

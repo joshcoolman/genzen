@@ -29,7 +29,7 @@
 .pendingModel {
   font-size: 12px;
   font-weight: 600;
-  color: #c8c8c8;
+  color: var(--text-muted);
   font-family:
     system-ui,
     -apple-system,

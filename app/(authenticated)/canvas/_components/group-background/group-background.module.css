@@ -1,5 +1,5 @@
 .groupBackground {
   position: absolute;
-  background: #1a1a1a;
+  background: var(--surface);
   border-radius: 4px;
 }
