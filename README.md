@@ -9,29 +9,28 @@ for it not to be — not because it's a product. There's no signup, no billing, 
 support, no roadmap. MIT licensed; fork it and make it yours.
 
 **Up next.** The substrate work is done, and so is the finish state agreed in
-#222 — #216 and #213 both shipped. What is left is three pieces of hygiene, in
-the order they will be done.
+#222 — #216 and #213 both shipped. The token collapse (#229) closed with the
+canvas subtree folded in, so `eslint-rules/no-raw-color.js` has no exemptions
+left. What remains is two pieces of hygiene, in the order they will be done.
 
-1. **#229 step 3 + 4** — finish the token collapse. The core landed (153
-   properties to 97, 47 colors to 18) and `pnpm check:colors` holds the line,
-   but the canvas subtree is still allowlisted by name in
-   `eslint-rules/no-raw-color.js`: 60 raw colors across 12 modules, plus 11
-   local font stacks. Then re-author the two shadows against a 5% background.
-   **A design system that a whole subtree ignores is not one yet.**
-2. **#227** — the rest of deployability. CI landed and boots the production
+1. **#227** — the rest of deployability. CI landed and boots the production
    server; what has not is deployment-as-code. `pnpm start` hardcodes
    `--port 3000` while the platform injects `PORT`, so today the config would
    have to live in a Railway setting instead of the repo — the exact shape of
    rot this issue exists to stop. Write the env contract and the
    local-must-not-diverge list, then **deploy once to prove it**, and tear it
    down. Railway is the provider; `bootsy` is already there as a worked example.
-3. **#228** — the audit: the places where prose claims drifted from the code.
+2. **#228** — the audit: the places where prose claims drifted from the code.
    Deliberately last. Its own finding is that everything with a check held and
-   everything asserted only in prose drifted, so it is worth doing after the two
-   passes above have added their checks.
+   everything asserted only in prose drifted, so it is worth doing after the
+   pass above has added its checks.
 
-Also open: **#234**, canvas arrival sizing — an observation, not a diagnosis,
-and it needs reproducing before anyone picks a rule. **#223** is parked outside
+Also open, all captured rather than scheduled: **#234**, canvas arrival sizing —
+an observation, not a diagnosis, and it needs reproducing before anyone picks a
+rule. **#236**, deleting every confirm that stands in front of something Trash
+can undo, keeping only the three irreversible ones. **#237**, a generated
+"recently changed" block for this file, which argues honestly against itself via
+#217 and may want to be a command rather than a document. **#223** is parked outside
 all of this: a proposal for an AI policy seam, worth a read before it ages
 because it documents a real hole (the model id is a bare client string and
 `endpointFor` passes an unknown one straight through).
@@ -160,19 +159,19 @@ Conventions follow [project-standard](https://github.com/joshcoolman/project-sta
 GenZen is public-and-messy on purpose: the exploration home where ideas are tried
 in the open, on a clean substrate; bootsy consolidates what proves out (#222).
 
-**Last shipped** (2026-07-31)
+**Last shipped** (2026-08-01)
 
+- **The token core is done, and nothing is exempt from it (#229).** Canvas was the last subtree authoring its own colors — 61 of them, 15 greys collapsing to 5 and four accents to one, so selection chrome is the app's green now. Its eleven `font-family` declarations went too, deleted rather than retokenised: `base.css` already sets the face on `html` and resets form controls, so the right count below it is zero. `eslint-rules/no-raw-color.js` has no allowlist left.
 - **Cmd-F finds your stuff, and gets out of the way (#213).** An overlay over whatever you were doing: everything, newest first, the prompt you typed shown whole beside its thumbnail, live filtering and All / Generations / Uploads. Two things come out — the prompt to the clipboard, and the image as a _reference_: the clipboard carries the record id, so pasting it on Images adds it to the reference strip and on Canvas drops a card, with no upload and no second row. Escape leaves nothing behind. It is deliberately not a place: no route, no location on a row, nothing to navigate into.
 - **Canvas Undo actually undoes (#194).** It restored the cards on screen and left the membership rows deleted, so it looked like it worked and the next load dropped them for good. A toast Undo now reverses its own server write; the local stack stays local, and neither path pops it, because six seconds is long enough to do something else first.
-- **The token core collapsed: 153 properties to 97, and 47 colors to 18 (#229).** Ten names resolved to four values, so a divider and a panel fill were the same variable. Now three surfaces, two inks, one accent — the number you get if you squint at the app and count. `pnpm check:colors` keeps it there.
 - **CI exists, and it boots the production server (#227, part).** `check`/`typecheck`/`test`/`build` on push and PR, plus the one nobody runs locally: `pnpm start` answering `/login`. A passing build is not the same claim as "it starts" — which is exactly how the dead Dockerfile survived the Next conversion.
 - **Storage went private; the app serves its own images (#226).** Every image used to sit at an unauthenticated URL — a locked front door on a building with open windows. Now `/img/[id]` checks the session and the row's `user_id`, `src/lib/image-url.ts` is the only place a URL is built, and the local bucket is private too so local cannot drift from a deployment.
 - **The repo stopped advertising a stack it does not have (#225).** trigger.dev's MCP server, a `Dockerfile` that built green and could not boot, and a reset header claiming Tailwind still owned it. A cold read now lands on the truth: Next, Postgres, MinIO, and no deployment anywhere.
 
 **Up next** — the ordered list lives at the top of this file, so the front door
-carries it. It is the open issues, in execution order: finish the token collapse
-(#229), then make deployability a checked property and deploy once to prove it
-(#227), then the drift audit (#228).
+carries it. It is the open issues, in execution order: make deployability a
+checked property and deploy once to prove it (#227), then the drift audit
+(#228).
 
 Agent-facing designs are parked as prose in `docs/reference/agent-substrate.md`;
 the grouping spike (focus, not taxonomy — not #204's grouping) has no issue yet.
