@@ -15,8 +15,17 @@ recent-changes block in README, **#223** AI policy seam.
 
 ## Run it locally
 
-You need Docker, pnpm, and **one real API key: `FAL_KEY`**. No cloud account is
-required anywhere — Postgres, auth and storage all run as local containers.
+You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
+anywhere — Postgres, auth and storage all run as local containers.
+
+The Node floor is not cosmetic: `packageManager` pins pnpm 11, which imports
+`node:sqlite` and cannot run on Node 20. Corepack fetches pnpm before anything
+reads `engines`, so an older Node fails during `pnpm install` with
+`ERR_UNKNOWN_BUILTIN_MODULE: node:sqlite` and no mention of your Node version.
+
+A `FAL_KEY` is optional to start — the app runs without one and only image
+generation fails. Supplying one means generations bill your fal.ai account;
+nothing is mocked.
 
 ```bash
 pnpm install

@@ -5,8 +5,9 @@
 #   pnpm local:down   stop (data kept)
 #   pnpm local:reset  stop and delete the volumes
 #
-# FAL is not mocked: image generation still calls fal.ai, so FAL_KEY is
-# required even here.
+# FAL is not mocked: image generation calls fal.ai for real, and costs real
+# money. FAL_KEY is still optional — without one the app runs and only
+# generation fails (see the PROVIDER_KEYS prompt in scripts/local-up.mjs).
 
 name: genzen
 
