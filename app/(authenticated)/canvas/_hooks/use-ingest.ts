@@ -12,7 +12,7 @@ import type { CollectedImage, UserImage } from '#/features/user-images'
 import type { CanvasImage } from '../_lib/types'
 import { imageUrl } from '#/lib/image-url'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
-import { getLibraryImage } from '#/features/user-images/server/library-index.actions'
+import { getLibraryImage } from '#/features/user-images/server/library-index.action'
 import { readImageRef } from '#/lib/image-clipboard'
 
 /** Column width used when more than one image arrives at once; a lone image

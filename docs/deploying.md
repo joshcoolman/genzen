@@ -11,11 +11,11 @@ locally.
 
 ## Services
 
-| Resource | Notes |
-| --- | --- |
-| web service | source = this repo, branch `main` |
-| Postgres | any Postgres 17+; the volume is the only stateful part |
-| bucket | must be **private** (#226) — the app serves images itself via `/img/[id]` |
+| Resource    | Notes                                                                     |
+| ----------- | ------------------------------------------------------------------------- |
+| web service | source = this repo, branch `main`                                         |
+| Postgres    | any Postgres 17+; the volume is the only stateful part                    |
+| bucket      | must be **private** (#226) — the app serves images itself via `/img/[id]` |
 
 ## Variables
 

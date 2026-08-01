@@ -1,4 +1,4 @@
-import type { LibraryIndexRow } from '#/features/user-images/server/library-index.actions'
+import type { LibraryIndexRow } from '#/features/user-images/server/library-index.action'
 
 export type OverlayFilter = 'all' | 'generations' | 'uploads'
 

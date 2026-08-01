@@ -9,10 +9,24 @@ from something and cannot be mistaken for the source.
 
 ## Deltas
 
-**Server-only code carries a `.server.ts` suffix.** The standard has no such
-convention. It exists because a server-only module imported from a client
-component is a build error with a confusing message, and the suffix makes the
-mistake visible in the import line rather than in the build log.
+**Server-side code carries one of two suffixes, and they mean opposite things
+about importing (#241).** The standard has no such convention.
+
+- **`.server.ts` — the client may never import it.** Doing so is a build error
+  with a confusing message, and the suffix moves the mistake to the import line.
+- **`.action.ts` — a `'use server'` module the client imports on purpose.** That
+  is the entire point of the file.
+
+Both suffixes existed before, but `.server.ts` carried both meanings: fourteen
+`'use server'` modules wore it, so the only way to know which rule applied was
+to open the file — the one job the convention exists to do. Actions also wore
+three spellings (`.server.ts`, `.action.ts`, `.actions.ts`); `.action.ts` is now
+the only one.
+
+The distinction is exactly the `'use server'` directive, so it is checked rather
+than remembered: `eslint-rules/server-suffix.js` fails a `.server.ts` that
+declares the directive, or an `.action.ts` that does not. Test files are exempt,
+since a test imports its subject rather than declaring the directive itself.
 
 **The no-raw-color rule is checked, not remembered.** The rule itself is the
 standard's (L0: never a raw color above the token layer); what is genzen's is

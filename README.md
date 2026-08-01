@@ -4,8 +4,7 @@ A personal workspace for working with AI image models.
 
 ## Up next
 
-1. **#241** — make `.server.ts` mean one thing. It currently means both
-   "never importable from the client" and "import me, that is the point".
+Nothing queued.
 
 Not immediately: **#234** canvas image arrival sizing, **#237** generated
 recent-changes block in README, **#223** AI policy seam.
@@ -30,8 +29,8 @@ pnpm local:up                  # asks for your FAL key, sets up everything else
 pnpm dev                       # http://localhost:3000
 ```
 
-That is the whole setup, and Docker plus pnpm are the only prerequisites --
-there is no global CLI to install and no env file to copy or edit. `local:up`
+That is the whole setup — there is no global CLI to install and no env file to
+copy or edit. `local:up`
 starts Postgres and MinIO (S3-compatible storage) from `docker-compose.yml`,
 writes `.env.local` for you, applies any migrations the database has not seen,
 generates and provisions a login, and prompts for the FAL key. Re-run it any
@@ -65,20 +64,20 @@ about it — that's the usual reason generation 401s.
 
 ## Scripts
 
-| Command                 | Purpose                                                   |
-| ----------------------- | --------------------------------------------------------- |
-| `pnpm local:up`         | Start the local stack, write `.env.local`                 |
-| `pnpm local:down`       | Stop it (data kept)                                       |
-| `pnpm local:reset`      | Stop it and delete the volumes                            |
-| `pnpm dev`              | Next dev server on :3000                                  |
-| `pnpm build`            | Production build                                          |
-| `pnpm test`             | Vitest                                                    |
-| `pnpm check`            | Prettier + ESLint --fix + color check (run before commit) |
-| `pnpm check:colors`     | Fail on a raw color outside `tokens.css`                  |
-| `pnpm typecheck`        | `tsc --noEmit` (the build typechecks too)                 |
-| `pnpm db:migrate`       | Apply pending `migrations/*.sql`                          |
-| `pnpm users`            | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a *deployed* database needs an authenticated Railway CLI |
-| `pnpm check:claude-md`  | What the pre-commit hook checks (advisory)                |
+| Command                | Purpose                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm local:up`        | Start the local stack, write `.env.local`                                                                                       |
+| `pnpm local:down`      | Stop it (data kept)                                                                                                             |
+| `pnpm local:reset`     | Stop it and delete the volumes                                                                                                  |
+| `pnpm dev`             | Next dev server on :3000                                                                                                        |
+| `pnpm build`           | Production build                                                                                                                |
+| `pnpm test`            | Vitest                                                                                                                          |
+| `pnpm check`           | Prettier + ESLint --fix + color check (run before commit)                                                                       |
+| `pnpm check:colors`    | Fail on a raw color outside `tokens.css`                                                                                        |
+| `pnpm typecheck`       | `tsc --noEmit` (the build typechecks too)                                                                                       |
+| `pnpm db:migrate`      | Apply pending `migrations/*.sql`                                                                                                |
+| `pnpm users`           | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a _deployed_ database needs an authenticated Railway CLI |
+| `pnpm check:claude-md` | What the pre-commit hook checks (advisory)                                                                                      |
 
 ## Stack
 
@@ -88,7 +87,7 @@ about it — that's the usual reason generation 401s.
 | UI          | CSS Modules + Base UI, on the tokens in `src/styles/`      |
 | Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
 | Auth        | scrypt + signed session cookie, own `users` table          |
-| Storage     | S3 — MinIO locally; no deployment, so no provider chosen   |
+| Storage     | S3 — MinIO locally, a Railway bucket in production         |
 | Images      | FAL                                                        |
 | Text/vision | Anthropic (assistant, prompt work), Google Gemini (vision) |
 
@@ -100,7 +99,7 @@ fails the build.
 | Path                   | What's there                                                                              |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
 | `src/features/<name>/` | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.**    |
-| `src/lib/server/`      | Server-only helpers (files use `.server.ts` suffix).                                      |
+| `src/lib/server/`      | `.server.ts` = never client-importable; `.action.ts` = a `'use server'` module.           |
 | `src/components/`      | Primitives, one folder each, imported from the root barrel `#/components`.                |
 | `app/api/`             | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                     |
 | `migrations/`          | Numbered SQL migrations, applied by `pnpm db:migrate`.                                    |
@@ -134,8 +133,8 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   `src/styles/base.css` the reset; everything else is a `.module.css` beside its
   component. `src/styles.css` imports those two and nothing else. Colors live
   in `tokens.css` alone — `pnpm check:colors` enforces it (#229).
-- Server-only code uses the `.server.ts` suffix; do not import it from client code.
-- FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.server.ts`. Webhooks are optional and gated by env.
+- `.server.ts` must never be imported from client code; `.action.ts` is a `'use server'` module meant to be. Lint enforces the split (#241).
+- FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.action.ts`. Webhooks are optional and gated by env.
 - S3 public URLs do not expire — safe to persist in DB rows.
 - Every generate path reserves its `user_images` row _before_ any fallible work,
   so a click always leaves a card behind — pending, completed, or failed with a
@@ -145,6 +144,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-01
 
+- `.server.ts` / `.action.ts` mean one thing each, enforced by lint (#241)
 - Deployed to Railway, and `docs/deploying.md` says what that takes (#227)
 - `pnpm users` — list/add/delete logins on any database; replaced `auth:create-user`
 - Node 22.13+ stated as a prerequisite; pnpm 11 cannot run on Node 20

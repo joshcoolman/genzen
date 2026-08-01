@@ -12,8 +12,8 @@ import {
   DialogTitle,
   Textarea,
 } from '#/components'
-import { updateImageDescription } from '#/features/user-images/server/images.actions'
-import { captionImage } from '#/features/ai-images/server/caption-image.server'
+import { updateImageDescription } from '#/features/user-images/server/images.action'
+import { captionImage } from '#/features/ai-images/server/caption-image.action'
 
 interface DescribeDialogProps {
   open: boolean

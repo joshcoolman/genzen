@@ -13,7 +13,8 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
   nothing to the URL, so `/images`, `/canvas` etc. are top-level paths.
   It is not the gate -- `proxy.ts` is
 - `src/features/` -- headless domain modules, **each has its own CLAUDE.md -- read it before working on a feature**
-- `src/lib/server/` -- server-only code uses `.server.ts` suffix
+- `src/lib/server/` -- `.server.ts` is never importable from the client;
+  `.action.ts` is a `'use server'` module that is (#241, lint-enforced)
 - `src/components/` -- primitives, one folder per component, imported from the
   single root barrel `#/components`. Hand-rolled or on Base UI; there is no
   shadcn set left, no `ui/` folder, and no Radix
@@ -158,7 +159,8 @@ The two that come up constantly:
 
 - **`features/` is headless and earned by 2+ consumers.** No `.tsx` under
   `src/features/`. One consumer means it belongs to that route.
-- **Server-only code carries a `.server.ts` suffix.**
+- **`.server.ts` never imports from the client; `.action.ts` is a `'use server'`
+  module that does.** Checked by `eslint-rules/server-suffix.js`.
 
 Where the standard applies, prefer it over an older pattern found in the
 codebase — an existing file is not evidence of the current convention, because
@@ -182,7 +184,7 @@ silent exception, because the value of "copy a neighbour" is that it is safe.
 - Route protection is deny-by-default in `proxy.ts`; a new public path must be
   added to its `PUBLIC_PATHS`, or it redirects to /login
 - There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone
-- FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.server.ts`
+- FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.action.ts`
 - **Copying an image inside the app puts its record id on the clipboard, never
   its bytes** (`src/lib/image-clipboard.ts`, #213). Both paste handlers accept
   bytes and turn them into a new upload, so bytes would duplicate a row you

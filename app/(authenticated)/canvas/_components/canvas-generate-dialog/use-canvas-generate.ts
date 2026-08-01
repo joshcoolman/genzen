@@ -13,9 +13,9 @@ import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useUserImages } from '#/features/user-images'
 import { useAuth } from '#/lib/auth'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
 import { detectAspectRatio } from '#/features/ai-images/constants'
-import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
+import { retryGeneration } from '#/features/ai-images/server/retry-generation.action'
 import { normalizeGeneration } from '#/features/ai-images/normalize-generation'
 
 /** A failed tile can be retried once it has a DB record to resubmit. */

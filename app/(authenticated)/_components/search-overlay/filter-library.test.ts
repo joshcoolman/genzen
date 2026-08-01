@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { filterLibrary } from './filter-library'
-import type { LibraryIndexRow } from '#/features/user-images/server/library-index.actions'
+import type { LibraryIndexRow } from '#/features/user-images/server/library-index.action'
 
 function row(partial: Partial<LibraryIndexRow>): LibraryIndexRow {
   return {

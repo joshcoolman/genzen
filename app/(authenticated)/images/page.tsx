@@ -1,5 +1,5 @@
 import { View } from './view'
-import { listGalleryImages } from '#/features/ai-images/server/gallery.actions'
+import { listGalleryImages } from '#/features/ai-images/server/gallery.action'
 
 export default async function Images() {
   const initial = await listGalleryImages()

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.server'
+import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.action'
 
 interface UseVariationsOptions {
   setError: (error: string | null) => void

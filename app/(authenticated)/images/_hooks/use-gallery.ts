@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { toast } from '#/components'
-import { retryGeneration } from '#/features/ai-images/server/retry-generation.server'
-import { updateImageOrder } from '#/features/ai-images/server/update-image-order.server'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.server'
+import { retryGeneration } from '#/features/ai-images/server/retry-generation.action'
+import { updateImageOrder } from '#/features/ai-images/server/update-image-order.action'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
 import { imageUrl } from '#/lib/image-url'
 import {
   deleteGalleryImage,
   listGalleryImages,
-} from '#/features/ai-images/server/gallery.actions'
+} from '#/features/ai-images/server/gallery.action'
 
 interface UseImagesOptions {
   userId: string | undefined

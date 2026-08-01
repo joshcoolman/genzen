@@ -5,7 +5,7 @@ import { fal } from '@fal-ai/client'
 import * as falCompletion from './fal-completion.server'
 import { sql } from './db.server'
 
-import { checkPendingGenerations } from './check-pending-generations.server'
+import { checkPendingGenerations } from './check-pending-generations.action'
 
 vi.mock('@fal-ai/client', () => ({
   fal: {

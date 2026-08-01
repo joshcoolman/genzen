@@ -175,11 +175,11 @@ them.
 
 - `#/features/ai-images/hooks/use-generator` -- prompt state, source image, generation submission
 - `../_components/generator-panel/generator-panel` -- reused UI for generation controls
-- `#/features/ai-images/server/generate-image.server` -- server action for multi-image combination
+- `#/features/ai-images/server/generate-image.action` -- server action for multi-image combination
 - `#/features/user-images/` -- `useUserImages` for upload
 - `../_components/existing-image-picker/existing-image-picker` -- library picker
 - `#/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
-- `#/lib/server/check-pending-generations.server` -- triggers FAL status checks
+- `#/lib/server/check-pending-generations.action` -- triggers FAL status checks
 
 ## Quirks / Notes
 

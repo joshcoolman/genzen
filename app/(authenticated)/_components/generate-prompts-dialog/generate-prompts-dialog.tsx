@@ -12,7 +12,7 @@ import {
   NumberStepper,
   Textarea,
 } from '#/components'
-import { generateShotList } from '#/features/ai-images/server/generate-shot-list.server'
+import { generateShotList } from '#/features/ai-images/server/generate-shot-list.action'
 
 interface GeneratePromptsDialogProps {
   open: boolean

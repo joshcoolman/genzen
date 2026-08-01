@@ -3,7 +3,7 @@ Chronological record of every AI generation (image, success + failure, including
 ## Key Files
 
 - `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
-- `server/list-activity.server.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
+- `server/list-activity.action.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 
 Two files left here when the Activity route was restructured, because each had a
 single consumer and this folder is earned by two or more:
@@ -31,7 +31,7 @@ Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted
 - `#/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
 - `#/features/ai-images/models` -- `getModelName`, `IMAGE_MODELS` (filter options)
 - `#/lib/server/auth.server` -- requireAuth
-- `#/lib/server/check-pending-generations.server` -- FAL polling for pending rows
+- `#/lib/server/check-pending-generations.action` -- FAL polling for pending rows
 - `#/components` -- `Sheet`/`SheetContent` for the detail panel
 
 ## Quirks / Notes

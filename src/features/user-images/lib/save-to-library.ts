@@ -1,9 +1,9 @@
 'use client'
 
-import { createThumbnail } from '../server/create-thumbnail.server'
-import { createImageRecord } from '../server/images.actions'
-import { removeImages } from '../server/remove-images.server'
-import { uploadImage } from '../server/upload-image.server'
+import { createThumbnail } from '../server/create-thumbnail.action'
+import { createImageRecord } from '../server/images.action'
+import { removeImages } from '../server/remove-images.action'
+import { uploadImage } from '../server/upload-image.action'
 import type { UserImage } from '../types'
 
 async function fileToBase64(file: File): Promise<string> {

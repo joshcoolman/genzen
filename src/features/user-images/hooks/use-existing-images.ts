@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { listImages } from '../server/images.actions'
+import { listImages } from '../server/images.action'
 import type { UserImage } from '../types'
 import { imageUrl } from '#/lib/image-url'
 
