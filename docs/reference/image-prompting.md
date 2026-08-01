@@ -1,6 +1,6 @@
 # Image Prompting
 
-Image-specific prompting notes. For video prompting see `video-prompts.md`. For camera/framing vocabulary see `camera-reference.md`. For color grading see `color-grading.md`. For characters/reference sheets see `characters.md`.
+Image-specific prompting notes. For video prompting see `video-prompts.md`. For camera/framing vocabulary see `camera-reference.md`. For color grading see `color-grading.md`.
 
 ## Prompt Structure
 
