@@ -4,41 +4,14 @@ A personal workspace for working with AI image models.
 
 ## Up next
 
-The hygiene run is done — the token collapse (#229), the confirm
-removal (#236) and the drift audit (#228) all closed, so `no-raw-color.js` has
-no exemptions and no doc, config file or dependency names a tool this repo does
-not use. What is left is the deployment: two naming decisions taken while they
-are still free, then the deploy itself. In this order.
+1. **#242** — rename `R2_*` env vars to `BUCKET_*`. Free while nothing is
+   deployed; a dashboard edit and a deploy once something is.
+2. **#241** — make `.server.ts` mean one thing. It currently means both
+   "never importable from the client" and "import me, that is the point".
+3. **#227** — deploy to Railway once, prove it repeats, tear it down.
 
-1. **#242** — rename `R2_*` to Railway's `BUCKET_*`. The prefix describes an
-   intention rather than an account, and the rename is free only while nothing
-   is deployed. The day step 3 ships it becomes a dashboard edit, a deploy, and
-   a window where two names disagree.
-2. **#241** — decide what `.server.ts` means. Today it means two opposite
-   things: `db.server.ts` cannot be imported from client code, and fourteen
-   client modules import `.server.ts` action files because that is the point.
-   The import line does not say which. Same reason as above for doing it now —
-   a mechanical rename is cheap until it is competing with a deploy for
-   attention.
-3. **#227** — the rest of deployability. CI landed and boots the production
-   server; what has not is deployment-as-code. `pnpm start` hardcodes
-   `--port 3000` while the platform injects `PORT`, so today the config would
-   have to live in a Railway setting instead of the repo — the exact shape of
-   rot this issue exists to stop. Write the env contract and the
-   local-must-not-diverge list, then **deploy once to prove it**, look at it, and
-   tear it down. The property is reproducibility, not durability: nothing has to
-   survive teardown, but redeploying tomorrow has to land in the same place
-   without anyone remembering a step. Railway is the provider; `bootsy` is
-   already there as a worked example.
-
-**Not immediately** — captured, and worth reading before acting on any of them.
-**#234**, canvas arrival sizing: an observation, not a diagnosis, and it needs
-reproducing before anyone picks a rule. **#237**, a generated "recently changed"
-block for this file, which argues honestly against itself via #217 and may want
-to be a command rather than a document. **#223**, a proposal for an AI policy
-seam, worth a read before it ages because it documents a real hole — the model
-id is a bare client string and `endpointFor` passes an unknown one straight
-through.
+Not immediately: **#234** canvas image arrival sizing, **#237** generated
+recent-changes block in README, **#223** AI policy seam.
 
 ## Run it locally
 
