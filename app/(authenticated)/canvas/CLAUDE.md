@@ -135,7 +135,7 @@ them.
 - `use-autosave.ts` -- the 500ms debounce and its unload flush.
 - `use-canvas-hotkeys.ts` -- the thirteen bindings.
 
-- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useCredits` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
+- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
 ## Lib
 

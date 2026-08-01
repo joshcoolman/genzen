@@ -14,7 +14,7 @@ import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
-import { useUserImages } from '#/features/user-images/hooks/useUserImages'
+import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import { useSelection } from '#/lib/use-selection'
 

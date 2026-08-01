@@ -7,8 +7,8 @@ longer talks to the database.
 ## Key Files
 
 - `types.ts` -- UserImage, CollectedImage, CreateUserImageInput types, Zod schemas, ColorPalette/ShadeScale types
-- `hooks/useUserImages.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.actions`
-- `hooks/useExistingImages.ts` -- Fetch user's existing images + public R2 URLs (used by the shared image picker)
+- `hooks/use-user-images.ts` -- CRUD hook: fetch, create, update, soft-delete images via `server/images.actions`
+- `hooks/use-existing-images.ts` -- Fetch the user's existing library rows for the shared image picker (URLs come from `#/lib/image-url`, never the bucket)
 - `lib/file-hash.ts` -- Client-side SHA-256 hashing for duplicate detection
 - `lib/save-to-library.ts` -- `saveFileToLibrary()`: object to storage, then the
   row, then a background thumbnail, with a rollback if the insert fails.
@@ -59,7 +59,10 @@ canvas routes. The library picker they both open is
   When there were three upload functions, only one made a thumbnail, so whether
   the grid downloaded full-size objects depended on which one you went through
 - Delete is soft-delete (sets `deleted_at` timestamp)
-- Storage uses R2 public URLs (no signing/expiry), loaded incrementally per-image
-- Palette generator runs entirely in-browser via Canvas API (no edge function)
-- Storage uses R2 via `createImageStorage()` from `#/lib/image-storage`
+- **The bucket is private** (#226). Nothing is served by its object URL; the
+  browser reads images from `/img/[id]`, which resolves identity from the cookie
+  and filters the row by `user_id`. Build URLs only through `#/lib/image-url`.
+- Storage goes through `createImageStorage()` from `#/lib/image-storage`
+- `images.color_palette` and the `ColorPalette` type in `types.ts` are a column
+  and a shape with nothing writing them -- there is no palette generator
 - Max upload size: 50MB; allowed types: JPEG, PNG, WebP, GIF
