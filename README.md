@@ -1,12 +1,6 @@
 # GenZen
 
-A personal workspace for working with AI image models. Fan one prompt across
-several models and compare side by side, run non-destructive edit and variation
-flows, and arrange results on an infinite canvas.
-
-This is a tool I built for myself and use. It is public because there's no reason
-for it not to be — not because it's a product. There's no signup, no billing, no
-support, no roadmap. MIT licensed; fork it and make it yours.
+A personal workspace for working with AI image models.
 
 **Up next.** The hygiene run is done — the token collapse (#229), the confirm
 removal (#236) and the drift audit (#228) all closed, so `no-raw-color.js` has
