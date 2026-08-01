@@ -17,10 +17,6 @@
 .label {
   color: var(--text-muted);
   font-size: 13px;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   white-space: nowrap;
 }
 
@@ -47,10 +43,6 @@
   border-radius: 6px;
   color: var(--text-muted);
   font-size: 13px;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   cursor: pointer;
   transition:
     color 0.1s,
@@ -96,10 +88,6 @@
   background: var(--accent);
   color: var(--accent-contrast);
   font-size: 12px;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   font-weight: 700;
   border-radius: 15px;
   white-space: nowrap;

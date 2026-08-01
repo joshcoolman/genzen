@@ -10,10 +10,6 @@
      stays the dimmer of the two -- while the color itself stays a token. */
   color: var(--text-muted);
   opacity: 0.42;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   pointer-events: none;
   z-index: 5;
 }

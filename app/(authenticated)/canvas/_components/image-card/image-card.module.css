@@ -75,10 +75,6 @@
   background: var(--danger-soft);
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
   border-radius: 4px;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
 }
 
 .failedContent {
@@ -121,7 +117,6 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
-  font-family: inherit;
   cursor: pointer;
   border: 1px solid transparent;
 }
