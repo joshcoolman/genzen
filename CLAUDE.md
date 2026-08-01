@@ -22,8 +22,12 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 ## Services
 
 Local dev is one command: **`pnpm local:up`** (Postgres + MinIO + schema + a
-populated `.env.local`), then `pnpm dev`. Docker and pnpm are the only
-prerequisites. It is idempotent and never resets a database you have been
+populated `.env.local`), then `pnpm dev`. Docker, pnpm and Node 22.13+ are the
+only prerequisites.
+
+genzen is also deployed — Railway, one service plus Postgres and a private
+bucket. `docs/deploying.md` is the contract; do not re-derive it. Logins on any
+database, local or deployed, are managed with `pnpm users` (`-h` for usage). It is idempotent and never resets a database you have been
 working in. The only keys a human supplies are `FAL_KEY` and, if the AI-assisted
 features are wanted, `ANTHROPIC_API_KEY` -- `local:up` prompts for each that is
 missing and the app runs without the second. Everything else is a
@@ -42,9 +46,11 @@ than assume it's there.
 - **S3 storage** (`R2_*`) — image/asset storage. `src/lib/image-storage.ts` is a
   provider-agnostic S3 client pointed by `R2_ENDPOINT`; the `R2_` prefix is
   historical and Cloudflare-specific plumbing (`R2_ACCOUNT_ID`) is a leftover of
-  it. **MinIO in Docker is the only place genzen has ever run.** There is no
-  production deployment and no storage provider chosen — if a doc, a comment or
-  a memory says R2 is in production, it is wrong (#225).
+  it. The prefix is staying: #242 proposed renaming it to `BUCKET_*` and was
+  closed once a deployment existed, since the rename buys nothing but costs a
+  live variable change. **Cloudflare R2 is still not in use anywhere** — locally
+  it is MinIO in Docker, and in production it is a Railway bucket. A doc or
+  memory claiming R2 is the provider is wrong (#225).
   **The bucket is private** (#226), locally too. Nothing reads an object without
   credentials: the browser gets images from `/img/[id]`, which resolves identity
   from the cookie and filters the row by `user_id`. `src/lib/image-url.ts` is the

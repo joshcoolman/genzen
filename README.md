@@ -4,11 +4,8 @@ A personal workspace for working with AI image models.
 
 ## Up next
 
-1. **#242** — rename `R2_*` env vars to `BUCKET_*`. Free while nothing is
-   deployed; a dashboard edit and a deploy once something is.
-2. **#241** — make `.server.ts` mean one thing. It currently means both
+1. **#241** — make `.server.ts` mean one thing. It currently means both
    "never importable from the client" and "import me, that is the point".
-3. **#227** — deploy to Railway once, prove it repeats, tear it down.
 
 Not immediately: **#234** canvas image arrival sizing, **#237** generated
 recent-changes block in README, **#223** AI policy seam.
@@ -121,10 +118,11 @@ URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, Gemini, FAL
 webhooks). [`docs/deploying.md`](docs/deploying.md) covers the rest: what a
 deployment needs, the two non-default settings, and how the first user is made.
 
-One note if you deploy: the `R2_*` names are historical and the storage layer
-is plain S3, pointing wherever `R2_ENDPOINT` says. **The bucket must be private**
-(#226) — the app serves images itself. Leave `R2_ENDPOINT` unset and set
-`R2_ACCOUNT_ID` only if you want Cloudflare R2's endpoint derived.
+The `R2_*` names are historical and are staying that way (#242). The storage
+layer is plain S3 pointing wherever `R2_ENDPOINT` says — MinIO locally, a
+Railway bucket in production, Cloudflare R2 nowhere. **The bucket must be
+private** (#226); the app serves images itself. `R2_ACCOUNT_ID` derives
+Cloudflare's endpoint and is unused.
 
 Provider keys are server-only. Only `NEXT_PUBLIC_*` reaches the browser — Next
 inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
@@ -147,6 +145,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-01
 
+- Deployed to Railway, and `docs/deploying.md` says what that takes (#227)
+- `pnpm users` — list/add/delete logins on any database; replaced `auth:create-user`
+- Node 22.13+ stated as a prerequisite; pnpm 11 cannot run on Node 20
 - Docs, config and dead dependencies stopped claiming things that were not true (#228)
 - Nothing reversible asks first; Remove from Canvas is gone (#236)
 - The token core is done, and no subtree is exempt from it (#229)
