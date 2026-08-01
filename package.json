@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "dev": "node scripts/check-env-shadow.mjs && next dev --port 3000",
     "build": "next build",
     "test": "vitest run",
