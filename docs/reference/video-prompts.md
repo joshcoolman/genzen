@@ -1,6 +1,6 @@
 # Video Prompts
 
-Prompt structure, formulas, and templates for AI video generation. For camera vocabulary see `camera-reference.md`. For model-specific optimization see `prompt-system.md`.
+Prompt structure, formulas, and templates for AI video generation. For camera vocabulary see `camera-reference.md`.
 
 ## 7-Part Prompt Formula
 

@@ -1,6 +1,6 @@
 # Color Grading
 
-LUT prompts as a composable layer in the generation pipeline. See `prompt-system.md` for how this fits into the full compilation stack.
+LUT prompts as a composable layer in a prompt. Reference material, not wired into the app.
 
 ## The 10-Field LUT Prompt Format
 

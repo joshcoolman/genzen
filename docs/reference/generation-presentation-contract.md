@@ -54,7 +54,7 @@ interface GenerationView {
   (`#/features/ai-images/models`). This is the shared glossary; it resolves edit
   endpoints and aliases (e.g. `fal-ai/flux-pro/kontext` → "FLUX Kontext Pro").
 - `isRetryable` comes from `classifyError(generation_error)` for FAL records.
-  Google records are not retryable today (see saga in ARCHITECTURE.md).
+  Google records are not retryable.
 
 ---
 
@@ -100,75 +100,6 @@ failedMessage="See Details"` + Retry in `overlayActions` + error dialog
 
 If you're building a grid/card view, **use `Thumbnail`** — copying its behavior
 into bespoke markup is how divergence starts.
-
----
-
-## Where each view stands today (honest audit)
-
-| View         | Conforms?                         | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ------------ | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Images**   | ✅ structurally                   | Renders all states via `Thumbnail`. This is the canonical reference.                                                                                                                                                                                                                                                                                                                                                                    |
-| **Activity** | ✅ to the vocabulary              | Row presentation (`ActivityRow` `StatusIndicator`) is its own substrate (a list row, not a tile) but speaks the same status vocabulary and shows model + error.                                                                                                                                                                                                                                                                         |
-| **Canvas**   | ⚠️ behaviorally, not structurally | As of the failed-tile/label work it now shows model + pending + failed + retry/dismiss — but via **bespoke markup + CSS**, a _second_ implementation of the contract, not `Thumbnail`. Reason: canvas tiles are absolutely-positioned on a scaled infinite plane with drag handlers, so the grid-card `Thumbnail` doesn't drop in cleanly. It owes the contract (and now meets it), but the implementation should converge — see below. |
-
----
-
-## Convergence backlog (the work this contract names)
-
-From the Canvas drift audit (read-only pass against this contract +
-ARCHITECTURE.md). Ranked by leverage. Tier 1 items have GitHub issues.
-
-### Tier 1 — invariant violations / silent paths
-
-- [ ] **Canvas in-progress tile is a gray square** — no spinner, no model, for
-      the whole generation. Violates invariant #1; the original "why is Canvas a
-      gray square?" complaint, still open (failed/completed were fixed, pending was
-      not). → [#164](https://github.com/joshcoolman/genzen/issues/164)
-- [ ] **Completed-but-no-signedURL silently drops the tile** —
-      `use-canvas-generate.ts` completed branch `filter`s instead of failing.
-      Violates invariant #3. → [#165](https://github.com/joshcoolman/genzen/issues/165)
-- [x] **Failed-tile Dismiss is UI-only** — left a stale `on_canvas=true` failed
-      row in the DB. Membership is a row now (#212) and Dismiss deletes it. The
-      failed `user_images` row still stays, on purpose: Activity is the log of
-      every generation including the ones that died.
-      → [#166](https://github.com/joshcoolman/genzen/issues/166)
-
-### Tier 2 — structural drift
-
-- [ ] **No shared `normalizeGeneration(record): GenerationView`** — Canvas / AI
-      Images / Activity each re-derive model/status/retryable. _Highest-leverage
-      structural fix:_ it makes invariants 1–5 enforceable in one place, and #164 /
-      the nomenclature drift mostly fall out of it. (Functional core, unit-testable.)
-- [ ] **Canvas renders states via bespoke markup/CSS, not `Thumbnail`** — a
-      second implementation of the contract. Extract shared state-rendering pieces
-      (spinner+label, failed block) or make `Thumbnail` substrate-agnostic so Canvas
-      consumes it. Until then the next canvas state change must be mirrored by hand.
-- [ ] **Nomenclature drift:** `CanvasImage` uses `pending`/`failed` booleans
-      instead of the `status` vocabulary. Resolved by the normalizer above.
-- [ ] **Duplicated completion-polling loops** — `use-images.ts` vs
-      `use-canvas-generate.ts` are two implementations of "poll until done" (Canvas
-      also runs a redundant per-record query). Divergence risk: a fix to one may not
-      reach the other.
-
-### Tier 3 — cleanups
-
-- [ ] **`boundsOf` (use-canvas-generate) duplicates `getBounds`
-      (`canvas/_lib/geometry.ts`)** — same function twice. #189 gave `getBounds` a
-      home and tests, so this one is now a straight deletion.
-- [x] **Extract inline pure logic:** `spatialSort` moved to
-      `canvas/_lib/geometry.ts` with tests in #189. The placeholder collision
-      geometry (`rectsOverlap` + relocate-below decision) is still inline in
-      `use-canvas-generate.ts`.
-- [x] **Deletion semantics differ** — settled by #204: Images delete is a plain
-      `deleted_at` now too, the same as Canvas trash.
-
-### Explicitly NOT drift (don't "fix" these)
-
-Correct sibling-view separations, recorded so they aren't mistaken for debt:
-reorder (`sort_order`) vs spatial position; model label hover-only on canvas
-(substrate difference, contract still met); upload already shares
-`useUserImages`. Canvas groups are a Canvas-local spatial idea and survived the
-removal of library grouping (#204) on purpose.
 
 ---
 
