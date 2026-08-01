@@ -8,7 +8,7 @@ import type {
 import {
   getDefaultSelectedId,
   getModelsByCapability,
-} from '#/features/ai-images/model-selector/models'
+} from '#/features/ai-images/model-selector/unified-models'
 import { usePersistedState } from '#/lib/use-persisted-state'
 
 interface UseModelSelectorOptions {

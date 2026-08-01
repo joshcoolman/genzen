@@ -1,18 +1,17 @@
 packages: []
 
-# pnpm 11+ (what Vercel runs, per the packageManager pin) reads `allowBuilds`.
-# `onlyBuiltDependencies` was removed in v11 and is silently ignored there,
-# which is what caused ERR_PNPM_IGNORED_BUILDS on deploy.
+# pnpm 11 reads `allowBuilds` here; `onlyBuiltDependencies` was removed in v11
+# and is silently ignored, so a package that needs a postinstall gets none and
+# fails at runtime rather than at install. Only packages actually in the
+# lockfile belong here -- `@google/genai` and `protobufjs` had not been for
+# some time (#228).
 allowBuilds:
-  '@google/genai': true
   esbuild: true
-  protobufjs: true
   sharp: true
   unrs-resolver: true
 
-# pnpm 11+ reads overrides from pnpm-workspace.yaml (not package.json).
-# These pin vulnerable transitive deps to patched versions.
+# pnpm 11 reads overrides from here, not package.json. This pins a vulnerable
+# transitive dep to a patched version. The `protobufjs` and `shell-quote` pins
+# that sat beside it named packages the lockfile does not contain.
 overrides:
-  protobufjs: '>=7.5.5'
-  shell-quote: '>=1.8.4'
   minimatch: '>=10.2.1'

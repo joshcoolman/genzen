@@ -7,12 +7,9 @@ export default [
   {
     ignores: [
       '.next/',
-      '.output/',
       'eslint.config.js',
       'eslint-rules/**/*',
       'prettier.config.js',
-      'supabase/functions/**/*',
-      'src/lib/types/supabase.ts',
     ],
   },
   ...tanstackConfig,

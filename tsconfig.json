@@ -4,7 +4,6 @@
     "**/*.tsx",
     "eslint.config.js",
     "prettier.config.js",
-    "vite.config.js",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

@@ -41,7 +41,9 @@ generation could evict it.
    (`createPendingGeneration`'s `onCanvas`), unplaced; the client places it on
    load. Rows also carry `origin = 'canvas'` (#207) -- the canvas authored the
    request
-4. Display -> the public R2 URL, resolved server-side by `loadCanvasState()`
+4. Display -> a `/img/[id]` URL from `#/lib/image-url`, resolved server-side by
+   `loadCanvasState()`. The bucket is private (#226); nothing reads an object
+   address
 5. Move to Trash -> `deleted_at` only; membership survives, so restoring from
    Trash returns the card to its coordinates. **The only way a card leaves.**
    Remove-from-canvas was the other one and #236 deleted it: it destroyed the
@@ -63,7 +65,7 @@ interface CanvasImage {
   height
   pending?: boolean // derived from user_images.status -- nothing to draw yet
   uploading?: boolean // drawn from local bytes; the row has not returned
-  signedUrl?: string // the public URL (legacy name), or a local object URL
+  signedUrl?: string // a /img/[id] URL (legacy name; nothing is signed), or a local object URL
 }
 ```
 
@@ -124,7 +126,7 @@ them.
 
 - `use-viewport.ts` -- transform, screen<->canvas conversion, zoom/fit/focus,
   wheel zoom, space-to-pan. Owns `tRef`.
-- `use-selection.ts` -- selection, marquee, and the group operations. Owns
+- `use-canvas-selection.ts` -- selection, marquee, and the group operations. Owns
   `sRef`. **Change the selection only through `select()`** -- it writes the
   state and the ref together, and twelve hand-written pairs of those is what
   #189 replaced.

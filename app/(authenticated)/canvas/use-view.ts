@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { stateToImages } from './_lib/persistence'
 import { useHistory } from './_hooks/use-history'
 import { useViewport } from './_hooks/use-viewport'
-import { useSelection } from './_hooks/use-selection'
+import { useCanvasSelection } from './_hooks/use-canvas-selection'
 import { useRemoval } from './_hooks/use-removal'
 import { useIngest } from './_hooks/use-ingest'
 import { useAutosave } from './_hooks/use-autosave'
@@ -105,7 +105,7 @@ export function useView(initial: CanvasState) {
     groupSelected,
     ungroupSelected,
     groupImages,
-  } = useSelection({ iRef, gRef, setImages, setGroups, pushUndo })
+  } = useCanvasSelection({ iRef, gRef, setImages, setGroups, pushUndo })
 
   const getImages = useCallback(() => iRef.current, [])
 
