@@ -11,10 +11,6 @@
   color: var(--accent-contrast);
   font-size: 13px;
   font-weight: 600;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: var(--shadow-raised);

@@ -30,10 +30,6 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
   text-align: center;
   max-width: 180px;
   overflow: hidden;
