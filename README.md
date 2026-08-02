@@ -7,8 +7,8 @@ A personal workspace for working with AI image models.
 **#250** find overlay multi-select copy, **#251** canvas pasted images stack on
 top of each other.
 
-Not immediately: **#234** canvas image arrival sizing, **#237** generated
-recent-changes block in README, **#223** AI policy seam.
+Not immediately: **#237** generated recent-changes block in README, **#223**
+AI policy seam.
 
 ## Run it locally
 
