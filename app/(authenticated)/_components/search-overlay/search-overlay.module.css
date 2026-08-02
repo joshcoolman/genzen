@@ -112,68 +112,51 @@
   text-align: center;
 }
 
-.list {
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: var(--space-8);
   margin: 0;
-  padding: var(--space-8);
+  padding: var(--space-12);
   list-style: none;
 }
 
-.row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-12);
-  padding: var(--space-8);
+.tile {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
   border: var(--border-width) solid transparent;
   border-radius: var(--radius-lg);
   cursor: pointer;
 }
 
-.row:hover {
-  background: var(--surface-raised);
+.tile:hover {
+  border-color: var(--border);
 }
 
-.row[data-selected] {
+.tile[data-selected] {
   border-color: var(--accent);
-  background: var(--surface-raised);
 }
 
 .thumb {
-  flex-shrink: 0;
-  width: 4rem;
-  height: 4rem;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   background: var(--image-backing);
-  border-radius: var(--radius-md);
-}
-
-.prompt {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: var(--text);
-  font-size: var(--text-sm);
-  line-height: var(--leading-normal);
-  /* Whole, not clipped: the prompt is what you came for, and a row you have to
-     open to read is a trip out of flow. */
-  overflow-wrap: anywhere;
-}
-
-.noPrompt {
-  composes: prompt;
-  color: var(--text-muted);
-  font-style: italic;
 }
 
 .actions {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
   display: flex;
-  flex-shrink: 0;
   gap: var(--space-4);
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.row:hover .actions,
-.row[data-selected] .actions,
+.tile:hover .actions,
+.tile[data-selected] .actions,
 .actions:focus-within {
   opacity: 1;
 }
@@ -181,18 +164,17 @@
 .action {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-8);
-  background: var(--surface);
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: var(--scrim);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
-  color: var(--text-muted);
-  font-size: var(--text-2xs);
+  color: var(--text);
   cursor: pointer;
 }
 
 .action:hover {
-  color: var(--text);
   border-color: var(--text-muted);
 }
 

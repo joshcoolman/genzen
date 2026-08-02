@@ -108,12 +108,13 @@ export function SearchOverlay() {
           ) : results.length === 0 ? (
             <p className={styles.state}>Nothing matches.</p>
           ) : (
-            <ul className={styles.list}>
+            <ul className={styles.grid}>
               {results.map((row) => (
                 <li key={row.id}>
                   <div
-                    className={styles.row}
+                    className={styles.tile}
                     data-selected={selectedId === row.id || undefined}
+                    title={row.prompt ?? row.title}
                     onClick={() => setSelectedId(row.id)}
                   >
                     <img
@@ -123,29 +124,24 @@ export function SearchOverlay() {
                       loading="lazy"
                       draggable={false}
                     />
-                    {/* The prompt is the payload, so it is shown whole. A row
-                        clipped to one line makes you open something to read it,
-                        which is the trip out of flow this exists to avoid. */}
-                    <p className={row.prompt ? styles.prompt : styles.noPrompt}>
-                      {row.prompt ?? row.title}
-                    </p>
                     <div className={styles.actions}>
                       {row.prompt && (
                         <button
                           type="button"
                           className={styles.action}
+                          title="Copy prompt"
                           onClick={(e) => {
                             e.stopPropagation()
                             void copyPrompt(row)
                           }}
                         >
                           <Copy aria-hidden />
-                          Prompt
                         </button>
                       )}
                       <button
                         type="button"
                         className={styles.action}
+                        title="Copy image"
                         onClick={(e) => {
                           e.stopPropagation()
                           setSelectedId(row.id)
@@ -153,7 +149,6 @@ export function SearchOverlay() {
                         }}
                       >
                         <ImageDown aria-hidden />
-                        Image
                       </button>
                     </div>
                   </div>
