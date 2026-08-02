@@ -4,7 +4,8 @@ A personal workspace for working with AI image models.
 
 ## Up next
 
-Nothing queued.
+**#250** find overlay multi-select copy, **#251** canvas pasted images stack on
+top of each other.
 
 Not immediately: **#234** canvas image arrival sizing, **#237** generated
 recent-changes block in README, **#223** AI policy seam.
@@ -142,15 +143,11 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
-2026-08-01
+2026-08-02
 
+- Find overlay results are a plain image grid, no label, bigger thumbnails (#249)
 - `.server.ts` / `.action.ts` mean one thing each, enforced by lint (#241)
 - Deployed to Railway, and `docs/deploying.md` says what that takes (#227)
 - `pnpm users` — list/add/delete logins on any database; replaced `auth:create-user`
 - Node 22.13+ stated as a prerequisite; pnpm 11 cannot run on Node 20
 - Docs, config and dead dependencies stopped claiming things that were not true (#228)
-- Nothing reversible asks first; Remove from Canvas is gone (#236)
-- The token core is done, and no subtree is exempt from it (#229)
-- Cmd-F finds anything in the library and leaves nothing behind (#213)
-- CI runs on push and boots the production server (#227, part)
-- Storage went private; the app serves its own images (#226)
