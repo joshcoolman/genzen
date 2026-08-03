@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { Copy, ImageDown, Search } from 'lucide-react'
+import { Copy, Search } from 'lucide-react'
 import { useSearchOverlay } from './use-search-overlay'
 import styles from './search-overlay.module.css'
 import type { OverlayFilter } from './filter-library'
@@ -35,10 +35,11 @@ export function SearchOverlay() {
     setFilter,
     results,
     total,
-    selectedId,
-    setSelectedId,
+    selectedIds,
+    toggleSelected,
     copyPrompt,
-    copyImage,
+    copySelected,
+    selectedCount,
   } = useSearchOverlay()
 
   const inputRef = useRef<HTMLInputElement>(null)
@@ -98,7 +99,7 @@ export function SearchOverlay() {
             </button>
           ))}
           <p className={styles.hint}>
-            Click a row to select it, Cmd-C to copy the image, Esc to close
+            Click to select, Cmd-C to copy, Esc to close
           </p>
         </div>
 
@@ -113,9 +114,9 @@ export function SearchOverlay() {
                 <li key={row.id}>
                   <div
                     className={styles.tile}
-                    data-selected={selectedId === row.id || undefined}
+                    data-selected={selectedIds.has(row.id) || undefined}
                     title={row.prompt ?? row.title}
-                    onClick={() => setSelectedId(row.id)}
+                    onClick={() => toggleSelected(row.id)}
                   >
                     <img
                       className={styles.thumb}
@@ -124,8 +125,8 @@ export function SearchOverlay() {
                       loading="lazy"
                       draggable={false}
                     />
-                    <div className={styles.actions}>
-                      {row.prompt && (
+                    {row.prompt && (
+                      <div className={styles.actions}>
                         <button
                           type="button"
                           className={styles.action}
@@ -137,26 +138,26 @@ export function SearchOverlay() {
                         >
                           <Copy aria-hidden />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.action}
-                        title="Copy image"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedId(row.id)
-                          void copyImage(row)
-                        }}
-                      >
-                        <ImageDown aria-hidden />
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
+
+        {selectedCount > 0 && (
+          <button
+            type="button"
+            className={styles.copyButton}
+            onClick={() => void copySelected()}
+          >
+            {selectedCount === 1
+              ? 'Copy image'
+              : `Copy ${selectedCount} images`}
+          </button>
+        )}
       </div>
     </div>
   )

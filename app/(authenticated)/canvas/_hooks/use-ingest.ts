@@ -13,7 +13,7 @@ import type { CanvasImage } from '../_lib/types'
 import { imageUrl } from '#/lib/image-url'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
 import { getLibraryImage } from '#/features/user-images/server/library-index.action'
-import { readImageRef } from '#/lib/image-clipboard'
+import { readImageRefs } from '#/lib/image-clipboard'
 
 /** Column width used when more than one image arrives at once; a lone image
  *  keeps its natural width. */
@@ -200,52 +200,67 @@ export function useIngest({
   )
 
   /**
-   * A library image copied from the search overlay (#213): a card for a row
-   * that already exists.
+   * One or more library images copied from the search overlay (#213, and
+   * multi-select #250): a card for each row, all of which already exist.
    *
-   * This is the whole reason the clipboard carries an id. The bytes path below
-   * would upload the image a second time and leave two rows for one picture --
+   * This is the whole reason the clipboard carries ids. The bytes path below
+   * would upload each image a second time and leave two rows per picture --
    * so copying something you own in order to place it would quietly cost you
-   * a duplicate every time.
+   * a duplicate every time. Canvas has no selection cap, unlike Images'
+   * 3-reference-slot limit, so every id that resolves gets placed.
    */
-  const addImageByRecordId = useCallback(
-    async (recordId: string, cx: number, cy: number) => {
-      const record = await getLibraryImage(recordId).catch(() => null)
-      if (!record) return
+  const addImagesByRecordIds = useCallback(
+    async (recordIds: Array<string>, cx: number, cy: number) => {
+      const records = await Promise.all(
+        recordIds.map((id) => getLibraryImage(id).catch(() => null)),
+      )
+      const resolved = await Promise.all(
+        records
+          .filter((r): r is NonNullable<typeof r> => r !== null)
+          .map(async (record) => {
+            const url = imageUrl(record.id)
+            // The row's own dimensions where it has them; otherwise ask the
+            // image, which is what an older upload without them needs.
+            const dims =
+              record.width && record.height
+                ? { w: record.width, h: record.height }
+                : await getUrlDimensions(url)
+            return { record, url, dims }
+          }),
+      )
+      if (resolved.length === 0) return
 
-      const url = imageUrl(record.id)
-      // The row's own dimensions where it has them; otherwise ask the image,
-      // which is what an older upload without them needs.
-      const dims =
-        record.width && record.height
-          ? { w: record.width, h: record.height }
-          : await getUrlDimensions(url)
-
-      const [placed] = layoutMasonry(
-        [{ id: crypto.randomUUID(), width: dims.w, height: dims.h }],
+      const items = resolved.map(({ dims }) => ({
+        id: crypto.randomUUID(),
+        width: dims.w,
+        height: dims.h,
+      }))
+      const cards: Array<CanvasImage> = layoutMasonry(
+        items,
         COLUMNS,
         cx,
         cy,
-      )
-      const card: CanvasImage = {
-        ...placed,
-        recordId: record.id,
-        storagePath: record.storage_path,
-        signedUrl: url,
-      }
+        items.length === 1 ? undefined : MULTI_COLUMN_WIDTH,
+      ).map((r, i) => ({
+        ...r,
+        recordId: resolved[i].record.id,
+        storagePath: resolved[i].record.storage_path,
+        signedUrl: resolved[i].url,
+      }))
 
       pushUndo()
-      setImages((prev) => [...prev, card])
-      select(new Set([card.id]))
-      void addToCanvas(canvasId, [
-        {
+      setImages((prev) => [...prev, ...cards])
+      select(new Set(cards.map((card) => card.id)))
+      void addToCanvas(
+        canvasId,
+        cards.map((card) => ({
           imageId: card.recordId,
           x: card.x,
           y: card.y,
           width: card.width,
           height: card.height,
-        },
-      ])
+        })),
+      )
     },
     [canvasId, pushUndo, setImages, select],
   )
@@ -256,14 +271,14 @@ export function useIngest({
       const items = e.clipboardData?.items
       if (!items) return
 
-      // An internal copy comes first: it is a reference to a row, and the
-      // clipboard may well be carrying the picture too.
+      // An internal copy comes first: it is a reference to one or more rows,
+      // and the clipboard may well be carrying the picture too.
       const text = e.clipboardData.getData('text/plain')
-      const ref = readImageRef(text)
-      if (ref) {
+      const refs = readImageRefs(text)
+      if (refs) {
         e.preventDefault()
         const c = resolvePasteTarget()
-        void addImageByRecordId(ref, c.x, c.y)
+        void addImagesByRecordIds(refs, c.x, c.y)
         return
       }
 
@@ -291,7 +306,7 @@ export function useIngest({
   }, [
     addImagesFromFiles,
     addImageFromUrl,
-    addImageByRecordId,
+    addImagesByRecordIds,
     resolvePasteTarget,
   ])
 

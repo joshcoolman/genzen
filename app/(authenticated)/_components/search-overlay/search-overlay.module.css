@@ -10,6 +10,7 @@
 }
 
 .panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: min(56rem, 100%);
@@ -181,6 +182,25 @@
 .action svg {
   width: 0.75rem;
   height: 0.75rem;
+}
+
+.copyButton {
+  position: absolute;
+  right: var(--space-16);
+  bottom: var(--space-16);
+  padding: var(--space-8) var(--space-14);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-lg);
+  color: var(--accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-raised);
+}
+
+.copyButton:hover {
+  background: var(--accent-hover);
 }
 
 @media (max-width: 640px) {
