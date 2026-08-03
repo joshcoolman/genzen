@@ -88,38 +88,23 @@ lives with that route — #189 moved six folders out of there on that rule.
 
 ## Git workflow
 
-**Branch, PR, merge — the house standard, as of 2026-07-31.** Cut a short
-kebab-case branch, do the work, open a PR, merge it. This repo ran on
-commit-straight-to-`main` through the structural conversion (#168 → #229), which
-was the right call for a long run of mechanical passes and is no longer the
-shape of the work.
-
-**One issue per branch.** Finish the ticket, close the issue, PR, merge, delete
-the branch local and remote, then cut the next one. A branch covering two issues
-is allowed but is not the habit. The value is the buckets: the branch name and
-the PR are what say _what this work was_ when you come back to it, and what
-stop everything blurring into one `main` history.
-
-Merging without being asked is fine for straightforward work once the build is
-green — that's normal GitHub practice, not something to check in about every
-time. It is never fine to assume a whole session should be committed straight
-to `main` in bulk; that mode only applies when Josh says so at the start of a
-session.
-
-**A branch may outlive a session — that is part of what it is for.** Work that
-runs over a day or two keeps its own branch, and the branch name plus the PR are
-the orientation surface when you come back: where you were, and what is done so
-far. Do not rush a merge to close the day.
+Mechanics — branch, PR, squash-merge, issues as the durable record, no plan
+files, the `git diff origin/main` vs. `git log origin/main..HEAD` distinction —
+are [project-standard](https://github.com/joshcoolman/project-standard)'s call
+("Git & issues"). This section holds only what genzen adds on top of that.
 
 **The rule that does not relax: push the branch.** Never leave it local-only.
 Three Macs pull from this remote, and work that exists on one machine's disk is
 work the next machine cannot see — that is the actual failure behind the June
 2026 tangle, where a branch was cut off a stale `main` and reproduced work that
-already existed. Pushing fixes it; merging early is not required.
+already existed. Pushing fixes it; merging early is not required. This is also
+why a branch may outlive a session — do not rush a merge to close the day.
 
-Before assuming `main` is behind, check `git diff origin/main` rather than
-`git log origin/main..HEAD` — a squash merge makes a fully-landed branch look
-unmerged while every line is identical.
+**Merging without being asked is fine for straightforward work once the build
+is green** — normal GitHub practice, not something to check in about every
+time. It is never fine to assume a whole session should be committed straight
+to `main` in bulk; that mode only applies when Josh says so at the start of a
+session.
 
 At the end of any session:
 
