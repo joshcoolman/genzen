@@ -96,11 +96,15 @@ shape of the work.
 
 **One issue per branch.** Finish the ticket, close the issue, PR, merge, delete
 the branch local and remote, then cut the next one. A branch covering two issues
-is allowed but is not the habit. The PR is not a review gate — there is no
-reviewer — so open it and merge it in the same breath; do not wait to be told.
-The value is the buckets: the branch name and the PR are what say _what this
-work was_ when you come back to it, and what stop everything blurring into one
-`main` history.
+is allowed but is not the habit. The value is the buckets: the branch name and
+the PR are what say _what this work was_ when you come back to it, and what
+stop everything blurring into one `main` history.
+
+Merging without being asked is fine for straightforward work once the build is
+green — that's normal GitHub practice, not something to check in about every
+time. It is never fine to assume a whole session should be committed straight
+to `main` in bulk; that mode only applies when Josh says so at the start of a
+session.
 
 **A branch may outlive a session — that is part of what it is for.** Work that
 runs over a day or two keeps its own branch, and the branch name plus the PR are
