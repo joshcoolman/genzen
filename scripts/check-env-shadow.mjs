@@ -18,7 +18,6 @@ const text = readFileSync(ENV_LOCAL, 'utf8')
 const WATCHED = [
   'FAL_KEY',
   'ANTHROPIC_API_KEY',
-  'GOOGLE_GENERATIVE_AI_API_KEY',
   'DATABASE_URL',
   'AUTH_SESSION_SECRET',
 ]

@@ -26,9 +26,8 @@ Split by where the value comes from:
   `R2_BUCKET_NAME` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_ENDPOINT`.
   Railway's bucket exposes these as `BUCKET`, `ACCESS_KEY_ID`,
   `SECRET_ACCESS_KEY`, `ENDPOINT`.
-- **Yours** — `FAL_KEY`, and optionally `ANTHROPIC_API_KEY` /
-  `GOOGLE_GENERATIVE_AI_API_KEY`. A feature whose key is missing fails loudly
-  rather than degrading.
+- **Yours** — `FAL_KEY`, and optionally `ANTHROPIC_API_KEY`. A feature whose key
+  is missing fails loudly rather than degrading.
 - **Generated per deployment** — `AUTH_SESSION_SECRET` (`openssl rand -hex 32`).
   Do not reuse the local one; rotating it invalidates every session.
 

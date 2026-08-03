@@ -1,7 +1,7 @@
 /**
  * Missing-provider-key signalling, shared by server and client.
  *
- * Server functions that call a text/vision model fail with an ordinary Error
+ * Server functions that call a model fail with an ordinary Error
  * whose message crosses the RPC boundary as a plain string — that string is all
  * the client gets. So the fact "this failed because a key is absent" is encoded
  * *into* the message with a marker, and parsed back out on the other side.
@@ -10,7 +10,9 @@
  * the pair of functions still works.
  */
 
-export type AiProvider = 'anthropic' | 'google'
+// One provider today. The union and the `AI_PROVIDERS` record stay because the
+// mechanism is the point -- adding a second is one entry, not a refactor.
+export type AiProvider = 'anthropic'
 
 export interface MissingKeyInfo {
   provider: AiProvider
@@ -27,11 +29,6 @@ export const AI_PROVIDERS: Record<AiProvider, MissingKeyInfo> = {
     provider: 'anthropic',
     envVar: 'ANTHROPIC_API_KEY',
     label: 'Anthropic',
-  },
-  google: {
-    provider: 'google',
-    envVar: 'GOOGLE_GENERATIVE_AI_API_KEY',
-    label: 'Google Gemini',
   },
 }
 
