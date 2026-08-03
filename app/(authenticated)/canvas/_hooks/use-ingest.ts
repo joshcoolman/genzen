@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { layoutMasonry } from '../_lib/masonry'
 import {
   addToCanvas,
@@ -21,6 +21,9 @@ const MULTI_COLUMN_WIDTH = 300
 const COLUMNS = 6
 const DROP_NOTICE_MS = 3000
 const IMAGE_URL_PATTERN = /\.(png|jpg|jpeg|gif|webp|svg|bmp)(\?.*)?$/i
+/** Repeated Cmd-V without moving the cursor keeps landing on the same target
+ *  point -- cascade each consecutive paste so cards don't fully overlap. */
+const PASTE_CASCADE_OFFSET = 24
 
 interface CreatedRecord {
   id: string
@@ -60,6 +63,25 @@ export function useIngest({
   libraryImages,
 }: UseIngestArgs) {
   const [dropNotice, setDropNotice] = useState<string | null>(null)
+
+  // Tracks consecutive pastes that resolve to the same base target so each
+  // one after the first steps diagonally instead of landing on top.
+  const pasteCascadeRef = useRef<{
+    base: { x: number; y: number } | null
+    count: number
+  }>({ base: null, count: 0 })
+  const resolvePasteTarget = useCallback(() => {
+    const base = getPasteTarget()
+    const prev = pasteCascadeRef.current
+    const sameBase =
+      prev.base !== null && prev.base.x === base.x && prev.base.y === base.y
+    const count = sameBase ? prev.count + 1 : 0
+    pasteCascadeRef.current = { base, count }
+    return {
+      x: base.x + count * PASTE_CASCADE_OFFSET,
+      y: base.y + count * PASTE_CASCADE_OFFSET,
+    }
+  }, [getPasteTarget])
 
   const addImagesFromFiles = useCallback(
     async (files: FileList | Array<File>, cx: number, cy: number) => {
@@ -240,7 +262,7 @@ export function useIngest({
       const ref = readImageRef(text)
       if (ref) {
         e.preventDefault()
-        const c = getPasteTarget()
+        const c = resolvePasteTarget()
         void addImageByRecordId(ref, c.x, c.y)
         return
       }
@@ -251,7 +273,7 @@ export function useIngest({
           const file = item.getAsFile()
           if (!file) continue
           e.preventDefault()
-          const c = getPasteTarget()
+          const c = resolvePasteTarget()
           void addImagesFromFiles([file], c.x, c.y)
           return
         }
@@ -260,13 +282,18 @@ export function useIngest({
       // Otherwise a pasted URL -- fetch and upload it.
       if (IMAGE_URL_PATTERN.test(text)) {
         e.preventDefault()
-        const c = getPasteTarget()
+        const c = resolvePasteTarget()
         addImageFromUrl(text, c.x, c.y, 'pasted-image.png')
       }
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
-  }, [addImagesFromFiles, addImageFromUrl, addImageByRecordId, getPasteTarget])
+  }, [
+    addImagesFromFiles,
+    addImageFromUrl,
+    addImageByRecordId,
+    resolvePasteTarget,
+  ])
 
   /* -- Drop -- */
   const onDragOver = useCallback((e: React.DragEvent) => {
