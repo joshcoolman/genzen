@@ -74,5 +74,6 @@ anything one route renders lives with that route.
   `#/lib/server/fal-image-inputs.server.ts` is the one seam; generate and retry
   both go through it, and it preserves caller order because models read the
   image list positionally.
-- **FAL is the only image provider.** Anthropic is prompt work (enhancement,
-  variation prompts), Gemini is vision only (describe, caption, shot lists).
+- **FAL is the only image provider, Anthropic the only other one.** Prompt work
+  (enhancement, variation prompts, shot lists) and vision (describe, caption)
+  are all Claude; there is no second text/vision vendor (#254).

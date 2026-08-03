@@ -82,15 +82,15 @@ about it — that's the usual reason generation 401s.
 
 ## Stack
 
-| Layer       | Tech                                                       |
-| ----------- | ---------------------------------------------------------- |
-| App         | Next.js App Router (React 19 + Turbopack)                  |
-| UI          | CSS Modules + Base UI, on the tokens in `src/styles/`      |
-| Data        | Postgres, queried with SQL via `postgres` (no ORM)         |
-| Auth        | scrypt + signed session cookie, own `users` table          |
-| Storage     | S3 — MinIO locally, a Railway bucket in production         |
-| Images      | FAL                                                        |
-| Text/vision | Anthropic (assistant, prompt work), Google Gemini (vision) |
+| Layer       | Tech                                                  |
+| ----------- | ----------------------------------------------------- |
+| App         | Next.js App Router (React 19 + Turbopack)             |
+| UI          | CSS Modules + Base UI, on the tokens in `src/styles/` |
+| Data        | Postgres, queried with SQL via `postgres` (no ORM)    |
+| Auth        | scrypt + signed session cookie, own `users` table     |
+| Storage     | S3 — MinIO locally, a Railway bucket in production    |
+| Images      | FAL                                                   |
+| Text/vision | Anthropic — assistant, prompt work, and vision        |
 
 ## Repo map
 
@@ -114,7 +114,7 @@ fails the build.
 itself and prompts you for the one value that is actually yours, the FAL key.
 
 `.env.example` is the reference for deploying, split into Required (a Postgres
-URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, Gemini, FAL
+URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, FAL
 webhooks). [`docs/deploying.md`](docs/deploying.md) covers the rest: what a
 deployment needs, the two non-default settings, and how the first user is made.
 
@@ -145,6 +145,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-02
 
+- Every LLM call is Anthropic now; Google Gemini removed entirely (#254)
 - Find overlay results are a plain image grid, no label, bigger thumbnails (#249)
 - `.server.ts` / `.action.ts` mean one thing each, enforced by lint (#241)
 - Deployed to Railway, and `docs/deploying.md` says what that takes (#227)

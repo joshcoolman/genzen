@@ -36,12 +36,10 @@ container or a fixed local value. See the README's Local Dev section.
 
 Assume server-side access to the services below unless a feature explicitly says
 otherwise. Don't propose new auth/env plumbing for these. Note that locally the
-optional keys (Anthropic, Google) are usually **empty** — the app
-runs fine without them, so a feature that needs one should fail loudly rather
-than assume it's there.
+optional Anthropic key is usually **empty** — the app runs fine without it, so a
+feature that needs it should fail loudly rather than assume it's there.
 
-- **Anthropic** (`ANTHROPIC_API_KEY`) — Claude, server-side only. Prompt enhancement and variation prompts; there is no browser-held key.
-- **Google Gemini** (`GOOGLE_GENERATIVE_AI_API_KEY`) — vision only (Describe/Caption/shot lists) via `@ai-sdk/google`. There is no Google image-generation path; FAL is the only image provider.
+- **Anthropic** (`ANTHROPIC_API_KEY`) — Claude, server-side only, and the only text/vision provider: prompt enhancement, variation prompts, shot lists, Describe/Caption. There is no browser-held key. FAL is the only image provider.
 - **FAL AI** (`FAL_KEY`) — image generation via `@fal-ai/client`.
 - **Postgres** (`DATABASE_URL`) — the database, reached only through `sql` from `src/lib/server/db.server.ts`. There is no ORM and no query builder; server code writes SQL. There is also no RLS: `sql` connects as the owning role, so **every read and write carries an explicit `user_id` filter**, taken from `resolveAuth()` and never from the caller. That is checked, not remembered: `eslint-rules/sql-user-scoping.js` fails any `sql` statement naming a user-scoped table without one (#219). The tables come from the migrations, so a new one is covered the day it lands. Where an id is genuinely server-derived, annotate the statement `// sql-scope-exempt: <why>` — a reason is required, and `grep sql-scope-exempt` is the list of every place the rule is knowingly bent. Row shapes are `src/lib/types/db.ts`, paired with the select list in `src/lib/server/user-image-columns.server.ts` — a test fails if either drifts from `migrations/0001_init.sql`.
 - **S3 storage** (`R2_*`) — image/asset storage. `src/lib/image-storage.ts` is a
