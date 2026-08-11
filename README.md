@@ -146,10 +146,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-11
 
+- Every prompt row removes the same way; the X no longer clears the source image and references, and Clear all sits in a reserved strip so nothing shifts (#273)
+- Library source picks work again — our own images are read off the bucket instead of fetched over HTTP (#291)
 - Images card strips to two icons; click opens the lightbox, Cmd-click points the generator at the image or loads its prompt, selection is a mode (#284)
 - Cmd-Shift-click a card pushes it onto the reference strip; the strip gained Clear, and a whole thumbnail removes
 - Lightbox closes on a click anywhere that is not a control (#284)
 - Lightbox is a job view: large image, full prompt (click it to copy), filmstrip rail that tracks position (#271, #270)
-- Issues are ranked by label — `focus`, `now`, `next`, `later` — and `## Up next` points at them instead of listing them (#237)
-- Every open issue retitled to three words or fewer; the old title is the first line of the body
-- `docs/reference/camera-angles.md` — sixteen subject-free camera positions for generating a variation set from one reference image (#265)
