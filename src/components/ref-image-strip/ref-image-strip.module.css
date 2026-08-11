@@ -111,3 +111,22 @@
   line-height: var(--text-xs-leading);
   color: var(--text-muted);
 }
+
+/* The counter's twin: same size, same colour, opposite end of the row. `auto`
+   rather than a fixed gap so it holds the right edge however many thumbs
+   wrap. */
+.clear {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.clear:hover {
+  color: var(--text);
+}

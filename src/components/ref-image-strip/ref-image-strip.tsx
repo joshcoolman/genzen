@@ -7,6 +7,8 @@ interface RefImageStripProps {
   max: number
   onAdd?: () => void
   onRemove?: (id: string) => void
+  /** Empties the strip in one click. Shown only once something is in it. */
+  onClear?: () => void
   onImageClick?: () => void
   disabled?: boolean
   /** Show element label under each thumbnail */
@@ -18,6 +20,7 @@ export function RefImageStrip({
   max,
   onAdd,
   onRemove,
+  onClear,
   onImageClick,
   disabled,
   showLabels,
@@ -62,6 +65,14 @@ export function RefImageStrip({
       <span className={styles.count}>
         {images.length}/{max}
       </span>
+      {/* Far right, so it is nowhere near the per-thumb X it saves you from
+          using four times. Reads as the counter's twin rather than a button --
+          it is a way out of a state, not a step in the flow. */}
+      {onClear && !disabled && images.length > 0 && (
+        <button type="button" onClick={onClear} className={styles.clear}>
+          Clear
+        </button>
+      )}
     </div>
   )
 }
