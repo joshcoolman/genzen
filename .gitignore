@@ -12,3 +12,8 @@ node_modules
 
 # TypeScript incremental build cache -- dirties the tree on every typecheck
 tsconfig.tsbuildinfo
+
+# Next regenerates this, and rewrites it differently after `dev` than after
+# `build`, so tracking it means a permanently dirty tree. Verified: `pnpm
+# typecheck` passes without it.
+next-env.d.ts
