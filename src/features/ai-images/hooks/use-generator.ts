@@ -539,10 +539,12 @@ export function useGenerator({
         const { base64 } = await fetchImageAsBase64({ url })
         applySourceBase64(base64, name, id ? { id } : undefined)
       } catch (err) {
-        console.error('Failed to load image from library:', err)
+        // Was a console.error, so a failed pick looked exactly like a click
+        // that missed -- which is how #291 survived as long as it did.
+        reportError(err, 'Could not load that image')
       }
     },
-    [applySourceBase64],
+    [applySourceBase64, reportError],
   )
 
   function handleClearSourceImage() {
