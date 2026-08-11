@@ -1,0 +1,60 @@
+/* The gear that opens system instructions, sized to sit in the prompt list's
+   own strip beside "Clear all" rather than to read as a control of its own. */
+
+.trigger {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.trigger:hover {
+  color: var(--text);
+}
+
+/* Set-and-forget is the failure mode, so a non-empty block is always visible
+   as state -- the dot, never the content. */
+.triggerSet {
+  color: var(--text);
+}
+
+.triggerSet::after {
+  content: '';
+  width: 0.25rem;
+  height: 0.25rem;
+  margin-left: var(--space-2);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.popover {
+  width: min(24rem, calc(100vw - 2rem));
+  padding: var(--space-12);
+}
+
+.title {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text);
+}
+
+.subtitle {
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-8);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+.textarea {
+  width: 100%;
+  resize: vertical;
+}
