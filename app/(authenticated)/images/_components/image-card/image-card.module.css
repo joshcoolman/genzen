@@ -68,18 +68,41 @@
   line-height: 1.5;
 }
 
-/* "On canvas" marker. Passive: it never intercepts a click, and it does not
-   move or hide on hover -- a marker that vanishes exactly when you reach for
-   Delete would fail at the only moment it matters (#216).
+/* The bottom-centre column: the modifier hint above, the canvas marker below.
+   One stack rather than two absolute boxes fighting for the same spot, so
+   neither jumps when the other appears -- and being absolute, neither one
+   changes the card's height.
 
-   Bottom-centre was the one edge free when all four corners held a button;
-   two have since emptied (#284), but the marker is not an action and does not
-   want a corner. */
-.onCanvas {
+   Bottom-centre because the corners hold actions and these are not actions. */
+.markers {
   position: absolute;
   bottom: var(--space-8);
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  pointer-events: none;
+}
+
+/* What a Cmd-click would do, named the moment the key goes down. Quiet on
+   purpose: it is an answer to a question you asked by holding a key, not an
+   announcement. */
+.shortcut {
+  padding: var(--space-2) var(--space-8);
+  border-radius: var(--radius-full);
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+}
+
+/* "On canvas" marker. Passive: it never intercepts a click, and it does not
+   move or hide on hover -- a marker that vanishes exactly when you reach for
+   Delete would fail at the only moment it matters (#216). */
+.onCanvas {
   display: flex;
   gap: var(--space-4);
   align-items: center;
@@ -90,7 +113,6 @@
   color: var(--text-muted);
   font-size: var(--text-3xs);
   white-space: nowrap;
-  pointer-events: none;
 }
 
 .onCanvasIcon {

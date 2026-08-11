@@ -30,6 +30,10 @@ export interface ThumbnailProps {
   overlayActionsBottomRight?: ReactNode
 
   onClick?: (e?: React.MouseEvent) => void
+  /** On the root, so a caller can react to the pointer being over the whole
+   *  tile rather than over whichever part of it the pointer is actually on. */
+  onMouseEnter?: (e: React.MouseEvent) => void
+  onMouseLeave?: (e: React.MouseEvent) => void
 
   selected?: boolean
   selectedClassName?: string
@@ -65,6 +69,8 @@ export function Thumbnail({
   overlayActionsBottomLeft,
   overlayActionsBottomRight,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
   selected,
   selectedClassName,
   alwaysShowOverlay = false,
@@ -105,6 +111,8 @@ export function Thumbnail({
         className,
       )}
       onClick={asButton ? onClick : undefined}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       <div className={styles.frame}>
         <div

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import styles from './copy-text.module.css'
 import { cx } from '#/lib/utils'
+import { useModifierHeld } from '#/lib/use-modifier-held'
 
 interface CopyTextProps {
   text: string
@@ -39,31 +40,9 @@ export function CopyText({
 }: CopyTextProps) {
   const [copied, setCopied] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const [modifierHeld, setModifierHeld] = useState(false)
 
-  // Only while this one is hovered. A grid renders dozens of these, and a
-  // permanent key listener per card to answer a question nobody is asking is
-  // the kind of thing that is invisible until the grid is long.
   const watching = hovered && !!onModifierClick && !!modifierLabel
-
-  useEffect(() => {
-    if (!watching) {
-      setModifierHeld(false)
-      return
-    }
-    const sync = (e: KeyboardEvent) => setModifierHeld(e.metaKey || e.ctrlKey)
-    // Releasing the key outside the window never reaches keyup, which would
-    // leave the label lying about what the next click does.
-    const clear = () => setModifierHeld(false)
-    window.addEventListener('keydown', sync)
-    window.addEventListener('keyup', sync)
-    window.addEventListener('blur', clear)
-    return () => {
-      window.removeEventListener('keydown', sync)
-      window.removeEventListener('keyup', sync)
-      window.removeEventListener('blur', clear)
-    }
-  }, [watching])
+  const modifier = useModifierHeld(watching)
 
   async function copy() {
     try {
@@ -79,7 +58,7 @@ export function CopyText({
 
   const hint = copied
     ? 'Copied'
-    : watching && modifierHeld
+    : watching && modifier.meta
       ? modifierLabel
       : label
 
@@ -91,7 +70,7 @@ export function CopyText({
       // keydown is long gone -- so the entering event answers it too.
       onMouseEnter={(e) => {
         setHovered(true)
-        setModifierHeld(e.metaKey || e.ctrlKey)
+        modifier.seed(e)
       }}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setHovered(true)}

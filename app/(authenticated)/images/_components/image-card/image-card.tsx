@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   CheckCircle2,
   Download,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { useModifierHeld } from '#/lib/use-modifier-held'
 import {
   CopyText,
   DropdownMenu,
@@ -114,6 +116,21 @@ export function ImageCard({
 
   const caption = img.description ?? img.generation_metadata?.prompt
 
+  // The image's two shortcuts name themselves the moment the key goes down,
+  // the way the prompt's hint does. Only while this card is hovered -- see
+  // `useModifierHeld`.
+  const [hovered, setHovered] = useState(false)
+  const watching = hovered && !selectionActive
+  const modifier = useModifierHeld(watching)
+  const shortcut =
+    watching && modifier.meta
+      ? modifier.shift && onAddReference
+        ? 'Add Reference'
+        : onFocusSource
+          ? 'Load Image'
+          : null
+      : null
+
   return (
     <Thumbnail
       url={imageUrl}
@@ -127,16 +144,22 @@ export function ImageCard({
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
         <>
-          {/* Passive, and that is the whole point (#216): trashing an image
-              that is arranged on the canvas takes it off a surface you are not
-              looking at. Saying so on the card prevents the surprise instead of
-              interrupting to explain it. */}
-          {img.on_canvas && (
-            <span className={styles.onCanvas}>
-              <Frame className={styles.onCanvasIcon} aria-hidden="true" />
-              On canvas
-            </span>
-          )}
+          {/* Bottom-centre, stacked in one column so neither moves when the
+              other appears, and absolutely positioned so neither costs the
+              card any layout. */}
+          <div className={styles.markers}>
+            {shortcut && <span className={styles.shortcut}>{shortcut}</span>}
+            {/* Passive, and that is the whole point (#216): trashing an image
+                that is arranged on the canvas takes it off a surface you are
+                not looking at. Saying so on the card prevents the surprise
+                instead of interrupting to explain it. */}
+            {img.on_canvas && (
+              <span className={styles.onCanvas}>
+                <Frame className={styles.onCanvasIcon} aria-hidden="true" />
+                On canvas
+              </span>
+            )}
+          </div>
           {/* The tick the select circle used to carry, in the corner it used to
               sit in. The border says "selected" too, but only against its
               neighbours -- a card selected on its own has nothing to compare
@@ -151,6 +174,11 @@ export function ImageCard({
          whole path back from the grid to the generator, which #284 removed on
          purpose -- they are here as their own decision, and they cost the card
          nothing because they are not controls. */
+      onMouseEnter={(e) => {
+        setHovered(true)
+        modifier.seed(e)
+      }}
+      onMouseLeave={() => setHovered(false)}
       onClick={
         selectionActive
           ? undefined
