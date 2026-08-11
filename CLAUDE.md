@@ -128,11 +128,11 @@ door always reflects the current state.
 
 `docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
 does and must do), `DELTAS.md` (the deltas from the house standard) and
-`reference/` (two files: the generation presentation contract and genzen's route
-evidence). Never a plan, and never research — `docs/` describes the app as it
-is, and anything that does not is deleted rather than parked. There is no
-in-app docs viewer — that route and
-`src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled content.
+`reference/`. **Never a plan** — plans are issues, and a parked one rots. That is
+genzen's only rule here; `reference/` otherwise follows the standard, which asks
+for no particular name or structure. There is no in-app docs viewer — that route
+and `src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled
+content.
 
 ## Project standard
 
