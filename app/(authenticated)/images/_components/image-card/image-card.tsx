@@ -180,6 +180,7 @@ export function ImageCard({
               text={caption}
               label="Copy"
               onModifierClick={selectionActive ? undefined : onUsePrompt}
+              modifierLabel="Load Prompt"
               className={styles.prompt}
               textClassName={styles.promptText}
             />

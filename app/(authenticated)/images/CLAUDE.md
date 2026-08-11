@@ -30,9 +30,11 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   unit-tested), the opposite end from `addRefImages`: the gesture means "use
   this one", so a full strip has to make room rather than refuse. Only the
   eviction toasts -- gaining an image is its own feedback, losing one is not.
-  None of the three is hinted: the prompt's hover label says "Copy" and nothing
-  else, because a two-word hover is the wrong place to teach a shortcut. They
-  want explaining somewhere they can be, which is not decided yet Both open the panel, because a power move whose
+  The prompt's hover label says "Copy", and "Load Prompt" **while Cmd is
+  actually held** -- the shortcut announces itself to someone reaching for it
+  and charges nobody else for the privilege. The key listener is bound only
+  while that one card is hovered, because a grid holds dozens. The two image
+  gestures stay unhinted, waiting on a surface that can explain them (#289) Both open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
