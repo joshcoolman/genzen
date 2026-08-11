@@ -136,7 +136,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   in `tokens.css` alone — `pnpm check:colors` enforces it (#229).
 - `.server.ts` must never be imported from client code; `.action.ts` is a `'use server'` module meant to be. Lint enforces the split (#241).
 - FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.action.ts`. Webhooks are optional and gated by env.
-- S3 public URLs do not expire — safe to persist in DB rows.
+- The bucket is private, so there are no public object URLs to persist. Images
+  are served by the app at `/img/[id]`, which resolves identity from the cookie
+  and filters the row by `user_id`. `src/lib/image-url.ts` is the only place a
+  URL is built, and it returns an app path, never a storage key (#226).
 - Every generate path reserves its `user_images` row _before_ any fallible work,
   so a click always leaves a card behind — pending, completed, or failed with a
   reason and a Retry.
