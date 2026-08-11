@@ -18,6 +18,7 @@ import {
   RefImageStrip,
   SourceImagePreview,
 } from '#/components'
+import { cx } from '#/lib/utils'
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -110,7 +111,7 @@ export function GeneratorPanel({
       )}
 
       {/* Image source buttons + aspect ratio */}
-      <div className={styles.row}>
+      <div className={cx(styles.row, styles.rowAbovePrompts)}>
         {!hideSourceButtons && (
           <ImageSourceButtons
             onFileSelected={generator.setSourceFile}

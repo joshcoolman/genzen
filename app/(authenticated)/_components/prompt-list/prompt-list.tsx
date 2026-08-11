@@ -55,16 +55,20 @@ export function PromptList({
   const canClearPrompts = prompts.length > 1
   return (
     <div className={styles.root}>
-      {onClearPrompts && canClearPrompts && (
-        <button
-          type="button"
-          onClick={onClearPrompts}
-          disabled={disabled}
-          className={styles.clearAll}
-        >
-          Clear prompts
-        </button>
-      )}
+      {/* Always rendered, even empty: the strip reserves its own height so the
+          button can appear and disappear without moving the prompt below it. */}
+      <div className={styles.clearRow}>
+        {onClearPrompts && canClearPrompts && (
+          <button
+            type="button"
+            onClick={onClearPrompts}
+            disabled={disabled}
+            className={styles.clearAll}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       {prompts.map((promptText, index) => {
         const isEnhancing = enhancingPromptIndex === index
         const anyEnhancing =

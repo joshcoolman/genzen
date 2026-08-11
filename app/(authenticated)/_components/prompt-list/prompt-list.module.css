@@ -5,6 +5,16 @@
   margin-bottom: var(--space-8);
 }
 
+/* Reserved whether or not Clear all is in it. The height is the button's own
+   line box, so the strip does not resize when the button appears -- typing in
+   an empty prompt used to push every control below it down mid-sentence. */
+.clearRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 1rem;
+}
+
 .clearAll {
   border: none;
   background: transparent;
