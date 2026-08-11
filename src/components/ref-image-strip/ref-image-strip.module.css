@@ -25,6 +25,13 @@
   position: relative;
   width: var(--tile);
   height: var(--tile);
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.frameRemovable {
+  cursor: pointer;
 }
 
 .image {
@@ -34,29 +41,44 @@
   object-fit: cover;
 }
 
-.imageClickable {
-  cursor: pointer;
-  transition: opacity var(--duration-normal) var(--ease-in-out);
-}
+/* The marker, not the target -- the frame around it takes the click. It waits
+   until you reach for the thumbnail, because four red dots over four thumbs is
+   a lot of alarm for a row you are mostly just looking at.
 
-.imageClickable:hover {
-  opacity: 0.8;
-}
-
+   Always visible where there is no hover to detect: on a touch screen the
+   thumbnail would otherwise be a tile that silently deletes. */
 .remove {
   position: absolute;
   top: calc(var(--space-6) * -1);
   right: calc(var(--space-6) * -1);
+  display: flex;
   padding: var(--space-2);
-  border: none;
   border-radius: var(--radius-full);
   background: var(--danger);
   color: var(--text);
-  cursor: pointer;
+  pointer-events: none;
 }
 
-.remove:hover {
-  background: color-mix(in oklab, var(--danger) 80%, transparent);
+@media (hover: hover) {
+  .remove {
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-in-out);
+  }
+
+  .frameRemovable:hover .remove,
+  .frameRemovable:focus-visible .remove {
+    opacity: 1;
+  }
+}
+
+/* The image dims with it, so the whole tile reads as the thing about to go. */
+.frameRemovable .image {
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.frameRemovable:hover .image,
+.frameRemovable:focus-visible .image {
+  opacity: 0.7;
 }
 
 .removeIcon {
