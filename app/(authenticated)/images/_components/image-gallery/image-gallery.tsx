@@ -15,14 +15,15 @@ interface ImageGalleryProps {
   imageUrls: Record<string, string>
   loadingGallery: boolean
   showInfo?: boolean
-  onLoadPrompt?: (img: SavedAiImage) => void
-  onLoadPromptAndModel?: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
+  /** Cmd/Ctrl-click: the two power moves, source and prompt (#284 follow-up). */
+  onFocusSource?: (img: SavedAiImage) => void
+  onUsePrompt?: (text: string) => void
   /** Select mode: a click anywhere on a card picks it (#284). */
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
@@ -44,6 +45,8 @@ export function ImageGallery({
   onDescribe,
   onGenerateVariations,
   onOpen,
+  onFocusSource,
+  onUsePrompt,
   selectionActive,
   isSelected,
   onSelect,
@@ -113,6 +116,8 @@ export function ImageGallery({
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onOpen={onOpen}
+                onFocusSource={onFocusSource}
+                onUsePrompt={onUsePrompt}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}

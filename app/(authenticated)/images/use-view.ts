@@ -11,6 +11,7 @@ import { useVariations } from './_hooks/use-variations'
 import { usePasteReference } from './_hooks/use-paste-reference'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
+import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
@@ -175,12 +176,35 @@ export function useView(initial: Array<SavedAiImage>) {
     null,
   )
 
-  const loadPrompt = useCallback(
+  // The two power moves: Cmd-click a card for its image, Cmd-click its prompt
+  // for its text. Each replaces exactly one thing and touches nothing else --
+  // not the count, not the additional prompts, not the references, not the
+  // model selection -- so "that image, my words" is two clicks from anywhere
+  // in the grid.
+  //
+  // Both open the panel. A power move whose entire effect is inside a closed
+  // panel has no feedback at all, which is the reason #284 refused to put a
+  // "use as source" button on the card.
+  const focusSource = useCallback(
     (img: SavedAiImage) => {
-      const prompt = img.generation_metadata?.prompt
-      if (prompt) generator.setPrompt(prompt)
+      if (!img.storage_path) return
+      dock.setOpen(true)
+      // The URL is for the panel's preview only. The submit sends the id, and
+      // the server resolves the object and uploads the bytes to FAL -- handing
+      // FAL an app URL to fetch could never work: it needs a session.
+      generator.setSourceFromLibrary(img.id, imageUrl(img.id), img.title)
     },
-    [generator],
+    [generator, dock],
+  )
+
+  const usePromptText = useCallback(
+    (text: string) => {
+      dock.setOpen(true)
+      // `setPrompt` is prompts[0] only, so a second prompt row someone is
+      // holding on to survives this.
+      generator.setPrompt(text)
+    },
+    [generator, dock],
   )
 
   /** The source image's URL, for the variation dialog's preview. */
@@ -209,7 +233,8 @@ export function useView(initial: Array<SavedAiImage>) {
     describe,
     describeTarget,
     setDescribeTarget,
-    loadPrompt,
+    focusSource,
+    usePromptText,
     error,
     setError,
   }

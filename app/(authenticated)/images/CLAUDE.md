@@ -21,7 +21,13 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   chip at the top of Generate is the only indication of what the generator is
   pointed at and the only way to change it -- clicking it opens the library,
   the X clears it. There is no path back from the grid, deliberately: it was
-  removed to be bumped into rather than replaced up front. There is no edit
+  removed to be bumped into rather than replaced up front, and what arrived
+  instead is a modifier, not a button: **Cmd-click a card points the generator
+  at that image, Cmd-click its prompt loads that text**, each replacing exactly
+  one thing and leaving the count, the additional prompts, the references and
+  the model selection alone. Both open the panel, because a power move whose
+  whole effect is inside a closed panel has no feedback -- which was #284's
+  reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
   endpoint from whether a source is set, so "edit" is a detail of building the
   request. The lightbox used to offer a source pencil too; #271 removed it

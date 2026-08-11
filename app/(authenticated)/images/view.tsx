@@ -35,7 +35,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     describe,
     describeTarget,
     setDescribeTarget,
-    loadPrompt,
+    focusSource,
+    usePromptText,
   } = useView(initial)
 
   return (
@@ -56,14 +57,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           imageUrls={gallery.imageUrls}
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
-          onLoadPrompt={loadPrompt}
-          onLoadPromptAndModel={loadPrompt}
           onDelete={gallery.deleteImage}
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onDescribe={setDescribeTarget}
           onGenerateVariations={variations.openVariationDialog}
           onOpen={lightbox.open}
+          onFocusSource={focusSource}
+          onUsePrompt={usePromptText}
           emptyScopeLabel={
             prefs.originFilter === 'all'
               ? undefined

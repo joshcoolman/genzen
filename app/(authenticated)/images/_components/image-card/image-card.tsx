@@ -33,6 +33,10 @@ interface ImageCardProps {
   /** Card click in normal mode: the image opens bigger, which is what reaching
    *  for it in a grid means (#284). */
   onOpen?: (img: SavedAiImage) => void
+  /** Cmd/Ctrl-click on the image: point the generator at it. */
+  onFocusSource?: (img: SavedAiImage) => void
+  /** Cmd/Ctrl-click on the prompt: load it into the generator. */
+  onUsePrompt?: (text: string) => void
   selected?: boolean
   /** Select mode. The whole card is the target, and nothing else responds. */
   selectionActive?: boolean
@@ -57,6 +61,8 @@ export function ImageCard({
   onDescribe,
   onGenerateVariations,
   onOpen,
+  onFocusSource,
+  onUsePrompt,
   selected,
   selectionActive,
   onSelect,
@@ -137,7 +143,21 @@ export function ImageCard({
           )}
         </>
       }
-      onClick={selectionActive ? undefined : () => onOpen?.(img)}
+      /* Cmd-click points the generator at this image, plain click opens it
+         bigger. The modifier is the whole path back from the grid to the
+         source, which #284 removed on purpose -- it is here as its own
+         decision, and it costs the card nothing because it is not a control. */
+      onClick={
+        selectionActive
+          ? undefined
+          : (e) => {
+              if (onFocusSource && (e?.metaKey || e?.ctrlKey)) {
+                onFocusSource(img)
+                return
+              }
+              onOpen?.(img)
+            }
+      }
     >
       {showInfo && (
         <div className={styles.caption}>
@@ -149,6 +169,8 @@ export function ImageCard({
             <CopyText
               text={caption}
               label="Copy prompt"
+              onModifierClick={selectionActive ? undefined : onUsePrompt}
+              modifierLabel="Use"
               className={styles.prompt}
               textClassName={styles.promptText}
             />
