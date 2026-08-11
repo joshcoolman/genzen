@@ -23,6 +23,7 @@ export {
 } from './confirm-dialog/confirm-dialog'
 export { useConfirm, type UseConfirm } from './confirm-dialog/use-confirm'
 export { CopyButton } from './copy-button/copy-button'
+export { CopyText } from './copy-text/copy-text'
 export {
   DropdownMenu,
   DropdownMenuContent,

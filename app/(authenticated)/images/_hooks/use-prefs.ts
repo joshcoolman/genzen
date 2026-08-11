@@ -1,17 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/use-is-mobile'
-
-export const THUMB_SIZES = ['lg', 'md', 'sm'] as const
-
-export type ThumbSize = (typeof THUMB_SIZES)[number]
-
-export const THUMB_LABELS: Record<ThumbSize, string> = {
-  lg: 'LG',
-  md: 'MD',
-  sm: 'SM',
-}
 
 /**
  * What the gallery is scoped to. `images` is the default because Images is
@@ -35,7 +26,6 @@ export const ORIGIN_FILTER_LABELS: Record<OriginFilter, string> = {
 }
 
 interface Prefs {
-  thumbSize: ThumbSize
   sortAsc: boolean
   showInfo: boolean
   originFilter: OriginFilter
@@ -44,17 +34,27 @@ interface Prefs {
 const PREFS_KEY = 'genzen:ai-images-prefs'
 
 const DEFAULTS: Prefs = {
-  thumbSize: 'lg',
   sortAsc: false,
   showInfo: true,
   originFilter: 'images',
 }
 
 // Only ever called from an effect, never during render -- see usePersistedState.
+//
+// Reading picks fields out rather than spreading, so a key nothing reads any
+// more (`thumbSize`, #284) is dropped on the next write instead of living on in
+// storage as a setting that appears to exist.
 function read(): Prefs {
   try {
     const raw = localStorage.getItem(PREFS_KEY)
-    if (raw) return { ...DEFAULTS, ...JSON.parse(raw) }
+    if (raw) {
+      const stored = JSON.parse(raw) as Partial<Prefs>
+      return {
+        sortAsc: stored.sortAsc ?? DEFAULTS.sortAsc,
+        showInfo: stored.showInfo ?? DEFAULTS.showInfo,
+        originFilter: stored.originFilter ?? DEFAULTS.originFilter,
+      }
+    }
   } catch {
     // ignore
   }
@@ -70,31 +70,23 @@ function store(partial: Partial<Prefs>) {
 }
 
 export interface PrefsState {
-  thumbSize: ThumbSize
-  /** What the gallery renders: mobile is too narrow for anything but `lg`. */
-  effectiveThumbSize: ThumbSize
   sortAsc: boolean
   showInfo: boolean
   originFilter: OriginFilter
   isMobile: boolean
-  cycleThumbSize: () => void
   toggleSort: () => void
   toggleInfo: () => void
   setOriginFilter: (filter: OriginFilter) => void
 }
 
 /**
- * The three gallery view preferences, persisted under one key.
+ * The gallery view preferences, persisted under one key.
  *
  * Each setter writes through to storage as it updates, which is why they are
  * here rather than in the toolbar: the toolbar renders them, it does not own
  * them, and the gallery needs them too.
  */
 export function usePrefs(): PrefsState {
-  const [thumbSize, setThumbSize] = usePersistedState<ThumbSize>(
-    () => read().thumbSize,
-    DEFAULTS.thumbSize,
-  )
   const [sortAsc, setSortAsc] = usePersistedState(
     () => read().sortAsc,
     DEFAULTS.sortAsc,
@@ -111,9 +103,14 @@ export function usePrefs(): PrefsState {
 
   const isMobile = useIsMobile()
 
+  // `thumbSize` was stored here until #284. Purged on mount rather than on the
+  // next write, because someone who never touches sort or scope again would
+  // otherwise keep a stored setting nothing reads.
+  useEffect(() => {
+    store({})
+  }, [])
+
   return {
-    thumbSize,
-    effectiveThumbSize: isMobile ? 'lg' : thumbSize,
     sortAsc,
     showInfo,
     originFilter,
@@ -122,13 +119,6 @@ export function usePrefs(): PrefsState {
       store({ originFilter: filter })
       setOriginFilterRaw(filter)
     },
-    cycleThumbSize: () =>
-      setThumbSize((v) => {
-        const next =
-          THUMB_SIZES[(THUMB_SIZES.indexOf(v) + 1) % THUMB_SIZES.length]
-        store({ thumbSize: next })
-        return next
-      }),
     toggleSort: () =>
       setSortAsc((v) => {
         store({ sortAsc: !v })

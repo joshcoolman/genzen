@@ -6,32 +6,28 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { getModelName } from '#/features/ai-images/models'
 import { EmptyState, ImageGridSkeleton } from '#/components'
 
-const GRID_MIN_WIDTH: Record<string, string> = {
-  lg: '200px',
-  md: '120px',
-  sm: '80px',
-}
+/* One size. The switcher went in #284 -- large was the only setting ever used,
+   and a control nobody touches is worse than no control. */
+const GRID_MIN_WIDTH = '200px'
 
 interface ImageGalleryProps {
   images: Array<SavedAiImage>
   imageUrls: Record<string, string>
   loadingGallery: boolean
-  thumbSize?: 'lg' | 'md' | 'sm'
   showInfo?: boolean
-  onLoadPrompt?: (img: SavedAiImage) => void
-  onLoadPromptAndModel?: (img: SavedAiImage) => void
   onDelete: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
-  onGallery?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
+  /** Cmd/Ctrl-click: the two power moves, source and prompt (#284 follow-up). */
+  onFocusSource?: (img: SavedAiImage) => void
+  onUsePrompt?: (text: string) => void
+  /** Select mode: a click anywhere on a card picks it (#284). */
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
-  /** The highlighted image: the next prompt's primary reference. */
-  activeId?: string
   /** Set when the gallery is scoped to an origin (#207). An empty scope is not
    *  an empty library, and telling someone to write their first prompt when they
    *  have hundreds of images is the wrong sentence. */
@@ -42,23 +38,20 @@ export function ImageGallery({
   images,
   imageUrls,
   loadingGallery,
-  thumbSize = 'lg',
   showInfo = true,
   onDelete,
   onRetry,
   onDownload,
   onDescribe,
   onGenerateVariations,
-  onGallery,
   onOpen,
+  onFocusSource,
+  onUsePrompt,
   selectionActive,
   isSelected,
   onSelect,
-  activeId,
   emptyScopeLabel,
 }: ImageGalleryProps) {
-  const compact = thumbSize !== 'lg'
-
   return (
     <div className={styles.root}>
       {loadingGallery ? (
@@ -77,7 +70,7 @@ export function ImageGallery({
         <div
           className={styles.grid}
           style={{
-            gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH[thumbSize]}, 1fr))`,
+            gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
           }}
         >
           {images.map((img) => {
@@ -117,18 +110,17 @@ export function ImageGallery({
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 objectFit="contain"
-                compact={compact}
                 showInfo={showInfo}
                 onDelete={onDelete}
                 onDownload={onDownload}
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
-                onGallery={onGallery}
                 onOpen={onOpen}
+                onFocusSource={onFocusSource}
+                onUsePrompt={onUsePrompt}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}
-                active={activeId === img.id}
               />
             )
           })}

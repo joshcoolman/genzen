@@ -52,7 +52,6 @@ interface UseGeneratorOptions {
       error: string | null
     }>,
   ) => void
-  autoRefImageIds?: Array<string>
   /** Tag generations as canvas-owned, so they are reclaimable on canvas load.
    *  Membership only -- which surface made it is `origin` (#207). */
   onCanvas?: boolean
@@ -96,8 +95,8 @@ export interface GeneratorState {
     images: Array<{ id: string; url: string; title: string }>,
   ) => void
   setSourceFromBase64: (base64: string, name: string) => void
-  /** Use a library row as the primary reference: keeps the prompt, and the
-   *  submit sends the id rather than a URL. */
+  /** Swap the primary reference from the source chip (#284): keeps the prompt,
+   *  and the submit sends the id rather than a URL. */
   setSourceFromLibrary: (id: string, url: string, name: string) => void
   handleClearSourceImage: () => void
   handleClear: () => void
@@ -113,7 +112,6 @@ export interface GeneratorState {
   replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
   maxRefImages: number
-  setAutoRefImageIds: (ids: Array<string>) => void
   /** Index of the prompt currently being enhanced, or null. */
   enhancingPromptIndex: number | null
   handleEnhancePrompt: (index: number) => Promise<void>
@@ -126,7 +124,6 @@ export function useGenerator({
   origin,
   storagePrefix = 'genzen',
   onAfterSubmit,
-  autoRefImageIds: autoRefImageIdsProp,
   onCanvas,
   promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
@@ -231,9 +228,6 @@ export function useGenerator({
   >(null)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
-  const [autoRefImageIds, setAutoRefImageIds] = useState<Array<string>>(
-    autoRefImageIdsProp ?? [],
-  )
 
   // Backwards-compat: setPrompt updates prompts[0]
   const setPrompt = useCallback(
@@ -361,16 +355,11 @@ export function useGenerator({
     setError(null)
 
     try {
-      const explicitIds = refImages.map((r) => r.id)
-      const autoIds =
-        maxRefImages > 0
-          ? autoRefImageIds.filter((id) => !explicitIds.includes(id))
-          : []
-      const mergedIds = [...explicitIds, ...autoIds].slice(
-        0,
-        maxRefImages > 0 ? maxRefImages : 0,
-      )
-      const referenceImageIds = mergedIds.length > 0 ? mergedIds : undefined
+      // Only what the ref strip holds. Selecting images in the gallery used to
+      // add to this silently (#284); references are explicit or they are not
+      // references.
+      const ids = maxRefImages > 0 ? refImages.map((r) => r.id) : []
+      const referenceImageIds = ids.length > 0 ? ids : undefined
 
       // Submit order mirrors allCalls so callModels[i] labels outcomes[i].
       const callModels = promptsToRun.flatMap(() =>
@@ -658,7 +647,6 @@ export function useGenerator({
     replaceRefImages,
     removeRefImage,
     maxRefImages,
-    setAutoRefImageIds,
     enhancingPromptIndex,
     handleEnhancePrompt,
   }

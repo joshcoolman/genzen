@@ -4,16 +4,12 @@ import { useRef } from 'react'
 import {
   ArrowDown,
   ArrowUp,
+  CheckSquare,
   Info,
-  LayoutGrid,
   Plus,
   Upload,
 } from 'lucide-react'
-import {
-  ORIGIN_FILTERS,
-  ORIGIN_FILTER_LABELS,
-  THUMB_LABELS,
-} from '../../_hooks/use-prefs'
+import { ORIGIN_FILTERS, ORIGIN_FILTER_LABELS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
 import { SingleSelect } from '#/components'
@@ -27,6 +23,9 @@ interface ToolbarProps {
    *  edge. Without the reserved space the tools sit under it -- the defect
    *  `images/CLAUDE.md` carried as known. */
   panelFloating: boolean
+  /** Select mode (#284). It took the slot the size switcher vacated. */
+  selectMode: boolean
+  onToggleSelectMode: () => void
   onUpload: (files: Array<File>) => void
   onGenerate: () => void
 }
@@ -35,6 +34,8 @@ export function Toolbar({
   prefs,
   showGenerateButton,
   panelFloating,
+  selectMode,
+  onToggleSelectMode,
   onUpload,
   onGenerate,
 }: ToolbarProps) {
@@ -57,17 +58,6 @@ export function Toolbar({
       </div>
       <div className={styles.tools}>
         <button
-          onClick={prefs.cycleThumbSize}
-          className={cx(styles.viewToggle, styles.thumbSizeToggle)}
-          aria-label={`Thumbnail size: ${THUMB_LABELS[prefs.thumbSize]}`}
-        >
-          <LayoutGrid className={styles.smallIcon} />
-          <span className={styles.thumbSizeLabel}>
-            {THUMB_LABELS[prefs.thumbSize]}
-          </span>
-        </button>
-
-        <button
           onClick={prefs.toggleSort}
           className={styles.viewToggle}
           aria-label={prefs.sortAsc ? 'Sort oldest first' : 'Sort newest first'}
@@ -88,6 +78,19 @@ export function Toolbar({
           aria-label={prefs.showInfo ? 'Hide info' : 'Show info'}
         >
           <Info className={styles.icon} />
+        </button>
+
+        {/* Loud when on, because a click means something different in select
+            mode and the grid alone cannot say so. Not hidden on narrow
+            viewports like the view toggles are: bulk delete is the reason
+            selection exists, not a refinement. */}
+        <button
+          onClick={onToggleSelectMode}
+          className={cx(styles.action, selectMode && styles.actionOn)}
+          aria-pressed={selectMode}
+          title={selectMode ? 'Leave select mode' : 'Select images'}
+        >
+          <CheckSquare className={styles.icon} />
         </button>
 
         <input

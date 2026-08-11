@@ -5,13 +5,24 @@ interface SourceImagePreviewProps {
   src: string
   name: string
   onRemove?: () => void
+  /** Compact only. Clicking the chip anywhere but the X picks another source. */
+  onPick?: () => void
   variant?: 'compact' | 'square'
 }
 
+/**
+ * The image a generation is working from.
+ *
+ * The compact chip is the only place the source is shown and the only place it
+ * is changed (#284). It carries no title: the name it had was usually the
+ * source image's model, unrelated to the model currently selected, so it read
+ * as a claim about the wrong thing. The image says what is focused.
+ */
 export function SourceImagePreview({
   src,
   name,
   onRemove,
+  onPick,
   variant = 'compact',
 }: SourceImagePreviewProps) {
   if (variant === 'square') {
@@ -33,8 +44,19 @@ export function SourceImagePreview({
 
   return (
     <div className={styles.compact}>
-      <img src={src} alt="Source" className={styles.compactImage} />
-      <span className={styles.compactName}>{name}</span>
+      {onPick ? (
+        <button
+          type="button"
+          onClick={onPick}
+          className={styles.compactPick}
+          title="Change source image"
+        >
+          <img src={src} alt="Source" className={styles.compactImage} />
+          <span className={styles.compactHint}>Change</span>
+        </button>
+      ) : (
+        <img src={src} alt="Source" className={styles.compactImage} />
+      )}
       {onRemove && (
         <button
           onClick={onRemove}

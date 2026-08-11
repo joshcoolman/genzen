@@ -34,6 +34,9 @@ interface LibraryPickerDialogProps {
   onSelect: (image: SelectedImage) => void
   onSelectMultiple?: (images: Array<SelectedImage>) => void
   multiple?: boolean
+  /** Single-select: the image already in use, marked so the grid answers "which
+   *  one is this now" without the caller having to say it elsewhere. */
+  currentId?: string
 }
 
 export function LibraryPickerDialog({
@@ -46,6 +49,7 @@ export function LibraryPickerDialog({
   onSelect,
   onSelectMultiple,
   multiple = false,
+  currentId,
 }: LibraryPickerDialogProps) {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -163,7 +167,9 @@ export function LibraryPickerDialog({
           ) : (
             <ImageGrid size="md">
               {filteredImages.map((image) => {
-                const isSelected = selectedIds.has(image.id)
+                const isSelected = multiple
+                  ? selectedIds.has(image.id)
+                  : image.id === currentId
                 return (
                   <Thumbnail
                     key={image.id}

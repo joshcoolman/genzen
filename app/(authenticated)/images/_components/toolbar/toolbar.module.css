@@ -65,15 +65,6 @@
   color: var(--text);
 }
 
-.thumbSizeToggle {
-  width: 3.5rem;
-}
-
-.thumbSizeLabel {
-  font-size: var(--text-3xs);
-  font-weight: var(--weight-medium);
-}
-
 @media (min-width: 400px) {
   .toolbar {
     justify-content: space-between;
@@ -112,6 +103,15 @@
   color: var(--text);
 }
 
+.actionOn {
+  background: color-mix(in oklab, var(--accent) 25%, transparent);
+  color: var(--text);
+}
+
+.actionOn:hover {
+  background: color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
 .actionPrimary {
   background: var(--accent);
   color: var(--text);
@@ -125,9 +125,4 @@
 .icon {
   width: 1rem;
   height: 1rem;
-}
-
-.smallIcon {
-  width: 0.875rem;
-  height: 0.875rem;
 }
