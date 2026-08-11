@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
+import { SystemInstructionsButton } from '../system-instructions-button/system-instructions-button'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
 import styles from './generator-panel.module.css'
@@ -168,6 +169,10 @@ export function GeneratorPanel({
         onPastePrompts={hidePastePrompts ? undefined : generator.pastePrompts}
         onEnhancePrompt={generator.handleEnhancePrompt}
         enhancingPromptIndex={generator.enhancingPromptIndex}
+        /* Instructions for every prompt, not a prompt -- rendered into the
+           list's header strip from here so PromptList never learns about them
+           (#272), and so both Images and Canvas get the control. */
+        headerSlot={<SystemInstructionsButton />}
       />
 
       {/* Ref images -- show when model supports refs */}

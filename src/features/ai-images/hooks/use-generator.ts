@@ -18,6 +18,7 @@ import {
 } from '#/features/ai-images/constants'
 import { endpointFor, maxRefsFor } from '#/features/ai-images/models'
 import { recordPromptOrigin } from '#/features/ai-images/prompt-origins'
+import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useAuth } from '#/lib/auth'
@@ -383,7 +384,11 @@ export function useGenerator({
         // sent string (retry replays it); the other two ride along so a past
         // generation's inputs are recoverable (#210).
         const typedPrompt = promptText.trim()
-        const finalPrompt = `${promptPrefixRef.current}${typedPrompt}`
+        // System instructions (#272) lead, then whatever the host prepends --
+        // canvas image labels describe the references this prompt talks about,
+        // so they belong next to the prompt. Read from storage at submit rather
+        // than passed in: one global value, and both hosts get it for free.
+        const finalPrompt = `${systemInstructionsPrefix()}${promptPrefixRef.current}${typedPrompt}`
         const originalPrompt = promptOriginsRef.current[typedPrompt]
         return modelsToUse.map((m) =>
           generateImage({

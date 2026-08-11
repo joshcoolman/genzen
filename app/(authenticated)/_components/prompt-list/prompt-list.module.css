@@ -15,7 +15,11 @@
   height: 1rem;
 }
 
+/* Pushed left so the strip reads Clear all / gear, while the row stays
+   `flex-end` -- with Clear absent (a single prompt) the gear must not slide
+   over to where Clear would have been. */
 .clearAll {
+  margin-right: auto;
   border: none;
   background: transparent;
   font-size: var(--text-2xs);

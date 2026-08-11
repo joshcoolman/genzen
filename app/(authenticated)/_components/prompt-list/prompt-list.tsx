@@ -5,6 +5,7 @@ import { Loader2, Sparkles, X } from 'lucide-react'
 import { GeneratePromptsDialog } from '../generate-prompts-dialog/generate-prompts-dialog'
 import { PastePromptsDialog } from '../paste-prompts-dialog/paste-prompts-dialog'
 import styles from './prompt-list.module.css'
+import type { ReactNode } from 'react'
 import { Textarea } from '#/components'
 import { cx } from '#/lib/utils'
 
@@ -28,6 +29,13 @@ interface PromptListProps {
   onEnhancePrompt?: (index: number) => void | Promise<void>
   // Index of the prompt currently being enhanced (shows spinner on that row)
   enhancingPromptIndex?: number | null
+  /**
+   * Rendered at the right of the strip above the list, opposite Clear all.
+   * A slot rather than a prop per occupant: what goes there today is system
+   * instructions (#272), which are emphatically not a prompt and must not
+   * appear in this component's vocabulary.
+   */
+  headerSlot?: ReactNode
 }
 
 export function PromptList({
@@ -45,6 +53,7 @@ export function PromptList({
   onPastePrompts,
   onEnhancePrompt,
   enhancingPromptIndex,
+  headerSlot,
 }: PromptListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
@@ -68,6 +77,7 @@ export function PromptList({
             Clear all
           </button>
         )}
+        {headerSlot}
       </div>
       {prompts.map((promptText, index) => {
         const isEnhancing = enhancingPromptIndex === index
