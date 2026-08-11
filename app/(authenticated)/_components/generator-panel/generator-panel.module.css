@@ -20,3 +20,10 @@
 .fill {
   flex: 1;
 }
+
+/* The controls row sits directly above the prompt list's Clear all strip, which
+   gives 8px below itself. Matching that here centres the strip in even space
+   rather than 12 above / 8 below. */
+.rowAbovePrompts {
+  margin-bottom: var(--space-8);
+}

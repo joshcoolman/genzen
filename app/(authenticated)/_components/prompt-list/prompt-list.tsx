@@ -13,8 +13,6 @@ interface PromptListProps {
   onUpdatePrompt: (index: number, value: string) => void
   onAddPrompt: () => void
   onRemovePrompt: (index: number) => void
-  onClear?: () => void
-  canClear?: boolean
   disabled?: boolean
   placeholders?: { first: string; additional: string }
   // Optional: generate prompts capability (loosely coupled)
@@ -37,8 +35,6 @@ export function PromptList({
   onUpdatePrompt,
   onAddPrompt,
   onRemovePrompt,
-  onClear,
-  canClear,
   disabled,
   placeholders = {
     first: 'Describe your image...',
@@ -52,20 +48,27 @@ export function PromptList({
 }: PromptListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
-  const hasContent =
-    prompts.length > 1 || (prompts.length === 1 && prompts[0].trim() !== '')
+  // Only a multi-row list gets Clear. Tying it to "is there any text" made it
+  // appear on the first keystroke in an empty field, shifting every control
+  // below it while the user was typing. A row being added is already a shift;
+  // typing should never be one.
+  const canClearPrompts = prompts.length > 1
   return (
     <div className={styles.root}>
-      {onClearPrompts && hasContent && (
-        <button
-          type="button"
-          onClick={onClearPrompts}
-          disabled={disabled}
-          className={styles.clearAll}
-        >
-          Clear prompts
-        </button>
-      )}
+      {/* Always rendered, even empty: the strip reserves its own height so the
+          button can appear and disappear without moving the prompt below it. */}
+      <div className={styles.clearRow}>
+        {onClearPrompts && canClearPrompts && (
+          <button
+            type="button"
+            onClick={onClearPrompts}
+            disabled={disabled}
+            className={styles.clearAll}
+          >
+            Clear all
+          </button>
+        )}
+      </div>
       {prompts.map((promptText, index) => {
         const isEnhancing = enhancingPromptIndex === index
         const anyEnhancing =
@@ -88,27 +91,14 @@ export function PromptList({
               rows={index === 0 ? 4 : 3}
               className={styles.textarea}
             />
-            {index === 0 ? (
-              canClear && (
-                <button
-                  type="button"
-                  onClick={onClear}
-                  className={styles.remove}
-                  title="Clear all prompts, source image, and references"
-                >
-                  <X size={14} />
-                </button>
-              )
-            ) : (
-              <button
-                type="button"
-                onClick={() => onRemovePrompt(index)}
-                className={styles.remove}
-                title="Remove this prompt"
-              >
-                <X size={14} />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onRemovePrompt(index)}
+              className={styles.remove}
+              title="Remove this prompt"
+            >
+              <X size={14} />
+            </button>
             {onEnhancePrompt && (
               <button
                 type="button"

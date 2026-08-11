@@ -18,6 +18,7 @@ import {
   RefImageStrip,
   SourceImagePreview,
 } from '#/components'
+import { cx } from '#/lib/utils'
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -110,7 +111,7 @@ export function GeneratorPanel({
       )}
 
       {/* Image source buttons + aspect ratio */}
-      <div className={styles.row}>
+      <div className={cx(styles.row, styles.rowAbovePrompts)}>
         {!hideSourceButtons && (
           <ImageSourceButtons
             onFileSelected={generator.setSourceFile}
@@ -147,14 +148,6 @@ export function GeneratorPanel({
         onUpdatePrompt={generator.setPromptAtIndex}
         onAddPrompt={generator.addPrompt}
         onRemovePrompt={generator.removePrompt}
-        onClear={generator.handleClear}
-        canClear={
-          !!(
-            generator.prompt ||
-            generator.sourceImage ||
-            generator.refImages.length > 0
-          )
-        }
         disabled={generator.loading || generator.describingImage}
         placeholders={{
           first: generator.describingImage
