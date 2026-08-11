@@ -5,14 +5,15 @@
   margin-bottom: var(--space-8);
 }
 
-/* Reserved whether or not Clear all is in it. The height is the button's own
-   line box, so the strip does not resize when the button appears -- typing in
-   an empty prompt used to push every control below it down mid-sentence. */
+/* The strip does not resize when Clear all appears -- typing in an empty prompt
+   used to push every control below it down mid-sentence. Its height comes from
+   the header slot, which is always occupied, with the 1rem floor left over from
+   when the row could be empty. */
 .clearRow {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 1rem;
+  min-height: 1rem;
 }
 
 /* Pushed left so the strip reads Clear all / gear, while the row stays

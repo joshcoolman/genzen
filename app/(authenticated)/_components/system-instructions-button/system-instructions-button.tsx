@@ -32,6 +32,7 @@ export function SystemInstructionsButton() {
             aria-label="System instructions"
           >
             <Settings2 className={styles.icon} />
+            Instructions
           </button>
         }
       />
