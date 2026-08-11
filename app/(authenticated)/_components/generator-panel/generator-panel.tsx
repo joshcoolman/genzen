@@ -192,6 +192,11 @@ export function GeneratorPanel({
                   }
             }
             onRemove={refImagesReadOnly ? undefined : generator.removeRefImage}
+            onClear={
+              refImagesReadOnly
+                ? undefined
+                : () => generator.replaceRefImages([])
+            }
             disabled={generator.loading}
           />
           <ExistingImagePicker

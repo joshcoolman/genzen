@@ -6,8 +6,10 @@ interface RefImageStripProps {
   images: Array<{ id: string; url: string; title: string }>
   max: number
   onAdd?: () => void
+  /** The whole thumbnail removes; the X is the label for it, not the target. */
   onRemove?: (id: string) => void
-  onImageClick?: () => void
+  /** Empties the strip in one click. Shown only once something is in it. */
+  onClear?: () => void
   disabled?: boolean
   /** Show element label under each thumbnail */
   showLabels?: boolean
@@ -18,39 +20,48 @@ export function RefImageStrip({
   max,
   onAdd,
   onRemove,
-  onImageClick,
+  onClear,
   disabled,
   showLabels,
 }: RefImageStripProps) {
+  const removable = !!onRemove && !disabled
+
   return (
     <div className={cx(styles.root, showLabels && styles.rootLabelled)}>
-      {images.map((img) => (
-        <div key={img.id} className={styles.item}>
-          <div className={styles.frame}>
-            <img
-              src={img.url}
-              alt={img.title}
-              className={cx(
-                styles.image,
-                onImageClick && !disabled && styles.imageClickable,
-              )}
-              onClick={onImageClick && !disabled ? onImageClick : undefined}
-            />
-            {!disabled && onRemove && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onRemove(img.id)
-                }}
-                className={styles.remove}
-              >
+      {images.map((img) => {
+        const frame = (
+          <>
+            <img src={img.url} alt={img.title} className={styles.image} />
+            {/* Revealed on hover, and not the target: aiming at a 12px corner
+                is a lot of precision for "I do not want this one", and four red
+                dots is a lot of alarm for a row you are mostly just looking at.
+                The whole thumbnail takes the click; this says what it does. */}
+            {removable && (
+              <span className={styles.remove} aria-hidden="true">
                 <X className={styles.removeIcon} />
-              </button>
+              </span>
             )}
+          </>
+        )
+
+        return (
+          <div key={img.id} className={styles.item}>
+            {removable ? (
+              <button
+                type="button"
+                onClick={() => onRemove(img.id)}
+                className={cx(styles.frame, styles.frameRemovable)}
+                aria-label={`Remove ${img.title}`}
+              >
+                {frame}
+              </button>
+            ) : (
+              <div className={styles.frame}>{frame}</div>
+            )}
+            {showLabels && <p className={styles.label}>{img.title}</p>}
           </div>
-          {showLabels && <p className={styles.label}>{img.title}</p>}
-        </div>
-      ))}
+        )
+      })}
       {images.length < max && onAdd && (
         <div className={styles.item}>
           <button onClick={onAdd} disabled={disabled} className={styles.add}>
@@ -62,6 +73,14 @@ export function RefImageStrip({
       <span className={styles.count}>
         {images.length}/{max}
       </span>
+      {/* Far right, so it is nowhere near the thumbnails it empties. Reads as
+          the counter's twin rather than a button -- it is a way out of a state,
+          not a step in the flow. */}
+      {onClear && !disabled && images.length > 0 && (
+        <button type="button" onClick={onClear} className={styles.clear}>
+          Clear
+        </button>
+      )}
     </div>
   )
 }

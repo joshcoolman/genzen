@@ -36,6 +36,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     describeTarget,
     setDescribeTarget,
     focusSource,
+    addReference,
     usePromptText,
   } = useView(initial)
 
@@ -64,6 +65,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onGenerateVariations={variations.openVariationDialog}
           onOpen={lightbox.open}
           onFocusSource={focusSource}
+          onAddReference={addReference}
           onUsePrompt={usePromptText}
           emptyScopeLabel={
             prefs.originFilter === 'all'

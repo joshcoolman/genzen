@@ -35,6 +35,8 @@ interface ImageCardProps {
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: point the generator at it. */
   onFocusSource?: (img: SavedAiImage) => void
+  /** Cmd/Ctrl-Shift-click on the image: push it onto the reference strip. */
+  onAddReference?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the prompt: load it into the generator. */
   onUsePrompt?: (text: string) => void
   selected?: boolean
@@ -62,6 +64,7 @@ export function ImageCard({
   onGenerateVariations,
   onOpen,
   onFocusSource,
+  onAddReference,
   onUsePrompt,
   selected,
   selectionActive,
@@ -143,17 +146,24 @@ export function ImageCard({
           )}
         </>
       }
-      /* Cmd-click points the generator at this image, plain click opens it
-         bigger. The modifier is the whole path back from the grid to the
-         source, which #284 removed on purpose -- it is here as its own
-         decision, and it costs the card nothing because it is not a control. */
+      /* Plain click opens it bigger; Cmd points the generator at it, and
+         Cmd-Shift pushes it onto the reference strip. The modifiers are the
+         whole path back from the grid to the generator, which #284 removed on
+         purpose -- they are here as their own decision, and they cost the card
+         nothing because they are not controls. */
       onClick={
         selectionActive
           ? undefined
           : (e) => {
-              if (onFocusSource && (e?.metaKey || e?.ctrlKey)) {
-                onFocusSource(img)
-                return
+              if (e?.metaKey || e?.ctrlKey) {
+                if (e.shiftKey && onAddReference) {
+                  onAddReference(img)
+                  return
+                }
+                if (!e.shiftKey && onFocusSource) {
+                  onFocusSource(img)
+                  return
+                }
               }
               onOpen?.(img)
             }
