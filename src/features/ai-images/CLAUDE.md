@@ -23,9 +23,15 @@ anything one route renders lives with that route.
 - **`useGenerator` takes a required `origin`** (`images | canvas`), written to
   every row it creates, so a new host cannot be an unmarked generation source
   (#207).
-- **Two hooks, because two routes use them.** Everything else this feature held
-  moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the only
-  consumer, and `features/` is earned by two.
+- **The hooks here are the ones both routes use.** Everything else this feature
+  held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
+  only consumer, and `features/` is earned by two.
+- **System instructions are read from storage at submit, never passed in**
+  (#272). `system-instructions.ts` is one global value under one key, prepended
+  by `useGenerator` ahead of the host's own `promptPrefix` — so Images and
+  Canvas both get it with no wiring and the composition order lives in one
+  place. `use-system-instructions.ts` is for the UI that edits it and is not on
+  the submit path.
 - **Two ends to the reference strip.** `addRefImages` appends and slices the
   tail off, for picking several at once; `pushRefImage` unshifts and evicts the
   last, for the one-at-a-time gesture that means "use this one" (Cmd-Shift-click
