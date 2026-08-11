@@ -48,11 +48,14 @@ export function PromptList({
 }: PromptListProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false)
-  const hasContent =
-    prompts.length > 1 || (prompts.length === 1 && prompts[0].trim() !== '')
+  // Only a multi-row list gets Clear. Tying it to "is there any text" made it
+  // appear on the first keystroke in an empty field, shifting every control
+  // below it while the user was typing. A row being added is already a shift;
+  // typing should never be one.
+  const canClearPrompts = prompts.length > 1
   return (
     <div className={styles.root}>
-      {onClearPrompts && hasContent && (
+      {onClearPrompts && canClearPrompts && (
         <button
           type="button"
           onClick={onClearPrompts}
