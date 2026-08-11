@@ -143,12 +143,11 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
-2026-08-02
+2026-08-10
 
+- `docs/reference/camera-angles.md` — sixteen subject-free camera positions for generating a variation set from one reference image (#265)
 - Every LLM call is Anthropic now; Google Gemini removed entirely (#254)
 - Find overlay results are a plain image grid, no label, bigger thumbnails (#249)
 - `.server.ts` / `.action.ts` mean one thing each, enforced by lint (#241)
 - Deployed to Railway, and `docs/deploying.md` says what that takes (#227)
 - `pnpm users` — list/add/delete logins on any database; replaced `auth:create-user`
-- Node 22.13+ stated as a prerequisite; pnpm 11 cannot run on Node 20
-- Docs, config and dead dependencies stopped claiming things that were not true (#228)
