@@ -30,7 +30,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     selectedImageId,
     toggleHighlight,
     lightbox,
-    highlightFromLightbox,
     variations,
     variationSourceUrl,
     describe,
@@ -121,12 +120,13 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         <ImageLightbox
           items={lightbox.items}
           imageUrls={lightbox.imageUrls}
+          thumbnailUrls={lightbox.thumbnailUrls}
           currentIndex={lightbox.index!}
           onClose={lightbox.close}
+          onSelect={lightbox.select}
           onNext={lightbox.next}
           onPrev={lightbox.prev}
           onDelete={lightbox.deleteAndAdvance}
-          onEdit={highlightFromLightbox}
         />
       )}
 

@@ -72,10 +72,6 @@ export function useView(initial: Array<SavedAiImage>) {
     },
   })
 
-  const completedImages = gallery.images.filter(
-    (img) => img.status === 'completed',
-  )
-
   // Scope, then order. The filter is client-side on purpose: the gallery already
   // holds every row, so switching pills is instant and costs no round trip --
   // and `origin` is immutable, so a filtered-out row cannot become stale.
@@ -133,7 +129,15 @@ export function useView(initial: Array<SavedAiImage>) {
     refCount: generator.refImages.length,
   })
 
-  const lightbox = useLightbox(completedImages, gallery.deleteImage)
+  // The list the grid renders, minus the cards with nothing to look at (#270).
+  // Scoped and sorted like the grid, because the filmstrip shows this list and
+  // a lightbox cycling something else is visibly wrong, not subtly wrong.
+  const lightboxImages = useMemo(
+    () => images.filter((img) => img.status === 'completed'),
+    [images],
+  )
+
+  const lightbox = useLightbox(lightboxImages, gallery.deleteImage)
   const variations = useVariations({ setError })
 
   // Describe JSON for the generator's source image -- appends to prompt
@@ -184,14 +188,6 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator],
   )
 
-  /** The lightbox's Edit: close it, and highlight what was on screen. */
-  const highlightFromLightbox = useCallback(() => {
-    const item = lightbox.items[lightbox.index!]
-    const img = completedImages.find((i) => i.id === item.id)
-    lightbox.close()
-    if (img) toggleHighlight(img)
-  }, [lightbox, completedImages, toggleHighlight])
-
   /** The source image's URL, for the variation dialog's preview. */
   const variationSourceUrl = variations.pendingSourceImage
     ? gallery.imageUrls[variations.pendingSourceImage.id]
@@ -213,7 +209,6 @@ export function useView(initial: Array<SavedAiImage>) {
     selectedImageId,
     toggleHighlight,
     lightbox,
-    highlightFromLightbox,
     variations,
     variationSourceUrl,
     describe,

@@ -1,44 +1,40 @@
+import { Lightbox } from '../lightbox/lightbox'
 import type { LightboxItem } from '../../_hooks/use-lightbox'
-import type { LightboxImage } from '#/components'
-import { Lightbox } from '#/components'
 
 interface ImageLightboxProps {
   items: Array<LightboxItem>
   imageUrls: Record<string, string>
+  thumbnailUrls: Record<string, string>
   currentIndex: number
   onClose: () => void
+  onSelect: (index: number) => void
   onNext: () => void
   onPrev: () => void
   onDelete?: () => void
-  onEdit?: () => void
 }
 
 export function ImageLightbox({
   items,
   imageUrls,
+  thumbnailUrls,
   currentIndex,
   onClose,
+  onSelect,
   onNext,
   onPrev,
   onDelete,
-  onEdit,
 }: ImageLightboxProps) {
-  const lightboxImages: Array<LightboxImage> = items.map((item) => ({
-    id: item.id,
-    url: imageUrls[item.id] ?? '',
-    title: item.title,
-  }))
-
   return (
     <Lightbox
-      images={lightboxImages}
+      images={items}
       imageUrls={imageUrls}
+      thumbnailUrls={thumbnailUrls}
       currentIndex={currentIndex}
       onClose={onClose}
+      onSelect={onSelect}
       onNext={onNext}
       onPrev={onPrev}
       onDelete={onDelete}
-      onEdit={onEdit}
     />
   )
 }

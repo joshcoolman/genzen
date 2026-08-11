@@ -1,0 +1,236 @@
+/* A job view (#271): image, prompt, filmstrip. Everything sits on a near-black
+   scrim rather than on a surface, so the colours are the `--on-dark` pair, not
+   --foreground. Reference: docs/reference/images/midjourney-job-view.jpg */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  /* The image takes what is left after two fixed columns. Fixed is deliberate:
+     a prompt column that grows with the viewport re-wraps the text on every
+     resize, and the strip is a rail, not content. */
+  grid-template-columns: 1fr 24rem 7rem;
+  /* Without an explicit row the grid sizes to its tallest child, so a strip of
+     forty thumbnails made the row taller than the viewport: the page scrolled
+     and the rail never did, leaving the current thumbnail off screen. */
+  grid-template-rows: minmax(0, 1fr);
+  /* Opaque, not `--scrim`. A 60%-black veil is right for a centred image with
+     nothing but chrome behind it; here two columns of text sit over the grid
+     and the generator panel, and everything underneath reads straight through
+     them. */
+  background: var(--bg);
+}
+
+.control {
+  position: absolute;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+/* Inside the image column, not the viewport: at the top right of the window it
+   landed on the first thumbnail of the strip. */
+.close {
+  top: var(--space-16);
+  right: var(--space-16);
+  z-index: 1;
+}
+
+.closeIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: var(--space-16);
+}
+
+.frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.imageWrap {
+  position: relative;
+  display: flex;
+}
+
+.image {
+  max-height: calc(100vh - var(--space-16) * 4);
+  max-width: 100%;
+  object-fit: contain;
+  transition: opacity 200ms var(--ease-in-out);
+}
+
+.imageLoading {
+  opacity: 0;
+}
+
+.placeholder {
+  border-radius: 0.25rem;
+  background: var(--surface-raised);
+  animation: pulse 2s var(--ease-in-out) infinite;
+}
+
+/* Sized to the image once one is loading, and to a fixed square before the URL
+   is even known. */
+.placeholderOverlay {
+  position: absolute;
+  inset: 0;
+  min-width: 8rem;
+  min-height: 8rem;
+}
+
+.placeholderEmpty {
+  width: 16rem;
+  height: 16rem;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Stays on the image rather than moving into the column: the reference's action
+   row was not worth copying, and this is where the hand already is. */
+.action {
+  position: absolute;
+  right: var(--space-12);
+  bottom: var(--space-12);
+  padding: var(--space-8);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--scrim);
+  color: color-mix(in oklab, var(--text) 60%, transparent);
+  cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.action:hover {
+  background: var(--surface-raised);
+}
+
+.delete:hover {
+  color: var(--danger);
+}
+
+.actionIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-width: 0;
+  padding: var(--space-24) var(--space-16);
+  overflow-y: auto;
+}
+
+/* The model answers "what made this" before "what was asked for", which is the
+   question a mixed-model set raises first. */
+.model {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.prompt {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: color-mix(in oklab, var(--text) 75%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.promptEmpty {
+  font-style: italic;
+  color: color-mix(in oklab, var(--text) 40%, transparent);
+}
+
+.filmstrip {
+  /* The offset parent for the scroll maths above; without it `offsetTop` is
+     measured against the fixed root and the rail scrolls to the wrong place. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-16) var(--space-12);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.filmstrip::-webkit-scrollbar {
+  display: none;
+}
+
+/* The square is load-bearing, not decoration: without an intrinsic size these
+   boxes collapse to zero height, and `loading="lazy"` then decides every
+   thumbnail is off screen and loads none of them -- which keeps them zero
+   height. The rail renders empty and the strip has nothing to scroll. */
+.thumb {
+  flex: none;
+  aspect-ratio: 1;
+  overflow: hidden;
+  padding: 0;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  opacity: 0.5;
+  transition:
+    opacity var(--duration-normal) var(--ease-in-out),
+    border-color var(--duration-normal) var(--ease-in-out);
+}
+
+.thumb:hover {
+  opacity: 0.85;
+}
+
+.thumbOn {
+  border-color: var(--text);
+  opacity: 1;
+}
+
+.thumbImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--radius-sm) - 1px);
+}
+
+/* Narrow: the strip is the first thing to go — it is navigation the arrow keys
+   already provide, while the prompt is the only place the prompt exists. */
+@media (max-width: 60rem) {
+  .root {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .details {
+    max-height: 30vh;
+  }
+
+  .filmstrip {
+    display: none;
+  }
+}

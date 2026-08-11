@@ -9,11 +9,18 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 
 ## Quirks
 
-- **The highlight is the edit (#205).** Clicking a card toggles
-  `selectedImageId` and hands the generator a source image. There is no edit
-  mode and no edit route -- the generator already resolves the model's
-  image-input endpoint from whether a source is set, so "edit" is a detail of
-  building the request
+- **The highlight is the edit (#205), and the grid is the only place it
+  happens.** Clicking a card toggles `selectedImageId` and hands the generator a
+  source image. There is no edit mode and no edit route -- the generator already
+  resolves the model's image-input endpoint from whether a source is set, so
+  "edit" is a detail of building the request. The lightbox used to offer it too,
+  under a pencil; #271 removed that rather than have two answers to "how do I
+  set a source"
+- **The lightbox is a job view, and it lives here (#271).** Image, prompt,
+  filmstrip -- nothing else goes in it. It takes the list the grid renders,
+  filtered to completed, so the strip and the grid can never disagree (#270).
+  It sits in `_components/lightbox/` rather than `src/components/`: this route
+  is its only consumer and a job view is not a generic primitive
 - **`initial` is a seed, not the source of truth.** `use-gallery.ts` owns the
   list after the first paint, and its 5s FAL poll is the only signal that
   anything changed -- nothing pushes (#174)
