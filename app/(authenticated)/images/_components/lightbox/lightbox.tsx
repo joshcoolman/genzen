@@ -98,7 +98,10 @@ export function Lightbox({
 
   return (
     <div className={styles.root} onClick={onClose}>
-      <div className={styles.stage} onClick={(e) => e.stopPropagation()}>
+      {/* The stage does not swallow the click. Landing on the image is the
+          fastest way back to the grid: look, page a few, copy a prompt, click
+          anywhere that is not a control and you are out. */}
+      <div className={styles.stage}>
         <div className={styles.frame}>
           {imageUrl ? (
             <div className={styles.imageWrap}>
@@ -121,7 +124,12 @@ export function Lightbox({
           {onDelete && (
             <button
               className={cx(styles.action, styles.delete)}
-              onClick={onDelete}
+              onClick={(e) => {
+                // Or deleting would close on the way out, and the point of
+                // deleting from here is to keep going through the set.
+                e.stopPropagation()
+                onDelete()
+              }}
               aria-label="Delete"
             >
               <Trash2 className={styles.actionIcon} />
@@ -130,7 +138,10 @@ export function Lightbox({
         </div>
       </div>
 
-      <aside className={styles.details} onClick={(e) => e.stopPropagation()}>
+      {/* Same for the prompt column's empty space. Its two controls stop the
+          click themselves -- CopyText always does, and Close is closing
+          anyway. */}
+      <aside className={styles.details}>
         <div className={styles.head}>
           <h2 className={styles.model}>{img.title}</h2>
           <button

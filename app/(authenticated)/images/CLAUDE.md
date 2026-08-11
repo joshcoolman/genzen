@@ -40,7 +40,11 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   filmstrip -- nothing else goes in it. It takes the list the grid renders,
   filtered to completed, so the strip and the grid can never disagree (#270).
   It sits in `_components/lightbox/` rather than `src/components/`: this route
-  is its only consumer and a job view is not a generic primitive
+  is its only consumer and a job view is not a generic primitive. **A click
+  anywhere that is not a control closes it** -- the image, the scrim, the empty
+  space beside the prompt. Only the filmstrip and the two buttons stop the
+  click, because the way this gets used is look, page a few, copy, get back to
+  the grid, and a lightbox you have to aim at to leave taxes every one of those
 - **`initial` is a seed, not the source of truth.** `use-gallery.ts` owns the
   list after the first paint, and its 5s FAL poll is the only signal that
   anything changed -- nothing pushes (#174)
