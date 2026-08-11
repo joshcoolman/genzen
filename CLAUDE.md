@@ -122,10 +122,11 @@ shipped / up next) and open GitHub issues. Read both at session start.
 **Issues are ranked by three labels — `now`, `next`, `later`** — which the
 upnext app renders as group headers, most-recently-touched first within a group.
 Reordering is a label toggle, not a priority number. After changing any issue's
-labels, title or order, run `touch ~/repos/upnext/src/app/gh/\[repo\]/layout.tsx`
-so the running dev server pushes a reload and the board updates while it is being
-looked at. It is a push instead of a poll on purpose: a poll re-spawns `gh` for
-every issue on a schedule, including all weekend on a tab left open.
+labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
+open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
+many tabs heard it, so `0` means nothing was listening rather than nothing
+happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
+on a schedule forever, including on a tab left open all weekend.
 
 **Capture to GitHub issues, not the filesystem.** Anything worth carrying past
 this session — a plan, a task, a bug, an idea from a poke-around session ("capture
