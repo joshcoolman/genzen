@@ -147,14 +147,6 @@ export function GeneratorPanel({
         onUpdatePrompt={generator.setPromptAtIndex}
         onAddPrompt={generator.addPrompt}
         onRemovePrompt={generator.removePrompt}
-        onClear={generator.handleClear}
-        canClear={
-          !!(
-            generator.prompt ||
-            generator.sourceImage ||
-            generator.refImages.length > 0
-          )
-        }
         disabled={generator.loading || generator.describingImage}
         placeholders={{
           first: generator.describingImage

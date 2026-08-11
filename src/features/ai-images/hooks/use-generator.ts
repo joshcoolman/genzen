@@ -100,7 +100,6 @@ export interface GeneratorState {
    *  and the submit sends the id rather than a URL. */
   setSourceFromLibrary: (id: string, url: string, name: string) => void
   handleClearSourceImage: () => void
-  handleClear: () => void
   handleCaption: () => Promise<void>
   generatePromptsConfig: {
     imageBase64: string
@@ -263,8 +262,10 @@ export function useGenerator({
 
   const removePrompt = useCallback((index: number) => {
     setPromptsRaw((prev) => {
-      if (prev.length <= 1 || index === 0) return prev
-      const next = prev.filter((_, i) => i !== index)
+      // Removing the last row leaves one empty field rather than an empty list:
+      // the X never does nothing, and `prompts[0]` always exists for the
+      // Cmd-click power move (`images/use-view.ts` -> `setPrompt`).
+      const next = prev.length <= 1 ? [''] : prev.filter((_, i) => i !== index)
       persistPrompts(next)
       return next
     })
@@ -549,13 +550,6 @@ export function useGenerator({
     setSourceImage(null)
   }
 
-  function handleClear() {
-    setPromptsRaw([''])
-    persistPrompts([''])
-    setSourceImage(null)
-    setRefImages([])
-  }
-
   const handleCaption = useCallback(async () => {
     if (!sourceImage || describingImage) return
     setDescribingImage(true)
@@ -648,7 +642,6 @@ export function useGenerator({
     setSourceFromLibrary: (id: string, url: string, name: string) =>
       applySourceBase64(url, name, { id, keepPrompt: true }),
     handleClearSourceImage,
-    handleClear,
     handleCaption,
     generatePromptsConfig,
     clearPrompts,
