@@ -146,7 +146,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-11
 
-- Lightbox is a job view: large image, full prompt, filmstrip rail that tracks position (#271, #270)
+- Lightbox is a job view: large image, full prompt (click it to copy), filmstrip rail that tracks position (#271, #270)
 - Issues are ranked by label — `focus`, `now`, `next`, `later` — and `## Up next` points at them instead of listing them (#237)
 - Every open issue retitled to three words or fewer; the old title is the first line of the body
 - `docs/reference/camera-angles.md` — sixteen subject-free camera positions for generating a variation set from one reference image (#265)
