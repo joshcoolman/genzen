@@ -144,11 +144,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
-2026-08-10
+2026-08-11
 
+- Issues are ranked by label — `focus`, `now`, `next`, `later` — and `## Up next` points at them instead of listing them (#237)
+- Every open issue retitled to three words or fewer; the old title is the first line of the body
 - `docs/reference/camera-angles.md` — sixteen subject-free camera positions for generating a variation set from one reference image (#265)
 - Every LLM call is Anthropic now; Google Gemini removed entirely (#254)
 - Find overlay results are a plain image grid, no label, bigger thumbnails (#249)
 - `.server.ts` / `.action.ts` mean one thing each, enforced by lint (#241)
-- Deployed to Railway, and `docs/deploying.md` says what that takes (#227)
 - `pnpm users` — list/add/delete logins on any database; replaced `auth:create-user`
