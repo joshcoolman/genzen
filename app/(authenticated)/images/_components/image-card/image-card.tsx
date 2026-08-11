@@ -178,9 +178,8 @@ export function ImageCard({
           {caption && (
             <CopyText
               text={caption}
-              label="Copy prompt"
+              label="Copy"
               onModifierClick={selectionActive ? undefined : onUsePrompt}
-              modifierLabel="Use"
               className={styles.prompt}
               textClassName={styles.promptText}
             />

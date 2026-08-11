@@ -8,10 +8,10 @@ interface CopyTextProps {
   text: string
   /** Names the action in the hover hint and the accessible label. */
   label?: string
-  /** Cmd/Ctrl-click does this instead of copying, and the hint says so. */
+  /** Cmd/Ctrl-click does this instead of copying. Undiscoverable on purpose --
+   *  the hint names the plain click only, and the power moves get surfaced
+   *  somewhere they can be explained rather than in a two-word hover label. */
   onModifierClick?: (text: string) => void
-  /** Names that second action. Required for it to be discoverable. */
-  modifierLabel?: string
   /** On the button: spacing that belongs to the layout, not the affordance. */
   className?: string
   /** On the text itself: size, colour, clamping. */
@@ -31,7 +31,6 @@ export function CopyText({
   text,
   label = 'Copy',
   onModifierClick,
-  modifierLabel,
   className,
   textClassName,
 }: CopyTextProps) {
@@ -64,13 +63,7 @@ export function CopyText({
       aria-label={copied ? 'Copied' : label}
     >
       <span className={cx(styles.text, textClassName)}>{text}</span>
-      <span className={styles.hint}>
-        {copied
-          ? 'Copied'
-          : onModifierClick && modifierLabel
-            ? `${label}  ·  \u2318 ${modifierLabel}`
-            : label}
-      </span>
+      <span className={styles.hint}>{copied ? 'Copied' : label}</span>
     </button>
   )
 }
