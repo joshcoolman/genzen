@@ -22,10 +22,14 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   pointed at and the only way to change it -- clicking it opens the library,
   the X clears it. There is no path back from the grid, deliberately: it was
   removed to be bumped into rather than replaced up front, and what arrived
-  instead is a modifier, not a button: **Cmd-click a card points the generator
-  at that image, Cmd-click its prompt loads that text**, each replacing exactly
-  one thing and leaving the count, the additional prompts, the references and
-  the model selection alone. Both open the panel, because a power move whose
+  instead are modifiers, not buttons: **Cmd-click a card points the generator
+  at that image, Cmd-Shift-click pushes it onto the reference strip, Cmd-click
+  its prompt loads that text** -- each replacing exactly one thing and leaving
+  everything else in the panel alone. The reference push goes on the *front* and
+  evicts the last (`pushRef` in `src/features/ai-images/ref-images.ts`, which is
+  unit-tested), the opposite end from `addRefImages`: the gesture means "use
+  this one", so a full strip has to make room rather than refuse. Only the
+  eviction toasts -- gaining an image is its own feedback, losing one is not. Both open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input

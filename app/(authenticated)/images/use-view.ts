@@ -17,6 +17,7 @@ import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import { useSelection } from '#/lib/use-selection'
+import { toast } from '#/components'
 
 /**
  * The state `view.tsx` renders.
@@ -197,6 +198,40 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
+  const addReference = useCallback(
+    (img: SavedAiImage) => {
+      if (!img.storage_path) return
+      // Refusing out loud, the same way the paste path does (#213): the strip
+      // caps at the selected model's `maxRefImages`, and a gesture that reports
+      // nothing and adds nothing is worse than one that says no.
+      if (generator.maxRefImages === 0) {
+        toast('The selected model does not take reference images')
+        return
+      }
+      dock.setOpen(true)
+      // Onto the front, evicting the last. A full strip is the normal case for
+      // this gesture, not the exception -- see `pushRef`.
+      //
+      // Adding is its own feedback: the strip visibly gains an image. Dropping
+      // one is not, and it is the half you would want to know about, so it is
+      // the only outcome that says anything.
+      const evicts =
+        generator.refImages.length >= generator.maxRefImages &&
+        !generator.refImages.some((r) => r.id === img.id)
+      generator.pushRefImage({
+        id: img.id,
+        url: imageUrl(img.id),
+        title: img.title,
+      })
+      if (evicts) {
+        toast(
+          `Reference added; the last one dropped (max ${generator.maxRefImages})`,
+        )
+      }
+    },
+    [generator, dock],
+  )
+
   const usePromptText = useCallback(
     (text: string) => {
       dock.setOpen(true)
@@ -234,6 +269,7 @@ export function useView(initial: Array<SavedAiImage>) {
     describeTarget,
     setDescribeTarget,
     focusSource,
+    addReference,
     usePromptText,
     error,
     setError,

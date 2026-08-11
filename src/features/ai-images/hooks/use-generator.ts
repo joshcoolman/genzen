@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PromptOrigins } from '#/features/ai-images/prompt-origins'
 import type { GenerationOrigin } from '#/lib/types/db'
+import { pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import { captionImage } from '#/features/ai-images/server/caption-image.action'
@@ -109,6 +110,7 @@ export interface GeneratorState {
   pastePrompts: (texts: Array<string>) => void
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
+  pushRefImage: (image: RefImage) => void
   replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
   maxRefImages: number
@@ -301,6 +303,15 @@ export function useGenerator({
         const newImages = images.filter((img) => !existingIds.has(img.id))
         return [...prev, ...newImages].slice(0, maxRefImages)
       })
+    },
+    [maxRefImages],
+  )
+
+  /** The front of the strip, evicting the last. See `pushRef`; `addRefImages`
+   *  is the other end, appending and slicing the tail off. */
+  const pushRefImage = useCallback(
+    (image: RefImage) => {
+      setRefImages((prev) => pushRef(prev, image, maxRefImages))
     },
     [maxRefImages],
   )
@@ -644,6 +655,7 @@ export function useGenerator({
     pastePrompts,
     refImages,
     addRefImages,
+    pushRefImage,
     replaceRefImages,
     removeRefImage,
     maxRefImages,

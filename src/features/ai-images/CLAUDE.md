@@ -26,6 +26,11 @@ anything one route renders lives with that route.
 - **Two hooks, because two routes use them.** Everything else this feature held
   moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the only
   consumer, and `features/` is earned by two.
+- **Two ends to the reference strip.** `addRefImages` appends and slices the
+  tail off, for picking several at once; `pushRefImage` unshifts and evicts the
+  last, for the one-at-a-time gesture that means "use this one" (Cmd-Shift-click
+  a card, #284). The ordering is `pushRef` in `ref-images.ts` -- pure, so it is
+  unit-tested, because a silent eviction at the wrong end is invisible.
 - **Prompt origins are keyed by the enhanced string**, not by prompt index, so
   editing the text invalidates the pair instead of attributing a stale original
   (#210).
