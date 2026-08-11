@@ -55,8 +55,9 @@ anything one route renders lives with that route.
 - **A row is titled `Generating...` while reserved**, renamed to the model on
   success and by `failureTitle` on failure. Before that, a failure kept the
   placeholder forever and Trash filled with rows that all read "Generating...".
-- **There is no edit route** (#205). A highlighted image is the next prompt's
-  primary reference, so an edit is a generation with a source, not a place you go.
+- **There is no edit route** (#205). A source image is the next prompt's primary
+  reference, so an edit is a generation with a source, not a place you go. The
+  source is set from the generator's chip (#284), never from the grid.
 - Variations rewrite the prompt with Claude Sonnet against the source image
   ("creative tension") to stop quality drift.
 

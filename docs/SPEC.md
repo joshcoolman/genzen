@@ -15,10 +15,11 @@ Everything else in the app serves that loop.
 several models and a per-model count, submit once, get every result back into one
 board. Reference images can be attached.
 
-Clicking a gallery image highlights it, and a highlighted image is the primary
-reference for whatever you prompt next. Clicking it again takes the highlight
-off. Whether the resulting call is an edit or a generation is a detail of
-building the request -- there is no edit mode and no edit route.
+Clicking a gallery image opens it bigger. The image the generator is working
+from is shown and changed in one place, the chip at the top of the panel, and
+the grid does not mark it (#284). Whether the resulting call is an edit or a
+generation is a detail of building the request -- there is no edit mode and no
+edit route.
 
 **Canvas** — a spatial arrangement of images from the library, where generation
 happens in place. Removing an image from the canvas is non-destructive; it stays

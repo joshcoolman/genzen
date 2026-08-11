@@ -1,0 +1,46 @@
+/* The text is the affordance. Padding is on the button rather than the text so
+   the tint has room to read as a surface. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-8);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* Not selectable: dragging across it to select would fight the click. */
+  user-select: none;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.root:hover,
+.root:focus-visible {
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+.text {
+  display: block;
+  margin: 0;
+  color: color-mix(in oklab, var(--text) 75%, transparent);
+  overflow-wrap: anywhere;
+}
+
+/* Only on hover, and only once there is something to say. Reserving space for
+   it would put a permanent gap under every block for a label that is usually
+   not there. */
+.hint {
+  font-size: var(--text-xs);
+  color: color-mix(in oklab, var(--text) 45%, transparent);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.root:hover .hint,
+.root:focus-visible .hint {
+  opacity: 1;
+}

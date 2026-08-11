@@ -1,5 +1,6 @@
-/* The image an edit or variation is working from. Two shapes: a full-width
-   square in a panel, and a one-line chip in a form row. */
+/* The image a generation is working from. Two shapes: a full-width square in a
+   panel, and a one-line chip in a form row. The chip carries no title (#284) --
+   the image says what is focused. */
 
 /* ---- square ---- */
 
@@ -59,14 +60,32 @@
   object-fit: cover;
 }
 
-.compactName {
+/* The chip is the way to change the source, so the whole row but the X is the
+   target -- the thumbnail alone is a 40px square to aim at. */
+.compactPick {
+  display: flex;
   flex: 1;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.compactHint {
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.compactPick:hover .compactHint,
+.compactPick:focus-visible .compactHint {
+  opacity: 1;
 }
 
 .compactRemove {

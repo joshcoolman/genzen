@@ -1,16 +1,5 @@
-/* Everything an ImageCard adds to a Thumbnail: the caption block and the two
-   "selected" looks. */
-
-/* The two "selected" looks Thumbnail defers to the call site. Active is the
-   source image on the edit page -- a thicker ring and a lift; selected is a
-   tile picked in selection mode, brand-coloured and flat. */
-.activeTile {
-  border-color: var(--text);
-  box-shadow:
-    0 0 0 2px var(--text),
-    0 10px 15px -3px color-mix(in oklab, var(--text) 20%, transparent),
-    0 4px 6px -4px color-mix(in oklab, var(--text) 20%, transparent);
-}
+/* Everything an ImageCard adds to a Thumbnail: the caption block, the selected
+   look, and the two markers that sit on the image. */
 
 .selectedTile {
   border-color: var(--accent);
@@ -23,28 +12,41 @@
   height: 0.875rem;
 }
 
-.menuItemIcon,
-.selectIcon {
+.menuItemIcon {
   width: 1rem;
   height: 1rem;
 }
 
-.selectIconOn {
-  color: var(--accent);
-}
-
-/* Selection mode: the whole tile becomes one target, so a click picks rather
-   than opens. Above the image, below the overlay buttons. */
+/* Select mode: the whole card becomes one target, caption included, so a click
+   picks rather than opens (#284). Above everything the card draws -- in this
+   mode nothing else is meant to respond. */
 .selectOverlay {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   cursor: pointer;
   user-select: none;
 }
 
+.selectTick {
+  position: absolute;
+  bottom: var(--space-8);
+  left: var(--space-8);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
 .title {
-  padding: var(--space-8) var(--space-12) 0;
+  margin: 0;
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
@@ -54,12 +56,25 @@
   white-space: nowrap;
 }
 
+/* CopyText owns the affordance. The negative margin keeps the prompt's first
+   line aligned with the model name above it, which the button's own padding
+   would otherwise push in. */
+.prompt {
+  margin: 0 calc(var(--space-8) * -1);
+}
+
+.promptText {
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
 /* "On canvas" marker. Passive: it never intercepts a click, and it does not
    move or hide on hover -- a marker that vanishes exactly when you reach for
    Delete would fail at the only moment it matters (#216).
 
-   Bottom-centre is the one edge this card leaves free; `alwaysShowOverlay`
-   pins a button into all four corners. */
+   Bottom-centre was the one edge free when all four corners held a button;
+   two have since emptied (#284), but the marker is not an action and does not
+   want a corner. */
 .onCanvas {
   position: absolute;
   bottom: var(--space-8);

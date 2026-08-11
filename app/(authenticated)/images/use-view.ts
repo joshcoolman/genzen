@@ -11,7 +11,6 @@ import { useVariations } from './_hooks/use-variations'
 import { usePasteReference } from './_hooks/use-paste-reference'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
-import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
@@ -84,43 +83,10 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
-  // The highlight (#205). A highlighted image is the primary reference for
-  // whatever you prompt next; clicking it again takes the highlight off and
-  // you are back to plain generation. This replaced the /edit route, which
-  // answered "which image is the source" -- state wearing a URL as a costume.
-  //
-  // It is one flag. The generator already knows what to do with a source
-  // image, including picking the model's image-input endpoint, so "edit" vs
-  // "generate" stays a detail of building the request.
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
-
-  const clearHighlight = useCallback(() => {
-    setSelectedImageId(null)
-    generator.handleClearSourceImage()
-  }, [generator])
-
-  const toggleHighlight = useCallback(
-    (img: SavedAiImage) => {
-      if (img.id === selectedImageId) {
-        clearHighlight()
-        return
-      }
-      if (!img.storage_path) return
-      setSelectedImageId(img.id)
-      // The URL is for the panel's preview only. The submit sends the id, and
-      // the server resolves the object and uploads the bytes to FAL -- handing
-      // FAL an app URL to fetch could never work: it needs a session.
-      generator.setSourceFromLibrary(img.id, imageUrl(img.id), img.title)
-    },
-    [selectedImageId, clearHighlight, generator],
-  )
-
-  // The panel's own clear button has to take the highlight with it, or the
-  // border would outlive the reference it stands for.
-  const generatorWithHighlight = useMemo(
-    () => ({ ...generator, handleClearSourceImage: clearHighlight }),
-    [generator, clearHighlight],
-  )
+  // Nothing on the grid marks the source any more (#284). The generator's chip
+  // is the only place the source is shown and the only place it is changed --
+  // one place to look, and a white "this is the source" border can never
+  // collide with the green of a selected card, because there is no white.
 
   // An image copied from the search overlay pastes in as a reference (#213).
   usePasteReference({
@@ -155,13 +121,41 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const selection = useSelection({ items: images.map((img) => img.id) })
 
-  // A selected completed image is an automatic reference for the next prompt.
+  // Select mode (#284). A mode rather than a circle per card: the use that
+  // justifies selection is bulk, and per-card circles make clearing twelve of
+  // sixteen twelve precise clicks on a small corner. The cost is modality, paid
+  // for by a toolbar toggle that reads as on and by Escape always leaving.
+  //
+  // Selecting attaches nothing to the next generation. It used to feed
+  // `setAutoRefImageIds`, so looking through images silently changed what the
+  // next prompt was built from; references have their own surface, which says
+  // what it has collected.
+  const [selectMode, setSelectMode] = useState(false)
+
+  const exitSelectMode = useCallback(() => {
+    setSelectMode(false)
+    selection.clearSelection()
+  }, [selection])
+
+  const toggleSelectMode = useCallback(() => {
+    if (selectMode) {
+      exitSelectMode()
+      return
+    }
+    setSelectMode(true)
+  }, [selectMode, exitSelectMode])
+
+  // Always, and never automatically after a batch action: "delete three, then
+  // select four more" is a real pattern, and auto-exit punishes it by silently
+  // changing what the next click does.
   useEffect(() => {
-    const ids = Array.from(selection.selectedIds).filter(
-      (id) => gallery.images.find((i) => i.id === id)?.status === 'completed',
-    )
-    generator.setAutoRefImageIds(ids)
-  }, [selection.selectedIds, gallery.images])
+    if (!selectMode) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitSelectMode()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectMode, exitSelectMode])
 
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)
 
@@ -170,6 +164,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setIsBatchDeleting(true)
     try {
       for (const img of targets) await gallery.deleteImage(img)
+      // The mode stays on -- see exitSelectMode.
       selection.clearSelection()
     } finally {
       setIsBatchDeleting(false)
@@ -198,16 +193,16 @@ export function useView(initial: Array<SavedAiImage>) {
     gallery,
     userImages,
     modelSelector,
-    generator: generatorWithHighlight,
+    generator,
     prefs,
     dock,
     download,
     uploadFiles,
     selection,
+    selectMode,
+    toggleSelectMode,
     isBatchDeleting,
     deleteSelected,
-    selectedImageId,
-    toggleHighlight,
     lightbox,
     variations,
     variationSourceUrl,

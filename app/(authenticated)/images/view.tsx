@@ -25,10 +25,10 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     download,
     uploadFiles,
     selection,
+    selectMode,
+    toggleSelectMode,
     isBatchDeleting,
     deleteSelected,
-    selectedImageId,
-    toggleHighlight,
     lightbox,
     variations,
     variationSourceUrl,
@@ -45,6 +45,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           prefs={prefs}
           showGenerateButton={!dock.open}
           panelFloating={dock.open && !dock.pinned && !prefs.isMobile}
+          selectMode={selectMode}
+          onToggleSelectMode={toggleSelectMode}
           onUpload={uploadFiles}
           onGenerate={() => dock.setOpen(true)}
         />
@@ -53,7 +55,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           images={images}
           imageUrls={gallery.imageUrls}
           loadingGallery={gallery.loadingGallery}
-          thumbSize={prefs.effectiveThumbSize}
           showInfo={prefs.showInfo}
           onLoadPrompt={loadPrompt}
           onLoadPromptAndModel={loadPrompt}
@@ -62,15 +63,13 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDownload={download.start}
           onDescribe={setDescribeTarget}
           onGenerateVariations={variations.openVariationDialog}
-          onGallery={lightbox.open}
-          onOpen={toggleHighlight}
-          activeId={selectedImageId ?? undefined}
+          onOpen={lightbox.open}
           emptyScopeLabel={
             prefs.originFilter === 'all'
               ? undefined
               : ORIGIN_FILTER_LABELS[prefs.originFilter]
           }
-          selectionActive={selection.count > 0}
+          selectionActive={selectMode}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}
         />

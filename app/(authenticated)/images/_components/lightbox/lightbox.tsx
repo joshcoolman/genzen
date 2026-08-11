@@ -5,6 +5,7 @@ import { useHotkey } from '@tanstack/react-hotkeys'
 import { Trash2, X } from 'lucide-react'
 import styles from './lightbox.module.css'
 import { cx } from '#/lib/utils'
+import { CopyText } from '#/components'
 
 export interface LightboxImage {
   id: string
@@ -50,17 +51,10 @@ export function Lightbox({
   const [loaded, setLoaded] = useState(false)
   const currentThumb = useRef<HTMLButtonElement>(null)
   const stripRef = useRef<HTMLElement>(null)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setLoaded(false)
   }, [imageUrl])
-
-  // Paging away has to clear the tick, or it reads as a claim about the prompt
-  // now on screen.
-  useEffect(() => {
-    setCopied(false)
-  }, [currentIndex])
 
   // Preload adjacent images into browser cache
   const preloadAdjacent = useCallback(() => {
@@ -95,19 +89,6 @@ export function Lightbox({
       behavior: 'smooth',
     })
   }, [currentIndex])
-
-  async function copyPrompt() {
-    if (!img.prompt) return
-    try {
-      await navigator.clipboard.writeText(img.prompt)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // Clipboard access can be refused (permission, an unfocused document).
-      // Staying silent is right -- the tick is the only claim this makes, and
-      // not showing it is an honest one.
-    }
-  }
 
   useHotkey('Escape', onClose)
   useHotkey('ArrowRight', onNext)
@@ -162,21 +143,16 @@ export function Lightbox({
         </div>
 
         {img.prompt ? (
-          // The prompt is the button (#271 follow-up): hovering tints it and
-          // names the action, clicking copies. An icon in a rail beside it was
-          // one more thing to aim at and one more thing to look at, and the
-          // text was never selectable enough to be worth protecting.
-          <button
-            type="button"
+          // The prompt is the button (#271 follow-up). Keyed on the image so
+          // paging away clears the tick, which would otherwise read as a claim
+          // about the prompt now on screen.
+          <CopyText
+            key={img.id}
+            text={img.prompt}
+            label="Copy prompt"
             className={styles.promptButton}
-            onClick={copyPrompt}
-            aria-label={copied ? 'Prompt copied' : 'Copy prompt'}
-          >
-            <span className={styles.prompt}>{img.prompt}</span>
-            <span className={styles.hint}>
-              {copied ? 'Copied' : 'Copy prompt'}
-            </span>
-          </button>
+            textClassName={styles.prompt}
+          />
         ) : (
           // An upload has no prompt. The column stays either way: a mixed set
           // would jump on every page if the layout changed with the row.

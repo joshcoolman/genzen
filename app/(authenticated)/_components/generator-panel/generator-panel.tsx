@@ -13,6 +13,7 @@ import {
   ActionButton,
   AspectRatioSelect,
   ImageSourceButtons,
+  LibraryPickerDialog,
   NumberStepper,
   RefImageStrip,
   SourceImagePreview,
@@ -59,6 +60,7 @@ export function GeneratorPanel({
 }: GeneratorPanelProps) {
   const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [sourcePickerOpen, setSourcePickerOpen] = useState(false)
 
   // Filter library images to exclude ones already in the chain
   const filteredLibraryImages = libraryFilterIds
@@ -67,14 +69,44 @@ export function GeneratorPanel({
 
   return (
     <div className={styles.root}>
-      {/* Row 1: Source image */}
+      {/* Row 1: Source image. The chip is the only indication of what the
+          generator is pointed at and the only way to change it (#284) -- the
+          grid stopped marking it. Clicking anywhere but the X opens the
+          library; the X clears it, and Upload is right below. Canvas is the
+          exception: there the source is whatever is selected on the canvas, so
+          there is no library to pick from. */}
       {generator.sourceImage && (
-        <SourceImagePreview
-          src={generator.sourceImage.base64}
-          name={generator.sourceImage.name}
-          onRemove={isEdit ? undefined : generator.handleClearSourceImage}
-          variant={isEdit ? 'square' : 'compact'}
-        />
+        <>
+          <SourceImagePreview
+            src={generator.sourceImage.base64}
+            name={generator.sourceImage.name}
+            onRemove={isEdit ? undefined : generator.handleClearSourceImage}
+            onPick={
+              isEdit || hideSourceButtons
+                ? undefined
+                : () => {
+                    void userImages.refresh()
+                    setSourcePickerOpen(true)
+                  }
+            }
+            variant={isEdit ? 'square' : 'compact'}
+          />
+          <LibraryPickerDialog
+            open={sourcePickerOpen}
+            onOpenChange={setSourcePickerOpen}
+            images={filteredLibraryImages}
+            imageUrls={userImages.imageUrls}
+            isLoading={userImages.isLoading}
+            currentId={generator.sourceImage.id}
+            /* Swapping the source keeps the prompt (#205's rule, inherited
+               from the grid click this replaced) -- you are changing what the
+               sentence you are writing applies to. The library *button* below
+               still clears, because that is starting over. */
+            onSelect={(image) =>
+              generator.setSourceFromLibrary(image.id, image.url, image.title)
+            }
+          />
+        </>
       )}
 
       {/* Image source buttons + aspect ratio */}
