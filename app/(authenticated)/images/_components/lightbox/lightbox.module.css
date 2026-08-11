@@ -31,17 +31,27 @@
   transition: color var(--duration-normal) var(--ease-in-out);
 }
 
-/* Inside the image column, not the viewport: at the top right of the window it
-   landed on the first thumbnail of the strip. */
+/* In the column header, level with the model name and hard against the right
+   edge of the column -- ahead of the filmstrip, not on top of it, which is
+   where an absolutely positioned one landed. Muted rather than pure white: it
+   is the way out, not something to look at. */
 .close {
-  top: var(--space-16);
-  right: var(--space-16);
-  z-index: 1;
+  position: static;
+  flex: none;
+  padding: 0;
+  color: color-mix(in oklab, var(--text) 55%, transparent);
 }
 
+.close:hover {
+  color: var(--text);
+}
+
+/* 0.875rem, matching the generator dock's header icons -- this sits in a header
+   of the same weight, and the 1.5rem it inherited from the old full-screen
+   overlay shouted in it. */
 .closeIcon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .stage {
@@ -143,6 +153,15 @@
   overflow-y: auto;
 }
 
+/* The model name and the way out share a line, so the prompt starts at the same
+   place on every image. */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
 /* The model answers "what made this" before "what was asked for", which is the
    question a mixed-model set raises first. */
 .model {
@@ -154,6 +173,7 @@
 }
 
 .prompt {
+  display: block;
   margin: 0;
   font-size: var(--text-sm);
   line-height: 1.6;
@@ -164,6 +184,46 @@
 .promptEmpty {
   font-style: italic;
   color: color-mix(in oklab, var(--text) 40%, transparent);
+}
+
+/* The prompt is the affordance. Padding is on the button rather than the text so
+   the tint has room to read as a surface, and the negative margin keeps the
+   first line where it sits when there is no prompt to copy. */
+.promptButton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin: 0 calc(var(--space-8) * -1);
+  padding: var(--space-8);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* Not selectable: dragging across it to select would fight the click. */
+  user-select: none;
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.promptButton:hover,
+.promptButton:focus-visible {
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+/* Only on hover, and only once there is something to say. Reserving space for
+   it would put a permanent gap under every prompt for a label that is usually
+   not there. */
+.hint {
+  font-size: var(--text-xs);
+  color: color-mix(in oklab, var(--text) 45%, transparent);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.promptButton:hover .hint,
+.promptButton:focus-visible .hint {
+  opacity: 1;
 }
 
 .filmstrip {
