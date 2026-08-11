@@ -4,11 +4,9 @@ A personal workspace for working with AI image models.
 
 ## Up next
 
-**#250** find overlay multi-select copy, **#251** canvas pasted images stack on
-top of each other.
-
-Not immediately: **#237** generated recent-changes block in README, **#223**
-AI policy seam.
+The open issues labelled [`now`](https://github.com/joshcoolman/genzen/labels/now),
+then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
+the ranking; a list here would be a second copy of it that drifts.
 
 ## Run it locally
 
