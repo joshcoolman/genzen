@@ -28,14 +28,35 @@
   user-select: none;
 }
 
+/* Every card carries one in select mode, not just the picked ones: an empty
+   corner cannot say "this is selectable", and the grid has to answer that
+   before the first click, not after it. Its own ground because it sits on
+   arbitrary images -- a bare grey glyph disappears on anything pale. */
 .selectTick {
   position: absolute;
   bottom: var(--space-8);
   left: var(--space-8);
   width: 1.25rem;
   height: 1.25rem;
-  color: var(--accent);
+  border-radius: 50%;
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
   pointer-events: none;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.selectTickOn {
+  color: var(--accent);
+}
+
+/* A tenth off, and only while unpicked. Entering select mode dims the whole
+   grid, because nothing is picked yet -- which is the mode announcing itself.
+   After that the dimming is the answer to "which ones did I take", readable
+   from across the grid in a way a 20px corner glyph is not. */
+.unpicked img {
+  opacity: 0.9;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
 }
 
 .caption {
