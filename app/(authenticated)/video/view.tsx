@@ -42,20 +42,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         description="An image you already made, plus a note, comes back moving."
       />
 
-      {/* The same widget the generator panel uses for Reference images, and the
-          same picker behind it. One slot, because the endpoint takes a single
-          first frame. */}
-      <div className={styles.source}>
-        <p className={styles.sourceLabel}>First frame</p>
-        <RefImageStrip
-          images={sources}
-          max={1}
-          onAdd={openPicker}
-          onRemove={clearSources}
-          disabled={isSubmitting}
-        />
-      </div>
-
       <ExistingImagePicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}
@@ -68,25 +54,47 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         autoConfirm
       />
 
-      <VideoForm
-        model={model}
-        prompts={prompts}
-        onUpdatePrompt={updatePrompt}
-        onAddPrompt={addPrompt}
-        onRemovePrompt={removePrompt}
-        onClearPrompts={clearPrompts}
-        pendingCount={pendingCount}
-        duration={duration}
-        onDurationChange={setDuration}
-        aspectRatio={aspectRatio}
-        onAspectRatioChange={setAspectRatio}
-        estimatedCost={estimatedCost}
-        isSubmitting={isSubmitting}
-        canSubmit={canSubmit}
-        onSubmit={submit}
-      />
+      <div className={styles.columns}>
+        <div className={styles.clips}>
+          <VideoList videos={videos} />
+        </div>
 
-      <VideoList videos={videos} />
+        <div className={styles.controls}>
+          <Stack gap={16}>
+            {/* The same widget the generator panel uses for Reference images, and the
+              same picker behind it. One slot, because the endpoint takes a single
+              first frame. */}
+            <div className={styles.source}>
+              <p className={styles.sourceLabel}>First frame</p>
+              <RefImageStrip
+                images={sources}
+                max={1}
+                onAdd={openPicker}
+                onRemove={clearSources}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <VideoForm
+              model={model}
+              prompts={prompts}
+              onUpdatePrompt={updatePrompt}
+              onAddPrompt={addPrompt}
+              onRemovePrompt={removePrompt}
+              onClearPrompts={clearPrompts}
+              pendingCount={pendingCount}
+              duration={duration}
+              onDurationChange={setDuration}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={setAspectRatio}
+              estimatedCost={estimatedCost}
+              isSubmitting={isSubmitting}
+              canSubmit={canSubmit}
+              onSubmit={submit}
+            />
+          </Stack>
+        </div>
+      </div>
     </Stack>
   )
 }
