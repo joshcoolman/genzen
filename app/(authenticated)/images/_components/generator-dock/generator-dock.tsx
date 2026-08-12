@@ -5,7 +5,6 @@ import { GeneratorPanel } from '../../../_components/generator-panel/generator-p
 import styles from './generator-dock.module.css'
 import type { DockState } from '../../_hooks/use-dock'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
-import type { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import { Dialog, DialogContent, MobileDialogHeader } from '#/components'
@@ -21,7 +20,6 @@ interface GeneratorDockProps {
     isLoading: boolean
     refresh: () => Promise<void>
   }
-  describe: ReturnType<typeof useDescribeJson>
 }
 
 /**
@@ -39,14 +37,12 @@ export function GeneratorDock({
   generator,
   modelSelector,
   userImages,
-  describe,
 }: GeneratorDockProps) {
   const panel = (
     <GeneratorPanel
       generator={generator}
       modelSelector={modelSelector}
       userImages={userImages}
-      describe={describe}
       modelDisplay={isMobile ? 'dropdown' : undefined}
     />
   )

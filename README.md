@@ -8,11 +8,6 @@ The open issues labelled [`now`](https://github.com/joshcoolman/genzen/labels/no
 then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
 the ranking; a list here would be a second copy of it that drifts.
 
-**In flight:** #297 and #299, one branch. The generate panel loses its top row —
-source image and reference images become one ordered set of zero to N, filled by
-one widget, with upload living only in the Images toolbar. Read #297 first; it
-carries the decisions and the layout.
-
 ## Run it locally
 
 You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
@@ -151,9 +146,9 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-11
 
+- Reference images: the source image is gone and the panel holds one ordered set of zero to N, filled only from the library and uploaded only from the Images toolbar (#297)
+- The image cap is now the minimum across the selected models and counts correctly (`maxRefs + 1`) — a mixed selection used to offer four slots and send the small model one image with no warning
+- Clicking outside any dialog closes it again, and the library picker keeps a fixed height so switching filters no longer resizes it under the cursor (#299)
+- The prompt field sizes itself to what is in it, capped at 300px, at the same 10px as the chips around it — a 50-word prompt now fits without scrolling
 - Generate panel and Images toolbar cleanup: Paste Prompts and Generate prompts removed, the generator's pin removed, `MiniButton` shared by Enhance / Instructions / Add prompt, tooltips on every toolbar icon (#295)
 - The green `+` becomes a panel toggle that stays in its slot, and Images gets its right margin back — the shell no longer makes an exception for the route
-- Select mode announces itself: a tick on every card, grey until taken, unpicked cards at 50%, nothing animated
-- System instructions: one block, set behind a gear in the generator panel, prepended to every prompt in a run on both Images and Canvas (#272)
-- Every prompt row removes the same way; the X no longer clears the source image and references, and Clear all sits in a reserved strip so nothing shifts (#273)
-- Library source picks work again — our own images are read off the bucket instead of fetched over HTTP (#291)

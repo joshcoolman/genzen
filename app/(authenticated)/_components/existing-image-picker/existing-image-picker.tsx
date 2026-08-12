@@ -1,10 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Upload } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Check } from 'lucide-react'
 import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
-import { processAndUploadFiles } from '#/features/user-images/lib/process-files'
 import {
   Button,
   Dialog,
@@ -32,10 +31,6 @@ interface ExistingImagePickerProps {
   initialSelectedIds?: Set<string>
   /** When true, immediately confirm after the first selection (useful for single-select pickers). */
   autoConfirm?: boolean
-  /** When provided, shows upload button and enables clipboard paste. */
-  onUpload?: (file: File, title: string) => Promise<void>
-  /** Loading state for upload. */
-  isUploading?: boolean
 }
 
 export function ExistingImagePicker({
@@ -50,21 +45,9 @@ export function ExistingImagePicker({
   excludeIds,
   initialSelectedIds,
   autoConfirm,
-  onUpload,
-  isUploading,
 }: ExistingImagePickerProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (!onUpload || !e.target.files?.length) return
-      await processAndUploadFiles(Array.from(e.target.files), onUpload)
-      e.target.value = ''
-    },
-    [onUpload],
-  )
 
   // When picker opens with initialSelectedIds, pre-check them
   useEffect(() => {
@@ -164,7 +147,7 @@ export function ExistingImagePicker({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="wide" className={styles.popup}>
         <DialogHeader>
-          <DialogTitle>Select from Library</DialogTitle>
+          <DialogTitle>Library</DialogTitle>
         </DialogHeader>
 
         <div className={styles.filters}>
@@ -178,27 +161,6 @@ export function ExistingImagePicker({
               {btn.label}
             </button>
           ))}
-          {onUpload && (
-            <>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className={styles.upload}
-                title="Upload image"
-              >
-                <Upload />
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                className={styles.fileInput}
-                onChange={handleFileChange}
-              />
-            </>
-          )}
         </div>
 
         <div className={styles.grid}>

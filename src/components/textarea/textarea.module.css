@@ -8,6 +8,11 @@
  * four of the five call sites forced `text-xs` below 768px, so the guard only
  * ever applied to one textarea. One size, 14px, which is what every one of them
  * already rendered at on desktop.
+ *
+ * A call site that needs a different size sets `--textarea-font-size` rather
+ * than re-declaring `font-size` on the same element: equal specificity in a
+ * different file is a bundle-order race, and a property has no fight to lose.
+ * Same reasoning as `--dialog-*` -- see dialog.module.css.
  */
 .root {
   display: flex;
@@ -18,7 +23,7 @@
   color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  font-size: var(--textarea-font-size, var(--text-sm));
   font-family: inherit;
   transition: border-color var(--duration-normal) var(--ease-out);
 }

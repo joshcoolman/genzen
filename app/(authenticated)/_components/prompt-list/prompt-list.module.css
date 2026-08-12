@@ -41,9 +41,31 @@
 }
 
 /* 28px: clears the remove button so a long first line does not run under it.
-   Two call sites in one file -- not a scale, so not a token. */
+   Two call sites in one file -- not a scale, so not a token.
+
+   `--text-3xs` rather than the house 14px: a prompt is the longest text anyone
+   types into this app and the panel is 20rem wide, so the default size spent
+   most of its sentences scrolling. It matches the MiniButton chips sitting on
+   and under the field (Enhance, Add prompt), which is what makes it read as a
+   deliberate size rather than a shrunken one. `1.5` because the scale has no
+   `3xs` leading -- generous, since small text in a narrow column needs the
+   line separation more, not less. Set through the property Textarea exposes,
+   never by re-declaring `font-size` here -- see textarea.module.css. */
+/* The field grows with what is in it and stops. `field-sizing: content` is the
+   whole mechanism -- no resize-on-input listener, no hidden mirror element, no
+   re-measure on every keystroke -- with min/max height as the clamp. Past the
+   max it scrolls, which is the honest end state for a prompt that long.
+
+   Where it is unsupported the declaration is ignored and the field falls back
+   to `min-height`, which is exactly today's behaviour, so there is nothing to
+   feature-detect. */
 .textarea {
   padding-right: 1.75rem;
+  --textarea-font-size: var(--text-3xs);
+  line-height: 1.5;
+  field-sizing: content;
+  min-height: 3.75rem;
+  max-height: 300px;
 }
 
 .remove {

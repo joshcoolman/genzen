@@ -1,4 +1,4 @@
-/* The Generate panel's own stack: prompt, source, controls, model list. */
+/* The Generate panel's own stack: prompts, reference images, controls, models. */
 
 .root > :where(*:not(:last-child)) {
   margin-bottom: var(--space-12);
@@ -10,20 +10,40 @@
   gap: var(--space-8);
 }
 
-/* `display: contents` -- ImageSourceButtons' wrapper dissolves so its three
-   buttons become direct children of the row and share its gap, rather than
-   forming a nested flex box with its own spacing. */
-.contents {
-  display: contents;
-}
-
+/* `min-width: 0` is load-bearing, not tidiness: a flex item's floor is its
+   content width, so without it a wide label pushes its neighbours off the end
+   of the panel rather than sharing the row. */
 .fill {
   flex: 1;
+  min-width: 0;
 }
 
-/* The controls row sits directly above the prompt list's Clear all strip, which
-   gives 8px below itself. Matching that here centres the strip in even space
-   rather than 12 above / 8 below. */
-.rowAbovePrompts {
-  margin-bottom: var(--space-8);
+/* Count and shape share a row; Generate takes the next one whole, so its label
+   never has to compete for width.
+
+   The stepper keeps its natural width and the ratio takes the remainder.
+   Splitting the row evenly stretched `− 1 +` into a wide box of mostly empty
+   space, which read as a text field rather than a stepper. */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.generate {
+  width: 100%;
+}
+
+.refs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* The set is the one control here that is not self-evident from its contents
+   -- an empty strip of one + button says nothing about what it is for. */
+.refsLabel {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
 }

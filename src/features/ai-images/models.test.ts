@@ -3,6 +3,7 @@ import {
   IMAGE_MODELS,
   endpointFor,
   getModelName,
+  imageCapacityFor,
   maxRefsFor,
   pickerId,
 } from './models'
@@ -211,6 +212,50 @@ describe('maxRefsFor', () => {
 
   it('is 0 for an id it does not know', () => {
     expect(maxRefsFor('fal-ai/retired-model')).toBe(0)
+  })
+})
+
+/**
+ * The number the panel shows and caps on (#297). `maxRefs` counts images
+ * *beyond the source*, and the panel showed it as the total -- so every model
+ * read one lower than the endpoint can actually take. There is no source any
+ * more, so the two numbers had to stop being the same number.
+ */
+describe('imageCapacityFor', () => {
+  it('is one more than maxRefs, because the source was always in the count', () => {
+    // The case that made the off-by-one visible: the panel read `0/3` for an
+    // endpoint that takes four images.
+    expect(imageCapacityFor('fal-ai/nano-banana-2')).toBe(4)
+    expect(maxRefsFor('fal-ai/nano-banana-2')).toBe(3)
+  })
+
+  it('is 1 for the single-image Kontext endpoints, not 0', () => {
+    // They take exactly one image. Under the old reading that was "0 refs plus
+    // the source"; under one set it is a capacity of one, and a strip that
+    // offers a slot rather than refusing every image.
+    expect(imageCapacityFor(KONTEXT_DEV)).toBe(1)
+    expect(imageCapacityFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(1)
+  })
+
+  it('is 0 when the model has no image endpoint at all', () => {
+    expect(imageCapacityFor('fal-ai/recraft/v3/text-to-image')).toBe(0)
+    expect(imageCapacityFor('fal-ai/retired-model')).toBe(0)
+  })
+
+  it('resolves either endpoint of a two-endpoint model to the same capacity', () => {
+    // Canvas selects by the edit endpoint and Images by the text one; a cap
+    // that disagreed between them would truncate on exactly one surface.
+    expect(imageCapacityFor('fal-ai/gpt-image-1.5')).toBe(
+      imageCapacityFor('fal-ai/gpt-image-1.5/edit'),
+    )
+  })
+
+  it('minimum across a mixed selection is the small model, not the first', () => {
+    // The silent-truncation bug the panel had: Nano Banana 2 and FLUX Kontext
+    // Pro ticked together offered four slots, and FLUX -- whose schema takes
+    // `image_url`, not `image_urls` -- received the first image alone.
+    const selection = ['fal-ai/nano-banana-2', 'fal-ai/flux-pro/kontext']
+    expect(Math.min(...selection.map(imageCapacityFor))).toBe(1)
   })
 })
 

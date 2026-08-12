@@ -1,6 +1,0 @@
-/* The row is laid out by the caller, which passes its own className. All this
-   file owns is the one rule every button in it needs: never let a flex row
-   squeeze an icon button below its own size. */
-.button {
-  flex-shrink: 0;
-}

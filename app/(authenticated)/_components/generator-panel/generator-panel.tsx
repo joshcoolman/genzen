@@ -8,18 +8,13 @@ import { ModelSelector } from '../model-selector/model-selector'
 import styles from './generator-panel.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
-import type { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import {
   ActionButton,
   AspectRatioSelect,
-  ImageSourceButtons,
-  LibraryPickerDialog,
   NumberStepper,
   RefImageStrip,
-  SourceImagePreview,
 } from '#/components'
-import { cx } from '#/lib/utils'
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -32,128 +27,40 @@ interface GeneratorPanelProps {
   generator: GeneratorState
   modelSelector: ReturnType<typeof useModelSelector>
   userImages: UserImagesData
-  describe?: ReturnType<typeof useDescribeJson>
-  mode?: 'generate' | 'edit'
   modelDisplay?: 'panel' | 'dropdown'
-  refImagesReadOnly?: boolean
-  libraryFilterIds?: Set<string>
-  /**
-   * Canvas simplification (default off = Images behavior unchanged). On canvas
-   * the input is the selected image, so the library/upload source buttons are
-   * removed.
-   */
-  hideSourceButtons?: boolean
 }
 
+/**
+ * The panel Images and Canvas both generate from.
+ *
+ * There is no source image (#297). There is an ordered set of zero to N
+ * reference images and one widget that fills it, and the widget's only way in
+ * is the library -- uploading is the Images toolbar's job and nowhere else's.
+ * The row of source buttons that used to sit above the prompt is gone with it,
+ * along with the chip, the Describe/JSON pair and five separate ways to put an
+ * image in two different state slots.
+ */
 export function GeneratorPanel({
   generator,
   modelSelector,
   userImages,
-  describe,
-  mode = 'generate',
   modelDisplay = 'panel',
-  refImagesReadOnly = false,
-  libraryFilterIds,
-  hideSourceButtons = false,
 }: GeneratorPanelProps) {
-  const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [sourcePickerOpen, setSourcePickerOpen] = useState(false)
 
-  // Filter library images to exclude ones already in the chain
-  const filteredLibraryImages = libraryFilterIds
-    ? userImages.images.filter((img) => !libraryFilterIds.has(img.id))
-    : userImages.images
+  const remaining = generator.maxRefImages - generator.refImages.length
 
   return (
     <div className={styles.root}>
-      {/* Row 1: Source image. The chip is the only indication of what the
-          generator is pointed at and the only way to change it (#284) -- the
-          grid stopped marking it. Clicking anywhere but the X opens the
-          library; the X clears it, and Upload is right below. Canvas is the
-          exception: there the source is whatever is selected on the canvas, so
-          there is no library to pick from. */}
-      {generator.sourceImage && (
-        <>
-          <SourceImagePreview
-            src={generator.sourceImage.base64}
-            name={generator.sourceImage.name}
-            onRemove={isEdit ? undefined : generator.handleClearSourceImage}
-            onPick={
-              isEdit || hideSourceButtons
-                ? undefined
-                : () => {
-                    void userImages.refresh()
-                    setSourcePickerOpen(true)
-                  }
-            }
-            variant={isEdit ? 'square' : 'compact'}
-          />
-          <LibraryPickerDialog
-            open={sourcePickerOpen}
-            onOpenChange={setSourcePickerOpen}
-            images={filteredLibraryImages}
-            imageUrls={userImages.imageUrls}
-            isLoading={userImages.isLoading}
-            currentId={generator.sourceImage.id}
-            /* Swapping the source keeps the prompt (#205's rule, inherited
-               from the grid click this replaced) -- you are changing what the
-               sentence you are writing applies to. The library *button* below
-               still clears, because that is starting over. */
-            onSelect={(image) =>
-              generator.setSourceFromLibrary(image.id, image.url, image.title)
-            }
-          />
-        </>
-      )}
-
-      {/* Image source buttons + aspect ratio */}
-      <div className={cx(styles.row, styles.rowAbovePrompts)}>
-        {!hideSourceButtons && (
-          <ImageSourceButtons
-            onFileSelected={generator.setSourceFile}
-            showPaste={false}
-            multiple={isEdit}
-            library={{
-              images: filteredLibraryImages,
-              imageUrls: userImages.imageUrls,
-              isLoading: userImages.isLoading,
-              onSelect: (image) =>
-                generator.setSourceFromUrl(image.url, image.title, image.id),
-              onSelectMultiple:
-                isEdit && generator.setSourceFromUrls
-                  ? (images) => generator.setSourceFromUrls?.(images)
-                  : undefined,
-              onOpen: userImages.refresh,
-            }}
-            className={styles.contents}
-          />
-        )}
-        <AspectRatioSelect
-          orientation={generator.orientation}
-          aspectRatio={generator.aspectRatio}
-          onOrientationChange={generator.setOrientation}
-          onAspectRatioChange={generator.setAspectRatio}
-          disabled={generator.loading}
-          className={isEdit || hideSourceButtons ? styles.fill : undefined}
-        />
-      </div>
-
-      {/* Prompt textareas */}
+      {/* Prompt textareas. Nothing above them any more. */}
       <PromptList
         prompts={generator.prompts}
         onUpdatePrompt={generator.setPromptAtIndex}
         onAddPrompt={generator.addPrompt}
         onRemovePrompt={generator.removePrompt}
-        disabled={generator.loading || generator.describingImage}
+        disabled={generator.loading}
         placeholders={{
-          first: generator.describingImage
-            ? 'Describing image...'
-            : isEdit
-              ? 'Describe the edit...'
-              : generator.sourceImage
-                ? 'Edit prompt (optional)...'
-                : 'Describe your image...',
+          first: 'Describe your image...',
           additional: 'Additional prompt...',
         }}
         onClearPrompts={generator.clearPrompts}
@@ -165,76 +72,47 @@ export function GeneratorPanel({
         headerSlot={<SystemInstructionsButton />}
       />
 
-      {/* Ref images -- show when model supports refs */}
-      {generator.maxRefImages > 0 && (
-        <>
-          <RefImageStrip
-            images={generator.refImages}
-            max={generator.maxRefImages}
-            onAdd={
-              refImagesReadOnly
-                ? undefined
-                : () => {
-                    userImages.refresh()
-                    setPickerOpen(true)
-                  }
-            }
-            onRemove={refImagesReadOnly ? undefined : generator.removeRefImage}
-            onClear={
-              refImagesReadOnly
-                ? undefined
-                : () => generator.replaceRefImages([])
-            }
-            disabled={generator.loading}
-          />
-          <ExistingImagePicker
-            open={pickerOpen}
-            onOpenChange={setPickerOpen}
-            images={userImages.images}
-            imageUrls={userImages.imageUrls}
-            isLoading={userImages.isLoading}
-            alreadyCollectedIds={new Set(generator.refImages.map((r) => r.id))}
-            onConfirm={(selected) =>
-              generator.addRefImages(
-                selected.map((s) => ({
-                  id: s.id,
-                  url: s.url,
-                  title: s.title,
-                })),
-              )
-            }
-            max={generator.maxRefImages - generator.refImages.length}
-          />
-        </>
-      )}
+      {/* The set. It never hides: every model in the lineup takes at least one
+          image, so a widget that appeared and vanished as the selection changed
+          was churn with no information in it. A model with no image input at
+          all would leave `maxRefImages` at 0, which disables the strip rather
+          than offering slots the submit would drop. */}
+      <div className={styles.refs}>
+        <p className={styles.refsLabel}>Reference images</p>
+        <RefImageStrip
+          images={generator.refImages}
+          max={generator.maxRefImages}
+          onAdd={() => {
+            void userImages.refresh()
+            setPickerOpen(true)
+          }}
+          onRemove={generator.removeRefImage}
+          onClear={() => generator.replaceRefImages([])}
+          disabled={generator.loading || generator.maxRefImages === 0}
+        />
+      </div>
+      <ExistingImagePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        images={userImages.images}
+        imageUrls={userImages.imageUrls}
+        isLoading={userImages.isLoading}
+        alreadyCollectedIds={new Set(generator.refImages.map((r) => r.id))}
+        onConfirm={(selected) =>
+          generator.addRefImages(
+            selected.map((s) => ({ id: s.id, url: s.url, title: s.title })),
+          )
+        }
+        max={remaining > 0 ? remaining : 0}
+      />
 
-      {/* Generate button + gens stepper */}
-      <div className={styles.row}>
-        <ActionButton
-          onClick={() => generator.handleGenerate()}
-          loading={generator.loading || generator.savingSource}
-          loadingText={
-            // Saving an attached source blocks Generate (#224). Say so, or the
-            // button just looks inert for however long the upload takes.
-            generator.savingSource
-              ? 'Saving image...'
-              : generator.totalImages > 1
-                ? `Generating ${generator.totalImages} images...`
-                : isEdit
-                  ? 'Generating edit...'
-                  : 'Generating...'
-          }
-          disabled={!generator.canGenerate}
-          className={styles.fill}
-        >
-          {isEdit
-            ? generator.totalImages > 1
-              ? `Generate ${generator.totalImages} edits`
-              : 'Generate Edit'
-            : generator.totalImages > 1
-              ? `Generate ${generator.totalImages} images`
-              : 'Generate'}
-        </ActionButton>
+      {/* How many and what shape, then the button. The aspect ratio moved down
+          from the dead source row (#297) -- it describes the request, so it
+          belongs with the count rather than above the prompt. Two rows rather
+          than three-in-one: in a 20rem dock a full-width Generate and a full
+          Generate label do not both fit beside these, and the label carries the
+          only warning that a click is about to cost double. */}
+      <div className={styles.controls}>
         <NumberStepper
           value={modelSelector.gensPerModel}
           min={1}
@@ -242,7 +120,30 @@ export function GeneratorPanel({
           onAdjust={modelSelector.adjustGens}
           disabled={generator.loading}
         />
+        <AspectRatioSelect
+          orientation={generator.orientation}
+          aspectRatio={generator.aspectRatio}
+          onOrientationChange={generator.setOrientation}
+          onAspectRatioChange={generator.setAspectRatio}
+          disabled={generator.loading}
+          className={styles.fill}
+        />
       </div>
+      <ActionButton
+        onClick={() => generator.handleGenerate()}
+        loading={generator.loading}
+        loadingText={
+          generator.totalImages > 1
+            ? `Generating ${generator.totalImages} images...`
+            : 'Generating...'
+        }
+        disabled={!generator.canGenerate}
+        className={styles.generate}
+      >
+        {generator.totalImages > 1
+          ? `Generate ${generator.totalImages} images`
+          : 'Generate'}
+      </ActionButton>
 
       {/* Model selector */}
       <ModelSelector
@@ -253,34 +154,6 @@ export function GeneratorPanel({
         visibleModels={modelSelector.models}
         onToggleSelected={modelSelector.toggleSelected}
       />
-
-      {/* Describe / JSON -- only when source image present */}
-      {generator.sourceImage && (
-        <div className={styles.row}>
-          <ActionButton
-            variant="outline"
-            onClick={() => void generator.handleCaption()}
-            loading={generator.describingImage}
-            loadingText="..."
-            disabled={generator.loading}
-            className={styles.fill}
-          >
-            Describe
-          </ActionButton>
-          {describe && (
-            <ActionButton
-              variant="outline"
-              onClick={describe.handleDescribe}
-              loading={describe.jsonLoading}
-              loadingText="..."
-              disabled={generator.loading}
-              className={styles.fill}
-            >
-              JSON
-            </ActionButton>
-          )}
-        </div>
-      )}
     </div>
   )
 }

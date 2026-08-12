@@ -32,7 +32,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     lightbox,
     variations,
     variationSourceUrl,
-    describe,
     describeTarget,
     setDescribeTarget,
     focusSource,
@@ -90,7 +89,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}
-        describe={describe}
       />
 
       <VariationPromptsDialog
@@ -108,7 +106,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             prompts,
             generator.appendPrompts,
             variationSourceUrl,
-            generator.setSourceFromUrl,
+            generator.setPrimaryImage,
           )
         }
         sourceImageUrl={variationSourceUrl}

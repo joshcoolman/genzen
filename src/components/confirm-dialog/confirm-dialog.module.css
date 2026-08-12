@@ -16,6 +16,9 @@
   background: var(--scrim);
 }
 
+/* `pointer-events` -- see dialog.module.css. The viewport is a second layer
+   over the backdrop, and Base UI dismisses only on a press that lands on the
+   backdrop element, so presses have to fall through (#299). */
 .viewport {
   position: fixed;
   inset: 0;
@@ -24,10 +27,12 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-24);
+  pointer-events: none;
 }
 
 .popup {
   display: flex;
+  pointer-events: auto;
   width: 100%;
   max-width: 28rem;
   flex-direction: column;

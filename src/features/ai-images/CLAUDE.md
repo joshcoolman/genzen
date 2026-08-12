@@ -32,11 +32,25 @@ anything one route renders lives with that route.
   Canvas both get it with no wiring and the composition order lives in one
   place. `use-system-instructions.ts` is for the UI that edits it and is not on
   the submit path.
-- **Two ends to the reference strip.** `addRefImages` appends and slices the
-  tail off, for picking several at once; `pushRefImage` unshifts and evicts the
-  last, for the one-at-a-time gesture that means "use this one" (Cmd-Shift-click
-  a card, #284). The ordering is `pushRef` in `ref-images.ts` -- pure, so it is
-  unit-tested, because a silent eviction at the wrong end is invisible.
+- **One set, not a source plus references (#297).** `useGenerator` holds an
+  ordered `refImages` of zero to `maxRefImages`, and every member is a library
+  row -- there is no bytes-only member, because the only way in is the library
+  picker. `maxRefImages` is `imageCapacityFor` minimised across the selection
+  (`maxRefs` counts images _beyond_ a source that no longer exists, so capacity
+  is `maxRefs + 1`), and a narrowing selection trims the set rather than letting
+  the submit drop the overflow. Index 0 is the only asymmetry: an effect derives
+  orientation and aspect ratio from whatever lands there, and the submit sends
+  it as `sourceImageId` with the rest as `referenceImageIds`. **That split is
+  the wire's, not the model's** -- the server concatenates them straight back
+  into one ordered `image_urls`, and it survives only because
+  `generation_metadata` (and so `retry-plan.ts`) is written in those terms.
+- **Three ends to the set.** `addRefImages` appends and slices the tail off, for
+  picking several at once; `pushRefImage` unshifts and evicts the last, for the
+  one-at-a-time gesture that means "use this one" (Cmd-Shift-click a card,
+  #284); `setPrimaryImage` replaces slot 0 and keeps the rest, for the Cmd-click
+  that means "point at this one". The ordering is `pushRef` in `ref-images.ts`
+  -- pure, so it is unit-tested, because a silent eviction at the wrong end is
+  invisible.
 - **Prompt origins are keyed by the enhanced string**, not by prompt index, so
   editing the text invalidates the pair instead of attributing a stale original
   (#210).
@@ -57,18 +71,20 @@ anything one route renders lives with that route.
   written at reserve time as the base model and only patched to the resolved
   endpoint at submit, so a generation that failed _before_ submit kept the
   text-to-image endpoint — exactly the rows that get retried.
-- **A source image carries its library id wherever one exists.** An id makes a
+- **Every image the generator holds carries its library id.** An id makes a
   generation reproducible; bytes alone do not. Three call sites had the id and
   dropped it, which silently turned library picks into unreplayable pastes.
+  #297 closed the class rather than the instances: the panel can no longer
+  acquire bytes at all, so there is nothing left that could arrive without one.
 - **Failed generations are deleted outright, not soft-deleted.** There is no image
   to restore, so Trash has nothing to offer for one — restoring it just puts an
   error card back. Everything else still soft-deletes.
 - **A row is titled `Generating...` while reserved**, renamed to the model on
   success and by `failureTitle` on failure. Before that, a failure kept the
   placeholder forever and Trash filled with rows that all read "Generating...".
-- **There is no edit route** (#205). A source image is the next prompt's primary
-  reference, so an edit is a generation with a source, not a place you go. The
-  source is set from the generator's chip (#284), never from the grid.
+- **There is no edit route** (#205). An edit is a generation with images
+  attached, not a place you go. Since #297 the images are set from the panel's
+  Reference images widget, never from the grid and never by uploading.
 - Variations rewrite the prompt with Claude Sonnet against the source image
   ("creative tension") to stop quality drift.
 
