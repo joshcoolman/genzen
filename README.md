@@ -144,6 +144,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
+2026-08-12
+
+- `pnpm dev` now catches an **empty** `export FAL_KEY=""` shadowing `.env.local`, not just a stale one — the guard used a truthiness check, so the one case it never reported was the one that reads as "FAL_KEY is not set" against a file that plainly holds the key (#306)
+
 2026-08-11
 
 - Cmd-click a card adds it to the reference images and keeps adding — it used to replace the first one, so clicking three cards left you with one
