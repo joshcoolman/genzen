@@ -146,6 +146,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-12
 
+- **Video** — a new route: a still you already made, a note about what happens, and a clip comes back with sound. LTX-2.5 image-to-video on FAL, one model, 6–20s, ~$0.09/sec. Animate sits in the card's `...` menu. Clips land in the bucket like every other asset, and `/img/[id]` answers range requests now so they can be scrubbed (#305)
 - **Thumbnail pass** — the model moved off the caption and into the image's bottom-right corner, the "On canvas" marker went, the prompt clamps to three lines at the size it was typed, and the cards teach nothing on hover: both Cmd gestures still work, unnamed, pending #289 (#314)
 - **Generate prompt** — a prompt out of nothing, for the blank field. In the prompt list's header: roll, nudge it with instructions that persist, ask for "more like this", and Apply adds to the stack without closing. Enhance is set aside pending #309
 - **Explore** — a new route, first in the nav: a masonry wall of every finished image with no controls on it, and the lightbox over it. Browsing and working are different moods, and the overlay only makes sense in the first one

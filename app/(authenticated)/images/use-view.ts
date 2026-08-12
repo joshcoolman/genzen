@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
 import { usePrefs } from './_hooks/use-prefs'
@@ -28,6 +29,7 @@ import { toast } from '#/components'
  */
 export function useView(initial: Array<SavedAiImage>) {
   const { user } = useAuth()
+  const router = useRouter()
 
   const gallery = useGallery({ userId: user.id, initial })
   const userImages = useUserImages(user.id)
@@ -222,6 +224,16 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
+  /** Take a still to /video as its first frame (#305). A navigation rather
+   *  than a panel: video is its own route, and the image travels as an id in
+   *  the URL so the target needs no shared state. */
+  const animate = useCallback(
+    (img: SavedAiImage) => {
+      router.push(`/video?image=${img.id}`)
+    },
+    [router],
+  )
+
   /** The source image's URL, for the variation dialog's preview. */
   const variationSourceUrl = variations.pendingSourceImage
     ? gallery.imageUrls[variations.pendingSourceImage.id]
@@ -250,6 +262,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setDescribeTarget,
     addReference,
     usePromptText,
+    animate,
     error,
     setError,
   }

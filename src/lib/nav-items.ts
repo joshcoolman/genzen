@@ -1,4 +1,12 @@
-import { Compass, Frame, Logs, Sparkles, Trash2, User } from 'lucide-react'
+import {
+  Clapperboard,
+  Compass,
+  Frame,
+  Logs,
+  Sparkles,
+  Trash2,
+  User,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -32,6 +40,12 @@ export const navItems: Array<NavItem> = [
     label: 'Canvas',
     href: '/canvas',
     icon: Frame,
+  },
+  {
+    id: 'video',
+    label: 'Video',
+    href: '/video',
+    icon: Clapperboard,
   },
   {
     id: 'activity',

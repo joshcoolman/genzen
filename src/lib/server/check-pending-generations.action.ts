@@ -6,6 +6,7 @@ import { sql } from './db.server'
 import {
   markGenerationFailedWithBlob,
   processImageResult,
+  processVideoResult,
 } from './fal-completion.server'
 import { extractFalError } from './fal-error.server'
 
@@ -54,7 +55,14 @@ export async function checkPendingGenerations() {
               requestId: record.request_id,
             })) as { data: Record<string, unknown> }
 
-            await processImageResult(record.id, userId, result.data)
+            // FAL's result shape follows the asset, not the endpoint family:
+            // images arrive as `images[]`, a clip as `video.url` (#305). The
+            // row already knows which it asked for.
+            if (record.source === 'ai_video') {
+              await processVideoResult(record.id, userId, result.data)
+            } else {
+              await processImageResult(record.id, userId, result.data)
+            }
             completed++
           } else {
             // Non-COMPLETED branch: either the row is still pending, or it's

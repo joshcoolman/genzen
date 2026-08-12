@@ -19,6 +19,7 @@ interface ImageGalleryProps {
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
+  onAnimate?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
   /** The Experiment launcher: the grid area becomes one large preview. */
@@ -46,6 +47,7 @@ export function ImageGallery({
   onRetry,
   onDownload,
   onDescribe,
+  onAnimate,
   onGenerateVariations,
   onOpen,
   onExperiment,
@@ -118,6 +120,7 @@ export function ImageGallery({
                 onDelete={onDelete}
                 onDownload={onDownload}
                 onDescribe={onDescribe}
+                onAnimate={onAnimate}
                 onGenerateVariations={onGenerateVariations}
                 onOpen={onOpen}
                 onExperiment={onExperiment}
