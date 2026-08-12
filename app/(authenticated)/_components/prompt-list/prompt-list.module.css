@@ -13,12 +13,13 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: var(--space-8);
   min-height: 1rem;
 }
 
-/* Pushed left so the strip reads Clear all / gear, while the row stays
-   `flex-end` -- with Clear absent (a single prompt) the gear must not slide
-   over to where Clear would have been. */
+/* Pushed left so the strip reads Clear all / Generate prompt / gear, while the
+   row stays `flex-end` -- with Clear absent (a single prompt) the others must
+   not slide over to where Clear would have been. */
 .clearAll {
   margin-right: auto;
   border: none;
@@ -85,6 +86,9 @@
 }
 
 /* Placement only -- the chip itself is `MiniButton`. */
+/* Held for Enhance, which is set aside pending #309 -- nothing renders with
+   this today. Generating from nothing is a header control, not a per-row one,
+   so it does not use this. */
 .enhance {
   position: absolute;
   bottom: var(--space-6);
