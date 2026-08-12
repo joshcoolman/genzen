@@ -2,10 +2,13 @@
    the tint has room to read as a surface. */
 
 .root {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  width: 100%;
+  /* No `width: 100%`. A block-level flex container already fills its
+     container, and the fixed width made the pair of negative margins both
+     callers use to cancel this padding shift the button left instead of
+     widening it -- 8px off one edge and 8px onto the other. */
   padding: var(--space-8);
   border: none;
   border-radius: var(--radius-md);
@@ -30,15 +33,19 @@
   overflow-wrap: anywhere;
 }
 
-/* Only on hover, and only once there is something to say. Reserving space for
-   it would put a permanent gap under every block for a label that is usually
-   not there.
+/* Only on hover, and only once there is something to say -- and out of flow,
+   just under the tinted surface rather than inside it. In flow it reserved its
+   own line plus a gap on every block whether or not it ever appeared, which is
+   the whole reason a card's prompt block read as bottom-heavy against three
+   lines of text. Sitting below the tint, it costs the block nothing and lands
+   in padding the caller already has.
 
-   Small and tight against the text, because the hint is the reason the tinted
-   surface is taller than the text it wraps. On a grid card that surplus reads
-   as the block being bottom-heavy -- one line of whisper should not cost the
-   height of a paragraph line plus a paragraph gap. */
+   Callers must leave roughly a line of room under the button, or an ancestor
+   with `overflow: hidden` clips the hint. */
 .hint {
+  position: absolute;
+  top: 100%;
+  left: var(--space-8);
   font-size: var(--text-3xs);
   line-height: 1;
   color: color-mix(in oklab, var(--text) 45%, transparent);

@@ -1,5 +1,5 @@
 /* Everything an ImageCard adds to a Thumbnail: the caption block, the selected
-   look, and the two markers that sit on the image. */
+   look, and the model name that sits on the image. */
 
 .selectedTile {
   border-color: var(--accent);
@@ -56,9 +56,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  /* Even top and bottom: the tinted block is the card's last element, so an
-     uneven inset reads as the block sitting low rather than as padding. */
-  padding: var(--space-8) var(--space-12);
+  /* The extra below is the hover hint's room -- it is out of the button's flow
+     and lands here, and the card clips (`overflow: hidden`) anything past it.
+     With the hint gone from the flow the tinted block is even top and bottom
+     around its three lines, which is the point of the asymmetry here. */
+  padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
 /* The model name, in the image's bottom-right corner. Quiet grey on the tile's
@@ -111,33 +113,4 @@
   overflow: hidden;
   font-size: var(--text-3xs);
   line-height: 1.5;
-}
-
-/* The bottom-centre column, now holding only the modifier hint -- the "On
-   canvas" marker was its other occupant. Absolute, so it never changes the
-   card's height, and bottom-centre because the corners hold actions and a hint
-   is not one. */
-.markers {
-  position: absolute;
-  bottom: var(--space-8);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  pointer-events: none;
-}
-
-/* What a Cmd-click would do, named the moment the key goes down. Quiet on
-   purpose: it is an answer to a question you asked by holding a key, not an
-   announcement. */
-.shortcut {
-  padding: var(--space-2) var(--space-8);
-  border-radius: var(--radius-full);
-  background: var(--scrim);
-  backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
 }

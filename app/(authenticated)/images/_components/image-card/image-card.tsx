@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   CheckCircle2,
   Download,
@@ -11,7 +10,6 @@ import {
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
 import {
   CopyText,
@@ -118,14 +116,6 @@ export function ImageCard({
 
   const caption = img.description ?? img.generation_metadata?.prompt
 
-  // The image's shortcut names itself the moment the key goes down, the way
-  // the prompt's hint does. Only while this card is hovered -- see
-  // `useModifierHeld`.
-  const [hovered, setHovered] = useState(false)
-  const watching = hovered && !selectionActive
-  const modifier = useModifierHeld(watching)
-  const shortcut = watching && modifier.meta && onAddReference ? 'Add' : null
-
   return (
     <Thumbnail
       url={imageUrl}
@@ -146,15 +136,11 @@ export function ImageCard({
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
         <>
-          {/* Bottom-centre, absolutely positioned so it costs the card no
-              layout. The "On canvas" marker shared this column until it went;
-              the stack stays because a hint that shifts the card is worse than
-              one wrapper too many. */}
-          {shortcut && (
-            <div className={styles.markers}>
-              <span className={styles.shortcut}>{shortcut}</span>
-            </div>
-          )}
+          {/* The image used to name its Cmd-click ("Add") while the key was
+              held. It went with the "On canvas" marker: the gesture is an
+              insider's, and it does not need announcing over every thumbnail
+              of a grid. The prompt's own hint still names its modifier -- that
+              one sits in a hover surface that already exists. */}
           {/* The model, on the image rather than over the caption: it names
               what made *this* picture, so it belongs to the picture. In the
               caption it read as a title for the prompt underneath it. */}
@@ -185,11 +171,6 @@ export function ImageCard({
 
          The plain click opens the preview. It was briefly a duplicate of a
          launcher button in the caption; the click won and the buttons went. */
-      onMouseEnter={(e) => {
-        setHovered(true)
-        modifier.seed(e)
-      }}
-      onMouseLeave={() => setHovered(false)}
       onClick={
         selectionActive
           ? undefined
@@ -206,12 +187,17 @@ export function ImageCard({
         <div className={styles.caption}>
           {/* Clamped to three lines, with no expand. Three is enough to
               recognise a prompt, and the rest is a click away -- this button
-              copies the whole thing however much of it shows. */}
+              copies the whole thing however much of it shows.
+
+              `silent`: the card teaches nothing on hover now. Both gestures
+              still work; naming them is #289's job, in a surface that can
+              actually explain them. Only the tick survives, because it reports
+              rather than instructs. */}
           <CopyText
             text={caption}
             label="Copy"
+            silent
             onModifierClick={selectionActive ? undefined : onUsePrompt}
-            modifierLabel="Load Prompt"
             className={styles.prompt}
             textClassName={styles.promptText}
           />

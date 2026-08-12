@@ -15,6 +15,12 @@ interface CopyTextProps {
    *  actually held, so the shortcut announces itself to someone reaching for
    *  it and stays out of the way of everyone else. */
   modifierLabel?: string
+  /** Drops the hover hint, keeping the tick. The label still names the button
+   *  for a screen reader; what goes is the visible teaching of a gesture,
+   *  which a two-word hover is the wrong surface for (#289). "Copied" stays:
+   *  it is not an instruction, it is the only evidence the click did
+   *  anything. */
+  silent?: boolean
   /** On the button: spacing that belongs to the layout, not the affordance. */
   className?: string
   /** On the text itself: size, colour, clamping. */
@@ -35,13 +41,14 @@ export function CopyText({
   label = 'Copy',
   onModifierClick,
   modifierLabel,
+  silent = false,
   className,
   textClassName,
 }: CopyTextProps) {
   const [copied, setCopied] = useState(false)
   const [hovered, setHovered] = useState(false)
 
-  const watching = hovered && !!onModifierClick && !!modifierLabel
+  const watching = !silent && hovered && !!onModifierClick && !!modifierLabel
   const modifier = useModifierHeld(watching)
 
   async function copy() {
@@ -84,9 +91,10 @@ export function CopyText({
         void copy()
       }}
       aria-label={hint}
+      data-silent={silent || undefined}
     >
       <span className={cx(styles.text, textClassName)}>{text}</span>
-      <span className={styles.hint}>{hint}</span>
+      {(!silent || copied) && <span className={styles.hint}>{hint}</span>}
     </button>
   )
 }
