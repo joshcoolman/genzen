@@ -17,7 +17,6 @@ longer talks to the database.
   that hook fetches the whole library on mount, and a second copy on the same
   page doubles the query. `useUserImages.create` delegates to it
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
-- `lib/process-files.ts` -- Shared pipeline for file picker and clipboard: hash, title, validate, upload
 - `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
 - `server/library-index.action.ts` -- the two reads behind the Cmd-F overlay
   (#213): the whole library as lean rows (id, title, origin, typed prompt) and

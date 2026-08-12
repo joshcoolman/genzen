@@ -22,6 +22,14 @@
   background: var(--scrim);
 }
 
+/* `pointer-events: none` is what makes clicking off a dialog close it (#299).
+   Base UI only dismisses when the press lands on the backdrop *element*, and
+   this viewport is a second full-screen layer sitting on top of it -- so every
+   click in the margin hit the viewport, nothing happened, and the X was the
+   only way out. Letting presses fall through to the backdrop restores the
+   reflex for every dialog in the app at once. The popup takes its events back
+   below. Safe because the popup caps its own height and scrolls internally;
+   nothing here relies on the viewport being the scroll container. */
 .viewport {
   position: fixed;
   inset: 0;
@@ -30,6 +38,7 @@
   align-items: center;
   justify-content: center;
   padding: var(--space-24);
+  pointer-events: none;
 }
 
 /* The four things a call site legitimately changes about the popup come in as
@@ -38,6 +47,10 @@
    this rule -- equal specificity, different files -- and the winner is whatever
    the bundler happened to emit last. A property has no fight to lose.
      .popup { --dialog-max-width: 28rem; --dialog-overflow: hidden; }
+   `--dialog-height` is the fifth, for a dialog that must not resize as its
+   contents change: a picker whose height follows its result count makes the
+   grid jump under the cursor on every filter press (#299). Set it and an empty
+   filter leaves an empty grid rather than a smaller dialog.
    `--dialog-overflow: hidden` is half of the inner-scroll recipe: the popup
    stops scrolling, and the call site gives its own body `overflow-y: auto` and
    `min-height: 0` so the header and footer stay put. */
@@ -46,11 +59,13 @@
   display: flex;
   width: 100%;
   max-width: var(--dialog-max-width, 32rem);
+  height: var(--dialog-height, auto);
   max-height: var(--dialog-max-height, calc(100vh - var(--space-48)));
   flex-direction: column;
   gap: var(--space-16);
   overflow-y: var(--dialog-overflow, auto);
   padding: var(--dialog-padding, var(--space-24));
+  pointer-events: auto;
   background: var(--surface-raised);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
@@ -78,13 +93,20 @@
 }
 
 /* `size="wide"`. A picker is sized off the viewport rather than off its content
-   -- it is a grid of thumbnails, and 32rem shows two of them. Both pickers had
-   this as an inline `style`, which the new DialogContent rejects at the type
-   level; it lives here so the next one does not reinvent the numbers. */
+   -- it is a grid of thumbnails, and 32rem shows two of them. It had this as an
+   inline `style`, which the new DialogContent rejects at the type level; it
+   lives here so the next one does not reinvent the numbers.
+
+   Fixed height, not just a max (#299): the height used to follow the result
+   count, so All / Uploads / Generations each resized the dialog and the grid
+   jumped under the cursor at exactly the moment you were comparing them. 70vh
+   rather than 80 also leaves 15vh of backdrop above and below -- clicking off
+   is the reflex for leaving, and it wants a target rather than a sliver. */
 .wide {
   width: 66vw;
   --dialog-max-width: 66vw;
-  --dialog-max-height: 80vh;
+  --dialog-height: 70vh;
+  --dialog-max-height: 70vh;
 }
 
 .header {

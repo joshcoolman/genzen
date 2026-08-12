@@ -376,7 +376,10 @@ export function useCanvasGenerate(
     const totalCount = generator.totalImages
     const gap = 40
 
-    const isSingle = generator.refImages.length === 0
+    // One input image. Was `refImages.length === 0`, when the first image lived
+    // in a separate source slot and the strip held only the extras; the set
+    // holds all of them now, so one input reads as length 1 (#297).
+    const isSingle = generator.refImages.length <= 1
     // Models expanded by gensPerModel — placeholder[i] maps to
     // modelsExpanded[i % len] matching the submit order from useGenerator.
     const modelsExpanded = modelSelector.selectedIds.flatMap((id) =>
@@ -521,33 +524,24 @@ export function useCanvasGenerate(
           : '',
       )
 
-      // Primary image (Image 1) -> source slot. The recordId rides along for
-      // the same reason the references below carry theirs: without it the
-      // source is bytes with no identity, and Retry cannot send it again
-      // (#214). The URL is only the panel's preview -- the submit sends the id.
-      const url = source.signedUrl ?? imageUrl(source.recordId)
-      if (url)
-        generator.setSourceFromUrl(
-          url,
-          'canvas-image',
-          source.recordId || undefined,
-        )
-
-      // Remaining images (Image 2..N) -> reference strip, by recordId so they
-      // flow through as referenceImageIds (metadata parity). replaceRefImages
-      // skips the per-model slice; the scoped model list guarantees they fit.
-      if (extras.length > 0) {
-        const refs = await Promise.all(
-          extras.map(async (img) => ({
+      // The whole selection becomes the set, in order (#297). Canvas already
+      // believed this -- it labels the selection `[Image 1, Image 2, ...]` and
+      // treated the first as primary only because the panel had a slot to put
+      // it in. There is no slot now, so `open` no longer has to split it.
+      //
+      // Everything goes in by recordId: without one an image is bytes with no
+      // identity and Retry cannot send it again (#214). The URL is the panel's
+      // preview only -- the submit sends ids. `replaceRefImages` skips the
+      // per-model slice, which the scoped model list has already guaranteed.
+      generator.replaceRefImages(
+        selection
+          .map((img) => ({
             id: img.recordId,
             url: img.signedUrl ?? imageUrl(img.recordId),
-            title: 'reference',
-          })),
-        )
-        generator.replaceRefImages(refs.filter((r) => r.id && r.url))
-      } else {
-        generator.replaceRefImages([])
-      }
+            title: 'canvas-image',
+          }))
+          .filter((r) => r.id && r.url),
+      )
 
       // Orientation + aspect ratio from the primary image.
       const detected = detectAspectRatio(source.width, source.height)

@@ -160,6 +160,24 @@ export function maxRefsFor(modelId: string): number {
   return findModel(modelId)?.maxRefs ?? 0
 }
 
+/**
+ * How many images the model's endpoint can actually hold (#297).
+ *
+ * `maxRefs` counts images *beyond the source*, so the real capacity is one
+ * more. The panel used to show `maxRefs` as the total and undercounted every
+ * model by one -- Nano Banana 2 read `0/3` for an endpoint that takes four.
+ * There is no source any more; there is a set, and this is its size.
+ *
+ * A model with no `withImages` endpoint takes no images at all, so its capacity
+ * is zero rather than one. Nothing in `IMAGE_MODELS` is in that state today,
+ * which is exactly why it is worth encoding here rather than assuming.
+ */
+export function imageCapacityFor(modelId: string): number {
+  const m = findModel(modelId)
+  if (!m?.withImages) return 0
+  return m.maxRefs + 1
+}
+
 function findModel(modelId: string): ModelEntry | undefined {
   return IMAGE_MODELS.find(
     (m) =>

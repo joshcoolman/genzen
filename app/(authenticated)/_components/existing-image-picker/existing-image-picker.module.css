@@ -1,9 +1,15 @@
 /* Sizing is `size="wide"` on DialogContent, not here -- it was an inline
-   `style` before, which the new DialogContent rejects at the type level. */
+   `style` before, which the new DialogContent rejects at the type level. That
+   is also where the fixed height lives, so switching filters no longer resizes
+   the dialog (#299). */
 .popup {
   --dialog-overflow: hidden;
 }
 
+/* The one picker (#297). The library-picker-dialog twin went with the source
+   chip that was its only other consumer, so there is a single answer to "pick
+   an image from my library" again. Uploading is not one of this dialog's jobs:
+   it is the Images toolbar's, and only there. */
 .filters {
   display: flex;
   align-items: center;
@@ -31,37 +37,6 @@
 .filterSelected:hover {
   background: var(--accent);
   color: var(--accent-contrast);
-}
-
-.upload {
-  display: flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-left: auto;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-raised);
-  color: var(--text);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--duration-normal) var(--ease-out);
-}
-
-.upload:hover {
-  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
-}
-
-.upload:disabled {
-  opacity: 0.5;
-}
-
-.upload > svg {
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
-.fileInput {
-  display: none;
 }
 
 /* The grid scrolls, the filters and footer do not -- the inner-scroll recipe

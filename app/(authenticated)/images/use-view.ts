@@ -15,7 +15,6 @@ import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
-import { useDescribeJson } from '#/features/ai-images/hooks/use-describe-json'
 import { useSelection } from '#/lib/use-selection'
 import { toast } from '#/components'
 
@@ -85,11 +84,6 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
-  // Nothing on the grid marks the source any more (#284). The generator's chip
-  // is the only place the source is shown and the only place it is changed --
-  // one place to look, and a white "this is the source" border can never
-  // collide with the green of a selected card, because there is no white.
-
   // An image copied from the search overlay pastes in as a reference (#213).
   usePasteReference({
     addRefImages: generator.addRefImages,
@@ -107,19 +101,6 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const lightbox = useLightbox(lightboxImages, gallery.deleteImage)
   const variations = useVariations({ setError })
-
-  // Describe JSON for the generator's source image -- appends to prompt
-  const describe = useDescribeJson({
-    imageUrl: generator.sourceImage?.base64,
-    onResult: useCallback(
-      (json: string) => {
-        generator.setPrompt((prev: string) =>
-          prev ? `${prev}\n\n${json}` : json,
-        )
-      },
-      [generator],
-    ),
-  })
 
   const selection = useSelection({ items: images.map((img) => img.id) })
 
@@ -179,21 +160,33 @@ export function useView(initial: Array<SavedAiImage>) {
 
   // The two power moves: Cmd-click a card for its image, Cmd-click its prompt
   // for its text. Each replaces exactly one thing and touches nothing else --
-  // not the count, not the additional prompts, not the references, not the
+  // not the count, not the additional prompts, not the rest of the set, not the
   // model selection -- so "that image, my words" is two clicks from anywhere
   // in the grid.
   //
   // Both open the panel. A power move whose entire effect is inside a closed
   // panel has no feedback at all, which is the reason #284 refused to put a
   // "use as source" button on the card.
+  //
+  // With one set (#297) this now means slot 0 rather than a separate source
+  // slot: the image the aspect ratio follows and the one submitted first.
+  // Cmd-Shift-click still adds alongside, evicting the tail.
   const focusSource = useCallback(
     (img: SavedAiImage) => {
       if (!img.storage_path) return
+      if (generator.maxRefImages === 0) {
+        toast('The selected model does not take images')
+        return
+      }
       dock.setOpen(true)
       // The URL is for the panel's preview only. The submit sends the id, and
       // the server resolves the object and uploads the bytes to FAL -- handing
       // FAL an app URL to fetch could never work: it needs a session.
-      generator.setSourceFromLibrary(img.id, imageUrl(img.id), img.title)
+      generator.setPrimaryImage({
+        id: img.id,
+        url: imageUrl(img.id),
+        title: img.title,
+      })
     },
     [generator, dock],
   )
@@ -265,7 +258,6 @@ export function useView(initial: Array<SavedAiImage>) {
     lightbox,
     variations,
     variationSourceUrl,
-    describe,
     describeTarget,
     setDescribeTarget,
     focusSource,

@@ -108,13 +108,12 @@ Login's `centered-panel`.
 
 Generation is one flow keyed off the selection (`useCanvasGenerate`). The on-image Generate pill appears below the selection for 1..`CANVAS_MAX_GROUP_SELECTION` non-pending images:
 
-- **1 image** → it's the source (Image 1), single-image generate as before.
-- **2..N images** → the first is the primary/source (Image 1, shown up top); the rest pre-fill the reference strip (Image 2..N) via `replaceRefImages`. Every image is auto-labeled `[Image 1, Image 2, ...]`, prepended to the prompt (`useGenerator`'s `promptPrefix`) so the model can be referenced by number with no UI labeling.
+- **1..N images** → the whole selection becomes the generator's set, in order, via `replaceRefImages`. There is no source slot to split it into since #297 -- canvas already believed this, since it has always labeled the selection `[Image 1, Image 2, ...]` and prepended that to the prompt (`useGenerator`'s `promptPrefix`) so the model can be referenced by number with no UI labeling. Index 0 is still Image 1: it drives the aspect ratio and is submitted first.
 - The model selector is **scoped to models whose edit endpoint can hold the references** (`canvasModelIdsForRefCount` → `useModelSelector({ allowedIds })`); too-small models drop out so references can't be silently truncated. Over `CANVAS_MAX_GROUP_SELECTION` selected → no pill.
 
 There is no separate "Combine" feature anymore (retired into this flow).
 
-**Placement:** previews lay out to the right of the source; if that would overlap existing images they relocate to clear space below everything (single-image: the source moves with them; group: inputs stay put). The view `fitBounds`-zooms to the new previews. For a single-image generate the origin + its previews are auto-grouped (`groupImages`).
+**Placement:** "the source" here means the first selected image, which is where the placeholders are anchored (`sourceRef`). Previews lay out to its right; if that would overlap existing images they relocate to clear space below everything (single-image: the source moves with them; group: inputs stay put). The view `fitBounds`-zooms to the new previews. For a single-image generate the origin + its previews are auto-grouped (`groupImages`).
 
 **Delete:** Delete/Backspace moves the selection to Trash. No modal, no toast, nothing to dismiss (#236) -- Trash is a place you can visit tomorrow, and that is the confirmation. Right-click context menu offers Generate + Move to Trash. A failure still speaks: the cards have already left the screen, so silence there would be a lie.
 
@@ -137,7 +136,7 @@ them.
 - `use-autosave.ts` -- the 500ms debounce and its unload flush.
 - `use-canvas-hotkeys.ts` -- the thirteen bindings.
 
-- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` takes the selected images (first = source, rest = references), scopes models by ref capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
+- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` puts the whole selection in the generator's set in order (#297), scopes models by capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
 ## Lib
 
@@ -173,7 +172,7 @@ them.
 
 ## Shared Dependencies
 
-- `#/features/ai-images/hooks/use-generator` -- prompt state, source image, generation submission
+- `#/features/ai-images/hooks/use-generator` -- prompt state, the image set, generation submission
 - `../_components/generator-panel/generator-panel` -- reused UI for generation controls
 - `#/features/ai-images/server/generate-image.action` -- server action for multi-image combination
 - `#/features/user-images/` -- `useUserImages` for upload

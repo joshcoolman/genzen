@@ -13,34 +13,45 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   Delete on the image; the model name and the whole prompt under it, the prompt
   being its own copy button. The expand icon went (the click does that), the
   select circle went (select mode does), and the source highlight went -- the
-  grid used to set the generator's source on click, which is a hidden piece of
-  state for the most obvious gesture on the page. The prompt is deliberately
+  grid used to point the generator at an image on click, which is a hidden
+  piece of state for the most obvious gesture on the page. The prompt is deliberately
   not clamped: uneven card heights are the known cost, being tried before a
   clamp is reached for again
-- **The source is set in the panel, and the grid never marks it (#284).** The
-  chip at the top of Generate is the only indication of what the generator is
-  pointed at and the only way to change it -- clicking it opens the library,
-  the X clears it. There is no path back from the grid, deliberately: it was
-  removed to be bumped into rather than replaced up front, and what arrived
-  instead are modifiers, not buttons: **Cmd-click a card points the generator
-  at that image, Cmd-Shift-click pushes it onto the reference strip, Cmd-click
-  its prompt loads that text** -- each replacing exactly one thing and leaving
-  everything else in the panel alone. The reference push goes on the _front_ and
-  evicts the last (`pushRef` in `src/features/ai-images/ref-images.ts`, which is
-  unit-tested), the opposite end from `addRefImages`: the gesture means "use
-  this one", so a full strip has to make room rather than refuse. Only the
-  eviction toasts -- gaining an image is its own feedback, losing one is not.
-  The prompt's hover label says "Copy", and "Load Prompt" **while Cmd is
-  actually held** -- the shortcut announces itself to someone reaching for it
-  and charges nobody else for the privilege. The key listener is bound only
-  while that one card is hovered, because a grid holds dozens. The two image
-  gestures stay unhinted, waiting on a surface that can explain them (#289) Both open the panel, because a power move whose
+- **There is no source image; there is one set (#297).** The panel holds an
+  ordered set of zero to N **Reference images**, filled from the library and
+  from nowhere else. Index 0 is the only asymmetry left: the aspect ratio is
+  derived from it, and it is submitted first. **Upload happens in exactly one
+  place, the toolbar's Upload icon**, and picking from the library in exactly
+  one, the widget. The panel's own upload used to take a single file and
+  silently make it the source, so "put these in my library" also repointed the
+  generator with nothing saying so. The cost is that upload-and-immediately-use
+  is two gestures now; `reveal()` widens the scope to wherever the file landed,
+  so the second is a click rather than a hunt
+- **The cap is the minimum across the selected models**, never the first one's.
+  `buildFalInput` drops everything past index 0 for a model whose schema takes
+  `image_url` rather than `image_urls`, so a mixed selection used to send the
+  small model one image with no warning. Narrowing the selection **visibly
+  trims the set** rather than truncating it at submit
+- **The grid never marks the set, and reaches it only through modifiers (#284).**
+  Not buttons, deliberately: **Cmd-click a card puts that image in slot 0,
+  Cmd-Shift-click pushes it onto the set, Cmd-click its prompt loads that
+  text** -- each replacing exactly one thing and leaving everything else in the
+  panel alone. The push goes on the _front_ and evicts the last (`pushRef` in
+  `src/features/ai-images/ref-images.ts`, which is unit-tested), the opposite
+  end from `addRefImages`: the gesture means "use this one", so a full set has
+  to make room rather than refuse. Only the eviction toasts -- gaining an image
+  is its own feedback, losing one is not. The prompt's hover label says "Copy",
+  and "Load Prompt" **while Cmd is actually held** -- the shortcut announces
+  itself to someone reaching for it and charges nobody else for the privilege.
+  The key listener is bound only while that one card is hovered, because a grid
+  holds dozens. The two image gestures stay unhinted, waiting on a surface that
+  can explain them (#289). Both open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
-  endpoint from whether a source is set, so "edit" is a detail of building the
+  endpoint from whether the set is empty, so "edit" is a detail of building the
   request. The lightbox used to offer a source pencil too; #271 removed it
-  rather than have two answers to "how do I set a source"
+  rather than have two answers to "how do I put an image in"
 - **Selection is a mode, not a circle per card (#284).** The toolbar toggle
   turns the whole card into one target. The reason is target size: the use that
   justifies selection is bulk, and per-card circles make clearing twelve of

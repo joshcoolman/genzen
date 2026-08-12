@@ -64,7 +64,13 @@ export function RefImageStrip({
       })}
       {images.length < max && onAdd && (
         <div className={styles.item}>
-          <button onClick={onAdd} disabled={disabled} className={styles.add}>
+          <button
+            type="button"
+            onClick={onAdd}
+            disabled={disabled}
+            className={styles.add}
+            aria-label="Add an image"
+          >
             <Plus className={styles.addIcon} />
           </button>
           {showLabels && <p className={styles.addSpacer}>&nbsp;</p>}
