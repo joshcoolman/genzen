@@ -45,12 +45,20 @@ export function useView(initialVideos: Array<VideoRecord>) {
   const [duration, setDuration] = useState(model.defaultDuration)
   const [aspectRatio, setAspectRatio] = useState(model.aspectRatios[0])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
+  // One picker, two slots. A second dialog would be the same component mounted
+  // twice to answer the same question; the target says where the pick lands.
+  const [pickerTarget, setPickerTarget] = useState<'first' | 'last' | null>(
+    null,
+  )
 
   // The set is one image, held as an array so `RefImageStrip` can render it
   // unchanged. Anything past the first is dropped rather than queued -- the
   // endpoint takes a single `image_url`.
   const [sources, setSources] = useState<Array<SourceImage>>([])
+  // Optional. With one, the model solves the move between the two stills
+  // rather than inventing where the shot goes -- the same instruction a prompt
+  // spends three sentences failing to pin down.
+  const [endSources, setEndSources] = useState<Array<SourceImage>>([])
 
   // `?image=<id>` is how Animate hands a card over. It resolves once the
   // library has loaded, because the strip needs a URL and a title, not just an
@@ -99,17 +107,26 @@ export function useView(initialVideos: Array<VideoRecord>) {
     return () => clearInterval(id)
   }, [hasPending, refresh])
 
-  const openPicker = useCallback(() => {
-    void userImages.refresh()
-    setPickerOpen(true)
-  }, [userImages])
+  const openPicker = useCallback(
+    (target: 'first' | 'last') => {
+      void userImages.refresh()
+      setPickerTarget(target)
+    },
+    [userImages],
+  )
 
-  const collectSources = useCallback((picked: Array<SourceImage>) => {
-    // `max={1}` already bounds the picker; this is the belt to that brace.
-    setSources(picked.slice(0, 1))
-  }, [])
+  const collectSources = useCallback(
+    (picked: Array<SourceImage>) => {
+      // `max={1}` already bounds the picker; this is the belt to that brace.
+      const one = picked.slice(0, 1)
+      if (pickerTarget === 'last') setEndSources(one)
+      else setSources(one)
+    },
+    [pickerTarget],
+  )
 
   const clearSources = useCallback(() => setSources([]), [])
+  const clearEndSources = useCallback(() => setEndSources([]), [])
 
   const updatePrompt = useCallback((index: number, value: string) => {
     setPrompts((current) => current.map((p, i) => (i === index ? value : p)))
@@ -135,6 +152,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
   )
 
   const sourceId = sources.at(0)?.id ?? null
+  const endImageId = endSources.at(0)?.id ?? null
   // Every prompt is its own clip, so the figure on the button multiplies. The
   // per-clip price is constant; what varies is how many are queued.
   const estimatedCost =
@@ -153,6 +171,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
       for (const prompt of filledPrompts) {
         await generateVideo({
           imageId: sourceId,
+          ...(endImageId ? { endImageId } : {}),
           prompt,
           duration,
           aspectRatio,
@@ -166,17 +185,27 @@ export function useView(initialVideos: Array<VideoRecord>) {
     } finally {
       setIsSubmitting(false)
     }
-  }, [sourceId, filledPrompts, duration, aspectRatio, model.slug, refresh])
+  }, [
+    sourceId,
+    endImageId,
+    filledPrompts,
+    duration,
+    aspectRatio,
+    model.slug,
+    refresh,
+  ])
 
   return {
     model,
     userImages,
     sources,
-    pickerOpen,
-    setPickerOpen,
+    endSources,
+    pickerTarget,
+    setPickerTarget,
     openPicker,
     collectSources,
     clearSources,
+    clearEndSources,
     videos,
     prompts,
     updatePrompt,

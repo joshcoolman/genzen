@@ -7,7 +7,7 @@ import {
   videoModelBySlug,
 } from '../models'
 import { resolveAuth } from '#/lib/server/auth.server'
-import { first, sql } from '#/lib/server/db.server'
+import { sql } from '#/lib/server/db.server'
 import {
   createPendingGeneration,
   describeGenerationError,
@@ -20,6 +20,9 @@ fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateVideoInput {
   imageId: string
+  /** Optional last frame. With one, the model solves the move between the two
+   *  stills rather than inventing where the shot goes. */
+  endImageId?: string
   prompt: string
   duration: number
   aspectRatio: string
@@ -36,6 +39,7 @@ export interface GenerateVideoInput {
  */
 export async function generateVideo({
   imageId,
+  endImageId,
   prompt,
   duration,
   aspectRatio,
@@ -55,14 +59,22 @@ export async function generateVideo({
     throw new Error(`Unsupported aspect ratio: ${aspectRatio}`)
   }
 
-  const source = first(
-    await sql<Array<{ id: string; title: string }>>`
-      select id, title from user_images
-      where id = ${imageId} and user_id = ${userId} and deleted_at is null
-        and status = 'completed'
-    `,
-  )
-  if (!source) throw new Error('Source image not found')
+  // Both frames are checked in one statement: two round trips to prove the
+  // same thing, and a partial check would let an unreadable end frame fail
+  // after the row was reserved.
+  const wanted = endImageId ? [imageId, endImageId] : [imageId]
+  const found = await sql<Array<{ id: string }>>`
+      select id from user_images
+      where id in ${sql(wanted)} and user_id = ${userId}
+        and deleted_at is null and status = 'completed'
+    `
+  if (found.length !== new Set(wanted).size) {
+    throw new Error('Source image not found')
+  }
+
+  if (endImageId && !model.supportsEndImage) {
+    throw new Error(`${model.label} takes no end frame`)
+  }
 
   const estimatedCostCents = estimateCostCents(model, duration)
 
@@ -79,6 +91,7 @@ export async function generateVideo({
       // `.server.ts` module never has to import the route-owned catalog.
       model_label: model.label,
       source_image_id: imageId,
+      ...(endImageId ? { end_image_id: endImageId } : {}),
       duration_seconds: duration,
       resolution: model.resolution,
       estimated_cost_cents: estimatedCostCents,
@@ -88,13 +101,19 @@ export async function generateVideo({
   try {
     // The bucket is private (#226), so FAL cannot fetch our URL -- the bytes go
     // up to FAL's own storage first. Same seam the image paths use.
-    const [uploadedUrl] = await uploadLibraryImagesToFal([imageId], userId)
-    if (!uploadedUrl) throw new Error('Could not read the source image')
+    // One call, caller order preserved -- the helper resolves by the ids given,
+    // not by whatever the database returned.
+    const uploaded = await uploadLibraryImagesToFal(wanted, userId)
+    if (uploaded.length !== wanted.length) {
+      throw new Error('Could not read the source image')
+    }
+    const [uploadedUrl, uploadedEndUrl] = uploaded
 
     const { request_id } = await fal.queue.submit(model.endpoint, {
       input: {
         prompt: trimmed,
         image_url: uploadedUrl,
+        ...(uploadedEndUrl ? { end_image_url: uploadedEndUrl } : {}),
         duration,
         aspect_ratio: aspectRatio,
         resolution: model.resolution,

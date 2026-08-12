@@ -21,6 +21,8 @@ export interface VideoModel {
   durations: Array<number>
   defaultDuration: number
   aspectRatios: Array<string>
+  /** Takes an `end_image_url`: two stills in, the transition between them out. */
+  supportsEndImage: boolean
 }
 
 export const VIDEO_MODELS: Array<VideoModel> = [
@@ -36,6 +38,7 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     durations: [6, 8, 10, 12, 14, 16, 18, 20],
     defaultDuration: 8,
     aspectRatios: ['auto', '16:9', '9:16'],
+    supportsEndImage: true,
   },
 ]
 

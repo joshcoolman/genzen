@@ -17,6 +17,13 @@ source images; `use-view.ts` owns everything after the first paint.
   for the first frame, `PromptList` for the takes -- none of them modified.
   Blocked out rather than laid out: the point was to stop hand-rolling
   equivalents, not to settle the arrangement.
+- **Last frame is optional, and its slot stays visible when empty.** With one,
+  the model solves the move between two stills instead of inventing where the
+  shot goes -- the same instruction a prompt spends three sentences failing to
+  pin down. Hidden behind a disclosure, nothing would say the capability
+  exists. One picker serves both slots; `pickerTarget` says where the pick
+  lands, because a second dialog would be the same component mounted twice to
+  answer the same question.
 - **Several prompts, one first frame, one clip each.** The submit loops
   sequentially rather than `Promise.all` -- each call reserves a row before it
   contacts FAL, and firing them together interleaves the reservations against a

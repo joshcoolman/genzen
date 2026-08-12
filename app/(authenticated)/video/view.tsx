@@ -13,11 +13,13 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     model,
     userImages,
     sources,
-    pickerOpen,
-    setPickerOpen,
+    endSources,
+    pickerTarget,
+    setPickerTarget,
     openPicker,
     collectSources,
     clearSources,
+    clearEndSources,
     videos,
     prompts,
     updatePrompt,
@@ -43,12 +45,16 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
       />
 
       <ExistingImagePicker
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
+        open={pickerTarget !== null}
+        onOpenChange={(open) => !open && setPickerTarget(null)}
         images={userImages.images}
         imageUrls={userImages.imageUrls}
         isLoading={userImages.isLoading}
-        alreadyCollectedIds={new Set(sources.map((s) => s.id))}
+        alreadyCollectedIds={
+          new Set(
+            (pickerTarget === 'last' ? endSources : sources).map((s) => s.id),
+          )
+        }
         onConfirm={collectSources}
         max={1}
         autoConfirm
@@ -61,19 +67,35 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
         <div className={styles.controls}>
           <Stack gap={16}>
-            {/* The same widget the generator panel uses for Reference images, and the
-              same picker behind it. One slot, because the endpoint takes a single
-              first frame. */}
+            {/* The generator panel's Reference images widget, twice, with its
+                picker behind both. One slot each: the endpoint takes a single
+                still per end. */}
             <div className={styles.source}>
               <p className={styles.sourceLabel}>First frame</p>
               <RefImageStrip
                 images={sources}
                 max={1}
-                onAdd={openPicker}
+                onAdd={() => openPicker('first')}
                 onRemove={clearSources}
                 disabled={isSubmitting}
               />
             </div>
+
+            {/* Optional, and it stays visible when empty rather than hiding
+                behind a disclosure -- an empty slot is the only thing that
+                says the capability exists. */}
+            {model.supportsEndImage && (
+              <div className={styles.source}>
+                <p className={styles.sourceLabel}>Last frame (optional)</p>
+                <RefImageStrip
+                  images={endSources}
+                  max={1}
+                  onAdd={() => openPicker('last')}
+                  onRemove={clearEndSources}
+                  disabled={isSubmitting}
+                />
+              </div>
+            )}
 
             <VideoForm
               model={model}
