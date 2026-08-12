@@ -45,11 +45,11 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <Workspace pushed={dock.open}>
         <Toolbar
           prefs={prefs}
-          showGenerateButton={!dock.open}
+          panelOpen={dock.open}
+          onTogglePanel={() => dock.setOpen(!dock.open)}
           selectMode={selectMode}
           onToggleSelectMode={toggleSelectMode}
           onUpload={uploadFiles}
-          onGenerate={() => dock.setOpen(true)}
         />
 
         <ImageGallery

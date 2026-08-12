@@ -6,7 +6,7 @@ import {
   ArrowUp,
   CheckSquare,
   Info,
-  Plus,
+  PanelRight,
   Upload,
 } from 'lucide-react'
 import { ORIGIN_FILTERS, ORIGIN_FILTER_LABELS } from '../../_hooks/use-prefs'
@@ -47,22 +47,22 @@ function Labelled({
 
 interface ToolbarProps {
   prefs: PrefsState
-  /** Hidden while the generator is already showing. */
-  showGenerateButton: boolean
+  /** The generator panel. Its control stays put whichever way it is showing. */
+  panelOpen: boolean
+  onTogglePanel: () => void
   /** Select mode (#284). It took the slot the size switcher vacated. */
   selectMode: boolean
   onToggleSelectMode: () => void
   onUpload: (files: Array<File>) => void
-  onGenerate: () => void
 }
 
 export function Toolbar({
   prefs,
-  showGenerateButton,
+  panelOpen,
+  onTogglePanel,
   selectMode,
   onToggleSelectMode,
   onUpload,
-  onGenerate,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -155,17 +155,22 @@ export function Toolbar({
             </button>
           </Labelled>
 
-          {showGenerateButton && (
-            <Labelled label="New generation">
-              <button
-                onClick={onGenerate}
-                className={cx(styles.action, styles.actionPrimary)}
-                aria-label="New generation"
-              >
-                <Plus className={styles.icon} />
-              </button>
-            </Labelled>
-          )}
+          {/* The generator's own control, and it stays put: it used to be a
+              green `+` that vanished once the panel was open, so opening it
+              left only the panel's X and closing it moved the button back --
+              two controls for one thing, neither of them where the other was.
+              A panel toggle instead, in the row's own style, lit while the
+              panel is showing the way select is. */}
+          <Labelled label={panelOpen ? 'Hide generator' : 'Show generator'}>
+            <button
+              onClick={onTogglePanel}
+              className={cx(styles.action, panelOpen && styles.actionOn)}
+              aria-pressed={panelOpen}
+              aria-label={panelOpen ? 'Hide generator' : 'Show generator'}
+            >
+              <PanelRight className={styles.icon} />
+            </button>
+          </Labelled>
         </div>
       </TooltipProvider>
     </div>

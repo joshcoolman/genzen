@@ -104,16 +104,6 @@
   background: color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
-.actionPrimary {
-  background: var(--accent);
-  color: var(--text);
-}
-
-.actionPrimary:hover {
-  background: color-mix(in oklab, var(--accent) 90%, transparent);
-  color: var(--text);
-}
-
 .icon {
   width: 1rem;
   height: 1rem;
