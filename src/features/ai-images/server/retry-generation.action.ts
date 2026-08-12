@@ -8,6 +8,7 @@ import type { RetryMetadata } from '../retry-plan'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
+import { assertFalKey } from '#/lib/server/fal-key.server'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
   readLibraryImageBytes,
@@ -92,11 +93,7 @@ export async function retryGeneration(data: RetryGenerationInput) {
   const newRecord = { id: data.recordId }
 
   try {
-    if (!process.env.FAL_KEY) {
-      throw new Error(
-        'FAL_KEY is not set — add it to .env.local and restart the dev server',
-      )
-    }
+    assertFalKey()
 
     // Every image goes to FAL as bytes. The source used to be handed over as a
     // URL (unfetchable locally) or, for a library source, dropped entirely --
