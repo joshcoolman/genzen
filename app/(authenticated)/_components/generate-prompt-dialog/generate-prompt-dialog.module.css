@@ -1,0 +1,55 @@
+/* The roll-a-prompt dialog: a result, a nudge field, and three buttons. */
+
+.dialog {
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+/* A fixed minimum so the box does not resize between the spinner and the
+   result. Rolling repeatedly is the expected use, and a dialog that changes
+   height on every roll moves the Again button out from under the pointer. */
+.result {
+  min-height: 7rem;
+  display: flex;
+  align-items: center;
+  padding: var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+/* Larger than body text: this is one paragraph the user decides on at a
+   glance, and it is the only thing in the dialog worth reading. */
+.prompt {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.pending {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.spinner {
+  width: 1rem;
+  height: 1rem;
+  animation: spin 1s linear infinite;
+}
+
+.diceIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -146,6 +146,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-12
 
+- **Generate prompt** — a prompt out of nothing, for the blank field. In the prompt list's header: roll, nudge it with instructions that persist, ask for "more like this", and Apply adds to the stack without closing. Enhance is set aside pending #309
 - **Explore** — a new route, first in the nav: a masonry wall of every finished image with no controls on it, and the lightbox over it. Browsing and working are different moods, and the overlay only makes sense in the first one
 - Clicking an image on **Images** now opens an in-place preview instead of the lightbox: the grid area alone becomes one large image, toolbar untouched. Outer quarters step (chevron appears on hover), middle half closes, arrow keys page
 - `pnpm dev` now catches an **empty** `export FAL_KEY=""` shadowing `.env.local`, not just a stale one — the guard used a truthiness check, so the one case it never reported was the one that reads as "FAL_KEY is not set" against a file that plainly holds the key (#306)

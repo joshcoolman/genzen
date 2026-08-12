@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
+import { GeneratePromptButton } from '../generate-prompt-dialog/generate-prompt-dialog'
 import { SystemInstructionsButton } from '../system-instructions-button/system-instructions-button'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
@@ -66,6 +67,23 @@ export function GeneratorPanel({
   const remaining = generator.maxRefImages - generator.refImages.length
 
   /**
+   * Where a generated prompt lands. Fills the first row while the list is one
+   * empty box, appends after that.
+   *
+   * The special case exists so the common path -- open the panel, roll, apply
+   * -- does not leave an empty row above the prompt you just took. Once there
+   * is anything to preserve, appending is the only safe move: the dialog stays
+   * open to add several, and overwriting on the second Apply would silently
+   * eat the first.
+   */
+  function addGeneratedPrompt(text: string) {
+    const untouched =
+      generator.prompts.length === 1 && generator.prompts[0].trim() === ''
+    if (untouched) generator.setPromptAtIndex(0, text)
+    else generator.appendPrompts([text])
+  }
+
+  /**
    * A big run says how big before it starts. Cancel returns without submitting
    * anything, so the model selection and the count are still there to adjust --
    * the alternative was noticing twenty cards after they had already been paid
@@ -112,7 +130,15 @@ export function GeneratorPanel({
         /* Instructions for every prompt, not a prompt -- rendered into the
            list's header strip from here so PromptList never learns about them
            (#272), and so both Images and Canvas get the control. */
-        headerSlot={<SystemInstructionsButton />}
+        headerSlot={
+          <>
+            <GeneratePromptButton
+              onAdd={addGeneratedPrompt}
+              disabled={generator.loading}
+            />
+            <SystemInstructionsButton />
+          </>
+        }
       />
 
       {/* The set. It never hides: every model in the lineup takes at least one

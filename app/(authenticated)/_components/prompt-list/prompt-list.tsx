@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2, Plus, Sparkles, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import styles from './prompt-list.module.css'
 import type { ReactNode } from 'react'
 import { MiniButton, Textarea } from '#/components'
@@ -14,7 +14,12 @@ interface PromptListProps {
   placeholders?: { first: string; additional: string }
   // Optional: clear all prompts back to single empty textarea
   onClearPrompts?: () => void
-  // Optional: enhance prompt via LLM (loosely coupled — only renders if provided)
+  /**
+   * Enhance prompt via LLM. Currently unrendered -- it is set aside pending the
+   * rewrite in #309, because every run came back more verbose than wanted. The
+   * prop and the spinner state stay wired so restoring it is a button, not a
+   * rebuild. Generating from nothing is a separate control in `headerSlot`.
+   */
   onEnhancePrompt?: (index: number) => void | Promise<void>
   // Index of the prompt currently being enhanced (shows spinner on that row)
   enhancingPromptIndex?: number | null
@@ -38,7 +43,6 @@ export function PromptList({
     additional: 'Additional prompt...',
   },
   onClearPrompts,
-  onEnhancePrompt,
   enhancingPromptIndex,
   headerSlot,
 }: PromptListProps) {
@@ -66,13 +70,6 @@ export function PromptList({
       </div>
       {prompts.map((promptText, index) => {
         const isEnhancing = enhancingPromptIndex === index
-        const anyEnhancing =
-          enhancingPromptIndex !== null && enhancingPromptIndex !== undefined
-        const canEnhance =
-          Boolean(onEnhancePrompt) &&
-          promptText.trim().length > 0 &&
-          !disabled &&
-          !anyEnhancing
         return (
           <div key={index} className={styles.field}>
             <Textarea
@@ -94,23 +91,6 @@ export function PromptList({
             >
               <X size={14} />
             </button>
-            {onEnhancePrompt && (
-              <MiniButton
-                variant="overlay"
-                icon={isEnhancing ? <Loader2 /> : <Sparkles />}
-                spinning={isEnhancing}
-                onClick={() => void onEnhancePrompt(index)}
-                disabled={!canEnhance && !isEnhancing}
-                title={
-                  promptText.trim().length === 0
-                    ? 'Enter a prompt to enhance'
-                    : 'Enhance prompt with AI'
-                }
-                className={styles.enhance}
-              >
-                {isEnhancing ? 'Enhancing…' : 'Enhance'}
-              </MiniButton>
-            )}
           </div>
         )
       })}
