@@ -50,12 +50,14 @@
   color: var(--accent);
 }
 
-/* A tenth off, and only while unpicked. Entering select mode dims the whole
-   grid, because nothing is picked yet -- which is the mode announcing itself.
-   After that the dimming is the answer to "which ones did I take", readable
-   from across the grid in a way a 20px corner glyph is not. */
+/* Halved, and only while unpicked. Entering select mode dims the whole grid,
+   because nothing is picked yet -- which is the mode announcing itself. After
+   that the dimming is the answer to "which ones did I take", readable from
+   across the grid in a way a 20px corner glyph is not.
+   Deliberately overshot: 10% was correct in principle and invisible in
+   practice, and a value you can see is the only one you can tune down. */
 .unpicked img {
-  opacity: 0.9;
+  opacity: 0.5;
   transition: opacity var(--duration-normal) var(--ease-in-out);
 }
 
