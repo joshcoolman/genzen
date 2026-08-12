@@ -86,6 +86,46 @@ export function GeneratePromptButton({
     [guidance, reportError],
   )
 
+  /**
+   * Paste seeds the result without calling anything.
+   *
+   * Bring a prompt in from somewhere else, then use "More like this" to work
+   * outward from it. The point is that it costs no request: the pasted text is
+   * a starting position, not a result, and asking the model to hand back what
+   * you just gave it would be a round trip for nothing.
+   *
+   * Bubble phase with a `defaultPrevented` guard, so it sits underneath the
+   * handlers that are already listening. Images claims the clipboard in the
+   * capture phase when it holds one of our record ids (#213) -- an image ref
+   * still becomes a reference image, and only what nobody else wanted lands
+   * here.
+   */
+  useEffect(() => {
+    if (!open) return
+
+    function onPaste(e: ClipboardEvent) {
+      if (e.defaultPrevented) return
+      // A typing surface keeps its own paste -- the guidance field being the
+      // one that matters, since pasting a direction into it is ordinary.
+      const target = e.target as HTMLElement | null
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return
+
+      const text = e.clipboardData?.getData('text/plain').trim()
+      if (!text) return
+
+      e.preventDefault()
+      // So the route's upload handler does not also take a run at it.
+      e.stopPropagation()
+      setPrompt(text)
+      setAdded(false)
+      // Not added to `shown`: that list is what to steer away from, and this
+      // is the one thing the next roll is most likely meant to stay near.
+    }
+
+    document.addEventListener('paste', onPaste)
+    return () => document.removeEventListener('paste', onPaste)
+  }, [open])
+
   // Deliberately does not fire on open. The dialog is a place to work, not a
   // slot machine that pulls itself -- and an immediate request would spend a
   // call before the guidance field has been read, let alone edited.
@@ -130,7 +170,8 @@ export function GeneratePromptButton({
               <p className={styles.prompt}>{prompt}</p>
             ) : (
               <span className={styles.muted}>
-                Click Generate prompt to get an idea.
+                Click Generate prompt to get an idea, or paste one to start
+                from.
               </span>
             )}
           </div>
