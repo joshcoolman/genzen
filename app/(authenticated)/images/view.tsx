@@ -42,11 +42,10 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
   return (
     <>
-      <Workspace pushed={dock.open && dock.pinned}>
+      <Workspace pushed={dock.open}>
         <Toolbar
           prefs={prefs}
           showGenerateButton={!dock.open}
-          panelFloating={dock.open && !dock.pinned && !prefs.isMobile}
           selectMode={selectMode}
           onToggleSelectMode={toggleSelectMode}
           onUpload={uploadFiles}

@@ -8,13 +8,6 @@
   padding: var(--space-8) var(--space-12);
 }
 
-/* Click-away target when the panel is floating rather than pinned. */
-.dismissLayer {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-overlay);
-}
-
 .panel {
   position: fixed;
   top: 0;
@@ -29,10 +22,6 @@
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
-.panelFloating {
-  box-shadow: var(--shadow-overlay);
-}
-
 .header {
   display: flex;
   align-items: center;
@@ -44,12 +33,6 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   color: var(--text-muted);
-}
-
-.headerActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
 }
 
 .headerButton {

@@ -8,14 +8,6 @@
   gap: var(--space-8);
 }
 
-/* The unpinned generator is `position: fixed` at 20rem on the right and floats
-   over this row, so the right-aligned tools land underneath it. Reserving the
-   panel's width keeps them reachable; the gallery below is still full width,
-   which is the point of floating rather than pinning. */
-.inset {
-  padding-right: 20rem;
-}
-
 /* Scrolls rather than wraps: a second toolbar row would push the gallery down
    on every narrow viewport. */
 .scope {
