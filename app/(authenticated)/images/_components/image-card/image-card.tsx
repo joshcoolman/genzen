@@ -141,7 +141,13 @@ export function ImageCard({
       alwaysShowOverlay
       selected={selected}
       selectedClassName={styles.selectedTile}
-      className={cx(selectionActive && !selected && styles.unpicked)}
+      /* Entering select mode dims the whole grid, because nothing is picked
+         yet -- the mode announcing itself. After that it answers "which ones
+         did I take" from across the grid, which a 20px corner glyph cannot.
+         `dimmed` rather than a local class: it is already 50% on the tile
+         root, where nothing transitions, and the image itself carries a
+         load-fade transition that would have eased this too. */
+      dimmed={selectionActive && !selected}
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
