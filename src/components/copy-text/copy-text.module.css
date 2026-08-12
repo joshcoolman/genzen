@@ -4,7 +4,7 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-4);
   width: 100%;
   padding: var(--space-8);
   border: none;
@@ -32,9 +32,15 @@
 
 /* Only on hover, and only once there is something to say. Reserving space for
    it would put a permanent gap under every block for a label that is usually
-   not there. */
+   not there.
+
+   Small and tight against the text, because the hint is the reason the tinted
+   surface is taller than the text it wraps. On a grid card that surplus reads
+   as the block being bottom-heavy -- one line of whisper should not cost the
+   height of a paragraph line plus a paragraph gap. */
 .hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-3xs);
+  line-height: 1;
   color: color-mix(in oklab, var(--text) 45%, transparent);
   opacity: 0;
   transition: opacity var(--duration-normal) var(--ease-in-out);
