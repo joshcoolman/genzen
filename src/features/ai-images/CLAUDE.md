@@ -58,6 +58,14 @@ anything one route renders lives with that route.
 - **Prompt origins are keyed by the enhanced string**, not by prompt index, so
   editing the text invalidates the pair instead of attributing a stale original
   (#210).
+- **Two prompt writers, opposite operations, separate contracts.**
+  `enhance-prompt.action.ts` expands text it is given; `generate-prompt.action.ts`
+  invents from nothing and is capped at 20–45 words. They must not share a
+  prose file: running the expander on an empty field is what produced the
+  verbose output Generate exists to avoid, and enhance's own contract is a
+  10-step pipeline targeting 40–120 words (#309 is the rewrite). Both read
+  their instructions from `src/lib/prompts/*.md`, which a human edits, so both
+  strip the frontmatter block before sending it.
 
 ## Decisions worth not relitigating
 
