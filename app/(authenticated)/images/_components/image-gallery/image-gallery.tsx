@@ -21,6 +21,8 @@ interface ImageGalleryProps {
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
+  /** The Experiment launcher: the grid area becomes one large preview. */
+  onExperiment?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click: the power moves (#284 follow-up). Plain sets the source,
    *  Shift pushes a reference, and on the prompt it loads the text. */
   onAddReference?: (img: SavedAiImage) => void
@@ -46,6 +48,7 @@ export function ImageGallery({
   onDescribe,
   onGenerateVariations,
   onOpen,
+  onExperiment,
   onAddReference,
   onUsePrompt,
   selectionActive,
@@ -117,6 +120,7 @@ export function ImageGallery({
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onOpen={onOpen}
+                onExperiment={onExperiment}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}
                 selected={isSelected?.(img.id)}
