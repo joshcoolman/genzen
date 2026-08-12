@@ -91,12 +91,10 @@
   line-height: 1.5;
 }
 
-/* The bottom-centre column: the modifier hint above, the canvas marker below.
-   One stack rather than two absolute boxes fighting for the same spot, so
-   neither jumps when the other appears -- and being absolute, neither one
-   changes the card's height.
-
-   Bottom-centre because the corners hold actions and these are not actions. */
+/* The bottom-centre column, now holding only the modifier hint -- the "On
+   canvas" marker was its other occupant. Absolute, so it never changes the
+   card's height, and bottom-centre because the corners hold actions and a hint
+   is not one. */
 .markers {
   position: absolute;
   bottom: var(--space-8);
@@ -120,25 +118,4 @@
   color: var(--text-muted);
   font-size: var(--text-3xs);
   white-space: nowrap;
-}
-
-/* "On canvas" marker. Passive: it never intercepts a click, and it does not
-   move or hide on hover -- a marker that vanishes exactly when you reach for
-   Delete would fail at the only moment it matters (#216). */
-.onCanvas {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-2) var(--space-8);
-  border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--bg) 80%, transparent);
-  backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-}
-
-.onCanvasIcon {
-  width: 0.75rem;
-  height: 0.75rem;
 }

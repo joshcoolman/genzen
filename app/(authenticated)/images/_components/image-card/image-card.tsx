@@ -4,7 +4,6 @@ import { useState } from 'react'
 import {
   CheckCircle2,
   Download,
-  Frame,
   Layers,
   MessageSquare,
   MoreHorizontal,
@@ -147,22 +146,15 @@ export function ImageCard({
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
         <>
-          {/* Bottom-centre, stacked in one column so neither moves when the
-              other appears, and absolutely positioned so neither costs the
-              card any layout. */}
-          <div className={styles.markers}>
-            {shortcut && <span className={styles.shortcut}>{shortcut}</span>}
-            {/* Passive, and that is the whole point (#216): trashing an image
-                that is arranged on the canvas takes it off a surface you are
-                not looking at. Saying so on the card prevents the surprise
-                instead of interrupting to explain it. */}
-            {img.on_canvas && (
-              <span className={styles.onCanvas}>
-                <Frame className={styles.onCanvasIcon} aria-hidden="true" />
-                On canvas
-              </span>
-            )}
-          </div>
+          {/* Bottom-centre, absolutely positioned so it costs the card no
+              layout. The "On canvas" marker shared this column until it went;
+              the stack stays because a hint that shifts the card is worse than
+              one wrapper too many. */}
+          {shortcut && (
+            <div className={styles.markers}>
+              <span className={styles.shortcut}>{shortcut}</span>
+            </div>
+          )}
           {/* The model, on the image rather than over the caption: it names
               what made *this* picture, so it belongs to the picture. In the
               caption it read as a title for the prompt underneath it. */}

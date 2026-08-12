@@ -10,8 +10,10 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 ## Quirks
 
 - **The card has two icons, and a click opens the in-place preview.** `...` and
-  Delete on the image; the model name and the whole prompt under it, the prompt
-  being its own copy button. The click opened the lightbox until the preview
+  Delete on the image, the model in its bottom-right corner; the whole prompt
+  under it, being its own copy button. The model sat at the top of the caption
+  until it read as a title for the prompt -- it names what made the picture, so
+  it lives on the picture. The click opened the lightbox until the preview
   took it -- see the Experiment bullet below. The expand icon went (the click
   does that), the
   select circle went (select mode does), and the source highlight went -- the
@@ -122,16 +124,14 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   open flag is an older single-value key, and its `pinned` twin is now dead
   storage that nothing reads. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
-- **A card says when it is on the canvas (#216).** `on_canvas` is derived per
-  read with an `exists` over `canvas_images`, never stored -- the boolean column
-  of that name drifted from the membership rows that are the truth and went in
-  #205. The marker is passive on purpose: trashing an arranged image takes it
-  off a surface you are not looking at, and saying so up front prevents the
-  surprise rather than interrupting to explain it. It sits bottom-centre because
-  this card pins its overlay, so all four corners are permanently occupied, and
-  it never hides on hover -- a marker that vanishes as you reach for Delete
-  fails at the only moment it matters. Two of those corners have since emptied
-  (#284), but a marker is not an action and does not want one
+- **`on_canvas` is still derived, and no longer shown.** It comes per read from
+  an `exists` over `canvas_images`, never stored -- the boolean column of that
+  name drifted from the membership rows that are the truth and went in #205.
+  The card carried an "On canvas" marker for it (#216, so trashing an arranged
+  image was not a surprise); the marker went, on the grounds that the card is
+  crowded and the warning was not paying for its space. The read is left in
+  place because it is a cheap subquery and the fact is still true -- the seam
+  to show it again, here or in Trash's link badge, is `SavedAiImage.on_canvas`
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
