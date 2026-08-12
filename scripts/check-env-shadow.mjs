@@ -24,17 +24,24 @@ const WATCHED = [
 
 const mask = (v) => (v.length > 8 ? `${v.slice(0, 4)}…${v.slice(-4)}` : '…')
 
+// `name in process.env`, not a truthiness check: an EMPTY export shadows just
+// as effectively as a stale one, and reads far worse. A stale key 401s with the
+// credential named; an empty one makes the app report "FAL_KEY is not set"
+// while .env.local plainly holds a key, so you go looking at the file.
 const shadowed = WATCHED.filter((name) => {
+  if (!(name in process.env)) return false
   const shell = process.env[name]
   const file = (text.match(new RegExp(`^${name}=(.*)$`, 'm')) ?? [])[1]?.trim()
-  return shell && file && shell !== file
+  return file && shell !== file
 })
 
 if (shadowed.length) {
   console.warn('')
   for (const name of shadowed) {
+    const shell = process.env[name]
+    const file = (text.match(new RegExp(`^${name}=(.*)$`, 'm')) ?? [])[1].trim()
     console.warn(
-      `!! ${name} is exported in your shell (${mask(process.env[name])}) and OVERRIDES .env.local (${mask((text.match(new RegExp(`^${name}=(.*)$`, 'm')) ?? [])[1].trim())}).`,
+      `!! ${name} is exported in your shell (${shell === '' ? 'EMPTY STRING' : mask(shell)}) and OVERRIDES .env.local (${mask(file)}).`,
     )
   }
   console.warn('   Editing .env.local will not change what the app uses.')

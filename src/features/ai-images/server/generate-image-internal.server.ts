@@ -6,6 +6,7 @@ import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
 import { endpointFor } from '#/features/ai-images/models'
+import { assertFalKey } from '#/lib/server/fal-key.server'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
   readLibraryImageBytes,
@@ -195,11 +196,7 @@ export async function generateImageInternal(
   }
 
   async function runGenerate(): Promise<string> {
-    if (!process.env.FAL_KEY) {
-      throw new Error(
-        'FAL_KEY is not set — add it to .env.local and restart the dev server',
-      )
-    }
+    assertFalKey()
 
     let falModelId = model
     let effectivePrompt = prompt.trim()
