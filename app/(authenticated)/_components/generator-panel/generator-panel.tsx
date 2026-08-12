@@ -12,9 +12,23 @@ import type { useModelSelector } from '#/features/ai-images/model-selector/use-m
 import {
   ActionButton,
   AspectRatioSelect,
+  ConfirmDialog,
   NumberStepper,
   RefImageStrip,
+  useConfirm,
 } from '#/components'
+
+/**
+ * Above this many images in one submit, Generate asks first.
+ *
+ * The count is prompts x models x gens, so it multiplies out of sight -- three
+ * prompts and two models is six generations from a panel that shows a "1" in
+ * the stepper. Five is low enough to catch that and high enough that a normal
+ * run never sees the dialog.
+ */
+const CONFIRM_ABOVE = 5
+
+const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
 interface UserImagesData {
   images: Array<UserImage>
@@ -47,8 +61,37 @@ export function GeneratorPanel({
   modelDisplay = 'panel',
 }: GeneratorPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
+  const { confirm, dialogProps } = useConfirm()
 
   const remaining = generator.maxRefImages - generator.refImages.length
+
+  /**
+   * A big run says how big before it starts. Cancel returns without submitting
+   * anything, so the model selection and the count are still there to adjust --
+   * the alternative was noticing twenty cards after they had already been paid
+   * for, since nothing here is refundable once FAL has the job.
+   *
+   * Not `destructive`: generating is not destruction, and the red confirm
+   * button is reserved for things that lose work.
+   */
+  async function handleGenerateClick() {
+    const count = generator.totalImages
+    if (count > CONFIRM_ABOVE) {
+      const prompts = generator.prompts.filter((p) => p.trim()).length || 1
+      const models = modelSelector.selectedIds.length
+      // The multiplication spelled out, because the surprise is never the
+      // number itself -- it is which of the three factors was larger than you
+      // remembered.
+      const ok = await confirm({
+        title: `Generate ${count} images?`,
+        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each. Cancel to change the count or the models.`,
+        confirmLabel: `Generate ${count}`,
+        destructive: false,
+      })
+      if (!ok) return
+    }
+    await generator.handleGenerate()
+  }
 
   return (
     <div className={styles.root}>
@@ -130,7 +173,7 @@ export function GeneratorPanel({
         />
       </div>
       <ActionButton
-        onClick={() => generator.handleGenerate()}
+        onClick={() => void handleGenerateClick()}
         loading={generator.loading}
         loadingText={
           generator.totalImages > 1
@@ -144,6 +187,8 @@ export function GeneratorPanel({
           ? `Generate ${generator.totalImages} images`
           : 'Generate'}
       </ActionButton>
+
+      <ConfirmDialog {...dialogProps} />
 
       {/* Model selector */}
       <ModelSelector

@@ -46,10 +46,14 @@ anything one route renders lives with that route.
   `generation_metadata` (and so `retry-plan.ts`) is written in those terms.
 - **Three ends to the set.** `addRefImages` appends and slices the tail off, for
   picking several at once; `pushRefImage` unshifts and evicts the last, for the
-  one-at-a-time gesture that means "use this one" (Cmd-Shift-click a card,
-  #284); `setPrimaryImage` replaces slot 0 and keeps the rest, for the Cmd-click
-  that means "point at this one". The ordering is `pushRef` in `ref-images.ts`
-  -- pure, so it is unit-tested, because a silent eviction at the wrong end is
+  one-at-a-time gesture that means "use this one" (Cmd-click a card, #284);
+  `setPrimaryImage` replaces slot 0 and keeps the rest, and applying variations
+  is its only caller -- the prompts are _of_ that image. `setPrimaryImage` was
+  briefly the Cmd-click binding and should not be again: replacing meant
+  clicking three cards left one image, and against a single-image model it is
+  indistinguishable from `pushRefImage`, so the bug hides exactly where it is
+  most likely to be tested. The ordering is `pushRef` in `ref-images.ts` --
+  pure, so it is unit-tested, because a silent eviction at the wrong end is
   invisible.
 - **Prompt origins are keyed by the enhanced string**, not by prompt index, so
   editing the text invalidates the pair instead of attributing a stale original

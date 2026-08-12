@@ -158,56 +158,39 @@ export function useView(initial: Array<SavedAiImage>) {
     null,
   )
 
-  // The two power moves: Cmd-click a card for its image, Cmd-click its prompt
-  // for its text. Each replaces exactly one thing and touches nothing else --
-  // not the count, not the additional prompts, not the rest of the set, not the
-  // model selection -- so "that image, my words" is two clicks from anywhere
-  // in the grid.
+  // The two power moves: Cmd-click a card to add its image, Cmd-click its prompt
+  // for its text -- so "these images, my words" is a handful of clicks from
+  // anywhere in the grid. Neither touches anything else: not the count, not the
+  // additional prompts, not the model selection.
   //
   // Both open the panel. A power move whose entire effect is inside a closed
   // panel has no feedback at all, which is the reason #284 refused to put a
   // "use as source" button on the card.
   //
-  // With one set (#297) this now means slot 0 rather than a separate source
-  // slot: the image the aspect ratio follows and the one submitted first.
-  // Cmd-Shift-click still adds alongside, evicting the tail.
-  const focusSource = useCallback(
+  // **One modifier, not two.** Cmd-click used to replace the first image and
+  // Cmd-Shift-click push onto the rest -- a real distinction only while a source
+  // slot existed to be replaced. Over one set (#297) they were the same gesture
+  // with a rule to remember, and the replacing one was the wrong default:
+  // clicking three cards left one image, not three.
+  const addReference = useCallback(
     (img: SavedAiImage) => {
       if (!img.storage_path) return
+      // Refusing out loud, the same way the paste path does (#213): the set
+      // caps at the selected model's `maxRefImages`, and a gesture that reports
+      // nothing and adds nothing is worse than one that says no.
       if (generator.maxRefImages === 0) {
         toast('The selected model does not take images')
         return
       }
       dock.setOpen(true)
-      // The URL is for the panel's preview only. The submit sends the id, and
-      // the server resolves the object and uploads the bytes to FAL -- handing
-      // FAL an app URL to fetch could never work: it needs a session.
-      generator.setPrimaryImage({
-        id: img.id,
-        url: imageUrl(img.id),
-        title: img.title,
-      })
-    },
-    [generator, dock],
-  )
-
-  const addReference = useCallback(
-    (img: SavedAiImage) => {
-      if (!img.storage_path) return
-      // Refusing out loud, the same way the paste path does (#213): the strip
-      // caps at the selected model's `maxRefImages`, and a gesture that reports
-      // nothing and adds nothing is worse than one that says no.
-      if (generator.maxRefImages === 0) {
-        toast('The selected model does not take reference images')
-        return
-      }
-      dock.setOpen(true)
-      // Onto the front, evicting the last. A full strip is the normal case for
+      // Onto the front, evicting the last. A full set is the normal case for
       // this gesture, not the exception -- see `pushRef`.
       //
-      // Adding is its own feedback: the strip visibly gains an image. Dropping
+      // Adding is its own feedback: the set visibly gains an image. Dropping
       // one is not, and it is the half you would want to know about, so it is
-      // the only outcome that says anything.
+      // the only outcome that says anything. At capacity 1 every click evicts,
+      // which is correct and also why a single-image model made the old
+      // replace-slot-0 binding impossible to tell apart from this one.
       const evicts =
         generator.refImages.length >= generator.maxRefImages &&
         !generator.refImages.some((r) => r.id === img.id)
@@ -218,7 +201,7 @@ export function useView(initial: Array<SavedAiImage>) {
       })
       if (evicts) {
         toast(
-          `Reference added; the last one dropped (max ${generator.maxRefImages})`,
+          `Image added; the last one dropped (max ${generator.maxRefImages})`,
         )
       }
     },
@@ -260,7 +243,6 @@ export function useView(initial: Array<SavedAiImage>) {
     variationSourceUrl,
     describeTarget,
     setDescribeTarget,
-    focusSource,
     addReference,
     usePromptText,
     error,
