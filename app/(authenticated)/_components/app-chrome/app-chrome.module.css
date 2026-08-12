@@ -19,12 +19,6 @@
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
-/* Images and edit run their own fixed sidebar, so they own the right edge --
-   the shell must not add padding the page then has to fight. */
-.mainFlush {
-  padding-right: 0;
-}
-
 @media (min-width: 48rem) {
   .sidebar {
     display: flex;

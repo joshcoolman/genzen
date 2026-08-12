@@ -2,9 +2,14 @@
 
 import { Settings2 } from 'lucide-react'
 import styles from './system-instructions-button.module.css'
-import { Popover, PopoverContent, PopoverTrigger, Textarea } from '#/components'
+import {
+  MiniButton,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Textarea,
+} from '#/components'
 import { useSystemInstructions } from '#/features/ai-images/hooks/use-system-instructions'
-import { cx } from '#/lib/utils'
 
 /**
  * The gear above the prompt list (#272): a popover holding the one block of
@@ -25,15 +30,14 @@ export function SystemInstructionsButton() {
     <Popover>
       <PopoverTrigger
         render={
-          <button
-            type="button"
-            className={cx(styles.trigger, isSet && styles.triggerSet)}
+          <MiniButton
+            icon={<Settings2 />}
+            indicator={isSet}
             title={isSet ? 'System instructions (set)' : 'System instructions'}
             aria-label="System instructions"
           >
-            <Settings2 className={styles.icon} />
             Instructions
-          </button>
+          </MiniButton>
         }
       />
       <PopoverContent align="end" side="bottom" className={styles.popover}>

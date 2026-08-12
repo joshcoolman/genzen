@@ -28,14 +28,28 @@
   user-select: none;
 }
 
+/* Every card carries one in select mode, not just the picked ones: an empty
+   corner cannot say "this is selectable", and the grid has to answer that
+   before the first click, not after it. Its own ground because it sits on
+   arbitrary images -- a bare grey glyph disappears on anything pale. */
 .selectTick {
   position: absolute;
   bottom: var(--space-8);
   left: var(--space-8);
   width: 1.25rem;
   height: 1.25rem;
-  color: var(--accent);
+  border-radius: 50%;
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
   pointer-events: none;
+}
+
+/* No transition, here or on the dimming or the border. Selecting is a discrete
+   answer to a click -- on or off, 50% or 100% -- and easing it makes the grid
+   feel like it is deciding. */
+.selectTickOn {
+  color: var(--accent);
 }
 
 .caption {

@@ -42,15 +42,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
   return (
     <>
-      <Workspace pushed={dock.open && dock.pinned}>
+      <Workspace pushed={dock.open}>
         <Toolbar
           prefs={prefs}
-          showGenerateButton={!dock.open}
-          panelFloating={dock.open && !dock.pinned && !prefs.isMobile}
+          panelOpen={dock.open}
+          onTogglePanel={() => dock.setOpen(!dock.open)}
           selectMode={selectMode}
           onToggleSelectMode={toggleSelectMode}
           onUpload={uploadFiles}
-          onGenerate={() => dock.setOpen(true)}
         />
 
         <ImageGallery
@@ -107,7 +106,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         onApply={(prompts) =>
           variations.handleApplyVariations(
             prompts,
-            generator.pastePrompts,
+            generator.appendPrompts,
             variationSourceUrl,
             generator.setSourceFromUrl,
           )

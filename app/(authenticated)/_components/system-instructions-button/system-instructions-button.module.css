@@ -1,48 +1,5 @@
-/* The Instructions chip that opens system instructions. Borrowed from the
-   Enhance chip on a prompt row: same scale, same border, so it reads as another
-   small affordance on the panel rather than a control of its own. */
-
-.trigger {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-6);
-  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
-  border-radius: var(--radius-md);
-  background: transparent;
-  font-size: var(--text-3xs);
-  color: var(--text-muted);
-  transition:
-    border-color var(--duration-normal) var(--ease-in-out),
-    background-color var(--duration-normal) var(--ease-in-out),
-    color var(--duration-normal) var(--ease-in-out);
-}
-
-.trigger:hover {
-  border-color: var(--border);
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-/* Set-and-forget is the failure mode, so a non-empty block is always visible
-   as state -- the dot, never the content. */
-.triggerSet {
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.triggerSet::after {
-  content: '';
-  width: 0.25rem;
-  height: 0.25rem;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.icon {
-  width: 0.625rem;
-  height: 0.625rem;
-}
+/* The chip itself is `MiniButton`; set-and-forget is the failure mode here, so
+   the trigger takes its `indicator` dot. Only the popover is styled locally. */
 
 .popover {
   width: min(24rem, calc(100vw - 2rem));

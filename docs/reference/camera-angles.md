@@ -4,12 +4,12 @@ Sixteen camera positions for producing a variation set from a single reference
 image. Nothing here describes a subject — the subject arrives from the reference.
 Only the camera moves.
 
-Usage: paste the sixteen into **Paste Prompts**, attach the reference image, and
-set the constant block as the prompt prefix so every shot carries it.
+Usage: add sixteen prompts, one per row, attach the reference image, and put the
+constant block in **Instructions** so every shot carries it.
 
-Blank lines separate the prompts — that is what `splitPrompts` in
-`paste-prompts-dialog.tsx` splits on when no `*` is present. Single newlines
-would arrive as one prompt.
+There is no bulk-paste route into the prompt list any more — Paste Prompts was
+removed (#295) and prompt sets (#269) are what will make this file loadable
+rather than retyped.
 
 ## The constant block
 

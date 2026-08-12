@@ -13,6 +13,7 @@ import {
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useModifierHeld } from '#/lib/use-modifier-held'
+import { cx } from '#/lib/utils'
 import {
   CopyText,
   DropdownMenu,
@@ -140,6 +141,13 @@ export function ImageCard({
       alwaysShowOverlay
       selected={selected}
       selectedClassName={styles.selectedTile}
+      /* Entering select mode dims the whole grid, because nothing is picked
+         yet -- the mode announcing itself. After that it answers "which ones
+         did I take" from across the grid, which a 20px corner glyph cannot.
+         `dimmed` rather than a local class: it is already 50% on the tile
+         root, where nothing transitions, and the image itself carries a
+         load-fade transition that would have eased this too. */
+      dimmed={selectionActive && !selected}
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
@@ -161,11 +169,15 @@ export function ImageCard({
             )}
           </div>
           {/* The tick the select circle used to carry, in the corner it used to
-              sit in. The border says "selected" too, but only against its
-              neighbours -- a card selected on its own has nothing to compare
+              sit in -- on every card while the mode is on, grey until it is
+              taken. The border says "selected" too, but only against its
+              neighbours; a card selected on its own has nothing to compare
               to. */}
-          {selectionActive && selected && (
-            <CheckCircle2 className={styles.selectTick} aria-hidden="true" />
+          {selectionActive && (
+            <CheckCircle2
+              className={cx(styles.selectTick, selected && styles.selectTickOn)}
+              aria-hidden="true"
+            />
           )}
         </>
       }

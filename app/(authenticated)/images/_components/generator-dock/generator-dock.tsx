@@ -1,6 +1,6 @@
 'use client'
 
-import { Pin, PinOff, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
 import styles from './generator-dock.module.css'
 import type { DockState } from '../../_hooks/use-dock'
@@ -9,7 +9,6 @@ import type { useDescribeJson } from '#/features/ai-images/hooks/use-describe-js
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import { Dialog, DialogContent, MobileDialogHeader } from '#/components'
-import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
   dock: DockState
@@ -26,9 +25,13 @@ interface GeneratorDockProps {
 }
 
 /**
- * Where the generator sits. Two placements, one panel: a full-screen dialog on
- * mobile, and on desktop a fixed right-hand column that is either pinned --
- * pushing the gallery over -- or floating above it behind a dismiss layer.
+ * Where the generator sits: a full-screen dialog on mobile, and on desktop a
+ * fixed right-hand column that pushes the gallery over.
+ *
+ * It could also float above the gallery, until the pin came out -- floating
+ * covered the right-hand column of thumbnails to give the gallery back the
+ * width it was covering, so it hid as much as it revealed. The X is the only
+ * way to get the space back now, which is the honest one.
  */
 export function GeneratorDock({
   dock,
@@ -65,39 +68,18 @@ export function GeneratorDock({
   if (!dock.open) return null
 
   return (
-    <>
-      {!dock.pinned && (
-        <div
-          className={styles.dismissLayer}
+    <div className={styles.panel}>
+      <div className={styles.header}>
+        <span className={styles.title}>Generate</span>
+        <button
           onClick={() => dock.setOpen(false)}
-        />
-      )}
-
-      <div className={cx(styles.panel, !dock.pinned && styles.panelFloating)}>
-        <div className={styles.header}>
-          <span className={styles.title}>Generate</span>
-          <div className={styles.headerActions}>
-            <button
-              onClick={dock.togglePinned}
-              className={styles.headerButton}
-              title={dock.pinned ? 'Unpin (overlay)' : 'Pin (inline)'}
-            >
-              {dock.pinned ? (
-                <Pin className={styles.icon} />
-              ) : (
-                <PinOff className={styles.icon} />
-              )}
-            </button>
-            <button
-              onClick={() => dock.setOpen(false)}
-              className={styles.headerButton}
-            >
-              <X className={styles.icon} />
-            </button>
-          </div>
-        </div>
-        <div className={styles.body}>{panel}</div>
+          className={styles.headerButton}
+          aria-label="Close the generator"
+        >
+          <X className={styles.icon} />
+        </button>
       </div>
-    </>
+      <div className={styles.body}>{panel}</div>
+    </div>
   )
 }

@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { cx } from '#/lib/utils'
 
 /**
- * The frame the gallery lives in. It exists because the content moves: a
- * pinned generator pushes it left, an unpinned one floats over it.
+ * The frame the gallery lives in. It exists because the content moves: an open
+ * generator pushes it left.
  */
 export function Workspace({
   pushed,

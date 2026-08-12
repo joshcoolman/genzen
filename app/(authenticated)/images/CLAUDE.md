@@ -86,8 +86,9 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   and the origin filter as one object -- `read()` picks fields out rather than
   spreading, and `usePrefs` rewrites the key on mount, so `thumbSize` (dropped
   in #284 along with the size switcher, since large was the only size ever
-  used) does not live on as a setting that appears to exist; the generator's open and
-  pinned flags are two older single-value keys. Every write-through waits on `usePersistedState`'s
+  used) does not live on as a setting that appears to exist; the generator's
+  open flag is an older single-value key, and its `pinned` twin is now dead
+  storage that nothing reads. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
 - **A card says when it is on the canvas (#216).** `on_canvas` is derived per
   read with an `exists` over `canvas_images`, never stored -- the boolean column
@@ -102,8 +103,9 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
-Unpinning the generator used to hide the toolbar's own controls -- `workspace`
-stops being pushed, so the row spanned the full page and its right-aligned tools
-landed under the floating panel. Fixed with #207: the toolbar reserves the
-panel's width (`.inset`) when it is open, unpinned and not mobile. The gallery
-below stays full width, which is the point of floating rather than pinning.
+**The generator does not float.** It is open, pushing the gallery over, or it
+is closed. Unpinning bought the gallery back 20rem while covering the right-hand
+column of thumbnails with the panel, so the images it revealed were the ones it
+hid -- and it cost a dismiss layer plus `.inset` padding on the toolbar, which
+existed only so the tools were not underneath it (#207). The X is the way to get
+the space back.

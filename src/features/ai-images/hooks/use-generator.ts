@@ -102,12 +102,9 @@ export interface GeneratorState {
   setSourceFromLibrary: (id: string, url: string, name: string) => void
   handleClearSourceImage: () => void
   handleCaption: () => Promise<void>
-  generatePromptsConfig: {
-    imageBase64: string
-    onApply: (prompts: Array<string>) => void
-  } | null
   clearPrompts: () => void
-  pastePrompts: (texts: Array<string>) => void
+  /** Add prompts to the end of the list, leaving what is there alone. */
+  appendPrompts: (texts: Array<string>) => void
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
   pushRefImage: (image: RefImage) => void
@@ -272,7 +269,7 @@ export function useGenerator({
     })
   }, [])
 
-  const pastePrompts = useCallback((texts: Array<string>) => {
+  const appendPrompts = useCallback((texts: Array<string>) => {
     setPromptsRaw((prev) => {
       const next = [...prev, ...texts]
       persistPrompts(next)
@@ -599,23 +596,6 @@ export function useGenerator({
     [enhancingPromptIndex, prompts, reportError],
   )
 
-  const applyGeneratedPrompts = useCallback((shotPrompts: Array<string>) => {
-    setPromptsRaw((prev) => {
-      const kept = prev.filter((p) => p.trim())
-      const next = kept.length > 0 ? [...kept, ...shotPrompts] : shotPrompts
-      persistPrompts(next)
-      return next
-    })
-  }, [])
-
-  const generatePromptsConfig = useMemo(
-    () =>
-      sourceImage
-        ? { imageBase64: sourceImage.base64, onApply: applyGeneratedPrompts }
-        : null,
-    [sourceImage, applyGeneratedPrompts],
-  )
-
   const clearPrompts = useCallback(() => {
     setPromptsRaw([''])
     persistPrompts([''])
@@ -650,9 +630,8 @@ export function useGenerator({
       applySourceBase64(url, name, { id, keepPrompt: true }),
     handleClearSourceImage,
     handleCaption,
-    generatePromptsConfig,
     clearPrompts,
-    pastePrompts,
+    appendPrompts,
     refImages,
     addRefImages,
     pushRefImage,

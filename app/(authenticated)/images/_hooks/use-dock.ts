@@ -4,31 +4,27 @@ import { useEffect } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
 
 const OPEN_KEY = 'genzen:generator-panel-open'
-const PINNED_KEY = 'genzen:generator-panel-pinned'
 
 export interface DockState {
   open: boolean
-  /** Pinned pushes the gallery over; unpinned floats above it with a dismiss layer. */
-  pinned: boolean
   setOpen: (open: boolean) => void
-  togglePinned: () => void
 }
 
 /**
- * Whether the generator is showing, and whether it is docked or floating.
+ * Whether the generator is showing.
  *
- * Two keys rather than one because they predate each other; the write-through
- * effects wait on `hydrated` or they would put the fallback over the stored
- * value on mount and reset the panel on every load.
+ * It used to also hold whether the panel was pinned or floating. Floating never
+ * paid for itself: it bought back 20rem of gallery while covering the
+ * right-hand column of thumbnails, so the images it revealed were the ones it
+ * hid. It also cost a dismiss layer, a shadow, and the toolbar's `.inset`
+ * padding (#207), which existed solely so the tools were not underneath it.
+ *
+ * The write-through effect waits on `hydrated` or it would put the fallback
+ * over the stored value on mount and reset the panel on every load.
  */
 export function useDock(): DockState {
   const [open, setOpen, openHydrated] = usePersistedState(
     () => localStorage.getItem(OPEN_KEY) !== 'false',
-    true,
-  )
-
-  const [pinned, setPinned, pinnedHydrated] = usePersistedState(
-    () => localStorage.getItem(PINNED_KEY) !== 'false',
     true,
   )
 
@@ -37,15 +33,5 @@ export function useDock(): DockState {
     localStorage.setItem(OPEN_KEY, String(open))
   }, [open, openHydrated])
 
-  useEffect(() => {
-    if (!pinnedHydrated) return
-    localStorage.setItem(PINNED_KEY, String(pinned))
-  }, [pinned, pinnedHydrated])
-
-  return {
-    open,
-    pinned,
-    setOpen,
-    togglePinned: () => setPinned((p) => !p),
-  }
+  return { open, setOpen }
 }

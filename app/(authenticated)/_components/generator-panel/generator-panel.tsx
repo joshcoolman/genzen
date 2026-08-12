@@ -38,13 +38,11 @@ interface GeneratorPanelProps {
   refImagesReadOnly?: boolean
   libraryFilterIds?: Set<string>
   /**
-   * Canvas simplifications (default off = Images behavior unchanged). On
-   * canvas the input is the selected image, so the library/upload source
-   * buttons and the bulk-prompt controls are removed.
+   * Canvas simplification (default off = Images behavior unchanged). On canvas
+   * the input is the selected image, so the library/upload source buttons are
+   * removed.
    */
   hideSourceButtons?: boolean
-  hidePastePrompts?: boolean
-  hideGeneratePrompts?: boolean
 }
 
 export function GeneratorPanel({
@@ -57,8 +55,6 @@ export function GeneratorPanel({
   refImagesReadOnly = false,
   libraryFilterIds,
   hideSourceButtons = false,
-  hidePastePrompts = false,
-  hideGeneratePrompts = false,
 }: GeneratorPanelProps) {
   const isEdit = mode === 'edit'
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -160,13 +156,7 @@ export function GeneratorPanel({
                 : 'Describe your image...',
           additional: 'Additional prompt...',
         }}
-        generatePromptsConfig={
-          hideGeneratePrompts
-            ? undefined
-            : (generator.generatePromptsConfig ?? undefined)
-        }
         onClearPrompts={generator.clearPrompts}
-        onPastePrompts={hidePastePrompts ? undefined : generator.pastePrompts}
         onEnhancePrompt={generator.handleEnhancePrompt}
         enhancingPromptIndex={generator.enhancingPromptIndex}
         /* Instructions for every prompt, not a prompt -- rendered into the
