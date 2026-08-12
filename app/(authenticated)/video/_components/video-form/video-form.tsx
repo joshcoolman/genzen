@@ -2,18 +2,27 @@
 
 import { Clapperboard } from 'lucide-react'
 import { formatCost } from '../../models'
+import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
 import type { VideoModel } from '../../models'
-import { ActionButton, SingleSelect, Stack, Textarea } from '#/components'
+import { ActionButton, SingleSelect, Stack } from '#/components'
 
 /**
- * Prompt, duration, aspect. Every option is read off the model record rather
- * than hardcoded, so a second entry in `models.ts` needs nothing here.
+ * Prompts, duration, aspect.
+ *
+ * The prompt list is the generator panel's, unchanged: one first frame can
+ * carry several takes, and each prompt is its own clip. Duration and aspect
+ * options are read off the model record rather than hardcoded, so a second
+ * entry in `models.ts` needs nothing here.
  */
 export function VideoForm({
   model,
-  prompt,
-  onPromptChange,
+  prompts,
+  onUpdatePrompt,
+  onAddPrompt,
+  onRemovePrompt,
+  onClearPrompts,
+  pendingCount,
   duration,
   onDurationChange,
   aspectRatio,
@@ -24,8 +33,12 @@ export function VideoForm({
   onSubmit,
 }: {
   model: VideoModel
-  prompt: string
-  onPromptChange: (value: string) => void
+  prompts: Array<string>
+  onUpdatePrompt: (index: number, value: string) => void
+  onAddPrompt: () => void
+  onRemovePrompt: (index: number) => void
+  onClearPrompts: () => void
+  pendingCount: number
   duration: number
   onDurationChange: (value: number) => void
   aspectRatio: string
@@ -37,11 +50,18 @@ export function VideoForm({
 }) {
   return (
     <Stack gap={12}>
-      <Textarea
-        value={prompt}
-        onChange={(event) => onPromptChange(event.target.value)}
-        rows={4}
-        placeholder="What happens in the shot? Name the camera move and where it ends — a push-in that stops on a medium close-up beats 'the camera moves in'. Dialogue goes in quotes; it is spoken aloud."
+      <PromptList
+        prompts={prompts}
+        onUpdatePrompt={onUpdatePrompt}
+        onAddPrompt={onAddPrompt}
+        onRemovePrompt={onRemovePrompt}
+        onClearPrompts={onClearPrompts}
+        disabled={isSubmitting}
+        placeholders={{
+          first:
+            'What happens in the shot? Name the camera move and where it ends. Dialogue in quotes is spoken aloud.',
+          additional: 'Another take...',
+        }}
       />
 
       <div className={styles.controls}>
@@ -87,7 +107,8 @@ export function VideoForm({
           disabled={!canSubmit}
           onClick={onSubmit}
         >
-          Generate {formatCost(estimatedCost)}
+          {pendingCount > 1 ? `Generate ${pendingCount}` : 'Generate'}{' '}
+          {formatCost(estimatedCost)}
         </ActionButton>
       </div>
     </Stack>

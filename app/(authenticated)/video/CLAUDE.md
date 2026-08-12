@@ -12,6 +12,15 @@ source images; `use-view.ts` owns everything after the first paint.
   ratios, resolution and price all come off the record, so a second model is a
   literal in that array and nothing else. Route-owned because one route uses it;
   promote it to `src/features/` the day Canvas wants to animate a card.
+- **The source widget and the prompt list are the generator panel's, borrowed
+  whole.** `RefImageStrip` + `ExistingImagePicker` (`max={1}`, `autoConfirm`)
+  for the first frame, `PromptList` for the takes -- none of them modified.
+  Blocked out rather than laid out: the point was to stop hand-rolling
+  equivalents, not to settle the arrangement.
+- **Several prompts, one first frame, one clip each.** The submit loops
+  sequentially rather than `Promise.all` -- each call reserves a row before it
+  contacts FAL, and firing them together interleaves the reservations against a
+  queue that answers in its own order.
 - **Image-to-video, not text-to-video.** `prompt` and `image_url` are both
   required by the endpoint. The route is never a blank page, which is the point:
   genzen is already an image factory, so the first frame is something you have.
@@ -30,11 +39,11 @@ source images; `use-view.ts` owns everything after the first paint.
   `<video preload="metadata">` lets the browser paint frame one.
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
-  'ai_generated')`. Activity and Trash pick them up for free. Putting videos in
+'ai_generated')`. Activity and Trash pick them up for free. Putting videos in
   the library is a matter of teaching the card and the lightbox `<video>` --
   that render change is what V1 declined, not the storage.
 - **No Retry.** The endpoint exposes no seed, so an identical request returns a
-  *different* clip, while `retry-plan.ts` promises a faithful replay. Rather
+  _different_ clip, while `retry-plan.ts` promises a faithful replay. Rather
   than give one control two meanings, generating again is the same two clicks.
 - **Nothing pushes.** The 5s poll runs only while a clip is pending, and it
   calls the same `checkPendingGenerations` the gallery does -- which dispatches
