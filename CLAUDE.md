@@ -75,6 +75,7 @@ live with the one route that renders them:
 | Surface    | Where                                                                                   |
 | ---------- | --------------------------------------------------------------------------------------- |
 | Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                       |
+| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working              |
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                       |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                        |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, search overlay |
