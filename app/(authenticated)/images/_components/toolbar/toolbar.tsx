@@ -69,7 +69,8 @@ export function Toolbar({
   return (
     <div className={styles.toolbar}>
       <div className={styles.scope}>
-        <span className={styles.heading}>Images</span>
+        {/* No page title: the sidebar says which route this is, the pills say
+            what is scoped, and "Images" above a grid of images said neither. */}
         <SingleSelect
           options={ORIGIN_FILTERS.map((value) => ({
             value,

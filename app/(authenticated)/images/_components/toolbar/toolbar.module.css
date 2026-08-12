@@ -1,5 +1,6 @@
-/* Below the custom 400px breakpoint only Upload and New generation survive:
-   the view controls are refinements, and there is no room for them. */
+/* Below the custom 400px breakpoint the two view toggles drop and select,
+   upload and the panel toggle survive: sort and captions are refinements, and
+   there is no room for them. */
 
 .toolbar {
   display: flex;
@@ -16,14 +17,6 @@
   gap: var(--space-8);
   min-width: 0;
   overflow-x: auto;
-}
-
-.heading {
-  display: none;
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
 }
 
 .tools {
@@ -60,10 +53,6 @@
 @media (min-width: 400px) {
   .toolbar {
     justify-content: space-between;
-  }
-
-  .heading {
-    display: inline;
   }
 
   .viewToggle {
