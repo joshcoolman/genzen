@@ -8,6 +8,11 @@ The open issues labelled [`now`](https://github.com/joshcoolman/genzen/labels/no
 then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
 the ranking; a list here would be a second copy of it that drifts.
 
+**In flight:** #297 and #299, one branch. The generate panel loses its top row —
+source image and reference images become one ordered set of zero to N, filled by
+one widget, with upload living only in the Images toolbar. Read #297 first; it
+carries the decisions and the layout.
+
 ## Run it locally
 
 You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
