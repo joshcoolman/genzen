@@ -146,6 +146,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-12
 
+- **Thumbnail pass** — the model moved off the caption and into the image's bottom-right corner, the "On canvas" marker went, the prompt clamps to three lines at the size it was typed, and the cards teach nothing on hover: both Cmd gestures still work, unnamed, pending #289 (#314)
 - **Generate prompt** — a prompt out of nothing, for the blank field. In the prompt list's header: roll, nudge it with instructions that persist, ask for "more like this", and Apply adds to the stack without closing. Enhance is set aside pending #309
 - **Explore** — a new route, first in the nav: a masonry wall of every finished image with no controls on it, and the lightbox over it. Browsing and working are different moods, and the overlay only makes sense in the first one
 - Clicking an image on **Images** now opens an in-place preview instead of the lightbox: the grid area alone becomes one large image, toolbar untouched. Outer quarters step (chevron appears on hover), middle half closes, arrow keys page
@@ -154,8 +155,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 2026-08-11
 
 - Cmd-click a card adds it to the reference images and keeps adding — it used to replace the first one, so clicking three cards left you with one
-- A run over five images asks first, spelling out prompts x models x each; Cancel returns without submitting so the count and models are still there to change
-- Reference images: the source image is gone and the panel holds one ordered set of zero to N, filled only from the library and uploaded only from the Images toolbar (#297)
-- The image cap is now the minimum across the selected models and counts correctly (`maxRefs + 1`) — a mixed selection used to offer four slots and send the small model one image with no warning
-- Clicking outside any dialog closes it again, and the library picker keeps a fixed height so switching filters no longer resizes it under the cursor (#299)
-- The prompt field sizes itself to what is in it, capped at 300px, at the same 10px as the chips around it — a 50-word prompt now fits without scrolling
