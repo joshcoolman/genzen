@@ -51,8 +51,8 @@ interface ImageCardProps {
 }
 
 /**
- * Two icons and a caption. `...` and Delete on the image; the model name and the
- * whole prompt under it, the prompt being its own copy button.
+ * Two icons and a caption. `...` and Delete on the image, the model in its
+ * bottom-right corner; the whole prompt under it, being its own copy button.
  *
  * The select circle went in #284 (select mode replaced it) and the source
  * highlight in #297 (there is no source, only the generator's set). A pair of
@@ -163,6 +163,10 @@ export function ImageCard({
               </span>
             )}
           </div>
+          {/* The model, on the image rather than over the caption: it names
+              what made *this* picture, so it belongs to the picture. In the
+              caption it read as a title for the prompt underneath it. */}
+          <span className={styles.model}>{img.title}</span>
           {/* The tick the select circle used to carry, in the corner it used to
               sit in -- on every card while the mode is on, grey until it is
               taken. The border says "selected" too, but only against its
@@ -206,22 +210,19 @@ export function ImageCard({
             }
       }
     >
-      {showInfo && (
+      {showInfo && caption && (
         <div className={styles.caption}>
-          <p className={styles.title}>{img.title}</p>
           {/* Not truncated (#284): the point of a caption is reading what made
               something without opening it. Uneven card heights are the known
               cost, being tried before a clamp is reached for again. */}
-          {caption && (
-            <CopyText
-              text={caption}
-              label="Copy"
-              onModifierClick={selectionActive ? undefined : onUsePrompt}
-              modifierLabel="Load Prompt"
-              className={styles.prompt}
-              textClassName={styles.promptText}
-            />
-          )}
+          <CopyText
+            text={caption}
+            label="Copy"
+            onModifierClick={selectionActive ? undefined : onUsePrompt}
+            modifierLabel="Load Prompt"
+            className={styles.prompt}
+            textClassName={styles.promptText}
+          />
         </div>
       )}
 

@@ -59,20 +59,29 @@
   padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
-.title {
-  margin: 0;
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  font-weight: var(--weight-medium);
-  color: var(--text);
+/* The model name, in the image's bottom-right corner. Quiet grey on the tile's
+   own ground -- images are contained, so the corner is nearly always
+   letterbox, and the scrim covers the wide ones that reach it. Not a control:
+   it never takes a click. */
+.model {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* CopyText owns the affordance. The negative margin keeps the prompt's first
-   line aligned with the model name above it, which the button's own padding
-   would otherwise push in. */
+   line flush with the caption's padding, which the button's own padding would
+   otherwise push in. */
 .prompt {
   margin: 0 calc(var(--space-8) * -1);
 }
