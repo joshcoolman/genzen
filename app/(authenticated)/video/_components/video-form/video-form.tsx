@@ -26,6 +26,7 @@ export function VideoForm({
   duration,
   onDurationChange,
   aspectRatio,
+  aspectOptions,
   onAspectRatioChange,
   estimatedCost,
   isSubmitting,
@@ -42,6 +43,8 @@ export function VideoForm({
   duration: number
   onDurationChange: (value: number) => void
   aspectRatio: string
+  /** Mode-dependent: `auto` exists only when a first frame is set. */
+  aspectOptions: Array<string>
   onAspectRatioChange: (value: string) => void
   estimatedCost: number
   isSubmitting: boolean
@@ -85,10 +88,8 @@ export function VideoForm({
           <span className={styles.label}>Aspect</span>
           <SingleSelect
             value={aspectRatio}
-            onChange={(value) =>
-              onAspectRatioChange(value ?? model.aspectRatios[0])
-            }
-            options={model.aspectRatios.map((ratio) => ({
+            onChange={(value) => onAspectRatioChange(value ?? aspectOptions[0])}
+            options={aspectOptions.map((ratio) => ({
               value: ratio,
               label: ratio === 'auto' ? 'Match image' : ratio,
             }))}

@@ -28,9 +28,19 @@ source images; `use-view.ts` owns everything after the first paint.
   sequentially rather than `Promise.all` -- each call reserves a row before it
   contacts FAL, and firing them together interleaves the reservations against a
   queue that answers in its own order.
-- **Image-to-video, not text-to-video.** `prompt` and `image_url` are both
-  required by the endpoint. The route is never a blank page, which is the point:
-  genzen is already an image factory, so the first frame is something you have.
+- **The prompt is the only required input.** Every frame slot is optional, and
+  the first frame decides which endpoint runs -- `textToVideo` when empty,
+  `withImage` when set, resolved by `endpointFor`. Same shape as
+  `IMAGE_MODELS`'s `textToImage` / `withImages`. Two modes because they are
+  genuinely different acts: with a first frame you are animating something you
+  made; without one the model invents the whole shot and the prompt has to
+  carry it.
+- **Aspect options are per mode, and that is not a nicety.** `auto` exists only
+  where there is an image to match -- FAL's own enums differ, and the
+  text-to-video endpoint rejects `auto`. With a first frame, 16:9 and 9:16 mean
+  "recrop my picture", which crops and re-imagines; without one they are just
+  the output shape. `use-view` coerces the value when the mode changes, so the
+  pills never show a selection the request would refuse.
 - **The clip is ingested into our bucket, never left on FAL.** FAL's URL is
   public, unauthenticated and not ours to keep alive -- and generation is
   non-deterministic, so a URL that 404s cannot be re-created by re-running the

@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
-import { DEFAULT_VIDEO_MODEL, estimateCostCents } from './models'
+import {
+  DEFAULT_VIDEO_MODEL,
+  aspectRatiosFor,
+  estimateCostCents,
+} from './models'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
@@ -43,7 +47,10 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // component the generator panel uses.
   const [prompts, setPrompts] = useState<Array<string>>([''])
   const [duration, setDuration] = useState(model.defaultDuration)
-  const [aspectRatio, setAspectRatio] = useState(model.aspectRatios[0])
+  // Seeded for the mode the route opens in (no first frame -> no `auto`).
+  const [aspectRatio, setAspectRatio] = useState(
+    aspectRatiosFor(model, false)[0],
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   // One picker, two slots. A second dialog would be the same component mounted
   // twice to answer the same question; the target says where the pick lands.
@@ -153,14 +160,37 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   const sourceId = sources.at(0)?.id ?? null
   const endImageId = endSources.at(0)?.id ?? null
+  const hasFirstFrame = !!sourceId
+
+  // The options change with the mode, so a value carried across the switch can
+  // be one the endpoint rejects -- `auto` has nothing to match once the first
+  // frame is cleared. Coerced here rather than validated at submit, so the
+  // pills never show a selection the request would refuse.
+  const aspectOptions = useMemo(
+    () => aspectRatiosFor(model, hasFirstFrame),
+    [model, hasFirstFrame],
+  )
+  useEffect(() => {
+    if (!aspectOptions.includes(aspectRatio)) {
+      setAspectRatio(aspectOptions[0])
+    }
+  }, [aspectOptions, aspectRatio])
+
+  // An end frame needs a start. Dropping it on clear beats sending a request
+  // the action would refuse.
+  useEffect(() => {
+    if (!hasFirstFrame && endSources.length > 0) setEndSources([])
+  }, [hasFirstFrame, endSources.length])
   // Every prompt is its own clip, so the figure on the button multiplies. The
   // per-clip price is constant; what varies is how many are queued.
   const estimatedCost =
     estimateCostCents(model, duration) * Math.max(filledPrompts.length, 1)
-  const canSubmit = !!sourceId && filledPrompts.length > 0 && !isSubmitting
+  // The prompt is the only requirement: with no first frame the model invents
+  // the whole shot.
+  const canSubmit = filledPrompts.length > 0 && !isSubmitting
 
   const submit = useCallback(async () => {
-    if (!sourceId || filledPrompts.length === 0) return
+    if (filledPrompts.length === 0) return
 
     setIsSubmitting(true)
     try {
@@ -170,7 +200,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
       // the list out is not worth the few hundred milliseconds saved.
       for (const prompt of filledPrompts) {
         await generateVideo({
-          imageId: sourceId,
+          ...(sourceId ? { imageId: sourceId } : {}),
           ...(endImageId ? { endImageId } : {}),
           prompt,
           duration,
@@ -197,6 +227,8 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   return {
     model,
+    aspectOptions,
+    hasFirstFrame,
     userImages,
     sources,
     endSources,

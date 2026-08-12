@@ -11,6 +11,8 @@ import { PageHeader, RefImageStrip, Stack } from '#/components'
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
     model,
+    aspectOptions,
+    hasFirstFrame,
     userImages,
     sources,
     endSources,
@@ -71,7 +73,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                 picker behind both. One slot each: the endpoint takes a single
                 still per end. */}
             <div className={styles.source}>
-              <p className={styles.sourceLabel}>First frame</p>
+              <p className={styles.sourceLabel}>First frame (optional)</p>
               <RefImageStrip
                 images={sources}
                 max={1}
@@ -84,7 +86,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             {/* Optional, and it stays visible when empty rather than hiding
                 behind a disclosure -- an empty slot is the only thing that
                 says the capability exists. */}
-            {model.supportsEndImage && (
+            {model.supportsEndImage && hasFirstFrame && (
               <div className={styles.source}>
                 <p className={styles.sourceLabel}>Last frame (optional)</p>
                 <RefImageStrip
@@ -108,6 +110,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
               duration={duration}
               onDurationChange={setDuration}
               aspectRatio={aspectRatio}
+              aspectOptions={aspectOptions}
               onAspectRatioChange={setAspectRatio}
               estimatedCost={estimatedCost}
               isSubmitting={isSubmitting}
