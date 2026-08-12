@@ -1,4 +1,7 @@
-import { downloadAndStoreImage } from './image-storage.server'
+import {
+  downloadAndStoreImage,
+  downloadAndStoreVideo,
+} from './image-storage.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { failureTitle } from './create-pending-generation.server'
 import { first, jsonb, sql } from './db.server'
@@ -124,6 +127,97 @@ export async function processImageResult(
   }
 
   generateThumbnailInBackground(userId, storagePath, recordId)
+}
+
+/**
+ * The video sibling of `processImageResult` (#305).
+ *
+ * A separate function rather than a branch inside that one: the result shape
+ * differs (`{ video: { url } }` against `{ images: [{ url }] }`), and so does
+ * everything downstream -- no thumbnail, no dimensions, and the FAL URL kept in
+ * metadata as the degradation path when a later ingest fails.
+ *
+ * `width`, `height` and `thumbnail_path` stay NULL: there is no ffmpeg on the
+ * server, so nothing here can read a frame. The card uses
+ * `<video preload="metadata">` and lets the browser paint frame one.
+ */
+export async function processVideoResult(
+  recordId: string,
+  userId: string,
+  falResultData: Record<string, unknown>,
+) {
+  const videoUrl = (falResultData as { video?: { url?: string } }).video?.url
+  if (!videoUrl) {
+    throw new Error('No video URL in FAL result')
+  }
+
+  const { storagePath, fileName, fileHash, fileSize } =
+    await downloadAndStoreVideo(userId, videoUrl)
+
+  const record = first(
+    await sql<Array<{ generation_metadata: Record<string, unknown> | null }>>`
+    select generation_metadata from user_images
+    where id = ${recordId} and user_id = ${userId}
+  `,
+  )
+
+  const meta = record?.generation_metadata ?? {}
+  const prompt = typeof meta.prompt === 'string' ? meta.prompt : ''
+  // The label is read from the row, not from a catalog: the video lineup lives
+  // in `app/(authenticated)/video/models.ts` (one route owns it), and a
+  // `.server.ts` module here must not reach into a route folder to resolve a
+  // name. The submit writes `model_label`; this only spends it.
+  const title =
+    (typeof meta.model_label === 'string' ? meta.model_label : '') ||
+    (typeof meta.model === 'string' ? meta.model : '') ||
+    'Video'
+
+  // Same honesty as images: a figure derived from our own rate table must not
+  // be presented as something FAL reported. Video is the case where the
+  // estimate is reliable -- price is per second and the duration was chosen up
+  // front -- but that does not make it a provider figure.
+  const falCostCents = extractFalCostCents(falResultData)
+  const estimatedCostCents =
+    typeof meta.estimated_cost_cents === 'number'
+      ? meta.estimated_cost_cents
+      : null
+  const providerCostCents = falCostCents ?? estimatedCostCents
+  const providerCostIsEstimate = falCostCents == null
+
+  try {
+    await sql`
+      update user_images
+      set status = 'completed',
+          storage_path = ${storagePath},
+          file_name = ${fileName},
+          file_hash = ${fileHash},
+          file_size = ${fileSize},
+          mime_type = 'video/mp4',
+          title = ${title},
+          description = ${
+            prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
+          },
+          generation_metadata =
+            coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({
+              // Kept deliberately: if a future ingest change fails midway, a
+              // playable link beats a dead record. Not the source of truth --
+              // `storage_path` is, and `/img/[id]` is the only URL the UI uses.
+              fal_video_url: videoUrl,
+              timings: falResultData.timings,
+              completed_at: new Date().toISOString(),
+              ...(providerCostCents != null && {
+                provider_cost_cents: providerCostCents,
+                provider_cost_is_estimate: providerCostIsEstimate,
+              }),
+            })}
+      where id = ${recordId} and user_id = ${userId}
+    `
+  } catch (err) {
+    await createImageStorage().remove([storagePath])
+    throw new Error(
+      `Update failed: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
 }
 
 export async function markGenerationFailed(recordId: string, errorMsg: string) {

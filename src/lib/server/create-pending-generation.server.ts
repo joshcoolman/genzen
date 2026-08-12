@@ -23,6 +23,12 @@ interface CreatePendingGenerationOptions {
   requestId?: string
   /** Omitted for plain text-to-image, which has never carried one. */
   generationType?: string
+  /**
+   * What the row will hold once it settles. Defaults to `ai_generated`; video
+   * passes `ai_video` (#305), which is what keeps clips out of the gallery
+   * query and routes the poll to the right completion handler.
+   */
+  source?: 'ai_generated' | 'ai_video'
   falModelId: string
   prompt: string
   aspectRatio?: string
@@ -40,6 +46,7 @@ export async function createPendingGeneration({
   origin,
   requestId,
   generationType,
+  source = 'ai_generated',
   falModelId,
   prompt,
   aspectRatio,
@@ -55,7 +62,7 @@ export async function createPendingGeneration({
     user_id: userId,
     ...(requestId ? { request_id: requestId } : {}),
     status: 'pending',
-    source: 'ai_generated',
+    source,
     origin,
     title,
     sort_order: sortOrder ?? Date.now() / 1000,

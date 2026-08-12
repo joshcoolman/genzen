@@ -38,6 +38,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setDescribeTarget,
     addReference,
     usePromptText,
+    animate,
   } = useView(initial)
 
   return (
@@ -75,6 +76,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDownload={download.start}
           onDescribe={setDescribeTarget}
           onGenerateVariations={variations.openVariationDialog}
+          onAnimate={animate}
           onOpen={lightbox.open}
           onExperiment={experiment.open}
           onAddReference={addReference}

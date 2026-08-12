@@ -1,0 +1,196 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { generateVideo, listVideos } from './_actions/generate-video.action'
+import { DEFAULT_VIDEO_MODEL, estimateCostCents } from './models'
+import type { VideoRecord } from './_actions/generate-video.action'
+import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
+import { useUserImages } from '#/features/user-images/hooks/use-user-images'
+import { useAuth } from '#/lib/auth'
+import { imageUrl } from '#/lib/image-url'
+import { toast } from '#/components'
+
+/** What the strip renders and the submit sends. One, not a set: this model
+ *  takes a single first frame. */
+export interface SourceImage {
+  id: string
+  url: string
+  title: string
+}
+
+/**
+ * The state `view.tsx` renders.
+ *
+ * The first read of the clip list is the server component's, so there is no
+ * loading state and no empty first paint. After that a 5s poll is the only
+ * update signal -- nothing pushes, exactly as the gallery works: each tick asks
+ * FAL whether anything settled and then re-reads the list.
+ *
+ * The library comes from `useUserImages`, the same hook the generator panel
+ * uses, so the picker here is the picker there.
+ */
+export function useView(initialVideos: Array<VideoRecord>) {
+  const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const model = DEFAULT_VIDEO_MODEL
+
+  const userImages = useUserImages(user.id)
+
+  const [videos, setVideos] = useState(initialVideos)
+  // A list, not a field: one first frame can carry several takes, and queueing
+  // them is cheaper than sitting through one before writing the next. Same
+  // component the generator panel uses.
+  const [prompts, setPrompts] = useState<Array<string>>([''])
+  const [duration, setDuration] = useState(model.defaultDuration)
+  const [aspectRatio, setAspectRatio] = useState(model.aspectRatios[0])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  // The set is one image, held as an array so `RefImageStrip` can render it
+  // unchanged. Anything past the first is dropped rather than queued -- the
+  // endpoint takes a single `image_url`.
+  const [sources, setSources] = useState<Array<SourceImage>>([])
+
+  // `?image=<id>` is how Animate hands a card over. It resolves once the
+  // library has loaded, because the strip needs a URL and a title, not just an
+  // id.
+  const handoffId = searchParams.get('image')
+  useEffect(() => {
+    if (!handoffId || sources.length > 0 || userImages.isLoading) return
+    const match = userImages.images.find((image) => image.id === handoffId)
+    if (match) {
+      setSources([
+        {
+          id: match.id,
+          url: userImages.imageUrls[match.id] ?? imageUrl(match.id, 'thumb'),
+          title: match.title,
+        },
+      ])
+    }
+  }, [handoffId, sources.length, userImages])
+
+  const hasPending = useMemo(
+    () => videos.some((video) => video.status === 'pending'),
+    [videos],
+  )
+
+  const refresh = useCallback(async () => {
+    try {
+      setVideos(await listVideos())
+    } catch {
+      // A failed poll is not worth a toast -- the next tick re-reads.
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasPending) return
+
+    const tick = async () => {
+      try {
+        await checkPendingGenerations()
+      } catch {
+        // Swallowed for the same reason as above.
+      }
+      await refresh()
+    }
+
+    const id = setInterval(tick, 5000)
+    return () => clearInterval(id)
+  }, [hasPending, refresh])
+
+  const openPicker = useCallback(() => {
+    void userImages.refresh()
+    setPickerOpen(true)
+  }, [userImages])
+
+  const collectSources = useCallback((picked: Array<SourceImage>) => {
+    // `max={1}` already bounds the picker; this is the belt to that brace.
+    setSources(picked.slice(0, 1))
+  }, [])
+
+  const clearSources = useCallback(() => setSources([]), [])
+
+  const updatePrompt = useCallback((index: number, value: string) => {
+    setPrompts((current) => current.map((p, i) => (i === index ? value : p)))
+  }, [])
+
+  const addPrompt = useCallback(() => {
+    setPrompts((current) => [...current, ''])
+  }, [])
+
+  const removePrompt = useCallback((index: number) => {
+    // Never empty: the list is the input, so removing the last row leaves a
+    // blank one rather than nothing to type in.
+    setPrompts((current) =>
+      current.length <= 1 ? [''] : current.filter((_, i) => i !== index),
+    )
+  }, [])
+
+  const clearPrompts = useCallback(() => setPrompts(['']), [])
+
+  const filledPrompts = useMemo(
+    () => prompts.map((p) => p.trim()).filter((p) => p.length > 0),
+    [prompts],
+  )
+
+  const sourceId = sources.at(0)?.id ?? null
+  // Every prompt is its own clip, so the figure on the button multiplies. The
+  // per-clip price is constant; what varies is how many are queued.
+  const estimatedCost =
+    estimateCostCents(model, duration) * Math.max(filledPrompts.length, 1)
+  const canSubmit = !!sourceId && filledPrompts.length > 0 && !isSubmitting
+
+  const submit = useCallback(async () => {
+    if (!sourceId || filledPrompts.length === 0) return
+
+    setIsSubmitting(true)
+    try {
+      // Sequential, not `Promise.all`: each call reserves a row before it
+      // contacts FAL, and firing them together would interleave the
+      // reservations against a queue that answers in its own order. Sorting
+      // the list out is not worth the few hundred milliseconds saved.
+      for (const prompt of filledPrompts) {
+        await generateVideo({
+          imageId: sourceId,
+          prompt,
+          duration,
+          aspectRatio,
+          modelSlug: model.slug,
+        })
+      }
+      // Refresh once so the pending cards appear; the poll takes it from here.
+      await refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Generation failed')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [sourceId, filledPrompts, duration, aspectRatio, model.slug, refresh])
+
+  return {
+    model,
+    userImages,
+    sources,
+    pickerOpen,
+    setPickerOpen,
+    openPicker,
+    collectSources,
+    clearSources,
+    videos,
+    prompts,
+    updatePrompt,
+    addPrompt,
+    removePrompt,
+    clearPrompts,
+    pendingCount: filledPrompts.length,
+    duration,
+    setDuration,
+    aspectRatio,
+    setAspectRatio,
+    estimatedCost,
+    isSubmitting,
+    canSubmit,
+    submit,
+  }
+}

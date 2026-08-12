@@ -1,6 +1,7 @@
 import { first, sql } from '#/lib/server/db.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { createImageStorage } from '#/lib/image-storage'
+import { parseRange } from '#/lib/http-range'
 
 /**
  * Serve an image, to its owner only (#226).
@@ -60,13 +61,36 @@ export async function GET(
     return new Response('Not found', { status: 404 })
   }
 
+  // Thumbnails are WebP whatever the original was.
+  const contentType = wantsThumb
+    ? 'image/webp'
+    : blob.type || row.mime_type || 'application/octet-stream'
+  const cacheControl = 'private, max-age=31536000, immutable'
+
+  // A `<video>` element cannot seek unless the server answers a range request:
+  // without this it streams from byte zero and the scrub bar does nothing
+  // (#305). Stills never ask, so this costs them nothing.
+  const range = parseRange(request.headers.get('range'), blob.size)
+  if (range) {
+    const { start, end } = range
+    return new Response(blob.slice(start, end + 1).stream(), {
+      status: 206,
+      headers: {
+        'content-type': contentType,
+        'content-length': String(end - start + 1),
+        'content-range': `bytes ${start}-${end}/${blob.size}`,
+        'accept-ranges': 'bytes',
+        'cache-control': cacheControl,
+      },
+    })
+  }
+
   return new Response(blob.stream(), {
     headers: {
-      // Thumbnails are WebP whatever the original was.
-      'content-type': wantsThumb
-        ? 'image/webp'
-        : blob.type || row.mime_type || 'application/octet-stream',
-      'cache-control': 'private, max-age=31536000, immutable',
+      'content-type': contentType,
+      'content-length': String(blob.size),
+      'accept-ranges': 'bytes',
+      'cache-control': cacheControl,
     },
   })
 }

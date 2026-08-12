@@ -1,0 +1,48 @@
+/* Blocked out, not laid out: controls in a fixed column at the right, clips
+   filling whatever is left. 20rem matches the Images generator dock, so the
+   two surfaces read as the same shape -- but this is a plain column, not that
+   dock: nothing collapses, nothing pins, and there is no toggle. */
+.columns {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-24);
+}
+
+.clips {
+  flex: 1;
+  min-width: 0;
+}
+
+.controls {
+  position: sticky;
+  top: 0;
+  flex: 0 0 20rem;
+  width: 20rem;
+}
+
+/* One column below the dock's width plus a usable grid beside it. */
+@media (max-width: 60rem) {
+  .columns {
+    flex-direction: column;
+  }
+
+  .controls {
+    position: static;
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+.source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.sourceLabel {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}

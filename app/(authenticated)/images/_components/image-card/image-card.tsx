@@ -2,6 +2,7 @@
 
 import {
   CheckCircle2,
+  Clapperboard,
   Download,
   Layers,
   MessageSquare,
@@ -30,6 +31,8 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
+  /** Take this still to /video as the first frame (#305). */
+  onAnimate?: (img: SavedAiImage) => void
   /** Opens the lightbox. Currently unwired: the launcher row that called it has
    *  been removed and the card click goes to the preview instead. The lightbox
    *  is still mounted, so this is the seam to reach it from. */
@@ -65,6 +68,7 @@ export function ImageCard({
   onDownload,
   onDescribe,
   onGenerateVariations,
+  onAnimate,
   onExperiment,
   onAddReference,
   onUsePrompt,
@@ -99,6 +103,12 @@ export function ImageCard({
           <DropdownMenuItem onClick={() => onGenerateVariations(img)}>
             <Layers className={styles.menuItemIcon} />
             Generate Variations
+          </DropdownMenuItem>
+        )}
+        {onAnimate && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onAnimate(img)}>
+            <Clapperboard className={styles.menuItemIcon} />
+            Animate
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
