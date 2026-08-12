@@ -100,6 +100,10 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   const lightbox = useLightbox(lightboxImages, gallery.deleteImage)
+  // The same cursor over the same list, driving the in-place preview instead of
+  // the overlay. Its own instance so the two do not share a position: stepping
+  // through one is not meant to move the other.
+  const experiment = useLightbox(lightboxImages)
   const variations = useVariations({ setError })
 
   const selection = useSelection({ items: images.map((img) => img.id) })
@@ -239,6 +243,7 @@ export function useView(initial: Array<SavedAiImage>) {
     isBatchDeleting,
     deleteSelected,
     lightbox,
+    experiment,
     variations,
     variationSourceUrl,
     describeTarget,

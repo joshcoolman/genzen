@@ -1,0 +1,45 @@
+/* Column-packed images at their own aspect ratios. */
+
+/* `columns` takes a width, not a count, so the column count falls out of the
+   available space -- which means it also answers the collapsing sidebar and the
+   narrow viewport without a single breakpoint. */
+.masonry {
+  columns: 18rem;
+  column-gap: var(--space-12);
+}
+
+/* `break-inside: avoid` is what stops an image being sliced across a column
+   boundary. The bottom margin is the row gap; `column-gap` only handles the
+   horizontal one. */
+.tile {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--space-12);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  break-inside: avoid;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* No hover treatment beyond a slight lift in opacity: the images are the
+   content, and a scrim or a zoom on each one turns browsing into a surface
+   that keeps reacting to the pointer crossing it. */
+.image {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.tile:hover .image {
+  opacity: 0.85;
+}

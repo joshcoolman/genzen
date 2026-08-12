@@ -1,4 +1,4 @@
-import { Frame, Logs, Sparkles, Trash2, User } from 'lucide-react'
+import { Compass, Frame, Logs, Sparkles, Trash2, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface NavItem {
@@ -11,6 +11,16 @@ export interface NavItem {
 }
 
 export const navItems: Array<NavItem> = [
+  // First, because it is where you arrive rather than where you work. Explore
+  // is a browsing surface -- see `app/(authenticated)/explore/CLAUDE.md`.
+  // Deleting that folder and this entry removes it completely; nothing else in
+  // the app refers to it.
+  {
+    id: 'explore',
+    label: 'Explore',
+    href: '/explore',
+    icon: Compass,
+  },
   {
     id: 'images',
     label: 'Images',

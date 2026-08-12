@@ -6,6 +6,7 @@ import { VariationPromptsDialog } from './_components/variation-prompts-dialog/v
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { ImageLightbox } from './_components/image-lightbox/image-lightbox'
+import { Experiment } from './_components/experiment/experiment'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -30,6 +31,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     isBatchDeleting,
     deleteSelected,
     lightbox,
+    experiment,
     variations,
     variationSourceUrl,
     describeTarget,
@@ -50,6 +52,19 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onUpload={uploadFiles}
         />
 
+        {/* Before the gallery, not after: its anchor is measured to find the
+            top of the grid area. */}
+        {experiment.isOpen && (
+          <Experiment
+            items={experiment.items}
+            imageUrls={experiment.imageUrls}
+            currentIndex={experiment.index!}
+            onClose={experiment.close}
+            onNext={experiment.next}
+            onPrev={experiment.prev}
+          />
+        )}
+
         <ImageGallery
           images={images}
           imageUrls={gallery.imageUrls}
@@ -61,6 +76,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDescribe={setDescribeTarget}
           onGenerateVariations={variations.openVariationDialog}
           onOpen={lightbox.open}
+          onExperiment={experiment.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           emptyScopeLabel={

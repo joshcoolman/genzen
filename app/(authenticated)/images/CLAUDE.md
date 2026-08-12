@@ -9,9 +9,11 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 
 ## Quirks
 
-- **The card has two icons, and a click opens the lightbox (#284).** `...` and
+- **The card has two icons, and a click opens the in-place preview.** `...` and
   Delete on the image; the model name and the whole prompt under it, the prompt
-  being its own copy button. The expand icon went (the click does that), the
+  being its own copy button. The click opened the lightbox until the preview
+  took it -- see the Experiment bullet below. The expand icon went (the click
+  does that), the
   select circle went (select mode does), and the source highlight went -- the
   grid used to point the generator at an image on click, which is a hidden
   piece of state for the most obvious gesture on the page. The prompt is deliberately
@@ -66,11 +68,26 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   does. Selecting attaches nothing to the next generation; it used to feed
   `setAutoRefImageIds`, so looking through images changed what the next prompt
   was built from with nothing in the panel saying so
-- **The lightbox is a job view, and it lives here (#271).** Image, prompt,
+- **A click opens the preview, and the lightbox moved out.** The click used to
+  open the lightbox here, and it felt disorienting for a reason that took a
+  while to name: an overlay that covers everything costs nothing while
+  _browsing_ and buries your work while _working_. So browsing got its own
+  route, `/explore`, and the lightbox went with it. What the click does here is
+  `_components/experiment/` -- the grid area, and only the grid area, becomes
+  one large image. Toolbar stays, no scrim, no animation. The outer quarters of
+  the panel step (a chevron appears only once the pointer is in one), the middle
+  half closes, arrow keys page, Escape leaves. It covers the grid rather than
+  replacing it, so scroll position survives, and it is positioned by a
+  `ResizeObserver` rather than CSS because the sidebar and the dock both move
+  its edges
+- **The lightbox is a job view, and Explore owns it now (#271).** Image, prompt,
   filmstrip -- nothing else goes in it. It takes the list the grid renders,
   filtered to completed, so the strip and the grid can never disagree (#270).
-  It sits in `_components/lightbox/` rather than `src/components/`: this route
-  is its only consumer and a job view is not a generic primitive. **A click
+  It still sits in `_components/lightbox/` and `/explore` imports it from here;
+  that is a borrowed dependency, not a home. Two consumers means it has earned
+  `src/components/`, and the move is deliberately not done yet -- see
+  `app/(authenticated)/explore/CLAUDE.md`. `onOpen` is still threaded from
+  `use-view` down to the card as the unwired seam. **A click
   anywhere that is not a control closes it** -- the image, the scrim, the empty
   space beside the prompt. Only the filmstrip and the two buttons stop the
   click, because the way this gets used is look, page a few, copy, get back to

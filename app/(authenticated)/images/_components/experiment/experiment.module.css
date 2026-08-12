@@ -1,0 +1,97 @@
+/* The grid area, showing one image instead of many. Deliberately not a
+   lightbox: it takes the ground it is given rather than covering the app. */
+
+/* A zero-height marker in the flow, only there to be measured. It must cost the
+   layout nothing -- the grid is still mounted underneath. */
+.anchor {
+  height: 0;
+}
+
+/* Fixed, because "as large as it can be without leaving the viewport" is a
+   viewport measurement. Top/left/width come from the anchor.
+
+   It runs to the very bottom of the viewport and keeps the shell's margin as
+   padding instead. Ending at `bottom: var(--space-24)` left a 24px strip with
+   the still-mounted grid showing through it -- thumbnails peeking under the
+   preview. The image is inset the same either way; only the ground extends. */
+.panel {
+  position: fixed;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: var(--space-24);
+  background: var(--bg);
+}
+
+/* No animation, by request. Stepping through a set is a sequence of
+   comparisons, and a fade between them is time spent looking at neither. */
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* The two stepping zones: the outer quarter of the panel on each side, full
+   height. Enormous on purpose -- the whole complaint about chevrons is having
+   to aim at a small circle, so the target is a quarter of the screen and the
+   glyph inside it is only a label for what a click here would do. */
+.zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-24);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.zonePrev {
+  left: 0;
+  justify-content: flex-start;
+}
+
+.zoneNext {
+  right: 0;
+  justify-content: flex-end;
+}
+
+/* The middle half still closes. Not "anywhere" any more, but the outer
+   quarters had to come from somewhere and this is still a target you cannot
+   really miss. */
+.zoneClose {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  z-index: 1;
+  cursor: pointer;
+}
+
+/* Hidden until the pointer is already in the zone, so it confirms an intention
+   rather than advertising one. Its own ground because it sits over arbitrary
+   images -- a bare glyph disappears on anything pale, the same reason the
+   card's markers carry a scrim. Fading only the reveal, not the image. */
+.chevron {
+  width: 1.5rem;
+  height: 1.5rem;
+  box-sizing: content-box;
+  padding: var(--space-8);
+  border-radius: var(--radius-full);
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.zone:hover .chevron,
+.zone:focus-visible .chevron {
+  opacity: 1;
+}

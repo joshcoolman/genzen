@@ -33,9 +33,12 @@ interface ImageCardProps {
   onDownload?: (img: SavedAiImage) => void
   onDescribe?: (img: SavedAiImage) => void
   onGenerateVariations?: (img: SavedAiImage) => void
-  /** Card click in normal mode: the image opens bigger, which is what reaching
-   *  for it in a grid means (#284). */
+  /** Opens the lightbox. Currently unwired: the launcher row that called it has
+   *  been removed and the card click goes to the preview instead. The lightbox
+   *  is still mounted, so this is the seam to reach it from. */
   onOpen?: (img: SavedAiImage) => void
+  /** The card click: the grid area becomes one large preview. */
+  onExperiment?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
    *  evicting the last when the set is full. */
   onAddReference?: (img: SavedAiImage) => void
@@ -48,12 +51,13 @@ interface ImageCardProps {
 }
 
 /**
- * Two icons and a caption (#284). `...` and Delete on the image; the model name
- * and the whole prompt under it, the prompt being its own copy button.
+ * Two icons and a caption. `...` and Delete on the image; the model name and the
+ * whole prompt under it, the prompt being its own copy button.
  *
- * Everything else went: the expand icon (the click does that now), the select
- * circle (select mode does), and the source highlight -- there is no source to
- * highlight since #297, only the generator's set.
+ * The select circle went in #284 (select mode replaced it) and the source
+ * highlight in #297 (there is no source, only the generator's set). A pair of
+ * Gallery/Experiment launchers lived in the caption briefly and went once the
+ * card click was wired straight to the preview.
  */
 export function ImageCard({
   img,
@@ -64,7 +68,7 @@ export function ImageCard({
   onDownload,
   onDescribe,
   onGenerateVariations,
-  onOpen,
+  onExperiment,
   onAddReference,
   onUsePrompt,
   selected,
@@ -172,16 +176,19 @@ export function ImageCard({
           )}
         </>
       }
-      /* Plain click opens it bigger; Cmd adds it to the reference images. One
-         modifier, not two: Cmd used to replace the first image and Cmd-Shift
-         push onto the rest, which was a real distinction only while a source
-         slot existed to be replaced. Over one set (#297) they were the same
-         gesture with a rule to remember, so Cmd-click just adds -- click again
-         for a second, and a full set pops the last to make room.
+      /* Cmd adds it to the reference images. One modifier, not two: Cmd used to
+         replace the first image and Cmd-Shift push onto the rest, which was a
+         real distinction only while a source slot existed to be replaced. Over
+         one set (#297) they were the same gesture with a rule to remember, so
+         Cmd-click just adds -- click again for a second, and a full set pops
+         the last to make room.
 
          The modifier is the whole path back from the grid to the generator,
          which #284 removed on purpose -- it is here as its own decision, and it
-         costs the card nothing because it is not a control. */
+         costs the card nothing because it is not a control.
+
+         The plain click opens the preview. It was briefly a duplicate of a
+         launcher button in the caption; the click won and the buttons went. */
       onMouseEnter={(e) => {
         setHovered(true)
         modifier.seed(e)
@@ -195,7 +202,7 @@ export function ImageCard({
                 onAddReference(img)
                 return
               }
-              onOpen?.(img)
+              onExperiment?.(img)
             }
       }
     >
