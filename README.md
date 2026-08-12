@@ -149,6 +149,6 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 - Reference images: the source image is gone and the panel holds one ordered set of zero to N, filled only from the library and uploaded only from the Images toolbar (#297)
 - The image cap is now the minimum across the selected models and counts correctly (`maxRefs + 1`) — a mixed selection used to offer four slots and send the small model one image with no warning
 - Clicking outside any dialog closes it again, and the library picker keeps a fixed height so switching filters no longer resizes it under the cursor (#299)
+- The prompt field sizes itself to what is in it, capped at 300px, at the same 10px as the chips around it — a 50-word prompt now fits without scrolling
 - Generate panel and Images toolbar cleanup: Paste Prompts and Generate prompts removed, the generator's pin removed, `MiniButton` shared by Enhance / Instructions / Add prompt, tooltips on every toolbar icon (#295)
 - The green `+` becomes a panel toggle that stays in its slot, and Images gets its right margin back — the shell no longer makes an exception for the route
-- System instructions: one block, set behind a gear in the generator panel, prepended to every prompt in a run on both Images and Canvas (#272)
