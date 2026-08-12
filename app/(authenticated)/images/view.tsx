@@ -107,7 +107,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         onApply={(prompts) =>
           variations.handleApplyVariations(
             prompts,
-            generator.pastePrompts,
+            generator.appendPrompts,
             variationSourceUrl,
             generator.setSourceFromUrl,
           )
