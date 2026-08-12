@@ -34,7 +34,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     variationSourceUrl,
     describeTarget,
     setDescribeTarget,
-    focusSource,
     addReference,
     usePromptText,
   } = useView(initial)
@@ -62,7 +61,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDescribe={setDescribeTarget}
           onGenerateVariations={variations.openVariationDialog}
           onOpen={lightbox.open}
-          onFocusSource={focusSource}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           emptyScopeLabel={

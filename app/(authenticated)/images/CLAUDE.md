@@ -33,19 +33,23 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   small model one image with no warning. Narrowing the selection **visibly
   trims the set** rather than truncating it at submit
 - **The grid never marks the set, and reaches it only through modifiers (#284).**
-  Not buttons, deliberately: **Cmd-click a card puts that image in slot 0,
-  Cmd-Shift-click pushes it onto the set, Cmd-click its prompt loads that
-  text** -- each replacing exactly one thing and leaving everything else in the
-  panel alone. The push goes on the _front_ and evicts the last (`pushRef` in
+  Not buttons, deliberately: **Cmd-click a card adds that image to the set,
+  Cmd-click its prompt loads that text** -- and nothing else in the panel
+  moves. One image modifier, not two: Cmd-click used to replace slot 0 and
+  Cmd-Shift-click push onto the rest, which distinguished nothing once the
+  source slot was gone and made the wrong one the default -- clicking three
+  cards left one image. The push goes on the _front_ and evicts the last
+  (`pushRef` in
   `src/features/ai-images/ref-images.ts`, which is unit-tested), the opposite
   end from `addRefImages`: the gesture means "use this one", so a full set has
   to make room rather than refuse. Only the eviction toasts -- gaining an image
-  is its own feedback, losing one is not. The prompt's hover label says "Copy",
-  and "Load Prompt" **while Cmd is actually held** -- the shortcut announces
-  itself to someone reaching for it and charges nobody else for the privilege.
-  The key listener is bound only while that one card is hovered, because a grid
-  holds dozens. The two image gestures stay unhinted, waiting on a surface that
-  can explain them (#289). Both open the panel, because a power move whose
+  is its own feedback, losing one is not. At capacity 1 every click evicts,
+  which is correct, and is why a single-image model hides a wrong binding here.
+  Both shortcuts name themselves **while Cmd is actually held** -- "Add" over
+  the image, "Load Prompt" on the prompt (which otherwise reads "Copy") -- so
+  each announces itself to someone reaching for it and charges nobody else for
+  the privilege. The key listener is bound only while that one card is hovered,
+  because a grid holds dozens (#289). Both open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input

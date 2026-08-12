@@ -23,7 +23,6 @@ interface ImageGalleryProps {
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click: the power moves (#284 follow-up). Plain sets the source,
    *  Shift pushes a reference, and on the prompt it loads the text. */
-  onFocusSource?: (img: SavedAiImage) => void
   onAddReference?: (img: SavedAiImage) => void
   onUsePrompt?: (text: string) => void
   /** Select mode: a click anywhere on a card picks it (#284). */
@@ -47,7 +46,6 @@ export function ImageGallery({
   onDescribe,
   onGenerateVariations,
   onOpen,
-  onFocusSource,
   onAddReference,
   onUsePrompt,
   selectionActive,
@@ -119,7 +117,6 @@ export function ImageGallery({
                 onDescribe={onDescribe}
                 onGenerateVariations={onGenerateVariations}
                 onOpen={onOpen}
-                onFocusSource={onFocusSource}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}
                 selected={isSelected?.(img.id)}

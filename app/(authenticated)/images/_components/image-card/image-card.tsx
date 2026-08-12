@@ -36,9 +36,8 @@ interface ImageCardProps {
   /** Card click in normal mode: the image opens bigger, which is what reaching
    *  for it in a grid means (#284). */
   onOpen?: (img: SavedAiImage) => void
-  /** Cmd/Ctrl-click on the image: point the generator at it. */
-  onFocusSource?: (img: SavedAiImage) => void
-  /** Cmd/Ctrl-Shift-click on the image: push it onto the reference strip. */
+  /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
+   *  evicting the last when the set is full. */
   onAddReference?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the prompt: load it into the generator. */
   onUsePrompt?: (text: string) => void
@@ -53,8 +52,8 @@ interface ImageCardProps {
  * and the whole prompt under it, the prompt being its own copy button.
  *
  * Everything else went: the expand icon (the click does that now), the select
- * circle (select mode does), and the source highlight (the generator's chip is
- * the only place the source is shown or changed).
+ * circle (select mode does), and the source highlight -- there is no source to
+ * highlight since #297, only the generator's set.
  */
 export function ImageCard({
   img,
@@ -66,7 +65,6 @@ export function ImageCard({
   onDescribe,
   onGenerateVariations,
   onOpen,
-  onFocusSource,
   onAddReference,
   onUsePrompt,
   selected,
@@ -117,20 +115,13 @@ export function ImageCard({
 
   const caption = img.description ?? img.generation_metadata?.prompt
 
-  // The image's two shortcuts name themselves the moment the key goes down,
-  // the way the prompt's hint does. Only while this card is hovered -- see
+  // The image's shortcut names itself the moment the key goes down, the way
+  // the prompt's hint does. Only while this card is hovered -- see
   // `useModifierHeld`.
   const [hovered, setHovered] = useState(false)
   const watching = hovered && !selectionActive
   const modifier = useModifierHeld(watching)
-  const shortcut =
-    watching && modifier.meta
-      ? modifier.shift && onAddReference
-        ? 'Add Reference'
-        : onFocusSource
-          ? 'Load Image'
-          : null
-      : null
+  const shortcut = watching && modifier.meta && onAddReference ? 'Add' : null
 
   return (
     <Thumbnail
@@ -181,11 +172,16 @@ export function ImageCard({
           )}
         </>
       }
-      /* Plain click opens it bigger; Cmd points the generator at it, and
-         Cmd-Shift pushes it onto the reference strip. The modifiers are the
-         whole path back from the grid to the generator, which #284 removed on
-         purpose -- they are here as their own decision, and they cost the card
-         nothing because they are not controls. */
+      /* Plain click opens it bigger; Cmd adds it to the reference images. One
+         modifier, not two: Cmd used to replace the first image and Cmd-Shift
+         push onto the rest, which was a real distinction only while a source
+         slot existed to be replaced. Over one set (#297) they were the same
+         gesture with a rule to remember, so Cmd-click just adds -- click again
+         for a second, and a full set pops the last to make room.
+
+         The modifier is the whole path back from the grid to the generator,
+         which #284 removed on purpose -- it is here as its own decision, and it
+         costs the card nothing because it is not a control. */
       onMouseEnter={(e) => {
         setHovered(true)
         modifier.seed(e)
@@ -195,15 +191,9 @@ export function ImageCard({
         selectionActive
           ? undefined
           : (e) => {
-              if (e?.metaKey || e?.ctrlKey) {
-                if (e.shiftKey && onAddReference) {
-                  onAddReference(img)
-                  return
-                }
-                if (!e.shiftKey && onFocusSource) {
-                  onFocusSource(img)
-                  return
-                }
+              if ((e?.metaKey || e?.ctrlKey) && onAddReference) {
+                onAddReference(img)
+                return
               }
               onOpen?.(img)
             }

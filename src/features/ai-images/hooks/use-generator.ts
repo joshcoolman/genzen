@@ -94,8 +94,11 @@ export interface GeneratorState {
   pushRefImage: (image: RefImage) => void
   replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
-  /** Put this image in slot 0, keeping the rest of the set. The Cmd-click
-   *  gesture: "point the generator at that image", one thing replaced. */
+  /** Put this image in slot 0, keeping the rest of the set. Applying variations
+   *  is the one caller: the prompts are *of* that image, so it belongs in the
+   *  slot the aspect ratio follows. Not a card gesture -- Cmd-click adds
+   *  (`pushRefImage`), because replacing meant clicking three cards left one
+   *  image. */
   setPrimaryImage: (image: RefImage) => void
   /** How many images the set can hold, the minimum across the selected models
    *  -- see `imageCapacityFor`. */
