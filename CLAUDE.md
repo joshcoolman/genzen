@@ -78,6 +78,7 @@ live with the one route that renders them:
 | Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working              |
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                       |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                        |
+| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL       |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, search overlay |
 | Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else              |
 
