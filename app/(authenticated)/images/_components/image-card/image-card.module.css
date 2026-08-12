@@ -90,8 +90,23 @@
    (`prompt-list.module.css`): the card is showing the text you typed there, so
    reading it back at a different size makes it look like a different kind of
    thing. `1.5` for the same reason -- the scale has no `3xs` leading, and
-   small text needs the line separation more, not less. */
-.promptText {
+   small text needs the line separation more, not less.
+
+   Three lines, and no way to expand them: the caption is there to jog your
+   memory, not to be read in full. The whole prompt is one click away on the
+   clipboard, and Activity shows it entire. Unclamped (#284) it made the grid
+   ragged -- a long prompt gave its card twice the height of its neighbours,
+   for text nobody read past the third line anyway. The visibility toggle is
+   untouched; this caps what showing it costs.
+
+   The doubled selector is deliberate: CopyText's own `.text` sets
+   `display: block` at the same specificity, and a clamp needs the box. */
+.promptText.promptText {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
   font-size: var(--text-3xs);
   line-height: 1.5;
 }

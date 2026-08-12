@@ -18,9 +18,12 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   does that), the
   select circle went (select mode does), and the source highlight went -- the
   grid used to point the generator at an image on click, which is a hidden
-  piece of state for the most obvious gesture on the page. The prompt is deliberately
-  not clamped: uneven card heights are the known cost, being tried before a
-  clamp is reached for again
+  piece of state for the most obvious gesture on the page. **The prompt clamps
+  to three lines and does not expand**: three is enough to recognise a prompt,
+  the click copies all of it regardless, and Activity shows it entire.
+  Unclamped (#284) a long prompt gave its card twice the height of its
+  neighbours for text nobody read past line three. Hiding the caption entirely
+  is still the info toggle's job
 - **There is no source image; there is one set (#297).** The panel holds an
   ordered set of zero to N **Reference images**, filled from the library and
   from nowhere else. Index 0 is the only asymmetry left: the aspect ratio is

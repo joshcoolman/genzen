@@ -204,9 +204,9 @@ export function ImageCard({
     >
       {showInfo && caption && (
         <div className={styles.caption}>
-          {/* Not truncated (#284): the point of a caption is reading what made
-              something without opening it. Uneven card heights are the known
-              cost, being tried before a clamp is reached for again. */}
+          {/* Clamped to three lines, with no expand. Three is enough to
+              recognise a prompt, and the rest is a click away -- this button
+              copies the whole thing however much of it shows. */}
           <CopyText
             text={caption}
             label="Copy"
