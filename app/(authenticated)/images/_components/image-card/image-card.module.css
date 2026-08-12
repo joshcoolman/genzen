@@ -1,5 +1,5 @@
 /* Everything an ImageCard adds to a Thumbnail: the caption block, the selected
-   look, and the two markers that sit on the image. */
+   look, and the model name that sits on the image. */
 
 .selectedTile {
   border-color: var(--accent);
@@ -56,80 +56,61 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* The extra below is the hover hint's room -- it is out of the button's flow
+     and lands here, and the card clips (`overflow: hidden`) anything past it.
+     With the hint gone from the flow the tinted block is even top and bottom
+     around its three lines, which is the point of the asymmetry here. */
   padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
-.title {
-  margin: 0;
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  font-weight: var(--weight-medium);
-  color: var(--text);
+/* The model name, in the image's bottom-right corner. Quiet grey on the tile's
+   own ground -- images are contained, so the corner is nearly always
+   letterbox, and the scrim covers the wide ones that reach it. Not a control:
+   it never takes a click. */
+.model {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* CopyText owns the affordance. The negative margin keeps the prompt's first
-   line aligned with the model name above it, which the button's own padding
-   would otherwise push in. */
+   line flush with the caption's padding, which the button's own padding would
+   otherwise push in. */
 .prompt {
   margin: 0 calc(var(--space-8) * -1);
 }
 
-.promptText {
-  font-size: var(--text-xs);
+/* The same size and leading as the prompt field itself
+   (`prompt-list.module.css`): the card is showing the text you typed there, so
+   reading it back at a different size makes it look like a different kind of
+   thing. `1.5` for the same reason -- the scale has no `3xs` leading, and
+   small text needs the line separation more, not less.
+
+   Three lines, and no way to expand them: the caption is there to jog your
+   memory, not to be read in full. The whole prompt is one click away on the
+   clipboard, and Activity shows it entire. Unclamped (#284) it made the grid
+   ragged -- a long prompt gave its card twice the height of its neighbours,
+   for text nobody read past the third line anyway. The visibility toggle is
+   untouched; this caps what showing it costs.
+
+   The doubled selector is deliberate: CopyText's own `.text` sets
+   `display: block` at the same specificity, and a clamp needs the box. */
+.promptText.promptText {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--text-3xs);
   line-height: 1.5;
-}
-
-/* The bottom-centre column: the modifier hint above, the canvas marker below.
-   One stack rather than two absolute boxes fighting for the same spot, so
-   neither jumps when the other appears -- and being absolute, neither one
-   changes the card's height.
-
-   Bottom-centre because the corners hold actions and these are not actions. */
-.markers {
-  position: absolute;
-  bottom: var(--space-8);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  pointer-events: none;
-}
-
-/* What a Cmd-click would do, named the moment the key goes down. Quiet on
-   purpose: it is an answer to a question you asked by holding a key, not an
-   announcement. */
-.shortcut {
-  padding: var(--space-2) var(--space-8);
-  border-radius: var(--radius-full);
-  background: var(--scrim);
-  backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-}
-
-/* "On canvas" marker. Passive: it never intercepts a click, and it does not
-   move or hide on hover -- a marker that vanishes exactly when you reach for
-   Delete would fail at the only moment it matters (#216). */
-.onCanvas {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-2) var(--space-8);
-  border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--bg) 80%, transparent);
-  backdrop-filter: blur(8px);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-}
-
-.onCanvasIcon {
-  width: 0.75rem;
-  height: 0.75rem;
 }

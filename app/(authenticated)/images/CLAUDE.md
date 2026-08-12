@@ -10,15 +10,20 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 ## Quirks
 
 - **The card has two icons, and a click opens the in-place preview.** `...` and
-  Delete on the image; the model name and the whole prompt under it, the prompt
-  being its own copy button. The click opened the lightbox until the preview
+  Delete on the image, the model in its bottom-right corner; the whole prompt
+  under it, being its own copy button. The model sat at the top of the caption
+  until it read as a title for the prompt -- it names what made the picture, so
+  it lives on the picture. The click opened the lightbox until the preview
   took it -- see the Experiment bullet below. The expand icon went (the click
   does that), the
   select circle went (select mode does), and the source highlight went -- the
   grid used to point the generator at an image on click, which is a hidden
-  piece of state for the most obvious gesture on the page. The prompt is deliberately
-  not clamped: uneven card heights are the known cost, being tried before a
-  clamp is reached for again
+  piece of state for the most obvious gesture on the page. **The prompt clamps
+  to three lines and does not expand**: three is enough to recognise a prompt,
+  the click copies all of it regardless, and Activity shows it entire.
+  Unclamped (#284) a long prompt gave its card twice the height of its
+  neighbours for text nobody read past line three. Hiding the caption entirely
+  is still the info toggle's job
 - **There is no source image; there is one set (#297).** The panel holds an
   ordered set of zero to N **Reference images**, filled from the library and
   from nowhere else. Index 0 is the only asymmetry left: the aspect ratio is
@@ -47,11 +52,16 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   to make room rather than refuse. Only the eviction toasts -- gaining an image
   is its own feedback, losing one is not. At capacity 1 every click evicts,
   which is correct, and is why a single-image model hides a wrong binding here.
-  Both shortcuts name themselves **while Cmd is actually held** -- "Add" over
-  the image, "Load Prompt" on the prompt (which otherwise reads "Copy") -- so
-  each announces itself to someone reaching for it and charges nobody else for
-  the privilege. The key listener is bound only while that one card is hovered,
-  because a grid holds dozens (#289). Both open the panel, because a power move whose
+  **Neither shortcut names itself any more, and the card says nothing on
+  hover.** They used to: "Add" over the image while Cmd was held, "Load Prompt"
+  in place of the prompt's "Copy". Both went -- a two-word hover is the wrong
+  surface for teaching a gesture, and it charged every ordinary hover for a
+  feature most of them will not use. The gestures still work; explaining them
+  is **#289**'s job, in a surface that can carry the explanation. Until it
+  lands they are undiscoverable by design, which is a decision and not an
+  oversight. `CopyText`'s `silent` prop is what turns the hint off; the
+  "Copied" tick survives it, because it reports rather than instructs. Both
+  open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
@@ -122,16 +132,14 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   open flag is an older single-value key, and its `pinned` twin is now dead
   storage that nothing reads. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
-- **A card says when it is on the canvas (#216).** `on_canvas` is derived per
-  read with an `exists` over `canvas_images`, never stored -- the boolean column
-  of that name drifted from the membership rows that are the truth and went in
-  #205. The marker is passive on purpose: trashing an arranged image takes it
-  off a surface you are not looking at, and saying so up front prevents the
-  surprise rather than interrupting to explain it. It sits bottom-centre because
-  this card pins its overlay, so all four corners are permanently occupied, and
-  it never hides on hover -- a marker that vanishes as you reach for Delete
-  fails at the only moment it matters. Two of those corners have since emptied
-  (#284), but a marker is not an action and does not want one
+- **`on_canvas` is still derived, and no longer shown.** It comes per read from
+  an `exists` over `canvas_images`, never stored -- the boolean column of that
+  name drifted from the membership rows that are the truth and went in #205.
+  The card carried an "On canvas" marker for it (#216, so trashing an arranged
+  image was not a surprise); the marker went, on the grounds that the card is
+  crowded and the warning was not paying for its space. The read is left in
+  place because it is a cheap subquery and the fact is still true -- the seam
+  to show it again, here or in Trash's link badge, is `SavedAiImage.on_canvas`
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
