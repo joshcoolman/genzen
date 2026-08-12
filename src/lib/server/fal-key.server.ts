@@ -14,9 +14,7 @@
 export function assertFalKey(): void {
   if (process.env.FAL_KEY) return
   throw new Error(
-    'FAL_KEY is not set. Check .env.local — and if it looks right, check that ' +
-      'your shell is not exporting an empty FAL_KEY over it: run ' +
-      '`echo "${FAL_KEY+set}:${#FAL_KEY}"`, and if that prints `set:0`, ' +
-      '`unset FAL_KEY` and restart the dev server.',
+    'FAL_KEY is not set. Check .env.local, or try `unset FAL_KEY` and restart ' +
+      'the dev server.',
   )
 }
