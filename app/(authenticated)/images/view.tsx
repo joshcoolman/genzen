@@ -20,6 +20,7 @@ import { ConfirmDialog } from '#/components'
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
   const {
     images,
+    cells,
     gallery,
     userImages,
     modelSelector,
@@ -45,7 +46,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     groups,
     activeGroup,
     activeGroupId,
-    uploadsIgnoreGroups,
     openGroup,
     leaveGroup,
     groupFlow,
@@ -94,7 +94,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         )}
 
         <ImageGallery
-          images={images}
+          cells={cells}
           imageUrls={gallery.imageUrls}
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
@@ -108,12 +108,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onExperiment={experiment.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
-          /* Only at top level, and not under Uploads: groups do not nest, and
-             the Uploads scope already shows every upload wherever it sits, so a
-             card standing in for some of them would be showing them twice. */
-          groups={
-            activeGroupId || uploadsIgnoreGroups ? undefined : groups.groups
-          }
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
           onDissolveGroup={(group) =>

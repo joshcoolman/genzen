@@ -12,6 +12,7 @@ import { useVariations } from './_hooks/use-variations'
 import { usePasteReference } from './_hooks/use-paste-reference'
 import { useGroups } from './_hooks/use-groups'
 import type { ImageGroupSummary } from './_hooks/use-groups'
+import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -202,6 +203,43 @@ export function useView(initial: Array<SavedAiImage>) {
   }, [gallery.images, prefs.originFilter, activeGroupId, uploadsIgnoreGroups])
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
+
+  /**
+   * The grid's cells: loose images and group cards in one order (#324).
+   *
+   * A group's key is its newest live member's `sort_order`, computed by
+   * `listImageGroups` in the same units an image uses -- so the comparison is
+   * the ordinary one and a group with a picture from this morning sits exactly
+   * where that picture would. Group cards used to render as their own block
+   * ahead of every image, which pinned a group finished months ago above
+   * everything made since.
+   *
+   * Merged here rather than in the component, and before the ascending flip
+   * below reaches it, so one sequence reverses rather than two lists that would
+   * each need their own reversal to stay interleaved.
+   */
+  const cells: Array<GalleryCell> = useMemo(() => {
+    const imageCells = scoped.map((image) => ({
+      cell: { kind: 'image' as const, image },
+      sortOrder:
+        image.sort_order ?? new Date(image.created_at).getTime() / 1000,
+    }))
+    // Groups appear at top level only: inside one there is nothing to nest, and
+    // the uploads scope is deliberately not a grouped view.
+    const groupCells =
+      activeGroupId || uploadsIgnoreGroups
+        ? []
+        : groups.groups.map((group) => ({
+            cell: { kind: 'group' as const, group },
+            sortOrder: group.sort_order,
+          }))
+
+    const ordered = [...groupCells, ...imageCells].sort(
+      (a, b) => b.sortOrder - a.sortOrder,
+    )
+    const cellsDesc = ordered.map((o) => o.cell)
+    return prefs.sortAsc ? cellsDesc.reverse() : cellsDesc
+  }, [scoped, groups.groups, activeGroupId, uploadsIgnoreGroups, prefs.sortAsc])
 
   // An image copied from the search overlay pastes in as a reference (#213).
   usePasteReference({
@@ -508,11 +546,11 @@ export function useView(initial: Array<SavedAiImage>) {
 
   return {
     images,
+    cells,
     gallery,
     groups,
     activeGroup,
     activeGroupId,
-    uploadsIgnoreGroups,
     openGroup,
     leaveGroup,
     groupFlow,

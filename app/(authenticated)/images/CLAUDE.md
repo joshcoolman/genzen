@@ -151,7 +151,14 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   (`user_images.group_id`, exclusive) and an active scope (the filter, plus
   `groupId` on every generation submitted while one is open). Top level shows
   **group cards in place of their members** -- if members also appeared loose
-  the wall would be as tall as before, which is the entire payoff. Exclusive
+  the wall would be as tall as before, which is the entire payoff. **A group
+  card sorts among the thumbnails on its newest member's `sort_order`** (#324),
+  so an active group sits with today's pictures and a finished one sinks past
+  them. `listImageGroups` computes that key in the same units an image uses;
+  `use-view` merges both into one `GalleryCell[]` before the ascending toggle,
+  because two lists reversed separately stop interleaving. Group cards used to
+  render as their own block ahead of every image, which pinned a group finished
+  months ago above everything made since. Exclusive
   membership is a column rather than a join table for that reason: two groups
   would make an image vanish from top level twice. **There is no origin
   filtering inside a group** -- the group is already the scope. Groups do not
