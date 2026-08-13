@@ -6,6 +6,14 @@
 
 .root {
   position: relative;
+  /* A stacking context, so the tile's internal layers stay internal. Without
+     it `position: relative` alone establishes none, and a z-index set inside a
+     card competes at page level: Images' select tick (z-index 3) painted
+     straight through the Experiment preview, which covers the grid on
+     `position: fixed; z-index: 1`. The select overlay (z-index 2) had the same
+     leak and only got away with it by being transparent. Anything a caller
+     stacks inside a tile is scoped here now. */
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   overflow: hidden;
