@@ -77,11 +77,11 @@
   text-overflow: ellipsis;
 }
 
-/* Five across, sized by the column rather than fixed: the grid's cards are
-   ~200px and up, and a fixed square would leave a gap on the wide ones. This is
-   the whole tell that the card stands for more than one picture, so it gets
-   real room in the grey instead of floating over the image, where it read as
-   noise at 18px. */
+/* Five cells across -- four pictures and a count -- sized by the column rather
+   than fixed: the grid's cards are ~200px and up, and a fixed square would
+   leave a gap on the wide ones. This row is the whole tell that the card stands
+   for more than one picture, so it gets real room in the grey instead of
+   floating over the image, where it read as noise at 18px. */
 .swatches {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -94,4 +94,33 @@
   background-color: var(--surface-sunken);
   background-size: cover;
   background-position: center;
+}
+
+/* Pinned to the last column rather than flowing after the swatches: a group
+   with two members would otherwise put its count in the middle of the row, and
+   the count is the one cell whose position should be learnable. */
+.total {
+  grid-column: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  /* Darker than the caption it sits in, where the swatches are pictures --
+     the one cell that is deliberately not an image. */
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  line-height: 1.1;
+}
+
+/* Small enough to read as a unit on the number rather than as a second thing
+   in the cell. */
+.totalLabel {
+  font-family: var(--font-body);
+  font-size: 0.5rem;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
 }

@@ -19,9 +19,11 @@ import {
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
-/** Five, filling the caption's width. Enough to read as "there is more here",
- *  few enough that each one is still a picture rather than a speck. */
-const SWATCH_COUNT = 5
+/** Four pictures and a count, filling the caption's width as five cells. The
+ *  swatches say "there is more here"; the count says how much more, which four
+ *  squares alone cannot -- a group of six and a group of sixty looked
+ *  identical. */
+const SWATCH_COUNT = 4
 
 interface GroupCardProps {
   group: ImageGroupSummary
@@ -67,7 +69,7 @@ export function GroupCard({
   const coverUrl = coverId ? imageUrl(coverId, 'thumb') : undefined
 
   // The cover is already the picture above; repeating it as the first swatch
-  // spends one of five slots on something directly overhead.
+  // spends one of four slots on something directly overhead.
   const swatchIds = group.preview_image_ids
     .filter((id) => id !== coverId)
     .slice(0, SWATCH_COUNT)
@@ -134,18 +136,24 @@ export function GroupCard({
       {showInfo && (
         <div className={styles.caption}>
           <span className={styles.name}>{group.name}</span>
-          {swatchIds.length > 0 && (
-            <div className={styles.swatches}>
-              {swatchIds.map((id) => (
-                <span
-                  key={id}
-                  className={styles.swatch}
-                  style={{ backgroundImage: `url(${imageUrl(id, 'thumb')})` }}
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
-          )}
+          <div className={styles.swatches}>
+            {swatchIds.map((id) => (
+              <span
+                key={id}
+                className={styles.swatch}
+                style={{ backgroundImage: `url(${imageUrl(id, 'thumb')})` }}
+                aria-hidden="true"
+              />
+            ))}
+            {/* The last cell, in the same rhythm as the swatches rather than
+                as a label beside them -- it is one of the row, so it reads
+                without being announced. Rendered even for an empty group,
+                where "0" is the only thing the row has to say. */}
+            <span className={styles.total}>
+              {group.count}
+              <span className={styles.totalLabel}>total</span>
+            </span>
+          </div>
         </div>
       )}
     </Thumbnail>
