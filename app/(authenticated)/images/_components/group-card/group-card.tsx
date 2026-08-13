@@ -150,8 +150,7 @@ export function GroupCard({
                 without being announced. Rendered even for an empty group,
                 where "0" is the only thing the row has to say. */}
             <span className={styles.total}>
-              {group.count}
-              <span className={styles.totalLabel}>total</span>
+              <span className={styles.totalCircle}>{group.count}</span>
             </span>
           </div>
         </div>

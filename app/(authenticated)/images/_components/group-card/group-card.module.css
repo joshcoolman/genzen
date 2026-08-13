@@ -98,29 +98,31 @@
 
 /* Pinned to the last column rather than flowing after the swatches: a group
    with two members would otherwise put its count in the middle of the row, and
-   the count is the one cell whose position should be learnable. */
+   the count is the one cell whose position should be learnable.
+
+   The cell itself draws nothing -- it only reserves the slot, so the circle
+   inside it sits on the caption's own ground rather than on a square. */
 .total {
   grid-column: 5;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
-  border-radius: var(--radius-sm);
-  /* Darker than the caption it sits in, where the swatches are pictures --
-     the one cell that is deliberately not an image. */
+}
+
+/* A circle, and darker than everything around it. The row is four pictures and
+   this: a square would read as a fifth thumbnail with a number on it, where a
+   circle reads as a piece of interface -- which is what it is. */
+.totalCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
   background: var(--surface-sunken);
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-3xs);
-  line-height: 1.1;
-}
-
-/* Small enough to read as a unit on the number rather than as a second thing
-   in the cell. */
-.totalLabel {
-  font-family: var(--font-body);
-  font-size: 0.5rem;
-  letter-spacing: 0.04em;
-  color: var(--text-faint);
+  line-height: 1;
 }
