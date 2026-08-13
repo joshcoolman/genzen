@@ -235,13 +235,13 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
       <ConfirmDialog
         open={groupFlow?.kind === 'confirm-dissolve'}
-        title="Dissolve this group?"
+        title="Ungroup these images?"
         message={
           groupFlow?.kind === 'confirm-dissolve'
-            ? `"${groupFlow.group.name}" goes away. Its ${groupFlow.group.count} image${groupFlow.group.count === 1 ? '' : 's'} stay, back at the top level.`
+            ? `All ${groupFlow.group.count} image${groupFlow.group.count === 1 ? '' : 's'} go back to the top level. Only the group "${groupFlow.group.name}" goes away.`
             : ''
         }
-        confirmLabel="Dissolve"
+        confirmLabel="Ungroup"
         destructive={false}
         onConfirm={() => {
           if (groupFlow?.kind !== 'confirm-dissolve') return

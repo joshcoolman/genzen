@@ -94,13 +94,17 @@ export function GroupCard({
           <Pencil className={styles.menuItemIcon} />
           Rename
         </DropdownMenuItem>
-        {/* Dissolve is the non-destructive twin of the delete icon: same group
-            gone, every picture kept and returned to top level. Both are offered
-            because "I am done with this grouping" and "I am done with these
-            images" are different intentions. */}
+        {/* The non-destructive twin of the delete icon: same group gone, every
+            picture kept and returned to top level. Both are offered because "I
+            am done with this grouping" and "I am done with these images" are
+            different intentions.
+
+            "Ungroup", not "Dissolve" -- dissolve sounds like the images go with
+            it, which is precisely what this one does not do. It also pairs with
+            "Remove from group" on an image, which is the same act on one. */}
         <DropdownMenuItem onClick={() => onDissolve(group)}>
           <Unlink className={styles.menuItemIcon} />
-          Dissolve group
+          Ungroup
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

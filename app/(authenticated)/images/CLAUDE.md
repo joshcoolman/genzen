@@ -174,8 +174,9 @@ group` opens a dialog because a flyout of names commits you to picking one at
   says why, so it reads as a failed restore. Consequence: a trashed image is
   already not a member, so no group read filters `deleted_at`. The group card's
   own delete icon asks first and then trashes the members, which is safe to
-  offer only because Trash is the way back; `Dissolve` is the twin that keeps
-  every picture
+  offer only because Trash is the way back; `Ungroup` is the twin that keeps
+  every picture -- named that rather than "Dissolve", which sounds like the
+  images go with it
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
