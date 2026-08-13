@@ -92,6 +92,30 @@ export function ImageRow({
 
         {!hasSelection && (
           <div className={styles.actions}>
+            {/* Delete first, and its slot is held open even on a linked row
+                that has no Delete. Restore is the button you click many times
+                in a row -- down a list of things you want back -- so it has to
+                be in the same place on every row. Appending Delete after it
+                moved Restore left whenever a row had one, which puts Delete
+                under a finger that is repeating a Restore click. Destructive
+                verbs do not get to move under a repeating hand. */}
+            <div className={styles.deleteSlot}>
+              {!isLinked && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={styles.deleteButton}
+                  disabled={busy}
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    void askThenDelete()
+                  }}
+                >
+                  <X className={styles.buttonIcon} />
+                  Delete
+                </Button>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -104,21 +128,6 @@ export function ImageRow({
               <RotateCcw className={styles.buttonIcon} />
               Restore
             </Button>
-            {!isLinked && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className={styles.deleteButton}
-                disabled={busy}
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation()
-                  void askThenDelete()
-                }}
-              >
-                <X className={styles.buttonIcon} />
-                Delete
-              </Button>
-            )}
           </div>
         )}
       </div>
