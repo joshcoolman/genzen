@@ -144,6 +144,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
+2026-08-13
+
+- **Generate paints instantly** — clicking Generate used to leave the grid unchanged for ~10s: `onAfterSubmit` fired once, after every model settled, and then re-fetched the gallery to find rows it already knew were coming. Cards now land in the same tick as the click and each resolves on its own submit, so one slow model stops holding up the rest. Shared reference images are also uploaded to FAL once per submit instead of once per model — three models used to move the same megabytes three times (#313)
+
 2026-08-12
 
 - **Groups** — a flat way to focus on images that go together. Select a few and file them, or make an empty group and generate into it: while a group is open the library filters to it and every new generation lands in it, so the filing is a byproduct rather than a chore. Top level replaces a group's members with its card, which is the whole payoff. The group view _is_ `/images` with a filter — same component, deliberately, since the last attempt at grouping (#204) died from letting the group view look different and growing a second panel, a second selection state and two sidebars. Trashing clears membership, so restore has one destination. Uploads ignores grouping entirely; the Canvas pill is commented out for now (#319)
@@ -151,9 +155,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 - **Thumbnail pass** — the model moved off the caption and into the image's bottom-right corner, the "On canvas" marker went, the prompt clamps to three lines at the size it was typed, and the cards teach nothing on hover: both Cmd gestures still work, unnamed, pending #289 (#314)
 - **Generate prompt** — a prompt out of nothing, for the blank field. In the prompt list's header: roll, nudge it with instructions that persist, ask for "more like this", and Apply adds to the stack without closing. Enhance is set aside pending #309
 - **Explore** — a new route, first in the nav: a masonry wall of every finished image with no controls on it, and the lightbox over it. Browsing and working are different moods, and the overlay only makes sense in the first one
-- Clicking an image on **Images** now opens an in-place preview instead of the lightbox: the grid area alone becomes one large image, toolbar untouched. Outer quarters step (chevron appears on hover), middle half closes, arrow keys page
-- `pnpm dev` now catches an **empty** `export FAL_KEY=""` shadowing `.env.local`, not just a stale one — the guard used a truthiness check, so the one case it never reported was the one that reads as "FAL_KEY is not set" against a file that plainly holds the key (#306)
-
-2026-08-11
-
-- Cmd-click a card adds it to the reference images and keeps adding — it used to replace the first one, so clicking three cards left you with one
