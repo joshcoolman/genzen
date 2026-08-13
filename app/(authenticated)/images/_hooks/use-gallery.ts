@@ -1,10 +1,11 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { toast } from '#/components'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.action'
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.action'
+import { GALLERY_SEED_LIMIT } from '#/features/ai-images/gallery-seed'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { imageUrl } from '#/lib/image-url'
 import { isOptimisticId } from '#/lib/optimistic-id'
@@ -117,8 +118,17 @@ export function useGallery({
     [userId],
   )
 
-  // No mount fetch: `initial` is the read, and a client navigation back to the
-  // route re-runs the server component, so the seed is never stale on arrival.
+  // The seed is bounded (#328), so a library bigger than one page arrives
+  // first-page-only and is completed here. `initial` is still the read on
+  // arrival -- there is no mount fetch for a library that fits, which is the
+  // common case and the one worth keeping free.
+  const backfilled = useRef(false)
+  useEffect(() => {
+    if (backfilled.current) return
+    if (initial.length < GALLERY_SEED_LIMIT) return
+    backfilled.current = true
+    void loadSavedImages({ silent: true })
+  }, [initial.length, loadSavedImages])
 
   // Poll FAL for pending generations (skipped when webhooks are enabled).
   //
