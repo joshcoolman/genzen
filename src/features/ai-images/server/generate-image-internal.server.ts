@@ -9,7 +9,7 @@ import { endpointFor } from '#/features/ai-images/models'
 import { assertFalKey } from '#/lib/server/fal-key.server'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
-  readLibraryImageBytes,
+  uploadLibraryImageToFal,
   uploadLibraryImagesToFal,
 } from '#/lib/server/fal-image-inputs.server'
 import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
@@ -219,14 +219,20 @@ export async function generateImageInternal(
     if (sourceImageId || sourceImageUrl) {
       // A library source is read from the bucket; only a genuinely external
       // URL is fetched. Since #226 our own images have no fetchable URL at all.
-      const buffer = sourceImageId
-        ? await readLibraryImageBytes(sourceImageId, userId)
-        : await fetch(sourceImageUrl!).then((res) => {
-            if (!res.ok) throw new Error('Could not read the source image')
-            return res.arrayBuffer()
-          })
-      if (!buffer) throw new Error('Source image not found')
-      imageUrl = await uploadBufferToFal(buffer)
+      //
+      // The library path goes through the shared upload, so a submit against
+      // three models moves these bytes once rather than three times (#313).
+      if (sourceImageId) {
+        const uploaded = await uploadLibraryImageToFal(sourceImageId, userId)
+        if (!uploaded) throw new Error('Source image not found')
+        imageUrl = uploaded
+      } else {
+        const buffer = await fetch(sourceImageUrl!).then((res) => {
+          if (!res.ok) throw new Error('Could not read the source image')
+          return res.arrayBuffer()
+        })
+        imageUrl = await uploadBufferToFal(buffer)
+      }
       falModelId = endpointFor(model, true)
     } else if (sourceBuffer) {
       const buffer = sourceBuffer

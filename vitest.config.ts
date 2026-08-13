@@ -9,6 +9,12 @@ export default defineConfig({
   resolve: {
     alias: {
       '#': fileURLToPath(new URL('./src', import.meta.url)),
+      // A `.server.ts` module declares where it may run by importing this. It
+      // has no runtime and Node cannot resolve it, so without the stub a module
+      // is untestable purely for saying it is server-side.
+      'server-only': fileURLToPath(
+        new URL('./vitest.server-only-stub.ts', import.meta.url),
+      ),
     },
   },
   test: {
