@@ -4,7 +4,6 @@ import { useRef } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  CheckSquare,
   ChevronLeft,
   FolderPlus,
   Info,
@@ -52,9 +51,6 @@ interface ToolbarProps {
   /** The generator panel. Its control stays put whichever way it is showing. */
   panelOpen: boolean
   onTogglePanel: () => void
-  /** Select mode (#284). It took the slot the size switcher vacated. */
-  selectMode: boolean
-  onToggleSelectMode: () => void
   onUpload: (files: Array<File>) => void
   /** The group being worked in, or null at top level (#319). */
   groupName?: string | null
@@ -66,8 +62,6 @@ export function Toolbar({
   prefs,
   panelOpen,
   onTogglePanel,
-  selectMode,
-  onToggleSelectMode,
   onUpload,
   groupName,
   onLeaveGroup,
@@ -160,21 +154,6 @@ export function Toolbar({
               aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
             >
               <Info className={styles.icon} />
-            </button>
-          </Labelled>
-
-          {/* Loud when on, because a click means something different in select
-              mode and the grid alone cannot say so. Not hidden on narrow
-              viewports like the view toggles are: bulk delete is the reason
-              selection exists, not a refinement. */}
-          <Labelled label={selectMode ? 'Leave select mode' : 'Select images'}>
-            <button
-              onClick={onToggleSelectMode}
-              className={cx(styles.action, selectMode && styles.actionOn)}
-              aria-pressed={selectMode}
-              aria-label={selectMode ? 'Leave select mode' : 'Select images'}
-            >
-              <CheckSquare className={styles.icon} />
             </button>
           </Labelled>
 

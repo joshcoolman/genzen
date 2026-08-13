@@ -28,21 +28,39 @@
   user-select: none;
 }
 
-/* Every card carries one in select mode, not just the picked ones: an empty
-   corner cannot say "this is selectable", and the grid has to answer that
-   before the first click, not after it. Its own ground because it sits on
-   arbitrary images -- a bare grey glyph disappears on anything pale. */
+/* Every card carries one, always -- not just the picked ones and not only once
+   the mode is on: an empty corner cannot say "this is selectable", and the grid
+   has to answer that before the first click, not after it. Since #325 it is
+   also the way in, so it takes clicks. Its own ground because it sits on
+   arbitrary images -- a bare grey glyph disappears on anything pale.
+
+   `z-index: 3` puts it over `.selectOverlay`, so once the mode is on a click on
+   the tick and a click anywhere else on the card do the same thing. */
 .selectTick {
   position: absolute;
   bottom: var(--space-8);
   left: var(--space-8);
+  display: grid;
+  place-items: center;
   width: 1.25rem;
   height: 1.25rem;
+  padding: 0;
+  border: none;
   border-radius: 50%;
   background: var(--scrim);
   backdrop-filter: blur(8px);
   color: var(--text-muted);
-  pointer-events: none;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.selectTick:hover {
+  color: var(--text);
+}
+
+.selectTickIcon {
+  width: 100%;
+  height: 100%;
 }
 
 /* No transition, here or on the dimming or the border. Selecting is a discrete
