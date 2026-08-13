@@ -285,10 +285,17 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * Create, and then go there -- for a group made from a selection as much as
-   * for an empty one. Making a group is a statement about what you are working
-   * on next, so landing outside it would leave the user to find and click the
-   * card they just created.
+   * Create -- and go there only when the group is empty.
+   *
+   * Both paths entered the group at first, on the theory that making one is a
+   * statement about what you are working on next. Using it says otherwise: from
+   * top level you select a few similar images, hit Create group, and being
+   * thrown somewhere else is disorienting even though the intent was clear. You
+   * already know what you did; the group card is right there when you want it.
+   *
+   * An empty group is the opposite case. There is nothing to stay and look at,
+   * and naming a place to work is only useful if you end up in it -- that is
+   * the whole reason the toolbar can make one.
    */
   const createGroup = useCallback(
     async (name: string, imageIds: Array<string>) => {
@@ -298,7 +305,7 @@ export function useView(initial: Array<SavedAiImage>) {
       await gallery.refresh({ silent: true })
       selection.clearSelection()
       setSelectMode(false)
-      router.push(`/images?group=${id}`)
+      if (imageIds.length === 0) router.push(`/images?group=${id}`)
     },
     [groups, gallery, selection, router, closeGroupFlow],
   )
