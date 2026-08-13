@@ -106,6 +106,17 @@ anything one route renders lives with that route.
   refreshes once via `onAfterSubmit` so pending cards appear, and each poll that
   settles a row refreshes again. FAL runs through the async queue
   (`fal.queue.submit`).
+- **`hooks/use-generation-poll.ts` is that poll, for every route that has one**
+  -- Images, Video and Activity each had their own `setInterval(..., 5000)`,
+  which is why the fixes below had to be made three times or not at all. It
+  backs off with the age of the work, stops while the tab is hidden, and stops
+  outright when the action reports nothing left in flight. **A generation also
+  has a deadline** (`DEADLINE_MS` in `check-pending-generations.action.ts`, 10
+  minutes for a still and 30 for a clip): past it the row becomes a failed card
+  rather than a poll that never ends. One had been pending for 26 hours, checked
+  every five seconds throughout (#327). The poll's backfill of error detail on
+  already-failed rows is bounded to the last two minutes for the same reason --
+  unbounded, it re-checked every failure you had ever had, forever.
 - **Every image FAL is given is uploaded as bytes**, never handed over as a URL
   for FAL to fetch. It was already the only thing that worked against
   `localhost`; since #226 it is the only thing that works at all, because our

@@ -52,6 +52,9 @@ function makePendingRecord(overrides: Record<string, unknown> = {}) {
     status: 'pending',
     request_id: 'req-abc',
     generation_metadata: { fal_model_id: 'fal-ai/flux' },
+    // Submitted a moment ago unless a test says otherwise -- the deadline in
+    // #327 reads this.
+    age_ms: 0,
     ...overrides,
   }
 }
@@ -131,5 +134,56 @@ describe('checkPendingGenerations handler', () => {
     expect(result.completed).toBe(1)
     expect(result.failed).toBe(0)
     expect(falCompletion.processImageResult).toHaveBeenCalledOnce()
+  })
+  // #327 -- a row FAL never answers for used to poll forever. One had been
+  // pending for 26 hours, checked every five seconds the whole time.
+  describe('the deadline', () => {
+    const IN_PROGRESS = {
+      status: 'IN_PROGRESS',
+    } as unknown as Awaited<ReturnType<typeof fal.queue.status>>
+
+    it('gives up on a pending row that is past its deadline', async () => {
+      mockPendingRows([makePendingRecord({ age_ms: 11 * 60_000 })])
+      vi.mocked(fal.queue.status).mockResolvedValue(IN_PROGRESS)
+
+      const result = (await checkPendingGenerations()) as Record<string, number>
+
+      expect(result.failed).toBe(1)
+      expect(result.pending).toBe(0)
+      expect(falCompletion.markGenerationFailedWithBlob).toHaveBeenCalledOnce()
+    })
+
+    it('waits on a young row, and says it is still pending', async () => {
+      mockPendingRows([makePendingRecord({ age_ms: 30_000 })])
+      vi.mocked(fal.queue.status).mockResolvedValue(IN_PROGRESS)
+
+      const result = (await checkPendingGenerations()) as Record<string, number>
+
+      expect(result.failed).toBe(0)
+      expect(result.pending).toBe(1)
+      expect(falCompletion.markGenerationFailedWithBlob).not.toHaveBeenCalled()
+    })
+
+    it('gives video longer than a still', async () => {
+      mockPendingRows([
+        makePendingRecord({ source: 'ai_video', age_ms: 11 * 60_000 }),
+      ])
+      vi.mocked(fal.queue.status).mockResolvedValue(IN_PROGRESS)
+
+      const result = (await checkPendingGenerations()) as Record<string, number>
+
+      expect(result.failed).toBe(0)
+      expect(result.pending).toBe(1)
+    })
+
+    it('stops retrying a transient error once the deadline has passed', async () => {
+      mockPendingRows([makePendingRecord({ age_ms: 11 * 60_000 })])
+      vi.mocked(fal.queue.status).mockRejectedValue(new Error('network timeout'))
+
+      const result = (await checkPendingGenerations()) as Record<string, number>
+
+      expect(result.failed).toBe(1)
+      expect(falCompletion.markGenerationFailedWithBlob).toHaveBeenCalledOnce()
+    })
   })
 })
