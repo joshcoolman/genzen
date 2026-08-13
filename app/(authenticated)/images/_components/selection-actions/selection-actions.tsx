@@ -1,6 +1,6 @@
 'use client'
 
-import { FolderPlus, Trash2, Unlink } from 'lucide-react'
+import { FolderMinus, FolderPlus, Trash2 } from 'lucide-react'
 import styles from './selection-actions.module.css'
 import { Button, SelectionDrawer } from '#/components'
 
@@ -50,8 +50,10 @@ export function SelectionActions({
           disabled={busy}
           onClick={onRemoveFromGroup}
         >
-          <Unlink className={styles.icon} />
-          Remove
+          {/* The mirror of Add to group, and it should look like one: a folder
+              losing an item, not a broken link. */}
+          <FolderMinus className={styles.icon} />
+          Remove from group
         </Button>
       )}
       {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
