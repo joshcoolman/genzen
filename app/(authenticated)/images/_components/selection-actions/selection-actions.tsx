@@ -54,9 +54,12 @@ export function SelectionActions({
           Remove
         </Button>
       )}
-      <Button variant="danger" size="sm" disabled={busy} onClick={onDelete}>
+      {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
+          sit until you empty it. Red belongs to the one verb that cannot be
+          undone, which is Trash's own Delete Forever. */}
+      <Button size="sm" disabled={busy} onClick={onDelete}>
         <Trash2 className={styles.icon} />
-        {busy ? 'Deleting...' : `Delete (${count})`}
+        {busy ? 'Trashing...' : `Trash ${count}`}
       </Button>
     </SelectionDrawer>
   )
