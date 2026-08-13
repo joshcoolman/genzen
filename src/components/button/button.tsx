@@ -60,6 +60,9 @@ export function Button({
     <BaseButton
       {...props}
       type={type}
+      // So a container can style its own buttons without reaching for a hashed
+      // module class -- the selection drawer greens everything but the danger.
+      data-variant={variant}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={`${styles.root} ${styles[variant]} ${styles[size]} ${className ?? ''}`}

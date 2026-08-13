@@ -11,7 +11,7 @@
 
 .hidden {
   composes: root;
-  transform: translateY(var(--space-16));
+  transform: translateY(var(--space-24));
   opacity: 0;
   pointer-events: none;
 }
@@ -22,23 +22,60 @@
   opacity: 1;
 }
 
+/* Accent, not the page's own near-black: a selection is a mode, and a bar that
+   matches the surface it floats over is missed in peripheral vision -- which is
+   exactly where it is, while you are looking at the grid. The wash carries it
+   rather than a filled accent bar, so the red Delete still reads as the
+   dangerous one and the images stay the brightest thing on screen. */
 .bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-16);
-  padding: var(--space-12) var(--space-20);
-  background: color-mix(in srgb, var(--bg) 95%, transparent);
-  border: var(--border-width) solid var(--border);
+  justify-content: center;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  background: color-mix(in srgb, var(--accent-soft) 92%, var(--bg));
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--accent) 40%, transparent);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-overlay);
   backdrop-filter: blur(4px);
 }
 
-.count {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+/* One pulse on arrival, then quiet. The rise alone is a 16px move at the very
+   bottom of the screen and reads as nothing. */
+.visible .bar {
+  animation: arrive var(--duration-slow) var(--ease-out);
+}
+
+@keyframes arrive {
+  from {
+    box-shadow:
+      var(--shadow-overlay),
+      0 0 0 0 var(--accent);
+  }
+  to {
+    box-shadow:
+      var(--shadow-overlay),
+      0 0 0 0.5rem transparent;
+  }
+}
+
+/* Every button in here is a filled darker green with no edge -- the bar is one
+   object, and a row of outlined buttons on a green wash read as three separate
+   controls floating on it. Danger keeps its own treatment: Trash's "Delete
+   Forever" is the one irreversible verb in the app and must not look like its
+   neighbours. */
+.bar button:not([data-variant='danger']) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--image-backing) 60%, transparent);
+  color: var(--text);
+}
+
+/* Hover thins the black rather than adding a colour: the green underneath comes
+   up through it, so the bar stays one object. */
+.bar button:not([data-variant='danger']):not([data-disabled]):hover {
+  background: color-mix(in srgb, var(--image-backing) 35%, transparent);
+  color: var(--text);
 }
 
 .actions {

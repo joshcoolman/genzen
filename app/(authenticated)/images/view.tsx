@@ -145,6 +145,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <GeneratorDock
         dock={dock}
         isMobile={prefs.isMobile}
+        selectionActive={selectMode}
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}

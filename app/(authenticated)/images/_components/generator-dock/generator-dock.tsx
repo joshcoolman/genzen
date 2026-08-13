@@ -8,10 +8,13 @@ import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import type { UserImage } from '#/features/user-images/types'
 import { Dialog, DialogContent, MobileDialogHeader } from '#/components'
+import { cx } from '#/lib/utils'
 
 interface GeneratorDockProps {
   dock: DockState
   isMobile: boolean
+  /** A selection is up: the panel steps back rather than competing with it. */
+  selectionActive?: boolean
   generator: GeneratorState
   modelSelector: ReturnType<typeof useModelSelector>
   userImages: {
@@ -34,6 +37,7 @@ interface GeneratorDockProps {
 export function GeneratorDock({
   dock,
   isMobile,
+  selectionActive,
   generator,
   modelSelector,
   userImages,
@@ -64,7 +68,7 @@ export function GeneratorDock({
   if (!dock.open) return null
 
   return (
-    <div className={styles.panel}>
+    <div className={cx(styles.panel, selectionActive && styles.stepBack)}>
       <div className={styles.header}>
         <span className={styles.title}>Generate</span>
         <button
@@ -75,7 +79,12 @@ export function GeneratorDock({
           <X className={styles.icon} />
         </button>
       </div>
-      <div className={styles.body}>{panel}</div>
+      {/* Inert, not merely dimmed: a dimmed panel that still takes clicks and
+          Tab stops is a lie. The header stays live so the X can still close
+          it. */}
+      <div className={styles.body} inert={selectionActive}>
+        {panel}
+      </div>
     </div>
   )
 }

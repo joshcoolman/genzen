@@ -23,10 +23,13 @@ export function SelectionDrawer({
 }: SelectionDrawerProps) {
   return (
     <div className={count > 0 ? styles.visible : styles.hidden}>
+      {/* No "n selected" label: every verb here already carries the count, and
+          the bar only exists when there is a selection. Deselect is one of the
+          buttons rather than a quieter ghost beside them -- it is the way out,
+          not a footnote. */}
       <div className={styles.bar}>
-        <span className={styles.count}>{count} selected</span>
         <div className={styles.actions}>{children}</div>
-        <Button variant="ghost" size="sm" onClick={onClear}>
+        <Button size="sm" onClick={onClear}>
           Deselect all
         </Button>
       </div>
