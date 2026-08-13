@@ -285,17 +285,17 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * Create -- and go there only when the group is empty.
+   * Create, and stay where you are. Always -- empty group or not.
    *
-   * Both paths entered the group at first, on the theory that making one is a
-   * statement about what you are working on next. Using it says otherwise: from
-   * top level you select a few similar images, hit Create group, and being
-   * thrown somewhere else is disorienting even though the intent was clear. You
-   * already know what you did; the group card is right there when you want it.
+   * Creating used to navigate into the group, on the theory that making one is
+   * a statement about what you are working on next. Using it said otherwise:
+   * you select a few similar images from top level, hit Create group, and being
+   * thrown somewhere else is disorienting even though the intent was clear.
    *
-   * An empty group is the opposite case. There is nothing to stay and look at,
-   * and naming a place to work is only useful if you end up in it -- that is
-   * the whole reason the toolbar can make one.
+   * The empty case briefly kept the old behaviour, since there is nothing to
+   * stay and look at. That is a defensible exception and still the wrong call:
+   * creating a group means one thing wherever it is done, and clicking the card
+   * is the way in. One rule beats a better rule you have to remember.
    */
   const createGroup = useCallback(
     async (name: string, imageIds: Array<string>) => {
@@ -305,9 +305,8 @@ export function useView(initial: Array<SavedAiImage>) {
       await gallery.refresh({ silent: true })
       selection.clearSelection()
       setSelectMode(false)
-      if (imageIds.length === 0) router.push(`/images?group=${id}`)
     },
-    [groups, gallery, selection, router, closeGroupFlow],
+    [groups, gallery, selection, closeGroupFlow],
   )
 
   const removeFromGroup = useCallback(
