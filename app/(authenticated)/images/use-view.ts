@@ -55,10 +55,6 @@ export function useView(initial: Array<SavedAiImage>) {
     }
   }, [activeGroupId, groups.loading, groups.groups, router])
 
-  const openGroup = useCallback(
-    (group: ImageGroupSummary) => router.push(`/images?group=${group.id}`),
-    [router],
-  )
   const leaveGroup = useCallback(() => router.push('/images'), [router])
 
   const gallery = useGallery({ userId: user.id, initial })
@@ -181,6 +177,29 @@ export function useView(initial: Array<SavedAiImage>) {
     }
     setSelectMode(true)
   }, [selectMode, exitSelectMode])
+
+  /**
+   * Open a group -- and leave select mode on the way in.
+   *
+   * The one automatic exit, and it does not contradict the rule below it. That
+   * rule is about *batch actions*: "delete three, then select four more" is a
+   * real pattern, so finishing a batch must not silently change what the next
+   * click does. This is navigation. Selecting a few images, filing them into a
+   * group and then clicking that group is one continuous intention, and it ends
+   * with wanting to be inside the group rather than still picking things.
+   * Carrying the mode across would also carry a selection of images the new
+   * view does not show.
+   *
+   * Defined here rather than beside `leaveGroup` because it is the piece that
+   * needs select mode; leaving a group has nothing to undo.
+   */
+  const openGroup = useCallback(
+    (group: ImageGroupSummary) => {
+      exitSelectMode()
+      router.push(`/images?group=${group.id}`)
+    },
+    [exitSelectMode, router],
+  )
 
   // Always, and never automatically after a batch action: "delete three, then
   // select four more" is a real pattern, and auto-exit punishes it by silently
