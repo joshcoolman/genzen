@@ -57,6 +57,10 @@ interface UseGeneratorOptions {
   /** Tag generations as canvas-owned, so they are reclaimable on canvas load.
    *  Membership only -- which surface made it is `origin` (#207). */
   onCanvas?: boolean
+  /** The group the host is currently inside, or null at top level (#319).
+   *  Every generation submitted from in there is filed into it -- that is the
+   *  half of a group that makes it a place to work rather than a folder. */
+  groupId?: string | null
   /**
    * Text prepended to every submitted prompt (not shown in the textarea). Used by
    * canvas multi-image generate to auto-label images ("[Image 1, Image 2, ...]")
@@ -116,6 +120,7 @@ export function useGenerator({
   storagePrefix = 'genzen',
   onAfterSubmit,
   onCanvas,
+  groupId,
   promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
   // Surfaces failures the user can act on: a missing provider key opens the
@@ -126,6 +131,10 @@ export function useGenerator({
   // Read the latest prefix at submit time without re-creating handleGenerate.
   const promptPrefixRef = useRef(promptPrefix ?? '')
   promptPrefixRef.current = promptPrefix ?? ''
+  // A ref for the same reason, and a sharper one: leaving a group must not be
+  // able to strand an in-flight submit against the group you just left.
+  const groupIdRef = useRef(groupId ?? null)
+  groupIdRef.current = groupId ?? null
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
   const promptOriginsKey = `${storagePrefix}:prompt-origins`
@@ -443,6 +452,7 @@ export function useGenerator({
             ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
             ...(referenceImageIds ? { referenceImageIds } : {}),
             ...(onCanvas ? { onCanvas: true } : {}),
+            ...(groupIdRef.current ? { groupId: groupIdRef.current } : {}),
           }),
         )
       })

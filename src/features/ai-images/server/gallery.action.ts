@@ -27,7 +27,7 @@ export async function listGalleryImages(): Promise<Array<SavedAiImage>> {
     select ui.id, ui.title, ui.description, ui.storage_path, ui.thumbnail_path,
            to_json(ui.created_at)#>>'{}' as created_at,
            ui.sort_order, ui.status, ui.origin, ui.generation_error,
-           ui.generation_metadata,
+           ui.generation_metadata, ui.group_id,
            exists (
              select 1 from canvas_images ci
              where ci.image_id = ui.id and ci.user_id = ${userId}
@@ -91,8 +91,16 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
   // Canvas membership is deliberately untouched (#212). Trashing is a library
   // operation; evicting the image from a canvas as a side effect destroyed an
   // arrangement, and canvas reads already filter `deleted_at is null`.
+  //
+  // Group membership is the opposite call, and on purpose (#319): trashing
+  // clears it, so restore has one destination, always. Remembering the group
+  // and restoring into it sounds tidier and fails worse -- you restore an
+  // image, look for it at top level, and it is not there, because it silently
+  // went back into a group you had forgotten it belonged to. Nothing on screen
+  // explains that, so it reads as a failed restore. The cost is re-adding it,
+  // and you can see the image the whole time.
   await sql`
-    update user_images set deleted_at = now()
+    update user_images set deleted_at = now(), group_id = null
     where id = ${imageId} and user_id = ${userId}
   `
 }

@@ -15,6 +15,9 @@ export interface SavedAiImage {
    *  the truth. Absent on a card that has not come back from the server yet. */
   on_canvas?: boolean
   deleted_at?: string | null
+  /** The one group this image sits in, or null for top level (#319). Cleared
+   *  on trash, so a restored image always comes back at top level. */
+  group_id?: string | null
   description?: string | null
   generation_error: string | null
   generation_metadata: {

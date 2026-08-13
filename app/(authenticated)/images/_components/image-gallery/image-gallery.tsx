@@ -1,8 +1,10 @@
+import { GroupCard } from '../group-card/group-card'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
 import { ImageCard } from '../image-card/image-card'
 import { FailedImageCard } from '../failed-image-card/failed-image-card'
 import styles from './image-gallery.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import { getModelName } from '#/features/ai-images/models'
 import { EmptyState, ImageGridSkeleton } from '#/components'
 
@@ -28,6 +30,16 @@ interface ImageGalleryProps {
    *  Shift pushes a reference, and on the prompt it loads the text. */
   onAddReference?: (img: SavedAiImage) => void
   onUsePrompt?: (text: string) => void
+  /** Groups (#319). Cards for these lead the grid at top level, and the list is
+   *  empty inside a group -- groups do not nest. */
+  groups?: Array<ImageGroupSummary>
+  onOpenGroup?: (group: ImageGroupSummary) => void
+  onRenameGroup?: (group: ImageGroupSummary) => void
+  onDissolveGroup?: (group: ImageGroupSummary) => void
+  onTrashGroup?: (group: ImageGroupSummary) => void
+  onAddToGroup?: (img: SavedAiImage) => void
+  onRemoveFromGroup?: (img: SavedAiImage) => void
+  onSetGroupCover?: (img: SavedAiImage) => void
   /** Select mode: a click anywhere on a card picks it (#284). */
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
@@ -53,6 +65,14 @@ export function ImageGallery({
   onExperiment,
   onAddReference,
   onUsePrompt,
+  groups,
+  onOpenGroup,
+  onRenameGroup,
+  onDissolveGroup,
+  onTrashGroup,
+  onAddToGroup,
+  onRemoveFromGroup,
+  onSetGroupCover,
   selectionActive,
   isSelected,
   onSelect,
@@ -62,7 +82,7 @@ export function ImageGallery({
     <div className={styles.root}>
       {loadingGallery ? (
         <ImageGridSkeleton />
-      ) : images.length === 0 ? (
+      ) : images.length === 0 && !groups?.length ? (
         <EmptyState
           title={
             emptyScopeLabel ? `Nothing in ${emptyScopeLabel}` : 'No images yet'
@@ -79,6 +99,22 @@ export function ImageGallery({
             gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
           }}
         >
+          {/* Group cards lead, then the loose images. Both are cells in the one
+              grid -- a group is a lens on the same library, not a second place,
+              which is why there is no separate section and no sidebar list.
+              Groups are ordered newest-member-first by the server, so an active
+              one floats and a finished one sinks. */}
+          {groups?.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              onOpen={onOpenGroup ?? (() => {})}
+              onRename={onRenameGroup ?? (() => {})}
+              onDissolve={onDissolveGroup ?? (() => {})}
+              onTrash={onTrashGroup ?? (() => {})}
+            />
+          ))}
+
           {images.map((img) => {
             if (img.status === 'pending') {
               return (
@@ -126,6 +162,9 @@ export function ImageGallery({
                 onExperiment={onExperiment}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}
+                onAddToGroup={onAddToGroup}
+                onRemoveFromGroup={onRemoveFromGroup}
+                onSetGroupCover={onSetGroupCover}
                 selected={isSelected?.(img.id)}
                 selectionActive={selectionActive}
                 onSelect={onSelect}

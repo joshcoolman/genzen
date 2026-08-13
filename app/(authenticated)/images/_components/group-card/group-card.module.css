@@ -1,0 +1,100 @@
+/* Everything a GroupCard adds to a Thumbnail: the swatch strip that makes it
+   read as a group, the count, and the name under it. */
+
+/* A fixed shape, unlike an image card, which takes whatever ratio its picture
+   has. Groups sit in the same grid, and a card whose height came from whichever
+   member happened to be the cover would make the row ragged for a reason no one
+   could see. */
+.card {
+  aspect-ratio: 1;
+}
+
+.menuIcon,
+.actionIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.menuItemIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The tell. Small enough to read as texture rather than as four more pictures
+   -- the cover is the thing being recognised, and these only have to say "there
+   is more underneath". Sits on the image, so it carries its own ground. */
+.strip {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  left: var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  pointer-events: none;
+}
+
+.swatches {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.swatch {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 0 0 1px var(--scrim);
+}
+
+/* Right-aligned against the swatches, in the corner an image card puts its
+   model name -- same slot, same weight, so the two kinds of card agree about
+   where their quiet metadata lives. */
+.count {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+}
+
+/* An empty group is a state, not a failure: you name one and start generating
+   into it. Says so, rather than showing the generic broken-image fallback. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  width: 100%;
+  height: 100%;
+  color: var(--text-faint);
+  font-size: var(--text-2xs);
+}
+
+.emptyIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* The same block an image card's caption occupies, so a row of mixed cards
+   lines up. One line and no clamp -- a name is short by construction. */
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
+.name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

@@ -50,6 +50,10 @@ export interface GenerateImageInput {
   idempotencyKey?: string
   /** Mark the created row as living on the canvas, so it's reclaimable on load */
   onCanvas?: boolean
+  /** File the result into a group (#319) -- set when the generator submitted
+   *  from inside one. Verified against the caller's user id before it is
+   *  written; see `createPendingGeneration`. */
+  groupId?: string | null
 }
 
 function buildRefinePrompt(userPrompt: string): string {
@@ -152,6 +156,7 @@ export async function generateImageInternal(
     aspectRatio,
     idempotencyKey: data.idempotencyKey,
     onCanvas: data.onCanvas,
+    groupId: data.groupId,
     extraMetadata: {
       // Captured with no reader today, deliberately: unused *code* rots, unused
       // *data* accrues, and a UI can be built over a captured fact at any time

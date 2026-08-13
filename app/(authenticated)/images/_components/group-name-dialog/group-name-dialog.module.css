@@ -1,0 +1,5 @@
+/* One field and two buttons -- narrower than the default dialog, which is sized
+   for content that has something to say. */
+.content {
+  max-width: 22rem;
+}

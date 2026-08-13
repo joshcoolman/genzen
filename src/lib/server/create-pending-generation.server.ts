@@ -37,6 +37,10 @@ interface CreatePendingGenerationOptions {
   idempotencyKey?: string
   /** Put the row on the canvas, so the generation is reclaimable on canvas load */
   onCanvas?: boolean
+  /** File the row into a group at birth (#319). This is the half of grouping
+   *  that makes it not a folder: you declare where you are working once, and
+   *  the filing is a byproduct rather than a chore afterwards. */
+  groupId?: string | null
   /** Overrides the default `Date.now() / 1000`, for ordering a batch */
   sortOrder?: number
 }
@@ -54,9 +58,25 @@ export async function createPendingGeneration({
   title = PENDING_TITLE,
   idempotencyKey,
   onCanvas,
+  groupId,
   sortOrder,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
   const model = falModelId.replace(/\/edit$/, '')
+
+  // The group id reaches here from the browser, and the foreign key alone would
+  // happily accept a stranger's group -- the row would be invisible to both
+  // users but written into someone else's set. Confirmed against `user_id`
+  // first, and an id that does not resolve files the image at top level rather
+  // than failing the generation: a wrong group is worth losing, a picture is
+  // not.
+  const owned = groupId
+    ? first(
+        await sql<Array<{ id: string }>>`
+          select id from image_groups
+          where id = ${groupId} and user_id = ${userId}
+        `,
+      )
+    : null
 
   const row = {
     user_id: userId,
@@ -66,6 +86,7 @@ export async function createPendingGeneration({
     origin,
     title,
     sort_order: sortOrder ?? Date.now() / 1000,
+    ...(owned ? { group_id: owned.id } : {}),
     ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}),
     generation_metadata: jsonb({
       prompt,

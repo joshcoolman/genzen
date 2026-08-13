@@ -192,8 +192,10 @@ export async function trashCanvasImages(ids: Array<string>): Promise<void> {
 
   const { userId } = await resolveAuth()
 
+  // `group_id = null`: trashing clears group membership on every path (#319),
+  // so restore always lands at top level.
   await sql`
-    update user_images set deleted_at = now()
+    update user_images set deleted_at = now(), group_id = null
     where user_id = ${userId} and id in ${sql(list)} and deleted_at is null
   `
 }

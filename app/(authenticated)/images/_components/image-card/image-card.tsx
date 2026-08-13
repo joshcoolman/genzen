@@ -4,10 +4,13 @@ import {
   CheckCircle2,
   Clapperboard,
   Download,
+  FolderPlus,
+  ImageIcon,
   Layers,
   MessageSquare,
   MoreHorizontal,
   Trash2,
+  Unlink,
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
@@ -44,6 +47,16 @@ interface ImageCardProps {
   onAddReference?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the prompt: load it into the generator. */
   onUsePrompt?: (text: string) => void
+  /** Groups (#319). Opens the picker dialog -- a pop-up rather than a submenu,
+   *  because a flyout of group names has no way out: it commits you to picking
+   *  one at the exact moment you might realise the group you wanted does not
+   *  exist. The dialog has a Cancel, and offers `New group...` in the same
+   *  list. */
+  onAddToGroup?: (img: SavedAiImage) => void
+  /** Set only while the gallery is inside a group -- the two actions that make
+   *  no sense from top level, where an image has no group to leave or cover. */
+  onRemoveFromGroup?: (img: SavedAiImage) => void
+  onSetGroupCover?: (img: SavedAiImage) => void
   selected?: boolean
   /** Select mode. The whole card is the target, and nothing else responds. */
   selectionActive?: boolean
@@ -72,6 +85,9 @@ export function ImageCard({
   onExperiment,
   onAddReference,
   onUsePrompt,
+  onAddToGroup,
+  onRemoveFromGroup,
+  onSetGroupCover,
   selected,
   selectionActive,
   onSelect,
@@ -109,6 +125,31 @@ export function ImageCard({
           <DropdownMenuItem onClick={() => onAnimate(img)}>
             <Clapperboard className={styles.menuItemIcon} />
             Animate
+          </DropdownMenuItem>
+        )}
+
+        {/* Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
+        {onAddToGroup && (
+          <DropdownMenuItem onClick={() => onAddToGroup(img)}>
+            <FolderPlus className={styles.menuItemIcon} />
+            Add to group
+          </DropdownMenuItem>
+        )}
+
+        {/* Only inside a group. `Remove` returns the image to top level and
+            deletes nothing; `Set as cover` is the escape hatch for the cover
+            being chosen automatically, which is what keeps creation from
+            asking. */}
+        {onSetGroupCover && (
+          <DropdownMenuItem onClick={() => onSetGroupCover(img)}>
+            <ImageIcon className={styles.menuItemIcon} />
+            Set as group cover
+          </DropdownMenuItem>
+        )}
+        {onRemoveFromGroup && (
+          <DropdownMenuItem onClick={() => onRemoveFromGroup(img)}>
+            <Unlink className={styles.menuItemIcon} />
+            Remove from group
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
