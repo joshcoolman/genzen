@@ -108,6 +108,7 @@ export function ImageGallery({
             <GroupCard
               key={group.id}
               group={group}
+              showInfo={showInfo}
               onOpen={onOpenGroup ?? (() => {})}
               onRename={onRenameGroup ?? (() => {})}
               onDissolve={onDissolveGroup ?? (() => {})}

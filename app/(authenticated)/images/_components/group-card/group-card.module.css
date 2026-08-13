@@ -1,13 +1,9 @@
-/* Everything a GroupCard adds to a Thumbnail: the swatch strip that makes it
-   read as a group, the count, and the name under it. */
-
-/* A fixed shape, unlike an image card, which takes whatever ratio its picture
-   has. Groups sit in the same grid, and a card whose height came from whichever
-   member happened to be the cover would make the row ragged for a reason no one
-   could see. */
-.card {
-  aspect-ratio: 1;
-}
+/* Everything a GroupCard adds to a Thumbnail. Deliberately little: the card is
+   an image card with three deviations, so most of it is the neighbour's look
+   and only the caption block does anything different. There is no fixed aspect
+   ratio and no cover-crop here -- both were tried, and a square cropped tile
+   beside contained ones reads as a different kind of card rather than as one of
+   them carrying something extra. */
 
 .menuIcon,
 .actionIcon {
@@ -20,46 +16,24 @@
   height: 1rem;
 }
 
-/* The tell. Small enough to read as texture rather than as four more pictures
-   -- the cover is the thing being recognised, and these only have to say "there
-   is more underneath". Sits on the image, so it carries its own ground. */
-.strip {
+/* The corner an image card fills with the model name, matched exactly
+   (`image-card.module.css` `.model`). Same slot, same weight: that corner
+   answers "what is this picture", and for a group the answer is that it stands
+   for several. */
+.kind {
   position: absolute;
   right: var(--space-8);
   bottom: var(--space-8);
-  left: var(--space-8);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  pointer-events: none;
-}
-
-.swatches {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.swatch {
-  width: 1.125rem;
-  height: 1.125rem;
-  border-radius: var(--radius-sm);
-  background-color: var(--surface-sunken);
-  background-size: cover;
-  background-position: center;
-  box-shadow: 0 0 0 1px var(--scrim);
-}
-
-/* Right-aligned against the swatches, in the corner an image card puts its
-   model name -- same slot, same weight, so the two kinds of card agree about
-   where their quiet metadata lives. */
-.count {
+  max-width: calc(100% - var(--space-8) * 2);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--scrim);
   color: var(--text-muted);
-  font-family: var(--font-mono);
   font-size: var(--text-3xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 /* An empty group is a state, not a failure: you name one and start generating
@@ -81,20 +55,43 @@
   height: 1.5rem;
 }
 
-/* The same block an image card's caption occupies, so a row of mixed cards
-   lines up. One line and no clamp -- a name is short by construction. */
+/* The same block an image card's caption occupies, with the same padding, so a
+   row of mixed cards lines up. */
 .caption {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-8);
   padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
+/* Where the prompt goes on an image card, and at the prompt's size -- but one
+   line and no clamp, a name being short by construction. Full-strength text
+   rather than the prompt's muted grey: this one is a title. */
 .name {
   overflow: hidden;
   color: var(--text);
-  font-size: var(--text-2xs);
+  font-size: var(--text-3xs);
   font-weight: 500;
+  line-height: 1.5;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* Five across, sized by the column rather than fixed: the grid's cards are
+   ~200px and up, and a fixed square would leave a gap on the wide ones. This is
+   the whole tell that the card stands for more than one picture, so it gets
+   real room in the grey instead of floating over the image, where it read as
+   noise at 18px. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
 }
