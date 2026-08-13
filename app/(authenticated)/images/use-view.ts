@@ -328,7 +328,10 @@ export function useView(initial: Array<SavedAiImage>) {
     const targets = images.filter((img) => selection.selectedIds.has(img.id))
     setIsBatchDeleting(true)
     try {
-      for (const img of targets) await gallery.deleteImage(img)
+      // One call for the set (#329). This was a loop of one action per image,
+      // awaited -- and React serialises server actions anyway, so twelve
+      // pictures was twelve round trips with the grid frozen until the last.
+      await gallery.deleteImages(targets)
       // Which also leaves the mode. The ticks are still on every card, so
       // picking up again is one click -- see the note on `selectMode`.
       selection.clearSelection()
