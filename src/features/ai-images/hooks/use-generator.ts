@@ -5,6 +5,7 @@ import type { PromptOrigins } from '#/features/ai-images/prompt-origins'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
+import { optimisticId } from '#/lib/optimistic-id'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.action'
 import { useReportError } from '#/components'
@@ -50,10 +51,41 @@ interface UseGeneratorOptions {
   onAfterSubmit?: (
     results: Array<{
       model: string
+      placeholderId: string
       recordId: string | null
       error: string | null
     }>,
   ) => void
+  /**
+   * Fires **before any request**, one entry per generation about to be
+   * submitted, in submit order (#313).
+   *
+   * A submit reserves its row before it does anything fallible, so the row
+   * exists roughly 100ms in -- but `recordId` was not returned until after the
+   * bucket read, the FAL upload and the queue submit, and the host only heard
+   * about any of it once every call had settled. That was ~10s of an unchanged
+   * grid after pressing Generate. The host does not need the row to draw a
+   * card; it needs the model and the prompt, and it has both at click time.
+   */
+  onSubmitStart?: (
+    placeholders: Array<{
+      placeholderId: string
+      model: string
+      prompt: string
+      sourceImageId?: string
+    }>,
+  ) => void
+  /**
+   * Fires as each generation settles, rather than after all of them. One slow
+   * model no longer holds up the rest -- which is the whole reason the calls
+   * are fired together in the first place.
+   */
+  onSubmitOutcome?: (outcome: {
+    placeholderId: string
+    model: string
+    recordId: string | null
+    error: string | null
+  }) => void
   /** Tag generations as canvas-owned, so they are reclaimable on canvas load.
    *  Membership only -- which surface made it is `origin` (#207). */
   onCanvas?: boolean
@@ -119,6 +151,8 @@ export function useGenerator({
   origin,
   storagePrefix = 'genzen',
   onAfterSubmit,
+  onSubmitStart,
+  onSubmitOutcome,
   onCanvas,
   groupId,
   promptPrefix,
@@ -423,29 +457,55 @@ export function useGenerator({
       const referenceImageIds = restIds.length > 0 ? restIds : undefined
       const sourceImageId = hasImages ? primary.id : undefined
 
-      // Submit order mirrors allCalls so callModels[i] labels outcomes[i].
-      const callModels = promptsToRun.flatMap(() =>
-        modelsToUse.map((m) => m.base),
-      )
-      const allCalls = promptsToRun.flatMap((promptText) => {
-        // Three distinct facts, and the row has room for one: what was typed,
-        // what the enhancer made of it, and what was sent. `prompt` stays the
-        // sent string (retry replays it); the other two ride along so a past
-        // generation's inputs are recoverable (#210).
+      // Three distinct facts, and the row has room for one: what was typed,
+      // what the enhancer made of it, and what was sent. `prompt` stays the
+      // sent string (retry replays it); the other two ride along so a past
+      // generation's inputs are recoverable (#210).
+      const promptPlans = promptsToRun.map((promptText) => {
         const typedPrompt = promptText.trim()
         // System instructions (#272) lead, then whatever the host prepends --
         // canvas image labels describe the references this prompt talks about,
         // so they belong next to the prompt. Read from storage at submit rather
         // than passed in: one global value, and both hosts get it for free.
         const finalPrompt = `${systemInstructionsPrefix()}${promptPrefixRef.current}${typedPrompt}`
-        const originalPrompt = promptOriginsRef.current[typedPrompt]
-        return modelsToUse.map((m) =>
-          generateImage({
+        return {
+          typedPrompt,
+          finalPrompt,
+          originalPrompt: promptOriginsRef.current[typedPrompt],
+        }
+      })
+
+      // One descriptor per generation, so a placeholder, its submit and its
+      // outcome all line up -- by id now rather than by array index.
+      const calls = promptPlans.flatMap((plan) =>
+        modelsToUse.map((m) => ({
+          placeholderId: optimisticId(),
+          model: m.base,
+          resolved: m.resolved,
+          plan,
+        })),
+      )
+
+      // Before any await. Everything above this line is synchronous, so the
+      // host can draw its cards in the same tick as the click (#313).
+      onSubmitStart?.(
+        calls.map((c) => ({
+          placeholderId: c.placeholderId,
+          model: c.model,
+          prompt: c.plan.typedPrompt,
+          ...(sourceImageId ? { sourceImageId } : {}),
+        })),
+      )
+
+      const results = await Promise.allSettled(
+        calls.map((c) => {
+          const { typedPrompt, finalPrompt, originalPrompt } = c.plan
+          return generateImage({
             origin,
             prompt: finalPrompt,
             ...(originalPrompt ? { originalPrompt } : {}),
             ...(typedPrompt !== finalPrompt ? { typedPrompt } : {}),
-            model: m.resolved,
+            model: c.resolved,
             aspectRatio,
             idempotencyKey: crypto.randomUUID(),
             ...(sourceImageId ? { sourceImageId } : {}),
@@ -453,15 +513,34 @@ export function useGenerator({
             ...(referenceImageIds ? { referenceImageIds } : {}),
             ...(onCanvas ? { onCanvas: true } : {}),
             ...(groupIdRef.current ? { groupId: groupIdRef.current } : {}),
-          }),
-        )
-      })
-
-      const results = await Promise.allSettled(allCalls)
+          }).then(
+            (value) => {
+              onSubmitOutcome?.({
+                placeholderId: c.placeholderId,
+                model: c.model,
+                recordId: value.recordId,
+                error: null,
+              })
+              return value
+            },
+            (reason: unknown) => {
+              onSubmitOutcome?.({
+                placeholderId: c.placeholderId,
+                model: c.model,
+                recordId: null,
+                error:
+                  reason instanceof Error ? reason.message : String(reason),
+              })
+              throw reason
+            },
+          )
+        }),
+      )
       // Ordered outcomes (one per call) so the caller can map each to its
       // placeholder and mark per-model failures instead of dropping slots.
       const outcomes = results.map((r, i) => ({
-        model: callModels[i],
+        model: calls[i].model,
+        placeholderId: calls[i].placeholderId,
         recordId:
           r.status === 'fulfilled'
             ? (r.value as { recordId: string }).recordId
