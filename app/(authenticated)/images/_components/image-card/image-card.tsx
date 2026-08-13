@@ -4,13 +4,13 @@ import {
   CheckCircle2,
   Clapperboard,
   Download,
+  FolderMinus,
   FolderPlus,
   ImageIcon,
   Layers,
   MessageSquare,
   MoreHorizontal,
   Trash2,
-  Unlink,
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
@@ -148,7 +148,7 @@ export function ImageCard({
         )}
         {onRemoveFromGroup && (
           <DropdownMenuItem onClick={() => onRemoveFromGroup(img)}>
-            <Unlink className={styles.menuItemIcon} />
+            <FolderMinus className={styles.menuItemIcon} />
             Remove from group
           </DropdownMenuItem>
         )}
