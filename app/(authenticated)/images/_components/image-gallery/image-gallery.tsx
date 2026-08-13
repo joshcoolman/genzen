@@ -12,8 +12,24 @@ import { EmptyState, ImageGridSkeleton } from '#/components'
    and a control nobody touches is worse than no control. */
 const GRID_MIN_WIDTH = '200px'
 
+/**
+ * One cell of the grid: a loose image, or a group standing in for its members.
+ *
+ * A union rather than two lists, because they are ordered against each other
+ * (#324). A group's position is its newest member's, so an active group sits
+ * among today's pictures and a finished one sinks past them -- which only works
+ * if there is one sequence. Rendering groups as their own block meant a group
+ * outranked every image in the library no matter how old it was.
+ *
+ * `use-view` builds this; the sort key lives there with the rest of the
+ * ordering, so the ascending toggle reverses one list rather than two.
+ */
+export type GalleryCell =
+  | { kind: 'group'; group: ImageGroupSummary }
+  | { kind: 'image'; image: SavedAiImage }
+
 interface ImageGalleryProps {
-  images: Array<SavedAiImage>
+  cells: Array<GalleryCell>
   imageUrls: Record<string, string>
   loadingGallery: boolean
   showInfo?: boolean
@@ -30,9 +46,6 @@ interface ImageGalleryProps {
    *  Shift pushes a reference, and on the prompt it loads the text. */
   onAddReference?: (img: SavedAiImage) => void
   onUsePrompt?: (text: string) => void
-  /** Groups (#319). Cards for these lead the grid at top level, and the list is
-   *  empty inside a group -- groups do not nest. */
-  groups?: Array<ImageGroupSummary>
   onOpenGroup?: (group: ImageGroupSummary) => void
   onRenameGroup?: (group: ImageGroupSummary) => void
   onDissolveGroup?: (group: ImageGroupSummary) => void
@@ -51,7 +64,7 @@ interface ImageGalleryProps {
 }
 
 export function ImageGallery({
-  images,
+  cells,
   imageUrls,
   loadingGallery,
   showInfo = true,
@@ -65,7 +78,6 @@ export function ImageGallery({
   onExperiment,
   onAddReference,
   onUsePrompt,
-  groups,
   onOpenGroup,
   onRenameGroup,
   onDissolveGroup,
@@ -82,7 +94,7 @@ export function ImageGallery({
     <div className={styles.root}>
       {loadingGallery ? (
         <ImageGridSkeleton />
-      ) : images.length === 0 && !groups?.length ? (
+      ) : cells.length === 0 ? (
         <EmptyState
           title={
             emptyScopeLabel ? `Nothing in ${emptyScopeLabel}` : 'No images yet'
@@ -99,24 +111,27 @@ export function ImageGallery({
             gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
           }}
         >
-          {/* Group cards lead, then the loose images. Both are cells in the one
-              grid -- a group is a lens on the same library, not a second place,
-              which is why there is no separate section and no sidebar list.
-              Groups are ordered newest-member-first by the server, so an active
-              one floats and a finished one sinks. */}
-          {groups?.map((group) => (
-            <GroupCard
-              key={group.id}
-              group={group}
-              showInfo={showInfo}
-              onOpen={onOpenGroup ?? (() => {})}
-              onRename={onRenameGroup ?? (() => {})}
-              onDissolve={onDissolveGroup ?? (() => {})}
-              onTrash={onTrashGroup ?? (() => {})}
-            />
-          ))}
+          {/* One sequence, groups and images ordered against each other -- a
+              group is a lens on the same library, not a second place, which is
+              why there is no separate section, no sidebar list, and since #324
+              no block of its own. A group sits where its newest member would. */}
+          {cells.map((cell) => {
+            if (cell.kind === 'group') {
+              const { group } = cell
+              return (
+                <GroupCard
+                  key={group.id}
+                  group={group}
+                  showInfo={showInfo}
+                  onOpen={onOpenGroup ?? (() => {})}
+                  onRename={onRenameGroup ?? (() => {})}
+                  onDissolve={onDissolveGroup ?? (() => {})}
+                  onTrash={onTrashGroup ?? (() => {})}
+                />
+              )
+            }
 
-          {images.map((img) => {
+            const img = cell.image
             if (img.status === 'pending') {
               return (
                 <PendingImageCard
