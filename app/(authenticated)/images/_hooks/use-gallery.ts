@@ -7,6 +7,7 @@ import { retryGeneration } from '#/features/ai-images/server/retry-generation.ac
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.action'
 import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
 import { imageUrl } from '#/lib/image-url'
+import { isOptimisticId } from '#/lib/optimistic-id'
 import {
   deleteGalleryImage,
   listGalleryImages,
@@ -38,7 +39,13 @@ export interface GalleryState {
   loadingGallery: boolean
   deleteImage: (img: SavedAiImage) => Promise<void>
   addOptimisticCard: (card: SavedAiImage) => void
-  replaceOptimisticCard: (optimisticId: string, realCard: SavedAiImage) => void
+  /** An updater rather than a replacement: a generation's card already holds
+   *  the prompt and model the submit only echoes back, so the swap is the id
+   *  and nothing else. */
+  replaceOptimisticCard: (
+    optimisticId: string,
+    next: (card: SavedAiImage) => SavedAiImage,
+  ) => void
   removeOptimisticCard: (optimisticId: string) => void
   setImageUrl: (id: string, url: string) => void
   reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
@@ -80,10 +87,27 @@ export function useGallery({
         if (!options?.silent) setLoadingGallery(true)
 
         const images = sortByOrder(await listGalleryImages())
-        setSavedImages(images)
+        // A refresh replaces the whole list, so anything still in flight has to
+        // be carried over -- it has no row yet to be replaced by. The 5s poll
+        // calls this while generations are pending, which is exactly when
+        // optimistic cards exist, so dropping them would blank the grid a
+        // second after it filled (#313).
+        setSavedImages((prev) => {
+          const inFlight = prev.filter((i) => isOptimisticId(i.id))
+          return inFlight.length > 0
+            ? sortByOrder([...inFlight, ...images])
+            : images
+        })
         setLoadingGallery(false)
 
-        setImageUrls(urlsFor(images))
+        // Same reason, for the blob preview a pasted upload is showing.
+        setImageUrls((prev) => {
+          const next = urlsFor(images)
+          for (const [id, url] of Object.entries(prev)) {
+            if (isOptimisticId(id)) next[id] = url
+          }
+          return next
+        })
       } catch {
         console.error('Failed to load saved AI images')
       } finally {
@@ -139,9 +163,12 @@ export function useGallery({
     setSavedImages((prev) => [card, ...prev])
   }
 
-  function replaceOptimisticCard(optimisticId: string, realCard: SavedAiImage) {
+  function replaceOptimisticCard(
+    optimisticId: string,
+    next: (card: SavedAiImage) => SavedAiImage,
+  ) {
     setSavedImages((prev) =>
-      prev.map((i) => (i.id === optimisticId ? realCard : i)),
+      prev.map((i) => (i.id === optimisticId ? next(i) : i)),
     )
   }
 
@@ -164,6 +191,12 @@ export function useGallery({
 
   async function deleteImage(img: SavedAiImage) {
     forgetImages(new Set([img.id]))
+
+    // A card whose row does not exist yet is dismissed locally and nothing
+    // else. Sending an optimistic id to the server is a guaranteed error, and
+    // the catch below would answer it with a refresh that re-adds the row the
+    // moment the submit lands.
+    if (isOptimisticId(img.id)) return
 
     try {
       await deleteGalleryImage(img.id)

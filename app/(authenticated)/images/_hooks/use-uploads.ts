@@ -5,6 +5,7 @@ import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { imageUrl } from '#/lib/image-url'
+import { optimisticId } from '#/lib/optimistic-id'
 
 /** The placeholder a card shows while its bytes are still in flight. */
 function skeletonCard(id: string, title: string): SavedAiImage {
@@ -49,7 +50,7 @@ export function useUploads(
     (file: File, { preview }: { preview: boolean }) => {
       if (!userId) return
       revealUploads()
-      const tempId = `upload-${Date.now()}-${crypto.randomUUID()}`
+      const tempId = optimisticId()
       gallery.addOptimisticCard(skeletonCard(tempId, file.name))
 
       const previewUrl = preview ? URL.createObjectURL(file) : null
@@ -62,8 +63,7 @@ export function useUploads(
             file,
             title: file.name,
           })
-          gallery.replaceOptimisticCard(
-            tempId,
+          gallery.replaceOptimisticCard(tempId, () =>
             skeletonCard(created.id, created.title),
           )
           // Hold the blob preview until the refresh brings a real URL --

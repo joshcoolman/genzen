@@ -22,6 +22,44 @@ import { useSelection } from '#/lib/use-selection'
 import { toast } from '#/components'
 
 /**
+ * The card a generation shows between the click and its row (#313).
+ *
+ * Shaped as a real pending row rather than as a third card state, so
+ * `image-gallery` needs no branch for it: the same `PendingImageCard` renders
+ * this and the row that replaces it, and the swap is invisible.
+ *
+ * `group_id` is carried because a generation made inside a group is filed into
+ * it -- without it the card would be filtered out of the view that created it.
+ */
+function pendingCard(
+  placeholder: {
+    placeholderId: string
+    model: string
+    prompt: string
+    sourceImageId?: string
+  },
+  groupId: string | null,
+): SavedAiImage {
+  return {
+    id: placeholder.placeholderId,
+    origin: 'images',
+    title: 'Generating...',
+    storage_path: null,
+    created_at: new Date().toISOString(),
+    status: 'pending',
+    group_id: groupId,
+    generation_error: null,
+    generation_metadata: {
+      prompt: placeholder.prompt,
+      model: placeholder.model,
+      ...(placeholder.sourceImageId
+        ? { source_image_id: placeholder.sourceImageId }
+        : {}),
+    },
+  }
+}
+
+/**
  * The state `view.tsx` renders.
  *
  * The first read is the server component's -- `page.tsx` runs
@@ -98,8 +136,30 @@ export function useView(initial: Array<SavedAiImage>) {
     // the half that makes a group a place to work rather than a folder: the
     // filing is a byproduct of generating, not a chore afterwards.
     groupId: activeGroupId,
-    onAfterSubmit: () => {
+    // Cards on click, from local state, before anything has been asked of the
+    // server (#313). The upload path has always done this; generation never
+    // adopted it, which is why pasting felt instant and generating did not.
+    onSubmitStart: (placeholders) => {
       reveal('images')
+      for (const p of placeholders) {
+        gallery.addOptimisticCard(pendingCard(p, activeGroupId))
+      }
+    },
+    // Each card resolves on its own submit rather than on the slowest one's.
+    // A success swaps in the real row id so the refresh below recognises the
+    // card it already drew; a failure that never reached the database takes
+    // the card with it.
+    onSubmitOutcome: ({ placeholderId, recordId }) => {
+      if (recordId) {
+        gallery.replaceOptimisticCard(placeholderId, (card) => ({
+          ...card,
+          id: recordId,
+        }))
+      } else {
+        gallery.removeOptimisticCard(placeholderId)
+      }
+    },
+    onAfterSubmit: () => {
       void gallery.refresh({ silent: true })
       void groups.refresh()
     },
