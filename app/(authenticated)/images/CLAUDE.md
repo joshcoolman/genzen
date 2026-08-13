@@ -90,7 +90,10 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   selection props, and a group's verbs are its own. **A group card is dimmed
   and inert while a selection is up**: it cannot join one, and `openGroup`
   drops the selection on the way in, so a stray click threw away the picking
-  that was in progress
+  that was in progress. **The generator dock steps back the same way** (#326):
+  faded, and its body `inert` rather than merely dimmed, since a panel that
+  looks off but still takes clicks and Tab stops is a lie. Its header stays
+  live so the X still closes it
 - **A click opens the preview, and the lightbox moved out.** The click used to
   open the lightbox here, and it felt disorienting for a reason that took a
   while to name: an overlay that covers everything costs nothing while
