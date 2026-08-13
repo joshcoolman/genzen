@@ -1,12 +1,6 @@
 'use client'
 
-import {
-  FolderOpen,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Unlink,
-} from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2, Unlink } from 'lucide-react'
 import styles from './group-card.module.css'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import {
@@ -128,15 +122,12 @@ export function GroupCard({
       alwaysShowOverlay
       overlayActionsLeft={moreButton}
       overlayActions={deleteButton}
-      /* An empty group is a real state, not a broken one: naming one before
-         there is anything in it is how you start working in it. So it says so,
-         rather than showing the generic missing-image fallback. */
-      fallback={
-        <div className={styles.empty}>
-          <FolderOpen className={styles.emptyIcon} aria-hidden="true" />
-          <span>Empty group</span>
-        </div>
-      }
+      /* Blank, deliberately. An empty group said so in white text under a
+         folder icon, which glared -- and said nothing the card was not already
+         saying twice, in the name and in "0 images". Still a fallback rather
+         than none, because without one the tile renders a loading skeleton and
+         an empty group is not loading. */
+      fallback={<div className={styles.empty} />}
       /* The slot an image card fills with the model name. Same corner, same
          register: it says what kind of thing the picture is standing for. */
       imageOverlay={<span className={styles.kind}>Image group</span>}
