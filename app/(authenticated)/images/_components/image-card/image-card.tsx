@@ -165,7 +165,17 @@ export function ImageCard({
     />
   ) : undefined
 
-  const caption = img.description ?? img.generation_metadata?.prompt
+  // An upload has no prompt, so its caption block was empty and its badge
+  // carried the filename -- a card with a name in the corner and a blank grey
+  // strip under it. The two swap: the badge says what kind of thing this is,
+  // the way a generation's badge names the model, and the filename moves down
+  // to where the prompt would be. A description still wins if one was written,
+  // since Describe would otherwise have nowhere to show.
+  const isUpload = img.origin === 'upload'
+  const badge = isUpload ? 'Upload' : img.title
+  const caption = isUpload
+    ? (img.description ?? img.title)
+    : (img.description ?? img.generation_metadata?.prompt)
 
   return (
     <Thumbnail
@@ -195,7 +205,7 @@ export function ImageCard({
           {/* The model, on the image rather than over the caption: it names
               what made *this* picture, so it belongs to the picture. In the
               caption it read as a title for the prompt underneath it. */}
-          <span className={styles.model}>{img.title}</span>
+          <span className={styles.model}>{badge}</span>
           {/* The tick the select circle used to carry, in the corner it used to
               sit in -- on every card while the mode is on, grey until it is
               taken. The border says "selected" too, but only against its
