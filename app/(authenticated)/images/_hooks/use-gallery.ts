@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { toast } from '#/components'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.action'
 import { updateImageOrder } from '#/features/ai-images/server/update-image-order.action'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
+import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { imageUrl } from '#/lib/image-url'
 import { isOptimisticId } from '#/lib/optimistic-id'
 import {
@@ -126,38 +126,20 @@ export function useGallery({
   // be a `postgres_changes` channel here doing that, but it went with #174:
   // `user_images` is in no publication, and the browser has had no Supabase
   // session since #171, so it had already stopped delivering anything.
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  useEffect(() => {
-    if (process.env.NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS === 'true') return
+  //
+  // The timer itself is `useGenerationPoll` -- backoff, tab-visibility and
+  // giving up live there, shared with Video and Activity (#327).
+  const oldestPending =
+    process.env.NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS === 'true'
+      ? null
+      : (savedImages
+          .filter((img) => img.status === 'pending' && !isOptimisticId(img.id))
+          .reduce<
+            string | null
+          >((oldest, img) => (!oldest || img.created_at < oldest ? img.created_at : oldest), null) ??
+        null)
 
-    const hasPending = savedImages.some((img) => img.status === 'pending')
-
-    const pollOnce = () =>
-      checkPendingGenerations()
-        .then((result) => {
-          if (result.completed === 0 && result.failed === 0) return
-          return loadSavedImages({ silent: true })
-        })
-        .catch(() => {})
-
-    if (hasPending && !pollingRef.current) {
-      // Initial check immediately
-      void pollOnce()
-      pollingRef.current = setInterval(() => {
-        void pollOnce()
-      }, 5000)
-    } else if (!hasPending && pollingRef.current) {
-      clearInterval(pollingRef.current)
-      pollingRef.current = null
-    }
-
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current)
-        pollingRef.current = null
-      }
-    }
-  }, [savedImages.some((img) => img.status === 'pending'), loadSavedImages])
+  useGenerationPoll(oldestPending, () => loadSavedImages({ silent: true }))
 
   function addOptimisticCard(card: SavedAiImage) {
     setSavedImages((prev) => [card, ...prev])

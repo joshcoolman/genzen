@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ActivityEntry, ActivityFilters } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.action'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
+import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 
 const PAGE_SIZE = 50
 
@@ -55,26 +55,16 @@ export function useView() {
   }, [refetch])
 
   // Poll for pending rows so this page progresses even when the user isn't on
-  // Images. Runs only while work is live.
-  const hasPendingWork = entries.some((e) => e.status === 'pending')
-  useEffect(() => {
-    if (!hasPendingWork) return
-    // A settled row means this page is stale. Realtime no longer delivers the
-    // UPDATE (#174), so the poll drives the refetch itself.
-    const pollOnce = () =>
-      checkPendingGenerations()
-        .then((result) => {
-          if (result.completed === 0 && result.failed === 0) return
-          return refetch({ silent: true })
-        })
-        .catch(() => {})
+  // Images -- the same timer Images and Video use (#327). A settled row means
+  // this page is stale; realtime no longer delivers the UPDATE (#174), so the
+  // poll drives the refetch itself.
+  const pendingSince = entries
+    .filter((e) => e.status === 'pending')
+    .reduce<
+      string | null
+    >((oldest, e) => (!oldest || e.createdAt < oldest ? e.createdAt : oldest), null)
 
-    void pollOnce()
-    const interval = setInterval(() => {
-      void pollOnce()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [hasPendingWork, refetch])
+  useGenerationPoll(pendingSince, () => refetch({ silent: true }))
 
   // Arrow keys cycle the detail panel through the visible rows. Lives here
   // rather than in the view because it is selection behaviour, not layout --

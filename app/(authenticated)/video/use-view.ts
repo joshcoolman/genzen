@@ -9,7 +9,7 @@ import {
   estimateCostCents,
 } from './models'
 import type { VideoRecord } from './_actions/generate-video.action'
-import { checkPendingGenerations } from '#/lib/server/check-pending-generations.action'
+import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -85,8 +85,16 @@ export function useView(initialVideos: Array<VideoRecord>) {
     }
   }, [handoffId, sources.length, userImages])
 
-  const hasPending = useMemo(
-    () => videos.some((video) => video.status === 'pending'),
+  // The oldest clip still rendering, which is what paces the poll (#327). A
+  // clip is minutes of work, so its deadline is longer than a still's -- that
+  // part lives in the action.
+  const pendingSince = useMemo(
+    () =>
+      videos
+        .filter((video) => video.status === 'pending')
+        .reduce<
+          string | null
+        >((oldest, video) => (!oldest || video.created_at < oldest ? video.created_at : oldest), null),
     [videos],
   )
 
@@ -98,21 +106,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     }
   }, [])
 
-  useEffect(() => {
-    if (!hasPending) return
-
-    const tick = async () => {
-      try {
-        await checkPendingGenerations()
-      } catch {
-        // Swallowed for the same reason as above.
-      }
-      await refresh()
-    }
-
-    const id = setInterval(tick, 5000)
-    return () => clearInterval(id)
-  }, [hasPending, refresh])
+  useGenerationPoll(pendingSince, refresh)
 
   const openPicker = useCallback(
     (target: 'first' | 'last') => {
