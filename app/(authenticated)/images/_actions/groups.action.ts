@@ -18,7 +18,9 @@ export interface ImageGroupSummary {
   name: string
   /** The frozen cover, or the newest remaining member when it has none. */
   cover_image_id: string | null
-  /** Up to five members for the card's swatch strip, newest first. */
+  /** Members for the card's swatch strip, newest first. Six, not five: the
+   *  card drops the cover from this list before rendering, so trimming to five
+   *  here left it with four. */
   preview_image_ids: Array<string>
   /** Live members -- trashed images are not in it, having lost `group_id`. */
   count: number
@@ -65,12 +67,13 @@ export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
   `
 
   // The lateral collects every member so `count` is the real one; the strip
-  // only ever shows five, and trimming here keeps the ids off the wire.
+  // shows five of them, and the card removes the cover before rendering --
+  // hence six here, or a five-member group would draw four swatches.
   return (rows as unknown as Array<ImageGroupSummary>).map((g) => ({
     ...g,
     count: Number(g.count),
     // Never null -- `coalesce(m.ids, '{}')` above -- so no fallback here.
-    preview_image_ids: g.preview_image_ids.slice(0, 5),
+    preview_image_ids: g.preview_image_ids.slice(0, 6),
   }))
 }
 

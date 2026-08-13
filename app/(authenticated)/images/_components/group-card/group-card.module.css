@@ -109,8 +109,13 @@
   background-position: center;
 }
 
+/* A filled slot, darker than the caption behind it. It was `--surface-sunken`
+   at 35% opacity first, which on the caption's own dark ground is very nearly
+   the caption -- the slots were there and invisible, so a short row read as a
+   broken grid rather than as room for more. Black rather than a token, so it
+   reads as an absence at any surface it sits on. */
 .swatchEmpty {
-  opacity: 0.35;
+  background-color: rgb(0 0 0 / 30%);
 }
 
 /* Beside the name rather than in the swatch row. It was a fifth cell there,
