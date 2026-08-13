@@ -14,9 +14,25 @@ import { useIsMobile } from '#/lib/use-is-mobile'
  * navigation and no filter can fix it. If #213 lands and this stops being
  * touched, deleting it is the right outcome.
  */
-export const ORIGIN_FILTERS = ['images', 'uploads', 'canvas', 'all'] as const
+/**
+ * The pills the toolbar renders.
+ *
+ * **`canvas` is temporarily removed at Josh's request (#319).** Scoping the
+ * library to things made on the canvas turned out not to be something worth
+ * a pill once groups existed. It is commented out rather than deleted because
+ * the removal is a trial, not a decision -- put the entry back and the pill
+ * returns; nothing else knows the difference. `'canvas'` stays in
+ * `OriginFilter` and in `ORIGIN_FILTER_LABELS` for the same reason, and
+ * because a stored pref from before this change still names it.
+ */
+export const ORIGIN_FILTERS = [
+  'images',
+  'uploads',
+  // 'canvas',
+  'all',
+] as const satisfies ReadonlyArray<OriginFilter>
 
-export type OriginFilter = (typeof ORIGIN_FILTERS)[number]
+export type OriginFilter = 'images' | 'uploads' | 'canvas' | 'all'
 
 export const ORIGIN_FILTER_LABELS: Record<OriginFilter, string> = {
   images: 'Generations',
@@ -52,7 +68,18 @@ function read(): Prefs {
       return {
         sortAsc: stored.sortAsc ?? DEFAULTS.sortAsc,
         showInfo: stored.showInfo ?? DEFAULTS.showInfo,
-        originFilter: stored.originFilter ?? DEFAULTS.originFilter,
+        // A stored filter whose pill no longer renders is a trap: the scope
+        // applies, no pill reads as active, and there is nothing to click to
+        // get out of it. Anything not in `ORIGIN_FILTERS` falls back -- which
+        // today means the commented-out `canvas`, and tomorrow means whatever
+        // else is retired without anyone remembering this line.
+        originFilter:
+          stored.originFilter &&
+          (ORIGIN_FILTERS as ReadonlyArray<OriginFilter>).includes(
+            stored.originFilter,
+          )
+            ? stored.originFilter
+            : DEFAULTS.originFilter,
       }
     }
   } catch {

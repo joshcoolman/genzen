@@ -105,14 +105,26 @@ export function useView(initial: Array<SavedAiImage>) {
     },
   })
 
+  /**
+   * Uploads ignores grouping entirely: every upload, grouped or not.
+   *
+   * The other scopes hide a grouped image behind its group card, which is the
+   * whole payoff -- a wall of thirty becomes three cards and eight loose
+   * pictures. Uploads is not that kind of question. An upload is something you
+   * put there deliberately, and "show me my uploads" means all of them; where
+   * each one happens to sit is somebody else's concern. So this scope shows no
+   * group cards either -- there is nothing left for them to stand in for.
+   */
+  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
+
   // Group first, then scope, then order. The filter is client-side on purpose:
   // the gallery already holds every row, so switching pills is instant and
   // costs no round trip -- and `origin` is immutable, so a filtered-out row
   // cannot become stale.
   //
   // At top level a grouped image is *absent*, not shown twice: the group card
-  // stands in for its members, which is the entire payoff. If members also
-  // appeared loose, the wall would be exactly as tall as before.
+  // stands in for its members. If members also appeared loose, the wall would
+  // be exactly as tall as before.
   //
   // Inside a group there is no origin filtering at all -- the group is already
   // the scope, and two scoping controls stacked on each other only raise the
@@ -121,12 +133,13 @@ export function useView(initial: Array<SavedAiImage>) {
     if (activeGroupId) {
       return gallery.images.filter((img) => img.group_id === activeGroupId)
     }
+    if (uploadsIgnoreGroups) {
+      return gallery.images.filter((img) => img.origin === 'upload')
+    }
     const loose = gallery.images.filter((img) => !img.group_id)
     if (prefs.originFilter === 'all') return loose
-    const origin =
-      prefs.originFilter === 'uploads' ? 'upload' : prefs.originFilter
-    return loose.filter((img) => img.origin === origin)
-  }, [gallery.images, prefs.originFilter, activeGroupId])
+    return loose.filter((img) => img.origin === prefs.originFilter)
+  }, [gallery.images, prefs.originFilter, activeGroupId, uploadsIgnoreGroups])
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
@@ -439,6 +452,7 @@ export function useView(initial: Array<SavedAiImage>) {
     groups,
     activeGroup,
     activeGroupId,
+    uploadsIgnoreGroups,
     openGroup,
     leaveGroup,
     groupFlow,

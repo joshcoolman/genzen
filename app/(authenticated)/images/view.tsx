@@ -45,6 +45,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     groups,
     activeGroup,
     activeGroupId,
+    uploadsIgnoreGroups,
     openGroup,
     leaveGroup,
     groupFlow,
@@ -107,9 +108,12 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onExperiment={experiment.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
-          /* Only at top level: groups do not nest, so there is nothing to
-             render inside one. */
-          groups={activeGroupId ? undefined : groups.groups}
+          /* Only at top level, and not under Uploads: groups do not nest, and
+             the Uploads scope already shows every upload wherever it sits, so a
+             card standing in for some of them would be showing them twice. */
+          groups={
+            activeGroupId || uploadsIgnoreGroups ? undefined : groups.groups
+          }
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
           onDissolveGroup={(group) =>
