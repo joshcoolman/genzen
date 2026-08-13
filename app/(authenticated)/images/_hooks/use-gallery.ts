@@ -12,6 +12,7 @@ import { isOptimisticId } from '#/lib/optimistic-id'
 import {
   deleteGalleryImage,
   listGalleryImages,
+  trashGalleryImages,
 } from '#/features/ai-images/server/gallery.action'
 
 interface UseImagesOptions {
@@ -39,6 +40,8 @@ export interface GalleryState {
   imageUrls: Record<string, string>
   loadingGallery: boolean
   deleteImage: (img: SavedAiImage) => Promise<void>
+  /** The selection drawer's Trash: one round trip for the whole set (#329). */
+  deleteImages: (images: Array<SavedAiImage>) => Promise<void>
   addOptimisticCard: (card: SavedAiImage) => void
   /** An updater rather than a replacement: a generation's card already holds
    *  the prompt and model the submit only echoes back, so the swap is the id
@@ -197,6 +200,29 @@ export function useGallery({
     }
   }
 
+  /**
+   * Trash a set of images: the cards leave now, the server hears once (#329).
+   *
+   * The grid used to sit still until the last of N round trips landed. It moves
+   * on the click instead, and a failure re-reads -- which puts back whatever is
+   * genuinely still there, rather than this hook trying to remember what it
+   * removed.
+   */
+  async function deleteImages(images: Array<SavedAiImage>) {
+    const ids = images.map((i) => i.id)
+    forgetImages(new Set(ids))
+
+    const real = ids.filter((id) => !isOptimisticId(id))
+    if (real.length === 0) return
+
+    try {
+      await trashGalleryImages(real)
+    } catch {
+      toast('Could not move those to Trash')
+      await loadSavedImages({ silent: true })
+    }
+  }
+
   async function retryImage(img: SavedAiImage) {
     // The retry reuses this row, so the card stays where it is and goes back to
     // pending in place. Flipping it here also restarts the poll, which is what
@@ -243,6 +269,7 @@ export function useGallery({
     imageUrls,
     loadingGallery,
     deleteImage,
+    deleteImages,
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,

@@ -50,6 +50,66 @@ export async function listGalleryImages(options?: {
 }
 
 /**
+ * Trash many images in one call (#329).
+ *
+ * The drawer's Trash button used to loop `deleteGalleryImage` over the
+ * selection, awaiting each -- and React serialises server actions anyway, so
+ * twelve images was twelve round trips, each one re-rendering the route and
+ * re-reading the seed. Selecting things is *for* bulk; it was the path that
+ * scaled worst.
+ *
+ * Two statements rather than one, because the two kinds of row end differently
+ * and always have: a failed generation has no picture to restore, so Trash has
+ * nothing to offer for it and it goes for good, objects included. Everything
+ * else soft-deletes, losing `group_id` on the way so restore has one
+ * destination (#319).
+ */
+export async function trashGalleryImages(
+  imageIds: Array<string>,
+): Promise<void> {
+  const { userId } = await resolveAuth()
+  if (imageIds.length === 0) return
+
+  const rows = await sql<
+    Array<{
+      id: string
+      status: string
+      storage_path: string | null
+      thumbnail_path: string | null
+    }>
+  >`
+    select id, status, storage_path, thumbnail_path
+    from user_images
+    where user_id = ${userId} and id = any(${imageIds})
+  `
+  if (rows.length === 0) return
+
+  const failed = rows.filter((r) => r.status === 'failed')
+  const rest = rows.filter((r) => r.status !== 'failed')
+
+  if (failed.length > 0) {
+    await sql`
+      delete from user_images
+      where user_id = ${userId} and id = any(${failed.map((r) => r.id)})
+    `
+    // Defensive, as in the single-image path: a failed row normally has no
+    // objects, but a failure late in the pipeline can leave one behind. One
+    // storage call for the whole set rather than one per row.
+    const paths = failed
+      .flatMap((r) => [r.storage_path, r.thumbnail_path])
+      .filter((p): p is string => !!p)
+    if (paths.length > 0) await removeImages({ storagePaths: paths })
+  }
+
+  if (rest.length > 0) {
+    await sql`
+      update user_images set deleted_at = now(), group_id = null
+      where user_id = ${userId} and id = any(${rest.map((r) => r.id)})
+    `
+  }
+}
+
+/**
  * Delete one image -- that image, and nothing else.
  *
  * This used to be a decision about a subtree: hide rather than soft-delete when
