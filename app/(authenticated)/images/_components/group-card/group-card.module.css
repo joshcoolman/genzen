@@ -64,10 +64,19 @@
   padding: var(--space-8) var(--space-12) var(--space-12);
 }
 
+/* Name left, count right, on the line where an image card starts its prompt. */
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
 /* Where the prompt goes on an image card, and at the prompt's size -- but one
    line and no clamp, a name being short by construction. Full-strength text
    rather than the prompt's muted grey: this one is a title. */
 .name {
+  flex: 1;
   overflow: hidden;
   color: var(--text);
   font-size: var(--text-3xs);
@@ -77,8 +86,7 @@
   text-overflow: ellipsis;
 }
 
-/* Five cells across -- four pictures and a count -- sized by the column rather
-   than fixed: the grid's cards are ~200px and up, and a fixed square would
+/* Five cells across, sized by the column rather than fixed: the grid's cards are ~200px and up, and a fixed square would
    leave a gap on the wide ones. This row is the whole tell that the card stands
    for more than one picture, so it gets real room in the grey instead of
    floating over the image, where it read as noise at 18px. */
@@ -88,7 +96,12 @@
   gap: var(--space-4);
 }
 
-.swatch {
+/* A slot with no member ghosts rather than collapsing: the row keeps its shape
+   on every card, and a half-full one reads as room for more instead of as a
+   grid that lost its rhythm. That is also why the count is not in here -- there
+   is no spare cell for it. */
+.swatch,
+.swatchEmpty {
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   background-color: var(--surface-sunken);
@@ -96,33 +109,16 @@
   background-position: center;
 }
 
-/* Pinned to the last column rather than flowing after the swatches: a group
-   with two members would otherwise put its count in the middle of the row, and
-   the count is the one cell whose position should be learnable.
-
-   The cell itself draws nothing -- it only reserves the slot, so the circle
-   inside it sits on the caption's own ground rather than on a square. */
-.total {
-  grid-column: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
+.swatchEmpty {
+  opacity: 0.35;
 }
 
-/* A circle, and darker than everything around it. The row is four pictures and
-   this: a square would read as a fifth thumbnail with a number on it, where a
-   circle reads as a piece of interface -- which is what it is. */
-.totalCircle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
+/* Beside the name rather than in the swatch row. It was a fifth cell there,
+   which cost a picture and made the count read as a thumbnail with a number on
+   it. Quiet: the name is what is being scanned. */
+.total {
+  flex: none;
+  color: var(--text-faint);
   font-size: var(--text-3xs);
-  line-height: 1;
+  white-space: nowrap;
 }

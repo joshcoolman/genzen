@@ -19,11 +19,10 @@ import {
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 
-/** Four pictures and a count, filling the caption's width as five cells. The
- *  swatches say "there is more here"; the count says how much more, which four
- *  squares alone cannot -- a group of six and a group of sixty looked
- *  identical. */
-const SWATCH_COUNT = 4
+/** Five, filling the caption's width. A group with fewer members still draws
+ *  five cells -- the empty ones ghost, which keeps the row the same shape on
+ *  every card and reads as "room for more" rather than as a broken grid. */
+const SWATCH_COUNT = 5
 
 interface GroupCardProps {
   group: ImageGroupSummary
@@ -69,10 +68,16 @@ export function GroupCard({
   const coverUrl = coverId ? imageUrl(coverId, 'thumb') : undefined
 
   // The cover is already the picture above; repeating it as the first swatch
-  // spends one of four slots on something directly overhead.
+  // spends one of five slots on something directly overhead.
   const swatchIds = group.preview_image_ids
     .filter((id) => id !== coverId)
     .slice(0, SWATCH_COUNT)
+
+  // Padded to a fixed five so the row never reflows: a null is a ghosted slot.
+  const swatchSlots: Array<string | null> = Array.from(
+    { length: SWATCH_COUNT },
+    (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
+  )
 
   const moreButton = (
     <DropdownMenu>
@@ -135,23 +140,30 @@ export function GroupCard({
     >
       {showInfo && (
         <div className={styles.caption}>
-          <span className={styles.name}>{group.name}</span>
+          {/* Name and count on one line, the count right-aligned. It sat in the
+              row of swatches as a fifth cell first, which cost a picture and
+              made the count look like a thumbnail. It belongs with the name:
+              both are what this group *is*, and the row below is what is in
+              it. */}
+          <div className={styles.heading}>
+            <span className={styles.name}>{group.name}</span>
+            <span className={styles.total}>
+              {group.count} {group.count === 1 ? 'image' : 'images'}
+            </span>
+          </div>
           <div className={styles.swatches}>
-            {swatchIds.map((id) => (
+            {swatchSlots.map((id, i) => (
               <span
-                key={id}
-                className={styles.swatch}
-                style={{ backgroundImage: `url(${imageUrl(id, 'thumb')})` }}
+                key={id ?? `empty-${i}`}
+                className={id ? styles.swatch : styles.swatchEmpty}
+                style={
+                  id
+                    ? { backgroundImage: `url(${imageUrl(id, 'thumb')})` }
+                    : undefined
+                }
                 aria-hidden="true"
               />
             ))}
-            {/* The last cell, in the same rhythm as the swatches rather than
-                as a label beside them -- it is one of the row, so it reads
-                without being announced. Rendered even for an empty group,
-                where "0" is the only thing the row has to say. */}
-            <span className={styles.total}>
-              <span className={styles.totalCircle}>{group.count}</span>
-            </span>
           </div>
         </div>
       )}
