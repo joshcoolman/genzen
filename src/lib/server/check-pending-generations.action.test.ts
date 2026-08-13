@@ -178,7 +178,9 @@ describe('checkPendingGenerations handler', () => {
 
     it('stops retrying a transient error once the deadline has passed', async () => {
       mockPendingRows([makePendingRecord({ age_ms: 11 * 60_000 })])
-      vi.mocked(fal.queue.status).mockRejectedValue(new Error('network timeout'))
+      vi.mocked(fal.queue.status).mockRejectedValue(
+        new Error('network timeout'),
+      )
 
       const result = (await checkPendingGenerations()) as Record<string, number>
 

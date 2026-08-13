@@ -7,6 +7,12 @@ Built to `docs/reference/route-shape.md` (#189). `page.tsx` is a server
 component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
 `initial`; `use-view.ts` seeds from that and owns every read after it.
 
+**That seed is bounded** to `GALLERY_SEED_LIMIT` (#328). Not for the first
+paint's sake -- a server action re-renders the route it was called from, so
+every delete, group write and poll tick re-runs this read. Bounding it is what
+stops a mutation from costing a full library scan. `use-gallery` completes the
+list once when the seed comes back full, so the grid is never short.
+
 ## Quirks
 
 - **The card has two icons, and a click opens the in-place preview.** `...` and
@@ -119,8 +125,11 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   click, because the way this gets used is look, page a few, copy, get back to
   the grid, and a lightbox you have to aim at to leave taxes every one of those
 - **`initial` is a seed, not the source of truth.** `use-gallery.ts` owns the
-  list after the first paint, and its 5s FAL poll is the only signal that
-  anything changed -- nothing pushes (#174)
+  list after the first paint, and the FAL poll is the only signal that anything
+  changed -- nothing pushes (#174). The poll is
+  `features/ai-images/hooks/use-generation-poll.ts`, shared with Video and
+  Activity, and it backs off, sleeps with the tab and gives up on work FAL never
+  answers for (#327)
 - **A paste previews, the file picker does not.** A paste is one image the user
   has in mind, so it gets a blob preview immediately; the picker takes many at
   once and previews would land in upload order, so the cards would appear to

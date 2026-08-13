@@ -9,34 +9,41 @@ import { removeImages } from '#/features/user-images/server/remove-images.action
 // against Supabase. As in user-images (#173), the change that matters is that
 // `user_id` comes from `resolveAuth()` rather than from the caller.
 
-export async function listGalleryImages(): Promise<Array<SavedAiImage>> {
+export async function listGalleryImages(options?: {
+  /** Cap the read. The server component's seed passes one (#328); a refresh
+   *  that owns the grid's whole state does not. */
+  limit?: number
+}): Promise<Array<SavedAiImage>> {
   const { userId } = await resolveAuth()
 
   // `created_at` goes through `to_json(...)#>>'{}'` rather than being selected
   // raw: `SavedAiImage.created_at` is an ISO string, and the driver would
   // otherwise hand back a `Date`.
-  // `on_canvas` is derived, never stored -- the boolean column of that name was
-  // deleted in #205 precisely because it drifted from the membership rows that
-  // are the truth. `exists` over `canvas_images_user_image_idx` (user_id,
-  // image_id), so it costs an index probe per row rather than a join.
   //
-  // A boolean is enough while there is one canvas per user. The day there are
-  // several, this becomes the canvas name and the marker says which -- same
-  // query shape, one more column.
+  // `on_canvas` used to be derived here, per row, by an `exists` over
+  // `canvas_images`. Nothing has read it since #314 took the "On canvas" marker
+  // off the card -- so every read of the library, including the one every server
+  // action triggers, was paying an index probe per row for a value that went
+  // straight in the bin (#330). `SavedAiImage.on_canvas` stays on the type as
+  // the seam: the surface that wants it again reads it for the rows it renders,
+  // rather than the whole library paying in advance.
+  //
+  // The select list is otherwise as wide as it was, and that is not an
+  // oversight: the card renders `title`, `description` and three fields out of
+  // `generation_metadata`. Trimming the jsonb to those three would save real
+  // bytes and make the type lie about what a `SavedAiImage` contains, which is
+  // a bad trade at this size.
   const rows = await sql`
     select ui.id, ui.title, ui.description, ui.storage_path, ui.thumbnail_path,
            to_json(ui.created_at)#>>'{}' as created_at,
            ui.sort_order, ui.status, ui.origin, ui.generation_error,
-           ui.generation_metadata, ui.group_id,
-           exists (
-             select 1 from canvas_images ci
-             where ci.image_id = ui.id and ci.user_id = ${userId}
-           ) as on_canvas
+           ui.generation_metadata, ui.group_id
     from user_images ui
     where ui.user_id = ${userId}
       and ui.source in ('upload', 'ai_generated')
       and ui.deleted_at is null
     order by ui.sort_order desc nulls last
+    ${options?.limit ? sql`limit ${options.limit}` : sql``}
   `
 
   return rows as unknown as Array<SavedAiImage>
