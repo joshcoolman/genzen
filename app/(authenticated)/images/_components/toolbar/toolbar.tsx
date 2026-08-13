@@ -5,6 +5,8 @@ import {
   ArrowDown,
   ArrowUp,
   CheckSquare,
+  ChevronLeft,
+  FolderPlus,
   Info,
   PanelRight,
   Upload,
@@ -54,6 +56,10 @@ interface ToolbarProps {
   selectMode: boolean
   onToggleSelectMode: () => void
   onUpload: (files: Array<File>) => void
+  /** The group being worked in, or null at top level (#319). */
+  groupName?: string | null
+  onLeaveGroup: () => void
+  onNewGroup: () => void
 }
 
 export function Toolbar({
@@ -63,24 +69,62 @@ export function Toolbar({
   selectMode,
   onToggleSelectMode,
   onUpload,
+  groupName,
+  onLeaveGroup,
+  onNewGroup,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   return (
     <div className={styles.toolbar}>
       <div className={styles.scope}>
-        {/* No page title: the sidebar says which route this is, the pills say
-            what is scoped, and "Images" above a grid of images said neither. */}
-        <SingleSelect
-          options={ORIGIN_FILTERS.map((value) => ({
-            value,
-            label: ORIGIN_FILTER_LABELS[value],
-          }))}
-          value={prefs.originFilter}
-          // SingleSelect clears on re-click; here "no scope" is `all`, so a
-          // second click on the active pill widens rather than doing nothing.
-          onChange={(value) => prefs.setOriginFilter(value ?? 'all')}
-        />
+        {/* Inside a group the pills are gone, not disabled (#319). A group is
+            already the scope, and two scoping controls stacked on each other
+            invite the question of which one wins -- with the honest answer
+            being that origin filtering has almost no use once things that
+            belong together are together. The chevron takes their place; it is
+            the same navigation the browser's Back button performs, since the
+            group is in the URL. */}
+        {groupName ? (
+          <button
+            type="button"
+            className={styles.crumb}
+            onClick={onLeaveGroup}
+            aria-label="Leave group"
+          >
+            <ChevronLeft className={styles.crumbIcon} />
+            <span className={styles.crumbName}>{groupName}</span>
+          </button>
+        ) : (
+          <>
+            {/* No page title: the sidebar says which route this is, the pills
+                say what is scoped, and "Images" above a grid of images said
+                neither. */}
+            <SingleSelect
+              options={ORIGIN_FILTERS.map((value) => ({
+                value,
+                label: ORIGIN_FILTER_LABELS[value],
+              }))}
+              value={prefs.originFilter}
+              // SingleSelect clears on re-click; here "no scope" is `all`, so a
+              // second click on the active pill widens rather than doing
+              // nothing.
+              onChange={(value) => prefs.setOriginFilter(value ?? 'all')}
+            />
+            {/* An empty group is a legitimate way to start: name the thing you
+                are about to work on, then generate into it. Without this the
+                only way to make one is to have already made something, which
+                is the wrong order for a place to work. */}
+            <button
+              type="button"
+              className={styles.newGroup}
+              onClick={onNewGroup}
+            >
+              <FolderPlus className={styles.newGroupIcon} />
+              New group
+            </button>
+          </>
+        )}
       </div>
       <TooltipProvider delay={300}>
         <div className={styles.tools}>

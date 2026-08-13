@@ -1,0 +1,117 @@
+/* Everything a GroupCard adds to a Thumbnail. Deliberately little: the card is
+   an image card with three deviations, so most of it is the neighbour's look
+   and only the caption block does anything different. There is no fixed aspect
+   ratio and no cover-crop here -- both were tried, and a square cropped tile
+   beside contained ones reads as a different kind of card rather than as one of
+   them carrying something extra. */
+
+.menuIcon,
+.actionIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.menuItemIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The corner an image card fills with the model name, matched exactly
+   (`image-card.module.css` `.model`). Same slot, same weight: that corner
+   answers "what is this picture", and for a group the answer is that it stands
+   for several. */
+.kind {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* An empty group draws nothing in the image area -- see the fallback comment
+   in the component. The height keeps the tile from collapsing to its caption,
+   so a new group is a card among cards rather than a strip. */
+.empty {
+  width: 100%;
+  min-height: 8rem;
+}
+
+/* The same block an image card's caption occupies, with the same padding, so a
+   row of mixed cards lines up. */
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
+/* Name left, count right, on the line where an image card starts its prompt. */
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+/* Where the prompt goes on an image card, and at the prompt's size -- but one
+   line and no clamp, a name being short by construction. Full-strength text
+   rather than the prompt's muted grey: this one is a title. */
+.name {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-3xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Five cells across, sized by the column rather than fixed: the grid's cards are ~200px and up, and a fixed square would
+   leave a gap on the wide ones. This row is the whole tell that the card stands
+   for more than one picture, so it gets real room in the grey instead of
+   floating over the image, where it read as noise at 18px. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+}
+
+/* A slot with no member ghosts rather than collapsing: the row keeps its shape
+   on every card, and a half-full one reads as room for more instead of as a
+   grid that lost its rhythm. That is also why the count is not in here -- there
+   is no spare cell for it. */
+.swatch,
+.swatchEmpty {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+}
+
+/* A filled slot, darker than the caption behind it. It was `--surface-sunken`
+   at 35% opacity first, which on the caption's own dark ground is very nearly
+   the caption -- the slots were there and invisible, so a short row read as a
+   broken grid rather than as room for more. */
+.swatchEmpty {
+  background-color: var(--slot-empty);
+}
+
+/* Beside the name rather than in the swatch row. It was a fifth cell there,
+   which cost a picture and made the count read as a thumbnail with a number on
+   it. Quiet: the name is what is being scanned. */
+.total {
+  flex: none;
+  color: var(--text-faint);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+}

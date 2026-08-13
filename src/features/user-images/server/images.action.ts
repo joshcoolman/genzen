@@ -124,8 +124,11 @@ export async function updateImageMeta(
 export async function softDeleteImage(id: string): Promise<void> {
   const { userId } = await resolveAuth()
 
+  // `group_id = null` here too, not just in the gallery's delete (#319):
+  // restore has one destination whichever surface did the trashing, and three
+  // paths that disagree is three different restores.
   await sql`
-    update user_images set deleted_at = now()
+    update user_images set deleted_at = now(), group_id = null
     where id = ${id} and user_id = ${userId}
   `
 }

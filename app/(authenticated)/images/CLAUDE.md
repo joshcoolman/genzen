@@ -140,6 +140,43 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   crowded and the warning was not paying for its space. The read is left in
   place because it is a cheap subquery and the fact is still true -- the seam
   to show it again, here or in Trash's link badge, is `SavedAiImage.on_canvas`
+- **A group is this view with a filter, and that is the whole constraint
+  (#319).** `?group=<id>` -- same `view.tsx`, same toolbar, same cards. Not a
+  route segment and not a component of its own, because #204's grouping died
+  from exactly one small permission: that the group view could look different.
+  A second panel followed, then a second selection state, then two sidebars.
+  The test for anything proposed here: **does it only make sense inside a
+  group?** Then it is the same mistake -- editing, comparing and promoting a
+  hero image belong to images, not to groups. Two mechanisms only: membership
+  (`user_images.group_id`, exclusive) and an active scope (the filter, plus
+  `groupId` on every generation submitted while one is open). Top level shows
+  **group cards in place of their members** -- if members also appeared loose
+  the wall would be as tall as before, which is the entire payoff. Exclusive
+  membership is a column rather than a join table for that reason: two groups
+  would make an image vanish from top level twice. **There is no origin
+  filtering inside a group** -- the group is already the scope. Groups do not
+  nest. `_actions/groups.action.ts` owns the writes, `_hooks/use-groups.ts`
+  re-reads after each one rather than patching four derived fields locally
+- **The group card never asks for a cover, and Add to group is never a
+  submenu.** Both are the same lesson: the previous grouping was abandoned
+  because creating one was a chore. Creation asks for a name and nothing else;
+  the cover is the newest member, frozen, overridable from an image's own `...`
+  and falling back to the newest remaining member when it is trashed. `Add to
+group` opens a dialog because a flyout of names commits you to picking one at
+  the moment you are most likely to notice the group you wanted does not exist
+  -- the dialog has a Cancel and offers `New group...` in the same list, and
+  skips straight to naming when there are no groups yet. The card carries no
+  "Group" label: the swatch strip reads as texture at a glance, a label is text
+  to parse
+- **Trashing clears `group_id`, on all three soft-delete paths.** Restore has
+  one destination, always. Restoring into a remembered group sounds tidier and
+  fails worse -- the image is not where you look for it and nothing on screen
+  says why, so it reads as a failed restore. Consequence: a trashed image is
+  already not a member, so no group read filters `deleted_at`. The group card's
+  own delete icon asks first and then trashes the members, which is safe to
+  offer only because Trash is the way back; `Ungroup` is the twin that keeps
+  every picture -- named that rather than "Dissolve", which sounds like the
+  images go with it
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 
