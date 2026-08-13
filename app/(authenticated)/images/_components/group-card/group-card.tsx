@@ -26,6 +26,9 @@ interface GroupCardProps {
   onRename: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
+  /** Something in the grid is selected (#325). A group cannot join a selection,
+   *  so it steps out of the way rather than offering its own verbs. */
+  selectionActive?: boolean
 }
 
 /**
@@ -53,6 +56,7 @@ export function GroupCard({
   onRename,
   onDissolve,
   onTrash,
+  selectionActive,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
   // the rows the grid is currently rendering, and a group's members are
@@ -120,8 +124,13 @@ export function GroupCard({
       status="complete"
       objectFit="contain"
       alwaysShowOverlay
-      overlayActionsLeft={moreButton}
-      overlayActions={deleteButton}
+      /* Dimmed and inert while a selection is up, the same way an unselected
+         image card is. A group can never be part of the selection, and opening
+         one navigates *and* drops the selection on the way in -- so a stray
+         click here used to throw away the picking that was in progress. */
+      dimmed={selectionActive}
+      overlayActionsLeft={selectionActive ? undefined : moreButton}
+      overlayActions={selectionActive ? undefined : deleteButton}
       /* Blank, deliberately. An empty group said so in white text under a
          folder icon, which glared -- and said nothing the card was not already
          saying twice, in the name and in "0 images". Still a fallback rather
@@ -131,7 +140,7 @@ export function GroupCard({
       /* The slot an image card fills with the model name. Same corner, same
          register: it says what kind of thing the picture is standing for. */
       imageOverlay={<span className={styles.kind}>Image group</span>}
-      onClick={() => onOpen(group)}
+      onClick={selectionActive ? undefined : () => onOpen(group)}
     >
       {showInfo && (
         <div className={styles.caption}>

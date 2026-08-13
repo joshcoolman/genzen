@@ -127,6 +127,7 @@ export function ImageGallery({
                   onRename={onRenameGroup ?? (() => {})}
                   onDissolve={onDissolveGroup ?? (() => {})}
                   onTrash={onTrashGroup ?? (() => {})}
+                  selectionActive={selectionActive}
                 />
               )
             }

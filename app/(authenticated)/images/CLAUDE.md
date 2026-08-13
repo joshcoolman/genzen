@@ -87,7 +87,10 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   used to feed `setAutoRefImageIds`, so looking through images changed what the
   next prompt was built from with nothing in the panel saying so. **Group,
   pending and failed cards are not selectable** -- only `ImageCard` takes the
-  selection props, and a group's verbs are its own
+  selection props, and a group's verbs are its own. **A group card is dimmed
+  and inert while a selection is up**: it cannot join one, and `openGroup`
+  drops the selection on the way in, so a stray click threw away the picking
+  that was in progress
 - **A click opens the preview, and the lightbox moved out.** The click used to
   open the lightbox here, and it felt disorienting for a reason that took a
   while to name: an overlay that covers everything costs nothing while
