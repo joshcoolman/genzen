@@ -31,7 +31,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     uploadFiles,
     selection,
     selectMode,
-    toggleSelectMode,
     isBatchDeleting,
     deleteSelected,
     lightbox,
@@ -72,8 +71,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           prefs={prefs}
           panelOpen={dock.open}
           onTogglePanel={() => dock.setOpen(!dock.open)}
-          selectMode={selectMode}
-          onToggleSelectMode={toggleSelectMode}
           onUpload={uploadFiles}
           groupName={activeGroup?.name}
           onLeaveGroup={leaveGroup}

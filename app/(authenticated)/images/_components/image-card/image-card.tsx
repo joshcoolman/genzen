@@ -206,16 +206,29 @@ export function ImageCard({
               what made *this* picture, so it belongs to the picture. In the
               caption it read as a title for the prompt underneath it. */}
           <span className={styles.model}>{badge}</span>
-          {/* The tick the select circle used to carry, in the corner it used to
-              sit in -- on every card while the mode is on, grey until it is
-              taken. The border says "selected" too, but only against its
-              neighbours; a card selected on its own has nothing to compare
-              to. */}
-          {selectionActive && (
-            <CheckCircle2
+          {/* The tick, and the way *into* select mode (#325). On every card
+              always, not only once the mode is on: it is the only thing saying
+              a card can be picked, and a toolbar toggle asked you to turn a
+              mode on before you could touch the picture you were looking at.
+              Grey until taken. The border says "selected" too, but only
+              against its neighbours -- a card selected on its own has nothing
+              to compare to.
+
+              Above the full-card overlay, so a click on the tick and a click
+              on the card do the same thing once the mode is on. */}
+          {onSelect && (
+            <button
+              type="button"
               className={cx(styles.selectTick, selected && styles.selectTickOn)}
-              aria-hidden="true"
-            />
+              aria-pressed={selected}
+              aria-label={selected ? 'Deselect image' : 'Select image'}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelect(img.id, e.shiftKey)
+              }}
+            >
+              <CheckCircle2 className={styles.selectTickIcon} />
+            </button>
           )}
         </>
       }

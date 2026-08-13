@@ -68,16 +68,26 @@ component that runs `listGalleryImages()` and hands the rows to `view.tsx` as
   endpoint from whether the set is empty, so "edit" is a detail of building the
   request. The lightbox used to offer a source pencil too; #271 removed it
   rather than have two answers to "how do I put an image in"
-- **Selection is a mode, not a circle per card (#284).** The toolbar toggle
-  turns the whole card into one target. The reason is target size: the use that
-  justifies selection is bulk, and per-card circles make clearing twelve of
-  sixteen twelve precise clicks on a small corner. The cost is modality, paid
-  for by a toggle that reads as on and by Escape always leaving -- but never
-  automatically after a batch action, because "delete three, then select four
-  more" is a real pattern and auto-exit silently changes what the next click
-  does. Selecting attaches nothing to the next generation; it used to feed
-  `setAutoRefImageIds`, so looking through images changed what the next prompt
-  was built from with nothing in the panel saying so
+- **Selection is a mode, and the mode is the selection (#284, #325).**
+  `selectMode` is not state -- it is `selection.count > 0`. **The tick in each
+  card's bottom-left is on every card always, and clicking one is the way in**;
+  Deselect all and Escape are the way out, because emptying the selection is
+  the only thing leaving could mean. There is no toolbar toggle: it asked you
+  to declare an intention before you could touch the picture you were looking
+  at, and it was also the only thing saying selection existed. Once anything is
+  picked the rest dim and the whole card is one target -- target size is why
+  this is a mode at all, since the use that justifies selection is bulk and
+  per-card circles make clearing twelve of sixteen twelve precise clicks on a
+  small corner. **A batch action now leaves the mode**, reversing #284's rule
+  that it must not: that rule protected a modal entry point, where after an
+  auto-exit the affordance was gone and a click meant something different with
+  nothing on screen saying so. The tick never goes away now -- select is the
+  corner, open is the image -- so picking up again after a delete is the one
+  click it always was. Selecting attaches nothing to the next generation; it
+  used to feed `setAutoRefImageIds`, so looking through images changed what the
+  next prompt was built from with nothing in the panel saying so. **Group,
+  pending and failed cards are not selectable** -- only `ImageCard` takes the
+  selection props, and a group's verbs are its own
 - **A click opens the preview, and the lightbox moved out.** The click used to
   open the lightbox here, and it felt disorienting for a reason that took a
   while to name: an overlay that covers everything costs nothing while

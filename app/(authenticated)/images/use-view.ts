@@ -265,64 +265,62 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const selection = useSelection({ items: images.map((img) => img.id) })
 
-  // Select mode (#284). A mode rather than a circle per card: the use that
-  // justifies selection is bulk, and per-card circles make clearing twelve of
-  // sixteen twelve precise clicks on a small corner. The cost is modality, paid
-  // for by a toolbar toggle that reads as on and by Escape always leaving.
-  //
-  // Selecting attaches nothing to the next generation. It used to feed
-  // `setAutoRefImageIds`, so looking through images silently changed what the
-  // next prompt was built from; references have their own surface, which says
-  // what it has collected.
-  const [selectMode, setSelectMode] = useState(false)
-
-  const exitSelectMode = useCallback(() => {
-    setSelectMode(false)
-    selection.clearSelection()
-  }, [selection])
-
-  const toggleSelectMode = useCallback(() => {
-    if (selectMode) {
-      exitSelectMode()
-      return
-    }
-    setSelectMode(true)
-  }, [selectMode, exitSelectMode])
+  /**
+   * Select mode is a selection, not a switch (#325).
+   *
+   * A mode rather than a circle per card is still right -- the use that
+   * justifies selection is bulk, and per-card circles make clearing twelve of
+   * sixteen twelve precise clicks on a small corner. What changed is the way
+   * in: the tick on each card, which is on every card always. Turning a mode on
+   * from the toolbar asked you to declare an intention before you could touch
+   * the picture you were already looking at, and the toggle was also the only
+   * thing saying selection existed.
+   *
+   * So there is no mode state. Being in the mode *is* having something picked;
+   * Deselect all and Escape are the way out because emptying the selection is
+   * the only thing leaving could mean.
+   *
+   * This retires the rule that the mode must survive a batch action ("delete
+   * three, then select four more"). That rule protected a modal entry point:
+   * after an auto-exit the affordance was gone and a click on a card meant
+   * something different with nothing on screen saying so. The tick never goes
+   * away now -- select is the corner, open is the image -- so picking up again
+   * after a delete is the one click it was before.
+   *
+   * Selecting attaches nothing to the next generation. It used to feed
+   * `setAutoRefImageIds`, so looking through images silently changed what the
+   * next prompt was built from; references have their own surface, which says
+   * what it has collected.
+   */
+  const selectMode = selection.count > 0
 
   /**
-   * Open a group -- and leave select mode on the way in.
+   * Open a group -- dropping the selection on the way in.
    *
-   * The one automatic exit, and it does not contradict the rule below it. That
-   * rule is about *batch actions*: "delete three, then select four more" is a
-   * real pattern, so finishing a batch must not silently change what the next
-   * click does. This is navigation. Selecting a few images, filing them into a
-   * group and then clicking that group is one continuous intention, and it ends
-   * with wanting to be inside the group rather than still picking things.
-   * Carrying the mode across would also carry a selection of images the new
-   * view does not show.
+   * Selecting a few images, filing them into a group and then clicking that
+   * group is one continuous intention, and it ends with wanting to be inside
+   * the group rather than still picking things. Carrying it across would also
+   * carry a selection of images the new view does not show.
    *
    * Defined here rather than beside `leaveGroup` because it is the piece that
-   * needs select mode; leaving a group has nothing to undo.
+   * needs the selection; leaving a group has nothing to undo.
    */
   const openGroup = useCallback(
     (group: ImageGroupSummary) => {
-      exitSelectMode()
+      selection.clearSelection()
       router.push(`/images?group=${group.id}`)
     },
-    [exitSelectMode, router],
+    [selection, router],
   )
 
-  // Always, and never automatically after a batch action: "delete three, then
-  // select four more" is a real pattern, and auto-exit punishes it by silently
-  // changing what the next click does.
   useEffect(() => {
     if (!selectMode) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') exitSelectMode()
+      if (e.key === 'Escape') selection.clearSelection()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectMode, exitSelectMode])
+  }, [selectMode, selection])
 
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)
 
@@ -331,7 +329,8 @@ export function useView(initial: Array<SavedAiImage>) {
     setIsBatchDeleting(true)
     try {
       for (const img of targets) await gallery.deleteImage(img)
-      // The mode stays on -- see exitSelectMode.
+      // Which also leaves the mode. The ticks are still on every card, so
+      // picking up again is one click -- see the note on `selectMode`.
       selection.clearSelection()
     } finally {
       setIsBatchDeleting(false)
@@ -414,8 +413,8 @@ export function useView(initial: Array<SavedAiImage>) {
       const id = await groups.create(name, imageIds)
       if (!id) return
       await gallery.refresh({ silent: true })
+      // Clearing is leaving now -- the images are filed, the picking is over.
       selection.clearSelection()
-      setSelectMode(false)
     },
     [groups, gallery, selection, closeGroupFlow],
   )
@@ -573,7 +572,6 @@ export function useView(initial: Array<SavedAiImage>) {
     uploadFiles,
     selection,
     selectMode,
-    toggleSelectMode,
     isBatchDeleting,
     deleteSelected,
     lightbox,
