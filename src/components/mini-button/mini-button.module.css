@@ -2,11 +2,15 @@
    it, bordered enough to read as pressable. */
 
 .root {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-2) var(--space-6);
-  border: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+  /* The full border, matching Textarea and Input rather than a 60% wash of it.
+     The chips sit directly under the prompt field they act on, and two weights
+     of the same line an inch apart reads as one of them being unfinished. */
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
   background: transparent;
   font-size: var(--text-3xs);
@@ -17,8 +21,10 @@
     color var(--duration-normal) var(--ease-in-out);
 }
 
+/* No border change: the border is now the same full-strength line the prompt
+   field draws, so there is nothing left to brighten. Ground and ink carry the
+   hover. */
 .root:hover:not(:disabled) {
-  border-color: var(--border);
   background: var(--surface-raised);
   color: var(--text);
 }
@@ -34,9 +40,17 @@
   background: color-mix(in oklab, var(--bg) 80%, transparent);
 }
 
+/* Icon-only: a square target rather than a chip, at the height the labelled
+   chip already draws at, so the two sit on one row without a step. */
+.iconOnly {
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  justify-content: center;
+}
+
 /* State you cannot see is state you forget you set. */
 .indicated {
-  border-color: var(--border);
   color: var(--text);
 }
 
@@ -46,6 +60,15 @@
   height: 0.25rem;
   border-radius: 50%;
   background: var(--accent);
+}
+
+/* With no label there is no trailing edge to sit on, so the dot goes to the
+   corner instead of taking a slot in the row -- in the flow it would stretch
+   the square back into a chip, which is the shape we just left. */
+.iconOnly.indicated::after {
+  position: absolute;
+  top: -1px;
+  right: -1px;
 }
 
 .icon {

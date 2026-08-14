@@ -12,12 +12,19 @@ import {
 import { useSystemInstructions } from '#/features/ai-images/hooks/use-system-instructions'
 
 /**
- * The gear above the prompt list (#272): a popover holding the one block of
+ * The gear on the generator's header (#272): a popover holding the one block of
  * instructions prepended to every prompt sent to FAL.
  *
- * It sits in `GeneratorPanel` rather than the Images dock header because Canvas
- * renders the same panel and has no such header -- the gear would have existed
- * on one route while the prefix silently applied to both.
+ * Icon-only. The label said "Instructions", which is the widest thing that was
+ * ever going to sit in a 20rem panel's header, and a gear beside a title is
+ * already the universal reading.
+ *
+ * **Every surface that renders `GeneratorPanel` must also render this**, and
+ * there are three: the Images dock (desktop and mobile) and the Canvas dialog.
+ * It used to live inside the panel for exactly that reason. It moved out when
+ * the header became its home, so the rule that was structural is now a rule you
+ * have to keep -- the failure it guards against is the gear existing on one
+ * route while the prefix silently applies to all of them.
  *
  * The dot is the whole safety mechanism. Hidden and persistent is the point;
  * hidden, persistent and unmarked is a paragraph typed on Tuesday quietly
@@ -35,9 +42,7 @@ export function SystemInstructionsButton() {
             indicator={isSet}
             title={isSet ? 'System instructions (set)' : 'System instructions'}
             aria-label="System instructions"
-          >
-            Instructions
-          </MiniButton>
+          />
         }
       />
       <PopoverContent align="end" side="bottom" className={styles.popover}>

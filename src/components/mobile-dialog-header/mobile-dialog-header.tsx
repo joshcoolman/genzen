@@ -1,10 +1,13 @@
 import { X } from 'lucide-react'
 import { DialogTitle } from '../dialog/dialog'
 import styles from './mobile-dialog-header.module.css'
+import type { ReactNode } from 'react'
 
 interface MobileDialogHeaderProps {
   title: string
   onClose: () => void
+  /** Optional control between the title and the close, e.g. a settings gear. */
+  action?: ReactNode
 }
 
 /**
@@ -26,10 +29,12 @@ interface MobileDialogHeaderProps {
 export function MobileDialogHeader({
   title,
   onClose,
+  action,
 }: MobileDialogHeaderProps) {
   return (
     <div className={styles.bar}>
       <DialogTitle className={styles.title}>{title}</DialogTitle>
+      {action}
       <button
         type="button"
         onClick={onClose}

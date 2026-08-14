@@ -24,12 +24,16 @@ interface PromptListProps {
   // Index of the prompt currently being enhanced (shows spinner on that row)
   enhancingPromptIndex?: number | null
   /**
-   * Rendered at the right of the strip above the list, opposite Clear all.
-   * A slot rather than a prop per occupant: what goes there today is system
-   * instructions (#272), which are emphatically not a prompt and must not
-   * appear in this component's vocabulary.
+   * Rendered at the right of the Add prompt row, opposite the button.
+   * A slot rather than a prop per occupant: what goes there today is Generate
+   * prompt, which is a way of *filling* a prompt rather than a prompt, and must
+   * not appear in this component's vocabulary.
+   *
+   * It sat above the list until the strip up there was down to Clear all -- two
+   * chips over an empty field read as the panel's controls rather than as the
+   * list's, and one of them acts on a row that does not exist yet.
    */
-  headerSlot?: ReactNode
+  actionSlot?: ReactNode
 }
 
 export function PromptList({
@@ -44,7 +48,7 @@ export function PromptList({
   },
   onClearPrompts,
   enhancingPromptIndex,
-  headerSlot,
+  actionSlot,
 }: PromptListProps) {
   // Only a multi-row list gets Clear. Tying it to "is there any text" made it
   // appear on the first keystroke in an empty field, shifting every control
@@ -66,7 +70,6 @@ export function PromptList({
             Clear all
           </button>
         )}
-        {headerSlot}
       </div>
       {prompts.map((promptText, index) => {
         const isEnhancing = enhancingPromptIndex === index
@@ -102,6 +105,7 @@ export function PromptList({
         <MiniButton icon={<Plus />} onClick={onAddPrompt} disabled={disabled}>
           Add prompt
         </MiniButton>
+        {actionSlot}
       </div>
     </div>
   )

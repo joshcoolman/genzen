@@ -1,27 +1,24 @@
 /* The stack of prompt textareas, each with a clear/remove button top-right and
    an Enhance chip bottom-right, plus the dashed row that adds more. */
 
+/* Takes the containing panel's rhythm where there is one -- see
+   `generator-panel.module.css`. The fallback is what this always drew. */
 .root > :where(*:not(:last-child)) {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--panel-rhythm, var(--space-8));
 }
 
-/* The strip does not resize when Clear all appears -- typing in an empty prompt
-   used to push every control below it down mid-sentence. Its height comes from
-   the header slot, which is always occupied, with the 1rem floor left over from
-   when the row could be empty. */
+/* No reserved height. The 1rem floor was here because Clear all used to appear
+   on the first keystroke in an empty field, shifting every control below it
+   mid-sentence. It is now tied to `prompts.length > 1`, so the only thing that
+   can summon it is Add prompt -- which moves the whole list anyway, by a whole
+   textarea. Holding 1rem open bought nothing and cost the panel its tightest
+   gap: an empty strip between the header and the first prompt. */
 .clearRow {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: var(--space-8);
-  min-height: 1rem;
 }
 
-/* Pushed left so the strip reads Clear all / Generate prompt / gear, while the
-   row stays `flex-end` -- with Clear absent (a single prompt) the others must
-   not slide over to where Clear would have been. */
 .clearAll {
-  margin-right: auto;
   border: none;
   background: transparent;
   font-size: var(--text-2xs);
@@ -95,6 +92,19 @@
   right: var(--space-6);
 }
 
+/* Add prompt and the action slot split the row evenly, each centring its own
+   label. Two ways of filling a prompt, given equal weight and the panel's full
+   width, rather than a pair of chips marooned at opposite edges.
+
+   `> button` rather than `> *`: the slot's occupant renders its chip alongside
+   a Dialog, and only the chip is in the row. */
 .actions {
   display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.actions > button {
+  flex: 1;
+  justify-content: center;
 }

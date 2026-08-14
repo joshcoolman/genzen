@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { PromptList } from '../prompt-list/prompt-list'
 import { GeneratePromptButton } from '../generate-prompt-dialog/generate-prompt-dialog'
-import { SystemInstructionsButton } from '../system-instructions-button/system-instructions-button'
 import { ExistingImagePicker } from '../existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../model-selector/model-selector'
 import styles from './generator-panel.module.css'
@@ -125,17 +124,16 @@ export function GeneratorPanel({
         onClearPrompts={generator.clearPrompts}
         onEnhancePrompt={generator.handleEnhancePrompt}
         enhancingPromptIndex={generator.enhancingPromptIndex}
-        /* Instructions for every prompt, not a prompt -- rendered into the
-           list's header strip from here so PromptList never learns about them
-           (#272), and so both Images and Canvas get the control. */
-        headerSlot={
-          <>
-            <GeneratePromptButton
-              onAdd={addGeneratedPrompt}
-              disabled={generator.loading}
-            />
-            <SystemInstructionsButton />
-          </>
+        /* Filling a prompt is not a prompt, so it is passed in rather than
+           built in: PromptList never learns that prompts can be generated.
+           Beside Add prompt because both are ways of getting a row filled.
+           System instructions are not here at all any more -- they are the
+           header's, on all three surfaces that render this panel. */
+        actionSlot={
+          <GeneratePromptButton
+            onAdd={addGeneratedPrompt}
+            disabled={generator.loading}
+          />
         }
       />
 
@@ -144,8 +142,12 @@ export function GeneratorPanel({
           strip refusing an image was how staged work got deleted by ticking a
           smaller model. It still disables with no model selected at all --
           there is nothing to attach images to. */}
+      {/* No "Reference images" heading. The strip is a row of thumbnails and a
+          + box directly under the prompt, which is where an image would be
+          expected in a generate panel; the label was naming the obvious and
+          spending a line of a 20rem column to do it. The picker it opens says
+          what it is. */}
       <div className={styles.refs}>
-        <p className={styles.refsLabel}>Reference images</p>
         <RefImageStrip
           images={generator.refImages}
           onAdd={() => {
