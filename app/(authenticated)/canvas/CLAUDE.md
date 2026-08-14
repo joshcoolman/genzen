@@ -34,9 +34,11 @@ generation could evict it.
 
 1. Paste / drop / upload -> `saveFileToLibrary` (via `useUserImages.create()`)
    -> `addToCanvas` with the placeholder's position, eagerly
-2. Library pick, or a paste of an image copied from the Cmd-F overlay
-   (`addImageByRecordId`, #213) -> `addToCanvas` with the masonry position,
-   eagerly. Neither uploads: the row already exists, and only membership is new
+2. Library pick -> `addToCanvas` with the masonry position, eagerly. It does
+   not upload: the row already exists, and only membership is new. A paste of
+   an image copied inside the app used to land here too (`addImageByRecordId`,
+   #213); the clipboard no longer carries a record id, so pasting one uploads
+   the bytes as a new row (#348)
 3. AI generation -> the `canvas_images` row is written _at the insert_
    (`createPendingGeneration`'s `onCanvas`), unplaced; the client places it on
    load. Rows also carry `origin = 'canvas'` (#207) -- the canvas authored the

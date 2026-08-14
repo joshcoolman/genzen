@@ -72,15 +72,15 @@ earned; see `docs/DELTAS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                       |
-| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working              |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                       |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                        |
-| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL       |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav, search overlay |
-| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else              |
+| Surface    | Where                                                                             |
+| ---------- | --------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                 |
+| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working        |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                 |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                  |
+| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav           |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else        |
 
 `(authenticated)/_components/` also holds the generation UI Images and Canvas
 share (`generator-panel/` and what it composes). Anything one route renders
@@ -183,10 +183,11 @@ silent exception, because the value of "copy a neighbour" is that it is safe.
   added to its `PUBLIC_PATHS`, or it redirects to /login
 - There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone
 - FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.action.ts`
-- **Copying an image inside the app puts its record id on the clipboard, never
-  its bytes** (`src/lib/image-clipboard.ts`, #213). Both paste handlers accept
-  bytes and turn them into a new upload, so bytes would duplicate a row you
-  already own. A new paste target checks `readImageRef` before it looks for files
+- **Pasting an image you already own uploads it again, as a new row.** The
+  clipboard used to carry the record id instead (#213) so it did not; the only
+  thing that put an id there was the Cmd-F overlay, and both went in #348. If
+  copy-here-paste-there returns, put the id on the clipboard, not the bytes --
+  see #347
 - **A global overlay must take the keyboard, not share it**
   (`src/lib/keyboard-capture.ts`). Canvas replaces hotkeys-js's default
   text-field exemption with its own dialog check, so anything floating over a

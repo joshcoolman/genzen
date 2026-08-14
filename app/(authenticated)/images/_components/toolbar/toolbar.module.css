@@ -146,7 +146,7 @@
   flex-shrink: 0;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-8);
-  border: var(--border-width) solid var(--border-faint);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
   background: transparent;
   font: inherit;
@@ -159,8 +159,20 @@
 }
 
 .newGroup:hover {
-  background: var(--surface-raised);
+  background: var(--field-hover);
   color: var(--text);
+}
+
+/* Upload is the same chip as New group -- same border, size and hover. They sit
+   next to each other and are the same kind of thing: a thing you do to the
+   library, as opposed to the view toggles on the right. Composed rather than
+   sharing a class so either can move without dragging the other. */
+.upload {
+  composes: newGroup;
+}
+
+.uploadIcon {
+  composes: newGroupIcon;
 }
 
 .newGroupIcon {

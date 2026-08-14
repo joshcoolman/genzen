@@ -136,26 +136,29 @@ list once when the seed comes back full, so the grid is never short.
   has in mind, so it gets a blob preview immediately; the picker takes many at
   once and previews would land in upload order, so the cards would appear to
   shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
-- **The gallery is scoped, and scoping is not finding (#207).** Pills filter by
-  `origin`: Generations (made here) / Uploads / Canvas / All, defaulting to
-  Generations because this is where you generate. Filtering is client-side --
-  the route already holds every row. Making something widens the scope to where
-  it landed (`reveal()` in `use-view.ts`), or the card you just created would be
-  invisible in the view you made it in. Finding things is the Cmd-F overlay
-  (#213), which shipped with its own All / Generations / Uploads filter; if
-  these pills go untouched now, deleting them is the right outcome
-- **A pasted image can be a reference rather than an upload (#213).**
-  `_hooks/use-paste-reference.ts` claims the clipboard first, in the capture
-  phase, when it holds one of our record ids — the image joins the generator's
-  reference strip with no upload and no new row. It refuses out loud when the
-  selected model takes no references, because `addRefImages` caps silently at
-  `maxRefImages` and a paste that reports success and adds nothing is worse
-  than one that says no. Bytes from outside still go to `use-uploads.ts`
-- **Two localStorage namespaces.** `genzen:ai-images-prefs` holds sort, info
-  and the origin filter as one object -- `read()` picks fields out rather than
-  spreading, and `usePrefs` rewrites the key on mount, so `thumbSize` (dropped
-  in #284 along with the size switcher, since large was the only size ever
-  used) does not live on as a setting that appears to exist; the generator's
+- **Upload is the leftmost control, and where it puts things depends on where
+  you are (#348).** At top level it is a menu: _Upload_ lands loose, _Upload to
+  group_ picks a destination first and files the batch once the bytes are in,
+  leaving you at top level with a toast naming the group. **Inside a group
+  there is no menu** -- it goes straight to the file picker and the files land
+  in the open group. That is a deliberate exception to "one way to do things":
+  a group is a focus session, and asking which group you meant while standing
+  in one is ceremony. The menu is also absent with no groups to pick from.
+  Filing is one `addImagesToGroup` for the batch, not one per file -- the write
+  returns the group's new cover and count (#331), and per-file would pay for
+  that arithmetic every time
+- **The gallery has no origin filter, and no find (#348).** Pills scoped it by
+  `origin` until working with them on All made the point: a group is a scope you
+  made on purpose, and it is the only one worth having. `reveal()` went with
+  them -- it existed only so a card you just made was not filtered out of the
+  view you made it in. The `origin` column stays; Activity reads it. Cmd-F find
+  went in the same pass and is parked in #347
+- **Two localStorage namespaces.** `genzen:ai-images-prefs` holds sort and info
+  as one object -- `read()` picks fields out rather than spreading, and
+  `usePrefs` rewrites the key on mount, so `thumbSize` (dropped in #284) and
+  `originFilter` (dropped in #348) do not live on as settings that appear to
+  exist. A stored scope nothing renders would be worse than dead weight: it
+  would apply with no control on screen to undo it; the generator's
   open flag is an older single-value key, and its `pinned` twin is now dead
   storage that nothing reads. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount

@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef } from 'react'
 import { DescribeDialog } from './_components/describe-dialog/describe-dialog'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { VariationPromptsDialog } from './_components/variation-prompts-dialog/variation-prompts-dialog'
@@ -12,12 +13,18 @@ import { Experiment } from './_components/experiment/experiment'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
-import { ORIGIN_FILTER_LABELS } from './_hooks/use-prefs'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { ConfirmDialog } from '#/components'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
+  // Where an "Upload to group" batch is headed, held across the gap between
+  // choosing the group and the OS file dialog coming back. A ref, not state:
+  // nothing renders from it, and a re-render between the two would be a bug
+  // rather than a repaint.
+  const uploadTargetRef = useRef<string | null>(null)
+  const groupUploadInputRef = useRef<HTMLInputElement>(null)
+
   const {
     images,
     cells,
@@ -51,6 +58,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setGroupFlow,
     closeGroupFlow,
     startAddToGroup,
+    startUploadToGroup,
     addToGroup,
     createGroup,
     removeFromGroup,
@@ -72,6 +80,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           panelOpen={dock.open}
           onTogglePanel={() => dock.setOpen(!dock.open)}
           onUpload={uploadFiles}
+          /* Absent inside a group (the open one is the destination) and absent
+             with no groups to choose from -- either way the toolbar collapses
+             to a plain Upload button. */
+          onUploadToGroup={
+            !activeGroupId && groups.groups.length > 0
+              ? startUploadToGroup
+              : undefined
+          }
           groupName={activeGroup?.name}
           onLeaveGroup={leaveGroup}
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
@@ -119,11 +135,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           }
           onSetGroupCover={
             activeGroupId ? (img) => void setGroupCoverImage(img) : undefined
-          }
-          emptyScopeLabel={
-            activeGroupId || prefs.originFilter === 'all'
-              ? undefined
-              : ORIGIN_FILTER_LABELS[prefs.originFilter]
           }
           selectionActive={selectMode}
           isSelected={selection.isSelected}
@@ -191,6 +202,36 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,
           or confirm the two that change what exists. */}
+      {/* The destination for an upload that has not happened yet (#348).
+          Picking is a user gesture, so clicking the file input from inside
+          `onPick` opens the OS dialog -- doing it a tick later would not. */}
+      <input
+        ref={groupUploadInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          e.target.value = ''
+          const groupId = uploadTargetRef.current
+          uploadTargetRef.current = null
+          if (files.length > 0 && groupId) uploadFiles(files, groupId)
+        }}
+      />
+      <GroupPickerDialog
+        open={groupFlow?.kind === 'upload-target'}
+        groups={groups.groups}
+        count={0}
+        onPick={(groupId) => {
+          closeGroupFlow()
+          uploadTargetRef.current = groupId
+          groupUploadInputRef.current?.click()
+        }}
+        onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
+        onCancel={closeGroupFlow}
+      />
+
       <GroupPickerDialog
         open={groupFlow?.kind === 'pick'}
         groups={groups.groups}

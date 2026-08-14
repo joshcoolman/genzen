@@ -5,17 +5,20 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronLeft,
+  FolderInput,
   FolderPlus,
   Info,
   PanelRight,
   Upload,
 } from 'lucide-react'
-import { ORIGIN_FILTERS, ORIGIN_FILTER_LABELS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
 import type { ReactElement } from 'react'
 import {
-  SingleSelect,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -52,6 +55,11 @@ interface ToolbarProps {
   panelOpen: boolean
   onTogglePanel: () => void
   onUpload: (files: Array<File>) => void
+  /**
+   * Open the destination picker for an upload (#348). Absent when there is
+   * nothing to pick from, which is what collapses the menu to a plain button.
+   */
+  onUploadToGroup?: () => void
   /** The group being worked in, or null at top level (#319). */
   groupName?: string | null
   onLeaveGroup: () => void
@@ -63,22 +71,76 @@ export function Toolbar({
   panelOpen,
   onTogglePanel,
   onUpload,
+  onUploadToGroup,
   groupName,
   onLeaveGroup,
   onNewGroup,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const openFilePicker = () => fileInputRef.current?.click()
 
   return (
     <div className={styles.toolbar}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        className={styles.fileInput}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          if (files.length > 0) onUpload(files)
+          e.target.value = ''
+        }}
+      />
+      {/* Upload is the leftmost control in both states, so its position never
+          moves. Inside a group the chevron follows it -- that is the same
+          navigation the browser's Back button performs, since the group is in
+          the URL.
+
+          No page title: the sidebar says which route this is, and "Images"
+          above a grid of images said nothing. The origin pills stood here
+          until #348 -- a group is a scope you made on purpose, and it turned
+          out to be the only one worth having. */}
       <div className={styles.scope}>
-        {/* Inside a group the pills are gone, not disabled (#319). A group is
-            already the scope, and two scoping controls stacked on each other
-            invite the question of which one wins -- with the honest answer
-            being that origin filtering has almost no use once things that
-            belong together are together. The chevron takes their place; it is
-            the same navigation the browser's Back button performs, since the
-            group is in the URL. */}
+        {/* The menu is top level only. Inside a group Upload goes straight to
+            the file picker and the files land in the open group: a group is a
+            focus session, and asking which group you meant while you are
+            standing in one is ceremony. A deliberate exception to "one way to
+            do things" -- and the only one, since `onUploadToGroup` is also
+            absent when there are no groups to pick from. */}
+        {onUploadToGroup ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button type="button" className={styles.upload}>
+                  <Upload className={styles.uploadIcon} />
+                  Upload
+                </button>
+              }
+            />
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={openFilePicker}>
+                <Upload />
+                Upload
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onUploadToGroup}>
+                <FolderInput />
+                Upload to group
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <button
+            type="button"
+            className={styles.upload}
+            onClick={openFilePicker}
+          >
+            <Upload className={styles.uploadIcon} />
+            Upload
+          </button>
+        )}
+
         {groupName ? (
           <button
             type="button"
@@ -90,34 +152,18 @@ export function Toolbar({
             <span className={styles.crumbName}>{groupName}</span>
           </button>
         ) : (
-          <>
-            {/* No page title: the sidebar says which route this is, the pills
-                say what is scoped, and "Images" above a grid of images said
-                neither. */}
-            <SingleSelect
-              options={ORIGIN_FILTERS.map((value) => ({
-                value,
-                label: ORIGIN_FILTER_LABELS[value],
-              }))}
-              value={prefs.originFilter}
-              // SingleSelect clears on re-click; here "no scope" is `all`, so a
-              // second click on the active pill widens rather than doing
-              // nothing.
-              onChange={(value) => prefs.setOriginFilter(value ?? 'all')}
-            />
-            {/* An empty group is a legitimate way to start: name the thing you
-                are about to work on, then generate into it. Without this the
-                only way to make one is to have already made something, which
-                is the wrong order for a place to work. */}
-            <button
-              type="button"
-              className={styles.newGroup}
-              onClick={onNewGroup}
-            >
-              <FolderPlus className={styles.newGroupIcon} />
-              New group
-            </button>
-          </>
+          /* An empty group is a legitimate way to start: name the thing you
+             are about to work on, then generate into it. Without this the only
+             way to make one is to have already made something, which is the
+             wrong order for a place to work. */
+          <button
+            type="button"
+            className={styles.newGroup}
+            onClick={onNewGroup}
+          >
+            <FolderPlus className={styles.newGroupIcon} />
+            New group
+          </button>
         )}
       </div>
       <TooltipProvider delay={300}>
@@ -154,28 +200,6 @@ export function Toolbar({
               aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
             >
               <Info className={styles.icon} />
-            </button>
-          </Labelled>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            className={styles.fileInput}
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? [])
-              if (files.length > 0) onUpload(files)
-              e.target.value = ''
-            }}
-          />
-          <Labelled label="Upload images">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className={styles.action}
-              aria-label="Upload images"
-            >
-              <Upload className={styles.icon} />
             </button>
           </Labelled>
 
