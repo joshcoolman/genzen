@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components'
+import { imageUrl } from '#/lib/image-url'
 
 interface GroupPickerDialogProps {
   open: boolean
@@ -68,17 +69,36 @@ export function GroupPickerDialog({
         </DialogHeader>
 
         <div className={styles.list}>
-          {groups.map((group) => (
-            <button
-              key={group.id}
-              type="button"
-              className={styles.row}
-              onClick={() => onPick(group.id)}
-            >
-              <span className={styles.name}>{group.name}</span>
-              <span className={styles.count}>{group.count}</span>
-            </button>
-          ))}
+          {groups.map((group) => {
+            // The same cover the card in the grid shows -- frozen if there is
+            // one, newest member otherwise -- so a row here and the tile it
+            // stands for are recognisably the same thing. An empty group has
+            // no picture and gets the ghosted slot the card's strip uses,
+            // which keeps every name on the same left edge.
+            const coverId = group.cover_image_id ?? group.preview_image_ids[0]
+            return (
+              <button
+                key={group.id}
+                type="button"
+                className={styles.row}
+                onClick={() => onPick(group.id)}
+              >
+                <span
+                  className={coverId ? styles.cover : styles.coverEmpty}
+                  style={
+                    coverId
+                      ? {
+                          backgroundImage: `url(${imageUrl(coverId, 'thumb')})`,
+                        }
+                      : undefined
+                  }
+                  aria-hidden="true"
+                />
+                <span className={styles.name}>{group.name}</span>
+                <span className={styles.count}>{group.count}</span>
+              </button>
+            )
+          })}
 
           {onNewGroup && (
             <button
