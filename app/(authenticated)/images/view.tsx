@@ -124,6 +124,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           workingByGroup={workingByGroup}
+          expandedGroupIds={groups.expandedIds}
+          groupMembers={groups.members}
+          onToggleGroupMembers={groups.toggleExpanded}
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
           /* Only with somewhere to move to. One group is the common early

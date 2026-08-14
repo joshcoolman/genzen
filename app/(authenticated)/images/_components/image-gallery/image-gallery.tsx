@@ -12,6 +12,11 @@ import { EmptyState, ImageGridSkeleton } from '#/components'
    and a control nobody touches is worse than no control. */
 const GRID_MIN_WIDTH = '200px'
 
+/** What a collapsed strip already shows -- `SWATCH_COUNT` in `GroupCard`. A
+ *  group with no more than this is entirely visible, so its strip is not a
+ *  toggle. */
+const VISIBLE_SWATCHES = 5
+
 /**
  * One cell of the grid: a loose image, or a group standing in for its members.
  *
@@ -49,6 +54,11 @@ interface ImageGalleryProps {
   /** Per-group count of work in flight (#350) -- generations queued, uploads
    *  still sending. Client-derived, so it costs nothing to keep current. */
   workingByGroup?: Record<string, number>
+  /** Which groups have their strip expanded to every member (#352), and the
+   *  ids to draw once the read lands. */
+  expandedGroupIds?: Set<string>
+  groupMembers?: Record<string, Array<string>>
+  onToggleGroupMembers?: (groupId: string) => void
   onOpenGroup?: (group: ImageGroupSummary) => void
   onRenameGroup?: (group: ImageGroupSummary) => void
   /** Undefined when there is nowhere to move to -- the card hides the item. */
@@ -80,6 +90,9 @@ export function ImageGallery({
   onAddReference,
   onUsePrompt,
   workingByGroup,
+  expandedGroupIds,
+  groupMembers,
+  onToggleGroupMembers,
   onOpenGroup,
   onRenameGroup,
   onMoveGroup,
@@ -115,12 +128,29 @@ export function ImageGallery({
           {cells.map((cell) => {
             if (cell.kind === 'group') {
               const { group } = cell
+              const expanded = expandedGroupIds?.has(group.id) ?? false
               return (
                 <GroupCard
                   key={group.id}
                   group={group}
                   showInfo={showInfo}
                   working={workingByGroup?.[group.id] ?? 0}
+                  expanded={expanded}
+                  members={expanded ? groupMembers?.[group.id] : undefined}
+                  /* Only when there is something the strip is not already
+                     showing: a group of five or fewer is entirely visible, so
+                     the click would expand to exactly what is there. The cover
+                     is not in the strip, hence the minus one. A selection makes
+                     the whole card inert. Either way the row falls back to a
+                     plain strip rather than a dead control. */
+                  onToggleMembers={
+                    onToggleGroupMembers &&
+                    !selectionActive &&
+                    group.count - (group.cover_image_id ? 1 : 0) >
+                      VISIBLE_SWATCHES
+                      ? () => onToggleGroupMembers(group.id)
+                      : undefined
+                  }
                   onOpen={onOpenGroup ?? (() => {})}
                   onRename={onRenameGroup ?? (() => {})}
                   onMove={onMoveGroup}

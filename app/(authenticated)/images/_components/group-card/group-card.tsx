@@ -40,6 +40,14 @@ interface GroupCardProps {
   onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
+  /** The strip is a toggle: expanded, it keeps its five columns and grows down
+   *  through every member (#352). Absent for an empty group -- there is nothing
+   *  to disclose. */
+  onToggleMembers?: () => void
+  expanded?: boolean
+  /** Every member, newest first, once the read lands. Undefined while it is in
+   *  flight, which draws ghosts at the count the card already knows. */
+  members?: Array<string>
   /** Something in the grid is selected (#325). A group cannot join a selection,
    *  so it steps out of the way rather than offering its own verbs. */
   selectionActive?: boolean
@@ -72,6 +80,9 @@ export function GroupCard({
   onMove,
   onDissolve,
   onTrash,
+  onToggleMembers,
+  expanded = false,
+  members,
   selectionActive,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
@@ -94,15 +105,44 @@ export function GroupCard({
    * The cover is already the picture above; repeating it as the first swatch
    * spends one of five slots on something directly overhead.
    */
-  const swatchIds = group.preview_image_ids
-    .filter((id) => id !== coverId)
-    .slice(0, SWATCH_COUNT)
-
-  // Padded to a fixed five so the row never reflows: a null is a ghosted slot.
-  const swatchSlots: Array<string | null> = Array.from(
-    { length: SWATCH_COUNT },
-    (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
+  const swatchIds = (
+    expanded ? (members ?? group.preview_image_ids) : group.preview_image_ids
   )
+    .filter((id) => id !== coverId)
+    .slice(0, expanded ? undefined : SWATCH_COUNT)
+
+  /**
+   * The row, padded to whole rows of five.
+   *
+   * Collapsed that is one row, and a null ghosts -- the strip keeps its shape
+   * on every card. Expanded it is however many rows the group needs, still five
+   * across, so the card grows *down* and nothing about its width or its first
+   * row changes (#352). The five you were looking at stay exactly where they
+   * were and more appear beneath them.
+   *
+   * While the read is in flight the length comes from `count`, so the card
+   * reaches its final height at once and the grid below it moves one time
+   * instead of twice.
+   */
+  const target = expanded
+    ? Math.max(group.count - (coverId ? 1 : 0), swatchIds.length)
+    : SWATCH_COUNT
+  const rows = Math.max(1, Math.ceil(target / SWATCH_COUNT))
+  const swatchSlots: Array<string | null> = Array.from(
+    { length: rows * SWATCH_COUNT },
+    (_, i) => swatchIds[i] ?? null,
+  )
+
+  const swatchRow = swatchSlots.map((id, i) => (
+    <span
+      key={id ?? `empty-${i}`}
+      className={id ? styles.swatch : styles.swatchEmpty}
+      style={
+        id ? { backgroundImage: `url(${imageUrl(id, 'thumb')})` } : undefined
+      }
+      aria-hidden="true"
+    />
+  ))
 
   const moreButton = (
     <DropdownMenu>
@@ -198,20 +238,35 @@ export function GroupCard({
               )}
             </span>
           </div>
-          <div className={styles.swatches}>
-            {swatchSlots.map((id, i) => (
-              <span
-                key={id ?? `empty-${i}`}
-                className={id ? styles.swatch : styles.swatchEmpty}
-                style={
-                  id
-                    ? { backgroundImage: `url(${imageUrl(id, 'thumb')})` }
-                    : undefined
-                }
-                aria-hidden="true"
-              />
-            ))}
-          </div>
+          {/* The row is the toggle (#352). A button rather than the card's own
+              click, which opens the group -- looking at what is in there and
+              going in there are different intentions, and the strip is the
+              part already about the contents. `stopPropagation` because it
+              sits inside the card's click target.
+
+              With nothing to disclose it stays a plain div, so the click falls
+              through to opening the group as it always did. A disabled button
+              would make an empty group's strip dead space instead. */}
+          {onToggleMembers ? (
+            <button
+              type="button"
+              className={styles.swatches}
+              aria-expanded={expanded}
+              aria-label={
+                expanded
+                  ? `Hide the contents of ${group.name}`
+                  : `Show all ${group.count} images in ${group.name}`
+              }
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleMembers()
+              }}
+            >
+              {swatchRow}
+            </button>
+          ) : (
+            <div className={styles.swatches}>{swatchRow}</div>
+          )}
         </div>
       )}
     </Thumbnail>
