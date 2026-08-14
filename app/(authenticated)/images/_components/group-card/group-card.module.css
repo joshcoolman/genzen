@@ -94,13 +94,6 @@ button.swatches:hover .swatchEmpty {
   opacity: 0.82;
 }
 
-/* Expanded, the row is many rows and the same gap would read as one dense
-   block. A little more air between rows than between columns keeps it legible
-   as a grid of pictures. */
-.swatchesExpanded {
-  row-gap: var(--space-8);
-}
-
 .swatch,
 .swatchEmpty {
   transition: opacity var(--dur-fast) var(--ease);

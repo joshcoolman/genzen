@@ -244,7 +244,8 @@ group` opens a dialog because a flyout of names commits you to picking one at
   see was an upload aimed at it
 - **Clicking the swatch strip grows it through the whole group (#352).** The
   strip keeps its five columns and its first row; the card just gets taller,
-  five across, for as many rows as the group needs. Strictly additive -- the
+  five across, for as many rows as the group needs, at one even gap in both
+  directions so it reads as a single grid. Strictly additive -- the
   five you were looking at do not move, more appear beneath them -- which is
   why the cover stays excluded in both states. The strip is the toggle rather
   than the card, because looking at what is inside and going inside are

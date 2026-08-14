@@ -18,7 +18,6 @@ import {
   Thumbnail,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
-import { cx } from '#/lib/utils'
 
 /** Five, filling the caption's width. A group with fewer members still draws
  *  five cells -- the empty ones ghost, which keeps the row the same shape on
@@ -251,10 +250,7 @@ export function GroupCard({
           {onToggleMembers ? (
             <button
               type="button"
-              className={cx(
-                styles.swatches,
-                expanded && styles.swatchesExpanded,
-              )}
+              className={styles.swatches}
               aria-expanded={expanded}
               aria-label={
                 expanded
