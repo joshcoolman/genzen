@@ -47,7 +47,11 @@
      controls that missed it sat in the same row as the ones that had it -- the
      stepper and the aspect field, side by side, one filled and one not. */
   --field: color-mix(in oklab, var(--surface-raised) 30%, transparent);
-  --field-hover: color-mix(in oklab, var(--surface-raised) 50%, transparent);
+  /* 70%, not the 50% the hand-written pairs used. Those were 50% over a
+     *transparent* resting state, so the hover was the whole fill arriving. Now
+     that resting is 30%, the same 50% is a fifth of a step and reads as
+     nothing. Hover is the only feedback these controls give. */
+  --field-hover: color-mix(in oklab, var(--surface-raised) 70%, transparent);
 
   /* ========================================
      INK -- two. There is no third: white at 70% for captions over images was
