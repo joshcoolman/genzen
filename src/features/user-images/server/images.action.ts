@@ -55,6 +55,16 @@ export interface CreateImageRecordInput {
   fileSize: number
   mimeType: string
   fileHash?: string
+  /**
+   * The group this upload belongs to, if the user picked one (#350).
+   *
+   * Set at insert rather than by a group write afterwards. Filing the batch
+   * once it landed meant every file appeared at top level first and was then
+   * taken away -- a burst of thumbnails thrown onto the grid and yanked. A row
+   * that is born in the group is never loose, so there is nothing to render
+   * and nothing to retract.
+   */
+  groupId?: string | null
 }
 
 export async function createImageRecord(
@@ -73,15 +83,24 @@ export async function createImageRecord(
   // paste-on-Images produce identical bytes, so the surface authored nothing
   // (#207). `source` still relies on its column default, which cannot be wrong
   // for the same reason.
+  // A group id from the browser is not trusted on its own: the subquery names
+  // the user too, so a guessed uuid resolves to null and the upload lands at
+  // top level rather than in a stranger's group.
   const row = first(
     await sql<Array<UserImage>>`
     insert into user_images
-      (user_id, title, description, storage_path, file_name, file_size,
-       mime_type, file_hash, origin)
+      (user_id, title, description, storage_path, file_size, file_name,
+       mime_type, file_hash, origin, group_id)
     values
       (${userId}, ${input.title}, ${input.description ?? null},
-       ${input.storagePath}, ${input.fileName}, ${input.fileSize},
-       ${input.mimeType}, ${input.fileHash ?? null}, 'upload')
+       ${input.storagePath}, ${input.fileSize}, ${input.fileName},
+       ${input.mimeType}, ${input.fileHash ?? null}, 'upload',
+       ${
+         input.groupId
+           ? sql`(select id from image_groups
+                  where id = ${input.groupId} and user_id = ${userId})`
+           : sql`null`
+       })
     returning ${userImageColumns()}
   `,
   )

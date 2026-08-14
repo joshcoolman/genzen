@@ -460,7 +460,7 @@ export function useView(initial: Array<SavedAiImage>) {
   const { uploadFiles: uploadFilesRaw } = useUploads(
     user.id,
     gallery,
-    addToGroup,
+    activeGroupId,
   )
 
   const uploadFiles = useCallback(

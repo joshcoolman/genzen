@@ -138,15 +138,21 @@ list once when the seed comes back full, so the grid is never short.
   shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
 - **Upload is the leftmost control, and where it puts things depends on where
   you are (#348).** At top level it is a menu: _Upload_ lands loose, _Upload to
-  group_ picks a destination first and files the batch once the bytes are in,
-  leaving you at top level with a toast naming the group. **Inside a group
-  there is no menu** -- it goes straight to the file picker and the files land
-  in the open group. That is a deliberate exception to "one way to do things":
-  a group is a focus session, and asking which group you meant while standing
-  in one is ceremony. The menu is also absent with no groups to pick from.
-  Filing is one `addImagesToGroup` for the batch, not one per file -- the write
-  returns the group's new cover and count (#331), and per-file would pay for
-  that arithmetic every time
+  group_ picks a destination first, leaving you at top level with a toast
+  naming the group. **Inside a group there is no menu** -- it goes straight to
+  the file picker and the files land in the open group, and a paste does the
+  same. That is a deliberate exception to "one way to do things": a group is a
+  focus session, and asking which group you meant while standing in one is
+  ceremony. The menu is also absent with no groups to pick from.
+  **A destination is set at insert, not by a write afterwards (#350).**
+  `createImageRecord` takes the group id and resolves it through a subquery
+  that names the user, so a guessed uuid lands the upload loose rather than in
+  a stranger's group. Filing the batch after the fact -- one
+  `addImagesToGroup` for the lot, which was the right instinct about round
+  trips -- meant every thumbnail appeared at top level and was pulled out
+  again a moment later. A row born in the group is never loose, so there is
+  nothing to render and nothing to retract, and the optimistic card carries
+  the same `group_id` from its first frame
 - **The gallery has no origin filter, and no find (#348).** Pills scoped it by
   `origin` until working with them on All made the point: a group is a scope you
   made on purpose, and it is the only one worth having. `reveal()` went with
@@ -233,8 +239,9 @@ group` opens a dialog because a flyout of names commits you to picking one at
   burst** -- when a group's in-flight count reaches zero -- because that is the
   only moment the strip has something new to show. Uploads are counted from
   their destination rather than from the rows: a file on its way up has no
-  `group_id` yet, it gets one when the batch is filed, so without that the one
-  kind of work the card could not see was an upload aimed at it
+  `group_id` until its row exists, so the destination is what is counted while
+  the bytes are going up -- without it the one kind of work the card could not
+  see was an upload aimed at it
 - **Move to group empties a group into another and drops it.** Membership is an
   exclusive column, so it is one update and a delete -- no new write plumbing,
   and `GroupWrite.gone` already carried the vanished group. Named for the images
