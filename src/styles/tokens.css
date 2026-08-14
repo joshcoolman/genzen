@@ -10,9 +10,15 @@
  * is allowlisted any more: the canvas subtree was the last exception and #229
  * step 3 closed it.
  *
- * Eighteen colors: three surfaces, two inks, one line, four accent, six
- * status/elevation, two utility. Small enough to hold in your head, which is
- * the property being bought. It was 153 properties across two competing
+ * Twenty-one colors: three surfaces, three control washes, two inks, one line,
+ * four accent, six status/elevation, two utility. Small enough to hold in your
+ * head, which is the property being bought.
+ *
+ * The washes (--field, --field-hover, --row-hover) are the one group that is
+ * not a flat value, and the distinction between them is load-bearing rather
+ * than cosmetic -- read their comments before reaching for either. A fill for a
+ * control on the page and a hover for a row inside a panel look
+ * interchangeable and are not: each is invisible where the other belongs. It was 153 properties across two competing
  * vocabularies -- a flattened Tailwind palette rather than a system -- where
  * ten names resolved to four values, so a divider and a panel fill were the
  * same variable and neither could move without the other (#229).
