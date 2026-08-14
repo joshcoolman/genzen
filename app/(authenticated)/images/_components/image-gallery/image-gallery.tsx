@@ -36,6 +36,9 @@ export type GalleryCell =
 interface ImageGalleryProps {
   cells: Array<GalleryCell>
   imageUrls: Record<string, string>
+  /** A card's React key, which is not its id (#353) -- a generation's row
+   *  changes id mid-life and must keep the tile it already has. */
+  keyFor?: (id: string) => string
   loadingGallery: boolean
   showInfo?: boolean
   onDelete: (img: SavedAiImage) => void
@@ -84,6 +87,7 @@ export function ImageGallery({
   onDownload,
   onDescribe,
   onAnimate,
+  keyFor,
   onGenerateVariations,
   onOpen,
   onExperiment,
@@ -165,7 +169,7 @@ export function ImageGallery({
             if (img.status === 'pending') {
               return (
                 <PendingImageCard
-                  key={img.id}
+                  key={keyFor?.(img.id) ?? img.id}
                   prompt={img.generation_metadata?.prompt ?? ''}
                   model={getModelName(img.generation_metadata?.model ?? '')}
                   isVariation={
@@ -184,7 +188,7 @@ export function ImageGallery({
             if (img.status === 'failed') {
               return (
                 <FailedImageCard
-                  key={img.id}
+                  key={keyFor?.(img.id) ?? img.id}
                   img={img}
                   onDelete={onDelete}
                   onRetry={onRetry}
@@ -194,7 +198,7 @@ export function ImageGallery({
 
             return (
               <ImageCard
-                key={img.id}
+                key={keyFor?.(img.id) ?? img.id}
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 objectFit="contain"

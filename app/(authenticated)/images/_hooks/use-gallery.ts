@@ -42,6 +42,21 @@ export interface GalleryState {
   deleteImage: (img: SavedAiImage) => Promise<void>
   /** The selection drawer's Trash: one round trip for the whole set (#329). */
   deleteImages: (images: Array<SavedAiImage>) => Promise<void>
+  /**
+   * The React key for a row, which is **not** its id (#353).
+   *
+   * A generation's card is born with an optimistic id and swaps it for its
+   * record id the moment the submit answers. The id was the key, so React saw
+   * one card removed and a different one added, and threw away a mounted tile
+   * to build an identical one -- four times in a three-image burst, at the
+   * busiest moment in the app. The comment on that swap claimed it was
+   * invisible; it was a remount.
+   *
+   * So the card keeps the identity it was born with, and the id is free to
+   * change underneath it. A row that never had an optimistic card -- anything
+   * that arrived from the server -- is its own key.
+   */
+  keyFor: (id: string) => string
   /** Patch rows already on screen -- a group write's half of the grid (#331).
    *  Membership is a column on the image, so filing pictures into a group is
    *  a field change on rows this hook already holds, not a re-read. */
@@ -89,6 +104,11 @@ export function useGallery({
   // The server component already ran the read, so there is nothing to wait for
   // on first paint. A non-silent refresh can still turn this on.
   const [loadingGallery, setLoadingGallery] = useState(false)
+
+  // record id -> the optimistic id its card was born with. Survives the list
+  // replacement a refresh does, which is the point: the server's row for a
+  // generation must key the same as the card already on screen for it.
+  const bornAs = useRef<Record<string, string>>({})
 
   const loadSavedImages = useCallback(
     async (options?: RefreshOptions) => {
@@ -170,7 +190,15 @@ export function useGallery({
     next: (card: SavedAiImage) => SavedAiImage,
   ) {
     setSavedImages((prev) =>
-      prev.map((i) => (i.id === optimisticId ? next(i) : i)),
+      prev.map((i) => {
+        if (i.id !== optimisticId) return i
+        const swapped = next(i)
+        // Remember what this row's card was called before the swap, so it
+        // keeps its React key and its DOM node (#353).
+        if (swapped.id !== optimisticId)
+          bornAs.current[swapped.id] = optimisticId
+        return swapped
+      }),
     )
   }
 
@@ -178,11 +206,14 @@ export function useGallery({
     setSavedImages((prev) => prev.filter((i) => i.id !== optimisticId))
   }
 
+  const keyFor = useCallback((id: string) => bornAs.current[id] ?? id, [])
+
   function setImageUrl(id: string, url: string) {
     setImageUrls((prev) => ({ ...prev, [id]: url }))
   }
 
   function forgetImages(ids: Set<string>) {
+    for (const id of ids) delete bornAs.current[id]
     setSavedImages((prev) => prev.filter((i) => !ids.has(i.id)))
     setImageUrls((prev) => {
       const next = { ...prev }
@@ -282,6 +313,7 @@ export function useGallery({
     images: savedImages,
     imageUrls,
     loadingGallery,
+    keyFor,
     deleteImage,
     deleteImages,
     patchImages,
