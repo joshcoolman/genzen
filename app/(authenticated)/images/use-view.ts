@@ -11,7 +11,7 @@ import { useLightbox } from './_hooks/use-lightbox'
 import { useVariations } from './_hooks/use-variations'
 import { usePasteReference } from './_hooks/use-paste-reference'
 import { useGroups } from './_hooks/use-groups'
-import type { ImageGroupSummary } from './_hooks/use-groups'
+import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
@@ -387,14 +387,47 @@ export function useView(initial: Array<SavedAiImage>) {
     [groups.groups.length],
   )
 
+  /**
+   * The gallery's half of a group write (#331).
+   *
+   * Membership is a column on the image row and the gallery already holds
+   * every row, so a write that moved pictures is a field patch here, not a
+   * re-read. The group half is `useGroups`' own; both land in the same tick,
+   * which is what makes filing four images look instant instead of pausing
+   * for three serialised round trips.
+   */
+  const applyGroupWrite = useCallback(
+    (write: GroupWrite | null) => {
+      // A failure has already toasted and re-read the groups. The gallery
+      // re-reads too rather than this trying to remember what it moved.
+      if (!write) {
+        void gallery.refresh({ silent: true })
+        return
+      }
+      if (write.moved) {
+        gallery.patchImages(write.moved.ids, { group_id: write.moved.groupId })
+      }
+      if (write.trashed.length > 0) gallery.forgetImages(write.trashed)
+    },
+    [gallery],
+  )
+
+  /**
+   * Filing images into a group: the pictures leave top level on the click.
+   *
+   * The optimistic half is the cheap one -- membership is a field, and the
+   * grid can act on it before the server answers. The group card's new cover
+   * and count arrive with the response a moment later, because that is the
+   * arithmetic worth taking from the database rather than reproducing here.
+   */
   const addToGroup = useCallback(
     async (groupId: string, imageIds: Array<string>) => {
       closeGroupFlow()
-      await groups.addTo(groupId, imageIds)
-      await gallery.refresh({ silent: true })
+      gallery.patchImages(imageIds, { group_id: groupId })
       selection.clearSelection()
+      applyGroupWrite(await groups.addTo(groupId, imageIds))
     },
-    [groups, gallery, selection, closeGroupFlow],
+    [groups, gallery, selection, closeGroupFlow, applyGroupWrite],
   )
 
   /**
@@ -413,22 +446,24 @@ export function useView(initial: Array<SavedAiImage>) {
   const createGroup = useCallback(
     async (name: string, imageIds: Array<string>) => {
       closeGroupFlow()
-      const id = await groups.create(name, imageIds)
-      if (!id) return
-      await gallery.refresh({ silent: true })
+      // Not optimistic, unlike `addToGroup`: there is no group id to move the
+      // images into until the insert answers, and hiding them under a
+      // placeholder id would empty their space with no card standing in it.
+      // One round trip is the whole win here.
+      applyGroupWrite(await groups.create(name, imageIds))
       // Clearing is leaving now -- the images are filed, the picking is over.
       selection.clearSelection()
     },
-    [groups, gallery, selection, closeGroupFlow],
+    [groups, selection, closeGroupFlow, applyGroupWrite],
   )
 
   const removeFromGroup = useCallback(
     async (imageIds: Array<string>) => {
-      await groups.removeFrom(imageIds)
-      await gallery.refresh({ silent: true })
+      gallery.patchImages(imageIds, { group_id: null })
       selection.clearSelection()
+      applyGroupWrite(await groups.removeFrom(imageIds))
     },
-    [groups, gallery, selection],
+    [groups, gallery, selection, applyGroupWrite],
   )
 
   const renameGroup = useCallback(
@@ -443,11 +478,10 @@ export function useView(initial: Array<SavedAiImage>) {
   const dissolveGroup = useCallback(
     async (groupId: string) => {
       closeGroupFlow()
-      await groups.dissolve(groupId)
-      await gallery.refresh({ silent: true })
+      applyGroupWrite(await groups.dissolve(groupId))
       if (activeGroupId === groupId) router.push('/images')
     },
-    [groups, gallery, activeGroupId, router, closeGroupFlow],
+    [groups, activeGroupId, router, closeGroupFlow, applyGroupWrite],
   )
 
   /** The card's delete icon: the members go to Trash, the group goes. Asks
@@ -456,11 +490,12 @@ export function useView(initial: Array<SavedAiImage>) {
   const trashGroup = useCallback(
     async (groupId: string) => {
       closeGroupFlow()
-      await groups.trash(groupId)
-      await gallery.refresh({ silent: true })
+      // The write returns the ids it soft-deleted, so the cards leave without
+      // a re-read -- the same shape as the selection drawer's Trash (#329).
+      applyGroupWrite(await groups.trash(groupId))
       if (activeGroupId === groupId) router.push('/images')
     },
-    [groups, gallery, activeGroupId, router, closeGroupFlow],
+    [groups, activeGroupId, router, closeGroupFlow, applyGroupWrite],
   )
 
   const setGroupCoverImage = useCallback(

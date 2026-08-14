@@ -42,6 +42,13 @@ export interface GalleryState {
   deleteImage: (img: SavedAiImage) => Promise<void>
   /** The selection drawer's Trash: one round trip for the whole set (#329). */
   deleteImages: (images: Array<SavedAiImage>) => Promise<void>
+  /** Patch rows already on screen -- a group write's half of the grid (#331).
+   *  Membership is a column on the image, so filing pictures into a group is
+   *  a field change on rows this hook already holds, not a re-read. */
+  patchImages: (ids: Array<string>, patch: Partial<SavedAiImage>) => void
+  /** Drop rows the server has already removed. The caller did the write --
+   *  unlike `deleteImages`, which is the write. */
+  forgetImages: (ids: Array<string>) => void
   addOptimisticCard: (card: SavedAiImage) => void
   /** An updater rather than a replacement: a generation's card already holds
    *  the prompt and model the submit only echoes back, so the swap is the id
@@ -184,6 +191,13 @@ export function useGallery({
     })
   }
 
+  function patchImages(ids: Array<string>, patch: Partial<SavedAiImage>) {
+    const set = new Set(ids)
+    setSavedImages((prev) =>
+      prev.map((i) => (set.has(i.id) ? { ...i, ...patch } : i)),
+    )
+  }
+
   async function deleteImage(img: SavedAiImage) {
     forgetImages(new Set([img.id]))
 
@@ -270,6 +284,8 @@ export function useGallery({
     loadingGallery,
     deleteImage,
     deleteImages,
+    patchImages,
+    forgetImages: (ids: Array<string>) => forgetImages(new Set(ids)),
     addOptimisticCard,
     replaceOptimisticCard,
     removeOptimisticCard,

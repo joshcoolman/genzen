@@ -8,9 +8,16 @@ import { first, sql } from '#/lib/server/db.server'
  * `src/features/` -- one consumer means it belongs to that consumer
  * (`docs/DELTAS.md`).
  *
- * Every write is one statement, and every one of them carries `user_id` from
- * `resolveAuth()`. A group id arriving from the browser is never trusted on its
- * own: the `where` always names the user too, so a guessed uuid updates nothing.
+ * Every write carries `user_id` from `resolveAuth()`. A group id arriving from
+ * the browser is never trusted on its own: the `where` always names the user
+ * too, so a guessed uuid updates nothing.
+ *
+ * **Every write returns what it changed** (#331). A group write moves a cover,
+ * a count, a preview strip and a position in the grid at once, and the client
+ * used to buy that arithmetic with a second round trip -- the write, then
+ * `listImageGroups()`, then a gallery re-read, serialised, with nothing on
+ * screen moving until the last landed. The rows are already in hand here, so
+ * the write says what happened and the client patches both lists from it.
  */
 
 export interface ImageGroupSummary {
@@ -30,17 +37,47 @@ export interface ImageGroupSummary {
 }
 
 /**
- * Every group with the handful of member ids its card renders.
+ * What a write changed, in the two lists that render it.
+ *
+ * One shape for every write rather than a bespoke return each, so the client
+ * has one `apply` rather than seven patches that can each disagree with the
+ * database in their own way. Most writes leave most of it empty.
+ */
+export interface GroupWrite {
+  /** Fresh summaries for every group the write touched -- upsert these. */
+  groups: Array<ImageGroupSummary>
+  /** Groups that no longer exist -- drop these. */
+  gone: Array<string>
+  /** Images whose membership changed, and what it changed to. */
+  moved: { ids: Array<string>; groupId: string | null } | null
+  /** Images that left the gallery entirely (the group card's delete icon). */
+  trashed: Array<string>
+}
+
+const EMPTY_WRITE: GroupWrite = {
+  groups: [],
+  gone: [],
+  moved: null,
+  trashed: [],
+}
+
+/**
+ * Group summaries with the handful of member ids each card renders.
  *
  * One statement rather than a query per group: the lateral join gives each
  * group its own newest-five without a round trip each, and the count comes off
  * the same scan. `deleted_at is null` is belt-and-braces -- trashing clears
  * `group_id`, so a trashed row is already not a member -- but it keeps the read
  * correct if a row is ever soft-deleted by a path that forgets.
+ *
+ * `only` narrows it to the groups a write touched. Same statement either way,
+ * so the summary a write returns is the one the full read would have given --
+ * a second query shaped "close enough" is how the two drift apart.
  */
-export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
-  const { userId } = await resolveAuth()
-
+async function readGroups(
+  userId: string,
+  only: Array<string> | null,
+): Promise<Array<ImageGroupSummary>> {
   const rows = await sql`
     select g.id,
            g.name,
@@ -63,6 +100,7 @@ export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
       ) ui
     ) m on true
     where g.user_id = ${userId}
+      ${only ? sql`and g.id = any(${only})` : sql``}
     order by sort_order desc
   `
 
@@ -77,6 +115,29 @@ export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
   }))
 }
 
+export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
+  const { userId } = await resolveAuth()
+  return readGroups(userId, null)
+}
+
+/**
+ * The groups these images are in *now*, before a move takes them out.
+ *
+ * A move changes two groups, not one: the count and cover of wherever the
+ * images land, and of wherever they came from. Reading it before the update
+ * is the only moment the old membership still exists.
+ */
+async function currentGroupIds(
+  userId: string,
+  imageIds: Array<string>,
+): Promise<Array<string>> {
+  const rows = await sql<Array<{ group_id: string }>>`
+    select distinct group_id from user_images
+    where user_id = ${userId} and id = any(${imageIds}) and group_id is not null
+  `
+  return rows.map((r) => r.group_id)
+}
+
 /**
  * Create a group and move the given images into it.
  *
@@ -89,12 +150,15 @@ export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
 export async function createImageGroup(
   name: string,
   imageIds: Array<string>,
-): Promise<{ id: string }> {
+): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
   const trimmed = name.trim()
   if (!trimmed) throw new Error('A group needs a name')
   if (trimmed.length > 200) throw new Error('That name is too long')
+
+  const from =
+    imageIds.length > 0 ? await currentGroupIds(userId, imageIds) : []
 
   const group = first(
     // sql-scope-exempt: an insert scopes by what it writes, and user_id comes
@@ -106,11 +170,14 @@ export async function createImageGroup(
   )
   if (!group) throw new Error('Could not create the group')
 
+  let moved: Array<string> = []
   if (imageIds.length > 0) {
-    await sql`
+    const rows = await sql<Array<{ id: string }>>`
       update user_images set group_id = ${group.id}
       where user_id = ${userId} and id = any(${imageIds}) and deleted_at is null
+      returning id
     `
+    moved = rows.map((r) => r.id)
     await sql`
       update image_groups set cover_image_id = (
         select id from user_images
@@ -123,16 +190,21 @@ export async function createImageGroup(
     `
   }
 
-  return { id: group.id }
+  return {
+    groups: await readGroups(userId, [group.id, ...from]),
+    gone: [],
+    moved: { ids: moved, groupId: group.id },
+    trashed: [],
+  }
 }
 
 /** Move images into an existing group. Whatever group they were in, they leave. */
 export async function addImagesToGroup(
   groupId: string,
   imageIds: Array<string>,
-): Promise<void> {
+): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
-  if (imageIds.length === 0) return
+  if (imageIds.length === 0) return EMPTY_WRITE
 
   // The group is confirmed to be this user's before anything moves -- otherwise
   // a guessed id would file the caller's own images under a stranger's group.
@@ -143,29 +215,49 @@ export async function addImagesToGroup(
   )
   if (!group) throw new Error('That group no longer exists')
 
-  await sql`
+  const from = await currentGroupIds(userId, imageIds)
+
+  const rows = await sql<Array<{ id: string }>>`
     update user_images set group_id = ${groupId}
     where user_id = ${userId} and id = any(${imageIds}) and deleted_at is null
+    returning id
   `
+
+  return {
+    groups: await readGroups(userId, [groupId, ...from]),
+    gone: [],
+    moved: { ids: rows.map((r) => r.id), groupId },
+    trashed: [],
+  }
 }
 
 /** Return images to top level. Deletes nothing -- see the Trash note in #319. */
 export async function removeImagesFromGroup(
   imageIds: Array<string>,
-): Promise<void> {
+): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
-  if (imageIds.length === 0) return
+  if (imageIds.length === 0) return EMPTY_WRITE
 
-  await sql`
+  const from = await currentGroupIds(userId, imageIds)
+
+  const rows = await sql<Array<{ id: string }>>`
     update user_images set group_id = null
     where user_id = ${userId} and id = any(${imageIds})
+    returning id
   `
+
+  return {
+    groups: from.length > 0 ? await readGroups(userId, from) : [],
+    gone: [],
+    moved: { ids: rows.map((r) => r.id), groupId: null },
+    trashed: [],
+  }
 }
 
 export async function renameImageGroup(
   groupId: string,
   name: string,
-): Promise<void> {
+): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
   const trimmed = name.trim()
@@ -176,6 +268,8 @@ export async function renameImageGroup(
     update image_groups set name = ${trimmed}
     where id = ${groupId} and user_id = ${userId}
   `
+
+  return { ...EMPTY_WRITE, groups: await readGroups(userId, [groupId]) }
 }
 
 /**
@@ -188,18 +282,27 @@ export async function renameImageGroup(
  * The explicit update is not redundant with `on delete set null`. The
  * constraint would do the same thing, but leaving it implicit means the one
  * behaviour a reader will want to check -- that dissolving keeps the pictures
- * -- is only visible in the migration.
+ * -- is only visible in the migration. It is also what tells the client which
+ * images just came back to top level.
  */
-export async function dissolveImageGroup(groupId: string): Promise<void> {
+export async function dissolveImageGroup(groupId: string): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
-  await sql`
+  const rows = await sql<Array<{ id: string }>>`
     update user_images set group_id = null
     where user_id = ${userId} and group_id = ${groupId}
+    returning id
   `
   await sql`
     delete from image_groups where id = ${groupId} and user_id = ${userId}
   `
+
+  return {
+    groups: [],
+    gone: [groupId],
+    moved: { ids: rows.map((r) => r.id), groupId: null },
+    trashed: [],
+  }
 }
 
 /**
@@ -215,23 +318,31 @@ export async function dissolveImageGroup(groupId: string): Promise<void> {
  * restore has one destination. That also means the group row is left with no
  * members by the time it is deleted, so the delete cannot cascade anywhere.
  */
-export async function trashImageGroup(groupId: string): Promise<void> {
+export async function trashImageGroup(groupId: string): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
-  await sql`
+  const rows = await sql<Array<{ id: string }>>`
     update user_images set deleted_at = now(), group_id = null
     where user_id = ${userId} and group_id = ${groupId} and deleted_at is null
+    returning id
   `
   await sql`
     delete from image_groups where id = ${groupId} and user_id = ${userId}
   `
+
+  return {
+    groups: [],
+    gone: [groupId],
+    moved: null,
+    trashed: rows.map((r) => r.id),
+  }
 }
 
 /** Point a group's cover at one of its members. The image's own `...` menu. */
 export async function setGroupCover(
   groupId: string,
   imageId: string,
-): Promise<void> {
+): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
   // Scoped to a member of *this* group: a cover pointing at an image the group
@@ -244,4 +355,6 @@ export async function setGroupCover(
         where id = ${imageId} and user_id = ${userId} and group_id = ${groupId}
       )
   `
+
+  return { ...EMPTY_WRITE, groups: await readGroups(userId, [groupId]) }
 }
