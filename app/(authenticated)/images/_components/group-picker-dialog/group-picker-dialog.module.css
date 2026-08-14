@@ -59,7 +59,7 @@
 .newRow {
   margin-top: var(--space-4);
   padding-top: var(--space-12);
-  border-top: var(--border-width) solid var(--border-faint);
+  border-top: var(--border-width) solid var(--border);
   border-radius: 0;
   color: var(--text-muted);
 }

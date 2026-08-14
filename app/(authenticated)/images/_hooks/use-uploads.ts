@@ -39,53 +39,65 @@ export function useUploads(
   userId: string | undefined,
   gallery: GalleryState,
   /**
-   * Widen the gallery's scope so the upload is visible. The default scope is
-   * generations (#207), and an upload is an `upload` wherever it happened --
-   * so without this the card the user just created would be filtered out of the
-   * view they created it in. Uploading is an implicit request to see uploads.
+   * Files freshly-uploaded rows into a group (#348). Passed in rather than
+   * called here, because membership is `useGroups`' write and this hook has no
+   * business knowing how a group write patches the grid.
    */
-  revealUploads: () => void,
+  fileIntoGroup: (groupId: string, imageIds: Array<string>) => Promise<void>,
 ) {
   const ingest = useCallback(
-    (file: File, { preview }: { preview: boolean }) => {
-      if (!userId) return
-      revealUploads()
+    async (file: File, { preview }: { preview: boolean }) => {
+      if (!userId) return null
       const tempId = optimisticId()
       gallery.addOptimisticCard(skeletonCard(tempId, file.name))
 
       const previewUrl = preview ? URL.createObjectURL(file) : null
       if (previewUrl) gallery.setImageUrl(tempId, previewUrl)
 
-      void (async () => {
-        try {
-          const created = await saveFileToLibrary({
-            userId,
-            file,
-            title: file.name,
-          })
-          gallery.replaceOptimisticCard(tempId, () =>
-            skeletonCard(created.id, created.title),
-          )
-          // Hold the blob preview until the refresh brings a real URL --
-          // swapping to nothing would blink the card empty.
-          const url = created.storage_path
-            ? imageUrl(created.id, 'thumb')
-            : previewUrl
-          if (url) gallery.setImageUrl(created.id, url)
-          void gallery.refresh({ silent: true })
-        } catch {
-          gallery.removeOptimisticCard(tempId)
-        }
-      })()
+      try {
+        const created = await saveFileToLibrary({
+          userId,
+          file,
+          title: file.name,
+        })
+        gallery.replaceOptimisticCard(tempId, () =>
+          skeletonCard(created.id, created.title),
+        )
+        // Hold the blob preview until the refresh brings a real URL --
+        // swapping to nothing would blink the card empty.
+        const url = created.storage_path
+          ? imageUrl(created.id, 'thumb')
+          : previewUrl
+        if (url) gallery.setImageUrl(created.id, url)
+        void gallery.refresh({ silent: true })
+        return created.id
+      } catch {
+        gallery.removeOptimisticCard(tempId)
+        return null
+      }
     },
-    [userId, gallery, revealUploads],
+    [userId, gallery],
   )
 
+  /**
+   * `groupId` files the whole batch once every upload has landed (#348).
+   *
+   * One group write for the batch rather than one per file: `addImagesToGroup`
+   * returns the group's new cover and count (#331), and calling it per file
+   * would move the card that many times and pay for that arithmetic each time.
+   *
+   * The cards still appear one by one as their bytes land -- only the filing
+   * waits. An upload that failed is simply not in the list to file.
+   */
   const uploadFiles = useCallback(
-    (files: Array<File>) => {
-      for (const file of files) ingest(file, { preview: false })
+    async (files: Array<File>, groupId?: string | null) => {
+      const ids = (
+        await Promise.all(files.map((file) => ingest(file, { preview: false })))
+      ).filter((id): id is string => id !== null)
+
+      if (groupId && ids.length > 0) await fileIntoGroup(groupId, ids)
     },
-    [ingest],
+    [ingest, fileIntoGroup],
   )
 
   useEffect(() => {
@@ -97,7 +109,7 @@ export function useUploads(
         const file = item.getAsFile()
         if (!file) continue
         e.preventDefault()
-        ingest(file, { preview: true })
+        void ingest(file, { preview: true })
         return
       }
     }

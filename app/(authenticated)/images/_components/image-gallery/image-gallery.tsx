@@ -57,10 +57,6 @@ interface ImageGalleryProps {
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
-  /** Set when the gallery is scoped to an origin (#207). An empty scope is not
-   *  an empty library, and telling someone to write their first prompt when they
-   *  have hundreds of images is the wrong sentence. */
-  emptyScopeLabel?: string
 }
 
 export function ImageGallery({
@@ -88,21 +84,15 @@ export function ImageGallery({
   selectionActive,
   isSelected,
   onSelect,
-  emptyScopeLabel,
 }: ImageGalleryProps) {
   return (
     <div className={styles.root}>
       {loadingGallery ? (
         <ImageGridSkeleton />
       ) : cells.length === 0 ? (
-        <EmptyState
-          title={
-            emptyScopeLabel ? `Nothing in ${emptyScopeLabel}` : 'No images yet'
-          }
-        >
-          {emptyScopeLabel
-            ? 'Nothing matches this filter. Switch to All to see everything.'
-            : 'Type a prompt in the panel below and hit Generate to create your first image.'}
+        <EmptyState title="No images yet">
+          Type a prompt in the panel below and hit Generate to create your first
+          image.
         </EmptyState>
       ) : (
         <div

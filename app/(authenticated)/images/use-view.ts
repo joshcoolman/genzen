@@ -9,7 +9,6 @@ import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
 import { useLightbox } from './_hooks/use-lightbox'
 import { useVariations } from './_hooks/use-variations'
-import { usePasteReference } from './_hooks/use-paste-reference'
 import { useGroups } from './_hooks/use-groups'
 import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
@@ -101,22 +100,6 @@ export function useView(initial: Array<SavedAiImage>) {
   const prefs = usePrefs()
   const dock = useDock()
   const download = useDownload()
-  // Making something is an implicit request to see it. The scope defaults to
-  // generations (#207), so without these a card the user just created lands in
-  // a bucket the current pill hides -- an upload while scoped to generations, a
-  // generation while scoped to uploads. Only widens; never narrows.
-  const reveal = useCallback(
-    (filter: 'uploads' | 'images') => {
-      if (prefs.originFilter !== filter && prefs.originFilter !== 'all') {
-        prefs.setOriginFilter(filter)
-      }
-    },
-    [prefs],
-  )
-
-  const revealUploads = useCallback(() => reveal('uploads'), [reveal])
-
-  const { uploadFiles } = useUploads(user.id, gallery, revealUploads)
 
   const modelSelector = useModelSelector({
     capability: 'sidebar',
@@ -141,7 +124,6 @@ export function useView(initial: Array<SavedAiImage>) {
     // server (#313). The upload path has always done this; generation never
     // adopted it, which is why pasting felt instant and generating did not.
     onSubmitStart: (placeholders) => {
-      reveal('images')
       for (const p of placeholders) {
         gallery.addOptimisticCard(pendingCard(p, activeGroupId))
       }
@@ -168,39 +150,20 @@ export function useView(initial: Array<SavedAiImage>) {
 
   /**
    * Uploads ignores grouping entirely: every upload, grouped or not.
-   *
-   * The other scopes hide a grouped image behind its group card, which is the
-   * whole payoff -- a wall of thirty becomes three cards and eight loose
-   * pictures. Uploads is not that kind of question. An upload is something you
-   * put there deliberately, and "show me my uploads" means all of them; where
-   * each one happens to sit is somebody else's concern. So this scope shows no
-   * group cards either -- there is nothing left for them to stand in for.
    */
-  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
-
-  // Group first, then scope, then order. The filter is client-side on purpose:
-  // the gallery already holds every row, so switching pills is instant and
-  // costs no round trip -- and `origin` is immutable, so a filtered-out row
-  // cannot become stale.
+  // Group, then order. There is no origin scope any more (#348): a group is a
+  // scope you made on purpose, and it turned out to be the only one worth
+  // having -- `use-prefs` had predicted its own deletion in a comment.
   //
   // At top level a grouped image is *absent*, not shown twice: the group card
   // stands in for its members. If members also appeared loose, the wall would
   // be exactly as tall as before.
-  //
-  // Inside a group there is no origin filtering at all -- the group is already
-  // the scope, and two scoping controls stacked on each other only raise the
-  // question of which one wins.
   const scoped = useMemo(() => {
     if (activeGroupId) {
       return gallery.images.filter((img) => img.group_id === activeGroupId)
     }
-    if (uploadsIgnoreGroups) {
-      return gallery.images.filter((img) => img.origin === 'upload')
-    }
-    const loose = gallery.images.filter((img) => !img.group_id)
-    if (prefs.originFilter === 'all') return loose
-    return loose.filter((img) => img.origin === prefs.originFilter)
-  }, [gallery.images, prefs.originFilter, activeGroupId, uploadsIgnoreGroups])
+    return gallery.images.filter((img) => !img.group_id)
+  }, [gallery.images, activeGroupId])
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
@@ -224,29 +187,20 @@ export function useView(initial: Array<SavedAiImage>) {
       sortOrder:
         image.sort_order ?? new Date(image.created_at).getTime() / 1000,
     }))
-    // Groups appear at top level only: inside one there is nothing to nest, and
-    // the uploads scope is deliberately not a grouped view.
-    const groupCells =
-      activeGroupId || uploadsIgnoreGroups
-        ? []
-        : groups.groups.map((group) => ({
-            cell: { kind: 'group' as const, group },
-            sortOrder: group.sort_order,
-          }))
+    // Groups appear at top level only: inside one there is nothing to nest.
+    const groupCells = activeGroupId
+      ? []
+      : groups.groups.map((group) => ({
+          cell: { kind: 'group' as const, group },
+          sortOrder: group.sort_order,
+        }))
 
     const ordered = [...groupCells, ...imageCells].sort(
       (a, b) => b.sortOrder - a.sortOrder,
     )
     const cellsDesc = ordered.map((o) => o.cell)
     return prefs.sortAsc ? cellsDesc.reverse() : cellsDesc
-  }, [scoped, groups.groups, activeGroupId, uploadsIgnoreGroups, prefs.sortAsc])
-
-  // An image copied from the search overlay pastes in as a reference (#213).
-  usePasteReference({
-    addRefImages: generator.addRefImages,
-    maxRefImages: generator.maxRefImages,
-    refCount: generator.refImages.length,
-  })
+  }, [scoped, groups.groups, activeGroupId, prefs.sortAsc])
 
   // The list the grid renders, minus the cards with nothing to look at (#270).
   // Scoped and sorted like the grid, because the filmstrip shows this list and
@@ -361,6 +315,10 @@ export function useView(initial: Array<SavedAiImage>) {
    */
   const [groupFlow, setGroupFlow] = useState<
     | { kind: 'pick'; targets: Array<string> }
+    // Picking where an upload is about to go, before any file has been chosen
+    // (#348). No `targets`: the images do not exist yet, which is what makes it
+    // its own kind rather than a 'pick' with an empty list.
+    | { kind: 'upload-target' }
     | { kind: 'create'; targets: Array<string> }
     | { kind: 'rename'; group: ImageGroupSummary }
     | { kind: 'confirm-dissolve'; group: ImageGroupSummary }
@@ -369,6 +327,18 @@ export function useView(initial: Array<SavedAiImage>) {
   >(null)
 
   const closeGroupFlow = useCallback(() => setGroupFlow(null), [])
+
+  /**
+   * "Upload to group" from the toolbar: choose the destination, then the files.
+   *
+   * Never offered with no groups to choose from -- the toolbar renders a plain
+   * Upload button in that case, since "file these into nothing, or go make a
+   * group first" is the same non-choice `GroupPickerDialog` already refuses.
+   */
+  const startUploadToGroup = useCallback(
+    () => setGroupFlow({ kind: 'upload-target' }),
+    [],
+  )
 
   /**
    * "Add to group", from the card menu or the selection drawer.
@@ -428,6 +398,36 @@ export function useView(initial: Array<SavedAiImage>) {
       applyGroupWrite(await groups.addTo(groupId, imageIds))
     },
     [groups, gallery, selection, closeGroupFlow, applyGroupWrite],
+  )
+
+  /**
+   * Uploading, with the open group as the default destination (#348).
+   *
+   * At top level `activeGroupId` is null and files land loose. Inside a group
+   * they land in it, with no dialog: a group is a focus session, and asking
+   * which group you meant while you are standing in one is ceremony. That is
+   * a deliberate exception to "one way to do things" -- the toolbar's menu is
+   * top-level only, and the reasoning is on the toolbar.
+   */
+  const { uploadFiles: uploadFilesRaw } = useUploads(
+    user.id,
+    gallery,
+    addToGroup,
+  )
+
+  const uploadFiles = useCallback(
+    (files: Array<File>, groupId: string | null = activeGroupId) => {
+      void uploadFilesRaw(files, groupId).then(() => {
+        // Only the explicit to-a-group upload speaks. Uploading into the group
+        // you are looking at needs no announcement -- the cards are right
+        // there. Filing from top level moves them somewhere you are not, so
+        // without this the only visible effect is a card gaining a new cover.
+        if (!groupId || groupId === activeGroupId) return
+        const name = groups.groups.find((g) => g.id === groupId)?.name
+        if (name) toast(`Uploaded to ${name}`)
+      })
+    },
+    [uploadFilesRaw, activeGroupId, groups.groups],
   )
 
   /**
@@ -594,6 +594,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setGroupFlow,
     closeGroupFlow,
     startAddToGroup,
+    startUploadToGroup,
     addToGroup,
     createGroup,
     removeFromGroup,

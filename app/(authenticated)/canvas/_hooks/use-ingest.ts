@@ -2,18 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { layoutMasonry } from '../_lib/masonry'
-import {
-  addToCanvas,
-  getUrlDimensions,
-  preloadUrl,
-  readLocalImage,
-} from '../_lib/persistence'
+import { addToCanvas, preloadUrl, readLocalImage } from '../_lib/persistence'
 import type { CollectedImage, UserImage } from '#/features/user-images'
 import type { CanvasImage } from '../_lib/types'
 import { imageUrl } from '#/lib/image-url'
 import { computeFileHash } from '#/features/user-images/lib/file-hash'
-import { getLibraryImage } from '#/features/user-images/server/library-index.action'
-import { readImageRef } from '#/lib/image-clipboard'
 
 /** Column width used when more than one image arrives at once; a lone image
  *  keeps its natural width. */
@@ -177,73 +170,13 @@ export function useIngest({
     [addImagesFromFiles],
   )
 
-  /**
-   * A library image copied from the search overlay (#213): a card for a row
-   * that already exists.
-   *
-   * This is the whole reason the clipboard carries an id. The bytes path below
-   * would upload the image a second time and leave two rows for one picture --
-   * so copying something you own in order to place it would quietly cost you
-   * a duplicate every time.
-   */
-  const addImageByRecordId = useCallback(
-    async (recordId: string, cx: number, cy: number) => {
-      const record = await getLibraryImage(recordId).catch(() => null)
-      if (!record) return
-
-      const url = imageUrl(record.id)
-      // The row's own dimensions where it has them; otherwise ask the image,
-      // which is what an older upload without them needs.
-      const dims =
-        record.width && record.height
-          ? { w: record.width, h: record.height }
-          : await getUrlDimensions(url)
-
-      const [placed] = layoutMasonry(
-        [{ id: crypto.randomUUID(), width: dims.w, height: dims.h }],
-        COLUMNS,
-        cx,
-        cy,
-      )
-      const card: CanvasImage = {
-        ...placed,
-        recordId: record.id,
-        storagePath: record.storage_path,
-        signedUrl: url,
-      }
-
-      pushUndo()
-      setImages((prev) => [...prev, card])
-      select(new Set([card.id]))
-      void addToCanvas(canvasId, [
-        {
-          imageId: card.recordId,
-          x: card.x,
-          y: card.y,
-          width: card.width,
-          height: card.height,
-        },
-      ])
-    },
-    [canvasId, pushUndo, setImages, select],
-  )
-
   /* -- Paste -- */
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
 
-      // An internal copy comes first: it is a reference to a row, and the
-      // clipboard may well be carrying the picture too.
       const text = e.clipboardData.getData('text/plain')
-      const ref = readImageRef(text)
-      if (ref) {
-        e.preventDefault()
-        const c = getPasteTarget()
-        void addImageByRecordId(ref, c.x, c.y)
-        return
-      }
 
       // A clipboard image file: screenshots, copies, HTML img pastes.
       for (const item of items) {
@@ -266,7 +199,7 @@ export function useIngest({
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
-  }, [addImagesFromFiles, addImageFromUrl, addImageByRecordId, getPasteTarget])
+  }, [addImagesFromFiles, addImageFromUrl, getPasteTarget])
 
   /* -- Drop -- */
   const onDragOver = useCallback((e: React.DragEvent) => {
