@@ -136,6 +136,49 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     displayPrice: '~$0.04/img',
     useCase: 'Pro img2img — solid for refinement work',
   },
+  // Cheap/fast tier (#262). Three rather than one because the point is
+  // comparison: the same prompt across all three costs under two cents.
+  {
+    slug: 'z-image-turbo',
+    name: 'Z-Image Turbo',
+    description: 'Tongyi-MAI 6B, sub-cent, ~2s',
+    category: 'Other',
+    textToImage: 'fal-ai/z-image/turbo',
+    // Denoise-from-image with a `strength` dial, NOT instruct editing: told to
+    // recolour a mug it returns the same mug, at any strength. It is here so an
+    // attached image is used rather than dropped, not as an editor.
+    withImages: 'fal-ai/z-image/turbo/image-to-image',
+    // One `image_url` slot, and the attached image is it -- same arithmetic as
+    // both Kontext entries.
+    maxRefs: 0,
+    displayPrice: '~$0.005/img',
+    useCase: 'Cheapest fast draft — fire several and skim',
+  },
+  {
+    slug: 'flux-2-flash',
+    name: 'FLUX.2 Flash',
+    description: 'Cheap reference editing, up to 4 images',
+    category: 'FLUX',
+    textToImage: 'fal-ai/flux-2/flash',
+    withImages: 'fal-ai/flux-2/flash/edit',
+    maxRefs: 3,
+    // Billed per compute second ($0.0008/s), not per megapixel, so this is an
+    // approximation in a way the other prices are not. Activity records the
+    // real cost; correct it from there (#262).
+    displayPrice: '~$0.01/img',
+    useCase: 'Cheap reference editing — preserves the input scene',
+  },
+  {
+    slug: 'flux-2-klein-4b',
+    name: 'FLUX.2 Klein 4B',
+    description: 'Open-weights fast tier, up to 4 images',
+    category: 'FLUX',
+    textToImage: 'fal-ai/flux-2/klein/4b',
+    withImages: 'fal-ai/flux-2/klein/4b/edit',
+    maxRefs: 3,
+    displayPrice: '~$0.009/img',
+    useCase: 'Fastest of the cheap tier — re-renders rather than preserves',
+  },
 ]
 
 /**
