@@ -106,25 +106,25 @@ export function ImageCard({
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         {onDownload && (
           <DropdownMenuItem onClick={() => onDownload(img)}>
-            <Download className={styles.menuItemIcon} />
+            <Download />
             Download
           </DropdownMenuItem>
         )}
         {onDescribe && (
           <DropdownMenuItem onClick={() => onDescribe(img)}>
-            <MessageSquare className={styles.menuItemIcon} />
+            <MessageSquare />
             Describe
           </DropdownMenuItem>
         )}
         {onGenerateVariations && img.status === 'completed' && (
           <DropdownMenuItem onClick={() => onGenerateVariations(img)}>
-            <Layers className={styles.menuItemIcon} />
+            <Layers />
             Generate Variations
           </DropdownMenuItem>
         )}
         {onAnimate && img.status === 'completed' && (
           <DropdownMenuItem onClick={() => onAnimate(img)}>
-            <Clapperboard className={styles.menuItemIcon} />
+            <Clapperboard />
             Animate
           </DropdownMenuItem>
         )}
@@ -132,7 +132,7 @@ export function ImageCard({
         {/* Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
         {onAddToGroup && (
           <DropdownMenuItem onClick={() => onAddToGroup(img)}>
-            <FolderPlus className={styles.menuItemIcon} />
+            <FolderPlus />
             Add to group
           </DropdownMenuItem>
         )}
@@ -143,13 +143,13 @@ export function ImageCard({
             asking. */}
         {onSetGroupCover && (
           <DropdownMenuItem onClick={() => onSetGroupCover(img)}>
-            <ImageIcon className={styles.menuItemIcon} />
+            <ImageIcon />
             Set as group cover
           </DropdownMenuItem>
         )}
         {onRemoveFromGroup && (
           <DropdownMenuItem onClick={() => onRemoveFromGroup(img)}>
-            <FolderMinus className={styles.menuItemIcon} />
+            <FolderMinus />
             Remove from group
           </DropdownMenuItem>
         )}

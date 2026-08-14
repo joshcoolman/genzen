@@ -32,10 +32,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-8);
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-sm);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
   cursor: default;
   user-select: none;
   outline: none;
@@ -52,10 +52,15 @@
 }
 
 /* The menu sizes its own icons: every item is `<Icon /> Label`. The icon stays
-   muted even when the row is highlighted -- shadcn's behaviour, kept. */
+   muted even when the row is highlighted -- shadcn's behaviour, kept.
+
+   0.875rem, not 1rem: a menu row and a model row are the same kind of thing --
+   a picker line -- and both consumers were restating `1rem` locally, which is
+   how the two drifted apart in the first place. Sized here so a new consumer
+   inherits the density rather than choosing one. */
 .item > svg {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
   flex-shrink: 0;
   pointer-events: none;
   color: var(--text-muted);
