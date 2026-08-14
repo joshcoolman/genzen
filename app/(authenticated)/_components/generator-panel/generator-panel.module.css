@@ -1,7 +1,28 @@
 /* The Generate panel's own stack: prompts, reference images, controls, models. */
 
+/* One knob for the panel's vertical rhythm.
+ *
+ * Every gap between stacked controls in this column reads it -- the panel's own
+ * blocks, PromptList's internals, and the space a ModelSelector opens below its
+ * field. They were 12, 8 and 4 respectively, chosen a component at a time, and
+ * the eye reads unequal gaps down one narrow column as misalignment rather than
+ * as hierarchy.
+ *
+ * It is inherited rather than passed: the three modules are separate files and
+ * a custom property is the only thing that crosses that line without either
+ * one importing the other. Each declares its own fallback, so all three still
+ * stand up outside this panel.
+ *
+ * Change this value to loosen or tighten the whole column at once. That is the
+ * point of it -- prefer moving this over spot-fixing one gap, which is how the
+ * three of them drifted apart to begin with.
+ */
+.root {
+  --panel-rhythm: var(--space-8);
+}
+
 .root > :where(*:not(:last-child)) {
-  margin-bottom: var(--space-12);
+  margin-bottom: var(--panel-rhythm);
 }
 
 .row {
@@ -34,8 +55,10 @@
   width: 100%;
 }
 
+/* A column of one since the heading went, so the gap is dormant -- kept on the
+   rhythm rather than a literal so it is right if a second row ever returns. */
 .refs {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--panel-rhythm);
 }

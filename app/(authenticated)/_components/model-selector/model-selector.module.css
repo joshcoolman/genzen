@@ -69,8 +69,11 @@
 
 /* ---- rows ---- */
 
+/* The gap under the field takes the containing panel's rhythm where there is
+   one -- see `generator-panel.module.css`. It was the tightest gap in that
+   column at 4px, which made the open list look welded to its own trigger. */
 .list {
-  margin-top: var(--space-4);
+  margin-top: var(--panel-rhythm, var(--space-4));
   padding: var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);

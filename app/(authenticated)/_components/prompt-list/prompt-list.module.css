@@ -1,8 +1,10 @@
 /* The stack of prompt textareas, each with a clear/remove button top-right and
    an Enhance chip bottom-right, plus the dashed row that adds more. */
 
+/* Takes the containing panel's rhythm where there is one -- see
+   `generator-panel.module.css`. The fallback is what this always drew. */
 .root > :where(*:not(:last-child)) {
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--panel-rhythm, var(--space-8));
 }
 
 /* No reserved height. The 1rem floor was here because Clear all used to appear
