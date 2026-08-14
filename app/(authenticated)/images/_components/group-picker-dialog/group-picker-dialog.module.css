@@ -38,6 +38,20 @@
   background: var(--surface-raised);
 }
 
+/* The group's cover, at the row's height. Square and cropped, unlike the card
+   in the grid, which is contained at its natural ratio -- a list wants one
+   left edge more than it wants each picture's true shape. */
+.cover,
+.coverEmpty {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--slot-empty);
+  background-size: cover;
+  background-position: center;
+}
+
 .name {
   flex: 1;
   min-width: 0;
@@ -51,6 +65,12 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: var(--text-faint);
+}
+
+/* Lines up with the names above it rather than with their covers: it creates a
+   group instead of choosing one, so it is not a row with a missing picture. */
+.newRow {
+  padding-left: calc(var(--space-12) + 2rem + var(--space-8));
 }
 
 /* Below the groups and quieter than them: it is the way out of the list, not
