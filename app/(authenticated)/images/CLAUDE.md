@@ -51,7 +51,11 @@ list once when the seed comes back full, so the grid is never short.
   to generate, while a control labelled "deselect all" says so out loud and is
   one click to undo. Zero is already handled -- `canGenerate` requires a model,
   so Generate goes dead, and the button's own "Generate 30 images" is what says
-  how big an all-selected click has become. The panel used to clamp to
+  how big an all-selected click has become. **Cmd/Ctrl-click a row solos it** --
+  that model, everything else off. Same modifier as the grid's power moves and
+  the same reasoning: a plain click toggles one row, which is the common case,
+  and "just this one" was otherwise nine clicks off. Undiscoverable by design
+  for now, like the grid's (#289 owns teaching them). The panel used to clamp to
   the minimum across the selection, which **deleted staged images** when you
   ticked a smaller model
 - **The grid never marks the set, and reaches it only through modifiers (#284).**

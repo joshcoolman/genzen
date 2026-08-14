@@ -23,6 +23,9 @@ interface ModelSelectorProps {
   /** The header tick: everything or nothing (#358). Absent in single mode,
    *  where "all" means nothing. */
   onToggleAll?: () => void
+  /** Cmd/Ctrl-click a row: that model and no other (#358). Absent in single
+   *  mode, where a plain click already means exactly that. */
+  onSelectOnly?: (id: string) => void
   /**
    * Images staged right now. Rows that cannot hold them all are dimmed -- the
    * only thing the picker says about a limit, because nothing enforces one any
@@ -50,6 +53,7 @@ export function ModelSelector({
   visibleModels,
   onToggleSelected,
   onToggleAll,
+  onSelectOnly,
   stagedImageCount = 0,
   defaultExpanded = true,
   persistKey,
@@ -85,6 +89,7 @@ export function ModelSelector({
       <div className={styles.row}>
         <DropdownModels
           onToggleAll={onToggleAll}
+          onSelectOnly={onSelectOnly}
           models={visibleModels}
           selectedIds={selectedIds}
           mode={mode}
@@ -109,6 +114,7 @@ export function ModelSelector({
         <div className={styles.list}>
           <ModelTable
             onToggleAll={onToggleAll}
+            onSelectOnly={onSelectOnly}
             models={visibleModels}
             selectedIds={selectedIds}
             stagedImageCount={stagedImageCount}
@@ -135,6 +141,7 @@ function ModelTable({
   stagedImageCount,
   onToggle,
   onToggleAll,
+  onSelectOnly,
   onAfterToggle,
 }: {
   models: Array<UnifiedModel>
@@ -142,6 +149,7 @@ function ModelTable({
   stagedImageCount: number
   onToggle: (id: string) => void
   onToggleAll?: () => void
+  onSelectOnly?: (id: string) => void
   onAfterToggle?: () => void
 }) {
   const allSelected =
@@ -198,8 +206,17 @@ function ModelTable({
         return (
           <button
             key={model.id}
-            onClick={() => {
-              onToggle(model.id)
+            /* Cmd/Ctrl-click solos a model: it alone, everything else off
+               (#358). The same modifier the grid uses for its power moves, and
+               the same reasoning -- the common case is toggling one row, and
+               "I want just this one" was otherwise nine clicks off. Plain
+               click is untouched. */
+            onClick={(e) => {
+              if (onSelectOnly && (e.metaKey || e.ctrlKey)) {
+                onSelectOnly(model.id)
+              } else {
+                onToggle(model.id)
+              }
               onAfterToggle?.()
             }}
             title={
@@ -234,6 +251,7 @@ function DropdownModels({
   stagedImageCount,
   onToggle,
   onToggleAll,
+  onSelectOnly,
 }: {
   models: Array<UnifiedModel>
   selectedIds: Array<string>
@@ -241,6 +259,7 @@ function DropdownModels({
   stagedImageCount: number
   onToggle: (id: string) => void
   onToggleAll?: () => void
+  onSelectOnly?: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -278,6 +297,7 @@ function DropdownModels({
               stagedImageCount={stagedImageCount}
               onToggle={onToggle}
               onToggleAll={onToggleAll}
+              onSelectOnly={onSelectOnly}
               onAfterToggle={() => {
                 if (mode === 'single') setOpen(false)
               }}
