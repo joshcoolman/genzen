@@ -144,8 +144,10 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
-2026-08-13
+2026-08-14
 
+- **Permissive in, informed after** — the generator panel no longer caps the reference strip at the smallest selected model, which used to *delete* staged images when you ticked a one-image model. Stage as many as you like; each model takes what its endpoint holds, the submit drops the rest, and the card says "1 of 5 images". The picker became a table (name, price, capacity) sorted by price, with rows that cannot hold the current set dimmed but still selectable (#341)
+- **A cheap tier, three models wide** — Z-Image Turbo, FLUX.2 Flash and FLUX.2 Klein 4B, half a cent to a cent each. Everything else in the lineup was $0.03–$0.04, or $1.00 for GPT Image 2, so there was no tier for "fire several and skim". Three because the picker is multi-select: the same prompt across all three costs under two cents (#262)
 - **Group writes are one round trip** — filing images into a group moves the grid on the click, and the card's new cover and count arrive with the response. Every group write returns what it changed (the affected summaries, the images whose membership moved, the ids a group trash soft-deleted) instead of being followed by a group re-read and a gallery re-read, serialised, with nothing on screen moving until the last landed (#331)
 - **Bulk actions are instant** — trashing a selection is one round trip instead of one per image, and the cards leave on the click; the gallery seed is bounded, so a mutation no longer costs a full library scan (a server action re-renders its route, which re-runs that read); and `on_canvas` stopped being derived per row for a marker no card has drawn since #314. Epic #333's `now` column is clear (#328, #329, #330)
 - **The FAL poll gives up** — a generation now has a deadline (10 min for a still, 30 for a clip), past which it becomes a retryable failed card instead of a poll that never ends; one row had been pending for 26 hours, checked every five seconds throughout. One shared timer for Images, Video and Activity: backs off with the age of the work, sleeps while the tab is hidden, stops when nothing is in flight. First of epic #333 (#327)
