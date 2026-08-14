@@ -11,15 +11,21 @@ anything one route renders lives with that route.
   only place to add or remove one; everything else in the file derives from it. A
   model is one name over up to two FAL endpoints — `textToImage` (no references)
   and `withImages` (references attached) — picked by `endpointFor(id, hasRefs)`,
-  with `maxRefs` capping how many are sent. `getModelName()` resolves either,
+  with `maxRefs` describing how many it holds -- a hint the submit truncates to,
+  not a gate the panel enforces (#341). `getModelName()` resolves either,
   because `images.model` stores the resolved one. The legacy
   `ALL_IMAGE_MODELS` / `IMAGE_INPUT_MODELS` / `EDIT_MODELS` shape is gone (#190);
   `models.test.ts` keeps their numbers as fixtures so a lineup edit cannot
   quietly change a cap or a name that used to be pinned.
-- **`fal-params.server.ts` is the one param resolver.** `buildFalInput()` resolves
-  size, safety and image params per model schema for every path — generate,
-  variations, retry. Some models take resolution enum strings and others
-  width/height objects; that difference lives here and nowhere else.
+- **`fal-params.server.ts` is the one param resolver, and the only enforcer of a
+  model's image limit (#341).** `buildFalInput()` resolves size, safety and image
+  params per model schema for every path — generate, variations, retry. Some
+  models take resolution enum strings and others width/height objects; that
+  difference lives here and nowhere else. It truncates the image list to
+  `imageCapacityFor` and **returns what it sent** (`imagesRequested` /
+  `imagesUsed`), which the caller writes to the row when the two disagree. For an
+  endpoint no entry claims it falls back to the schema shape rather than dropping
+  everything — that is what lets a model be tried with nothing verified about it.
 - **`useGenerator` takes a required `origin`** (`images | canvas`), written to
   every row it creates, so a new host cannot be an unmarked generation source
   (#207).
@@ -33,20 +39,22 @@ anything one route renders lives with that route.
   place. `use-system-instructions.ts` is for the UI that edits it and is not on
   the submit path.
 - **One set, not a source plus references (#297).** `useGenerator` holds an
-  ordered `refImages` of zero to `maxRefImages`, and every member is a library
+  ordered, **unbounded** `refImages`, and every member is a library
   row -- there is no bytes-only member, because the only way in is the library
   picker. `maxRefImages` is `imageCapacityFor` minimised across the selection
   (`maxRefs` counts images _beyond_ a source that no longer exists, so capacity
-  is `maxRefs + 1`), and a narrowing selection trims the set rather than letting
-  the submit drop the overflow. Index 0 is the only asymmetry: an effect derives
+  is `maxRefs + 1`) -- reported since #341, never enforced: clamping to it
+  deleted staged images the moment a smaller model was ticked, and the submit
+  truncates per model and says so instead. Index 0 is the only asymmetry: an effect derives
   orientation and aspect ratio from whatever lands there, and the submit sends
   it as `sourceImageId` with the rest as `referenceImageIds`. **That split is
   the wire's, not the model's** -- the server concatenates them straight back
   into one ordered `image_urls`, and it survives only because
   `generation_metadata` (and so `retry-plan.ts`) is written in those terms.
-- **Three ends to the set.** `addRefImages` appends and slices the tail off, for
-  picking several at once; `pushRefImage` unshifts and evicts the last, for the
-  one-at-a-time gesture that means "use this one" (Cmd-click a card, #284);
+- **Three ends to the set.** `addRefImages` appends, for picking several at
+  once; `pushRefImage` unshifts, for the one-at-a-time
+  gesture that means "use this one" (Cmd-click a card, #284) — it evicted the
+  last until #341, and nothing replaced the limit;
   `setPrimaryImage` replaces slot 0 and keeps the rest, and applying variations
   is its only caller -- the prompts are _of_ that image. `setPrimaryImage` was
   briefly the Cmd-click binding and should not be again: replacing meant

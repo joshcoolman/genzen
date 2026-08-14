@@ -40,11 +40,13 @@ list once when the seed comes back full, so the grid is never short.
   generator with nothing saying so. The cost is that upload-and-immediately-use
   is two gestures now; `reveal()` widens the scope to wherever the file landed,
   so the second is a click rather than a hunt
-- **The cap is the minimum across the selected models**, never the first one's.
-  `buildFalInput` drops everything past index 0 for a model whose schema takes
-  `image_url` rather than `image_urls`, so a mixed selection used to send the
-  small model one image with no warning. Narrowing the selection **visibly
-  trims the set** rather than truncating it at submit
+- **Nothing caps the set (#341).** Stage as many images as you like against any
+  selection; each model takes what its endpoint holds, `buildFalInput` drops the
+  rest, and `images_used`/`images_requested` on the row make the card say "1 of
+  5 images". The picker's `Refs` column is the capacity, and a row that cannot
+  hold the current set is dimmed -- still selectable. The panel used to clamp to
+  the minimum across the selection, which **deleted staged images** when you
+  ticked a smaller model
 - **The grid never marks the set, and reaches it only through modifiers (#284).**
   Not buttons, deliberately: **Cmd-click a card adds that image to the set,
   Cmd-click its prompt loads that text** -- and nothing else in the panel
