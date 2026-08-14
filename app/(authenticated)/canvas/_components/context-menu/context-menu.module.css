@@ -32,7 +32,7 @@
 
 .contextMenuItem:hover {
   color: var(--text);
-  background: var(--surface-raised);
+  background: var(--row-hover);
 }
 
 .contextMenuItemDanger {

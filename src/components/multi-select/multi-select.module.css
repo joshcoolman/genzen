@@ -13,7 +13,7 @@
 }
 
 .trigger:hover {
-  background: var(--surface-raised);
+  background: var(--field-hover);
 }
 
 .triggerActive {
@@ -62,7 +62,7 @@
 }
 
 .clearAll:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
   color: var(--text);
 }
 
@@ -91,7 +91,7 @@
 }
 
 .option:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
 }
 
 /* The selected/unselected pair the model selector established: a brand-green
