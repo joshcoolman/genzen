@@ -41,5 +41,10 @@ export interface SavedAiImage {
     root_image_id?: string
     aspect_ratio?: string
     reference_image_ids?: Array<string>
+    /** Written only when the endpoint held fewer images than it was given
+     *  (#341). Absent on a generation that used everything it was offered,
+     *  which is what makes their presence the whole condition for the note. */
+    images_requested?: number
+    images_used?: number
   } | null
 }

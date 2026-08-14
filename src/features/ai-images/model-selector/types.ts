@@ -8,5 +8,13 @@ export interface UnifiedModel {
   capability: ModelCapability
   editId?: string
   maxRefImages?: number
-  displayPrice?: string
+  /** Dollars per image. A number so the picker can align and sort it (#341). */
+  price?: number
+  /**
+   * Images this model's endpoint holds -- `imageCapacityFor`, not `maxRefs`.
+   * Shown in the picker always, staged set or not, and it is the whole of what
+   * the picker says about limits: the panel no longer enforces one, so a set
+   * larger than this is truncated at submit and reported on the card.
+   */
+  capacity: number
 }

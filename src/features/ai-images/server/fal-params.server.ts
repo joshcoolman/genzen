@@ -4,6 +4,7 @@
  */
 import { fetchModelSchema } from './fal-schema.server'
 import { RATIO_TO_SIZE } from '#/features/ai-images/constants'
+import { imageCapacityFor } from '#/features/ai-images/models'
 
 // Maps our aspect ratios to resolution strings for models like GPT Image 1.5
 // that accept a fixed enum of "WIDTHxHEIGHT" values
@@ -32,9 +33,40 @@ export interface BuildFalInputOptions {
   extraParams?: Record<string, unknown>
 }
 
+export interface BuiltFalInput {
+  input: Record<string, unknown>
+  /** How many images the caller offered. */
+  imagesRequested: number
+  /** How many of them the endpoint could hold, and so how many were sent. */
+  imagesUsed: number
+}
+
+/**
+ * How many images this endpoint takes (#341).
+ *
+ * The lineup's `imageCapacityFor` is the answer whenever an entry claims the
+ * id, because the panel shows that same number -- a cap the submit derived
+ * differently would contradict what the picker promised.
+ *
+ * An endpoint no entry claims (a retired id being retried, or a model wired up
+ * to try) falls back to the schema shape: `image_urls` takes as many as it is
+ * given, `image_url` takes one, neither takes none. That fallback is the point
+ * of the whole change -- an unlisted model behaves, it does not lose every
+ * image because no one wrote a number down.
+ */
+function imageCapacity(
+  modelId: string,
+  param: 'image_url' | 'image_urls' | null,
+): number {
+  const known = imageCapacityFor(modelId)
+  if (known > 0) return known
+  if (param === 'image_urls') return Infinity
+  return param === 'image_url' ? 1 : 0
+}
+
 export async function buildFalInput(
   opts: BuildFalInputOptions,
-): Promise<Record<string, unknown>> {
+): Promise<BuiltFalInput> {
   const schema = await fetchModelSchema(opts.modelId)
 
   const input: Record<string, unknown> = {
@@ -77,13 +109,24 @@ export async function buildFalInput(
     }
   }
 
-  // Image input params
+  // Image input params.
+  //
+  // Truncation is explicit and ours, and it is reported back (#341). The panel
+  // no longer refuses images past a model's capacity, so this is where a set
+  // larger than the endpoint meets the endpoint. It has to be ours rather than
+  // FAL's because FAL does not agree with itself about which images survive --
+  // FLUX.2 keeps the first four, Seedream keeps the LAST ten -- and a note that
+  // says "4 of 6 used" is a lie if the four were not the four we listed.
   const urls = opts.imageUrls ?? (opts.imageUrl ? [opts.imageUrl] : [])
-  if (urls.length > 0 && schema.imageInputParam) {
+  const sent = urls.slice(
+    0,
+    imageCapacity(opts.modelId, schema.imageInputParam),
+  )
+  if (sent.length > 0 && schema.imageInputParam) {
     if (schema.imageInputParam === 'image_urls') {
-      input.image_urls = urls
+      input.image_urls = sent
     } else {
-      input.image_url = urls[0]
+      input.image_url = sent[0]
     }
   }
 
@@ -92,7 +135,12 @@ export async function buildFalInput(
     Object.assign(input, opts.extraParams)
   }
 
-  return input
+  return {
+    input,
+    imagesRequested: urls.length,
+    // A schema with no image param takes none, whatever the capacity said.
+    imagesUsed: schema.imageInputParam ? sent.length : 0,
+  }
 }
 
 function isResolutionEnum(values?: Array<string>): boolean {
