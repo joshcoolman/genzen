@@ -101,7 +101,7 @@ list once when the seed comes back full, so the grid is never short.
   that was in progress. **The generator dock steps back the same way** (#326):
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
-  live so the X still closes it
+  live so the gear is still reachable
 - **A click opens the preview, and the lightbox moved out.** The click used to
   open the lightbox here, and it felt disorienting for a reason that took a
   while to name: an overlay that covers everything costs nothing while
@@ -228,5 +228,22 @@ group` opens a dialog because a flyout of names commits you to picking one at
 is closed. Unpinning bought the gallery back 20rem while covering the right-hand
 column of thumbnails with the panel, so the images it revealed were the ones it
 hid -- and it cost a dismiss layer plus `.inset` padding on the toolbar, which
-existed only so the tools were not underneath it (#207). The X is the way to get
-the space back.
+existed only so the tools were not underneath it (#207).
+
+**The toolbar toggle is the only way in and out** (#345). The panel's own X went
+with it: an X on something the sidebar toggles reads as "discard this" rather
+than "collapse this", and there is nothing to discard, since the prompt and the
+staged set survive either way. One switch going both directions. The mobile
+full-screen variant keeps its X, because it covers the toolbar that would
+otherwise close it.
+
+The panel's header carries the title and the system-instructions gear. **Every
+surface that renders `GeneratorPanel` must render that gear** -- the Images dock,
+its mobile variant, and the Canvas dialog. It used to live inside the panel so
+that was structural; it is now a rule, and the failure it guards against is
+silent: a prompt prefix applying to generations with nothing on screen saying so.
+
+Vertical spacing in the panel is one knob, `--panel-rhythm` on
+`generator-panel.module.css`'s root, inherited by `PromptList` and
+`ModelSelector`. Change that rather than spot-fixing a gap -- three components
+each picking their own is how it drifted to 12/8/4.
