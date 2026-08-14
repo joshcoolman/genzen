@@ -242,21 +242,25 @@ group` opens a dialog because a flyout of names commits you to picking one at
   `group_id` until its row exists, so the destination is what is counted while
   the bytes are going up -- without it the one kind of work the card could not
   see was an upload aimed at it
-- **Clicking the swatch strip discloses the whole group, full width (#352).**
-  The strip is the toggle, not the card -- looking at what is inside and going
-  inside are different intentions. The expansion is its own grid cell spanning
-  `1 / -1`, dropped in after the card, rather than the card growing: grown in
-  place a group of fifty makes its own row twelve swatches tall and strands the
-  cards beside it, and at a 200px card five across is a 33px thumbnail, which
-  is texture rather than orientation. Across the full width the same fifty are
-  ten or twelve columns you can actually recognise. The cells left empty beside
-  the expanded card are what say which card it belongs to. **One group at a
-  time**, and the ids are fetched on open -- `preview_image_ids` stays capped at
-  six because it rides on every group write (#331), so a fifty-member group
-  would put fifty uuids in the payload of every rename and every refresh to
-  serve a panel that is usually closed. Cached per group and dropped by any
-  write that touches it. An empty group's strip stays a plain div, so its click
-  still opens the group instead of being a dead control
+- **Clicking the swatch strip grows it through the whole group (#352).** The
+  strip keeps its five columns and its first row; the card just gets taller,
+  five across, for as many rows as the group needs. Strictly additive -- the
+  five you were looking at do not move, more appear beneath them -- which is
+  why the cover stays excluded in both states. The strip is the toggle rather
+  than the card, because looking at what is inside and going inside are
+  different intentions. **Offered only when something is hidden**: a group of
+  five or fewer is already entirely visible, so its row stays a plain div and
+  the click still opens the group instead of being a dead control. Any number
+  of groups can be open at once -- an expanded strip changes nothing else's
+  width, so it costs the others only the distance they move down. `.grid` is
+  `align-items: start` for the same reason: stretching gave three ordinary
+  cards a tall grey foot to match one expanded neighbour. **The ids are fetched
+  on open** -- `preview_image_ids` stays capped at six because it rides on every
+  group write (#331), so a fifty-member group would put fifty uuids in the
+  payload of every rename and every refresh to serve a strip that is usually
+  collapsed. Cached per group, dropped by any write touching it, and the slots
+  are held at `count` while the read is in flight so the card reaches its final
+  height once
 - **Move to group empties a group into another and drops it.** Membership is an
   exclusive column, so it is one update and a delete -- no new write plumbing,
   and `GroupWrite.gone` already carried the vanished group. Named for the images

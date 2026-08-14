@@ -94,6 +94,13 @@ button.swatches:hover .swatchEmpty {
   opacity: 0.82;
 }
 
+/* Expanded, the row is many rows and the same gap would read as one dense
+   block. A little more air between rows than between columns keeps it legible
+   as a grid of pictures. */
+.swatchesExpanded {
+  row-gap: var(--space-8);
+}
+
 .swatch,
 .swatchEmpty {
   transition: opacity var(--dur-fast) var(--ease);
@@ -104,7 +111,8 @@ button.swatches:hover .swatchEmpty {
    grid that lost its rhythm. That is also why the count is not in here -- there
    is no spare cell for it. */
 .swatch,
-.swatchEmpty {
+.swatchEmpty,
+.swatchLoading {
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   background-color: var(--surface-sunken);
@@ -118,6 +126,24 @@ button.swatches:hover .swatchEmpty {
    broken grid rather than as room for more. */
 .swatchEmpty {
   background-color: var(--slot-empty);
+}
+
+/* A slot in an expanded strip whose picture has not arrived yet. Breathing
+   rather than ghosted, because the space is held for something specific --
+   holding it is what stops the card growing twice. */
+.swatchLoading {
+  background-color: var(--slot-empty);
+  animation: slot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes slot-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }
 
 /* Beside the name rather than in the swatch row. It was a fifth cell there,

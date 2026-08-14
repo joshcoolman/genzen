@@ -124,7 +124,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           workingByGroup={workingByGroup}
-          expandedGroupId={groups.expandedId}
+          expandedGroupIds={groups.expandedIds}
           groupMembers={groups.members}
           onToggleGroupMembers={groups.toggleExpanded}
           onOpenGroup={openGroup}

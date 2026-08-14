@@ -8,4 +8,9 @@
 .grid {
   display: grid;
   gap: var(--space-16);
+  /* Cards keep their own height rather than stretching to the tallest in the
+     row. It never mattered while every card was about the same height; an
+     expanded group strip (#352) is three times its neighbours, and stretching
+     made three ordinary cards grow a tall grey foot to match it. */
+  align-items: start;
 }

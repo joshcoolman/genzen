@@ -18,6 +18,7 @@ import {
   Thumbnail,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 /** Five, filling the caption's width. A group with fewer members still draws
  *  five cells -- the empty ones ghost, which keeps the row the same shape on
@@ -40,10 +41,14 @@ interface GroupCardProps {
   onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
-  /** The strip is a toggle that discloses every member below the grid row
-   *  (#352). Absent for an empty group -- there is nothing to disclose. */
+  /** The strip is a toggle: expanded, it keeps its five columns and grows down
+   *  through every member (#352). Absent for an empty group -- there is nothing
+   *  to disclose. */
   onToggleMembers?: () => void
   expanded?: boolean
+  /** Every member, newest first, once the read lands. Undefined while it is in
+   *  flight, which draws ghosts at the count the card already knows. */
+  members?: Array<string>
   /** Something in the grid is selected (#325). A group cannot join a selection,
    *  so it steps out of the way rather than offering its own verbs. */
   selectionActive?: boolean
@@ -78,6 +83,7 @@ export function GroupCard({
   onTrash,
   onToggleMembers,
   expanded = false,
+  members,
   selectionActive,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
@@ -100,14 +106,32 @@ export function GroupCard({
    * The cover is already the picture above; repeating it as the first swatch
    * spends one of five slots on something directly overhead.
    */
-  const swatchIds = group.preview_image_ids
+  const swatchIds = (
+    expanded ? (members ?? group.preview_image_ids) : group.preview_image_ids
+  )
     .filter((id) => id !== coverId)
-    .slice(0, SWATCH_COUNT)
+    .slice(0, expanded ? undefined : SWATCH_COUNT)
 
-  // Padded to a fixed five so the row never reflows: a null is a ghosted slot.
+  /**
+   * The row, padded to whole rows of five.
+   *
+   * Collapsed that is one row, and a null ghosts -- the strip keeps its shape
+   * on every card. Expanded it is however many rows the group needs, still five
+   * across, so the card grows *down* and nothing about its width or its first
+   * row changes (#352). The five you were looking at stay exactly where they
+   * were and more appear beneath them.
+   *
+   * While the read is in flight the length comes from `count`, so the card
+   * reaches its final height at once and the grid below it moves one time
+   * instead of twice.
+   */
+  const target = expanded
+    ? Math.max(group.count - (coverId ? 1 : 0), swatchIds.length)
+    : SWATCH_COUNT
+  const rows = Math.max(1, Math.ceil(target / SWATCH_COUNT))
   const swatchSlots: Array<string | null> = Array.from(
-    { length: SWATCH_COUNT },
-    (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
+    { length: rows * SWATCH_COUNT },
+    (_, i) => swatchIds[i] ?? null,
   )
 
   const swatchRow = swatchSlots.map((id, i) => (
@@ -227,7 +251,10 @@ export function GroupCard({
           {onToggleMembers ? (
             <button
               type="button"
-              className={styles.swatches}
+              className={cx(
+                styles.swatches,
+                expanded && styles.swatchesExpanded,
+              )}
               aria-expanded={expanded}
               aria-label={
                 expanded

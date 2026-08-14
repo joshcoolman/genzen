@@ -38,17 +38,17 @@ export function useGroups() {
   const [loading, setLoading] = useState(true)
 
   /**
-   * The one group whose strip is expanded, and its members (#352).
+   * Which strips are expanded, and the members to draw in them (#352).
    *
-   * One at a time: two open accordions push the rest of the grid a long way
-   * down, and the panel is for orienting on a group rather than comparing two.
-   * Clicking another group's strip moves the expansion rather than adding one.
+   * Any number at once: an expanded strip grows its own card taller and changes
+   * nothing else's width, so one being open costs the others only the distance
+   * they move down. There is nothing to arbitrate.
    *
-   * `members` is keyed by group id and kept after collapsing, so re-opening the
-   * same group is instant. It is invalidated by every write below, because a
-   * write is exactly when the membership it caches can have changed.
+   * `members` is kept after collapsing, so re-opening is instant. It is
+   * invalidated by every write below, because a write is exactly when the
+   * membership it caches can have changed.
    */
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [members, setMembers] = useState<Record<string, Array<string>>>({})
 
   const refresh = useCallback(async () => {
@@ -67,21 +67,23 @@ export function useGroups() {
 
   const toggleExpanded = useCallback(
     (groupId: string) => {
-      if (expandedId === groupId) {
-        setExpandedId(null)
+      if (expandedIds.has(groupId)) {
+        setExpandedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(groupId)
+          return next
+        })
         return
       }
-      setExpandedId(groupId)
+      setExpandedIds((prev) => new Set(prev).add(groupId))
       // Fetched on open and only on open. A cached list renders immediately
       // and is refreshed underneath, so re-opening never waits on the network.
       void listGroupMemberIds(groupId)
         .then((ids) => setMembers((prev) => ({ ...prev, [groupId]: ids })))
         .catch(() => toast('Could not load that group'))
     },
-    [expandedId],
+    [expandedIds],
   )
-
-  const collapse = useCallback(() => setExpandedId(null), [])
 
   /**
    * Patch the list from what the write returned.
@@ -102,7 +104,11 @@ export function useGroups() {
       }
       return next
     })
-    setExpandedId((prev) => (prev && write.gone.includes(prev) ? null : prev))
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      for (const id of write.gone) next.delete(id)
+      return next
+    })
     setGroups((prev) => {
       const gone = new Set(write.gone)
       const next = prev.filter((g) => !gone.has(g.id))
@@ -205,10 +211,9 @@ export function useGroups() {
   return {
     groups,
     loading,
-    expandedId,
+    expandedIds,
     members,
     toggleExpanded,
-    collapse,
     refresh,
     create,
     addTo,
