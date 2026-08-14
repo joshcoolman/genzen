@@ -142,8 +142,12 @@ export function GeneratorPanel({
           strip refusing an image was how staged work got deleted by ticking a
           smaller model. It still disables with no model selected at all --
           there is nothing to attach images to. */}
+      {/* No "Reference images" heading. The strip is a row of thumbnails and a
+          + box directly under the prompt, which is where an image would be
+          expected in a generate panel; the label was naming the obvious and
+          spending a line of a 20rem column to do it. The picker it opens says
+          what it is. */}
       <div className={styles.refs}>
-        <p className={styles.refsLabel}>Reference images</p>
         <RefImageStrip
           images={generator.refImages}
           onAdd={() => {

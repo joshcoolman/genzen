@@ -39,11 +39,3 @@
   flex-direction: column;
   gap: var(--space-8);
 }
-
-/* The set is the one control here that is not self-evident from its contents
-   -- an empty strip of one + button says nothing about what it is for. */
-.refsLabel {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-}

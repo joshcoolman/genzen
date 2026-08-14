@@ -5,15 +5,15 @@
   margin-bottom: var(--space-8);
 }
 
-/* The strip does not resize when Clear all appears -- typing in an empty prompt
-   used to push every control below it down mid-sentence. Clear all is now its
-   only occupant, so the 1rem floor is the whole mechanism rather than a leftover
-   from when it was: without it the row collapses on a single prompt and the
-   list jumps the moment a second one is added. */
+/* No reserved height. The 1rem floor was here because Clear all used to appear
+   on the first keystroke in an empty field, shifting every control below it
+   mid-sentence. It is now tied to `prompts.length > 1`, so the only thing that
+   can summon it is Add prompt -- which moves the whole list anyway, by a whole
+   textarea. Holding 1rem open bought nothing and cost the panel its tightest
+   gap: an empty strip between the header and the first prompt. */
 .clearRow {
   display: flex;
   align-items: center;
-  min-height: 1rem;
 }
 
 .clearAll {
@@ -90,12 +90,19 @@
   right: var(--space-6);
 }
 
-/* Add prompt left, the action slot right. Both are chips at the same scale, so
-   the row reads as one pair of options on the list rather than a control and a
-   heading. */
+/* Add prompt and the action slot split the row evenly, each centring its own
+   label. Two ways of filling a prompt, given equal weight and the panel's full
+   width, rather than a pair of chips marooned at opposite edges.
+
+   `> button` rather than `> *`: the slot's occupant renders its chip alongside
+   a Dialog, and only the chip is in the row. */
 .actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-8);
+}
+
+.actions > button {
+  flex: 1;
+  justify-content: center;
 }
