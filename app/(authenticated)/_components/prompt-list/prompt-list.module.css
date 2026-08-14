@@ -6,22 +6,17 @@
 }
 
 /* The strip does not resize when Clear all appears -- typing in an empty prompt
-   used to push every control below it down mid-sentence. Its height comes from
-   the header slot, which is always occupied, with the 1rem floor left over from
-   when the row could be empty. */
+   used to push every control below it down mid-sentence. Clear all is now its
+   only occupant, so the 1rem floor is the whole mechanism rather than a leftover
+   from when it was: without it the row collapses on a single prompt and the
+   list jumps the moment a second one is added. */
 .clearRow {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: var(--space-8);
   min-height: 1rem;
 }
 
-/* Pushed left so the strip reads Clear all / Generate prompt / gear, while the
-   row stays `flex-end` -- with Clear absent (a single prompt) the others must
-   not slide over to where Clear would have been. */
 .clearAll {
-  margin-right: auto;
   border: none;
   background: transparent;
   font-size: var(--text-2xs);
@@ -95,6 +90,12 @@
   right: var(--space-6);
 }
 
+/* Add prompt left, the action slot right. Both are chips at the same scale, so
+   the row reads as one pair of options on the list rather than a control and a
+   heading. */
 .actions {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
 }

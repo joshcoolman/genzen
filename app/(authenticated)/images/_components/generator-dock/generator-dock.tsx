@@ -1,7 +1,7 @@
 'use client'
 
-import { X } from 'lucide-react'
 import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
+import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
 import styles from './generator-dock.module.css'
 import type { DockState } from '../../_hooks/use-dock'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
@@ -55,9 +55,12 @@ export function GeneratorDock({
     return (
       <Dialog open={dock.open} onOpenChange={dock.setOpen}>
         <DialogContent size="fullscreen" showCloseButton={false}>
+          {/* The X stays here, unlike the desktop header: a full-screen dialog
+              covers the sidebar that would otherwise close it. */}
           <MobileDialogHeader
             title="Generate"
             onClose={() => dock.setOpen(false)}
+            action={<SystemInstructionsButton />}
           />
           <div className={styles.mobileBody}>{panel}</div>
         </DialogContent>
@@ -69,15 +72,14 @@ export function GeneratorDock({
 
   return (
     <div className={cx(styles.panel, selectionActive && styles.stepBack)}>
+      {/* No close button. An X on a panel that the sidebar toggles reads as
+          "discard this", not "collapse this" -- and there is nothing here to
+          discard, since the prompt and the staged set survive either way. The
+          sidebar's own control is the honest one: the same switch going both
+          directions. */}
       <div className={styles.header}>
         <span className={styles.title}>Generate</span>
-        <button
-          onClick={() => dock.setOpen(false)}
-          className={styles.headerButton}
-          aria-label="Close the generator"
-        >
-          <X className={styles.icon} />
-        </button>
+        <SystemInstructionsButton />
       </div>
       {/* Inert, not merely dimmed: a dimmed panel that still takes clicks and
           Tab stops is a lie. The header stays live so the X can still close

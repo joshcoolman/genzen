@@ -42,28 +42,6 @@
   color: var(--text-muted);
 }
 
-.headerButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-muted);
-  transition: color var(--duration-normal) var(--ease-in-out);
-}
-
-.headerButton:hover {
-  color: var(--text);
-}
-
 .body {
   padding: 0 var(--space-16) var(--space-16);
-}
-
-.icon {
-  width: 0.875rem;
-  height: 0.875rem;
 }

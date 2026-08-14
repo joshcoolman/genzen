@@ -53,6 +53,10 @@ export function MiniButton({
       type={type}
       className={cx(
         styles.root,
+        // No label, so it squares up rather than staying a stubby chip. Derived
+        // rather than a prop: a chip with nothing to read is icon-only whether
+        // or not the call site says so, and the two could otherwise disagree.
+        !children && styles.iconOnly,
         variant === 'overlay' && styles.overlay,
         indicator && styles.indicated,
         className,

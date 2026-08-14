@@ -3,3 +3,10 @@
 .popup {
   --dialog-max-width: 23.75rem;
 }
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}

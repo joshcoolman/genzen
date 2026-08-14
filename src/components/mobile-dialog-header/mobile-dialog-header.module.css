@@ -4,14 +4,18 @@
   z-index: var(--z-sticky);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-8);
   min-height: 0;
   padding: var(--space-10) var(--space-12);
   background: var(--bg);
   border-bottom: var(--border-width) solid var(--border);
 }
 
+/* Takes the slack rather than the bar using `space-between`: with an `action`
+   present, spreading three children would strand the gear in the middle of the
+   bar instead of grouping it with the close. */
 .title {
+  margin-right: auto;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   line-height: var(--leading-none);
