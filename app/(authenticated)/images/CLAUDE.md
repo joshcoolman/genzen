@@ -138,15 +138,21 @@ list once when the seed comes back full, so the grid is never short.
   shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
 - **Upload is the leftmost control, and where it puts things depends on where
   you are (#348).** At top level it is a menu: _Upload_ lands loose, _Upload to
-  group_ picks a destination first and files the batch once the bytes are in,
-  leaving you at top level with a toast naming the group. **Inside a group
-  there is no menu** -- it goes straight to the file picker and the files land
-  in the open group. That is a deliberate exception to "one way to do things":
-  a group is a focus session, and asking which group you meant while standing
-  in one is ceremony. The menu is also absent with no groups to pick from.
-  Filing is one `addImagesToGroup` for the batch, not one per file -- the write
-  returns the group's new cover and count (#331), and per-file would pay for
-  that arithmetic every time
+  group_ picks a destination first, leaving you at top level with a toast
+  naming the group. **Inside a group there is no menu** -- it goes straight to
+  the file picker and the files land in the open group, and a paste does the
+  same. That is a deliberate exception to "one way to do things": a group is a
+  focus session, and asking which group you meant while standing in one is
+  ceremony. The menu is also absent with no groups to pick from.
+  **A destination is set at insert, not by a write afterwards (#350).**
+  `createImageRecord` takes the group id and resolves it through a subquery
+  that names the user, so a guessed uuid lands the upload loose rather than in
+  a stranger's group. Filing the batch after the fact -- one
+  `addImagesToGroup` for the lot, which was the right instinct about round
+  trips -- meant every thumbnail appeared at top level and was pulled out
+  again a moment later. A row born in the group is never loose, so there is
+  nothing to render and nothing to retract, and the optimistic card carries
+  the same `group_id` from its first frame
 - **The gallery has no origin filter, and no find (#348).** Pills scoped it by
   `origin` until working with them on All made the point: a group is a scope you
   made on purpose, and it is the only one worth having. `reveal()` went with
@@ -215,6 +221,35 @@ group` opens a dialog because a flyout of names commits you to picking one at
   skips straight to naming when there are no groups yet. The card carries no
   "Group" label: the swatch strip reads as texture at a glance, a label is text
   to parse
+- **The swatch strip is feedback, not portraiture -- but never a loading state
+  (#350).** Nobody picks those five: they are "what is happening in here
+  lately", ordered newest-first. The cover is the curated one, which is why it
+  freezes and the strip does not. Two consequences. The strip shows pictures
+  only -- a row with no `storage_path` used to take the newest slot and render
+  as a filled swatch of nothing. And **work in flight is not in the strip at
+  all**: a pending slot re-composed all five cells twice per image, in the
+  middle of a grid that is already swapping optimistic cards for real ones. The
+  card says ", 3 working" in its caption instead, where saying it moves nothing,
+  and the pictures change once, after the work is done
+- **A group's work-in-flight is counted on the client, never read from the
+  server.** `use-view` already holds every row, so it is arithmetic on state in
+  hand. A `pending_count` on the summary looked cheaper and was not: it made
+  every settle a reason to re-read the groups, and each of those is a server
+  action that re-renders the whole route. The summaries are re-read **once per
+  burst** -- when a group's in-flight count reaches zero -- because that is the
+  only moment the strip has something new to show. Uploads are counted from
+  their destination rather than from the rows: a file on its way up has no
+  `group_id` until its row exists, so the destination is what is counted while
+  the bytes are going up -- without it the one kind of work the card could not
+  see was an upload aimed at it
+- **Move to group empties a group into another and drops it.** Membership is an
+  exclusive column, so it is one update and a delete -- no new write plumbing,
+  and `GroupWrite.gone` already carried the vanished group. Named for the images
+  rather than "Merge", because that is what moves. The destination picker
+  excludes the source and offers no `New group...`: moving a group's contents
+  somewhere that does not exist yet is a rename. The source's frozen cover is
+  discarded and the target keeps its own -- re-covering the destination would
+  silently undo a choice someone made
 - **Trashing clears `group_id`, on all three soft-delete paths.** Restore has
   one destination, always. Restoring into a remembered group sounds tidier and
   fails worse -- the image is not where you look for it and nothing on screen

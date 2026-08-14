@@ -6,6 +6,7 @@ import {
   createImageGroup,
   dissolveImageGroup,
   listImageGroups,
+  moveGroupContents,
   removeImagesFromGroup,
   renameImageGroup,
   setGroupCover,
@@ -108,6 +109,17 @@ export function useGroups() {
     [write],
   )
 
+  /** The card's Move to group: every picture goes to the destination and the
+   *  source group is gone. One write, because membership is a column (#350). */
+  const moveContents = useCallback(
+    (sourceGroupId: string, targetGroupId: string) =>
+      write(
+        () => moveGroupContents(sourceGroupId, targetGroupId),
+        'Could not move the group',
+      ),
+    [write],
+  )
+
   const removeFrom = useCallback(
     (imageIds: Array<string>) =>
       write(
@@ -152,6 +164,7 @@ export function useGroups() {
     refresh,
     create,
     addTo,
+    moveContents,
     removeFrom,
     rename,
     dissolve,

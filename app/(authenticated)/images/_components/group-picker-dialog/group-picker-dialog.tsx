@@ -18,8 +18,15 @@ interface GroupPickerDialogProps {
   groups: Array<ImageGroupSummary>
   /** How many images are being filed, for the title. */
   count: number
+  /** Defaults to the filing case. Moving a whole group's contents (#350) is
+   *  the same question asked about a different noun, so it borrows the dialog
+   *  rather than growing a second one. */
+  title?: string
+  description?: string
   onPick: (groupId: string) => void
-  onNewGroup: () => void
+  /** Absent hides the `New group...` row. A move has no use for it: sending a
+   *  group's contents to a group that does not exist yet is a rename. */
+  onNewGroup?: () => void
   onCancel: () => void
 }
 
@@ -39,6 +46,8 @@ export function GroupPickerDialog({
   open,
   groups,
   count,
+  title = 'Add to group',
+  description,
   onPick,
   onNewGroup,
   onCancel,
@@ -52,9 +61,9 @@ export function GroupPickerDialog({
     >
       <DialogContent className={styles.content}>
         <DialogHeader>
-          <DialogTitle>Add to group</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {count === 1 ? '1 image' : `${count} images`}
+            {description ?? (count === 1 ? '1 image' : `${count} images`)}
           </DialogDescription>
         </DialogHeader>
 
@@ -71,10 +80,16 @@ export function GroupPickerDialog({
             </button>
           ))}
 
-          <button type="button" className={styles.newRow} onClick={onNewGroup}>
-            <Plus className={styles.newIcon} />
-            New group...
-          </button>
+          {onNewGroup && (
+            <button
+              type="button"
+              className={styles.newRow}
+              onClick={onNewGroup}
+            >
+              <Plus className={styles.newIcon} />
+              New group...
+            </button>
+          )}
         </div>
 
         <DialogFooter>

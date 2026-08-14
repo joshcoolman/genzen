@@ -110,3 +110,24 @@
   font-size: var(--text-3xs);
   white-space: nowrap;
 }
+
+/* ", 2 working" -- the entire report that something is in flight (#350).
+   Deliberately only text: it appears, changes and goes without moving the
+   swatch row, which is what a slot-based indicator could not do. A shade
+   brighter than the total it hangs off, because it is the transient half and
+   the only one worth a second look, and breathing so it reads as ongoing
+   rather than as a number that happens to be there. */
+.working {
+  color: var(--text-muted);
+  animation: working-pulse 2s ease-in-out infinite;
+}
+
+@keyframes working-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}

@@ -1,6 +1,12 @@
 'use client'
 
-import { MoreHorizontal, Pencil, Trash2, Unlink } from 'lucide-react'
+import {
+  FolderInput,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Unlink,
+} from 'lucide-react'
 import styles from './group-card.module.css'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import {
@@ -22,8 +28,16 @@ interface GroupCardProps {
   group: ImageGroupSummary
   /** The gallery's caption toggle, honoured exactly as an image card does. */
   showInfo?: boolean
+  /** How many things are in flight for this group right now -- generations
+   *  queued, uploads still sending. Client-derived and passed in, so saying so
+   *  costs no round trip and the strip below is never asked to be a spinner. */
+  working?: number
   onOpen: (group: ImageGroupSummary) => void
   onRename: (group: ImageGroupSummary) => void
+  /** Move every picture into another group and drop this one (#350). Absent
+   *  when there is nowhere to move to, which is how the menu item hides -- the
+   *  card does not know about the other groups and does not need to. */
+  onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
   /** Something in the grid is selected (#325). A group cannot join a selection,
@@ -52,8 +66,10 @@ interface GroupCardProps {
 export function GroupCard({
   group,
   showInfo = true,
+  working = 0,
   onOpen,
   onRename,
+  onMove,
   onDissolve,
   onTrash,
   selectionActive,
@@ -65,8 +81,19 @@ export function GroupCard({
   const coverId = group.cover_image_id ?? group.preview_image_ids[0]
   const coverUrl = coverId ? imageUrl(coverId, 'thumb') : undefined
 
-  // The cover is already the picture above; repeating it as the first swatch
-  // spends one of five slots on something directly overhead.
+  /**
+   * The strip: the group's newest members, in the group's own order.
+   *
+   * **Not a loading state** (#350). Work in flight used to take a slot here,
+   * which meant every settle re-composed the row -- five cells shifting one
+   * place, twice per image, while the grid around them was already churning.
+   * The strip only ever changes now when the pictures change, once, after the
+   * work is done. What is happening is said in the caption instead, where
+   * saying it moves nothing.
+   *
+   * The cover is already the picture above; repeating it as the first swatch
+   * spends one of five slots on something directly overhead.
+   */
   const swatchIds = group.preview_image_ids
     .filter((id) => id !== coverId)
     .slice(0, SWATCH_COUNT)
@@ -92,6 +119,16 @@ export function GroupCard({
           <Pencil />
           Rename
         </DropdownMenuItem>
+        {/* Move to group, not Merge (#350): it reads as an action on the
+            images, which is what it is -- they go to the destination and this
+            group, having nothing left, goes away. Absent when there is nowhere
+            to move to. */}
+        {onMove && (
+          <DropdownMenuItem onClick={() => onMove(group)}>
+            <FolderInput />
+            Move to group
+          </DropdownMenuItem>
+        )}
         {/* The non-destructive twin of the delete icon: same group gone, every
             picture kept and returned to top level. Both are offered because "I
             am done with this grouping" and "I am done with these images" are
@@ -151,8 +188,14 @@ export function GroupCard({
               it. */}
           <div className={styles.heading}>
             <span className={styles.name}>{group.name}</span>
+            {/* The whole report that a group you are not standing in is busy
+                (#350), and it is one line of text on purpose: it can change
+                every few seconds without moving a pixel of the row below. */}
             <span className={styles.total}>
               {group.count} {group.count === 1 ? 'image' : 'images'}
+              {working > 0 && (
+                <span className={styles.working}>, {working} working</span>
+              )}
             </span>
           </div>
           <div className={styles.swatches}>

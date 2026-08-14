@@ -8,10 +8,20 @@ import { imageUrl } from '#/lib/image-url'
 import { optimisticId } from '#/lib/optimistic-id'
 
 /** The placeholder a card shows while its bytes are still in flight. */
-function skeletonCard(id: string, title: string): SavedAiImage {
+function skeletonCard(
+  id: string,
+  title: string,
+  groupId: string | null,
+): SavedAiImage {
   return {
     id,
     title,
+    // Carried from the first frame (#350). An upload aimed at a group used to
+    // be born loose and moved in once the whole batch had landed, so every
+    // file appeared at top level and was then taken away again. A card that
+    // knows where it is going is filtered out of top level immediately, and
+    // there is nothing to retract.
+    group_id: groupId,
     // An in-flight upload is already an upload, so the card sits in the same
     // filter bucket the real row will land in and does not vanish on swap.
     origin: 'upload',
@@ -38,18 +48,19 @@ function skeletonCard(id: string, title: string): SavedAiImage {
 export function useUploads(
   userId: string | undefined,
   gallery: GalleryState,
-  /**
-   * Files freshly-uploaded rows into a group (#348). Passed in rather than
-   * called here, because membership is `useGroups`' write and this hook has no
-   * business knowing how a group write patches the grid.
-   */
-  fileIntoGroup: (groupId: string, imageIds: Array<string>) => Promise<void>,
+  /** The open group, which a paste lands in the same way a picked file does
+   *  (#348's rule -- standing in a group makes it the destination). Null at
+   *  top level. */
+  activeGroupId: string | null,
 ) {
   const ingest = useCallback(
-    async (file: File, { preview }: { preview: boolean }) => {
+    async (
+      file: File,
+      { preview, groupId }: { preview: boolean; groupId: string | null },
+    ) => {
       if (!userId) return null
       const tempId = optimisticId()
-      gallery.addOptimisticCard(skeletonCard(tempId, file.name))
+      gallery.addOptimisticCard(skeletonCard(tempId, file.name, groupId))
 
       const previewUrl = preview ? URL.createObjectURL(file) : null
       if (previewUrl) gallery.setImageUrl(tempId, previewUrl)
@@ -59,9 +70,10 @@ export function useUploads(
           userId,
           file,
           title: file.name,
+          groupId,
         })
         gallery.replaceOptimisticCard(tempId, () =>
-          skeletonCard(created.id, created.title),
+          skeletonCard(created.id, created.title, groupId),
         )
         // Hold the blob preview until the refresh brings a real URL --
         // swapping to nothing would blink the card empty.
@@ -80,24 +92,26 @@ export function useUploads(
   )
 
   /**
-   * `groupId` files the whole batch once every upload has landed (#348).
+   * `groupId` is the destination, and it travels with each file (#350).
    *
-   * One group write for the batch rather than one per file: `addImagesToGroup`
-   * returns the group's new cover and count (#331), and calling it per file
-   * would move the card that many times and pay for that arithmetic each time.
-   *
-   * The cards still appear one by one as their bytes land -- only the filing
-   * waits. An upload that failed is simply not in the list to file.
+   * There is no filing step any more. The batch used to upload loose and then
+   * make one `addImagesToGroup` call -- one write rather than one per file,
+   * which was the right instinct about round trips and the wrong answer for
+   * what it looked like: every thumbnail landed at top level and was pulled
+   * out again a moment later. The insert takes the group now, so the cards are
+   * never anywhere they should not be, and the group's own summary is re-read
+   * once when the batch drains (`use-view`).
    */
   const uploadFiles = useCallback(
-    async (files: Array<File>, groupId?: string | null) => {
+    async (files: Array<File>, groupId: string | null = null) => {
       const ids = (
-        await Promise.all(files.map((file) => ingest(file, { preview: false })))
+        await Promise.all(
+          files.map((file) => ingest(file, { preview: false, groupId })),
+        )
       ).filter((id): id is string => id !== null)
-
-      if (groupId && ids.length > 0) await fileIntoGroup(groupId, ids)
+      return ids
     },
-    [ingest, fileIntoGroup],
+    [ingest],
   )
 
   useEffect(() => {
@@ -109,13 +123,13 @@ export function useUploads(
         const file = item.getAsFile()
         if (!file) continue
         e.preventDefault()
-        void ingest(file, { preview: true })
+        void ingest(file, { preview: true, groupId: activeGroupId })
         return
       }
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [ingest])
+  }, [ingest, activeGroupId])
 
   return { uploadFiles }
 }

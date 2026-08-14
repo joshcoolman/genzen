@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
@@ -147,6 +147,50 @@ export function useView(initial: Array<SavedAiImage>) {
       void groups.refresh()
     },
   })
+
+  /**
+   * What each group has in play right now, and the one moment worth re-reading.
+   *
+   * **Derived here, never read from the server** (#350). The gallery already
+   * holds every row, so counting the pending ones per group is arithmetic on
+   * state that is in hand -- no action, no route re-render, no list
+   * replacement. A `pending_count` on the summary looked cheaper and was not:
+   * it made every settle a reason to re-read the groups, and each of those is
+   * a server action landing in the middle of a grid that is already swapping
+   * optimistic cards for real ones.
+   *
+   * Uploads are counted from their destination rather than from the rows,
+   * because a file on its way up has no `group_id` yet -- it gets one when the
+   * batch is filed, after the last byte. Without this, uploading into a group
+   * from top level is the one kind of work the card cannot see.
+   */
+  const [uploadingInto, setUploadingInto] = useState<Record<string, number>>({})
+
+  const workingByGroup = useMemo(() => {
+    const counts: Record<string, number> = { ...uploadingInto }
+    for (const img of gallery.images) {
+      if (!img.group_id || img.status !== 'pending') continue
+      counts[img.group_id] = (counts[img.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [gallery.images, uploadingInto])
+
+  /**
+   * Refresh the summaries when a group *finishes*, not when each image lands.
+   *
+   * One read per burst rather than one per settle. That is the moment the
+   * strip has something new to show, and doing it any earlier only re-composes
+   * a row that is about to change again.
+   */
+  const wasWorking = useRef(workingByGroup)
+  useEffect(() => {
+    const before = wasWorking.current
+    wasWorking.current = workingByGroup
+    const drained = Object.keys(before).some(
+      (groupId) => before[groupId] > 0 && !workingByGroup[groupId],
+    )
+    if (drained) void groups.refresh()
+  }, [workingByGroup, groups.refresh])
 
   /**
    * Uploads ignores grouping entirely: every upload, grouped or not.
@@ -321,6 +365,10 @@ export function useView(initial: Array<SavedAiImage>) {
     | { kind: 'upload-target' }
     | { kind: 'create'; targets: Array<string> }
     | { kind: 'rename'; group: ImageGroupSummary }
+    // Picking where a whole group's contents are headed (#350). Carries the
+    // source group rather than image ids: the images are not enumerated
+    // client-side at all -- at top level the grid does not even hold them.
+    | { kind: 'move'; group: ImageGroupSummary }
     | { kind: 'confirm-dissolve'; group: ImageGroupSummary }
     | { kind: 'confirm-trash'; group: ImageGroupSummary }
     | null
@@ -412,12 +460,31 @@ export function useView(initial: Array<SavedAiImage>) {
   const { uploadFiles: uploadFilesRaw } = useUploads(
     user.id,
     gallery,
-    addToGroup,
+    activeGroupId,
   )
 
   const uploadFiles = useCallback(
     (files: Array<File>, groupId: string | null = activeGroupId) => {
+      // The destination is held for the length of the batch, so the group card
+      // can say it is busy while the bytes are still going up (#350). The rows
+      // themselves cannot carry this: they get their `group_id` when the batch
+      // is filed, which is the moment the work is over.
+      if (groupId) {
+        setUploadingInto((prev) => ({
+          ...prev,
+          [groupId]: (prev[groupId] ?? 0) + files.length,
+        }))
+      }
       void uploadFilesRaw(files, groupId).then(() => {
+        if (groupId) {
+          setUploadingInto((prev) => {
+            const left = (prev[groupId] ?? 0) - files.length
+            const next = { ...prev }
+            if (left > 0) next[groupId] = left
+            else delete next[groupId]
+            return next
+          })
+        }
         // Only the explicit to-a-group upload speaks. Uploading into the group
         // you are looking at needs no announcement -- the cards are right
         // there. Filing from top level moves them somewhere you are not, so
@@ -472,6 +539,26 @@ export function useView(initial: Array<SavedAiImage>) {
       await groups.rename(groupId, name)
     },
     [groups, closeGroupFlow],
+  )
+
+  /**
+   * Move a group's contents into another and drop the emptied one (#350).
+   *
+   * Not optimistic: at top level the members are exactly the rows the grid
+   * filters out, so there is nothing on screen to move ahead of the answer.
+   * The write returns the moved ids anyway, which is what keeps a gallery that
+   * *is* holding them (someone standing in the source group) correct.
+   */
+  const moveGroup = useCallback(
+    async (sourceGroupId: string, targetGroupId: string) => {
+      closeGroupFlow()
+      applyGroupWrite(await groups.moveContents(sourceGroupId, targetGroupId))
+      // Standing in a group that just ceased to exist: follow the pictures.
+      if (activeGroupId === sourceGroupId) {
+        router.push(`/images?group=${targetGroupId}`)
+      }
+    },
+    [groups, activeGroupId, router, closeGroupFlow, applyGroupWrite],
   )
 
   /** Keeps every picture, returns them to top level, drops the group row. */
@@ -586,6 +673,7 @@ export function useView(initial: Array<SavedAiImage>) {
     cells,
     gallery,
     groups,
+    workingByGroup,
     activeGroup,
     activeGroupId,
     openGroup,
@@ -599,6 +687,7 @@ export function useView(initial: Array<SavedAiImage>) {
     createGroup,
     removeFromGroup,
     renameGroup,
+    moveGroup,
     dissolveGroup,
     trashGroup,
     setGroupCoverImage,

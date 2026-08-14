@@ -23,6 +23,9 @@ export interface SaveToLibraryInput {
   description?: string | null
   /** Optional: hashing is best-effort, and a row without one is still valid. */
   fileHash?: string
+  /** File it straight into a group (#350) -- the row is born a member rather
+   *  than being moved into one after the batch lands. */
+  groupId?: string | null
 }
 
 /** Put a file in the library: object to storage, then the row, then a thumbnail.
@@ -44,6 +47,7 @@ export async function saveFileToLibrary({
   title,
   description = null,
   fileHash,
+  groupId = null,
 }: SaveToLibraryInput): Promise<UserImage> {
   if (!userId) throw new Error('User not authenticated')
 
@@ -65,6 +69,7 @@ export async function saveFileToLibrary({
       fileSize: file.size,
       mimeType: file.type,
       fileHash,
+      groupId,
     })
 
     // Background, and failure is tolerated: reads fall back to the full-size

@@ -46,8 +46,13 @@ interface ImageGalleryProps {
    *  Shift pushes a reference, and on the prompt it loads the text. */
   onAddReference?: (img: SavedAiImage) => void
   onUsePrompt?: (text: string) => void
+  /** Per-group count of work in flight (#350) -- generations queued, uploads
+   *  still sending. Client-derived, so it costs nothing to keep current. */
+  workingByGroup?: Record<string, number>
   onOpenGroup?: (group: ImageGroupSummary) => void
   onRenameGroup?: (group: ImageGroupSummary) => void
+  /** Undefined when there is nowhere to move to -- the card hides the item. */
+  onMoveGroup?: (group: ImageGroupSummary) => void
   onDissolveGroup?: (group: ImageGroupSummary) => void
   onTrashGroup?: (group: ImageGroupSummary) => void
   onAddToGroup?: (img: SavedAiImage) => void
@@ -74,8 +79,10 @@ export function ImageGallery({
   onExperiment,
   onAddReference,
   onUsePrompt,
+  workingByGroup,
   onOpenGroup,
   onRenameGroup,
+  onMoveGroup,
   onDissolveGroup,
   onTrashGroup,
   onAddToGroup,
@@ -113,8 +120,10 @@ export function ImageGallery({
                   key={group.id}
                   group={group}
                   showInfo={showInfo}
+                  working={workingByGroup?.[group.id] ?? 0}
                   onOpen={onOpenGroup ?? (() => {})}
                   onRename={onRenameGroup ?? (() => {})}
+                  onMove={onMoveGroup}
                   onDissolve={onDissolveGroup ?? (() => {})}
                   onTrash={onTrashGroup ?? (() => {})}
                   selectionActive={selectionActive}

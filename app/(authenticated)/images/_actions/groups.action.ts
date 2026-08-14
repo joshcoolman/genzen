@@ -27,9 +27,19 @@ export interface ImageGroupSummary {
   cover_image_id: string | null
   /** Members for the card's swatch strip, newest first. Six, not five: the
    *  card drops the cover from this list before rendering, so trimming to five
-   *  here left it with four. */
+   *  here left it with four.
+   *
+   *  Pictures only -- a row with no `storage_path` is a generation still in the
+   *  queue or one that failed, and it used to take the newest slot and render
+   *  as a filled swatch of nothing (#350). Work in flight is not represented
+   *  here at all: the strip is pictures, not a loading state. */
   preview_image_ids: Array<string>
-  /** Live members -- trashed images are not in it, having lost `group_id`. */
+  /** Live members -- trashed images are not in it, having lost `group_id`.
+   *  Includes whatever is still generating. What is *in flight* is not here on
+   *  purpose (#350): the client already holds every row and can count them
+   *  without a round trip, and a summary that reported it would have to be
+   *  re-read on every settle -- which is the churn this read is trying not to
+   *  cause. */
   count: number
   /** The newest member's `sort_order`, which is what the grid sorts on. An
    *  empty group falls back to its own creation time so it still has a place. */
@@ -62,6 +72,21 @@ const EMPTY_WRITE: GroupWrite = {
 }
 
 /**
+ * The one ordering the grid and the strip have to agree on (#350).
+ *
+ * `sort_order` is null on an upload -- only a generation or a drag ever sets it
+ * -- and the grid has always fallen back to `created_at` (`sortByOrder` in
+ * `use-gallery`). The group read did not: it ordered `nulls last`, so an image
+ * uploaded into a group was *first* inside the group and *last* in that group's
+ * strip. The card gained a count and nothing else moved, which reads as the
+ * upload not having landed.
+ *
+ * Epoch seconds on both sides, so the two are the same number and not merely
+ * the same intent.
+ */
+const ORDER_KEY = sql`coalesce(sort_order, extract(epoch from created_at))`
+
+/**
  * Group summaries with the handful of member ids each card renders.
  *
  * One statement rather than a query per group: the lateral join gives each
@@ -87,16 +112,16 @@ async function readGroups(
            coalesce(m.newest, extract(epoch from g.created_at))::float8 as sort_order
     from image_groups g
     left join lateral (
-      select array_agg(ui.id order by ui.sort_order desc nulls last) as ids,
+      select array_agg(ui.id order by ui.order_key desc)
+               filter (where ui.storage_path is not null) as ids,
              count(*) as n,
-             max(ui.sort_order) as newest
+             max(ui.order_key) as newest
       from (
-        select id, sort_order
+        select id, storage_path, ${ORDER_KEY} as order_key
         from user_images
         where user_id = ${userId}
           and group_id = g.id
           and deleted_at is null
-        order by sort_order desc nulls last
       ) ui
     ) m on true
     where g.user_id = ${userId}
@@ -110,7 +135,9 @@ async function readGroups(
   return (rows as unknown as Array<ImageGroupSummary>).map((g) => ({
     ...g,
     count: Number(g.count),
-    // Never null -- `coalesce(m.ids, '{}')` above -- so no fallback here.
+    // Never null -- `coalesce(m.ids, '{}')` above, which also covers the case
+    // the `filter` introduced: a group whose only members are still generating
+    // aggregates to null rather than to an empty array.
     preview_image_ids: g.preview_image_ids.slice(0, 6),
   }))
 }
@@ -183,7 +210,7 @@ export async function createImageGroup(
         select id from user_images
         where user_id = ${userId} and group_id = ${group.id}
           and deleted_at is null and storage_path is not null
-        order by sort_order desc nulls last
+        order by ${ORDER_KEY} desc
         limit 1
       )
       where id = ${group.id} and user_id = ${userId}
@@ -227,6 +254,53 @@ export async function addImagesToGroup(
     groups: await readGroups(userId, [groupId, ...from]),
     gone: [],
     moved: { ids: rows.map((r) => r.id), groupId },
+    trashed: [],
+  }
+}
+
+/**
+ * Move a whole group's contents into another, and drop the emptied group (#350).
+ *
+ * "Move to group", not "Merge": it reads as an action on the images, which is
+ * what it is. Doing it by hand was Ungroup, select all of them, Add to group --
+ * three steps for one intention, and the middle one is the tedious part.
+ *
+ * Membership is an exclusive column, so the move is one update; nothing has to
+ * be de-duplicated and nothing can end up in two groups. The source's frozen
+ * cover is discarded with its row and the target keeps its own -- a merge that
+ * re-covered the destination would silently undo a choice someone made.
+ *
+ * Destructive with no undo, like Ungroup, which already deletes a group row the
+ * same way. The pictures are never at risk; only the grouping is.
+ */
+export async function moveGroupContents(
+  sourceGroupId: string,
+  targetGroupId: string,
+): Promise<GroupWrite> {
+  const { userId } = await resolveAuth()
+  if (sourceGroupId === targetGroupId) return EMPTY_WRITE
+
+  // Both ends confirmed to be this user's before anything moves, for the same
+  // reason `addImagesToGroup` checks: a guessed id must update nothing.
+  const owned = await sql<Array<{ id: string }>>`
+    select id from image_groups
+    where user_id = ${userId} and id = any(${[sourceGroupId, targetGroupId]})
+  `
+  if (owned.length !== 2) throw new Error('That group no longer exists')
+
+  const rows = await sql<Array<{ id: string }>>`
+    update user_images set group_id = ${targetGroupId}
+    where user_id = ${userId} and group_id = ${sourceGroupId}
+    returning id
+  `
+  await sql`
+    delete from image_groups where id = ${sourceGroupId} and user_id = ${userId}
+  `
+
+  return {
+    groups: await readGroups(userId, [targetGroupId]),
+    gone: [sourceGroupId],
+    moved: { ids: rows.map((r) => r.id), groupId: targetGroupId },
     trashed: [],
   }
 }
