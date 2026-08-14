@@ -99,12 +99,18 @@ const LEGACY_EDIT_CAPS: Record<string, number> = {
 
 describe('lineup, pinned to what shipped', () => {
   it('keeps the same models in the same order', () => {
-    expect(IMAGE_MODELS.map(pickerId)).toEqual(
-      LEGACY_ALL_IMAGE_MODELS.map((m) => m.id),
-    )
-    expect(IMAGE_MODELS.map((m) => m.name)).toEqual(
-      LEGACY_ALL_IMAGE_MODELS.map((m) => m.name),
-    )
+    // A subset check, not equality: the lineup grows (#262 added a cheap tier).
+    // What is pinned is that the models that shipped are still there, still in
+    // that relative order -- a new entry may be appended or slotted between
+    // them, but none of them may be reordered or silently dropped.
+    const legacyIds = LEGACY_ALL_IMAGE_MODELS.map((m) => m.id)
+    const live = IMAGE_MODELS.map(pickerId)
+    expect(live.filter((id) => legacyIds.includes(id))).toEqual(legacyIds)
+    for (const legacy of LEGACY_ALL_IMAGE_MODELS) {
+      expect(IMAGE_MODELS.find((m) => pickerId(m) === legacy.id)?.name).toBe(
+        legacy.name,
+      )
+    }
   })
 
   it('routes each model to the endpoint it used to route to', () => {
