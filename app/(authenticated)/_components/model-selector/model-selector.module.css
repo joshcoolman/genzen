@@ -32,7 +32,7 @@
   padding-inline: var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface-raised) 30%, transparent);
+  background: var(--field);
   box-shadow: var(--shadow-raised);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
@@ -42,7 +42,7 @@
 }
 
 .field:hover {
-  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
+  background: var(--field-hover);
 }
 
 .fieldWide {
@@ -113,7 +113,7 @@
 }
 
 .item:hover {
-  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
+  background: var(--field-hover);
 }
 
 .itemIcon {

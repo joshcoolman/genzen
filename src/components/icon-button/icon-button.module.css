@@ -8,7 +8,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: var(--field);
   color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
@@ -19,7 +19,7 @@
 }
 
 .root:hover:not(:disabled) {
-  background: var(--surface-raised);
+  background: var(--field-hover);
 }
 
 .root:disabled {

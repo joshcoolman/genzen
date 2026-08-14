@@ -12,7 +12,7 @@
      of the same line an inch apart reads as one of them being unfinished. */
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);
-  background: transparent;
+  background: var(--field);
   font-size: var(--text-3xs);
   color: var(--text-muted);
   transition:
@@ -25,7 +25,7 @@
    field draws, so there is nothing left to brighten. Ground and ink carry the
    hover. */
 .root:hover:not(:disabled) {
-  background: var(--surface-raised);
+  background: var(--field-hover);
   color: var(--text);
 }
 

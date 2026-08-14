@@ -3,7 +3,7 @@
   width: 100%;
   height: 2.25rem;
   padding: var(--space-4) var(--space-12);
-  background: transparent;
+  background: var(--field);
   color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);

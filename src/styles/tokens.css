@@ -36,6 +36,19 @@
   --surface: hsl(180 6.7% 11.8%);
   --surface-raised: hsl(0 0% 13%);
 
+  /* The field fill: what a control you can type in, step, or open is filled
+     with -- inputs, steppers, selects, the aspect and model fields, the chips
+     under the prompt. A wash rather than a step, so it takes whatever it is
+     placed on and reads the same over --bg and over --surface.
+
+     Not a fourth surface: surfaces are grounds that things sit *on*, this is
+     the tint that says "this one is a control". It was written by hand in eight
+     modules, one of them in `srgb` while the rest were `oklab`, and the
+     controls that missed it sat in the same row as the ones that had it -- the
+     stepper and the aspect field, side by side, one filled and one not. */
+  --field: color-mix(in oklab, var(--surface-raised) 30%, transparent);
+  --field-hover: color-mix(in oklab, var(--surface-raised) 50%, transparent);
+
   /* ========================================
      INK -- two. There is no third: white at 70% for captions over images was
      one name too many for the difference it made.
