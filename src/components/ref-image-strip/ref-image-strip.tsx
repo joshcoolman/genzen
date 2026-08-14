@@ -4,7 +4,14 @@ import { cx } from '#/lib/utils'
 
 interface RefImageStripProps {
   images: Array<{ id: string; url: string; title: string }>
-  max: number
+  /**
+   * Hard limit on the strip. Omit for an unbounded one, which is what the
+   * generator panel is since #341: models take what they hold at submit and the
+   * card reports it, so the strip has no number to enforce. Video keeps `max={1}`
+   * -- that strip really is one image, not one image's worth of a model's
+   * capacity.
+   */
+  max?: number
   onAdd?: () => void
   /** The whole thumbnail removes; the X is the label for it, not the target. */
   onRemove?: (id: string) => void
@@ -62,7 +69,7 @@ export function RefImageStrip({
           </div>
         )
       })}
-      {images.length < max && onAdd && (
+      {(max === undefined || images.length < max) && onAdd && (
         <div className={styles.item}>
           <button
             type="button"
@@ -77,7 +84,7 @@ export function RefImageStrip({
         </div>
       )}
       <span className={styles.count}>
-        {images.length}/{max}
+        {max === undefined ? images.length : `${images.length}/${max}`}
       </span>
       {/* Far right, so it is nowhere near the thumbnails it empties. Reads as
           the counter's twin rather than a button -- it is a way out of a state,

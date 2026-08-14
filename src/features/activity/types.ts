@@ -15,6 +15,9 @@ export interface ActivityGenerationMetadata {
   thumbnail_path?: string
   fal_url?: string
   error?: { message?: string } | string
+  /** Written only when the endpoint held fewer images than it was given (#341). */
+  images_requested?: number
+  images_used?: number
 }
 
 export interface ActivityEntry {
@@ -61,6 +64,9 @@ export interface ActivityEntryDetail extends ActivityEntry {
   height: number | null
   falUrl: string | null
   referenceImages: Array<ActivityReferenceImage>
+  /** "1 of 5 images" when the endpoint held fewer than it was given, else null
+   *  (#341). Null on every ordinary generation. */
+  refUsageNote: string | null
   /** JSON-stringified raw `generation_metadata`. Parse on the client. */
   rawMetadataJson: string
 }

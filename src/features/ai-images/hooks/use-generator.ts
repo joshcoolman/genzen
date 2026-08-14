@@ -123,8 +123,8 @@ export interface GeneratorState {
   clearPrompts: () => void
   /** Add prompts to the end of the list, leaving what is there alone. */
   appendPrompts: (texts: Array<string>) => void
-  /** The set. Ordered, zero to `maxRefImages`; index 0 drives the aspect
-   *  ratio and is submitted first. Nothing else distinguishes a member. */
+  /** The set. Ordered and unbounded; index 0 drives the aspect ratio and is
+   *  submitted first. Nothing else distinguishes a member. */
   refImages: Array<RefImage>
   addRefImages: (images: Array<RefImage>) => void
   pushRefImage: (image: RefImage) => void
@@ -136,8 +136,11 @@ export interface GeneratorState {
    *  (`pushRefImage`), because replacing meant clicking three cards left one
    *  image. */
   setPrimaryImage: (image: RefImage) => void
-  /** How many images the set can hold, the minimum across the selected models
-   *  -- see `imageCapacityFor`. */
+  /** How many images the *smallest* selected model holds. Advisory since #341:
+   *  nothing clamps the set to it. It is what the panel reports, and the submit
+   *  truncates per model rather than to this minimum. Zero selected models is
+   *  0, which is the one case that still disables the strip -- there is nothing
+   *  to attach images to. */
   maxRefImages: number
   /** Index of the prompt currently being enhanced, or null. */
   enhancingPromptIndex: number | null
@@ -306,40 +309,38 @@ export function useGenerator({
   }, [aspectRatio, aspectRatioHydrated])
 
   /**
-   * The set's capacity: the **minimum** across the selected models, never the
-   * first one's (#297).
+   * The smallest capacity across the selected models -- reported, not enforced
+   * (#341).
    *
-   * Taking `selectedModels[0]` was a silent-truncation bug. `buildFalInput`
-   * drops everything past index 0 for a model whose schema takes `image_url`
-   * rather than `image_urls`, so ticking Nano Banana 2 (4) and FLUX Kontext Pro
-   * (1) together and adding four images sent FLUX the first image alone -- same
-   * click, same cost, no warning. The cap has to be what every selected model
-   * can actually hold.
+   * It was a clamp until #341, and the clamp was the problem: ticking a
+   * one-image model *deleted* four staged images, and unticking it did not
+   * bring them back. Now the set holds what you put in it, each model takes
+   * what it can hold, and the row records the difference. The number survives
+   * because the panel still shows it; the minimum is the honest summary of a
+   * mixed selection.
+   *
+   * The silent truncation #297 closed is still closed, by the other half of
+   * this change: `buildFalInput` reports what it sent, so "same click, same
+   * cost, no warning" is now "same click, same cost, and the card says 1 of 5".
    */
   const maxRefImages = useMemo(() => {
     if (selectedModels.length === 0) return 0
     return Math.min(...selectedModels.map(imageCapacityFor))
   }, [selectedModels])
 
-  const addRefImages = useCallback(
-    (images: Array<RefImage>) => {
-      setRefImages((prev) => {
-        const existingIds = new Set(prev.map((r) => r.id))
-        const newImages = images.filter((img) => !existingIds.has(img.id))
-        return [...prev, ...newImages].slice(0, maxRefImages)
-      })
-    },
-    [maxRefImages],
-  )
+  /** Appends whatever is not already in the set. No cap: see `maxRefImages`. */
+  const addRefImages = useCallback((images: Array<RefImage>) => {
+    setRefImages((prev) => {
+      const existingIds = new Set(prev.map((r) => r.id))
+      const newImages = images.filter((img) => !existingIds.has(img.id))
+      return [...prev, ...newImages]
+    })
+  }, [])
 
-  /** The front of the strip, evicting the last. See `pushRef`; `addRefImages`
-   *  is the other end, appending and slicing the tail off. */
-  const pushRefImage = useCallback(
-    (image: RefImage) => {
-      setRefImages((prev) => pushRef(prev, image, maxRefImages))
-    },
-    [maxRefImages],
-  )
+  /** The front of the strip: "use this one" goes to slot 0, keeping the rest. */
+  const pushRefImage = useCallback((image: RefImage) => {
+    setRefImages((prev) => pushRef(prev, image))
+  }, [])
 
   const removeRefImage = useCallback((id: string) => {
     setRefImages((prev) => prev.filter((img) => img.id !== id))
@@ -353,17 +354,6 @@ export function useGenerator({
       return [image, ...rest]
     })
   }, [])
-
-  // Ticking a smaller model has to shrink the set, not leave images sitting in
-  // it that the submit would quietly drop -- which is the same silent
-  // truncation `maxRefImages` above exists to prevent, arriving from the other
-  // direction. The strip visibly loses the overflow, so the cap is never a
-  // surprise at Generate time.
-  useEffect(() => {
-    setRefImages((prev) =>
-      prev.length > maxRefImages ? prev.slice(0, maxRefImages) : prev,
-    )
-  }, [maxRefImages])
 
   // The aspect ratio follows whatever is in slot 0 (#297). One effect rather
   // than a call inside every mutator: a removal that promotes image 2 to the
@@ -399,9 +389,8 @@ export function useGenerator({
     }
   }, [primaryUrl])
 
-  // Replace the whole ref set without capping. Caller guarantees the count fits
-  // the chosen model (canvas pre-fills a known-fitting group). addRefImages, by
-  // contrast, slices to maxRefImages for ad-hoc additions.
+  // Replace the whole ref set. Canvas pre-fills a group through it; since #341
+  // it differs from `addRefImages` only in discarding what was there.
   const replaceRefImages = useCallback((images: Array<RefImage>) => {
     setRefImages(images)
   }, [])

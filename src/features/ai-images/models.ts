@@ -42,7 +42,14 @@ export interface ModelEntry {
   /** Borrowed endpoint for the no-image case. Only for `textToImage: null`. */
   textOnlyFallback?: string
   maxRefs: number
-  displayPrice?: string
+  /**
+   * Dollars per image, as a number so the picker can align and sort it (#341).
+   * A string ('~$0.03/img') baked presentation into the lineup and made the
+   * cheap tier unsortable, which was the only thing that would have surfaced it.
+   * Approximate by nature: several models bill per megapixel or per compute
+   * second, so this is what a typical image costs, not a quoted rate.
+   */
+  price?: number
   useCase?: string
 }
 
@@ -61,7 +68,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textOnlyFallback: 'fal-ai/flux/dev',
     // The single `image_url` slot is the source image's.
     maxRefs: 0,
-    displayPrice: '~$0.03/img',
+    price: 0.03,
     useCase: 'Cheap img2img — fast iteration with a reference',
   },
   // Kling
@@ -73,8 +80,13 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     category: 'Specialized',
     textToImage: 'fal-ai/bytedance/seedream/v4/text-to-image',
     withImages: 'fal-ai/bytedance/seedream/v4/edit',
-    maxRefs: 10,
-    displayPrice: '~$0.03/img',
+    // 9, not 10: FAL's schema says "up to 10 image inputs are allowed. If over
+    // 10 are sent, only the LAST 10 will be used", and capacity is maxRefs + 1.
+    // At 10 we promised eleven slots and FAL would have dropped the first image
+    // -- the one that sets orientation. Invisible while the strip capped at the
+    // same wrong number; #341 stops it capping.
+    maxRefs: 9,
+    price: 0.03,
     useCase: 'Cheap, high-quality realism — great daily driver',
   },
   {
@@ -85,7 +97,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/gpt-image-1.5',
     withImages: 'fal-ai/gpt-image-1.5/edit',
     maxRefs: 4,
-    displayPrice: '~$0.04/img',
+    price: 0.04,
     useCase: 'OpenAI quality — works with references',
   },
   {
@@ -96,7 +108,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/gpt-image-2',
     withImages: 'fal-ai/gpt-image-2/edit',
     maxRefs: 4,
-    displayPrice: '~$1.00/img',
+    price: 1.0,
     useCase: 'Premium OpenAI — use when you know what you want',
   },
   {
@@ -106,8 +118,9 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     category: 'Specialized',
     textToImage: 'fal-ai/bytedance/seedream/v4.5/text-to-image',
     withImages: 'fal-ai/bytedance/seedream/v4.5/edit',
-    maxRefs: 10,
-    displayPrice: '~$0.04/img',
+    // See v4 above: ten images total, so nine beyond the first.
+    maxRefs: 9,
+    price: 0.04,
     useCase: 'Multi-image reference, premium realism',
   },
   // Specialized
@@ -119,7 +132,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/nano-banana-2',
     withImages: 'fal-ai/nano-banana-2/edit',
     maxRefs: 3,
-    displayPrice: '~$0.04/img',
+    price: 0.04,
     useCase: 'Reasoning-guided generation',
   },
   {
@@ -133,7 +146,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     withImages: 'fal-ai/flux-pro/kontext',
     // Single-image endpoint; the source image occupies its one slot.
     maxRefs: 0,
-    displayPrice: '~$0.04/img',
+    price: 0.04,
     useCase: 'Pro img2img — solid for refinement work',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
@@ -151,7 +164,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // One `image_url` slot, and the attached image is it -- same arithmetic as
     // both Kontext entries.
     maxRefs: 0,
-    displayPrice: '~$0.005/img',
+    price: 0.005,
     useCase: 'Cheapest fast draft — fire several and skim',
   },
   {
@@ -165,7 +178,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // Billed per compute second ($0.0008/s), not per megapixel, so this is an
     // approximation in a way the other prices are not. Activity records the
     // real cost; correct it from there (#262).
-    displayPrice: '~$0.01/img',
+    price: 0.01,
     useCase: 'Cheap reference editing — preserves the input scene',
   },
   {
@@ -176,7 +189,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/flux-2/klein/4b',
     withImages: 'fal-ai/flux-2/klein/4b/edit',
     maxRefs: 3,
-    displayPrice: '~$0.009/img',
+    price: 0.009,
     useCase: 'Fastest of the cheap tier — re-renders rather than preserves',
   },
 ]

@@ -128,7 +128,11 @@ export async function retryGeneration(data: RetryGenerationInput) {
       ...referenceUrls,
     ]
 
-    const falInput = await buildFalInput({
+    const {
+      input: falInput,
+      imagesRequested,
+      imagesUsed,
+    } = await buildFalInput({
       modelId: falModelId,
       prompt: plan.prompt,
       aspectRatio: plan.aspectRatio,
@@ -149,6 +153,11 @@ export async function retryGeneration(data: RetryGenerationInput) {
       // one can be the base model (see the derivation above), so without this
       // the row keeps claiming a text-only endpoint for a run that sent images.
       fal_model_id: falModelId,
+      // Same note the original run would have carried (#341): a retry replays
+      // the whole request, so it truncates the same way and has to say so.
+      ...(imagesRequested > imagesUsed
+        ? { images_requested: imagesRequested, images_used: imagesUsed }
+        : {}),
       ...(estimatedCostCents != null
         ? { estimated_cost_cents: estimatedCostCents }
         : {}),

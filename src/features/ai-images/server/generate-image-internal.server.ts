@@ -293,7 +293,11 @@ export async function generateImageInternal(
     const allImageUrls = [...(imageUrl ? [imageUrl] : []), ...referenceUrls]
 
     // Build FAL input using schema-driven param resolution
-    const falInput = await buildFalInput({
+    const {
+      input: falInput,
+      imagesRequested,
+      imagesUsed,
+    } = await buildFalInput({
       modelId: falModelId,
       prompt: effectivePrompt,
       aspectRatio,
@@ -317,6 +321,13 @@ export async function generateImageInternal(
       fal_model_id: falModelId,
       prompt: metadataPrompt,
       ...(promptDerivedFromSource ? { prompt_derived_from_source: true } : {}),
+      // Only when they disagree (#341). Written on every row it applies to, so
+      // a card can say "used 1 of 5 images" without re-deriving a capacity that
+      // may have changed since -- the row is what happened, not what would
+      // happen now.
+      ...(imagesRequested > imagesUsed
+        ? { images_requested: imagesRequested, images_used: imagesUsed }
+        : {}),
       ...(estimatedCostCents != null
         ? { estimated_cost_cents: estimatedCostCents }
         : {}),

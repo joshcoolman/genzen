@@ -1,7 +1,8 @@
-/* Three presentations of one list: `panel` (a field that expands into rows,
-   what the Generate panel uses), `dropdown` (the same rows in a popover) and
-   `inline` (a wrap of pills). The row and the field are shared between the
-   first two; the pills belong to `inline` alone.
+/* Two presentations of one table: `panel` (a field that expands into rows, what
+   the Generate panel uses) and `dropdown` (the same rows in a popover). The row
+   and the field are shared. A third presentation -- a wrap of pills -- went
+   with #341: nothing rendered it, and it would have been a second copy of the
+   columns.
 
    `dark:bg-input/30` and `dark:hover:bg-input/50` are unconditional here, as
    they are on AspectRatioSelect: the app is dark-only, and the tinted field is
@@ -17,49 +18,6 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   color: var(--text-muted);
-}
-
-/* ---- gens-per-model stepper ---- */
-
-.gens {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  height: 2.25rem;
-  padding-inline: var(--space-12);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: color-mix(in oklab, var(--surface-raised) 30%, transparent);
-  box-shadow: var(--shadow-raised);
-}
-
-.gensStep {
-  padding: var(--space-2);
-  border: none;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-}
-
-.gensStep:hover {
-  background: var(--surface-raised);
-}
-
-.gensStep:disabled {
-  opacity: 0.3;
-}
-
-.gensStepIcon {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-.gensValue {
-  width: var(--space-16);
-  text-align: center;
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
-  font-weight: var(--weight-medium);
 }
 
 /* ---- field (panel + dropdown triggers) ---- */
@@ -134,7 +92,11 @@
 }
 
 .item {
-  display: flex;
+  /* One grid template on every row, so the three columns line up down the list
+     without a table element. Price and refs are fixed and right-aligned; the
+     name takes what is left. */
+  display: grid;
+  grid-template-columns: 0.875rem 1fr 2.75rem 1.75rem;
   align-items: center;
   gap: var(--space-8);
   width: 100%;
@@ -169,110 +131,41 @@
   font-weight: var(--weight-medium);
 }
 
-.itemPrice {
+.itemPrice,
+.itemRefs {
   font-size: var(--text-3xs);
   font-variant-numeric: tabular-nums;
+  text-align: right;
   color: color-mix(in oklab, var(--text-muted) 70%, transparent);
+}
+
+/* Column labels. Not a button, so it does not take the hover the rows do. */
+.head {
+  padding-block: var(--space-4);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
+}
+
+.head .itemName {
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-normal);
+  color: inherit;
+}
+
+/* Holds fewer images than are staged. Dimmed, never disabled: picking it is
+   allowed and the submit sends what fits (#341). */
+.itemTruncates .itemName,
+.itemTruncates .itemPrice {
+  opacity: 0.45;
+}
+
+.itemTruncates .itemRefs {
+  color: var(--warning);
+  opacity: 1;
 }
 
 .dropdownRoot {
   position: relative;
   flex: 1;
-}
-
-/* ---- inline ---- */
-
-.inline > :where(*:not(:last-child)) {
-  margin-bottom: var(--space-12);
-}
-
-.inlineHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.inlineToggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  border: none;
-  background: transparent;
-  text-align: left;
-  color: inherit;
-}
-
-.inlineToggleIcon {
-  width: 0.875rem;
-  height: 0.875rem;
-  color: var(--text-muted);
-}
-
-.inlineTitle {
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  font-weight: var(--weight-medium);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-  color: var(--text-muted);
-}
-
-.inlineCount {
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
-}
-
-.pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-}
-
-.pill {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  padding: var(--space-6) var(--space-10);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  text-align: left;
-  color: inherit;
-  transition:
-    border-color var(--duration-normal) var(--ease-in-out),
-    background-color var(--duration-normal) var(--ease-in-out);
-}
-
-.pill:hover {
-  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
-}
-
-.pillSelected,
-.pillSelected:hover {
-  border-color: var(--accent);
-  background: color-mix(in oklab, var(--accent) 10%, transparent);
-}
-
-.pillIcon {
-  width: 0.75rem;
-  height: 0.75rem;
-  flex-shrink: 0;
-  color: color-mix(in oklab, var(--text-muted) 40%, transparent);
-}
-
-.pillIconOn {
-  color: var(--accent);
-}
-
-.pillName {
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  font-weight: var(--weight-medium);
-}
-
-.pillPrice {
-  font-size: var(--text-3xs);
-  font-variant-numeric: tabular-nums;
-  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
 }

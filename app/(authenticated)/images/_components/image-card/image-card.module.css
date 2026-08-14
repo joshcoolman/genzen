@@ -101,6 +101,22 @@
   pointer-events: none;
 }
 
+/* Sits above the model badge, same corner: both name a fact about how this
+   picture was made, and the count is the surprising one. Only rendered when
+   references were dropped, so a normal card has neither this nor the gap. */
+.refNote {
+  position: absolute;
+  right: var(--space-8);
+  bottom: calc(var(--space-8) + 1.15rem);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--warning);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* CopyText owns the affordance. The negative margin keeps the prompt's first
    line flush with the caption's padding, which the button's own padding would
    otherwise push in. */

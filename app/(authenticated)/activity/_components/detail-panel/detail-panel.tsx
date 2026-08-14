@@ -327,7 +327,14 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
 
                 {detail.referenceImages.length > 0 && (
                   <Section
-                    title={`References (${detail.referenceImages.length})`}
+                    title={
+                      // The count in the header is what was *offered*; the note
+                      // says how many the endpoint could hold (#341). Only
+                      // present when they differ.
+                      detail.refUsageNote
+                        ? `References (${detail.refUsageNote} used)`
+                        : `References (${detail.referenceImages.length})`
+                    }
                   >
                     <div className={styles.refGrid}>
                       {detail.referenceImages.map((ref) => {

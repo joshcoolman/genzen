@@ -9,6 +9,7 @@ import type {
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { getModelName } from '#/features/ai-images/models'
+import { refUsageNote } from '#/features/ai-images/ref-usage'
 
 interface GetActivityEntryInput {
   id: string
@@ -173,6 +174,7 @@ export async function getActivityEntry(
     height: r.height,
     falUrl: m.fal_url ?? null,
     referenceImages,
+    refUsageNote: refUsageNote(m),
     rawMetadataJson: rawMetaJson(r),
   }
 }

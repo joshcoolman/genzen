@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { cx } from '#/lib/utils'
 import {
   CopyText,
@@ -176,6 +177,9 @@ export function ImageCard({
   const caption = isUpload
     ? (img.description ?? img.title)
     : (img.description ?? img.generation_metadata?.prompt)
+  // Only when the endpoint could not hold everything it was given (#341). The
+  // panel no longer refuses those images, so this is where you find out.
+  const refNote = refUsageNote(img.generation_metadata)
 
   return (
     <Thumbnail
@@ -206,6 +210,7 @@ export function ImageCard({
               what made *this* picture, so it belongs to the picture. In the
               caption it read as a title for the prompt underneath it. */}
           <span className={styles.model}>{badge}</span>
+          {refNote && <span className={styles.refNote}>{refNote}</span>}
           {/* The tick, and the way *into* select mode (#325). On every card
               always, not only once the mode is on: it is the only thing saying
               a card can be picked, and a toolbar toggle asked you to turn a

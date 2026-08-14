@@ -64,8 +64,6 @@ export function GeneratorPanel({
   const [pickerOpen, setPickerOpen] = useState(false)
   const { confirm, dialogProps } = useConfirm()
 
-  const remaining = generator.maxRefImages - generator.refImages.length
-
   /**
    * Where a generated prompt lands. Fills the first row while the list is one
    * empty box, appends after that.
@@ -141,16 +139,15 @@ export function GeneratorPanel({
         }
       />
 
-      {/* The set. It never hides: every model in the lineup takes at least one
-          image, so a widget that appeared and vanished as the selection changed
-          was churn with no information in it. A model with no image input at
-          all would leave `maxRefImages` at 0, which disables the strip rather
-          than offering slots the submit would drop. */}
+      {/* The set, unbounded (#341). No `max`: what a model can hold is in the
+          picker's Refs column, applied at submit, and reported on the card. The
+          strip refusing an image was how staged work got deleted by ticking a
+          smaller model. It still disables with no model selected at all --
+          there is nothing to attach images to. */}
       <div className={styles.refs}>
         <p className={styles.refsLabel}>Reference images</p>
         <RefImageStrip
           images={generator.refImages}
-          max={generator.maxRefImages}
           onAdd={() => {
             void userImages.refresh()
             setPickerOpen(true)
@@ -172,7 +169,6 @@ export function GeneratorPanel({
             selected.map((s) => ({ id: s.id, url: s.url, title: s.title })),
           )
         }
-        max={remaining > 0 ? remaining : 0}
       />
 
       {/* How many and what shape, then the button. The aspect ratio moved down
@@ -223,6 +219,7 @@ export function GeneratorPanel({
         persistKey="genzen:model-panel:expanded"
         selectedIds={modelSelector.selectedIds}
         visibleModels={modelSelector.models}
+        stagedImageCount={generator.refImages.length}
         onToggleSelected={modelSelector.toggleSelected}
       />
     </div>

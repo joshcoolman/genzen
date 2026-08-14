@@ -88,13 +88,27 @@ const LEGACY_ALL_IMAGE_MODELS = [
   },
 ]
 
-/** What `EDIT_MODELS` said before it was deleted: endpoint -> reference cap. */
+/**
+ * What `EDIT_MODELS` said before it was deleted: endpoint -> reference cap.
+ *
+ * Both Seedream entries read 10 here and are 9 now. That is a correction, not
+ * drift: FAL takes ten images total and `maxRefs` counts them beyond the first,
+ * so 10 claimed an eleventh slot FAL would have filled by silently dropping the
+ * first image. The old number is left in the fixture with the offset spelled
+ * out, because a fixture quietly edited to match the code pins nothing.
+ */
 const LEGACY_EDIT_CAPS: Record<string, number> = {
   'fal-ai/gpt-image-1.5/edit': 4,
   'fal-ai/gpt-image-2/edit': 4,
   'fal-ai/nano-banana-2/edit': 3,
   'fal-ai/bytedance/seedream/v4/edit': 10,
   'fal-ai/bytedance/seedream/v4.5/edit': 10,
+}
+
+/** Endpoints whose legacy cap was one too high. Value is the corrected cap. */
+const CORRECTED_EDIT_CAPS: Record<string, number> = {
+  'fal-ai/bytedance/seedream/v4/edit': 9,
+  'fal-ai/bytedance/seedream/v4.5/edit': 9,
 }
 
 describe('lineup, pinned to what shipped', () => {
@@ -125,7 +139,13 @@ describe('lineup, pinned to what shipped', () => {
         legacy.supportsImageInput === true,
       )
       expect(m.description, legacy.id).toBe(legacy.description)
-      expect(m.displayPrice, legacy.id).toBe(legacy.displayPrice)
+      // The fixture keeps the string the lineup used to carry; `price` is the
+      // number it became in #341. Pinned by parsing the old string rather than
+      // by rewriting the fixture, so the number still has to mean what the
+      // label said.
+      expect(m.price, legacy.id).toBe(
+        Number(/[\d.]+/.exec(legacy.displayPrice)![0]),
+      )
     }
   })
 })
@@ -201,8 +221,16 @@ describe('endpointFor', () => {
 describe('maxRefsFor', () => {
   it('agrees with the EDIT_MODELS numbers it replaces', () => {
     for (const [id, cap] of Object.entries(LEGACY_EDIT_CAPS)) {
-      expect(maxRefsFor(id), id).toBe(cap)
+      expect(maxRefsFor(id), id).toBe(CORRECTED_EDIT_CAPS[id] ?? cap)
     }
+  })
+
+  it('holds ten images for Seedream, not eleven', () => {
+    // The correction, stated as the number that is actually wrong when it is
+    // wrong: FAL takes ten and keeps the LAST ten, so an eleventh slot loses
+    // image one -- the one an effect reads orientation from.
+    expect(imageCapacityFor('fal-ai/bytedance/seedream/v4/edit')).toBe(10)
+    expect(imageCapacityFor('fal-ai/bytedance/seedream/v4.5/edit')).toBe(10)
   })
 
   it('is 0 for the single-image Kontext endpoints', () => {
