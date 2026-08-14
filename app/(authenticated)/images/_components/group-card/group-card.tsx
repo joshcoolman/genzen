@@ -89,7 +89,7 @@ export function GroupCard({
       />
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
         <DropdownMenuItem onClick={() => onRename(group)}>
-          <Pencil className={styles.menuItemIcon} />
+          <Pencil />
           Rename
         </DropdownMenuItem>
         {/* The non-destructive twin of the delete icon: same group gone, every
@@ -101,7 +101,7 @@ export function GroupCard({
             it, which is precisely what this one does not do. It also pairs with
             "Remove from group" on an image, which is the same act on one. */}
         <DropdownMenuItem onClick={() => onDissolve(group)}>
-          <Unlink className={styles.menuItemIcon} />
+          <Unlink />
           Ungroup
         </DropdownMenuItem>
       </DropdownMenuContent>
