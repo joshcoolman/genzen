@@ -42,7 +42,7 @@
 }
 
 .item[data-highlighted] {
-  background: var(--surface-raised);
+  background: var(--row-hover);
   color: var(--text);
 }
 

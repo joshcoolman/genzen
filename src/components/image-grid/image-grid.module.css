@@ -39,7 +39,7 @@
 .titleBar {
   width: 33.333%;
   height: 10px;
-  background: color-mix(in srgb, var(--surface-raised) 30%, transparent);
+  background: var(--field);
   border-radius: var(--radius-sm);
 }
 

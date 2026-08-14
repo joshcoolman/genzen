@@ -22,7 +22,7 @@
 
 .rowSelected {
   composes: row;
-  background: color-mix(in oklab, var(--surface-raised) 50%, transparent);
+  background: var(--field-hover);
 }
 
 .checkOn,

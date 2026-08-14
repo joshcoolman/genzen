@@ -6,14 +6,14 @@
   padding-inline: var(--space-12);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--bg);
+  background: var(--field);
   color: var(--text);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
 }
 
 .trigger:hover {
-  background: var(--surface-raised);
+  background: var(--field-hover);
 }
 
 .triggerActive {
@@ -62,7 +62,7 @@
 }
 
 .clearAll:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
   color: var(--text);
 }
 
@@ -91,7 +91,7 @@
 }
 
 .option:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
 }
 
 /* The selected/unselected pair the model selector established: a brand-green

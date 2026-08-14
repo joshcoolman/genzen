@@ -19,7 +19,7 @@
      rule left in the app, in an app that is dark-only by design (tokens.css).
      Unconditional now: the tinted field is the intended look, and a user on a
      light OS was seeing an untinted one against the same dark chrome. */
-  background: color-mix(in oklab, var(--surface-raised) 30%, transparent);
+  background: var(--field);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);
   color: inherit;
@@ -29,7 +29,7 @@
 }
 
 .trigger:hover {
-  background: var(--surface-raised);
+  background: var(--field-hover);
   color: var(--text);
 }
 
@@ -87,7 +87,7 @@
 }
 
 .option:hover {
-  background: var(--surface-raised);
+  background: var(--row-hover);
   color: var(--text);
 }
 

@@ -19,7 +19,7 @@
   width: 100%;
   min-height: 3.75rem;
   padding: var(--space-8) var(--space-12);
-  background: transparent;
+  background: var(--field);
   color: var(--text);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-md);

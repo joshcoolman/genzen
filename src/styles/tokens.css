@@ -36,6 +36,35 @@
   --surface: hsl(180 6.7% 11.8%);
   --surface-raised: hsl(0 0% 13%);
 
+  /* The field fill: what a control you can type in, step, or open is filled
+     with -- inputs, steppers, selects, the aspect and model fields, the chips
+     under the prompt. A wash rather than a step, so it takes whatever it is
+     placed on and reads the same over --bg and over --surface.
+
+     Not a fourth surface: surfaces are grounds that things sit *on*, this is
+     the tint that says "this one is a control". It was written by hand in eight
+     modules, one of them in `srgb` while the rest were `oklab`, and the
+     controls that missed it sat in the same row as the ones that had it -- the
+     stepper and the aspect field, side by side, one filled and one not. */
+  --field: color-mix(in oklab, var(--surface-raised) 30%, transparent);
+  /* 70%, not the 50% the hand-written pairs used. Those were 50% over a
+     *transparent* resting state, so the hover was the whole fill arriving. Now
+     that resting is 30%, the same 50% is a fifth of a step and reads as
+     nothing. Hover is the only feedback these controls give. */
+  --field-hover: color-mix(in oklab, var(--surface-raised) 70%, transparent);
+
+  /* Hovering a row inside a panel or a menu -- model rows, menu items, option
+     lists. **Light, not a surface**, and that is the whole point: those panels
+     are drawn on --surface at 11.8% lightness while --surface-raised is 13%,
+     so a hover made of --surface-raised is a 1.2% step and effectively
+     invisible. Every menu in the app was drawing one.
+
+     A white wash lifts whatever ground it lands on by a fixed amount, so the
+     same value works on --surface, on --bg and on a card. --field/--field-hover
+     cannot do this job: they are a fill for a control sitting on the page, and
+     they wash out the moment the ground comes up to meet them. */
+  --row-hover: hsl(0 0% 100% / 0.07);
+
   /* ========================================
      INK -- two. There is no third: white at 70% for captions over images was
      one name too many for the difference it made.
