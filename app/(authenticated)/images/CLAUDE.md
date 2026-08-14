@@ -187,8 +187,18 @@ list once when the seed comes back full, so the grid is never short.
   membership is a column rather than a join table for that reason: two groups
   would make an image vanish from top level twice. **There is no origin
   filtering inside a group** -- the group is already the scope. Groups do not
-  nest. `_actions/groups.action.ts` owns the writes, `_hooks/use-groups.ts`
-  re-reads after each one rather than patching four derived fields locally
+  nest. `_actions/groups.action.ts` owns the writes, and **every one of them
+  returns what it changed** (#331): the affected group summaries, the images
+  whose `group_id` moved, and the ids a group trash soft-deleted. That is still
+  server truth rather than client arithmetic -- a write moves a cover, a count,
+  a preview strip and a grid position at once -- but it costs one round trip
+  instead of three serialised ones, so the group card and the grid move in the
+  same tick. `use-groups.ts` patches its list from the response and hands it to
+  `use-view`, which patches the gallery's half; membership is a column on the
+  image row, so there is nothing to re-read. **Only the cheap half is
+  optimistic**: filing pictures moves them out of top level on the click, and
+  the new cover and count arrive with the response. A failed write toasts and
+  re-reads both lists rather than unwinding a patch
 - **The group card never asks for a cover, and Add to group is never a
   submenu.** Both are the same lesson: the previous grouping was abandoned
   because creating one was a chore. Creation asks for a name and nothing else;
