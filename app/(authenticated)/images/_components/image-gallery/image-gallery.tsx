@@ -1,4 +1,6 @@
+import { Fragment } from 'react'
 import { GroupCard } from '../group-card/group-card'
+import { GroupMembers } from '../group-members/group-members'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
 import { ImageCard } from '../image-card/image-card'
 import { FailedImageCard } from '../failed-image-card/failed-image-card'
@@ -49,6 +51,11 @@ interface ImageGalleryProps {
   /** Per-group count of work in flight (#350) -- generations queued, uploads
    *  still sending. Client-derived, so it costs nothing to keep current. */
   workingByGroup?: Record<string, number>
+  /** The one group whose members are disclosed below the grid row (#352), and
+   *  the ids to draw. One at a time -- see `useGroups`. */
+  expandedGroupId?: string | null
+  groupMembers?: Record<string, Array<string>>
+  onToggleGroupMembers?: (groupId: string) => void
   onOpenGroup?: (group: ImageGroupSummary) => void
   onRenameGroup?: (group: ImageGroupSummary) => void
   /** Undefined when there is nowhere to move to -- the card hides the item. */
@@ -80,6 +87,9 @@ export function ImageGallery({
   onAddReference,
   onUsePrompt,
   workingByGroup,
+  expandedGroupId,
+  groupMembers,
+  onToggleGroupMembers,
   onOpenGroup,
   onRenameGroup,
   onMoveGroup,
@@ -115,19 +125,44 @@ export function ImageGallery({
           {cells.map((cell) => {
             if (cell.kind === 'group') {
               const { group } = cell
+              const expanded = expandedGroupId === group.id
               return (
-                <GroupCard
-                  key={group.id}
-                  group={group}
-                  showInfo={showInfo}
-                  working={workingByGroup?.[group.id] ?? 0}
-                  onOpen={onOpenGroup ?? (() => {})}
-                  onRename={onRenameGroup ?? (() => {})}
-                  onMove={onMoveGroup}
-                  onDissolve={onDissolveGroup ?? (() => {})}
-                  onTrash={onTrashGroup ?? (() => {})}
-                  selectionActive={selectionActive}
-                />
+                <Fragment key={group.id}>
+                  <GroupCard
+                    group={group}
+                    showInfo={showInfo}
+                    working={workingByGroup?.[group.id] ?? 0}
+                    expanded={expanded}
+                    /* An empty group has nothing to disclose, and a selection
+                       makes the whole card inert -- both leave the row a plain
+                       strip rather than a dead control. */
+                    onToggleMembers={
+                      onToggleGroupMembers &&
+                      group.count > 0 &&
+                      !selectionActive
+                        ? () => onToggleGroupMembers(group.id)
+                        : undefined
+                    }
+                    onOpen={onOpenGroup ?? (() => {})}
+                    onRename={onRenameGroup ?? (() => {})}
+                    onMove={onMoveGroup}
+                    onDissolve={onDissolveGroup ?? (() => {})}
+                    onTrash={onTrashGroup ?? (() => {})}
+                    selectionActive={selectionActive}
+                  />
+                  {/* Immediately after the card in source order, so it lands on
+                      the next grid row and spans it. The cells left empty
+                      beside the card are what tells you which card it belongs
+                      to. */}
+                  {expanded && (
+                    <GroupMembers
+                      name={group.name}
+                      ids={groupMembers?.[group.id]}
+                      count={group.count}
+                      onCollapse={() => onToggleGroupMembers?.(group.id)}
+                    />
+                  )}
+                </Fragment>
               )
             }
 

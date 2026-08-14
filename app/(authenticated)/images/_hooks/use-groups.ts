@@ -5,6 +5,7 @@ import {
   addImagesToGroup,
   createImageGroup,
   dissolveImageGroup,
+  listGroupMemberIds,
   listImageGroups,
   moveGroupContents,
   removeImagesFromGroup,
@@ -36,6 +37,20 @@ export function useGroups() {
   const [groups, setGroups] = useState<Array<ImageGroupSummary>>([])
   const [loading, setLoading] = useState(true)
 
+  /**
+   * The one group whose strip is expanded, and its members (#352).
+   *
+   * One at a time: two open accordions push the rest of the grid a long way
+   * down, and the panel is for orienting on a group rather than comparing two.
+   * Clicking another group's strip moves the expansion rather than adding one.
+   *
+   * `members` is keyed by group id and kept after collapsing, so re-opening the
+   * same group is instant. It is invalidated by every write below, because a
+   * write is exactly when the membership it caches can have changed.
+   */
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [members, setMembers] = useState<Record<string, Array<string>>>({})
+
   const refresh = useCallback(async () => {
     try {
       setGroups(await listImageGroups())
@@ -50,6 +65,24 @@ export function useGroups() {
     void refresh()
   }, [refresh])
 
+  const toggleExpanded = useCallback(
+    (groupId: string) => {
+      if (expandedId === groupId) {
+        setExpandedId(null)
+        return
+      }
+      setExpandedId(groupId)
+      // Fetched on open and only on open. A cached list renders immediately
+      // and is refreshed underneath, so re-opening never waits on the network.
+      void listGroupMemberIds(groupId)
+        .then((ids) => setMembers((prev) => ({ ...prev, [groupId]: ids })))
+        .catch(() => toast('Could not load that group'))
+    },
+    [expandedId],
+  )
+
+  const collapse = useCallback(() => setExpandedId(null), [])
+
   /**
    * Patch the list from what the write returned.
    *
@@ -59,6 +92,17 @@ export function useGroups() {
    * filing one picture is enough to move a card across the grid.
    */
   const apply = useCallback((write: GroupWrite) => {
+    // Membership just changed for everything this write touched, so the cached
+    // member lists for those groups are stale. Dropped rather than re-fetched:
+    // the panel is usually closed, and the open one re-reads on its next open.
+    setMembers((prev) => {
+      const next = { ...prev }
+      for (const id of [...write.gone, ...write.groups.map((g) => g.id)]) {
+        delete next[id]
+      }
+      return next
+    })
+    setExpandedId((prev) => (prev && write.gone.includes(prev) ? null : prev))
     setGroups((prev) => {
       const gone = new Set(write.gone)
       const next = prev.filter((g) => !gone.has(g.id))
@@ -161,6 +205,10 @@ export function useGroups() {
   return {
     groups,
     loading,
+    expandedId,
+    members,
+    toggleExpanded,
+    collapse,
     refresh,
     create,
     addTo,

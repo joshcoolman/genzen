@@ -1,0 +1,84 @@
+/* The disclosed contents of one group, spanning the whole grid.
+
+   `1 / -1` is the point of the component: the panel gets the full width rather
+   than a card's ~200px, so the same members render at a size you can recognise
+   instead of as a strip of texture. The gap it leaves to the right of the
+   expanded card is deliberate and reads as "this belongs to that". */
+.root {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+/* Repeats the group's name, because at full width the panel can sit well below
+   the card it belongs to once the grid is several columns wide. */
+.title {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.close {
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.close:hover {
+  color: var(--text);
+}
+
+/* Auto-fill at a size chosen to be recognisable rather than to fit a count:
+   ~5rem is where a face or a composition reads at a glance, and the column
+   count follows the window. A group of six draws six and stops -- no padding
+   to a fixed row, unlike the card's strip, because here the row length carries
+   no meaning. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5rem, 1fr));
+  gap: var(--space-8);
+}
+
+.member,
+.memberLoading {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--slot-empty);
+  background-size: cover;
+  background-position: center;
+}
+
+/* Holding the space the pictures are about to take, so the panel opens at its
+   final height and the grid below it moves once. */
+.memberLoading {
+  animation: member-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes member-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}

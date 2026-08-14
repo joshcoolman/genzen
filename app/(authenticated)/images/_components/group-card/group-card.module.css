@@ -78,6 +78,25 @@
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--space-4);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* The only hover the row has, and only when it is a button: a control that
+   does nothing on hover reads as decoration. Deliberately slight -- it sits
+   inside a card with its own hover, and two competing responses to one pointer
+   is worse than none. */
+button.swatches:hover .swatch,
+button.swatches:hover .swatchEmpty {
+  opacity: 0.82;
+}
+
+.swatch,
+.swatchEmpty {
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 /* A slot with no member ghosts rather than collapsing: the row keeps its shape

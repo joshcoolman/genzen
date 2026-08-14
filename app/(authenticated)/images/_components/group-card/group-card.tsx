@@ -40,6 +40,10 @@ interface GroupCardProps {
   onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
+  /** The strip is a toggle that discloses every member below the grid row
+   *  (#352). Absent for an empty group -- there is nothing to disclose. */
+  onToggleMembers?: () => void
+  expanded?: boolean
   /** Something in the grid is selected (#325). A group cannot join a selection,
    *  so it steps out of the way rather than offering its own verbs. */
   selectionActive?: boolean
@@ -72,6 +76,8 @@ export function GroupCard({
   onMove,
   onDissolve,
   onTrash,
+  onToggleMembers,
+  expanded = false,
   selectionActive,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
@@ -103,6 +109,17 @@ export function GroupCard({
     { length: SWATCH_COUNT },
     (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
   )
+
+  const swatchRow = swatchSlots.map((id, i) => (
+    <span
+      key={id ?? `empty-${i}`}
+      className={id ? styles.swatch : styles.swatchEmpty}
+      style={
+        id ? { backgroundImage: `url(${imageUrl(id, 'thumb')})` } : undefined
+      }
+      aria-hidden="true"
+    />
+  ))
 
   const moreButton = (
     <DropdownMenu>
@@ -198,20 +215,35 @@ export function GroupCard({
               )}
             </span>
           </div>
-          <div className={styles.swatches}>
-            {swatchSlots.map((id, i) => (
-              <span
-                key={id ?? `empty-${i}`}
-                className={id ? styles.swatch : styles.swatchEmpty}
-                style={
-                  id
-                    ? { backgroundImage: `url(${imageUrl(id, 'thumb')})` }
-                    : undefined
-                }
-                aria-hidden="true"
-              />
-            ))}
-          </div>
+          {/* The row is the toggle (#352). A button rather than the card's own
+              click, which opens the group -- looking at what is in there and
+              going in there are different intentions, and the strip is the
+              part already about the contents. `stopPropagation` because it
+              sits inside the card's click target.
+
+              With nothing to disclose it stays a plain div, so the click falls
+              through to opening the group as it always did. A disabled button
+              would make an empty group's strip dead space instead. */}
+          {onToggleMembers ? (
+            <button
+              type="button"
+              className={styles.swatches}
+              aria-expanded={expanded}
+              aria-label={
+                expanded
+                  ? `Hide the contents of ${group.name}`
+                  : `Show all ${group.count} images in ${group.name}`
+              }
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleMembers()
+              }}
+            >
+              {swatchRow}
+            </button>
+          ) : (
+            <div className={styles.swatches}>{swatchRow}</div>
+          )}
         </div>
       )}
     </Thumbnail>

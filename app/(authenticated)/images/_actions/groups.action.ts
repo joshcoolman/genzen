@@ -142,6 +142,33 @@ async function readGroups(
   }))
 }
 
+/**
+ * Every picture in a group, newest first -- the expanded strip (#352).
+ *
+ * Its own read rather than a bigger `preview_image_ids`, because that field
+ * rides on every group write (#331): a fifty-image group would put fifty uuids
+ * in the payload of each rename, add and poll-driven refresh, to serve a panel
+ * that is usually closed. This is asked for once, when the row is clicked.
+ *
+ * Same `ORDER_KEY` and the same `storage_path` filter as the summary, so the
+ * expansion continues the strip rather than disagreeing with it.
+ */
+export async function listGroupMemberIds(
+  groupId: string,
+): Promise<Array<string>> {
+  const { userId } = await resolveAuth()
+
+  const rows = await sql<Array<{ id: string }>>`
+    select id from user_images
+    where user_id = ${userId}
+      and group_id = ${groupId}
+      and deleted_at is null
+      and storage_path is not null
+    order by ${ORDER_KEY} desc
+  `
+  return rows.map((r) => r.id)
+}
+
 export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
   const { userId } = await resolveAuth()
   return readGroups(userId, null)
