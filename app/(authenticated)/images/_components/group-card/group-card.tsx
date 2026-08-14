@@ -24,16 +24,14 @@ import { imageUrl } from '#/lib/image-url'
  *  every card and reads as "room for more" rather than as a broken grid. */
 const SWATCH_COUNT = 5
 
-/** How much of the strip work-in-flight may take (#350). The strip earns its
- *  keep by being stable and glanceable, so a pending slot is an *addition* to
- *  it, not a takeover -- kick off six generations and the row still shows what
- *  is in the group as well as that something is happening. */
-const MAX_PENDING_SLOTS = 2
-
 interface GroupCardProps {
   group: ImageGroupSummary
   /** The gallery's caption toggle, honoured exactly as an image card does. */
   showInfo?: boolean
+  /** How many things are in flight for this group right now -- generations
+   *  queued, uploads still sending. Client-derived and passed in, so saying so
+   *  costs no round trip and the strip below is never asked to be a spinner. */
+  working?: number
   onOpen: (group: ImageGroupSummary) => void
   onRename: (group: ImageGroupSummary) => void
   /** Move every picture into another group and drop this one (#350). Absent
@@ -68,6 +66,7 @@ interface GroupCardProps {
 export function GroupCard({
   group,
   showInfo = true,
+  working = 0,
   onOpen,
   onRename,
   onMove,
@@ -83,23 +82,25 @@ export function GroupCard({
   const coverUrl = coverId ? imageUrl(coverId, 'thumb') : undefined
 
   /**
-   * The strip: what is happening in here lately, newest first.
+   * The strip: the group's newest members, in the group's own order.
    *
-   * Three kinds of slot (#350). Work in flight leads, because it is the newest
-   * thing in the group and because that is the whole signal -- a group being
-   * generated into from top level said nothing at all before. Then the members
-   * there are to look at. Then ghosts, so the row keeps its shape.
+   * **Not a loading state** (#350). Work in flight used to take a slot here,
+   * which meant every settle re-composed the row -- five cells shifting one
+   * place, twice per image, while the grid around them was already churning.
+   * The strip only ever changes now when the pictures change, once, after the
+   * work is done. What is happening is said in the caption instead, where
+   * saying it moves nothing.
    *
    * The cover is already the picture above; repeating it as the first swatch
    * spends one of five slots on something directly overhead.
    */
-  const pendingSlots = Math.min(group.pending_count, MAX_PENDING_SLOTS)
   const swatchIds = group.preview_image_ids
     .filter((id) => id !== coverId)
-    .slice(0, SWATCH_COUNT - pendingSlots)
+    .slice(0, SWATCH_COUNT)
 
+  // Padded to a fixed five so the row never reflows: a null is a ghosted slot.
   const swatchSlots: Array<string | null> = Array.from(
-    { length: SWATCH_COUNT - pendingSlots },
+    { length: SWATCH_COUNT },
     (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
   )
 
@@ -187,28 +188,17 @@ export function GroupCard({
               it. */}
           <div className={styles.heading}>
             <span className={styles.name}>{group.name}</span>
-            {/* The count has always included pending rows; it now says so
-                while there are any (#350). Silence was the wrong answer to
-                "why does this say 8 when I can see 6" -- and from top level
-                this line plus the strip is the only report that a group you
-                are not standing in is busy. */}
+            {/* The whole report that a group you are not standing in is busy
+                (#350), and it is one line of text on purpose: it can change
+                every few seconds without moving a pixel of the row below. */}
             <span className={styles.total}>
               {group.count} {group.count === 1 ? 'image' : 'images'}
-              {group.pending_count > 0 && (
-                <span className={styles.working}>
-                  , {group.pending_count} working
-                </span>
+              {working > 0 && (
+                <span className={styles.working}>, {working} working</span>
               )}
             </span>
           </div>
           <div className={styles.swatches}>
-            {Array.from({ length: pendingSlots }, (_, i) => (
-              <span
-                key={`working-${i}`}
-                className={styles.swatchWorking}
-                aria-hidden="true"
-              />
-            ))}
             {swatchSlots.map((id, i) => (
               <span
                 key={id ?? `empty-${i}`}

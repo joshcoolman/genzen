@@ -50,6 +50,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     usePromptText,
     animate,
     groups,
+    workingByGroup,
     activeGroup,
     activeGroupId,
     openGroup,
@@ -122,6 +123,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onExperiment={experiment.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
+          workingByGroup={workingByGroup}
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
           /* Only with somewhere to move to. One group is the common early

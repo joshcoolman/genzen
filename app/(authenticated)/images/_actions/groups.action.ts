@@ -31,16 +31,16 @@ export interface ImageGroupSummary {
    *
    *  Pictures only -- a row with no `storage_path` is a generation still in the
    *  queue or one that failed, and it used to take the newest slot and render
-   *  as a filled swatch of nothing (#350). What is in flight is `pending_count`
-   *  instead, which the strip draws as its own kind of slot. */
+   *  as a filled swatch of nothing (#350). Work in flight is not represented
+   *  here at all: the strip is pictures, not a loading state. */
   preview_image_ids: Array<string>
   /** Live members -- trashed images are not in it, having lost `group_id`.
-   *  Includes whatever is still generating; `pending_count` is how much. */
+   *  Includes whatever is still generating. What is *in flight* is not here on
+   *  purpose (#350): the client already holds every row and can count them
+   *  without a round trip, and a summary that reported it would have to be
+   *  re-read on every settle -- which is the churn this read is trying not to
+   *  cause. */
   count: number
-  /** Members still in the FAL queue. The card's "work is happening in here"
-   *  (#350) -- the strip is read as what is going on lately, not as a curated
-   *  five, so it has to move while a group is being generated into. */
-  pending_count: number
   /** The newest member's `sort_order`, which is what the grid sorts on. An
    *  empty group falls back to its own creation time so it still has a place. */
   sort_order: number
@@ -90,9 +90,8 @@ const ORDER_KEY = sql`coalesce(sort_order, extract(epoch from created_at))`
  * Group summaries with the handful of member ids each card renders.
  *
  * One statement rather than a query per group: the lateral join gives each
- * group its own newest-five without a round trip each, and both counts come off
- * the same scan -- which is why `pending_count` costs nothing extra (#350).
- * `deleted_at is null` is belt-and-braces -- trashing clears
+ * group its own newest-five without a round trip each, and the count comes off
+ * the same scan. `deleted_at is null` is belt-and-braces -- trashing clears
  * `group_id`, so a trashed row is already not a member -- but it keeps the read
  * correct if a row is ever soft-deleted by a path that forgets.
  *
@@ -110,17 +109,15 @@ async function readGroups(
            g.cover_image_id,
            coalesce(m.ids, '{}') as preview_image_ids,
            coalesce(m.n, 0) as count,
-           coalesce(m.pending, 0) as pending_count,
            coalesce(m.newest, extract(epoch from g.created_at))::float8 as sort_order
     from image_groups g
     left join lateral (
       select array_agg(ui.id order by ui.order_key desc)
                filter (where ui.storage_path is not null) as ids,
              count(*) as n,
-             count(*) filter (where ui.status = 'pending') as pending,
              max(ui.order_key) as newest
       from (
-        select id, status, storage_path, ${ORDER_KEY} as order_key
+        select id, storage_path, ${ORDER_KEY} as order_key
         from user_images
         where user_id = ${userId}
           and group_id = g.id
@@ -138,7 +135,6 @@ async function readGroups(
   return (rows as unknown as Array<ImageGroupSummary>).map((g) => ({
     ...g,
     count: Number(g.count),
-    pending_count: Number(g.pending_count),
     // Never null -- `coalesce(m.ids, '{}')` above, which also covers the case
     // the `filter` introduced: a group whose only members are still generating
     // aggregates to null rather than to an empty array.

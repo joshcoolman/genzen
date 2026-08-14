@@ -149,36 +149,48 @@ export function useView(initial: Array<SavedAiImage>) {
   })
 
   /**
-   * The group card as a live thing, not a snapshot (#350).
+   * What each group has in play right now, and the one moment worth re-reading.
    *
-   * A generation started inside a group is filed into it on submit, so
-   * `onAfterSubmit` above refreshes the groups and the card's strip picks up a
-   * working slot. Nothing refreshed them again when it *landed*: the poll lives
-   * in `useGallery` and re-reads the gallery only, so the card kept saying
-   * "1 working" until some unrelated write forced a group re-read.
+   * **Derived here, never read from the server** (#350). The gallery already
+   * holds every row, so counting the pending ones per group is arithmetic on
+   * state that is in hand -- no action, no route re-render, no list
+   * replacement. A `pending_count` on the summary looked cheaper and was not:
+   * it made every settle a reason to re-read the groups, and each of those is
+   * a server action landing in the middle of a grid that is already swapping
+   * optimistic cards for real ones.
    *
-   * Watching the gallery's own rows rather than adding a second timer -- the
-   * poll already knows when something settles, and this is what that means for
-   * the other list. Optimistic cards are skipped: they have no row yet, so
-   * their id changing is not a generation finishing.
+   * Uploads are counted from their destination rather than from the rows,
+   * because a file on its way up has no `group_id` yet -- it gets one when the
+   * batch is filed, after the last byte. Without this, uploading into a group
+   * from top level is the one kind of work the card cannot see.
    */
-  const pendingInGroups = useMemo(
-    () =>
-      gallery.images
-        .filter((img) => img.group_id && img.status === 'pending')
-        .map((img) => img.id),
-    [gallery.images],
-  )
+  const [uploadingInto, setUploadingInto] = useState<Record<string, number>>({})
 
-  const wasPendingInGroups = useRef(pendingInGroups)
+  const workingByGroup = useMemo(() => {
+    const counts: Record<string, number> = { ...uploadingInto }
+    for (const img of gallery.images) {
+      if (!img.group_id || img.status !== 'pending') continue
+      counts[img.group_id] = (counts[img.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [gallery.images, uploadingInto])
+
+  /**
+   * Refresh the summaries when a group *finishes*, not when each image lands.
+   *
+   * One read per burst rather than one per settle. That is the moment the
+   * strip has something new to show, and doing it any earlier only re-composes
+   * a row that is about to change again.
+   */
+  const wasWorking = useRef(workingByGroup)
   useEffect(() => {
-    const before = wasPendingInGroups.current
-    wasPendingInGroups.current = pendingInGroups
-    const stillPending = new Set(pendingInGroups)
-    // Only shrinkage. Growth is the submit's business, and it has already
-    // refreshed -- reacting to it here would fire a second read per click.
-    if (before.some((id) => !stillPending.has(id))) void groups.refresh()
-  }, [pendingInGroups, groups.refresh])
+    const before = wasWorking.current
+    wasWorking.current = workingByGroup
+    const drained = Object.keys(before).some(
+      (groupId) => before[groupId] > 0 && !workingByGroup[groupId],
+    )
+    if (drained) void groups.refresh()
+  }, [workingByGroup, groups.refresh])
 
   /**
    * Uploads ignores grouping entirely: every upload, grouped or not.
@@ -453,7 +465,26 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const uploadFiles = useCallback(
     (files: Array<File>, groupId: string | null = activeGroupId) => {
+      // The destination is held for the length of the batch, so the group card
+      // can say it is busy while the bytes are still going up (#350). The rows
+      // themselves cannot carry this: they get their `group_id` when the batch
+      // is filed, which is the moment the work is over.
+      if (groupId) {
+        setUploadingInto((prev) => ({
+          ...prev,
+          [groupId]: (prev[groupId] ?? 0) + files.length,
+        }))
+      }
       void uploadFilesRaw(files, groupId).then(() => {
+        if (groupId) {
+          setUploadingInto((prev) => {
+            const left = (prev[groupId] ?? 0) - files.length
+            const next = { ...prev }
+            if (left > 0) next[groupId] = left
+            else delete next[groupId]
+            return next
+          })
+        }
         // Only the explicit to-a-group upload speaks. Uploading into the group
         // you are looking at needs no announcement -- the cards are right
         // there. Filing from top level moves them somewhere you are not, so
@@ -642,6 +673,7 @@ export function useView(initial: Array<SavedAiImage>) {
     cells,
     gallery,
     groups,
+    workingByGroup,
     activeGroup,
     activeGroupId,
     openGroup,

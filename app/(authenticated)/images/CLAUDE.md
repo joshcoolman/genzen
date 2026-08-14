@@ -215,25 +215,26 @@ group` opens a dialog because a flyout of names commits you to picking one at
   skips straight to naming when there are no groups yet. The card carries no
   "Group" label: the swatch strip reads as texture at a glance, a label is text
   to parse
-- **The swatch strip is feedback, not portraiture (#350).** Nobody picks those
-  five: they are "what is happening in here lately", ordered newest-first and
-  expected to move when the group changes. The cover is the curated one, which
-  is why it freezes and the strip does not. Consequences: the strip shows
-  pictures only -- a row with no `storage_path` used to take the newest slot and
-  render as a filled swatch of nothing -- and work in flight gets a third kind
-  of slot, capped at two so it is an addition to the row rather than a takeover.
-  `pending_count` comes off the same lateral as `count`, and the gallery's poll
-  refreshes the groups when a pending row that belongs to one settles, so a card
-  you are watching from top level is live rather than a snapshot
-- **The strip's order is the group's order, by construction.** `sort_order` is
-  null on an upload -- only a generation or a drag sets it -- and the grid has
-  always fallen back to `created_at`. The group read sorted `nulls last`, so an
-  image uploaded into a group was first inside the group and last in its strip:
-  the card gained a count and nothing else moved, which reads as the upload not
-  landing. One `ORDER_KEY` fragment now covers the strip, the card's grid
-  position and the auto-picked cover, in the same epoch seconds the client uses.
-  The cover is still dropped from the strip -- it is the picture directly
-  overhead -- so the row is the group's order minus its first entry
+- **The swatch strip is feedback, not portraiture -- but never a loading state
+  (#350).** Nobody picks those five: they are "what is happening in here
+  lately", ordered newest-first. The cover is the curated one, which is why it
+  freezes and the strip does not. Two consequences. The strip shows pictures
+  only -- a row with no `storage_path` used to take the newest slot and render
+  as a filled swatch of nothing. And **work in flight is not in the strip at
+  all**: a pending slot re-composed all five cells twice per image, in the
+  middle of a grid that is already swapping optimistic cards for real ones. The
+  card says ", 3 working" in its caption instead, where saying it moves nothing,
+  and the pictures change once, after the work is done
+- **A group's work-in-flight is counted on the client, never read from the
+  server.** `use-view` already holds every row, so it is arithmetic on state in
+  hand. A `pending_count` on the summary looked cheaper and was not: it made
+  every settle a reason to re-read the groups, and each of those is a server
+  action that re-renders the whole route. The summaries are re-read **once per
+  burst** -- when a group's in-flight count reaches zero -- because that is the
+  only moment the strip has something new to show. Uploads are counted from
+  their destination rather than from the rows: a file on its way up has no
+  `group_id` yet, it gets one when the batch is filed, so without that the one
+  kind of work the card could not see was an upload aimed at it
 - **Move to group empties a group into another and drops it.** Membership is an
   exclusive column, so it is one update and a delete -- no new write plumbing,
   and `GroupWrite.gone` already carried the vanished group. Named for the images

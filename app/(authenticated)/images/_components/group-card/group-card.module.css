@@ -85,8 +85,7 @@
    grid that lost its rhythm. That is also why the count is not in here -- there
    is no spare cell for it. */
 .swatch,
-.swatchEmpty,
-.swatchWorking {
+.swatchEmpty {
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   background-color: var(--surface-sunken);
@@ -102,27 +101,6 @@
   background-color: var(--slot-empty);
 }
 
-/* The third state (#350): a member that is still generating. It used to be a
-   `.swatch` with a background-image pointing at nothing -- filled-but-blank,
-   which reads as a broken thumbnail rather than as work. Breathing rather than
-   spinning, and it leads the row because it is the newest thing in the group.
-   The pulse is the same 2s one the canvas pending tile uses. */
-.swatchWorking {
-  background-color: var(--slot-empty);
-  border: 1px solid var(--border);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
 /* Beside the name rather than in the swatch row. It was a fifth cell there,
    which cost a picture and made the count read as a thumbnail with a number on
    it. Quiet: the name is what is being scanned. */
@@ -133,9 +111,23 @@
   white-space: nowrap;
 }
 
-/* ", 2 working" -- a shade brighter than the total it hangs off, because it is
-   the transient half and the only one worth a second look. Not a colour of its
-   own: the line is a quiet report, not an alert. */
+/* ", 2 working" -- the entire report that something is in flight (#350).
+   Deliberately only text: it appears, changes and goes without moving the
+   swatch row, which is what a slot-based indicator could not do. A shade
+   brighter than the total it hangs off, because it is the transient half and
+   the only one worth a second look, and breathing so it reads as ongoing
+   rather than as a number that happens to be there. */
 .working {
   color: var(--text-muted);
+  animation: working-pulse 2s ease-in-out infinite;
+}
+
+@keyframes working-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
