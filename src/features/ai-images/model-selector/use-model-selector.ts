@@ -138,6 +138,22 @@ export function useModelSelector({
     [mode],
   )
 
+  /**
+   * The picker header's tick: everything, or nothing (#358).
+   *
+   * Multi only -- a single-selection picker has no "all" to mean. It ignores
+   * the min-1 rule that `toggleSelected` keeps, and deliberately: that rule
+   * stops a row-click from quietly leaving you unable to generate, while this
+   * control says "none" out loud and is one click to undo. Zero is a state the
+   * generator already handles -- `canGenerate` requires a model -- so the
+   * Generate button simply goes dead, which is the honest answer to picking
+   * nothing.
+   */
+  const toggleAll = useCallback(() => {
+    if (mode === 'single') return
+    setSelectedIds((prev) => (prev.length === modelIds.length ? [] : modelIds))
+  }, [mode, modelIds])
+
   const adjustGens = useCallback((delta: number) => {
     setGensPerModel((prev) => Math.min(Math.max(prev + delta, 1), 5))
   }, [])
@@ -164,6 +180,7 @@ export function useModelSelector({
     gensPerModel,
     maxRefImages,
     toggleSelected,
+    toggleAll,
     adjustGens,
     selectOnly,
   }

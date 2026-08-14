@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, ChevronDown, Circle } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Circle, MinusCircle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import styles from './model-selector.module.css'
 import type {
@@ -20,6 +20,9 @@ interface ModelSelectorProps {
   selectedIds: Array<string>
   visibleModels: Array<UnifiedModel>
   onToggleSelected: (id: string) => void
+  /** The header tick: everything or nothing (#358). Absent in single mode,
+   *  where "all" means nothing. */
+  onToggleAll?: () => void
   /**
    * Images staged right now. Rows that cannot hold them all are dimmed -- the
    * only thing the picker says about a limit, because nothing enforces one any
@@ -46,6 +49,7 @@ export function ModelSelector({
   selectedIds,
   visibleModels,
   onToggleSelected,
+  onToggleAll,
   stagedImageCount = 0,
   defaultExpanded = true,
   persistKey,
@@ -80,6 +84,7 @@ export function ModelSelector({
     return (
       <div className={styles.row}>
         <DropdownModels
+          onToggleAll={onToggleAll}
           models={visibleModels}
           selectedIds={selectedIds}
           mode={mode}
@@ -103,6 +108,7 @@ export function ModelSelector({
       {expanded && (
         <div className={styles.list}>
           <ModelTable
+            onToggleAll={onToggleAll}
             models={visibleModels}
             selectedIds={selectedIds}
             stagedImageCount={stagedImageCount}
@@ -128,21 +134,61 @@ function ModelTable({
   selectedIds,
   stagedImageCount,
   onToggle,
+  onToggleAll,
   onAfterToggle,
 }: {
   models: Array<UnifiedModel>
   selectedIds: Array<string>
   stagedImageCount: number
   onToggle: (id: string) => void
+  onToggleAll?: () => void
   onAfterToggle?: () => void
 }) {
+  const allSelected =
+    models.length > 0 && models.every((m) => selectedIds.includes(m.id))
+  const someSelected = selectedIds.length > 0
+
   return (
     <>
-      <div className={cx(styles.item, styles.head)} aria-hidden="true">
-        <span className={styles.itemIcon} />
-        <span className={styles.itemName}>Model</span>
-        <span className={styles.itemPrice}>$</span>
-        <span className={styles.itemRefs}>Refs</span>
+      {/* The header is a row of column labels and one control: the tick in the
+          same column as every row's, because that is what it toggles. Three
+          states, like any tri-state checkbox -- all, some, none -- so it also
+          reports the selection rather than only changing it. */}
+      <div className={cx(styles.item, styles.head)}>
+        {onToggleAll ? (
+          <button
+            type="button"
+            className={styles.headToggle}
+            aria-label={
+              allSelected ? 'Deselect all models' : 'Select all models'
+            }
+            aria-pressed={allSelected}
+            onClick={onToggleAll}
+          >
+            {allSelected ? (
+              <CheckCircle2
+                className={cx(styles.itemIcon, styles.itemIconOn)}
+              />
+            ) : someSelected ? (
+              <MinusCircle
+                className={cx(styles.itemIcon, styles.headIconSome)}
+              />
+            ) : (
+              <Circle className={styles.itemIcon} />
+            )}
+          </button>
+        ) : (
+          <span className={styles.itemIcon} aria-hidden="true" />
+        )}
+        <span className={styles.itemName} aria-hidden="true">
+          Model
+        </span>
+        <span className={styles.itemPrice} aria-hidden="true">
+          $
+        </span>
+        <span className={styles.itemRefs} aria-hidden="true">
+          Refs
+        </span>
       </div>
       {models.map((model) => {
         const isSelected = selectedIds.includes(model.id)
@@ -187,12 +233,14 @@ function DropdownModels({
   mode,
   stagedImageCount,
   onToggle,
+  onToggleAll,
 }: {
   models: Array<UnifiedModel>
   selectedIds: Array<string>
   mode: SelectionMode
   stagedImageCount: number
   onToggle: (id: string) => void
+  onToggleAll?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -229,6 +277,7 @@ function DropdownModels({
               selectedIds={selectedIds}
               stagedImageCount={stagedImageCount}
               onToggle={onToggle}
+              onToggleAll={onToggleAll}
               onAfterToggle={() => {
                 if (mode === 'single') setOpen(false)
               }}

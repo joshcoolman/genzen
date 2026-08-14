@@ -44,7 +44,14 @@ list once when the seed comes back full, so the grid is never short.
   selection; each model takes what its endpoint holds, `buildFalInput` drops the
   rest, and `images_used`/`images_requested` on the row make the card say "1 of
   5 images". The picker's `Refs` column is the capacity, and a row that cannot
-  hold the current set is dimmed -- still selectable. The panel used to clamp to
+  hold the current set is dimmed -- still selectable. **The header's tick
+  selects or clears every model** (#358), tri-state so it reports the selection
+  as well as changing it. It ignores the min-1 rule a row-click keeps: that
+  rule stops a click on the last selected row from quietly leaving you unable
+  to generate, while a control labelled "deselect all" says so out loud and is
+  one click to undo. Zero is already handled -- `canGenerate` requires a model,
+  so Generate goes dead, and the button's own "Generate 30 images" is what says
+  how big an all-selected click has become. The panel used to clamp to
   the minimum across the selection, which **deleted staged images** when you
   ticked a smaller model
 - **The grid never marks the set, and reaches it only through modifiers (#284).**
