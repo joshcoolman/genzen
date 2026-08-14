@@ -225,6 +225,15 @@ group` opens a dialog because a flyout of names commits you to picking one at
   `pending_count` comes off the same lateral as `count`, and the gallery's poll
   refreshes the groups when a pending row that belongs to one settles, so a card
   you are watching from top level is live rather than a snapshot
+- **The strip's order is the group's order, by construction.** `sort_order` is
+  null on an upload -- only a generation or a drag sets it -- and the grid has
+  always fallen back to `created_at`. The group read sorted `nulls last`, so an
+  image uploaded into a group was first inside the group and last in its strip:
+  the card gained a count and nothing else moved, which reads as the upload not
+  landing. One `ORDER_KEY` fragment now covers the strip, the card's grid
+  position and the auto-picked cover, in the same epoch seconds the client uses.
+  The cover is still dropped from the strip -- it is the picture directly
+  overhead -- so the row is the group's order minus its first entry
 - **Move to group empties a group into another and drops it.** Membership is an
   exclusive column, so it is one update and a delete -- no new write plumbing,
   and `GroupWrite.gone` already carried the vanished group. Named for the images

@@ -72,6 +72,21 @@ const EMPTY_WRITE: GroupWrite = {
 }
 
 /**
+ * The one ordering the grid and the strip have to agree on (#350).
+ *
+ * `sort_order` is null on an upload -- only a generation or a drag ever sets it
+ * -- and the grid has always fallen back to `created_at` (`sortByOrder` in
+ * `use-gallery`). The group read did not: it ordered `nulls last`, so an image
+ * uploaded into a group was *first* inside the group and *last* in that group's
+ * strip. The card gained a count and nothing else moved, which reads as the
+ * upload not having landed.
+ *
+ * Epoch seconds on both sides, so the two are the same number and not merely
+ * the same intent.
+ */
+const ORDER_KEY = sql`coalesce(sort_order, extract(epoch from created_at))`
+
+/**
  * Group summaries with the handful of member ids each card renders.
  *
  * One statement rather than a query per group: the lateral join gives each
@@ -99,18 +114,17 @@ async function readGroups(
            coalesce(m.newest, extract(epoch from g.created_at))::float8 as sort_order
     from image_groups g
     left join lateral (
-      select array_agg(ui.id order by ui.sort_order desc nulls last)
+      select array_agg(ui.id order by ui.order_key desc)
                filter (where ui.storage_path is not null) as ids,
              count(*) as n,
              count(*) filter (where ui.status = 'pending') as pending,
-             max(ui.sort_order) as newest
+             max(ui.order_key) as newest
       from (
-        select id, sort_order, status, storage_path
+        select id, status, storage_path, ${ORDER_KEY} as order_key
         from user_images
         where user_id = ${userId}
           and group_id = g.id
           and deleted_at is null
-        order by sort_order desc nulls last
       ) ui
     ) m on true
     where g.user_id = ${userId}
@@ -200,7 +214,7 @@ export async function createImageGroup(
         select id from user_images
         where user_id = ${userId} and group_id = ${group.id}
           and deleted_at is null and storage_path is not null
-        order by sort_order desc nulls last
+        order by ${ORDER_KEY} desc
         limit 1
       )
       where id = ${group.id} and user_id = ${userId}
