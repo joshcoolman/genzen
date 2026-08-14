@@ -132,6 +132,15 @@ list once when the seed comes back full, so the grid is never short.
   `features/ai-images/hooks/use-generation-poll.ts`, shared with Video and
   Activity, and it backs off, sleeps with the tab and gives up on work FAL never
   answers for (#327)
+- **A card's React key is not its id (#353).** A generation's card is born with
+  an optimistic id and swaps it for its record id the moment the submit answers
+  (#313). The id was the key, so React saw one card removed and a different one
+  added, and destroyed a mounted tile to build an identical one -- measured at
+  four remounts in a three-image burst, at the busiest moment in the app.
+  `keyFor` in `use-gallery` remembers what each row's card was born as, so the
+  id can change underneath it. The one remount left in that burst is
+  `PendingImageCard` giving way to `ImageCard`, which is a real change of
+  component and not a key problem
 - **A paste previews, the file picker does not.** A paste is one image the user
   has in mind, so it gets a blob preview immediately; the picker takes many at
   once and previews would land in upload order, so the cards would appear to

@@ -111,6 +111,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         <ImageGallery
           cells={cells}
           imageUrls={gallery.imageUrls}
+          keyFor={gallery.keyFor}
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
           onDelete={gallery.deleteImage}

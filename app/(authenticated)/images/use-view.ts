@@ -26,7 +26,11 @@ import { toast } from '#/components'
  *
  * Shaped as a real pending row rather than as a third card state, so
  * `image-gallery` needs no branch for it: the same `PendingImageCard` renders
- * this and the row that replaces it, and the swap is invisible.
+ * this and the row that replaces it.
+ *
+ * The swap is invisible because the card's React key is not its id (#353) --
+ * `keyFor` in `use-gallery`. It was not, for a while: the id was the key, so
+ * swapping it destroyed a mounted tile and built an identical one.
  *
  * `group_id` is carried because a generation made inside a group is filed into
  * it -- without it the card would be filtered out of the view that created it.
@@ -131,7 +135,7 @@ export function useView(initial: Array<SavedAiImage>) {
     // Each card resolves on its own submit rather than on the slowest one's.
     // A success swaps in the real row id so the refresh below recognises the
     // card it already drew; a failure that never reached the database takes
-    // the card with it.
+    // the card with it. The tile survives the swap -- `keyFor` (#353).
     onSubmitOutcome: ({ placeholderId, recordId }) => {
       if (recordId) {
         gallery.replaceOptimisticCard(placeholderId, (card) => ({
