@@ -63,6 +63,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     createGroup,
     removeFromGroup,
     renameGroup,
+    moveGroup,
     dissolveGroup,
     trashGroup,
     setGroupCoverImage,
@@ -123,6 +124,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onUsePrompt={usePromptText}
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
+          /* Only with somewhere to move to. One group is the common early
+             state, and "move this into..." with nothing but itself to choose
+             from is the non-choice the picker already refuses. */
+          onMoveGroup={
+            groups.groups.length > 1
+              ? (group) => setGroupFlow({ kind: 'move', group })
+              : undefined
+          }
           onDissolveGroup={(group) =>
             setGroupFlow({ kind: 'confirm-dissolve', group })
           }
@@ -243,6 +252,30 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         onNewGroup={() => {
           if (groupFlow?.kind !== 'pick') return
           setGroupFlow({ kind: 'create', targets: groupFlow.targets })
+        }}
+        onCancel={closeGroupFlow}
+      />
+
+      {/* Move to group (#350): the same picker, minus the source group and
+          minus `New group...` -- moving a group's contents somewhere that does
+          not exist yet is a rename, which the menu already offers. */}
+      <GroupPickerDialog
+        open={groupFlow?.kind === 'move'}
+        groups={
+          groupFlow?.kind === 'move'
+            ? groups.groups.filter((g) => g.id !== groupFlow.group.id)
+            : []
+        }
+        count={0}
+        title="Move to group"
+        description={
+          groupFlow?.kind === 'move'
+            ? `Everything in "${groupFlow.group.name}" moves, and the group goes away.`
+            : ''
+        }
+        onPick={(groupId) => {
+          if (groupFlow?.kind !== 'move') return
+          void moveGroup(groupFlow.group.id, groupId)
         }}
         onCancel={closeGroupFlow}
       />

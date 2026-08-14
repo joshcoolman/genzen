@@ -27,10 +27,20 @@ export interface ImageGroupSummary {
   cover_image_id: string | null
   /** Members for the card's swatch strip, newest first. Six, not five: the
    *  card drops the cover from this list before rendering, so trimming to five
-   *  here left it with four. */
+   *  here left it with four.
+   *
+   *  Pictures only -- a row with no `storage_path` is a generation still in the
+   *  queue or one that failed, and it used to take the newest slot and render
+   *  as a filled swatch of nothing (#350). What is in flight is `pending_count`
+   *  instead, which the strip draws as its own kind of slot. */
   preview_image_ids: Array<string>
-  /** Live members -- trashed images are not in it, having lost `group_id`. */
+  /** Live members -- trashed images are not in it, having lost `group_id`.
+   *  Includes whatever is still generating; `pending_count` is how much. */
   count: number
+  /** Members still in the FAL queue. The card's "work is happening in here"
+   *  (#350) -- the strip is read as what is going on lately, not as a curated
+   *  five, so it has to move while a group is being generated into. */
+  pending_count: number
   /** The newest member's `sort_order`, which is what the grid sorts on. An
    *  empty group falls back to its own creation time so it still has a place. */
   sort_order: number
@@ -65,8 +75,9 @@ const EMPTY_WRITE: GroupWrite = {
  * Group summaries with the handful of member ids each card renders.
  *
  * One statement rather than a query per group: the lateral join gives each
- * group its own newest-five without a round trip each, and the count comes off
- * the same scan. `deleted_at is null` is belt-and-braces -- trashing clears
+ * group its own newest-five without a round trip each, and both counts come off
+ * the same scan -- which is why `pending_count` costs nothing extra (#350).
+ * `deleted_at is null` is belt-and-braces -- trashing clears
  * `group_id`, so a trashed row is already not a member -- but it keeps the read
  * correct if a row is ever soft-deleted by a path that forgets.
  *
@@ -84,14 +95,17 @@ async function readGroups(
            g.cover_image_id,
            coalesce(m.ids, '{}') as preview_image_ids,
            coalesce(m.n, 0) as count,
+           coalesce(m.pending, 0) as pending_count,
            coalesce(m.newest, extract(epoch from g.created_at))::float8 as sort_order
     from image_groups g
     left join lateral (
-      select array_agg(ui.id order by ui.sort_order desc nulls last) as ids,
+      select array_agg(ui.id order by ui.sort_order desc nulls last)
+               filter (where ui.storage_path is not null) as ids,
              count(*) as n,
+             count(*) filter (where ui.status = 'pending') as pending,
              max(ui.sort_order) as newest
       from (
-        select id, sort_order
+        select id, sort_order, status, storage_path
         from user_images
         where user_id = ${userId}
           and group_id = g.id
@@ -110,7 +124,10 @@ async function readGroups(
   return (rows as unknown as Array<ImageGroupSummary>).map((g) => ({
     ...g,
     count: Number(g.count),
-    // Never null -- `coalesce(m.ids, '{}')` above -- so no fallback here.
+    pending_count: Number(g.pending_count),
+    // Never null -- `coalesce(m.ids, '{}')` above, which also covers the case
+    // the `filter` introduced: a group whose only members are still generating
+    // aggregates to null rather than to an empty array.
     preview_image_ids: g.preview_image_ids.slice(0, 6),
   }))
 }
@@ -227,6 +244,53 @@ export async function addImagesToGroup(
     groups: await readGroups(userId, [groupId, ...from]),
     gone: [],
     moved: { ids: rows.map((r) => r.id), groupId },
+    trashed: [],
+  }
+}
+
+/**
+ * Move a whole group's contents into another, and drop the emptied group (#350).
+ *
+ * "Move to group", not "Merge": it reads as an action on the images, which is
+ * what it is. Doing it by hand was Ungroup, select all of them, Add to group --
+ * three steps for one intention, and the middle one is the tedious part.
+ *
+ * Membership is an exclusive column, so the move is one update; nothing has to
+ * be de-duplicated and nothing can end up in two groups. The source's frozen
+ * cover is discarded with its row and the target keeps its own -- a merge that
+ * re-covered the destination would silently undo a choice someone made.
+ *
+ * Destructive with no undo, like Ungroup, which already deletes a group row the
+ * same way. The pictures are never at risk; only the grouping is.
+ */
+export async function moveGroupContents(
+  sourceGroupId: string,
+  targetGroupId: string,
+): Promise<GroupWrite> {
+  const { userId } = await resolveAuth()
+  if (sourceGroupId === targetGroupId) return EMPTY_WRITE
+
+  // Both ends confirmed to be this user's before anything moves, for the same
+  // reason `addImagesToGroup` checks: a guessed id must update nothing.
+  const owned = await sql<Array<{ id: string }>>`
+    select id from image_groups
+    where user_id = ${userId} and id = any(${[sourceGroupId, targetGroupId]})
+  `
+  if (owned.length !== 2) throw new Error('That group no longer exists')
+
+  const rows = await sql<Array<{ id: string }>>`
+    update user_images set group_id = ${targetGroupId}
+    where user_id = ${userId} and group_id = ${sourceGroupId}
+    returning id
+  `
+  await sql`
+    delete from image_groups where id = ${sourceGroupId} and user_id = ${userId}
+  `
+
+  return {
+    groups: await readGroups(userId, [targetGroupId]),
+    gone: [sourceGroupId],
+    moved: { ids: rows.map((r) => r.id), groupId: targetGroupId },
     trashed: [],
   }
 }

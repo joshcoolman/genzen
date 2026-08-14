@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
@@ -147,6 +147,38 @@ export function useView(initial: Array<SavedAiImage>) {
       void groups.refresh()
     },
   })
+
+  /**
+   * The group card as a live thing, not a snapshot (#350).
+   *
+   * A generation started inside a group is filed into it on submit, so
+   * `onAfterSubmit` above refreshes the groups and the card's strip picks up a
+   * working slot. Nothing refreshed them again when it *landed*: the poll lives
+   * in `useGallery` and re-reads the gallery only, so the card kept saying
+   * "1 working" until some unrelated write forced a group re-read.
+   *
+   * Watching the gallery's own rows rather than adding a second timer -- the
+   * poll already knows when something settles, and this is what that means for
+   * the other list. Optimistic cards are skipped: they have no row yet, so
+   * their id changing is not a generation finishing.
+   */
+  const pendingInGroups = useMemo(
+    () =>
+      gallery.images
+        .filter((img) => img.group_id && img.status === 'pending')
+        .map((img) => img.id),
+    [gallery.images],
+  )
+
+  const wasPendingInGroups = useRef(pendingInGroups)
+  useEffect(() => {
+    const before = wasPendingInGroups.current
+    wasPendingInGroups.current = pendingInGroups
+    const stillPending = new Set(pendingInGroups)
+    // Only shrinkage. Growth is the submit's business, and it has already
+    // refreshed -- reacting to it here would fire a second read per click.
+    if (before.some((id) => !stillPending.has(id))) void groups.refresh()
+  }, [pendingInGroups, groups.refresh])
 
   /**
    * Uploads ignores grouping entirely: every upload, grouped or not.
@@ -321,6 +353,10 @@ export function useView(initial: Array<SavedAiImage>) {
     | { kind: 'upload-target' }
     | { kind: 'create'; targets: Array<string> }
     | { kind: 'rename'; group: ImageGroupSummary }
+    // Picking where a whole group's contents are headed (#350). Carries the
+    // source group rather than image ids: the images are not enumerated
+    // client-side at all -- at top level the grid does not even hold them.
+    | { kind: 'move'; group: ImageGroupSummary }
     | { kind: 'confirm-dissolve'; group: ImageGroupSummary }
     | { kind: 'confirm-trash'; group: ImageGroupSummary }
     | null
@@ -474,6 +510,26 @@ export function useView(initial: Array<SavedAiImage>) {
     [groups, closeGroupFlow],
   )
 
+  /**
+   * Move a group's contents into another and drop the emptied one (#350).
+   *
+   * Not optimistic: at top level the members are exactly the rows the grid
+   * filters out, so there is nothing on screen to move ahead of the answer.
+   * The write returns the moved ids anyway, which is what keeps a gallery that
+   * *is* holding them (someone standing in the source group) correct.
+   */
+  const moveGroup = useCallback(
+    async (sourceGroupId: string, targetGroupId: string) => {
+      closeGroupFlow()
+      applyGroupWrite(await groups.moveContents(sourceGroupId, targetGroupId))
+      // Standing in a group that just ceased to exist: follow the pictures.
+      if (activeGroupId === sourceGroupId) {
+        router.push(`/images?group=${targetGroupId}`)
+      }
+    },
+    [groups, activeGroupId, router, closeGroupFlow, applyGroupWrite],
+  )
+
   /** Keeps every picture, returns them to top level, drops the group row. */
   const dissolveGroup = useCallback(
     async (groupId: string) => {
@@ -599,6 +655,7 @@ export function useView(initial: Array<SavedAiImage>) {
     createGroup,
     removeFromGroup,
     renameGroup,
+    moveGroup,
     dissolveGroup,
     trashGroup,
     setGroupCoverImage,

@@ -48,6 +48,8 @@ interface ImageGalleryProps {
   onUsePrompt?: (text: string) => void
   onOpenGroup?: (group: ImageGroupSummary) => void
   onRenameGroup?: (group: ImageGroupSummary) => void
+  /** Undefined when there is nowhere to move to -- the card hides the item. */
+  onMoveGroup?: (group: ImageGroupSummary) => void
   onDissolveGroup?: (group: ImageGroupSummary) => void
   onTrashGroup?: (group: ImageGroupSummary) => void
   onAddToGroup?: (img: SavedAiImage) => void
@@ -76,6 +78,7 @@ export function ImageGallery({
   onUsePrompt,
   onOpenGroup,
   onRenameGroup,
+  onMoveGroup,
   onDissolveGroup,
   onTrashGroup,
   onAddToGroup,
@@ -115,6 +118,7 @@ export function ImageGallery({
                   showInfo={showInfo}
                   onOpen={onOpenGroup ?? (() => {})}
                   onRename={onRenameGroup ?? (() => {})}
+                  onMove={onMoveGroup}
                   onDissolve={onDissolveGroup ?? (() => {})}
                   onTrash={onTrashGroup ?? (() => {})}
                   selectionActive={selectionActive}

@@ -1,6 +1,12 @@
 'use client'
 
-import { MoreHorizontal, Pencil, Trash2, Unlink } from 'lucide-react'
+import {
+  FolderInput,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Unlink,
+} from 'lucide-react'
 import styles from './group-card.module.css'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import {
@@ -18,12 +24,22 @@ import { imageUrl } from '#/lib/image-url'
  *  every card and reads as "room for more" rather than as a broken grid. */
 const SWATCH_COUNT = 5
 
+/** How much of the strip work-in-flight may take (#350). The strip earns its
+ *  keep by being stable and glanceable, so a pending slot is an *addition* to
+ *  it, not a takeover -- kick off six generations and the row still shows what
+ *  is in the group as well as that something is happening. */
+const MAX_PENDING_SLOTS = 2
+
 interface GroupCardProps {
   group: ImageGroupSummary
   /** The gallery's caption toggle, honoured exactly as an image card does. */
   showInfo?: boolean
   onOpen: (group: ImageGroupSummary) => void
   onRename: (group: ImageGroupSummary) => void
+  /** Move every picture into another group and drop this one (#350). Absent
+   *  when there is nowhere to move to, which is how the menu item hides -- the
+   *  card does not know about the other groups and does not need to. */
+  onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
   onTrash: (group: ImageGroupSummary) => void
   /** Something in the grid is selected (#325). A group cannot join a selection,
@@ -54,6 +70,7 @@ export function GroupCard({
   showInfo = true,
   onOpen,
   onRename,
+  onMove,
   onDissolve,
   onTrash,
   selectionActive,
@@ -65,15 +82,24 @@ export function GroupCard({
   const coverId = group.cover_image_id ?? group.preview_image_ids[0]
   const coverUrl = coverId ? imageUrl(coverId, 'thumb') : undefined
 
-  // The cover is already the picture above; repeating it as the first swatch
-  // spends one of five slots on something directly overhead.
+  /**
+   * The strip: what is happening in here lately, newest first.
+   *
+   * Three kinds of slot (#350). Work in flight leads, because it is the newest
+   * thing in the group and because that is the whole signal -- a group being
+   * generated into from top level said nothing at all before. Then the members
+   * there are to look at. Then ghosts, so the row keeps its shape.
+   *
+   * The cover is already the picture above; repeating it as the first swatch
+   * spends one of five slots on something directly overhead.
+   */
+  const pendingSlots = Math.min(group.pending_count, MAX_PENDING_SLOTS)
   const swatchIds = group.preview_image_ids
     .filter((id) => id !== coverId)
-    .slice(0, SWATCH_COUNT)
+    .slice(0, SWATCH_COUNT - pendingSlots)
 
-  // Padded to a fixed five so the row never reflows: a null is a ghosted slot.
   const swatchSlots: Array<string | null> = Array.from(
-    { length: SWATCH_COUNT },
+    { length: SWATCH_COUNT - pendingSlots },
     (_, i) => (i < swatchIds.length ? swatchIds[i] : null),
   )
 
@@ -92,6 +118,16 @@ export function GroupCard({
           <Pencil />
           Rename
         </DropdownMenuItem>
+        {/* Move to group, not Merge (#350): it reads as an action on the
+            images, which is what it is -- they go to the destination and this
+            group, having nothing left, goes away. Absent when there is nowhere
+            to move to. */}
+        {onMove && (
+          <DropdownMenuItem onClick={() => onMove(group)}>
+            <FolderInput />
+            Move to group
+          </DropdownMenuItem>
+        )}
         {/* The non-destructive twin of the delete icon: same group gone, every
             picture kept and returned to top level. Both are offered because "I
             am done with this grouping" and "I am done with these images" are
@@ -151,11 +187,28 @@ export function GroupCard({
               it. */}
           <div className={styles.heading}>
             <span className={styles.name}>{group.name}</span>
+            {/* The count has always included pending rows; it now says so
+                while there are any (#350). Silence was the wrong answer to
+                "why does this say 8 when I can see 6" -- and from top level
+                this line plus the strip is the only report that a group you
+                are not standing in is busy. */}
             <span className={styles.total}>
               {group.count} {group.count === 1 ? 'image' : 'images'}
+              {group.pending_count > 0 && (
+                <span className={styles.working}>
+                  , {group.pending_count} working
+                </span>
+              )}
             </span>
           </div>
           <div className={styles.swatches}>
+            {Array.from({ length: pendingSlots }, (_, i) => (
+              <span
+                key={`working-${i}`}
+                className={styles.swatchWorking}
+                aria-hidden="true"
+              />
+            ))}
             {swatchSlots.map((id, i) => (
               <span
                 key={id ?? `empty-${i}`}
