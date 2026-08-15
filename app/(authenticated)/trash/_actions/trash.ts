@@ -14,21 +14,26 @@ import { removeImages } from '#/features/user-images/server/remove-images.action
 // browser, on data the browser had fetched earlier -- a client that skipped it
 // deleted whatever it liked.
 //
-// Canvas membership used to block a permanent delete outright (#212), and that
-// was a deadlock: trashing from the canvas deliberately keeps the
-// `canvas_images` row so a restore lands back at its coordinates, so every
-// image deleted from a canvas arrived here already carrying the thing that
-// made it undeletable, with no gesture anywhere that cleared it (#371). The
-// guard protected nothing either way -- it only ever ran over trashed rows,
-// and the canvas read filters `deleted_at`, so the card it was "protecting"
-// was already invisible on every board. `canvas_images.image_id` cascades.
+// **Canvas membership blocks a permanent delete** (#212, removed in #371,
+// restored in #375). The history is worth keeping because the same rule was
+// right, then wrong, then right again for a structural reason.
 //
-// Membership survives as a badge, not a veto: it tells you a restore will put
-// this back on a canvas.
+// #212 added the lock, and it deadlocked: the only way a card left a canvas was
+// a trash that deliberately kept the membership row, so every image deleted
+// from a canvas arrived here permanently undeletable with no gesture anywhere
+// that cleared it. #371 removed the lock, correctly, because a lock with no key
+// is just a wall.
+//
+// #373 cut the key. Remove-from-canvas exists again, the canvas no longer
+// filters `deleted_at`, and a trashed image stays on the board until it is
+// taken off it. So the badge here is now a live fact about something the user
+// can see, and the lock is what stops an Empty Trash from destroying a card off
+// a canvas nobody was looking at. Remove it from the canvas and the row becomes
+// deletable.
 
 export interface TrashLinks {
-  /** Trashed ids that still hold a canvas membership row. Informational -- it
-   *  drives the badge and nothing else. */
+  /** Trashed ids that still hold a canvas membership row: still on the board,
+   *  so not deletable until they are taken off it. */
   canvasIds: Array<string>
 }
 
@@ -62,7 +67,7 @@ export async function listTrashedImages(): Promise<TrashPayload> {
   return { images, links }
 }
 
-/** Which trashed ids still hold a canvas membership row, for the badge. */
+/** Which trashed ids are still on a canvas: badge, and the delete lock. */
 async function computeLinks(
   userId: string,
   trashedIds: Array<string>,
@@ -88,11 +93,11 @@ export async function restoreImages(ids: Array<string>): Promise<void> {
 }
 
 /**
- * Permanently delete trashed images.
+ * Permanently delete trashed images, skipping any still on a canvas.
  *
  * Pass no ids to empty the trash. Returns the ids actually destroyed, so the
  * caller can reconcile rather than assume its request was honoured wholesale --
- * a row can leave the trash between the page load and the click.
+ * the locked set is recomputed here, so it is not something a client can skip.
  */
 export async function permanentlyDeleteImages(
   ids?: Array<string>,
@@ -117,15 +122,23 @@ export async function permanentlyDeleteImages(
 
   if (candidates.length === 0) return []
 
-  const targetIds = candidates.map((c) => c.id)
+  const { canvasIds } = await computeLinks(
+    userId,
+    candidates.map((c) => c.id),
+  )
+  const locked = new Set(canvasIds)
+  const targets = candidates.filter((c) => !locked.has(c.id))
+  if (targets.length === 0) return []
+
+  const targetIds = targets.map((t) => t.id)
   await sql`
     delete from user_images
     where user_id = ${userId} and id in ${sql(targetIds)}
   `
 
-  const storagePaths = candidates.flatMap((c) => [
-    ...(c.storage_path ? [c.storage_path] : []),
-    ...(c.thumbnail_path ? [c.thumbnail_path] : []),
+  const storagePaths = targets.flatMap((t) => [
+    ...(t.storage_path ? [t.storage_path] : []),
+    ...(t.thumbnail_path ? [t.thumbnail_path] : []),
   ])
   if (storagePaths.length > 0) await removeImages({ storagePaths })
 

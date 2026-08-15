@@ -14,18 +14,21 @@ read after that.
   failure is just an error card again
 - Queries filter by `deleted_at IS NOT NULL` and
   `source IN ('upload', 'ai_generated')`
-- **Linked image protection.** An image is undeletable while it has a
-  `canvas_images` row (#212; it was an `on_canvas` boolean). Being a generation's
-  source used to count too and went with genealogy (#204). The client's
-  `linkedImageIds` only drives the disabled state; `permanentlyDeleteImages`
-  recomputes the set server-side and returns what it actually destroyed, so the
-  guard is not something a client can skip
-- The guard is now **policy, not necessity** — `canvas_images.image_id` cascades,
-  so a permanent delete would take the card with it rather than dangle. It stays
-  because an irreversible delete would silently change a canvas the user is not
-  looking at, and trashing was deliberately made not to (membership survives a
-  trash, so a restore returns the card to its position)
+- **An image still on a canvas cannot be permanently deleted.** Added in #212,
+  removed in #371, restored in #375 — and the reversals are the point. #212's
+  lock had no key: the only way a card left a canvas was a trash that kept the
+  `canvas_images` row, so every canvas image landed here undeletable forever
+  with no gesture anywhere that cleared it. #371 removed it. #373 cut the key —
+  remove-from-canvas is a verb again — and #375 made a trashed image _stay_ on
+  the board, so the badge names something the user can see and the lock is what
+  stops an Empty Trash from destroying a card off a live canvas. Remove it from
+  the canvas to delete it
+- Being a generation's source used to count as a link too, and went with
+  genealogy (#204). Canvas membership is the only one left
+- `links.canvasIds` drives the badge and the disabled state, but is not the
+  guard: `permanentlyDeleteImages` recomputes the set server-side and returns
+  what it actually destroyed, so a client cannot skip it
 - Mutations are optimistic with a refetch on error
 - No realtime (#174). Trash only changes from an action on this page or a delete
   elsewhere, and either way the next visit re-reads it
-- Image URLs are public S3 URLs via `createImageStorage()`, no signing or expiry
+- Image URLs are `/img/[id]`, app-served and session-checked (#226)
