@@ -6,7 +6,7 @@
      than per-edge: the picture reads as centred only while the gutters match,
      and the first version had a thin 1rem top and bottom against a wide 4rem
      left and right, which pinned tall images to the chrome. */
-  --viewer-gutter: calc(var(--space-64) * 2);
+  --viewer-gutter: var(--space-64);
 
   position: fixed;
   inset: 0;

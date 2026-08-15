@@ -15,28 +15,40 @@ that an overlay covering everything costs nothing while browsing and buries your
 work while working, so /images should preview in place instead (#308). The
 second half of that did not survive contact: a preview that leaves the working
 surface visible offers actions unrelated to the image you are looking at, which
-is worse than covering it. /images went back to the lightbox and its in-place
+is worse than covering it. /images went back to an overlay and its in-place
 preview was deleted.
 
 What stands is the first half. Browsing is a mood worth its own surface, and
-this is it. The lightbox is simply not exclusive to it.
+this is it. An overlay is simply not exclusive to it.
+
+## The overlay is `image-detail/`, and never "the lightbox"
+
+`_components/image-detail/` is the three-column one: image, the prompt that
+made it, filmstrip of the wall. **Do not rename it toward "lightbox", and do
+not let another route import it.**
+
+That is not fussiness. The name cost two rounds of the same mistake. The
+component lived in `images/_components/lightbox/` and Explore borrowed it, so
+anyone asked for a plain viewer on /images found "a lightbox" already in the
+tree, wired to it, and shipped a prompt column and a filmstrip nobody wanted
+there. /images now has its own `image-viewer/`, which is what a lightbox
+actually looks like — scrim, chevrons, an X, no text. The two answer different
+questions: this one is "what made this picture", that one is "show me this
+bigger".
+
+It was briefly `job-view/`, after the internal name in #271. That is
+Midjourney's word for a generation and means nothing in this codebase.
+
+The cursor is `_hooks/use-image-detail.ts`. /images has its own near-identical
+copy, on purpose — sharing the hook is how the layout got imposed the first
+time.
 
 ## Removability
 
 **One folder and one nav entry.** Delete `app/(authenticated)/explore/` and the
-`explore` item in `src/lib/nav-items.ts` and the route is gone. Nothing outside
-those two places refers to it, and /images was not modified to make it work.
-
-The dependency runs one way, Explore -> Images, and only for two imports:
-
-- `../images/_components/lightbox/lightbox` — presentational, props only
-- `../images/_hooks/use-lightbox` — the cursor over a list
-
-Still borrowed rather than moved, but the reason has expired. It was "an
-experiment that may not survive, so do not edit the working route for it";
-Explore stayed, and /images now renders the same lightbox for its own sake. Two
-real consumers, so by the house standard both have earned `src/components/` and
-a shared hook. **The move is the outstanding chore, not a judgement call.**
+`explore` item in `src/lib/nav-items.ts` and the route is gone. There are no
+cross-route imports in either direction any more; the overlay and its cursor
+live here now.
 
 ## Quirks
 

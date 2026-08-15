@@ -15,7 +15,7 @@ list once when the seed comes back full, so the grid is never short.
 
 ## Quirks
 
-- **The card has two icons, and a click opens the lightbox.** `...` and
+- **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption
   until it read as a title for the prompt -- it names what made the picture, so
@@ -84,7 +84,7 @@ list once when the seed comes back full, so the grid is never short.
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
   endpoint from whether the set is empty, so "edit" is a detail of building the
-  request. The lightbox used to offer a source pencil too; #271 removed it
+  request. Explore's overlay used to offer a source pencil too; #271 removed it
   rather than have two answers to "how do I put an image in"
 - **Selection is a mode, and the mode is the selection (#284, #325).**
   `selectMode` is not state -- it is `selection.count > 0`. **The tick in each
@@ -112,7 +112,7 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
-- **A click opens the lightbox, and #308's in-place preview is gone.** For three
+- **A click opens the viewer, and #308's in-place preview is gone.** For three
   days the click turned the grid area, and only the grid area, into one large
   image -- toolbar still there, no scrim, hidden click zones in the outer
   quarters to page. The theory was that an overlay covering everything costs
@@ -125,30 +125,39 @@ list once when the seed comes back full, so the grid is never short.
   detail to tune. The hidden zones failed the same way: a target that reveals
   its chevron only once you are inside it confirms rather than affords.
   `_components/experiment/` is deleted; do not rebuild it without a new reason
-- **The lightbox is a job view, and Images and Explore share one (#271).**
-  Image, prompt, filmstrip -- nothing else goes in it. It takes the list the
-  grid renders, filtered to completed, so the strip and the grid can never
-  disagree (#270). It sits in `_components/lightbox/` and `/explore` imports it
-  from here; that is a borrowed dependency, not a home, and with two real
-  consumers it has earned `src/components/` -- see
-  `app/(authenticated)/explore/CLAUDE.md`. The one difference between the two
-  is deliberate: Images passes `onDelete`, so the frame carries a Trash button
-  and the Delete/Backspace hotkeys; Explore passes nothing and stays a pure
-  viewer. That is the working/browsing line drawn in the only place it belongs.
-  **There are no chevrons, and the strip never disappears.** Arrow keys and the
-  filmstrip are the whole navigation surface -- chevrons competed with the
-  image for the space this layout exists to give it. Narrow viewports used to
-  hide the strip on the grounds that arrow keys replace it, which is backwards:
-  a small screen is the least likely to have a keyboard and the most in need of
-  a visible way through the set. The columns now compress instead
-  (`clamp()` in the stylesheet, capped at the old fixed widths) and nothing is
-  ever `display: none`. It gets tight before it gets unusable; that is an
-  accepted rough cut, and a reflowed small-screen layout is still open so long
-  as it drops neither the prompt nor the strip. **A click
-  anywhere that is not a control closes it** -- the image, the scrim, the empty
-  space beside the prompt. Only the filmstrip and the two buttons stop the
-  click, because the way this gets used is look, page a few, copy, get back to
-  the grid, and a lightbox you have to aim at to leave taxes every one of those
+- **The viewer is `_components/image-viewer/`, and it is nothing to do with
+  Explore's overlay.** A plain lightbox: scrim over the app, the picture
+  centred, chevrons either side, an X, a counter, click outside the image to
+  dismiss, arrows and Escape. **No prompt, no filmstrip, no metadata** -- "show
+  me this bigger and let me move through the set" is the whole job, and
+  anything proposed for it should have to answer why it is not a card action or
+  a route. Delete and Backspace send to Trash, which is the one thing this has
+  that Explore's does not.
+
+  Explore's `image-detail/` is the three-column one (image, prompt, filmstrip)
+  and is **not shared, not imported, and not to be renamed toward "lightbox"**.
+  The single name cost two rounds of the same mistake: it lived here as
+  `_components/lightbox/`, so a request for a plain viewer on /images found one
+  already in the tree and got a prompt column and a filmstrip with it. Two
+  components, two routes, no dependency in either direction. `#/components` is
+  the wrong destination for both -- they only look like one thing.
+
+  Same for the cursor. `_hooks/use-image-viewer.ts` is a near-copy of Explore's
+  `use-image-detail.ts`, on purpose: ~40 similar lines is cheaper than a shared
+  hook that decides for both surfaces, which is exactly how the layout got
+  imposed the first time.
+
+  **It cycles what the grid is showing** -- filtered, sorted, and scoped to the
+  open group if there is one (#270). "Next" has to mean the next picture on
+  screen; a viewer over a different list sends you somewhere you were not
+  looking. Group cards are not stops in the sequence, only images.
+
+  Gutters are one custom property, `--viewer-gutter`, equal on all four sides.
+  Tune that rather than a single edge -- the first pass had a thin top and
+  bottom against wide sides, which pinned tall images to the chrome. Paired
+  with `min-height: 0` on the stage, which is what makes "the image always fits
+  the viewport" true rather than nearly true
+
 - **`initial` is a seed, not the source of truth.** `use-gallery.ts` owns the
   list after the first paint, and the FAL poll is the only signal that anything
   changed -- nothing pushes (#174). The poll is
