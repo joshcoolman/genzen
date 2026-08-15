@@ -15,12 +15,11 @@ list once when the seed comes back full, so the grid is never short.
 
 ## Quirks
 
-- **The card has two icons, and a click opens the in-place preview.** `...` and
+- **The card has two icons, and a click opens the lightbox.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption
   until it read as a title for the prompt -- it names what made the picture, so
-  it lives on the picture. The click opened the lightbox until the preview
-  took it -- see the Experiment bullet below. The expand icon went (the click
+  it lives on the picture. The expand icon went (the click
   does that), the
   select circle went (select mode does), and the source highlight went -- the
   grid used to point the generator at an image on click, which is a hidden
@@ -113,26 +112,39 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
-- **A click opens the preview, and the lightbox moved out.** The click used to
-  open the lightbox here, and it felt disorienting for a reason that took a
-  while to name: an overlay that covers everything costs nothing while
-  _browsing_ and buries your work while _working_. So browsing got its own
-  route, `/explore`, and the lightbox went with it. What the click does here is
-  `_components/experiment/` -- the grid area, and only the grid area, becomes
-  one large image. Toolbar stays, no scrim, no animation. The outer quarters of
-  the panel step (a chevron appears only once the pointer is in one), the middle
-  half closes, arrow keys page, Escape leaves. It covers the grid rather than
-  replacing it, so scroll position survives, and it is positioned by a
-  `ResizeObserver` rather than CSS because the sidebar and the dock both move
-  its edges
-- **The lightbox is a job view, and Explore owns it now (#271).** Image, prompt,
-  filmstrip -- nothing else goes in it. It takes the list the grid renders,
-  filtered to completed, so the strip and the grid can never disagree (#270).
-  It still sits in `_components/lightbox/` and `/explore` imports it from here;
-  that is a borrowed dependency, not a home. Two consumers means it has earned
-  `src/components/`, and the move is deliberately not done yet -- see
-  `app/(authenticated)/explore/CLAUDE.md`. `onOpen` is still threaded from
-  `use-view` down to the card as the unwired seam. **A click
+- **A click opens the lightbox, and #308's in-place preview is gone.** For three
+  days the click turned the grid area, and only the grid area, into one large
+  image -- toolbar still there, no scrim, hidden click zones in the outer
+  quarters to page. The theory was that an overlay covering everything costs
+  nothing while _browsing_ and buries your work while _working_, so a working
+  surface should preview in place. Using it produced the opposite result: the
+  UI left visible cannot act on the image you are looking at, so it offers
+  actions unrelated to what is on screen and you lose the picture's full
+  attention as well. The scrim is not decoration -- it is the sentence "you are
+  looking now, not working," and leaving it out was the mistake rather than a
+  detail to tune. The hidden zones failed the same way: a target that reveals
+  its chevron only once you are inside it confirms rather than affords.
+  `_components/experiment/` is deleted; do not rebuild it without a new reason
+- **The lightbox is a job view, and Images and Explore share one (#271).**
+  Image, prompt, filmstrip -- nothing else goes in it. It takes the list the
+  grid renders, filtered to completed, so the strip and the grid can never
+  disagree (#270). It sits in `_components/lightbox/` and `/explore` imports it
+  from here; that is a borrowed dependency, not a home, and with two real
+  consumers it has earned `src/components/` -- see
+  `app/(authenticated)/explore/CLAUDE.md`. The one difference between the two
+  is deliberate: Images passes `onDelete`, so the frame carries a Trash button
+  and the Delete/Backspace hotkeys; Explore passes nothing and stays a pure
+  viewer. That is the working/browsing line drawn in the only place it belongs.
+  **There are no chevrons, and the strip never disappears.** Arrow keys and the
+  filmstrip are the whole navigation surface -- chevrons competed with the
+  image for the space this layout exists to give it. Narrow viewports used to
+  hide the strip on the grounds that arrow keys replace it, which is backwards:
+  a small screen is the least likely to have a keyboard and the most in need of
+  a visible way through the set. The columns now compress instead
+  (`clamp()` in the stylesheet, capped at the old fixed widths) and nothing is
+  ever `display: none`. It gets tight before it gets unusable; that is an
+  accepted rough cut, and a reflowed small-screen layout is still open so long
+  as it drops neither the prompt nor the strip. **A click
   anywhere that is not a control closes it** -- the image, the scrim, the empty
   space beside the prompt. Only the filmstrip and the two buttons stop the
   click, because the way this gets used is look, page a few, copy, get back to

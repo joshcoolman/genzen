@@ -37,12 +37,8 @@ interface ImageCardProps {
   onGenerateVariations?: (img: SavedAiImage) => void
   /** Take this still to /video as the first frame (#305). */
   onAnimate?: (img: SavedAiImage) => void
-  /** Opens the lightbox. Currently unwired: the launcher row that called it has
-   *  been removed and the card click goes to the preview instead. The lightbox
-   *  is still mounted, so this is the seam to reach it from. */
+  /** The card click: opens the lightbox over everything. */
   onOpen?: (img: SavedAiImage) => void
-  /** The card click: the grid area becomes one large preview. */
-  onExperiment?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
    *  evicting the last when the set is full. */
   onAddReference?: (img: SavedAiImage) => void
@@ -70,8 +66,8 @@ interface ImageCardProps {
  *
  * The select circle went in #284 (select mode replaced it) and the source
  * highlight in #297 (there is no source, only the generator's set). A pair of
- * Gallery/Experiment launchers lived in the caption briefly and went once the
- * card click was wired straight to the preview.
+ * Gallery launchers lived in the caption briefly and went once the card click
+ * was wired straight to the lightbox.
  */
 export function ImageCard({
   img,
@@ -83,7 +79,7 @@ export function ImageCard({
   onDescribe,
   onGenerateVariations,
   onAnimate,
-  onExperiment,
+  onOpen,
   onAddReference,
   onUsePrompt,
   onAddToGroup,
@@ -250,7 +246,7 @@ export function ImageCard({
          which #284 removed on purpose -- it is here as its own decision, and it
          costs the card nothing because it is not a control.
 
-         The plain click opens the preview. It was briefly a duplicate of a
+         The plain click opens the lightbox. It was briefly a duplicate of a
          launcher button in the caption; the click won and the buttons went. */
       onClick={
         selectionActive
@@ -260,7 +256,7 @@ export function ImageCard({
                 onAddReference(img)
                 return
               }
-              onExperiment?.(img)
+              onOpen?.(img)
             }
       }
     >

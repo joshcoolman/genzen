@@ -9,7 +9,6 @@ import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { GroupNameDialog } from './_components/group-name-dialog/group-name-dialog'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageLightbox } from './_components/image-lightbox/image-lightbox'
-import { Experiment } from './_components/experiment/experiment'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -41,7 +40,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     isBatchDeleting,
     deleteSelected,
     lightbox,
-    experiment,
     variations,
     variationSourceUrl,
     describeTarget,
@@ -95,19 +93,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
 
-        {/* Before the gallery, not after: its anchor is measured to find the
-            top of the grid area. */}
-        {experiment.isOpen && (
-          <Experiment
-            items={experiment.items}
-            imageUrls={experiment.imageUrls}
-            currentIndex={experiment.index!}
-            onClose={experiment.close}
-            onNext={experiment.next}
-            onPrev={experiment.prev}
-          />
-        )}
-
         <ImageGallery
           cells={cells}
           imageUrls={gallery.imageUrls}
@@ -121,7 +106,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onGenerateVariations={variations.openVariationDialog}
           onAnimate={animate}
           onOpen={lightbox.open}
-          onExperiment={experiment.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           workingByGroup={workingByGroup}

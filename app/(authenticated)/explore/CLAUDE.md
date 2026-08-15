@@ -5,17 +5,21 @@ over it.
 
 ## Why it exists
 
-The lightbox was modelled on Midjourney's and then put on /images, where it felt
-disorienting. The reason turned out to be context, not design: on Midjourney the
-overlay lives in **Explore**, where you have no task and nothing to lose sight
-of, so covering the screen costs nothing and landing back on the same scroll
-position is the whole trick. On a working surface you do have a task, and the
-same overlay buries it.
+A wall with no task attached to it. Nothing here is a control: no toolbar, no
+filters, no sort, no select mode, no captions, no hover actions. /images owns
+all of that, and a second copy would be a second place to look for the same
+setting.
 
-So this route is the context the lightbox was designed for. Nothing here is a
-control: no toolbar, no filters, no sort, no select mode, no captions, no hover
-actions. /images owns all of that, and a second copy would be a second place to
-look for the same setting.
+This route was created on the theory that the lightbox belonged **only** here --
+that an overlay covering everything costs nothing while browsing and buries your
+work while working, so /images should preview in place instead (#308). The
+second half of that did not survive contact: a preview that leaves the working
+surface visible offers actions unrelated to the image you are looking at, which
+is worse than covering it. /images went back to the lightbox and its in-place
+preview was deleted.
+
+What stands is the first half. Browsing is a mood worth its own surface, and
+this is it. The lightbox is simply not exclusive to it.
 
 ## Removability
 
@@ -28,11 +32,11 @@ The dependency runs one way, Explore -> Images, and only for two imports:
 - `../images/_components/lightbox/lightbox` — presentational, props only
 - `../images/_hooks/use-lightbox` — the cursor over a list
 
-Deliberately borrowed rather than moved. They have two consumers now, so by the
-house standard they have earned a promotion to `src/components/` and a shared
-hook — but doing that would edit the working route for the sake of an experiment
-that may not survive. **If Explore stays, promote them and delete this
-paragraph.**
+Still borrowed rather than moved, but the reason has expired. It was "an
+experiment that may not survive, so do not edit the working route for it";
+Explore stayed, and /images now renders the same lightbox for its own sake. Two
+real consumers, so by the house standard both have earned `src/components/` and
+a shared hook. **The move is the outstanding chore, not a judgement call.**
 
 ## Quirks
 

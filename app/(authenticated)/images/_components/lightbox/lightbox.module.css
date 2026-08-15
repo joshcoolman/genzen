@@ -7,10 +7,20 @@
   inset: 0;
   z-index: var(--z-dialog);
   display: grid;
-  /* The image takes what is left after two fixed columns. Fixed is deliberate:
-     a prompt column that grows with the viewport re-wraps the text on every
-     resize, and the strip is a rail, not content. */
-  grid-template-columns: 1fr 24rem 7rem;
+  /* The image takes what is left after the prompt column and the strip. Both
+     are capped rather than fixed: at their caps they behave as the fixed
+     24rem/7rem they used to be, so the re-wrap-on-resize that fixed widths
+     avoided only happens below the cap -- and below the cap the alternative
+     was hiding them, which is worse.
+
+     Never `display: none` on either of these. A narrow viewport is where a
+     visible way through the set matters most, since arrow keys are least
+     likely to be available there. The floors are deliberately small: a
+     cramped strip still says how many there are and where you are in them. */
+  grid-template-columns:
+    minmax(0, 1fr)
+    clamp(10rem, 22vw, 24rem)
+    clamp(3.25rem, 7vw, 7rem);
   /* Without an explicit row the grid sizes to its tallest child, so a strip of
      forty thumbnails made the row taller than the viewport: the page scrolled
      and the rail never did, leaving the current thumbnail off screen. */
@@ -244,19 +254,28 @@
   border-radius: calc(var(--radius-sm) - 1px);
 }
 
-/* Narrow: the strip is the first thing to go — it is navigation the arrow keys
-   already provide, while the prompt is the only place the prompt exists. */
+/* Narrow: the columns compress and the padding gives way first, so the image
+   loses as little as possible. Three columns all the way down is a rough cut
+   -- it gets tight well before it gets unusable, and the point is that nothing
+   vanishes on the way. A layout that reflows for small screens is still open;
+   what is settled is that it cannot be one that drops the prompt or the strip.
+
+   There used to be a breakpoint here that went to one column and hid the
+   strip entirely. */
 @media (max-width: 60rem) {
-  .root {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+  .stage {
+    padding: var(--space-8);
+  }
+
+  .image {
+    max-height: calc(100vh - var(--space-8) * 4);
   }
 
   .details {
-    max-height: 30vh;
+    padding: var(--space-16) var(--space-12);
   }
 
   .filmstrip {
-    display: none;
+    padding: var(--space-8) var(--space-8);
   }
 }
