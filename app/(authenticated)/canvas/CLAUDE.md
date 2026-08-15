@@ -11,11 +11,16 @@ canvas and the image. Arrangement is user data and lives in Postgres, so it
 survives a different browser and a different machine. There is no IndexedDB and
 no `on_canvas` boolean -- both are gone.
 
-**The library owns everything.** A membership row is an _arrangement over a
-library image_, never exile: nothing exists only inside a canvas. So trashing is
-a library operation that leaves membership alone -- the read filters
-`deleted_at`, the card stops rendering, and a restore puts it back at the same
-coordinates. `deleted_at = now(), on_canvas = false` was the bug this replaced.
+**The canvas holds references, never originals.** A membership row is an
+_arrangement over a library image_, never exile: every entry path -- paste,
+drop, upload, library pick, generation -- writes a `user_images` row first, so
+nothing exists only inside a canvas. That is what makes the board disposable:
+taking a card off cannot lose a picture, only a position, and a position is a
+byproduct of thinking rather than work worth a recovery path (#373). Groups hold
+the durable structure; the canvas is where things are tried.
+
+The canvas therefore does not reach into the library at all. It adds and removes
+membership rows and nothing else -- no `deleted_at`, no `group_id`.
 
 **One reconcile rule: place what is unplaced.** A membership row may arrive with
 no position, because a generation's row is written server-side the moment it is
@@ -46,13 +51,14 @@ generation could evict it.
 4. Display -> a `/img/[id]` URL from `#/lib/image-url`, resolved server-side by
    `loadCanvasState()`. The bucket is private (#226); nothing reads an object
    address
-5. Move to Trash -> `deleted_at` only; membership survives, so restoring from
-   Trash returns the card to its coordinates. **The only way a card leaves.**
-   Remove-from-canvas was the other one and #236 deleted it: it destroyed the
-   arrangement with no way back, which made it the single exception to "if it
-   can be undone, do it; if it cannot, ask". `removeFromCanvas()` still exists
-   and is used by one caller -- dismissing a failed tile, which never became an
-   image
+5. Remove from canvas -> the `canvas_images` row goes, the `user_images` row
+   is untouched. **The only way a card leaves.** It was replaced by a
+   Move-to-Trash in #236 and came back in #373. #236's reasoning -- removal
+   "destroyed the arrangement with no way back" -- belonged to a canvas whose
+   arrangement was the only structure in the app. What the trash-instead bought
+   was a canvas that soft-deleted library rows, cleared their `group_id` (#319),
+   and left a membership row that made them permanently undeletable from Trash
+   (#371)
 
 **Key type:**
 
@@ -117,7 +123,7 @@ There is no separate "Combine" feature anymore (retired into this flow).
 
 **Placement:** "the source" here means the first selected image, which is where the placeholders are anchored (`sourceRef`). Previews lay out to its right; if that would overlap existing images they relocate to clear space below everything (single-image: the source moves with them; group: inputs stay put). The view `fitBounds`-zooms to the new previews. For a single-image generate the origin + its previews are auto-grouped (`groupImages`).
 
-**Delete:** Delete/Backspace moves the selection to Trash. No modal, no toast, nothing to dismiss (#236) -- Trash is a place you can visit tomorrow, and that is the confirmation. Right-click context menu offers Generate + Move to Trash. A failure still speaks: the cards have already left the screen, so silence there would be a lie.
+**Remove:** Delete/Backspace takes the selection off the canvas -- membership only, the library rows untouched. No modal, no toast, nothing to dismiss: there is nothing to recover, because the images never left Images. Right-click context menu offers Generate + Remove from Canvas. A failure still speaks: the cards have already left the screen, so silence there would be a lie.
 
 ## Hooks
 
@@ -131,12 +137,13 @@ them.
   `sRef`. **Change the selection only through `select()`** -- it writes the
   state and the ref together, and twelve hand-written pairs of those is what
   #189 replaced.
-- `use-history.ts` -- undo/redo stacks, capped at 50.
 - `use-ingest.ts` -- paste, drop, file picker, library picker.
-- `use-removal.ts` -- move-to-trash, and dismissing a failed tile.
+- `use-removal.ts` -- remove-from-canvas, and dismissing a failed tile.
 - `use-reconcile.ts` -- place-what-is-unplaced, once per mount.
 - `use-autosave.ts` -- the 500ms debounce and its unload flush.
-- `use-canvas-hotkeys.ts` -- the thirteen bindings.
+- `use-canvas-hotkeys.ts` -- the eleven bindings. There is no undo (#373):
+  it rewound arrangement, and arrangement is the thing the board is least
+  precious about.
 
 - `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` puts the whole selection in the generator's set in order (#297), scopes models by capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
@@ -149,7 +156,7 @@ them.
 - `persistence.ts` -- the pure mapping between a membership row and a card
   (`memberToImage`, `stateToImages`, `groupsForSave`, `positionsForSave`) plus
   fail-safe wrappers over `_actions/canvas.ts`: `saveCanvas()`, `addToCanvas()`,
-  `removeFromCanvas()`, `moveToTrash()`, `readLocalImage()`, `preloadUrl()`,
+  `removeFromCanvas()`, `readLocalImage()`, `preloadUrl()`,
   `getImageDimensions()`, `getUrlDimensions()`. The wrappers swallow failures on
   purpose: a write that cannot reach the server must never take a card off the
   screen. `groupsForSave` is the one non-obvious piece -- a group formed over
@@ -161,12 +168,12 @@ them.
 - `_actions/canvas.ts` -- the canvas's database access, user-scoped by
   `resolveAuth()`: `loadCanvasState` (the whole canvas, read by `page.tsx`),
   `saveCanvasState` (positions / viewport / groupings, never membership),
-  `addImagesToCanvas`, `removeImagesFromCanvas`, `trashCanvasImages`,
-  `getCanvasGenerationRecord`, `getImagePrompt`. There is no un-trash here:
-  restoring is Trash's own `restoreImages` (#236 deleted the canvas copy along
-  with the Undo toast that was its only caller).
-  Membership and trash used to be id-only queries from the browser, so an id
-  from anywhere flipped or trashed a row (#173).
+  `addImagesToCanvas`, `removeImagesFromCanvas`,
+  `getCanvasGenerationRecord`, `getImagePrompt`. **Nothing here writes
+  `user_images`.** The canvas trashed rows until #373; it does not any more, so
+  Trash is reached only from Images and owns restore on its own.
+  Membership used to be an id-only query from the browser, so an id from
+  anywhere flipped a row (#173).
 - `#/lib/server/canvas-membership.server.ts` -- `ensureDefaultCanvas`,
   `addCanvasMembers`, `removeCanvasMembers`, `listCanvasMemberIds`. Shared,
   because the generation insert path writes membership too. One canvas per user
@@ -198,14 +205,14 @@ them.
   is gone and the `signedUrl` field name is a leftover.
 - High-frequency events (drag, wheel) update refs directly to avoid React
   re-renders
-- Undo/redo stack capped at 50 entries, and it is **local only**: it rewinds
-  positions and groupings, nothing else. It has never touched `deleted_at` or
-  membership, which is why the toast Undos that did could be deleted whole in
-  #236 without the stack noticing. **Keep it that way.** #194 was the shape of
-  the bug when something server-side leaned on `undo()`: cards came back on
-  screen, the rows stayed deleted, and the next load dropped them for good --
-  it looked like it worked. Anything that writes to the database and wants to be
-  reversible must reverse its own write, or leave the recovery to Trash
+- **There is no undo** (#373). It rewound positions and groupings, which is
+  the one thing the board is not precious about -- a scratch surface's layout is
+  the byproduct of thinking, not the work. It cost a `pushUndo()` snapshot
+  threaded through every mutating gesture, forever, for a recovery nobody
+  reached for. If it ever comes back it must stay **local only**: #194 was the
+  shape of the bug when something server-side leaned on `undo()` -- cards came
+  back on screen, the rows stayed deleted, the next load dropped them for good,
+  and it looked like it worked
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
 - **A paste draws before it uploads.** The clipboard hands over the bytes, so
   the card renders from a local object URL at ~30ms, at its real dimensions and

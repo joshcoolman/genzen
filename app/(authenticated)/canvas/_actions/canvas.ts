@@ -180,26 +180,6 @@ export async function removeImagesFromCanvas(
   await removeCanvasMembers(userId, canvasId, imageIds)
 }
 
-/**
- * Soft-delete (move to Trash) the given rows. Membership is deliberately left
- * alone (#212): trashing is a library operation, the canvas read filters
- * `deleted_at`, and the surviving membership row is what makes a restore put the
- * card back where it was.
- */
-export async function trashCanvasImages(ids: Array<string>): Promise<void> {
-  const list = ids.filter(Boolean)
-  if (list.length === 0) return
-
-  const { userId } = await resolveAuth()
-
-  // `group_id = null`: trashing clears group membership on every path (#319),
-  // so restore always lands at top level.
-  await sql`
-    update user_images set deleted_at = now(), group_id = null
-    where user_id = ${userId} and id in ${sql(list)} and deleted_at is null
-  `
-}
-
 export interface CanvasGenerationRecord {
   id: string
   storage_path: string | null

@@ -2,7 +2,6 @@ import {
   addImagesToCanvas,
   removeImagesFromCanvas,
   saveCanvasState,
-  trashCanvasImages,
 } from '../_actions/canvas'
 import type { CanvasGroup, CanvasImage, Transform } from './types'
 import type { CanvasMemberRecord, CanvasState } from '../_actions/canvas'
@@ -243,14 +242,6 @@ export function getUrlDimensions(
     img.onerror = () => finish({ w: 300, h: 300 })
     img.src = url
   })
-}
-
-/**
- * Soft-delete (move to Trash) the given `user_images` rows. Membership is left
- * alone -- restoring puts the card back where it was (#212).
- */
-export async function moveToTrash(recordIds: Array<string>): Promise<void> {
-  await trashCanvasImages(recordIds)
 }
 
 export type { CanvasMemberRecord, CanvasState }

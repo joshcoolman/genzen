@@ -119,10 +119,9 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       { keys: 'Escape', what: 'Clear the selection' },
       {
         keys: 'Backspace or Delete',
-        what: 'Send the selection to Trash',
-        note: 'No confirmation, deliberately — Trash is a place you can visit tomorrow, and that is the confirmation.',
+        what: 'Take the selection off the canvas',
+        note: 'The images stay in Images, in whatever group they belong to. The canvas holds references, never originals, so nothing here can lose a picture.',
       },
-      { keys: '⌘Z / ⌘⇧Z', what: 'Undo and redo' },
       { keys: '⌘G / ⌘⇧G', what: 'Group and ungroup' },
     ],
   },
