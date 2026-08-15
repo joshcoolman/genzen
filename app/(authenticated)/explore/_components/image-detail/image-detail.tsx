@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { Trash2, X } from 'lucide-react'
-import styles from './lightbox.module.css'
+import styles from './image-detail.module.css'
 import { cx } from '#/lib/utils'
 import { CopyText } from '#/components'
 
-export interface LightboxImage {
+export interface ImageDetailItem {
   id: string
   /** Model name for a generation, filename for an upload. */
   title: string
@@ -15,8 +15,8 @@ export interface LightboxImage {
   prompt?: string
 }
 
-interface LightboxProps {
-  images: Array<LightboxImage>
+interface ImageDetailProps {
+  images: Array<ImageDetailItem>
   imageUrls: Record<string, string>
   thumbnailUrls: Record<string, string>
   currentIndex: number
@@ -28,14 +28,31 @@ interface LightboxProps {
 }
 
 /**
- * A job view, not an inspector (#271): the image, the prompt that made it, and
- * a filmstrip of everything else in the set. Nothing more goes in here.
+ * Explore's overlay: the image, the prompt that made it, and a filmstrip of
+ * everything else on the wall. Three columns, modelled on
+ * `docs/reference/images/midjourney-job-view.jpg` (#271). Nothing more goes in
+ * here.
  *
  * There are no prev/next buttons. Arrow keys page and the filmstrip clicks,
  * which is the whole navigation surface — chevrons were competing with the
  * image for the space this layout exists to give it.
+ *
+ * **This is not a lightbox and must not be named like one.** It answers "what
+ * made this picture"; a lightbox answers "show me this bigger" and looks
+ * nothing like it — scrim, chevrons, an X, no text at all. /images has one of
+ * those in its own `image-viewer/`.
+ *
+ * The naming is load-bearing because getting it wrong cost two rounds of the
+ * same mistake. This file was `images/_components/lightbox/`, borrowed by
+ * Explore, so anyone wanting a plain viewer on /images found "a lightbox"
+ * already in the tree, wired to it, and got a prompt column and a filmstrip
+ * they never asked for. It was briefly `job-view/`, which is Midjourney's word
+ * for a generation and means nothing here.
+ *
+ * Explore owns this and is its only consumer. If a second surface wants one,
+ * that is a conversation, not an import.
  */
-export function Lightbox({
+export function ImageDetail({
   images,
   imageUrls,
   thumbnailUrls,
@@ -45,7 +62,7 @@ export function Lightbox({
   onNext,
   onPrev,
   onDelete,
-}: LightboxProps) {
+}: ImageDetailProps) {
   const img = images[currentIndex]
   const imageUrl = imageUrls[img.id]
   const [loaded, setLoaded] = useState(false)

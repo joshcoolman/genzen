@@ -7,7 +7,7 @@ import { useDownload } from './_hooks/use-download'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
-import { useLightbox } from './_hooks/use-lightbox'
+import { useImageViewer } from './_hooks/use-image-viewer'
 import { useVariations } from './_hooks/use-variations'
 import { useGroups } from './_hooks/use-groups'
 import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
@@ -256,18 +256,16 @@ export function useView(initial: Array<SavedAiImage>) {
   }, [scoped, groups.groups, activeGroupId, prefs.sortAsc])
 
   // The list the grid renders, minus the cards with nothing to look at (#270).
-  // Scoped and sorted like the grid, because the filmstrip shows this list and
-  // a lightbox cycling something else is visibly wrong, not subtly wrong.
-  const lightboxImages = useMemo(
+  // Scoped and sorted exactly like the grid -- inside a group that is the
+  // group's images -- because "next" has to mean the next picture on screen.
+  // A viewer cycling a different list sends you somewhere you were not looking.
+  const viewerImages = useMemo(
     () => images.filter((img) => img.status === 'completed'),
     [images],
   )
 
-  const lightbox = useLightbox(lightboxImages, gallery.deleteImage)
-  // The same cursor over the same list, driving the in-place preview instead of
-  // the overlay. Its own instance so the two do not share a position: stepping
-  // through one is not meant to move the other.
-  const experiment = useLightbox(lightboxImages)
+  const viewer = useImageViewer(viewerImages, gallery.deleteImage)
+
   const variations = useVariations({ setError })
 
   const selection = useSelection({ items: images.map((img) => img.id) })
@@ -711,8 +709,7 @@ export function useView(initial: Array<SavedAiImage>) {
     selectMode,
     isBatchDeleting,
     deleteSelected,
-    lightbox,
-    experiment,
+    viewer,
     variations,
     variationSourceUrl,
     describeTarget,

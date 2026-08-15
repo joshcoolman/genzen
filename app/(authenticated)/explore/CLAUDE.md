@@ -5,34 +5,50 @@ over it.
 
 ## Why it exists
 
-The lightbox was modelled on Midjourney's and then put on /images, where it felt
-disorienting. The reason turned out to be context, not design: on Midjourney the
-overlay lives in **Explore**, where you have no task and nothing to lose sight
-of, so covering the screen costs nothing and landing back on the same scroll
-position is the whole trick. On a working surface you do have a task, and the
-same overlay buries it.
+A wall with no task attached to it. Nothing here is a control: no toolbar, no
+filters, no sort, no select mode, no captions, no hover actions. /images owns
+all of that, and a second copy would be a second place to look for the same
+setting.
 
-So this route is the context the lightbox was designed for. Nothing here is a
-control: no toolbar, no filters, no sort, no select mode, no captions, no hover
-actions. /images owns all of that, and a second copy would be a second place to
-look for the same setting.
+This route was created on the theory that the lightbox belonged **only** here --
+that an overlay covering everything costs nothing while browsing and buries your
+work while working, so /images should preview in place instead (#308). The
+second half of that did not survive contact: a preview that leaves the working
+surface visible offers actions unrelated to the image you are looking at, which
+is worse than covering it. /images went back to an overlay and its in-place
+preview was deleted.
+
+What stands is the first half. Browsing is a mood worth its own surface, and
+this is it. An overlay is simply not exclusive to it.
+
+## The overlay is `image-detail/`, and never "the lightbox"
+
+`_components/image-detail/` is the three-column one: image, the prompt that
+made it, filmstrip of the wall. **Do not rename it toward "lightbox", and do
+not let another route import it.**
+
+That is not fussiness. The name cost two rounds of the same mistake. The
+component lived in `images/_components/lightbox/` and Explore borrowed it, so
+anyone asked for a plain viewer on /images found "a lightbox" already in the
+tree, wired to it, and shipped a prompt column and a filmstrip nobody wanted
+there. /images now has its own `image-viewer/`, which is what a lightbox
+actually looks like — scrim, chevrons, an X, no text. The two answer different
+questions: this one is "what made this picture", that one is "show me this
+bigger".
+
+It was briefly `job-view/`, after the internal name in #271. That is
+Midjourney's word for a generation and means nothing in this codebase.
+
+The cursor is `_hooks/use-image-detail.ts`. /images has its own near-identical
+copy, on purpose — sharing the hook is how the layout got imposed the first
+time.
 
 ## Removability
 
 **One folder and one nav entry.** Delete `app/(authenticated)/explore/` and the
-`explore` item in `src/lib/nav-items.ts` and the route is gone. Nothing outside
-those two places refers to it, and /images was not modified to make it work.
-
-The dependency runs one way, Explore -> Images, and only for two imports:
-
-- `../images/_components/lightbox/lightbox` — presentational, props only
-- `../images/_hooks/use-lightbox` — the cursor over a list
-
-Deliberately borrowed rather than moved. They have two consumers now, so by the
-house standard they have earned a promotion to `src/components/` and a shared
-hook — but doing that would edit the working route for the sake of an experiment
-that may not survive. **If Explore stays, promote them and delete this
-paragraph.**
+`explore` item in `src/lib/nav-items.ts` and the route is gone. There are no
+cross-route imports in either direction any more; the overlay and its cursor
+live here now.
 
 ## Quirks
 

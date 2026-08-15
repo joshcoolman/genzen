@@ -15,12 +15,11 @@ list once when the seed comes back full, so the grid is never short.
 
 ## Quirks
 
-- **The card has two icons, and a click opens the in-place preview.** `...` and
+- **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption
   until it read as a title for the prompt -- it names what made the picture, so
-  it lives on the picture. The click opened the lightbox until the preview
-  took it -- see the Experiment bullet below. The expand icon went (the click
+  it lives on the picture. The expand icon went (the click
   does that), the
   select circle went (select mode does), and the source highlight went -- the
   grid used to point the generator at an image on click, which is a hidden
@@ -85,7 +84,7 @@ list once when the seed comes back full, so the grid is never short.
   reason for refusing a card button in the first place. There is no edit
   mode and no edit route -- the generator resolves the model's image-input
   endpoint from whether the set is empty, so "edit" is a detail of building the
-  request. The lightbox used to offer a source pencil too; #271 removed it
+  request. Explore's overlay used to offer a source pencil too; #271 removed it
   rather than have two answers to "how do I put an image in"
 - **Selection is a mode, and the mode is the selection (#284, #325).**
   `selectMode` is not state -- it is `selection.count > 0`. **The tick in each
@@ -113,30 +112,60 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
-- **A click opens the preview, and the lightbox moved out.** The click used to
-  open the lightbox here, and it felt disorienting for a reason that took a
-  while to name: an overlay that covers everything costs nothing while
-  _browsing_ and buries your work while _working_. So browsing got its own
-  route, `/explore`, and the lightbox went with it. What the click does here is
-  `_components/experiment/` -- the grid area, and only the grid area, becomes
-  one large image. Toolbar stays, no scrim, no animation. The outer quarters of
-  the panel step (a chevron appears only once the pointer is in one), the middle
-  half closes, arrow keys page, Escape leaves. It covers the grid rather than
-  replacing it, so scroll position survives, and it is positioned by a
-  `ResizeObserver` rather than CSS because the sidebar and the dock both move
-  its edges
-- **The lightbox is a job view, and Explore owns it now (#271).** Image, prompt,
-  filmstrip -- nothing else goes in it. It takes the list the grid renders,
-  filtered to completed, so the strip and the grid can never disagree (#270).
-  It still sits in `_components/lightbox/` and `/explore` imports it from here;
-  that is a borrowed dependency, not a home. Two consumers means it has earned
-  `src/components/`, and the move is deliberately not done yet -- see
-  `app/(authenticated)/explore/CLAUDE.md`. `onOpen` is still threaded from
-  `use-view` down to the card as the unwired seam. **A click
-  anywhere that is not a control closes it** -- the image, the scrim, the empty
-  space beside the prompt. Only the filmstrip and the two buttons stop the
-  click, because the way this gets used is look, page a few, copy, get back to
-  the grid, and a lightbox you have to aim at to leave taxes every one of those
+- **A click opens the viewer, and #308's in-place preview is gone.** For three
+  days the click turned the grid area, and only the grid area, into one large
+  image -- toolbar still there, no scrim, hidden click zones in the outer
+  quarters to page. The theory was that an overlay covering everything costs
+  nothing while _browsing_ and buries your work while _working_, so a working
+  surface should preview in place. Using it produced the opposite result: the
+  UI left visible cannot act on the image you are looking at, so it offers
+  actions unrelated to what is on screen and you lose the picture's full
+  attention as well. The scrim is not decoration -- it is the sentence "you are
+  looking now, not working," and leaving it out was the mistake rather than a
+  detail to tune. The hidden zones failed the same way: a target that reveals
+  its chevron only once you are inside it confirms rather than affords.
+  `_components/experiment/` is deleted; do not rebuild it without a new reason
+- **The viewer is `_components/image-viewer/`, and it is nothing to do with
+  Explore's overlay.** A plain lightbox: scrim over the app, the picture
+  centred, chevrons either side, an X, a counter, click outside the image to
+  dismiss, arrows and Escape. **No prompt, no filmstrip, no metadata** -- "show
+  me this bigger and let me move through the set" is the whole job, and
+  anything proposed for it should have to answer why it is not a card action or
+  a route. Delete and Backspace send to Trash, which is the one thing this has
+  that Explore's does not.
+
+  Explore's `image-detail/` is the three-column one (image, prompt, filmstrip)
+  and is **not shared, not imported, and not to be renamed toward "lightbox"**.
+  The single name cost two rounds of the same mistake: it lived here as
+  `_components/lightbox/`, so a request for a plain viewer on /images found one
+  already in the tree and got a prompt column and a filmstrip with it. Two
+  components, two routes, no dependency in either direction. `#/components` is
+  the wrong destination for both -- they only look like one thing.
+
+  Same for the cursor. `_hooks/use-image-viewer.ts` is a near-copy of Explore's
+  `use-image-detail.ts`, on purpose: ~40 similar lines is cheaper than a shared
+  hook that decides for both surfaces, which is exactly how the layout got
+  imposed the first time.
+
+  **It cycles what the grid is showing** -- filtered, sorted, and scoped to the
+  open group if there is one (#270). "Next" has to mean the next picture on
+  screen; a viewer over a different list sends you somewhere you were not
+  looking. Group cards are not stops in the sequence, only images.
+
+  **Traversing into groups from top level is a stated non-goal.** At top level
+  a group is one card, so the viewer skips its members entirely -- that is
+  correct, not a gap. Making the sequence descend into groups would mean the
+  overlay browses a list the grid is not showing, which is the one rule above,
+  and it turns "click a thumbnail, see it bigger" into a way of digging through
+  the whole library. That is a different feature and it belongs to Explore.
+  Leave this alone until the friction is real
+
+  Gutters are one custom property, `--viewer-gutter`, equal on all four sides.
+  Tune that rather than a single edge -- the first pass had a thin top and
+  bottom against wide sides, which pinned tall images to the chrome. Paired
+  with `min-height: 0` on the stage, which is what makes "the image always fits
+  the viewport" true rather than nearly true
+
 - **`initial` is a seed, not the source of truth.** `use-gallery.ts` owns the
   list after the first paint, and the FAL poll is the only signal that anything
   changed -- nothing pushes (#174). The poll is

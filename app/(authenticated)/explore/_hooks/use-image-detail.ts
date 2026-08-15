@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { imageUrl } from '#/lib/image-url'
 
-export interface LightboxItem {
+export interface ImageDetailItem {
   id: string
   /** Model name for a generation, filename for an upload. */
   title: string
@@ -12,10 +12,10 @@ export interface LightboxItem {
   prompt?: string
 }
 
-export interface LightboxState {
+export interface ImageDetailState {
   index: number | null
   isOpen: boolean
-  items: Array<LightboxItem>
+  items: Array<ImageDetailItem>
   /** Full-resolution URLs keyed by image id -- always uses storage_path, never thumbnails */
   imageUrls: Record<string, string>
   /** Thumbnails for the filmstrip; a rail of full-res images would be absurd. */
@@ -30,17 +30,17 @@ export interface LightboxState {
 
 /**
  * `images` must be the list the grid is rendering -- filtered and sorted --
- * not every completed row (#270). The filmstrip shows this list, so a lightbox
+ * not every completed row (#270). The filmstrip shows this list, so a view
  * scoped differently from the grid is visibly wrong rather than subtly wrong.
  */
-export function useLightbox(
+export function useImageDetail(
   images: Array<SavedAiImage>,
   deleteImage?: (img: SavedAiImage) => Promise<void>,
-): LightboxState {
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+): ImageDetailState {
+  const [viewIndex, setViewIndex] = useState<number | null>(null)
 
   const { items, imageUrls, thumbnailUrls } = useMemo(() => {
-    const flatItems: Array<LightboxItem> = []
+    const flatItems: Array<ImageDetailItem> = []
     const urls: Record<string, string> = {}
     const thumbs: Record<string, string> = {}
 
@@ -50,7 +50,7 @@ export function useLightbox(
         title: img.title,
         prompt: img.generation_metadata?.prompt,
       })
-      // Full-res in the lightbox, never the thumbnail.
+      // Full-res here, never the thumbnail.
       if (img.storage_path) {
         urls[img.id] = imageUrl(img.id)
         thumbs[img.id] = imageUrl(img.id, 'thumb')
@@ -62,44 +62,44 @@ export function useLightbox(
 
   function open(img: SavedAiImage | { id: string }) {
     const idx = items.findIndex((i) => i.id === img.id)
-    if (idx !== -1) setLightboxIndex(idx)
+    if (idx !== -1) setViewIndex(idx)
   }
 
   function close() {
-    setLightboxIndex(null)
+    setViewIndex(null)
   }
 
   function select(index: number) {
-    if (index >= 0 && index < items.length) setLightboxIndex(index)
+    if (index >= 0 && index < items.length) setViewIndex(index)
   }
 
   function next() {
-    setLightboxIndex((i) => (i !== null ? (i + 1) % items.length : null))
+    setViewIndex((i) => (i !== null ? (i + 1) % items.length : null))
   }
 
   function prev() {
-    setLightboxIndex((i) =>
+    setViewIndex((i) =>
       i !== null ? (i - 1 + items.length) % items.length : null,
     )
   }
 
   function deleteAndAdvance() {
-    if (lightboxIndex === null || !deleteImage) return
-    const item = items[lightboxIndex]
+    if (viewIndex === null || !deleteImage) return
+    const item = items[viewIndex]
     const img = images.find((i) => i.id === item.id)
     if (!img) return
     const newLength = items.length - 1
     if (newLength === 0) {
       close()
-    } else if (lightboxIndex >= newLength) {
-      setLightboxIndex(newLength - 1)
+    } else if (viewIndex >= newLength) {
+      setViewIndex(newLength - 1)
     }
     deleteImage(img)
   }
 
   return {
-    index: lightboxIndex,
-    isOpen: lightboxIndex !== null,
+    index: viewIndex,
+    isOpen: viewIndex !== null,
     items,
     imageUrls,
     thumbnailUrls,
