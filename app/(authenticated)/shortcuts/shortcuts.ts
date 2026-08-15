@@ -75,25 +75,25 @@ export const shortcutGroups: Array<ShortcutGroup> = [
     ],
   },
   {
-    where: 'In the preview',
+    where: 'In the image viewer',
     blurb:
-      'The large image that replaces the grid when you click a card. It covers the grid rather than the screen, so the toolbar stays.',
+      'The overlay that opens when you click a card on Images. It steps through whatever the grid is showing — inside a group, that is the group.',
     items: [
       { keys: '← →', what: 'Step through the images' },
-      {
-        keys: 'Click the left or right quarter',
-        what: 'Step, same as the arrow keys',
-      },
-      { keys: 'Click the middle', what: 'Close it' },
+      { keys: 'Click either chevron', what: 'Step, same as the arrow keys' },
+      { keys: 'Click outside the image', what: 'Close it' },
+      { keys: 'Delete or Backspace', what: 'Send this one to Trash' },
       { keys: 'Escape', what: 'Close it' },
     ],
   },
   {
-    where: 'In the lightbox',
-    blurb: 'The full-screen overlay on Explore.',
+    where: 'On Explore',
+    blurb:
+      'The overlay there is a different one: the image, its prompt, and a filmstrip of the whole wall.',
     items: [
       { keys: '← →', what: 'Step through the images' },
-      { keys: 'Delete or Backspace', what: 'Send this one to Trash' },
+      { keys: 'Click a filmstrip thumbnail', what: 'Jump to that image' },
+      { keys: 'Click anywhere that is not a control', what: 'Close it' },
       { keys: 'Escape', what: 'Close it' },
     ],
   },

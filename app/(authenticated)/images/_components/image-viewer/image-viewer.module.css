@@ -1,0 +1,194 @@
+/* A plain lightbox: scrim, picture, chevrons, X, counter. Explore's image-detail
+   is the three-column one; this shares nothing with it on purpose. */
+
+.root {
+  /* One knob for the breathing room, used on all four sides. Tune here rather
+     than per-edge: the picture reads as centred only while the gutters match,
+     and the first version had a thin 1rem top and bottom against a wide 4rem
+     left and right, which pinned tall images to the chrome. */
+  --viewer-gutter: calc(var(--space-64) * 2);
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: grid;
+  place-items: center;
+  /* Semi-opaque rather than solid. The app staying faintly visible is what
+     says this is a layer over your work rather than a different place -- and
+     it is the reason clicking out is guessable without being told. */
+  background: var(--scrim);
+}
+
+/* `min-height: 0` and the explicit box sizing are what make "the image always
+   fits" true rather than nearly true: without them the flex child can exceed
+   the stage, and the picture runs off the bottom of the viewport on a tall
+   image instead of scaling down to meet it. */
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--viewer-gutter);
+}
+
+/* Bounded on both axes, so whichever one runs out first is the one that caps
+   it -- a portrait image goes as tall as the gutters allow, a landscape one as
+   wide, and neither ever leaves the viewport. */
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  cursor: default;
+  transition: opacity 200ms var(--ease-in-out);
+}
+
+/* Faded in rather than swapped. Paging to a large image otherwise shows the
+   previous one until the next decodes, which reads as the arrow key having
+   done nothing. */
+.imageLoading {
+  opacity: 0;
+}
+
+.placeholder {
+  width: 16rem;
+  height: 16rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  animation: pulse 2s var(--ease-in-out) infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.nav {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translateY(-50%);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  color: color-mix(in oklab, var(--text) 70%, transparent);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.nav:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.navPrev {
+  left: var(--space-12);
+}
+
+.navNext {
+  right: var(--space-12);
+}
+
+.navIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.topBar {
+  position: absolute;
+  top: var(--space-12);
+  right: var(--space-12);
+  left: var(--space-12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  pointer-events: none;
+}
+
+.topBar > * {
+  pointer-events: auto;
+}
+
+.counter {
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklab, var(--text) 70%, transparent);
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  color: color-mix(in oklab, var(--text) 70%, transparent);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+.control:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.delete:hover {
+  color: var(--danger);
+}
+
+.controlIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Narrow: the gutters give way before the picture does. Nothing is hidden --
+   that was the bug in the layout this replaces. */
+@media (max-width: 40rem) {
+  .root {
+    --viewer-gutter: var(--space-48);
+  }
+
+  .nav {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .navPrev {
+    left: var(--space-4);
+  }
+
+  .navNext {
+    right: var(--space-4);
+  }
+}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useLightbox } from '../images/_hooks/use-lightbox'
+import { useImageDetail } from './_hooks/use-image-detail'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { imageUrl } from '#/lib/image-url'
 
@@ -26,7 +26,7 @@ export function useView(initial: Array<SavedAiImage>) {
     return urls
   }, [images])
 
-  const lightbox = useLightbox(images)
+  const detail = useImageDetail(images)
 
-  return { images, thumbnailUrls, lightbox }
+  return { images, thumbnailUrls, detail }
 }
