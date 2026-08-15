@@ -12,12 +12,12 @@ import {
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
+import { CardCaption } from '../card-caption/card-caption'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { cx } from '#/lib/utils'
 import {
-  CopyText,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -264,25 +264,13 @@ export function ImageCard({
             }
       }
     >
+      {/* Shared with `PendingImageCard`, so a caption cannot change size,
+          colour, clamp or behaviour when the picture lands (#367). */}
       {showInfo && caption && (
-        <div className={styles.caption}>
-          {/* Clamped to three lines, with no expand. Three is enough to
-              recognise a prompt, and the rest is a click away -- this button
-              copies the whole thing however much of it shows.
-
-              `silent`: the card teaches nothing on hover now. Both gestures
-              still work; naming them is #289's job, in a surface that can
-              actually explain them. Only the tick survives, because it reports
-              rather than instructs. */}
-          <CopyText
-            text={caption}
-            label="Copy"
-            silent
-            onModifierClick={selectionActive ? undefined : onUsePrompt}
-            className={styles.prompt}
-            textClassName={styles.promptText}
-          />
-        </div>
+        <CardCaption
+          text={caption}
+          onUsePrompt={selectionActive ? undefined : onUsePrompt}
+        />
       )}
 
       {/* Select mode makes the whole card one target -- the caption too, since

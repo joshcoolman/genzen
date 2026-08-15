@@ -1,0 +1,39 @@
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* The extra below is the hover hint's room -- it is out of the button's flow
+     and lands here, and the card clips (`overflow: hidden`) anything past it.
+     With the hint gone from the flow the tinted block is even top and bottom
+     around its three lines, which is the point of the asymmetry here. */
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
+/* CopyText owns the affordance. The negative margin keeps the prompt's first
+   line flush with the caption's padding, which the button's own padding would
+   otherwise push in. */
+.prompt {
+  margin: 0 calc(var(--space-8) * -1);
+}
+
+/* The same size and leading as the prompt field itself
+   (`prompt-list.module.css`): the card is showing the text you typed there, so
+   reading it back at a different size makes it look like a different kind of
+   thing. `1.5` for the same reason -- the scale has no `3xs` leading, and
+   small text needs the line separation more, not less.
+
+   The colour is CopyText's, deliberately unset here: a hand-written
+   `--text-muted` on the pending copy of this block is what made a waiting card
+   read dimmer than the finished one it was about to become.
+
+   The doubled selector is deliberate: CopyText's own `.text` sets
+   `display: block` at the same specificity, and a clamp needs the box. */
+.promptText.promptText {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--text-3xs);
+  line-height: 1.5;
+}

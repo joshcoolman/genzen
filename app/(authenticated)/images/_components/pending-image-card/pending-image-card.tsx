@@ -1,4 +1,4 @@
-import styles from './pending-image-card.module.css'
+import { CardCaption } from '../card-caption/card-caption'
 import { Thumbnail } from '#/components'
 
 interface PendingImageCardProps {
@@ -38,10 +38,12 @@ export function PendingImageCard({
       onDelete={onDelete}
       alwaysShowOverlay={!!onDelete}
     >
-      {/* Only when there is one, as ImageCard does: generating from a picture
-          with no prompt has nothing to caption, and an empty block would give
-          the card a height its finished self does not have. */}
-      {prompt && <p className={styles.prompt}>{prompt}</p>}
+      {/* The same component the finished card renders, so the text cannot
+          change size, colour, clamp or behaviour when the picture lands. Only
+          when there is one: generating from a picture with no prompt has
+          nothing to caption, and an empty block would give the card a height
+          its finished self does not have. */}
+      {prompt && <CardCaption text={prompt} />}
     </Thumbnail>
   )
 }
