@@ -223,6 +223,8 @@ export function GeneratorPanel({
         visibleModels={modelSelector.models}
         stagedImageCount={generator.refImages.length}
         onToggleSelected={modelSelector.toggleSelected}
+        onToggleAll={modelSelector.toggleAll}
+        onSelectOnly={(id) => modelSelector.selectOnly([id])}
       />
     </div>
   )
