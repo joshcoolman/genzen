@@ -54,7 +54,10 @@ export function FailedImageCard({
     <>
       <Thumbnail
         status="failed"
-        failedLabel={modelName || undefined}
+        /* The same corner badge a pending and a finished card carry (#367).
+           It was centred under "Failed", so the one label you track across a
+           generation moved on the way to *both* of its endings. */
+        bottomRightBadge={modelName || undefined}
         failedMessage={rawError ? 'See Details' : undefined}
         onDelete={() => onDelete(img)}
         onClick={rawError ? () => setErrorOpen(true) : undefined}

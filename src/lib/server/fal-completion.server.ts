@@ -94,8 +94,9 @@ export async function processImageResult(
   // derived from the pricing table as something FAL reported.
   const providerCostIsEstimate = falCostCents == null
 
+  let written
   try {
-    await sql`
+    written = await sql`
       update user_images
       set status = 'completed',
           storage_path = ${storagePath},
@@ -128,6 +129,20 @@ export async function processImageResult(
     throw new Error(
       `Update failed: ${err instanceof Error ? err.message : String(err)}`,
     )
+  }
+
+  // No row to point at the object, and no error to say so -- an update that
+  // matches nothing succeeds. Since #369 that is a real outcome rather than an
+  // impossible one: cancelling a generation deletes its row, and a webhook
+  // already in flight arrives to find it gone. Same cleanup as the catch above,
+  // because the orphan is the same orphan; not an error, because the row is
+  // missing exactly as intended.
+  if (written.count === 0) {
+    await createImageStorage().remove([storagePath])
+    console.warn(
+      `[fal-completion] record=${recordId} no longer exists; discarded the result`,
+    )
+    return
   }
 
   generateThumbnailInBackground(userId, storagePath, recordId)

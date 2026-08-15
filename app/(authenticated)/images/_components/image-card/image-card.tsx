@@ -188,6 +188,12 @@ export function ImageCard({
       status="complete"
       objectFit={objectFit}
       alwaysShowOverlay
+      /* The model, on the image rather than over the caption: it names what
+         made *this* picture, so it belongs to the picture. In the caption it
+         read as a title for the prompt underneath it. Owned by Thumbnail since
+         #367, so a pending card carries the identical badge in the identical
+         place and nothing moves when the picture lands. */
+      bottomRightBadge={badge}
       selected={selected}
       selectedClassName={styles.selectedTile}
       /* Entering select mode dims the whole grid, because nothing is picked
@@ -206,10 +212,6 @@ export function ImageCard({
               insider's, and it does not need announcing over every thumbnail
               of a grid. The prompt's own hint still names its modifier -- that
               one sits in a hover surface that already exists. */}
-          {/* The model, on the image rather than over the caption: it names
-              what made *this* picture, so it belongs to the picture. In the
-              caption it read as a title for the prompt underneath it. */}
-          <span className={styles.model}>{badge}</span>
           {refNote && <span className={styles.refNote}>{refNote}</span>}
           {/* The tick, and the way *into* select mode (#325). On every card
               always, not only once the mode is on: it is the only thing saying

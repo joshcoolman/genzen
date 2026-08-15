@@ -1,25 +1,20 @@
-/* The caption under a generation that has not landed yet. Same two lines as a
-   finished ImageCard -- model, then prompt -- so a card does not move when it
-   completes. */
+/* The caption under a generation that has not landed yet: the prompt alone,
+   laid out exactly as `ImageCard`'s is, so the card does not move when it
+   completes. The model used to sit above it and now shares that card's badge
+   on the picture (#367).
 
-.model {
-  padding: var(--space-8) var(--space-12) 0;
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
-  font-weight: var(--weight-medium);
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+   The numbers are `image-card.module.css`'s `.caption` and `.promptText`
+   deliberately repeated rather than shared: they are the geometry of a caption
+   block, and the two components are the same block in two states. If a third
+   state ever needs it, it moves to `Thumbnail` alongside the badge. */
 .prompt {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
-  padding: var(--space-2) var(--space-12) var(--space-12);
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+  font-size: var(--text-3xs);
+  line-height: 1.5;
   color: var(--text-muted);
 }

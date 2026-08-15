@@ -80,21 +80,6 @@
    own ground -- images are contained, so the corner is nearly always
    letterbox, and the scrim covers the wide ones that reach it. Not a control:
    it never takes a click. */
-.model {
-  position: absolute;
-  right: var(--space-8);
-  bottom: var(--space-8);
-  max-width: calc(100% - var(--space-8) * 2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--scrim);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
 
 /* Sits above the model badge, same corner: both name a fact about how this
    picture was made, and the count is the surprising one. Only rendered when
