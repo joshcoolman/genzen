@@ -7,7 +7,7 @@ import { failureTitle } from './create-pending-generation.server'
 import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '#/lib/image-storage'
-import { getModelName } from '#/features/ai-images/models'
+import { modelTitleFor } from '#/features/ai-images/models'
 
 // Defensive extractor — FAL doesn't expose cost consistently across endpoints,
 // and in practice its image queue results carry no cost field at all, so this
@@ -73,11 +73,15 @@ export async function processImageResult(
 
   const meta = record?.generation_metadata ?? {}
   const prompt = typeof meta.prompt === 'string' ? meta.prompt : ''
+  // `fal_model_id` first: it is patched at submit to the *resolved* endpoint,
+  // where `model` was stripped of any `/edit` at reserve. For a model that
+  // registers its image endpoint with that suffix -- Seedream v4.5 does -- the
+  // stripped id names nothing, and the row was titled with a raw endpoint id.
   const model =
-    typeof meta.model === 'string'
-      ? meta.model
-      : typeof meta.fal_model_id === 'string'
-        ? meta.fal_model_id
+    typeof meta.fal_model_id === 'string'
+      ? meta.fal_model_id
+      : typeof meta.model === 'string'
+        ? meta.model
         : ''
 
   const falCostCents = extractFalCostCents(falResultData)
@@ -100,7 +104,7 @@ export async function processImageResult(
           file_hash = ${fileHash},
           file_size = ${fileSize},
           mime_type = 'image/png',
-          title = ${getModelName(model) || model},
+          title = ${modelTitleFor(model)},
           description = ${
             prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
           },

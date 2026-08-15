@@ -5,6 +5,7 @@ import {
   getModelName,
   imageCapacityFor,
   maxRefsFor,
+  modelTitleFor,
   pickerId,
 } from './models'
 
@@ -321,5 +322,36 @@ describe('getModelName', () => {
 
   it('falls back to the raw id, which is what an un-retired model looks like', () => {
     expect(getModelName('fal-ai/retired-model')).toBe('fal-ai/retired-model')
+  })
+})
+
+/**
+ * The optimistic card draws a badge before anything has been asked of the
+ * server, and the reserve and the completion write the row's title. All three
+ * call `modelTitleFor`; if they could disagree, the badge would rename itself
+ * at settle -- which is the whole defect #367 closed.
+ */
+describe('modelTitleFor', () => {
+  it('gives the same name for both of a model endpoints', () => {
+    for (const m of IMAGE_MODELS) {
+      for (const hasImages of [false, true]) {
+        const endpoint = endpointFor(pickerId(m), hasImages)
+        // What the browser guesses at click time is what the server resolves
+        // and writes. A borrowed text-only endpoint is the deliberate
+        // exception -- the row really was made by the model it borrowed from.
+        if (m.textOnlyFallback && endpoint === m.textOnlyFallback) continue
+        expect(modelTitleFor(endpoint), `${m.slug}/${hasImages}`).toBe(m.name)
+      }
+    }
+  })
+
+  it('reads an /edit route as the model, not as a model of its own', () => {
+    expect(modelTitleFor('fal-ai/bytedance/seedream/v4/edit')).toBe(
+      modelTitleFor('fal-ai/bytedance/seedream/v4'),
+    )
+  })
+
+  it('falls back to the raw id rather than rendering an empty badge', () => {
+    expect(modelTitleFor('fal-ai/unknown-thing')).toBe('fal-ai/unknown-thing')
   })
 })

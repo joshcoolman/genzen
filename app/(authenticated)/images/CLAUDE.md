@@ -143,6 +143,19 @@ list once when the seed comes back full, so the grid is never short.
   `features/ai-images/hooks/use-generation-poll.ts`, shared with Video and
   Activity, and it backs off, sleeps with the tab and gives up on work FAL never
   answers for (#327)
+- **A pending card is the card it will become, minus the picture (#367).** The
+  badge is the model from the first frame, the caption is what was typed, and
+  the only thing that changes at settle is the image region. All three used to
+  move: the badge renamed itself from "Generating...", and the caption grew the
+  system-instructions preamble the row had stored as its prompt. Tile geometry
+  was never the problem -- `aspect-ratio: 1 / 1` and a three-line clamp mean the
+  card is the same size throughout -- which is exactly why the rest of the churn
+  read as gratuitous rather than as loading. The badge was never the pending
+  card's problem -- `PendingImageCard` already labelled itself from
+  `generation_metadata.model`; the _settled_ title was the one that could be
+  wrong. Nor is the `...` menu: `ImageCard` renders only for `completed` rows
+  (pending and failed have their own components, and `status` is constrained to
+  those three), so gating Download and Describe on it would be dead code.
 - **A card's React key is not its id (#353).** A generation's card is born with
   an optimistic id and swaps it for its record id the moment the submit answers
   (#313). The id was the key, so React saw one card removed and a different one

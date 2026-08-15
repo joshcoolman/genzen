@@ -4,9 +4,17 @@ import {
   ensureDefaultCanvas,
 } from './canvas-membership.server'
 import type { GenerationOrigin } from '#/lib/types/db'
-import { getModelName } from '#/features/ai-images/models'
+import { modelTitleFor } from '#/features/ai-images/models'
 
-/** Title a generation row carries between being reserved and settling. */
+/**
+ * The title rows carried between being reserved and settling, until #367.
+ *
+ * A reserve now writes the model name straight away -- it is known at that
+ * moment, and a badge that renames itself on settle was the card admitting it
+ * had been guessing. Kept only to recognise rows written before that change:
+ * `failureTitle` still repairs them, and until the last one is out of Trash
+ * this string is the only way to tell a placeholder from a real title.
+ */
 export const PENDING_TITLE = 'Generating...'
 
 interface CreatePendingGenerationOptions {
@@ -33,6 +41,8 @@ interface CreatePendingGenerationOptions {
   prompt: string
   aspectRatio?: string
   extraMetadata?: Record<string, unknown>
+  /** Defaults to the model's own name (#367). Video passes its label, which
+   *  lives in a route-owned catalog this module must not import. */
   title?: string
   idempotencyKey?: string
   /** Put the row on the canvas, so the generation is reclaimable on canvas load */
@@ -55,7 +65,8 @@ export async function createPendingGeneration({
   prompt,
   aspectRatio,
   extraMetadata,
-  title = PENDING_TITLE,
+  // Bound after `falModelId` on purpose: the default reads it.
+  title = modelTitleFor(falModelId),
   idempotencyKey,
   onCanvas,
   groupId,
@@ -234,10 +245,13 @@ export async function markGenerationFailed(
 }
 
 /**
- * A row is titled 'Generating...' from the moment it is reserved, and success
- * renames it to the model. Failure used to leave the placeholder in place, so a
- * failed card -- and every trashed one after it -- read "Generating..." forever.
- * Returns a replacement title, or null when the row already has a real one.
+ * Repairs a row still titled 'Generating...' when it fails.
+ *
+ * Since #367 a reserve writes the model name, so a row reaching here with a
+ * real title is the normal case and this returns null. It stays for the rows
+ * written before that -- including every stuck-pending row #363 now fails off,
+ * which is precisely the population titled 'Generating...' -- and can go once
+ * none are left. Returns a replacement title, or null to leave the title alone.
  */
 export async function failureTitle(recordId: string): Promise<string | null> {
   const record = first(
@@ -257,7 +271,9 @@ export async function failureTitle(recordId: string): Promise<string | null> {
   if (record.title && record.title !== PENDING_TITLE) return null
 
   const meta = record.generation_metadata ?? {}
-  const model = (meta.model ?? meta.fal_model_id) as string | undefined
+  // `fal_model_id` first, for the same reason the completion path prefers it:
+  // it is the resolved endpoint, and `model` was stripped of any `/edit`.
+  const model = (meta.fal_model_id ?? meta.model) as string | undefined
   if (!model) return null
-  return getModelName(model) || model
+  return modelTitleFor(model)
 }

@@ -14,6 +14,24 @@ describe('planRetry', () => {
     expect(plan.source).toEqual({ kind: 'url', url: 'https://x/y.png' })
   })
 
+  // #367 swapped what `prompt` means: it is now what the user typed, and the
+  // string FAL received moved to `sent_prompt`. Replaying the wrong one is
+  // silent -- the retry succeeds and generates something else under a caption
+  // that still looks right -- so both eras are pinned here.
+  it('replays the sent string, not the caption, when the two differ', () => {
+    const plan = planRetry({
+      ...base,
+      prompt: 'a cat',
+      sent_prompt: 'Shoot on 35mm. a cat',
+    })
+    expect(plan.prompt).toBe('Shoot on 35mm. a cat')
+  })
+
+  it('replays `prompt` on a row written before the split, where it was the sent string', () => {
+    const plan = planRetry({ ...base, prompt: 'Shoot on 35mm. a cat' })
+    expect(plan.prompt).toBe('Shoot on 35mm. a cat')
+  })
+
   it('keeps reference ids in order', () => {
     const plan = planRetry({ ...base, reference_image_ids: ['c', 'a', 'b'] })
     expect(plan.referenceImageIds).toEqual(['c', 'a', 'b'])

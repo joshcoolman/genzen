@@ -15,7 +15,11 @@ import {
   flipOrientation,
   getRatioOptions,
 } from '#/features/ai-images/constants'
-import { endpointFor, imageCapacityFor } from '#/features/ai-images/models'
+import {
+  endpointFor,
+  imageCapacityFor,
+  modelTitleFor,
+} from '#/features/ai-images/models'
 import { recordPromptOrigin } from '#/features/ai-images/prompt-origins'
 import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 
@@ -71,6 +75,11 @@ interface UseGeneratorOptions {
     placeholders: Array<{
       placeholderId: string
       model: string
+      /** The row's eventual title, resolved here rather than by the host: it
+       *  comes from the endpoint the submit will use, which only this hook has
+       *  worked out. Same function the reserve and the completion call, so the
+       *  badge cannot change when the card becomes real (#367). */
+      title: string
       prompt: string
       sourceImageId?: string
     }>,
@@ -481,6 +490,7 @@ export function useGenerator({
         calls.map((c) => ({
           placeholderId: c.placeholderId,
           model: c.model,
+          title: modelTitleFor(c.resolved),
           prompt: c.plan.typedPrompt,
           ...(sourceImageId ? { sourceImageId } : {}),
         })),

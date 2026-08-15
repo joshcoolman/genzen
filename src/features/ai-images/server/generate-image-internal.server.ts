@@ -152,7 +152,12 @@ export async function generateImageInternal(
     origin: data.origin,
     generationType: data.parentImageId ? 'variation' : undefined,
     falModelId: model,
-    prompt: prompt.trim(),
+    // What the user typed, which is what every card, lightbox and variation
+    // seed shows (#367). It used to be the sent string -- system instructions
+    // and canvas image labels included -- so a caption grew a preamble it never
+    // had when the optimistic card became real. The sent string is still
+    // recorded, under `sent_prompt`, which is what Retry replays.
+    prompt: (typedPrompt ?? prompt).trim(),
     aspectRatio,
     idempotencyKey: data.idempotencyKey,
     onCanvas: data.onCanvas,
@@ -163,7 +168,7 @@ export async function generateImageInternal(
       // while an uncaptured one is gone. See docs/DELTAS.md.
       ...(originalPrompt ? { original_prompt: originalPrompt } : {}),
       ...(typedPrompt && typedPrompt !== prompt.trim()
-        ? { typed_prompt: typedPrompt }
+        ? { sent_prompt: prompt.trim() }
         : {}),
       ...(sourceSha256
         ? {
@@ -270,8 +275,12 @@ export async function generateImageInternal(
       falModelId = endpointFor(model, true)
     }
 
-    // Save the user-facing prompt before any model-specific wrapping
-    const metadataPrompt = effectivePrompt
+    // The prompt a person would recognise as theirs: what they typed, or -- when
+    // they typed nothing and generated from a picture alone -- the description
+    // the describer wrote for them, which is the only prompt that generation
+    // has. That second case is the one place a caption legitimately arrives
+    // late, because there was nothing to show at click time (#367).
+    const metadataPrompt = typedPrompt ?? effectivePrompt
 
     // Apply refine wrapping for FAL only
     if (imageUrl && isRefine) {
@@ -320,6 +329,13 @@ export async function generateImageInternal(
     await markGenerationSubmitted(recordId, request_id, {
       fal_model_id: falModelId,
       prompt: metadataPrompt,
+      // The string FAL actually received, after the describer, the system
+      // instructions and any refine wrapping. Recorded only when it differs
+      // from what the user would call their prompt; Retry replays this one, and
+      // falls back to `prompt` for rows written before the two split (#367).
+      ...(effectivePrompt !== metadataPrompt
+        ? { sent_prompt: effectivePrompt }
+        : {}),
       ...(promptDerivedFromSource ? { prompt_derived_from_source: true } : {}),
       // Only when they disagree (#341). Written on every row it applies to, so
       // a card can say "used 1 of 5 images" without re-deriving a capacity that
