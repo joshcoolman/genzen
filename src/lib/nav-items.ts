@@ -1,5 +1,6 @@
 import {
   Clapperboard,
+  Command,
   Compass,
   Frame,
   Logs,
@@ -59,6 +60,16 @@ export const navItems: Array<NavItem> = [
     href: '/trash',
     icon: Trash2,
     dividerBefore: true,
+  },
+  // Below the divider with Trash and Account: the three places you go *about*
+  // the app rather than to work in it. It is in the sidebar at all because the
+  // gestures it explains are invisible by design (#289) -- an overlay on `?`
+  // would only be findable by someone who already knew.
+  {
+    id: 'shortcuts',
+    label: 'Shortcuts',
+    href: '/shortcuts',
+    icon: Command,
   },
   {
     id: 'account',

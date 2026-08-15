@@ -54,8 +54,8 @@ list once when the seed comes back full, so the grid is never short.
   how big an all-selected click has become. **Cmd/Ctrl-click a row solos it** --
   that model, everything else off. Same modifier as the grid's power moves and
   the same reasoning: a plain click toggles one row, which is the common case,
-  and "just this one" was otherwise nine clicks off. Undiscoverable by design
-  for now, like the grid's (#289 owns teaching them). The panel used to clamp to
+  and "just this one" was otherwise nine clicks off. Listed at `/shortcuts`
+  alongside the grid's, which is where #289 put them. The panel used to clamp to
   the minimum across the selection, which **deleted staged images** when you
   ticked a smaller model
 - **The grid never marks the set, and reaches it only through modifiers (#284).**
@@ -76,9 +76,9 @@ list once when the seed comes back full, so the grid is never short.
   in place of the prompt's "Copy". Both went -- a two-word hover is the wrong
   surface for teaching a gesture, and it charged every ordinary hover for a
   feature most of them will not use. The gestures still work; explaining them
-  is **#289**'s job, in a surface that can carry the explanation. Until it
-  lands they are undiscoverable by design, which is a decision and not an
-  oversight. `CopyText`'s `silent` prop is what turns the hint off; the
+  is `/shortcuts`' job, a surface that can carry the explanation (#289). So
+  "undiscoverable by design" means "not taught by the card", not "not taught
+  anywhere" -- the card stays quiet and the page does the explaining. `CopyText`'s `silent` prop is what turns the hint off; the
   "Copied" tick survives it, because it reports rather than instructs. Both
   open the panel, because a power move whose
   whole effect is inside a closed panel has no feedback -- which was #284's

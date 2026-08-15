@@ -81,6 +81,7 @@ live with the one route that renders them:
 | Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav           |
 | Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else        |
+| Shortcuts  | `app/(authenticated)/shortcuts/` — every gesture and key, from `shortcuts.ts`     |
 
 `(authenticated)/_components/` also holds the generation UI Images and Canvas
 share (`generator-panel/` and what it composes). Anything one route renders
@@ -172,10 +173,11 @@ primitives catalogue.
 
 Copy `app/(authenticated)/trash/` for a simple route or `canvas/` for one with
 real state; not Activity, which established the shape but still fetches from the
-client. Every route conforms except `readme/`, which is a page and a
-stylesheet: it renders one file and has no state, so `view.tsx` and
-`use-view.ts` would both be empty indirection. Named here rather than left as a
-silent exception, because the value of "copy a neighbour" is that it is safe.
+client. Every route conforms except `readme/` and `shortcuts/`, which are a
+page and a stylesheet: they render fixed content and have no state, so
+`view.tsx` and `use-view.ts` would both be empty indirection. Named here rather
+than left as silent exceptions, because the value of "copy a neighbour" is that
+it is safe.
 
 ## Gotchas
 
