@@ -150,7 +150,12 @@ list once when the seed comes back full, so the grid is never short.
   system-instructions preamble the row had stored as its prompt. Tile geometry
   was never the problem -- `aspect-ratio: 1 / 1` and a three-line clamp mean the
   card is the same size throughout -- which is exactly why the rest of the churn
-  read as gratuitous rather than as loading. **The model badge is `Thumbnail`'s,
+  read as gratuitous rather than as loading. **Neither the badge nor the caption
+  belongs to a card any more.** The prompt block is `_components/card-caption/`,
+  rendered by the pending and the finished card alike -- written twice, it had
+  drifted to a dimmer colour and a different size on the pending side, so the
+  text you read while waiting changed when the picture landed.
+  `PendingImageCard` has no stylesheet left. **The model badge is `Thumbnail`'s,
   one definition for all three states** -- a pending card put it in the caption
   and a failed one centred it under "Failed", so the one label you track across
   a generation moved on the way to both of its endings. The `...` menu needs no
