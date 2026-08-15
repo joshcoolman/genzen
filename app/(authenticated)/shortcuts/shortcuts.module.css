@@ -1,0 +1,84 @@
+/* A reference page: read once, scanned after. Everything here serves scanning
+   -- one column of gestures at a fixed width so the eye runs down it, and the
+   explanation to its right where it can be skipped. */
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  max-width: 44rem;
+}
+
+.where {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+/* Why a group exists, when the heading cannot say it. Muted and narrow: it is
+   context for the rows below, not a paragraph to read first. */
+.blurb {
+  margin: 0;
+  max-width: 38rem;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
+}
+
+/* The gesture column is fixed rather than sized to content: a ragged left edge
+   on the thing being scanned defeats the point of the list. It collapses to a
+   stack on narrow screens, where two columns would leave the description three
+   words wide. */
+.row {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: var(--space-16);
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-sm);
+}
+
+.row:hover {
+  background: var(--row-hover);
+}
+
+/* Set in the mono face, the way the keys are written elsewhere in the app.
+   Not a boxed <kbd>: these are mostly gestures ("Click a prompt"), and a key
+   cap around a sentence reads as a mistake. */
+.keys {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text);
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+/* The part a table cannot carry -- what else moves, or deliberately does not.
+   Quieter than the effect it qualifies, because you only read it once. */
+.note {
+  color: var(--text-faint);
+}
+
+@media (max-width: 40rem) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
