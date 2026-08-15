@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   listTrashedImages,
   permanentlyDeleteImages,
@@ -23,16 +23,14 @@ import { useSelection } from '#/lib/use-selection'
  * No realtime (#174). Trash only changes from an action on this page or a
  * delete elsewhere, and either way the next visit re-reads it.
  *
- * `linkedImageIds` drives the disabled state on the delete controls but is not
- * what enforces the rule. The server recomputes the linked set inside
- * `permanentlyDeleteImages` and returns the ids it actually destroyed.
+ * `canvasLinkedIds` is badge data only. Canvas membership stopped vetoing a
+ * permanent delete in #371 -- it had deadlocked every image ever deleted from a
+ * canvas. `permanentlyDeleteImages` still returns the ids it actually
+ * destroyed, because a row can leave the trash between the read and the click.
  */
 export function useView(initial: TrashPayload) {
   const [images, setImages] = useState<Array<UserImage>>(initial.images)
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
-  const [linkedImageIds, setLinkedImageIds] = useState<Set<string>>(
-    () => new Set(initial.links.ids),
-  )
   const [canvasLinkedIds, setCanvasLinkedIds] = useState<Set<string>>(
     () => new Set(initial.links.canvasIds),
   )
@@ -60,7 +58,6 @@ export function useView(initial: TrashPayload) {
     try {
       const { images: rows, links } = await listTrashedImages()
       setImages(rows)
-      setLinkedImageIds(new Set(links.ids))
       setCanvasLinkedIds(new Set(links.canvasIds))
       signInBackground(rows)
     } catch {
@@ -92,21 +89,21 @@ export function useView(initial: TrashPayload) {
 
   const permanentDeleteMany = useCallback(
     async (ids: Array<string>) => {
-      const requested = ids.filter((id) => !linkedImageIds.has(id))
-      if (requested.length === 0) return
+      if (ids.length === 0) return
 
-      forget(new Set(requested))
+      forget(new Set(ids))
       try {
-        const deleted = await permanentlyDeleteImages(requested)
-        // The server may have refused some of them -- a link can appear between
-        // the page load and the click. Re-read rather than trust the optimism.
-        if (deleted.length !== requested.length) await refetch()
+        const deleted = await permanentlyDeleteImages(ids)
+        // A row can leave the trash between the page load and the click, so the
+        // server may have destroyed fewer than asked. Re-read rather than trust
+        // the optimism.
+        if (deleted.length !== ids.length) await refetch()
       } catch (err) {
         await refetch()
         throw err
       }
     },
-    [forget, linkedImageIds, refetch],
+    [forget, refetch],
   )
 
   const restore = useCallback(
@@ -158,12 +155,10 @@ export function useView(initial: TrashPayload) {
   )
 
   const emptyTrash = useCallback(async () => {
-    const deletable = images.filter((img) => !linkedImageIds.has(img.id))
-    if (deletable.length === 0) return
+    if (images.length === 0) return
 
     setIsEmptying(true)
-    // Keep the linked rows on screen; the server decides the rest.
-    setImages(images.filter((img) => linkedImageIds.has(img.id)))
+    setImages([])
     try {
       await permanentlyDeleteImages()
       await refetch()
@@ -173,7 +168,7 @@ export function useView(initial: TrashPayload) {
     } finally {
       setIsEmptying(false)
     }
-  }, [images, linkedImageIds, refetch])
+  }, [images.length, refetch])
 
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
@@ -188,16 +183,9 @@ export function useView(initial: TrashPayload) {
     [],
   )
 
-  const deletableCount = useMemo(
-    () => images.length - linkedImageIds.size,
-    [images.length, linkedImageIds.size],
-  )
-
   return {
     images,
     imageUrls,
-    linkedCount: linkedImageIds.size,
-    deletableCount,
     canvasLinkedIds,
     busyId,
     isEmptying,
