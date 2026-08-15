@@ -59,7 +59,6 @@ function boundsOf(imgs: Array<CanvasImage>): Rect {
 
 export function useCanvasGenerate(
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>,
-  pushUndo: () => void,
   getImages: () => Array<CanvasImage>,
   revealBounds: (b: Rect) => void,
   groupImages: (imageIds: Array<string>, columns: number) => void,
@@ -429,8 +428,6 @@ export function useCanvasGenerate(
       gap,
     }
 
-    pushUndo()
-
     // If the single-image block moved, carry the source image with it.
     if (isSingle && (originX !== source.x || originY !== source.y)) {
       setImages((prev) =>
@@ -499,7 +496,6 @@ export function useCanvasGenerate(
     generator,
     modelSelector,
     setImages,
-    pushUndo,
     getImages,
     revealBounds,
     groupImages,

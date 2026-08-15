@@ -17,7 +17,6 @@ interface UseSelectionArgs {
   gRef: React.RefObject<Array<CanvasGroup>>
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>
   setGroups: React.Dispatch<React.SetStateAction<Array<CanvasGroup>>>
-  pushUndo: () => void
 }
 
 /** What is selected, the marquee that selects it, and the grouping operations
@@ -31,7 +30,6 @@ export function useCanvasSelection({
   gRef,
   setImages,
   setGroups,
-  pushUndo,
 }: UseSelectionArgs) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [marquee, setMarquee] = useState<Marquee | null>(null)
@@ -106,20 +104,18 @@ export function useCanvasSelection({
     (columns: number) => {
       const sel = sRef.current
       if (sel.size < 2) return
-      pushUndo()
       arrangeIds(
         iRef.current.filter((img) => sel.has(img.id)),
         columns,
       )
     },
-    [pushUndo, arrangeIds, iRef],
+    [arrangeIds, iRef],
   )
 
   const groupSelected = useCallback(
     (columns: number) => {
       const sel = sRef.current
       if (sel.size < 2) return
-      pushUndo()
       const selArr = [...sel]
       arrangeIds(
         iRef.current.filter((img) => sel.has(img.id)),
@@ -135,16 +131,15 @@ export function useCanvasSelection({
         { id: crypto.randomUUID(), imageIds: selArr, columns, padding: 24 },
       ])
     },
-    [pushUndo, arrangeIds, iRef, setGroups],
+    [arrangeIds, iRef, setGroups],
   )
 
   const ungroupSelected = useCallback(() => {
     const sel = sRef.current
-    pushUndo()
     setGroups((prev) =>
       prev.filter((g) => !g.imageIds.some((id) => sel.has(id))),
     )
-  }, [pushUndo, setGroups])
+  }, [setGroups])
 
   /** Wrap already-positioned images in a group without re-arranging them
    *  (unlike groupSelected). Used to auto-group a generation's origin with its

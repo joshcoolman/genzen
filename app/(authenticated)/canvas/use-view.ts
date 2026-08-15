@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { stateToImages } from './_lib/persistence'
-import { useHistory } from './_hooks/use-history'
 import { useViewport } from './_hooks/use-viewport'
 import { useCanvasSelection } from './_hooks/use-canvas-selection'
 import { useRemoval } from './_hooks/use-removal'
@@ -71,13 +70,6 @@ export function useView(initial: CanvasState) {
     moved: false,
   })
 
-  const { pushUndo, undo, redo } = useHistory({
-    iRef,
-    gRef,
-    setImages,
-    setGroups,
-  })
-
   const viewport = useViewport({
     initial: initial.transform,
     containerRef,
@@ -105,25 +97,23 @@ export function useView(initial: CanvasState) {
     groupSelected,
     ungroupSelected,
     groupImages,
-  } = useCanvasSelection({ iRef, gRef, setImages, setGroups, pushUndo })
+  } = useCanvasSelection({ iRef, gRef, setImages, setGroups })
 
   const getImages = useCallback(() => iRef.current, [])
 
   const canvasGen = useCanvasGenerate(
     setImages,
-    pushUndo,
     getImages,
     viewport.fitBounds,
     groupImages,
   )
 
-  const { moveSelectionToTrash, dismissFailed } = useRemoval({
+  const { removeSelectionFromCanvas, dismissFailed } = useRemoval({
     canvasId,
     iRef,
     setImages,
     setGroups,
     select,
-    pushUndo,
   })
 
   const getPasteTarget = useCallback(
@@ -136,7 +126,6 @@ export function useView(initial: CanvasState) {
       canvasId,
       setImages,
       select,
-      pushUndo,
       getPasteTarget,
       screenToCanvas,
       createImage: canvasGen.userImages.create,
@@ -262,42 +251,38 @@ export function useView(initial: CanvasState) {
     containerRef.current?.setPointerCapture(e.pointerId)
   }, [])
 
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      const d = dragRef.current
-      if (!d.mode) return
-      if (
-        !d.moved &&
-        Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) > 3
-      ) {
-        d.moved = true
-        if (d.mode === 'move') pushUndo()
-      }
-      if (!d.moved) return
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d.mode) return
+    if (
+      !d.moved &&
+      Math.abs(e.clientX - d.sx) + Math.abs(e.clientY - d.sy) > 3
+    ) {
+      d.moved = true
+    }
+    if (!d.moved) return
 
-      if (d.mode === 'pan') {
-        viewport.panBy(e.clientX - d.sx, e.clientY - d.sy)
-        d.sx = e.clientX
-        d.sy = e.clientY
-      } else if (d.mode === 'move') {
-        const t = tRef.current
-        const dx = (e.clientX - d.sx) / t.scale
-        const dy = (e.clientY - d.sy) / t.scale
-        setImages((prev) =>
-          prev.map((img) =>
-            sRef.current.has(img.id)
-              ? { ...img, x: img.x + dx, y: img.y + dy }
-              : img,
-          ),
-        )
-        d.sx = e.clientX
-        d.sy = e.clientY
-      } else {
-        setMarquee({ x1: d.sx, y1: d.sy, x2: e.clientX, y2: e.clientY })
-      }
-    },
-    [pushUndo],
-  )
+    if (d.mode === 'pan') {
+      viewport.panBy(e.clientX - d.sx, e.clientY - d.sy)
+      d.sx = e.clientX
+      d.sy = e.clientY
+    } else if (d.mode === 'move') {
+      const t = tRef.current
+      const dx = (e.clientX - d.sx) / t.scale
+      const dy = (e.clientY - d.sy) / t.scale
+      setImages((prev) =>
+        prev.map((img) =>
+          sRef.current.has(img.id)
+            ? { ...img, x: img.x + dx, y: img.y + dy }
+            : img,
+        ),
+      )
+      d.sx = e.clientX
+      d.sy = e.clientY
+    } else {
+      setMarquee({ x1: d.sx, y1: d.sy, x2: e.clientX, y2: e.clientY })
+    }
+  }, [])
 
   const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
@@ -364,9 +349,7 @@ export function useView(initial: CanvasState) {
     clearSelection,
     groupSelected,
     ungroupSelected,
-    undo,
-    redo,
-    onDelete: moveSelectionToTrash,
+    onDelete: removeSelectionFromCanvas,
   })
 
   /** Right-click opens the menu on a card. A right-drag that panned has
@@ -418,7 +401,7 @@ export function useView(initial: CanvasState) {
     arrangeSelected,
     groupSelected,
     ungroupSelected,
-    moveSelectionToTrash,
+    removeSelectionFromCanvas,
     dismissFailed,
   }
 }

@@ -24,7 +24,6 @@ interface UseIngestArgs {
   canvasId: string
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>
   select: (next: Set<string> | ((prev: Set<string>) => Set<string>)) => void
-  pushUndo: () => void
   /** Where a paste lands: the last click, else the viewport centre. */
   getPasteTarget: () => { x: number; y: number }
   screenToCanvas: (sx: number, sy: number) => { x: number; y: number }
@@ -46,7 +45,6 @@ export function useIngest({
   canvasId,
   setImages,
   select,
-  pushUndo,
   getPasteTarget,
   screenToCanvas,
   createImage,
@@ -91,7 +89,6 @@ export function useIngest({
         signedUrl: local[i].url,
       }))
 
-      pushUndo()
       setImages((prev) => [...prev, ...placedImages])
       select(new Set(placedImages.map((img) => img.id)))
 
@@ -145,7 +142,7 @@ export function useIngest({
         }),
       )
     },
-    [pushUndo, setImages, select, createImage, canvasId],
+    [setImages, select, createImage, canvasId],
   )
 
   /** Fetch a remote image and route it through the upload path. */
@@ -294,7 +291,6 @@ export function useIngest({
         signedUrl: valid[i].signedUrl,
       }))
 
-      pushUndo()
       setImages((prev) => [...prev, ...newImages])
       select(new Set(newImages.map((img) => img.id)))
       void addToCanvas(
@@ -308,7 +304,7 @@ export function useIngest({
         })),
       )
     },
-    [pushUndo, setImages, select, getPasteTarget, libraryImages, canvasId],
+    [setImages, select, getPasteTarget, libraryImages, canvasId],
   )
 
   return {

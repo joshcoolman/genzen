@@ -20,8 +20,6 @@ interface UseCanvasHotkeysArgs {
   clearSelection: () => void
   groupSelected: (columns: number) => void
   ungroupSelected: () => void
-  undo: () => void
-  redo: () => void
   onDelete: (ids: Array<string>) => void
 }
 
@@ -38,8 +36,6 @@ const BINDINGS = [
   'backspace,delete',
   'command+a',
   'escape',
-  'command+z',
-  'command+shift+z',
   'command+g',
   'command+shift+g',
 ] as const
@@ -56,8 +52,6 @@ export function useCanvasHotkeys({
   clearSelection,
   groupSelected,
   ungroupSelected,
-  undo,
-  redo,
   onDelete,
 }: UseCanvasHotkeysArgs) {
   useEffect(() => {
@@ -99,8 +93,8 @@ export function useCanvasHotkeys({
       if (iRef.current.length > 0) fitBounds(getBounds(iRef.current))
     })
 
-    // Straight to Trash, with no modal and nothing to dismiss (#236). Trash is
-    // a place you can visit tomorrow, and that is the confirmation.
+    // Takes the cards off the board and nothing else (#373). The library rows
+    // are untouched, so there is nothing to confirm and nothing to recover.
     bind('backspace,delete', () => {
       if (sRef.current.size > 0) onDelete([...sRef.current])
     })
@@ -108,8 +102,6 @@ export function useCanvasHotkeys({
     bind('command+a', () => select(new Set(iRef.current.map((i) => i.id))))
     hotkeys('escape', () => clearSelection())
 
-    bind('command+z', undo)
-    bind('command+shift+z', redo)
     bind('command+g', () => {
       if (sRef.current.size >= 2) groupSelected(GROUP_COLUMNS)
     })
@@ -130,8 +122,6 @@ export function useCanvasHotkeys({
     clearSelection,
     groupSelected,
     ungroupSelected,
-    undo,
-    redo,
     onDelete,
   ])
 }

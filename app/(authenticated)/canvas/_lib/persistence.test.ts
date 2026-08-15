@@ -18,7 +18,6 @@ vi.mock('../_actions/canvas', () => ({
   addImagesToCanvas: vi.fn(),
   removeImagesFromCanvas: vi.fn(),
   saveCanvasState: vi.fn(),
-  trashCanvasImages: vi.fn(),
 }))
 vi.mock('#/lib/image-storage', () => ({
   createImageStorage: vi.fn(),

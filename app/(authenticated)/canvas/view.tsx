@@ -70,7 +70,7 @@ export function View({ initial }: ViewProps) {
     arrangeSelected,
     groupSelected,
     ungroupSelected,
-    moveSelectionToTrash,
+    removeSelectionFromCanvas,
     dismissFailed,
   } = useView(initial)
 
@@ -265,10 +265,10 @@ export function View({ initial }: ViewProps) {
             if (source) void canvasGen.open([source])
             setContextMenu(null)
           }}
-          onTrash={() => {
+          onRemove={() => {
             const id = contextMenu.imageId
             setContextMenu(null)
-            moveSelectionToTrash([id])
+            removeSelectionFromCanvas([id])
           }}
         />
       )}
