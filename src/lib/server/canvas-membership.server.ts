@@ -103,8 +103,8 @@ export async function removeCanvasMembers(
 }
 
 /**
- * Which images are on a canvas. Filters trashed images rather than removing
- * their rows, which is what makes a restore put the card back in place (#212).
+ * Which images are on a canvas. Membership is the whole answer -- a trashed
+ * image is still on the canvas until it is taken off it (#375).
  */
 export async function listCanvasMemberIds(
   userId: string,
@@ -113,10 +113,8 @@ export async function listCanvasMemberIds(
   const rows = await sql<Array<{ image_id: string }>>`
     select ci.image_id
     from canvas_images ci
-    join user_images ui on ui.id = ci.image_id
     where ci.user_id = ${userId}
       and ci.canvas_id = ${canvasId}
-      and ui.deleted_at is null
   `
   return rows.map((r) => r.image_id)
 }

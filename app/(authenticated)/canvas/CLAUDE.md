@@ -22,6 +22,14 @@ the durable structure; the canvas is where things are tried.
 The canvas therefore does not reach into the library at all. It adds and removes
 membership rows and nothing else -- no `deleted_at`, no `group_id`.
 
+**And the library does not reach into the canvas** (#375). The member read has
+no `deleted_at` filter: trashing an image to tidy a group leaves it on the board,
+because Trash is a library state and the board is not the library. A card leaves
+when it is taken off, and at no other time. What keeps that honest is Trash's
+lock -- a row still holding membership cannot be permanently deleted, so nothing
+can be destroyed out from under a canvas nobody is looking at. Remove it from the
+canvas and the lock lifts.
+
 **One reconcile rule: place what is unplaced.** A membership row may arrive with
 no position, because a generation's row is written server-side the moment it is
 reserved -- which is what makes it reclaimable if the client navigates away
@@ -50,7 +58,7 @@ generation could evict it.
    request
 4. Display -> a `/img/[id]` URL from `#/lib/image-url`, resolved server-side by
    `loadCanvasState()`. The bucket is private (#226); nothing reads an object
-   address
+   address. Trashed images render like any other (#375)
 5. Remove from canvas -> the `canvas_images` row goes, the `user_images` row
    is untouched. **The only way a card leaves.** It was replaced by a
    Move-to-Trash in #236 and came back in #373. #236's reasoning -- removal

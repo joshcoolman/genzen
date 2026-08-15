@@ -13,6 +13,8 @@ export function View({ initial }: { initial: TrashPayload }) {
     images,
     imageUrls,
     canvasLinkedIds,
+    lockedCount,
+    deletableCount,
     busyId,
     isEmptying,
     isBatchRunning,
@@ -35,7 +37,9 @@ export function View({ initial }: { initial: TrashPayload }) {
           title="Trash"
           description={
             hasImages
-              ? `${images.length} ${images.length === 1 ? 'item' : 'items'}`
+              ? `${images.length} ${images.length === 1 ? 'item' : 'items'}${
+                  lockedCount > 0 ? ` (${lockedCount} on the canvas)` : ''
+                }`
               : undefined
           }
           aside={
@@ -47,6 +51,7 @@ export function View({ initial }: { initial: TrashPayload }) {
                 />
                 <EmptyDialog
                   total={images.length}
+                  deletable={deletableCount}
                   busy={isEmptying}
                   onConfirm={emptyTrash}
                 />

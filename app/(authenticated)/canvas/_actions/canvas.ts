@@ -80,13 +80,20 @@ export async function loadCanvasState(): Promise<CanvasState> {
     join user_images ui on ui.id = ci.image_id
     where ci.user_id = ${userId}
       and ci.canvas_id = ${canvasId}
-      and ui.deleted_at is null
     order by ci.created_at
   `
 
-  // A trashed image is filtered above rather than removed, which is the whole
-  // point of #212's trash decision: the membership row survives, so restoring
-  // the image brings the card back exactly where it was.
+  // **No `deleted_at` filter, deliberately (#375).** Trash is a library state
+  // and the canvas is not the library: a card leaves the board when it is
+  // removed from the board, and at no other time. Trashing an image from Images
+  // to tidy a group used to wipe it off a canvas the user was not looking at,
+  // which is the library reaching into the canvas -- the mirror of the reach
+  // #373 took out in the other direction.
+  //
+  // What keeps this honest is the lock in Trash: an image with a membership row
+  // cannot be permanently deleted, so a card on the board can never be
+  // destroyed underneath it. Remove it from the canvas first, and the lock
+  // lifts.
   const images = rows.map((row) => ({
     ...row,
     url: row.storage_path ? imageUrl(row.image_id) : null,

@@ -30,7 +30,8 @@ interface ImageRowProps {
    *  the verbs while it is. */
   hasSelection: boolean
   busy: boolean
-  /** Still holds a canvas membership row -- badge only, not a veto (#371). */
+  /** Still on a canvas: badged, and not deletable until it is taken off
+   *  (#375). */
   onCanvas: boolean
   onToggle: (id: string, shiftKey: boolean) => void
   onRestore: (id: string) => void
@@ -92,26 +93,29 @@ export function ImageRow({
 
         {!hasSelection && (
           <div className={styles.actions}>
-            {/* Delete first. Restore is the button you click many times in a
-                row -- down a list of things you want back -- so it has to be in
-                the same place on every row. Appending Delete after it moved
-                Restore left whenever a row had one, which puts Delete under a
-                finger that is repeating a Restore click. Destructive verbs do
-                not get to move under a repeating hand. */}
+            {/* Delete first, and its slot is held open even on a locked row
+                that has no Delete. Restore is the button you click many times
+                in a row -- down a list of things you want back -- so it has to
+                be in the same place on every row. Appending Delete after it
+                moved Restore left whenever a row had one, which puts Delete
+                under a finger that is repeating a Restore click. Destructive
+                verbs do not get to move under a repeating hand. */}
             <div className={styles.deleteSlot}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={styles.deleteButton}
-                disabled={busy}
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation()
-                  void askThenDelete()
-                }}
-              >
-                <X className={styles.buttonIcon} />
-                Delete
-              </Button>
+              {!onCanvas && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={styles.deleteButton}
+                  disabled={busy}
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation()
+                    void askThenDelete()
+                  }}
+                >
+                  <X className={styles.buttonIcon} />
+                  Delete
+                </Button>
+              )}
             </div>
             <Button
               variant="ghost"

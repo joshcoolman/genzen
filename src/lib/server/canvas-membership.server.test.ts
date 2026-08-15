@@ -78,19 +78,18 @@ describe('membership', () => {
     expect(await memberIds()).toEqual([b])
   })
 
-  it('survives a trip through Trash, so a restore puts the card back', async () => {
+  it('ignores Trash entirely: a card leaves the board only when removed', async () => {
     const c = await makeImage('c')
     await addCanvasMembers(userId, canvasId, [
       { imageId: c, x: 40, y: 50, width: 200, height: 300 },
     ])
 
-    // Trashing is a library operation and does not touch membership (#212). The
-    // read filters `deleted_at`, so the card stops rendering on its own.
+    // Trash is a library state and the canvas is not the library (#375).
+    // Tidying a group must not wipe a card off a board nobody was looking at,
+    // so the card stays and Trash locks the row against a permanent delete.
     await sql`update user_images set deleted_at = now() where id = ${c}`
-    expect(await memberIds()).not.toContain(c)
+    expect(await memberIds()).toContain(c)
 
-    // The row -- and the position -- survived. This is what
-    // `deleted_at = now(), on_canvas = false` used to destroy.
     await sql`update user_images set deleted_at = null where id = ${c}`
     expect(await memberIds()).toContain(c)
 
