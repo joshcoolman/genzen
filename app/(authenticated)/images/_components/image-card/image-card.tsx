@@ -12,12 +12,12 @@ import {
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
+import { CardCaption } from '../card-caption/card-caption'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
 import { cx } from '#/lib/utils'
 import {
-  CopyText,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -188,6 +188,12 @@ export function ImageCard({
       status="complete"
       objectFit={objectFit}
       alwaysShowOverlay
+      /* The model, on the image rather than over the caption: it names what
+         made *this* picture, so it belongs to the picture. In the caption it
+         read as a title for the prompt underneath it. Owned by Thumbnail since
+         #367, so a pending card carries the identical badge in the identical
+         place and nothing moves when the picture lands. */
+      bottomRightBadge={badge}
       selected={selected}
       selectedClassName={styles.selectedTile}
       /* Entering select mode dims the whole grid, because nothing is picked
@@ -206,10 +212,6 @@ export function ImageCard({
               insider's, and it does not need announcing over every thumbnail
               of a grid. The prompt's own hint still names its modifier -- that
               one sits in a hover surface that already exists. */}
-          {/* The model, on the image rather than over the caption: it names
-              what made *this* picture, so it belongs to the picture. In the
-              caption it read as a title for the prompt underneath it. */}
-          <span className={styles.model}>{badge}</span>
           {refNote && <span className={styles.refNote}>{refNote}</span>}
           {/* The tick, and the way *into* select mode (#325). On every card
               always, not only once the mode is on: it is the only thing saying
@@ -262,25 +264,13 @@ export function ImageCard({
             }
       }
     >
+      {/* Shared with `PendingImageCard`, so a caption cannot change size,
+          colour, clamp or behaviour when the picture lands (#367). */}
       {showInfo && caption && (
-        <div className={styles.caption}>
-          {/* Clamped to three lines, with no expand. Three is enough to
-              recognise a prompt, and the rest is a click away -- this button
-              copies the whole thing however much of it shows.
-
-              `silent`: the card teaches nothing on hover now. Both gestures
-              still work; naming them is #289's job, in a surface that can
-              actually explain them. Only the tick survives, because it reports
-              rather than instructs. */}
-          <CopyText
-            text={caption}
-            label="Copy"
-            silent
-            onModifierClick={selectionActive ? undefined : onUsePrompt}
-            className={styles.prompt}
-            textClassName={styles.promptText}
-          />
-        </div>
+        <CardCaption
+          text={caption}
+          onUsePrompt={selectionActive ? undefined : onUsePrompt}
+        />
       )}
 
       {/* Select mode makes the whole card one target -- the caption too, since

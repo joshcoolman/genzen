@@ -102,6 +102,11 @@ export async function generateVideo({
     falModelId: endpoint,
     prompt: trimmed,
     aspectRatio,
+    // The default title resolves an *image* endpoint against the image lineup,
+    // which knows nothing about clips. The label is already in hand here, and a
+    // clip's card should name its model from the first frame like any other
+    // (#367).
+    title: model.label,
     extraMetadata: {
       // Read back by `processVideoResult` for the row's title, so a
       // `.server.ts` module never has to import the route-owned catalog.

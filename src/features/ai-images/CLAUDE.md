@@ -99,9 +99,22 @@ anything one route renders lives with that route.
 - **Failed generations are deleted outright, not soft-deleted.** There is no image
   to restore, so Trash has nothing to offer for one — restoring it just puts an
   error card back. Everything else still soft-deletes.
-- **A row is titled `Generating...` while reserved**, renamed to the model on
-  success and by `failureTitle` on failure. Before that, a failure kept the
-  placeholder forever and Trash filled with rows that all read "Generating...".
+- **A row is titled with its model from the moment it is reserved** (#367).
+  `modelTitleFor()` is the one answer, called by the reserve, the completion and
+  the optimistic card the browser draws before either has run -- three separate
+  derivations meant the badge renamed itself at settle, which is a card
+  admitting it had been guessing. It looks the full endpoint up _before_
+  stripping `/edit`, because Seedream v4.5 registers its image endpoint with
+  that suffix and stripping first badged every edit with a raw id. `PENDING_TITLE`
+  and `failureTitle` survive only to repair rows written before this.
+- **`generation_metadata.prompt` is what the user typed; `sent_prompt` is what
+  FAL received** (#367). The two used to be one field holding the sent string,
+  so a caption grew its system-instructions preamble when the optimistic card
+  became real. Retry replays `sent_prompt ?? prompt` -- the fallback is what
+  keeps rows written before the split replaying correctly, since back then
+  `prompt` _was_ the sent string. Generating from a picture with no prompt is
+  the one case where the caption legitimately arrives late: the describer's
+  text is the only prompt that generation has.
 - **There is no edit route** (#205). An edit is a generation with images
   attached, not a place you go. Since #297 the images are set from the panel's
   Reference images widget, never from the grid and never by uploading.
@@ -125,6 +138,12 @@ anything one route renders lives with that route.
   every five seconds throughout (#327). The poll's backfill of error detail on
   already-failed rows is bounded to the last two minutes for the same reason --
   unbounded, it re-checked every failure you had ever had, forever.
+  **A pending row with no `request_id` is the poll's other deadline** (#363).
+  There is no ticket to ask FAL about, so nothing could ever settle it: the
+  query used to filter those rows out entirely and they said "Generating..."
+  forever. Past `SUBMIT_DEADLINE_MS` the row becomes a failed card saying
+  nothing ran and nothing was charged, which is true -- the submit never
+  reached FAL.
 - **Every image FAL is given is uploaded as bytes**, never handed over as a URL
   for FAL to fetch. It was already the only thing that worked against
   `localhost`; since #226 it is the only thing that works at all, because our

@@ -275,6 +275,28 @@ export function getModelName(modelId: string): string {
 }
 
 /**
+ * The title a row carries, from the endpoint it was submitted to.
+ *
+ * Three places need the same answer and used to derive it separately: the
+ * reserve, the completion, and the optimistic card the browser draws before
+ * either has run (#367). A card whose badge changes at settle is a card that
+ * was guessing, so the guess and the truth have to be the same function.
+ *
+ * The full id is looked up **first**, and `/edit` stripped only as a fallback.
+ * The other order looks equivalent and is not: Seedream v4.5 registers its
+ * image endpoint *as* `.../v4.5/edit`, so stripping first threw away the only
+ * key that names it and every edit through that model was badged with a raw
+ * endpoint id. Stripping still earns its place for the models that register
+ * without the suffix -- it is a route into a model, not a model.
+ */
+export function modelTitleFor(falModelId: string): string {
+  const direct = getModelName(falModelId)
+  if (direct !== falModelId) return direct
+  const base = falModelId.replace(/\/edit$/, '')
+  return getModelName(base) || base
+}
+
+/**
  * Endpoints no model in the lineup claims, mapped to a name anyway.
  *
  * `images` rows outlive the lineup: dropping a model from IMAGE_MODELS does not

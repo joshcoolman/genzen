@@ -167,11 +167,6 @@
   }
 }
 
-.stateLabel {
-  font-size: var(--text-3xs);
-  color: var(--text-muted);
-}
-
 .failedTitle {
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
@@ -208,6 +203,25 @@
 .badgeBottomLeft {
   bottom: var(--space-8);
   left: var(--space-8);
+}
+
+/* The model name, in every state the card has. Deliberately not composed with
+   `.badge` above: this is the look a finished card already had, and adopting
+   the pill would restyle every thumbnail in the grid to fix a pending one. */
+.modelBadge {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
 }
 
 /* ---- overlay action clusters ---- */

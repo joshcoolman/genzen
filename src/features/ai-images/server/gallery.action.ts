@@ -4,6 +4,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { removeImages } from '#/features/user-images/server/remove-images.action'
+import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
 
 // The gallery's reads and deletes, which the browser used to run directly
 // against Supabase. As in user-images (#173), the change that matters is that
@@ -58,10 +59,11 @@ export async function listGalleryImages(options?: {
  * re-reading the seed. Selecting things is *for* bulk; it was the path that
  * scaled worst.
  *
- * Two statements rather than one, because the two kinds of row end differently
- * and always have: a failed generation has no picture to restore, so Trash has
- * nothing to offer for it and it goes for good, objects included. Everything
- * else soft-deletes, losing `group_id` on the way so restore has one
+ * Two statements rather than one, because the kinds of row end differently and
+ * always have: a failed generation has no picture to restore, so Trash has
+ * nothing to offer for it and it goes for good, objects included. A *pending*
+ * one is the same shape of thing and is cancelled at FAL on the way out (#369).
+ * Everything else soft-deletes, losing `group_id` on the way so restore has one
  * destination (#319).
  */
 export async function trashGalleryImages(
@@ -74,18 +76,34 @@ export async function trashGalleryImages(
     Array<{
       id: string
       status: string
+      request_id: string | null
+      generation_metadata: Record<string, unknown> | null
       storage_path: string | null
       thumbnail_path: string | null
     }>
   >`
-    select id, status, storage_path, thumbnail_path
+    select id, status, request_id, generation_metadata,
+           storage_path, thumbnail_path
     from user_images
     where user_id = ${userId} and id = any(${imageIds})
   `
   if (rows.length === 0) return
 
-  const failed = rows.filter((r) => r.status === 'failed')
-  const rest = rows.filter((r) => r.status !== 'failed')
+  // Cancelled before anything is deleted, so the job stops as early as it can
+  // and a row that outlives the attempt is still the row we are removing.
+  // Concurrently: one slow cancel must not hold up the other eleven.
+  const pending = rows.filter((r) => r.status === 'pending')
+  await Promise.all(
+    pending.map((r) => cancelFalRequest(r.request_id, r.generation_metadata)),
+  )
+
+  // A cancelled generation has no picture either, so it ends the same way.
+  const failed = rows.filter(
+    (r) => r.status === 'failed' || r.status === 'pending',
+  )
+  const rest = rows.filter(
+    (r) => r.status !== 'failed' && r.status !== 'pending',
+  )
 
   if (failed.length > 0) {
     await sql`
@@ -126,11 +144,14 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
       Array<{
         id: string
         status: string
+        request_id: string | null
+        generation_metadata: Record<string, unknown> | null
         storage_path: string | null
         thumbnail_path: string | null
       }>
     >`
-    select id, status, storage_path, thumbnail_path
+    select id, status, request_id, generation_metadata,
+           storage_path, thumbnail_path
     from user_images
     where id = ${imageId} and user_id = ${userId}
   `,
@@ -138,10 +159,18 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
 
   if (!image) return
 
+  // Trash on a card that is still generating means "stop", so the job is
+  // cancelled before the row goes (#369). It used to soft-delete and leave FAL
+  // running, which finished the picture, billed for it, and filed it in Trash.
+  if (image.status === 'pending') {
+    await cancelFalRequest(image.request_id, image.generation_metadata)
+  }
+
   // A failed generation produced no image, so Trash has nothing to offer for
   // it -- restoring one just puts an error card back. Deleting it is the user
-  // saying "get rid of this", and it goes for good.
-  if (image.status === 'failed') {
+  // saying "get rid of this", and it goes for good. A cancelled one is the same
+  // shape of thing: no picture, and nothing a restore could bring back.
+  if (image.status === 'failed' || image.status === 'pending') {
     await sql`
       delete from user_images where id = ${imageId} and user_id = ${userId}
     `

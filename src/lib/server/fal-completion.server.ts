@@ -7,7 +7,7 @@ import { failureTitle } from './create-pending-generation.server'
 import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '#/lib/image-storage'
-import { getModelName } from '#/features/ai-images/models'
+import { modelTitleFor } from '#/features/ai-images/models'
 
 // Defensive extractor — FAL doesn't expose cost consistently across endpoints,
 // and in practice its image queue results carry no cost field at all, so this
@@ -73,11 +73,15 @@ export async function processImageResult(
 
   const meta = record?.generation_metadata ?? {}
   const prompt = typeof meta.prompt === 'string' ? meta.prompt : ''
+  // `fal_model_id` first: it is patched at submit to the *resolved* endpoint,
+  // where `model` was stripped of any `/edit` at reserve. For a model that
+  // registers its image endpoint with that suffix -- Seedream v4.5 does -- the
+  // stripped id names nothing, and the row was titled with a raw endpoint id.
   const model =
-    typeof meta.model === 'string'
-      ? meta.model
-      : typeof meta.fal_model_id === 'string'
-        ? meta.fal_model_id
+    typeof meta.fal_model_id === 'string'
+      ? meta.fal_model_id
+      : typeof meta.model === 'string'
+        ? meta.model
         : ''
 
   const falCostCents = extractFalCostCents(falResultData)
@@ -90,8 +94,9 @@ export async function processImageResult(
   // derived from the pricing table as something FAL reported.
   const providerCostIsEstimate = falCostCents == null
 
+  let written
   try {
-    await sql`
+    written = await sql`
       update user_images
       set status = 'completed',
           storage_path = ${storagePath},
@@ -100,7 +105,7 @@ export async function processImageResult(
           file_hash = ${fileHash},
           file_size = ${fileSize},
           mime_type = 'image/png',
-          title = ${getModelName(model) || model},
+          title = ${modelTitleFor(model)},
           description = ${
             prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
           },
@@ -124,6 +129,20 @@ export async function processImageResult(
     throw new Error(
       `Update failed: ${err instanceof Error ? err.message : String(err)}`,
     )
+  }
+
+  // No row to point at the object, and no error to say so -- an update that
+  // matches nothing succeeds. Since #369 that is a real outcome rather than an
+  // impossible one: cancelling a generation deletes its row, and a webhook
+  // already in flight arrives to find it gone. Same cleanup as the catch above,
+  // because the orphan is the same orphan; not an error, because the row is
+  // missing exactly as intended.
+  if (written.count === 0) {
+    await createImageStorage().remove([storagePath])
+    console.warn(
+      `[fal-completion] record=${recordId} no longer exists; discarded the result`,
+    )
+    return
   }
 
   generateThumbnailInBackground(userId, storagePath, recordId)

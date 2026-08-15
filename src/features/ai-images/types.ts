@@ -21,16 +21,24 @@ export interface SavedAiImage {
   description?: string | null
   generation_error: string | null
   generation_metadata: {
-    /** What was sent to the provider. Retry replays this. */
+    /** What the user would call their prompt -- the textarea contents, or the
+     *  describer's text when they generated from a picture and typed nothing.
+     *  This is what every caption, lightbox and variation seed shows. Since
+     *  #367 it is *not* what was sent; see `sent_prompt`. */
     prompt: string
+    /** What the provider received: `prompt` plus system instructions (#272),
+     *  any canvas image labels, and refine wrapping. Written only when it
+     *  differs, and absent on rows predating the split -- where `prompt` was
+     *  the sent string, which is why Retry reads `sent_prompt ?? prompt`. */
+    sent_prompt?: string
     model: string
     seed?: number
     elapsed?: number
     generation_type?: string
     /** What the user typed before the enhancer rewrote it (#210). */
     original_prompt?: string
-    /** The textarea contents at submit, when `prompt` is not that -- canvas
-     *  prepends `[Image 1, ...]` labels. Absent when the two are identical. */
+    /** Pre-#367 rows only: the textarea contents back when `prompt` held the
+     *  sent string. The two swapped roles, so nothing writes this any more. */
     typed_prompt?: string
     /** `prompt` was written by the describer, not the user. */
     prompt_derived_from_source?: boolean

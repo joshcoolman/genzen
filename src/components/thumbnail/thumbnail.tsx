@@ -13,15 +13,21 @@ export interface ThumbnailProps {
   alt?: string
   status?: 'pending' | 'complete' | 'failed'
 
-  pendingLabel?: string
   pendingBackgroundUrl?: string
 
-  failedLabel?: string
   failedMessage?: string
   failedBackgroundUrl?: string
 
   label?: string
   topLeftBadge?: string
+  /**
+   * The model name, bottom-right on the picture, in every state the card has
+   * (#367). It was ImageCard's alone, so a generation labelled itself in the
+   * caption while pending and in the corner once complete -- the label moved
+   * at the one moment the card is being watched. One definition here rather
+   * than a copy in each module, which is how the field washes drifted (#346).
+   */
+  bottomRightBadge?: string
 
   onDelete?: () => void
   overlayActions?: ReactNode
@@ -56,13 +62,12 @@ export function Thumbnail({
   url,
   alt,
   status = 'complete',
-  pendingLabel,
   pendingBackgroundUrl,
-  failedLabel,
   failedMessage,
   failedBackgroundUrl,
   label,
   topLeftBadge,
+  bottomRightBadge,
   onDelete,
   overlayActions,
   overlayActionsLeft,
@@ -156,11 +161,11 @@ export function Thumbnail({
                   className={styles.stateBackdrop}
                 />
               ) : null}
+              {/* The spinner alone. It named its model underneath until #367
+                  gave every state the same corner badge, at which point this
+                  was the same word twice on one tile. */}
               <div className={styles.stateBody}>
                 <div className={styles.spinner} />
-                {pendingLabel && (
-                  <span className={styles.stateLabel}>{pendingLabel}</span>
-                )}
               </div>
             </div>
           ) : (
@@ -177,9 +182,6 @@ export function Thumbnail({
               ) : null}
               <div className={cx(styles.stateBody, styles.stateBodyFailed)}>
                 <span className={styles.failedTitle}>Failed</span>
-                {failedLabel && (
-                  <span className={styles.stateLabel}>{failedLabel}</span>
-                )}
                 {failedMessage && (
                   <span className={styles.failedMessage}>{failedMessage}</span>
                 )}
@@ -194,6 +196,10 @@ export function Thumbnail({
           <span className={cx(styles.badge, styles.badgeTopLeft)}>
             {topLeftBadge}
           </span>
+        )}
+
+        {bottomRightBadge && (
+          <span className={styles.modelBadge}>{bottomRightBadge}</span>
         )}
 
         {status === 'complete' && label && (

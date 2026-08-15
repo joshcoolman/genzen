@@ -1,5 +1,7 @@
-/* Everything an ImageCard adds to a Thumbnail: the caption block, the selected
-   look, and the model name that sits on the image. */
+/* Everything an ImageCard adds to a Thumbnail: the selected look, select mode's
+   tick and target, and the dropped-references note. The caption is
+   `card-caption/`, shared with the pending card; the model badge is
+   Thumbnail's, shared with both it and the failed card (#367). */
 
 .selectedTile {
   border-color: var(--accent);
@@ -65,37 +67,6 @@
   color: var(--accent);
 }
 
-.caption {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  /* The extra below is the hover hint's room -- it is out of the button's flow
-     and lands here, and the card clips (`overflow: hidden`) anything past it.
-     With the hint gone from the flow the tinted block is even top and bottom
-     around its three lines, which is the point of the asymmetry here. */
-  padding: var(--space-8) var(--space-12) var(--space-12);
-}
-
-/* The model name, in the image's bottom-right corner. Quiet grey on the tile's
-   own ground -- images are contained, so the corner is nearly always
-   letterbox, and the scrim covers the wide ones that reach it. Not a control:
-   it never takes a click. */
-.model {
-  position: absolute;
-  right: var(--space-8);
-  bottom: var(--space-8);
-  max-width: calc(100% - var(--space-8) * 2);
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--scrim);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
 /* Sits above the model badge, same corner: both name a fact about how this
    picture was made, and the count is the surprising one. Only rendered when
    references were dropped, so a normal card has neither this nor the gap. */
@@ -110,36 +81,4 @@
   font-size: var(--text-3xs);
   white-space: nowrap;
   pointer-events: none;
-}
-
-/* CopyText owns the affordance. The negative margin keeps the prompt's first
-   line flush with the caption's padding, which the button's own padding would
-   otherwise push in. */
-.prompt {
-  margin: 0 calc(var(--space-8) * -1);
-}
-
-/* The same size and leading as the prompt field itself
-   (`prompt-list.module.css`): the card is showing the text you typed there, so
-   reading it back at a different size makes it look like a different kind of
-   thing. `1.5` for the same reason -- the scale has no `3xs` leading, and
-   small text needs the line separation more, not less.
-
-   Three lines, and no way to expand them: the caption is there to jog your
-   memory, not to be read in full. The whole prompt is one click away on the
-   clipboard, and Activity shows it entire. Unclamped (#284) it made the grid
-   ragged -- a long prompt gave its card twice the height of its neighbours,
-   for text nobody read past the third line anyway. The visibility toggle is
-   untouched; this caps what showing it costs.
-
-   The doubled selector is deliberate: CopyText's own `.text` sets
-   `display: block` at the same specificity, and a clamp needs the box. */
-.promptText.promptText {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-  font-size: var(--text-3xs);
-  line-height: 1.5;
 }

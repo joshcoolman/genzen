@@ -5,7 +5,14 @@
  *  facts about that row rather than about the network. */
 
 export interface RetryMetadata {
+  /** What the user would call their prompt. Display, not replay (#367). */
   prompt?: string
+  /** The string FAL actually received -- system instructions, canvas image
+   *  labels and refine wrapping included. Written only when it differs from
+   *  `prompt`, and absent entirely on rows written before the two split, where
+   *  `prompt` *was* the sent string. Replaying `prompt` on a new row would drop
+   *  the preamble and generate something else under the same caption. */
+  sent_prompt?: string
   model?: string
   fal_model_id?: string
   aspect_ratio?: string
@@ -67,7 +74,9 @@ export function planRetry(meta: RetryMetadata): RetryPlan {
   }
 
   return {
-    prompt: meta.prompt,
+    // The sent string when the row has one, else `prompt` -- which on a
+    // pre-#367 row is the sent string anyway, so both eras replay correctly.
+    prompt: meta.sent_prompt ?? meta.prompt,
     model: meta.model,
     ...(meta.aspect_ratio ? { aspectRatio: meta.aspect_ratio } : {}),
     source,

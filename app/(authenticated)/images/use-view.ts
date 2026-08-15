@@ -39,6 +39,7 @@ function pendingCard(
   placeholder: {
     placeholderId: string
     model: string
+    title: string
     prompt: string
     sourceImageId?: string
   },
@@ -47,7 +48,11 @@ function pendingCard(
   return {
     id: placeholder.placeholderId,
     origin: 'images',
-    title: 'Generating...',
+    // The model, not 'Generating...' (#367). The card knew which model it was
+    // at click time and displayed a placeholder anyway, so the badge renamed
+    // itself ~10s later for no reason a viewer could act on. Pending-ness is
+    // `status` below, which is what the tile already styles from.
+    title: placeholder.title,
     storage_path: null,
     created_at: new Date().toISOString(),
     status: 'pending',

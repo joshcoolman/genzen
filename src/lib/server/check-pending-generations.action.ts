@@ -39,6 +39,24 @@ const DEADLINE_MS = {
  */
 const BACKFILL_WINDOW = '2 minutes'
 
+/**
+ * How long a row may sit `pending` with no `request_id` before it is declared
+ * dead (#363).
+ *
+ * Such a row is not slow, it is unreachable: polling FAL needs a request id, so
+ * the only thing that could ever settle it is the submit that never produced
+ * one. Two ways it happens -- `markGenerationFailed` swallowing its own write
+ * error (deliberately: a failed failure-write must not mask the original
+ * error), and the process dying between the reserve and the submit. Either way
+ * nothing else is coming, and the row used to say "Generating..." forever.
+ *
+ * The submit itself is seconds -- a bucket read, a FAL upload, a queue call --
+ * so three minutes is far outside it while staying well inside `DEADLINE_MS`.
+ * Generous on purpose: if a submit somehow *is* still running, it patches the
+ * row on its way past and the card recovers.
+ */
+const SUBMIT_DEADLINE_MS = 3 * 60 * 1000
+
 export async function checkPendingGenerations() {
   const { userId } = await resolveAuth()
 
@@ -47,7 +65,7 @@ export async function checkPendingGenerations() {
       id: string
       source: string
       status: string
-      request_id: string
+      request_id: string | null
       generation_metadata: Record<string, unknown> | null
       age_ms: number
     }>
@@ -56,10 +74,10 @@ export async function checkPendingGenerations() {
            (extract(epoch from (now() - created_at)) * 1000)::float8 as age_ms
     from user_images
     where user_id = ${userId}
-      and request_id is not null
       and (
         status = 'pending'
         or (status = 'failed'
+            and request_id is not null
             and updated_at > now() - ${BACKFILL_WINDOW}::interval)
       )
   `
@@ -76,7 +94,33 @@ export async function checkPendingGenerations() {
         const falModelId =
           (meta.fal_model_id as string | undefined) ??
           (meta.model as string | undefined)
-        if (!falModelId || !record.request_id) return
+
+        // No ticket, so there is nothing to ask FAL about (#363). This row was
+        // invisible here until now -- the query filtered it out, and the only
+        // thing that could have settled it was the submit that never returned
+        // an id. Past the submit deadline it is not slow, it is dead, and a
+        // failed card with a reason beats "Generating..." forever.
+        if (!record.request_id) {
+          if (record.status !== 'pending') return
+          if (record.age_ms <= SUBMIT_DEADLINE_MS) return
+          const blob = extractFalError(null)
+          blob.message =
+            'This generation was never handed to the provider, so nothing ran. Nothing was charged. Retry to send it again.'
+          blob.stage = 'submit'
+          blob.code = 'never_submitted'
+          console.error(
+            `[check-pending] record=${record.id} pending with no request_id after ${Math.round(record.age_ms / 60000)} minutes`,
+          )
+          await markGenerationFailedWithBlob(record.id, blob)
+          failed++
+          settled.add(record.id)
+          return
+        }
+
+        if (!falModelId) return
+
+        // A ticket exists, so every path below can name it.
+        const requestId = record.request_id
 
         // Past its deadline, a row that FAL is still sitting on -- or will not
         // talk about -- becomes a failed card rather than a permanent poll.
@@ -92,20 +136,20 @@ export async function checkPendingGenerations() {
           blob.message = reason
           blob.stage = 'queue'
           blob.code = 'fal_timeout'
-          blob.fal_request_id ??= record.request_id
+          blob.fal_request_id ??= requestId
           console.error(`[check-pending] record=${record.id} ${reason}`)
           await markGenerationFailedWithBlob(record.id, blob)
         }
 
         try {
           const status = await fal.queue.status(falModelId, {
-            requestId: record.request_id,
+            requestId,
             logs: false,
           })
 
           if (status.status === 'COMPLETED') {
             const result = (await fal.queue.result(falModelId, {
-              requestId: record.request_id,
+              requestId,
             })) as { data: Record<string, unknown> }
 
             // FAL's result shape follows the asset, not the endpoint family:
@@ -130,7 +174,7 @@ export async function checkPendingGenerations() {
               let blob
               try {
                 await fal.queue.result(falModelId, {
-                  requestId: record.request_id,
+                  requestId,
                 })
                 blob = extractFalError(null)
                 blob.message = `FAL queue reported ${statusStr}`
@@ -139,7 +183,7 @@ export async function checkPendingGenerations() {
               }
               blob.stage = 'queue'
               if (blob.code === 'unknown') blob.code = 'fal_queue'
-              blob.fal_request_id ??= record.request_id
+              blob.fal_request_id ??= requestId
               console.error(
                 `[check-pending] record=${record.id} queue=${statusStr} message=${blob.message}`,
               )
@@ -168,7 +212,7 @@ export async function checkPendingGenerations() {
             const blob = extractFalError(err)
             blob.stage = 'queue'
             if (blob.code === 'unknown') blob.code = 'fal_queue'
-            blob.fal_request_id ??= record.request_id
+            blob.fal_request_id ??= requestId
             await markGenerationFailedWithBlob(record.id, blob)
             failed++
             settled.add(record.id)

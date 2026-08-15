@@ -143,6 +143,32 @@ list once when the seed comes back full, so the grid is never short.
   `features/ai-images/hooks/use-generation-poll.ts`, shared with Video and
   Activity, and it backs off, sleeps with the tab and gives up on work FAL never
   answers for (#327)
+- **A pending card is the card it will become, minus the picture (#367).** The
+  badge is the model from the first frame, the caption is what was typed, and
+  the only thing that changes at settle is the image region. All three used to
+  move: the badge renamed itself from "Generating...", and the caption grew the
+  system-instructions preamble the row had stored as its prompt. Tile geometry
+  was never the problem -- `aspect-ratio: 1 / 1` and a three-line clamp mean the
+  card is the same size throughout -- which is exactly why the rest of the churn
+  read as gratuitous rather than as loading. **Neither the badge nor the caption
+  belongs to a card any more.** The prompt block is `_components/card-caption/`,
+  rendered by the pending and the finished card alike -- written twice, it had
+  drifted to a dimmer colour and a different size on the pending side, so the
+  text you read while waiting changed when the picture landed.
+  `PendingImageCard` has no stylesheet left. **The model badge is `Thumbnail`'s,
+  one definition for all three states** -- a pending card put it in the caption
+  and a failed one centred it under "Failed", so the one label you track across
+  a generation moved on the way to both of its endings. The `...` menu needs no
+  such gate: `ImageCard` renders only for `completed` rows (pending and failed
+  have their own components, and `status` is constrained to those three), so
+  gating Download and Describe on it would be dead code.
+- **Trash on a generating card cancels it** (#369). It used to soft-delete the
+  row and leave FAL running, which finished the picture, billed for it, and
+  filed it in Trash -- from the one click that plainly means "I do not want
+  this". The cancel is best effort and never fatal; the row goes either way,
+  and it goes _outright_, on the same grounds as a failed one: there is no
+  picture, so Trash has nothing to offer. A webhook landing after the row is
+  gone discards its result rather than orphaning the object.
 - **A card's React key is not its id (#353).** A generation's card is born with
   an optimistic id and swaps it for its record id the moment the submit answers
   (#313). The id was the key, so React saw one card removed and a different one
