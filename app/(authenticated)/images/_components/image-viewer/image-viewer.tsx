@@ -101,18 +101,42 @@ export function ImageViewer({
       aria-label="Image viewer"
     >
       <div className={styles.stage}>
-        {url ? (
-          <img
-            key={url}
-            src={url}
-            alt={item.title}
-            className={cx(styles.image, !loaded && styles.imageLoading)}
-            onClick={(e) => e.stopPropagation()}
-            onLoad={() => setLoaded(true)}
-          />
-        ) : (
-          <div className={styles.placeholder} />
-        )}
+        {/* The frame shrink-wraps the picture, so it *is* the picture's box
+            whatever the aspect ratio. That is what lets Trash sit on the
+            image's own lower-left corner rather than the viewport's -- against
+            the viewport it drifts into empty scrim beside a portrait image. */}
+        <div className={styles.frame}>
+          {url ? (
+            <img
+              key={url}
+              src={url}
+              alt={item.title}
+              className={cx(styles.image, !loaded && styles.imageLoading)}
+              onClick={(e) => e.stopPropagation()}
+              onLoad={() => setLoaded(true)}
+            />
+          ) : (
+            <div className={styles.placeholder} />
+          )}
+
+          {/* On the image, far from the X. The two shared a corner at first,
+              which put "delete this" one small slip from "close this". */}
+          {onDelete && url && (
+            <button
+              type="button"
+              className={styles.delete}
+              onClick={(e) => {
+                // Or the backdrop handler closes on the way out, and the point
+                // of deleting from here is to keep going through the set.
+                e.stopPropagation()
+                onDelete()
+              }}
+              aria-label="Delete"
+            >
+              <Trash2 className={styles.controlIcon} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Chevrons sit on the scrim rather than on the picture, so they never
@@ -153,26 +177,14 @@ export function ImageViewer({
             {currentIndex + 1} of {items.length}
           </span>
         )}
-        <div className={styles.topActions}>
-          {onDelete && (
-            <button
-              type="button"
-              className={cx(styles.control, styles.delete)}
-              onClick={onDelete}
-              aria-label="Delete"
-            >
-              <Trash2 className={styles.controlIcon} />
-            </button>
-          )}
-          <button
-            type="button"
-            className={styles.control}
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X className={styles.controlIcon} />
-          </button>
-        </div>
+        <button
+          type="button"
+          className={styles.control}
+          onClick={onClose}
+          aria-label="Close"
+        >
+          <X className={styles.controlIcon} />
+        </button>
       </div>
     </div>
   )

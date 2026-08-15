@@ -35,12 +35,28 @@
   padding: var(--viewer-gutter);
 }
 
+/* Shrink-wrapped to the picture: this element's box is the picture's box at
+   any aspect ratio, which is what the corner controls anchor to. */
+.frame {
+  position: relative;
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
 /* Bounded on both axes, so whichever one runs out first is the one that caps
    it -- a portrait image goes as tall as the gutters allow, a landscape one as
-   wide, and neither ever leaves the viewport. */
+   wide, and neither ever leaves the viewport.
+
+   The height cap is measured off the viewport rather than given as `100%`. A
+   percentage here resolves against the frame, whose own height is resolving
+   against this image, and that circularity is what lets a tall image overflow
+   in some browsers while looking correct in others. */
 .image {
+  display: block;
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(100vh - var(--viewer-gutter) * 2);
   width: auto;
   height: auto;
   object-fit: contain;
@@ -134,14 +150,8 @@
   color: color-mix(in oklab, var(--text) 70%, transparent);
 }
 
-.topActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-left: auto;
-}
-
 .control {
+  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +173,31 @@
   color: var(--text);
 }
 
+/* The image's own lower-left corner, inset from it, not the viewport's. Far
+   from the X in the opposite corner: they were neighbours at first, which put
+   "delete this" one small slip from "close this". */
+.delete {
+  position: absolute;
+  bottom: var(--space-12);
+  left: var(--space-12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  color: color-mix(in oklab, var(--text) 60%, transparent);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
 .delete:hover {
+  background: var(--surface-raised);
   color: var(--danger);
 }
 
