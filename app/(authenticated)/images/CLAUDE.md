@@ -152,6 +152,14 @@ list once when the seed comes back full, so the grid is never short.
   screen; a viewer over a different list sends you somewhere you were not
   looking. Group cards are not stops in the sequence, only images.
 
+  **Traversing into groups from top level is a stated non-goal.** At top level
+  a group is one card, so the viewer skips its members entirely -- that is
+  correct, not a gap. Making the sequence descend into groups would mean the
+  overlay browses a list the grid is not showing, which is the one rule above,
+  and it turns "click a thumbnail, see it bigger" into a way of digging through
+  the whole library. That is a different feature and it belongs to Explore.
+  Leave this alone until the friction is real
+
   Gutters are one custom property, `--viewer-gutter`, equal on all four sides.
   Tune that rather than a single edge -- the first pass had a thin top and
   bottom against wide sides, which pinned tall images to the chrome. Paired
