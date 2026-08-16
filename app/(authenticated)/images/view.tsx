@@ -46,6 +46,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setDescribeTarget,
     addReference,
     usePromptText,
+    loadIntoPanel,
     animate,
     groups,
     workingByGroup,
@@ -108,6 +109,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onOpen={viewer.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
+          onLoad={(img) => void loadIntoPanel(img)}
           workingByGroup={workingByGroup}
           expandedGroupIds={groups.expandedIds}
           groupMembers={groups.members}

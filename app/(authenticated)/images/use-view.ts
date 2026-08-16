@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { loadGeneration } from './_actions/load-generation.action'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
 import { usePrefs } from './_hooks/use-prefs'
@@ -19,7 +20,7 @@ import { useModelSelector } from '#/features/ai-images/model-selector/use-model-
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useSelection } from '#/lib/use-selection'
-import { toast } from '#/components'
+import { getRatioOptions, toast } from '#/components'
 
 /**
  * The card a generation shows between the click and its row (#313).
@@ -660,6 +661,66 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
+  /**
+   * Put a past generation back in the panel: prompt, reference images, aspect
+   * ratio (#382). The model selection is deliberately untouched -- see
+   * `load-generation.action.ts` for why, and for the three ways this differs
+   * from a retry.
+   *
+   * Nothing is submitted and no row is touched. It fills a form.
+   */
+  const loadIntoPanel = useCallback(
+    async (img: SavedAiImage) => {
+      dock.setOpen(true)
+      try {
+        const loaded = await loadGeneration(img.id)
+
+        generator.setPrompt(loaded.prompt)
+        generator.replaceRefImages(
+          loaded.images.map((i) => ({
+            id: i.id,
+            url: imageUrl(i.id),
+            title: i.title,
+          })),
+        )
+
+        // Only when the set came back empty. With images, `useGenerator`
+        // derives orientation and ratio from slot 0 the moment the set lands
+        // (#297) -- the same derivation that chose the ratio when this
+        // generation was first made, so it arrives at the same answer and
+        // setting it here would only be a race we lose. With no images nothing
+        // else will, so the stored value is all there is.
+        if (loaded.images.length === 0 && loaded.aspectRatio) {
+          const [w, h] = loaded.aspectRatio.split(':').map(Number)
+          if (w && h) {
+            const orientation = w / h >= 1 ? 'landscape' : 'portrait'
+            if (getRatioOptions(orientation).includes(loaded.aspectRatio)) {
+              generator.setOrientation(orientation)
+              generator.setAspectRatio(loaded.aspectRatio)
+            }
+          }
+        }
+
+        // Said out loud, because a set that comes back short is a generation
+        // you would otherwise repeat wrongly. Trashed counts as missing here:
+        // restoring an image is a deliberate act, not something Load does for
+        // you.
+        if (loaded.missing > 0) {
+          toast(
+            loaded.missing === 1
+              ? 'One image from that generation is no longer available'
+              : `${loaded.missing} images from that generation are no longer available`,
+          )
+        }
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Could not load that generation',
+        )
+      }
+    },
+    [generator, dock],
+  )
+
   /** Take a still to /video as its first frame (#305). A navigation rather
    *  than a panel: video is its own route, and the image travels as an id in
    *  the URL so the target needs no shared state. */
@@ -716,6 +777,7 @@ export function useView(initial: Array<SavedAiImage>) {
     setDescribeTarget,
     addReference,
     usePromptText,
+    loadIntoPanel,
     animate,
     error,
     setError,

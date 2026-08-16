@@ -52,6 +52,7 @@ interface ImageGalleryProps {
    *  Shift pushes a reference, and on the prompt it loads the text. */
   onAddReference?: (img: SavedAiImage) => void
   onUsePrompt?: (text: string) => void
+  onLoad?: (img: SavedAiImage) => void
   /** Per-group count of work in flight (#350) -- generations queued, uploads
    *  still sending. Client-derived, so it costs nothing to keep current. */
   workingByGroup?: Record<string, number>
@@ -90,6 +91,7 @@ export function ImageGallery({
   onOpen,
   onAddReference,
   onUsePrompt,
+  onLoad,
   workingByGroup,
   expandedGroupIds,
   groupMembers,
@@ -208,6 +210,7 @@ export function ImageGallery({
                 onOpen={onOpen}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}
+                onLoad={onLoad}
                 onAddToGroup={onAddToGroup}
                 onRemoveFromGroup={onRemoveFromGroup}
                 onSetGroupCover={onSetGroupCover}

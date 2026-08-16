@@ -38,6 +38,17 @@
   line-height: 1.5;
 }
 
+/* Details at one end, Load at the other. `space-between` rather than a gap so
+   the two stay pinned to the caption's edges whatever the card's width -- and
+   so a card with only one of them still puts it where the other cards put it.
+   The empty `<span />` in the markup is what holds Details' end when it is the
+   absent one. */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 /* Quiet until wanted. It sits under a prompt on every generation in the grid,
    so at full strength it would be the loudest thing on a wall of pictures --
    the picture is what you are scanning, and this is for the one card you stop
@@ -55,4 +66,21 @@
 .details:hover {
   color: var(--text);
   text-decoration: underline;
+}
+
+/* The same quiet as `.details` -- one button per card across a wall of
+   pictures, so it has to sit below the images until you stop on one. */
+.load {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: color-mix(in oklab, var(--text) 35%, transparent);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.load:hover {
+  color: var(--text);
 }
