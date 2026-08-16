@@ -266,6 +266,11 @@ export function ImageCard({
         <CardCaption
           text={caption}
           onUsePrompt={selectionActive ? undefined : onUsePrompt}
+          /* Generations only -- an upload has no run in Activity, so the link
+             would open a panel about nothing. Absent in select mode for the
+             same reason the caption stops being a copy button there: every
+             click belongs to the selection. */
+          detailId={!isUpload && !selectionActive ? img.id : undefined}
         />
       )}
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { ActivityEntry, ActivityFilters } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
@@ -18,7 +19,38 @@ export function useView() {
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [filters, setFiltersState] = useState<ActivityFilters>(EMPTY_FILTERS)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  /**
+   * Which entry's panel is open lives in the URL, so `/activity?entry=<id>`
+   * opens straight onto it. That is what an image card's Details link points
+   * at, in a new tab -- close the tab and you are back where you were, with
+   * the working surface untouched.
+   *
+   * The entry does not have to be in the list. The list is windowed to the
+   * last three active days while the panel fetches by id, so a link to an
+   * older generation shows the right detail over a list that does not contain
+   * it. Arrow-cycling already no-ops on an entry it cannot find, so this is
+   * merely odd rather than broken.
+   */
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const selectedId = searchParams.get('entry')
+
+  const setSelectedId = useCallback(
+    (id: string | null) => {
+      const next = new URLSearchParams(searchParams.toString())
+      if (id) next.set('entry', id)
+      else next.delete('entry')
+      const query = next.toString()
+      // Replace, not push: paging through entries with the arrow keys would
+      // otherwise stack one history entry per image, and Back would walk them
+      // one at a time instead of leaving Activity.
+      router.replace(query ? `/activity?${query}` : '/activity', {
+        scroll: false,
+      })
+    },
+    [router, searchParams],
+  )
 
   const fetchRef = useRef(0)
   const refetch = useCallback(

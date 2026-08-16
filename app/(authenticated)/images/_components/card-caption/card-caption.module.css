@@ -37,3 +37,22 @@
   font-size: var(--text-3xs);
   line-height: 1.5;
 }
+
+/* Quiet until wanted. It sits under a prompt on every generation in the grid,
+   so at full strength it would be the loudest thing on a wall of pictures --
+   the picture is what you are scanning, and this is for the one card you stop
+   on. `align-self: start` keeps the target the width of the word rather than
+   the column, so the dead space beside it still belongs to the card. */
+.details {
+  align-self: start;
+  font-size: var(--text-3xs);
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--text) 35%, transparent);
+  text-decoration: none;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.details:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
