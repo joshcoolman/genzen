@@ -1,9 +1,11 @@
 'use client'
 
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
+import { ModelSelector } from '../_components/model-selector/model-selector'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
+import { frameCapacityFor } from './models'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { PageHeader, RefImageStrip, Stack } from '#/components'
@@ -11,6 +13,9 @@ import { PageHeader, RefImageStrip, Stack } from '#/components'
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
     model,
+    models,
+    selectModel,
+    modelTakesEndFrame,
     aspectOptions,
     hasFirstFrame,
     userImages,
@@ -70,6 +75,31 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
         <div className={styles.controls}>
           <Stack gap={16}>
+            {/* The generator panel's picker, in single mode (#385). Its two
+                right-hand columns are the same two numbers, read differently:
+                dollars per second, and frames rather than references. Single
+                because a clip is 20-100x the price of a still -- ticking four
+                models here would be a $20 click. No header tick and no
+                Cmd-click solo for the same reason: with one selection they
+                both mean nothing. */}
+            <ModelSelector
+              mode="single"
+              selectedIds={[model.slug]}
+              visibleModels={models.map((m) => ({
+                id: m.slug,
+                name: m.label,
+                description: m.description,
+                capability: 'video' as const,
+                price: m.pricePerSecondCents / 100,
+                capacity: frameCapacityFor(m),
+              }))}
+              onToggleSelected={selectModel}
+              stagedImageCount={sources.length + endSources.length}
+              priceLabel="$/s"
+              capacityLabel="Frames"
+              persistKey="genzen:video:model-panel:expanded"
+            />
+
             {/* The generator panel's Reference images widget, twice, with its
                 picker behind both. One slot each: the endpoint takes a single
                 still per end. */}
@@ -87,7 +117,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             {/* Optional, and it stays visible when empty rather than hiding
                 behind a disclosure -- an empty slot is the only thing that
                 says the capability exists. */}
-            {model.supportsEndImage && hasFirstFrame && (
+            {modelTakesEndFrame && hasFirstFrame && (
               <div className={styles.source}>
                 <p className={styles.sourceLabel}>Last frame (optional)</p>
                 <RefImageStrip

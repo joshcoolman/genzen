@@ -84,22 +84,31 @@ export function VideoForm({
           />
         </div>
 
-        <div className={styles.control}>
-          <span className={styles.label}>Aspect</span>
-          <SingleSelect
-            value={aspectRatio}
-            onChange={(value) => onAspectRatioChange(value ?? aspectOptions[0])}
-            options={aspectOptions.map((ratio) => ({
-              value: ratio,
-              label: ratio === 'auto' ? 'Match image' : ratio,
-            }))}
-          />
-        </div>
+        {/* Absent, not empty: MiniMax H3's image endpoint has no
+            `aspect_ratio` param -- the output follows the frame it is given --
+            so there is nothing to choose. A control with no options would say
+            the choice exists and had been taken away. */}
+        {aspectOptions.length > 0 && (
+          <div className={styles.control}>
+            <span className={styles.label}>Aspect</span>
+            <SingleSelect
+              value={aspectRatio}
+              onChange={(value) =>
+                onAspectRatioChange(value ?? aspectOptions[0])
+              }
+              options={aspectOptions.map((ratio) => ({
+                value: ratio,
+                label: ratio === 'auto' ? 'Match image' : ratio,
+              }))}
+            />
+          </div>
+        )}
       </div>
 
       <div className={styles.footer}>
         <p className={styles.note}>
-          {model.label} · {model.resolution} · audio included
+          {model.label} · {model.resolution}
+          {model.supportsAudio ? ' · audio included' : ''}
         </p>
         <ActionButton
           icon={<Clapperboard size={16} />}

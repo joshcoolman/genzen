@@ -1,58 +1,180 @@
 /**
- * The video lineup (#305). One entry per model, and the only place to add or
- * remove one -- the form is driven off the record rather than hardcoding a
- * duration list, so a second model is a literal here and nothing else.
+ * The video lineup (#305, #385). One entry per model, and the only place to add
+ * or remove one -- the form and the submit are both driven off the record.
  *
  * Route-owned on purpose: `src/features/` is earned by two consumers and this
  * has one. Promote it the day Canvas wants to animate a card.
  *
- * Endpoint ids verified against https://fal.ai/models -- note the `lightricks/`
- * namespace, not `fal-ai/`.
+ * **A mode is an endpoint, and an endpoint is a descriptor, not an id** (#385).
+ * The three models here disagree about more than their names:
+ *
+ *   - Flux 3 puts first+last frame on a *separate* endpoint, which requires
+ *     both frames and calls the first one `start_image_url`. LTX and H3 take
+ *     an optional `end_image_url` on their ordinary image endpoint.
+ *   - MiniMax H3's image endpoint has no `aspect_ratio` at all -- the output
+ *     follows the image -- so there is no control to show, which is a
+ *     different thing from a list with one option in it.
+ *   - `generate_audio` is Flux 3 and LTX only.
+ *
+ * So each endpoint carries what it takes, and `generate-video.action.ts` builds
+ * its input from that rather than from a fixed list of params. Same idea as the
+ * image side's `buildFalInput`, minus the schema fetch: this lineup is three
+ * entries and every field below was read off FAL's OpenAPI spec by hand.
+ *
+ * Endpoint ids verified against https://fal.ai/models -- note the `lightricks/`,
+ * `blackforestlabs/` and `minimax/` namespaces, none of them `fal-ai/`.
  */
+export interface VideoEndpoint {
+  id: string
+  /**
+   * The param carrying the first frame. Absent on a text-to-video endpoint,
+   * which takes no image at all.
+   */
+  firstFrameParam?: 'image_url' | 'start_image_url'
+  /** Takes an `end_image_url` alongside the first frame. */
+  acceptsEndImage?: boolean
+  /**
+   * What this endpoint offers. **Empty means there is no control**, not that
+   * every ratio works: H3's image endpoint has no `aspect_ratio` param, and
+   * sending one is how you find out.
+   */
+  aspectRatios: Array<string>
+}
+
 export interface VideoModel {
   /** Stable identity. Never sent to FAL. */
   slug: string
   label: string
   description: string
-  /** No first frame: the model invents the whole shot from the prompt. */
-  textToVideo: string
-  /** A first frame is set. The only mode that takes an end frame. */
-  withImage: string
+  endpoints: {
+    /** No first frame: the model invents the whole shot from the prompt. */
+    textToVideo: VideoEndpoint
+    /** A first frame is set. */
+    withImage: VideoEndpoint
+    /**
+     * Both frames, where that is its own endpoint. Absent means the end frame
+     * rides on `withImage` -- which is the common case, and Flux 3 the
+     * exception that forced the slot to exist.
+     */
+    withFirstAndLastImage?: VideoEndpoint
+  }
   /** Cents per second of output, at the resolution below. */
   pricePerSecondCents: number
   resolution: string
   durations: Array<number>
   defaultDuration: number
-  /**
-   * Per mode, because the endpoints genuinely differ: `auto` exists only where
-   * there is an image to match. With a first frame, 16:9 and 9:16 mean "recrop
-   * my picture" -- which crops and re-imagines, and is why `auto` is the
-   * default there. With no first frame they are just the output shape.
-   */
-  aspectRatios: { textToVideo: Array<string>; withImage: Array<string> }
-  /** Takes an `end_image_url`: two stills in, the transition between them out.
-   *  Only meaningful with a first frame -- there is no end without a start. */
-  supportsEndImage: boolean
+  /** Sends `generate_audio`. H3 has no such param. */
+  supportsAudio: boolean
 }
 
 export const VIDEO_MODELS: Array<VideoModel> = [
   {
     slug: 'ltx-2.5-fast',
     label: 'LTX-2.5 Fast',
-    description: 'Image to video with native synchronized audio',
-    textToVideo: 'lightricks/ltx-2.5/text-to-video/fast',
-    withImage: 'lightricks/ltx-2.5/image-to-video/fast',
+    description: 'Native synchronized audio, cheap',
+    endpoints: {
+      textToVideo: {
+        id: 'lightricks/ltx-2.5/text-to-video/fast',
+        aspectRatios: ['16:9', '9:16'],
+      },
+      withImage: {
+        id: 'lightricks/ltx-2.5/image-to-video/fast',
+        firstFrameParam: 'image_url',
+        acceptsEndImage: true,
+        // `auto` exists only where there is an image to match. 16:9 and 9:16
+        // here mean "recrop my picture", which crops and re-imagines -- which
+        // is why `auto` leads.
+        aspectRatios: ['auto', '16:9', '9:16'],
+      },
+    },
     // $0.09/s at 720p. 1080p is $0.13 and 1440p/2160p higher, so a resolution
-    // control has to move this number with it -- which is why V1 has neither.
+    // control has to move this number with it -- which is why there is none.
     pricePerSecondCents: 9,
     resolution: '720p',
     durations: [6, 8, 10, 12, 14, 16, 18, 20],
     defaultDuration: 8,
-    aspectRatios: {
-      textToVideo: ['16:9', '9:16'],
-      withImage: ['auto', '16:9', '9:16'],
+    supportsAudio: true,
+  },
+  {
+    slug: 'minimax-h3',
+    label: 'MiniMax H3',
+    description: 'Cheapest per second, follows the first frame',
+    endpoints: {
+      textToVideo: {
+        id: 'minimax/h3/text-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+      },
+      withImage: {
+        id: 'minimax/h3/image-to-video',
+        firstFrameParam: 'image_url',
+        acceptsEndImage: true,
+        // Empty deliberately: this endpoint has no `aspect_ratio` param. FAL's
+        // own note is "the output aspect ratio follows this image", so there
+        // is nothing to choose and the form shows no pills.
+        aspectRatios: [],
+      },
     },
-    supportsEndImage: true,
+    // $0.08/s at 768P. 480P is $0.05, 2K $0.13 and 4K $0.16 -- and 2K is FAL's
+    // *default*, so pinning 768P is the cheap choice as well as the fixed one.
+    pricePerSecondCents: 8,
+    resolution: '768P',
+    // FAL gives a range (5-15) rather than an enum, and a 7 was accepted; this
+    // is a spread across it rather than a constraint FAL stated.
+    durations: [5, 6, 8, 10, 12, 15],
+    defaultDuration: 6,
+    supportsAudio: false,
+  },
+  {
+    slug: 'flux-3',
+    label: 'Flux 3',
+    description: 'Black Forest Labs, widest aspect range',
+    endpoints: {
+      textToVideo: {
+        id: 'blackforestlabs/flux-3/text-to-video',
+        // `auto` is in FAL's enum for every Flux 3 mode, but with no image it
+        // has nothing to match, so it is not offered here.
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '2:1', '21:9'],
+      },
+      withImage: {
+        id: 'blackforestlabs/flux-3/image-to-video',
+        firstFrameParam: 'image_url',
+        // Its own `image-to-video` endpoint takes no end frame; the endpoint
+        // below is what does.
+        aspectRatios: [
+          'auto',
+          '16:9',
+          '9:16',
+          '1:1',
+          '4:3',
+          '3:4',
+          '2:1',
+          '21:9',
+        ],
+      },
+      withFirstAndLastImage: {
+        id: 'blackforestlabs/flux-3/first-last-frame-to-video',
+        // Not `image_url`. This is the whole reason an endpoint is a
+        // descriptor rather than a string.
+        firstFrameParam: 'start_image_url',
+        acceptsEndImage: true,
+        aspectRatios: [
+          'auto',
+          '16:9',
+          '9:16',
+          '1:1',
+          '4:3',
+          '3:4',
+          '2:1',
+          '21:9',
+        ],
+      },
+    },
+    // $0.17/s at 720p, $0.29 at 1080p -- nearly twice LTX either way.
+    pricePerSecondCents: 17,
+    resolution: '720p',
+    durations: [5, 6, 8, 10, 12, 16, 20],
+    defaultDuration: 8,
+    supportsAudio: true,
   },
 ]
 
@@ -62,19 +184,52 @@ export function videoModelBySlug(slug: string): VideoModel | undefined {
   return VIDEO_MODELS.find((m) => m.slug === slug)
 }
 
-/** The endpoint for this request, picked by whether a first frame is set --
- *  the same shape `IMAGE_MODELS` uses for `textToImage` / `withImages`. */
-export function endpointFor(model: VideoModel, hasFirstFrame: boolean): string {
-  return hasFirstFrame ? model.withImage : model.textToVideo
+/**
+ * The endpoint this request goes to, and what it takes.
+ *
+ * Three modes, not two: a model may put first+last frame somewhere else
+ * entirely. Where it does not, the end frame rides on the image endpoint and
+ * this returns that one for both.
+ */
+export function endpointFor(
+  model: VideoModel,
+  hasFirstFrame: boolean,
+  hasLastFrame = false,
+): VideoEndpoint {
+  if (!hasFirstFrame) return model.endpoints.textToVideo
+  if (hasLastFrame && model.endpoints.withFirstAndLastImage) {
+    return model.endpoints.withFirstAndLastImage
+  }
+  return model.endpoints.withImage
+}
+
+/**
+ * Whether this model can take an end frame at all, in any mode. Drives the
+ * second slot's presence in the form -- a slot that cannot be sent anywhere is
+ * worse than no slot.
+ */
+export function supportsEndImage(model: VideoModel): boolean {
+  return (
+    !!model.endpoints.withFirstAndLastImage ||
+    !!model.endpoints.withImage.acceptsEndImage
+  )
+}
+
+/**
+ * How many frames this model holds in this mode: 1, or 2 where an end frame is
+ * accepted. The picker's capacity column, and what dims a row against a staged
+ * pair.
+ */
+export function frameCapacityFor(model: VideoModel): number {
+  return supportsEndImage(model) ? 2 : 1
 }
 
 export function aspectRatiosFor(
   model: VideoModel,
   hasFirstFrame: boolean,
+  hasLastFrame = false,
 ): Array<string> {
-  return hasFirstFrame
-    ? model.aspectRatios.withImage
-    : model.aspectRatios.textToVideo
+  return endpointFor(model, hasFirstFrame, hasLastFrame).aspectRatios
 }
 
 /** What a clip of this length will cost, in cents. */
