@@ -14,7 +14,7 @@ source images; `use-view.ts` owns everything after the first paint.
   to `src/features/` the day Canvas wants to animate a card.
 - **A mode is an endpoint, and an endpoint is a descriptor rather than an id**
   (#385). Adding the second and third models is what forced it: Flux 3 puts
-  first+last frame on a *separate* endpoint that requires both and calls the
+  first+last frame on a _separate_ endpoint that requires both and calls the
   first one `start_image_url`; MiniMax H3's image endpoint has no
   `aspect_ratio` at all; `generate_audio` is Flux 3 and LTX only. So each
   endpoint carries `firstFrameParam`, `acceptsEndImage` and its own
@@ -28,7 +28,7 @@ source images; `use-view.ts` owns everything after the first paint.
   no options would say the choice exists and had been taken away.
 - **The picker is `ModelSelector` in `mode="single"`, the generator panel's
   own.** Its two right-hand columns are the same two numbers read differently
-  -- dollars per *second*, and *frames* rather than references -- which is all
+  -- dollars per _second_, and _frames_ rather than references -- which is all
   the component needed to be shared: two optional label props, not a fork.
   Single-select is the money decision, not a simplification: a clip is 20-100x
   the price of a still, so the image panel's "tick four models and fire" would
