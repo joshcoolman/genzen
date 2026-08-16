@@ -61,11 +61,15 @@ export async function generateVideo({
   }
 
   const hasFirstFrame = !!imageId
-  const endpoint = endpointFor(model, hasFirstFrame)
+  const hasLastFrame = !!endImageId
+  const endpoint = endpointFor(model, hasFirstFrame, hasLastFrame)
 
-  // Checked against the mode, not the model: `auto` is valid only where there
-  // is an image to match, and the text-to-video endpoint rejects it.
-  if (!aspectRatiosFor(model, hasFirstFrame).includes(aspectRatio)) {
+  // Checked against the endpoint, not the model: `auto` is valid only where
+  // there is an image to match, and an endpoint with an empty list has no
+  // `aspect_ratio` param at all -- H3's image endpoint follows the frame it is
+  // given, so any value is one param too many.
+  const ratios = aspectRatiosFor(model, hasFirstFrame, hasLastFrame)
+  if (ratios.length > 0 && !ratios.includes(aspectRatio)) {
     throw new Error(`Unsupported aspect ratio: ${aspectRatio}`)
   }
 
@@ -88,7 +92,7 @@ export async function generateVideo({
     }
   }
 
-  if (endImageId && !model.supportsEndImage) {
+  if (endImageId && !endpoint.acceptsEndImage) {
     throw new Error(`${model.label} takes no end frame`)
   }
 
@@ -99,7 +103,7 @@ export async function generateVideo({
     origin: 'images',
     source: 'ai_video',
     generationType: hasFirstFrame ? 'image_to_video' : 'text_to_video',
-    falModelId: endpoint,
+    falModelId: endpoint.id,
     prompt: trimmed,
     aspectRatio,
     // The default title resolves an *image* endpoint against the image lineup,
@@ -130,15 +134,26 @@ export async function generateVideo({
     }
     const [uploadedUrl, uploadedEndUrl] = uploaded
 
-    const { request_id } = await fal.queue.submit(endpoint, {
+    // Built from the endpoint descriptor, never from a fixed list (#385). Three
+    // models, three disagreements: Flux 3's first+last endpoint names the first
+    // frame `start_image_url`, H3's image endpoint has no `aspect_ratio`, and
+    // only two of the three take `generate_audio`. Sending a param an endpoint
+    // does not declare is how a submit fails at FAL rather than here.
+    const { request_id } = await fal.queue.submit(endpoint.id, {
       input: {
         prompt: trimmed,
-        ...(uploadedUrl ? { image_url: uploadedUrl } : {}),
-        ...(uploadedEndUrl ? { end_image_url: uploadedEndUrl } : {}),
+        ...(uploadedUrl && endpoint.firstFrameParam
+          ? { [endpoint.firstFrameParam]: uploadedUrl }
+          : {}),
+        ...(uploadedEndUrl && endpoint.acceptsEndImage
+          ? { end_image_url: uploadedEndUrl }
+          : {}),
         duration,
-        aspect_ratio: aspectRatio,
+        ...(endpoint.aspectRatios.length > 0
+          ? { aspect_ratio: aspectRatio }
+          : {}),
         resolution: model.resolution,
-        generate_audio: true,
+        ...(model.supportsAudio ? { generate_audio: true } : {}),
       },
     })
 

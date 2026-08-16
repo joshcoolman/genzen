@@ -5,8 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
 import {
   DEFAULT_VIDEO_MODEL,
+  VIDEO_MODELS,
   aspectRatiosFor,
   estimateCostCents,
+  supportsEndImage,
+  videoModelBySlug,
 } from './models'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
@@ -14,7 +17,11 @@ import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-pol
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
+import { usePersistedState } from '#/lib/use-persisted-state'
 import { toast } from '#/components'
+
+/** One key, one value: which model the picker is on. */
+const MODEL_KEY = 'genzen:video:model'
 
 /** What the strip renders and the submit sends. One, not a set: this model
  *  takes a single first frame. */
@@ -38,7 +45,22 @@ export interface SourceImage {
 export function useView(initialVideos: Array<VideoRecord>) {
   const { user } = useAuth()
   const searchParams = useSearchParams()
-  const model = DEFAULT_VIDEO_MODEL
+
+  // Single-select, and deliberately (#385): a clip is 20-100x the price of a
+  // still, so the image panel's "tick four models and fire" would be $20 a
+  // click here. `videoModelBySlug` is what makes a stored slug for a model that
+  // has since been dropped fall back rather than crash.
+  const [modelSlug, setModelSlug, modelHydrated] = usePersistedState(
+    () => localStorage.getItem(MODEL_KEY) ?? DEFAULT_VIDEO_MODEL.slug,
+    DEFAULT_VIDEO_MODEL.slug,
+  )
+  const model = videoModelBySlug(modelSlug) ?? DEFAULT_VIDEO_MODEL
+
+  useEffect(() => {
+    // Waits on `hydrated`, or the fallback lands on top of the stored value on
+    // mount and the setting resets on every page load.
+    if (modelHydrated) localStorage.setItem(MODEL_KEY, model.slug)
+  }, [modelHydrated, model.slug])
 
   const userImages = useUserImages(user.id)
 
@@ -180,20 +202,39 @@ export function useView(initialVideos: Array<VideoRecord>) {
   const sourceId = sources.at(0)?.id ?? null
   const endImageId = endSources.at(0)?.id ?? null
   const hasFirstFrame = !!sourceId
+  const hasLastFrame = !!endImageId
 
-  // The options change with the mode, so a value carried across the switch can
-  // be one the endpoint rejects -- `auto` has nothing to match once the first
-  // frame is cleared. Coerced here rather than validated at submit, so the
-  // pills never show a selection the request would refuse.
+  // The options change with the mode *and* with the model, so a value carried
+  // across either switch can be one the endpoint rejects -- `auto` has nothing
+  // to match once the first frame is cleared, and H3's image endpoint has no
+  // aspect param at all. Coerced here rather than validated at submit, so the
+  // control never shows a selection the request would refuse. An empty list is
+  // the "no control" case: the form renders nothing and the submit sends
+  // nothing, so there is no value to coerce to.
   const aspectOptions = useMemo(
-    () => aspectRatiosFor(model, hasFirstFrame),
-    [model, hasFirstFrame],
+    () => aspectRatiosFor(model, hasFirstFrame, hasLastFrame),
+    [model, hasFirstFrame, hasLastFrame],
   )
   useEffect(() => {
-    if (!aspectOptions.includes(aspectRatio)) {
+    if (aspectOptions.length > 0 && !aspectOptions.includes(aspectRatio)) {
       setAspectRatio(aspectOptions[0])
     }
   }, [aspectOptions, aspectRatio])
+
+  // Same coercion, for the same reason: the durations are the model's, and
+  // switching from LTX (6s up) to H3 (5s up) leaves 18s selected against a
+  // model whose ceiling is 15.
+  useEffect(() => {
+    if (!model.durations.includes(duration)) setDuration(model.defaultDuration)
+  }, [model, duration])
+
+  // A model that takes no end frame in any mode should not offer the slot --
+  // and anything staged in it goes, rather than being silently dropped at
+  // submit.
+  const modelTakesEndFrame = supportsEndImage(model)
+  useEffect(() => {
+    if (!modelTakesEndFrame && endSources.length > 0) setEndSources([])
+  }, [modelTakesEndFrame, endSources.length])
 
   // An end frame needs a start. Dropping it on clear beats sending a request
   // the action would refuse.
@@ -246,6 +287,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   return {
     model,
+    models: VIDEO_MODELS,
+    selectModel: setModelSlug,
+    modelTakesEndFrame,
     aspectOptions,
     hasFirstFrame,
     userImages,

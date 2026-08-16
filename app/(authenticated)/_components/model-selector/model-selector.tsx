@@ -35,6 +35,16 @@ interface ModelSelectorProps {
   stagedImageCount?: number
   defaultExpanded?: boolean
   persistKey?: string
+  /**
+   * The two right-hand column heads. They default to the image lineup's
+   * meaning -- dollars per image, and images held -- and Video overrides both,
+   * where the same two numbers are dollars per *second* and *frames* (#385).
+   * Labels only: the columns themselves are the same two numbers off
+   * `UnifiedModel`, which is what makes this component worth sharing rather
+   * than forking.
+   */
+  priceLabel?: string
+  capacityLabel?: string
 }
 
 /**
@@ -57,6 +67,8 @@ export function ModelSelector({
   stagedImageCount = 0,
   defaultExpanded = true,
   persistKey,
+  priceLabel = '$',
+  capacityLabel = 'Refs',
 }: ModelSelectorProps) {
   const [expanded, setExpanded] = useState(() => {
     if (persistKey && typeof window !== 'undefined') {
@@ -95,6 +107,8 @@ export function ModelSelector({
           mode={mode}
           stagedImageCount={stagedImageCount}
           onToggle={onToggleSelected}
+          priceLabel={priceLabel}
+          capacityLabel={capacityLabel}
         />
       </div>
     )
@@ -119,6 +133,8 @@ export function ModelSelector({
             selectedIds={selectedIds}
             stagedImageCount={stagedImageCount}
             onToggle={onToggleSelected}
+            priceLabel={priceLabel}
+            capacityLabel={capacityLabel}
           />
         </div>
       )}
@@ -143,6 +159,8 @@ function ModelTable({
   onToggleAll,
   onSelectOnly,
   onAfterToggle,
+  priceLabel = '$',
+  capacityLabel = 'Refs',
 }: {
   models: Array<UnifiedModel>
   selectedIds: Array<string>
@@ -151,6 +169,8 @@ function ModelTable({
   onToggleAll?: () => void
   onSelectOnly?: (id: string) => void
   onAfterToggle?: () => void
+  priceLabel?: string
+  capacityLabel?: string
 }) {
   const allSelected =
     models.length > 0 && models.every((m) => selectedIds.includes(m.id))
@@ -192,10 +212,10 @@ function ModelTable({
           Model
         </span>
         <span className={styles.itemPrice} aria-hidden="true">
-          $
+          {priceLabel}
         </span>
         <span className={styles.itemRefs} aria-hidden="true">
-          Refs
+          {capacityLabel}
         </span>
       </div>
       {models.map((model) => {
@@ -252,6 +272,8 @@ function DropdownModels({
   onToggle,
   onToggleAll,
   onSelectOnly,
+  priceLabel,
+  capacityLabel,
 }: {
   models: Array<UnifiedModel>
   selectedIds: Array<string>
@@ -260,6 +282,8 @@ function DropdownModels({
   onToggle: (id: string) => void
   onToggleAll?: () => void
   onSelectOnly?: (id: string) => void
+  priceLabel?: string
+  capacityLabel?: string
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -298,6 +322,8 @@ function DropdownModels({
               onToggle={onToggle}
               onToggleAll={onToggleAll}
               onSelectOnly={onSelectOnly}
+              priceLabel={priceLabel}
+              capacityLabel={capacityLabel}
               onAfterToggle={() => {
                 if (mode === 'single') setOpen(false)
               }}

@@ -1,17 +1,39 @@
 # Video
 
-An image you already made, plus a note, comes back moving (#305). LTX-2.5
-image-to-video on FAL, with native synchronized audio.
+An image you already made, plus a note, comes back moving (#305). Three FAL
+models -- LTX-2.5 Fast, MiniMax H3, Flux 3 -- picked one at a time (#385).
 
 Built to `docs/reference/route-shape.md`. `page.tsx` reads the clip list and the
 source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
-- **`models.ts` is the lineup, and the form reads it.** Durations, aspect
-  ratios, resolution and price all come off the record, so a second model is a
-  literal in that array and nothing else. Route-owned because one route uses it;
-  promote it to `src/features/` the day Canvas wants to animate a card.
+- **`models.ts` is the lineup, and both the form and the submit read it.**
+  Durations, aspect ratios, resolution, price and **the request's own param
+  names** come off the record. Route-owned because one route uses it; promote it
+  to `src/features/` the day Canvas wants to animate a card.
+- **A mode is an endpoint, and an endpoint is a descriptor rather than an id**
+  (#385). Adding the second and third models is what forced it: Flux 3 puts
+  first+last frame on a *separate* endpoint that requires both and calls the
+  first one `start_image_url`; MiniMax H3's image endpoint has no
+  `aspect_ratio` at all; `generate_audio` is Flux 3 and LTX only. So each
+  endpoint carries `firstFrameParam`, `acceptsEndImage` and its own
+  `aspectRatios`, and the submit builds its input from that rather than from a
+  fixed list. Same idea as the image side's `buildFalInput`, minus the schema
+  fetch -- three entries, each field read off FAL's OpenAPI spec by hand and
+  pinned in `models.test.ts`.
+- **An empty `aspectRatios` means there is no control, not that no ratio
+  works.** H3's image endpoint follows the frame it is given, so the form
+  renders no Aspect row and the submit sends no `aspect_ratio`. A control with
+  no options would say the choice exists and had been taken away.
+- **The picker is `ModelSelector` in `mode="single"`, the generator panel's
+  own.** Its two right-hand columns are the same two numbers read differently
+  -- dollars per *second*, and *frames* rather than references -- which is all
+  the component needed to be shared: two optional label props, not a fork.
+  Single-select is the money decision, not a simplification: a clip is 20-100x
+  the price of a still, so the image panel's "tick four models and fire" would
+  be a $20 click. No header tick and no Cmd-click solo, because with one
+  selection both mean nothing.
 - **The source widget and the prompt list are the generator panel's, borrowed
   whole.** `RefImageStrip` + `ExistingImagePicker` (`max={1}`, `autoConfirm`)
   for the first frame, `PromptList` for the takes -- none of them modified.
@@ -29,18 +51,19 @@ source images; `use-view.ts` owns everything after the first paint.
   contacts FAL, and firing them together interleaves the reservations against a
   queue that answers in its own order.
 - **The prompt is the only required input.** Every frame slot is optional, and
-  the first frame decides which endpoint runs -- `textToVideo` when empty,
-  `withImage` when set, resolved by `endpointFor`. Same shape as
-  `IMAGE_MODELS`'s `textToImage` / `withImages`. Two modes because they are
-  genuinely different acts: with a first frame you are animating something you
-  made; without one the model invents the whole shot and the prompt has to
-  carry it.
-- **Aspect options are per mode, and that is not a nicety.** `auto` exists only
-  where there is an image to match -- FAL's own enums differ, and the
-  text-to-video endpoint rejects `auto`. With a first frame, 16:9 and 9:16 mean
+  the frames decide which endpoint runs -- `textToVideo` with none,
+  `withImage` with a first, `withFirstAndLastImage` with both where the model
+  has one, all resolved by `endpointFor(model, hasFirst, hasLast)`. Different
+  acts, not a switch: with a first frame you are animating something you made,
+  with both the model solves the move between two stills, and with neither it
+  invents the whole shot and the prompt has to carry it.
+- **Aspect options are per endpoint, and that is not a nicety.** `auto` exists
+  only where there is an image to match -- FAL's own enums differ, and the
+  text-to-video endpoints reject it. With a first frame, 16:9 and 9:16 mean
   "recrop my picture", which crops and re-imagines; without one they are just
-  the output shape. `use-view` coerces the value when the mode changes, so the
-  pills never show a selection the request would refuse.
+  the output shape. `use-view` coerces the value when the endpoint changes --
+  and the duration too, since switching from LTX (6s up) to H3 (5-15) leaves
+  18s selected against a model that will not take it.
 - **The clip is ingested into our bucket, never left on FAL.** FAL's URL is
   public, unauthenticated and not ours to keep alive -- and generation is
   non-deterministic, so a URL that 404s cannot be re-created by re-running the
