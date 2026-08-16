@@ -63,6 +63,18 @@ anything one route renders lives with that route.
   most likely to be tested. The ordering is `pushRef` in `ref-images.ts` --
   pure, so it is unit-tested, because a silent eviction at the wrong end is
   invisible.
+- **"What went into this generation" has one answer, `generation-inputs.ts`**
+  (#380). The split above is why: index 0 goes over the wire as
+  `sourceImageId` and the rest as `referenceImageIds`, so the same fact lands
+  in `generation_metadata` under two keys depending on the path, and a third
+  (`parent_id`) duplicates one of them. Any surface showing inputs reads
+  `generationInputIds()` and resolves through
+  `server/generation-inputs.server.ts` — never a single metadata field.
+  Activity did read one field, and so showed nothing at all on an edit through
+  a model's image endpoint and one image too few everywhere else. The function
+  ignores `parent_id` (filing, and mutable) and `root_image_id` (ancestry, not
+  input) on purpose; both are named in its comments so the exclusions are not
+  re-litigated as oversights.
 - **Prompt origins are keyed by the enhanced string**, not by prompt index, so
   editing the text invalidates the pair instead of attributing a stale original
   (#210).
