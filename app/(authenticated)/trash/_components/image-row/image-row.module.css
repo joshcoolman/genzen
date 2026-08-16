@@ -54,6 +54,18 @@
   background: var(--surface);
 }
 
+/* The same square an ImageBox occupies, so a mixed list does not step in and
+   out as it scrolls. `contain` because a clip is 16:9 and cropping it to a
+   square loses the thing that identifies it. */
+.clip {
+  flex-shrink: 0;
+  width: var(--clip-size);
+  height: var(--clip-size);
+  border-radius: var(--radius-md);
+  background: var(--image-backing);
+  object-fit: contain;
+}
+
 .text {
   flex: 1;
   min-width: 0;
