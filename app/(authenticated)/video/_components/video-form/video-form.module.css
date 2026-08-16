@@ -1,3 +1,20 @@
+/* The column's own stack, with `GeneratorPanel`'s rhythm knob.
+ *
+ * Declared here with the same fallback rather than imported: the two modules
+ * are separate files and a custom property is the only thing that crosses that
+ * line without one importing the other. Change it in `generator-panel` and
+ * this follows; render this outside that panel and it still stands up. */
+.root {
+  --panel-rhythm: var(--space-8);
+}
+
+.root > :where(*:not(:last-child)) {
+  margin-bottom: var(--panel-rhythm);
+}
+
+/* Duration and shape share a row, as count and shape do in the panel. They
+   wrap rather than squeeze: at 20rem two labelled selects fit, and below that
+   the column is full-width anyway. */
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -10,6 +27,10 @@
   gap: var(--space-6);
 }
 
+/* One label style for the whole column -- the frame slots use it too, from
+   `video.module.css`. `GeneratorPanel` has no labels at all because a stepper
+   and a ratio picker describe themselves; a bare list of durations does not,
+   and neither does the second of two image strips. */
 .label {
   color: var(--text-muted);
   font-size: var(--text-xs);
@@ -17,16 +38,17 @@
   text-transform: uppercase;
 }
 
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
+.generate {
+  width: 100%;
 }
 
+/* Under the button rather than beside it. Beside, it competed with the price
+   for the same row and the button lost width; under, it reads as a footnote to
+   the click -- which is what it is. */
 .note {
   margin: 0;
   color: var(--text-muted);
-  font-size: var(--text-sm);
+  font-size: var(--text-3xs);
+  line-height: 1.5;
+  text-align: center;
 }

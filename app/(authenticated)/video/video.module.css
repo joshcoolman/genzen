@@ -33,13 +33,20 @@
   }
 }
 
-.source {
+/* A frame slot: its label and its strip. Two of them sit inside `VideoForm`'s
+   stack, so the space *between* the slots is that column's `--panel-rhythm` --
+   this gap is only the one under the label. */
+.frame {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: var(--space-6);
 }
 
-.sourceLabel {
+/* `video-form.module.css`'s `.label`, matched: one voice for every label down
+   the column, whether it names a frame slot or a setting. Restated rather than
+   composed because `composes:` cannot cross module files here, and two
+   declarations is cheaper than a shared stylesheet nothing else would use. */
+.frameLabel {
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-xs);

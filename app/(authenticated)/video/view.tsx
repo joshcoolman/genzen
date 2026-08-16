@@ -74,81 +74,85 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         </div>
 
         <div className={styles.controls}>
-          <Stack gap={16}>
-            {/* The generator panel's picker, in single mode (#385). Its two
-                right-hand columns are the same two numbers, read differently:
-                dollars per second, and frames rather than references. Single
-                because a clip is 20-100x the price of a still -- ticking four
-                models here would be a $20 click. No header tick and no
-                Cmd-click solo for the same reason: with one selection they
-                both mean nothing. */}
-            <ModelSelector
-              mode="single"
-              selectedIds={[model.slug]}
-              visibleModels={models.map((m) => ({
-                id: m.slug,
-                name: m.label,
-                description: m.description,
-                capability: 'video' as const,
-                price: m.pricePerSecondCents / 100,
-                capacity: frameCapacityFor(m),
-              }))}
-              onToggleSelected={selectModel}
-              stagedImageCount={sources.length + endSources.length}
-              priceLabel="$/s"
-              capacityLabel="Frames"
-              persistKey="genzen:video:model-panel:expanded"
-            />
+          <VideoForm
+            model={model}
+            prompts={prompts}
+            onUpdatePrompt={updatePrompt}
+            onAddPrompt={addPrompt}
+            onRemovePrompt={removePrompt}
+            onClearPrompts={clearPrompts}
+            pendingCount={pendingCount}
+            duration={duration}
+            onDurationChange={setDuration}
+            aspectRatio={aspectRatio}
+            aspectOptions={aspectOptions}
+            onAspectRatioChange={setAspectRatio}
+            estimatedCost={estimatedCost}
+            isSubmitting={isSubmitting}
+            canSubmit={canSubmit}
+            onSubmit={submit}
+            /* Under the prompts, where the generator panel puts its reference
+               strip. The generator panel's widget, twice, with one picker
+               behind both -- a second dialog would be the same component
+               mounted twice to answer the same question. Labelled, which that
+               panel's single strip is not: two slots that do different things
+               cannot both be unlabelled. */
+            framesSlot={
+              <>
+                <div className={styles.frame}>
+                  <p className={styles.frameLabel}>First frame (optional)</p>
+                  <RefImageStrip
+                    images={sources}
+                    max={1}
+                    onAdd={() => openPicker('first')}
+                    onRemove={clearSources}
+                    disabled={isSubmitting}
+                  />
+                </div>
 
-            {/* The generator panel's Reference images widget, twice, with its
-                picker behind both. One slot each: the endpoint takes a single
-                still per end. */}
-            <div className={styles.source}>
-              <p className={styles.sourceLabel}>First frame (optional)</p>
-              <RefImageStrip
-                images={sources}
-                max={1}
-                onAdd={() => openPicker('first')}
-                onRemove={clearSources}
-                disabled={isSubmitting}
+                {/* Optional, and it stays visible when empty rather than
+                    hiding behind a disclosure -- an empty slot is the only
+                    thing that says the capability exists. */}
+                {modelTakesEndFrame && hasFirstFrame && (
+                  <div className={styles.frame}>
+                    <p className={styles.frameLabel}>Last frame (optional)</p>
+                    <RefImageStrip
+                      images={endSources}
+                      max={1}
+                      onAdd={() => openPicker('last')}
+                      onRemove={clearEndSources}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                )}
+              </>
+            }
+            /* Last, as it is in the generator panel. Single-select (#385): a
+               clip is 20-100x the price of a still, so ticking four models
+               would be a $20 click. Its two right-hand columns are the same
+               two numbers read differently -- dollars per second, and frames
+               rather than references. No header tick and no Cmd-click solo,
+               because with one selection both mean nothing. */
+            modelSlot={
+              <ModelSelector
+                mode="single"
+                selectedIds={[model.slug]}
+                visibleModels={models.map((m) => ({
+                  id: m.slug,
+                  name: m.label,
+                  description: m.description,
+                  capability: 'video' as const,
+                  price: m.pricePerSecondCents / 100,
+                  capacity: frameCapacityFor(m),
+                }))}
+                onToggleSelected={selectModel}
+                stagedImageCount={sources.length + endSources.length}
+                priceLabel="$/s"
+                capacityLabel="Frames"
+                persistKey="genzen:video:model-panel:expanded"
               />
-            </div>
-
-            {/* Optional, and it stays visible when empty rather than hiding
-                behind a disclosure -- an empty slot is the only thing that
-                says the capability exists. */}
-            {modelTakesEndFrame && hasFirstFrame && (
-              <div className={styles.source}>
-                <p className={styles.sourceLabel}>Last frame (optional)</p>
-                <RefImageStrip
-                  images={endSources}
-                  max={1}
-                  onAdd={() => openPicker('last')}
-                  onRemove={clearEndSources}
-                  disabled={isSubmitting}
-                />
-              </div>
-            )}
-
-            <VideoForm
-              model={model}
-              prompts={prompts}
-              onUpdatePrompt={updatePrompt}
-              onAddPrompt={addPrompt}
-              onRemovePrompt={removePrompt}
-              onClearPrompts={clearPrompts}
-              pendingCount={pendingCount}
-              duration={duration}
-              onDurationChange={setDuration}
-              aspectRatio={aspectRatio}
-              aspectOptions={aspectOptions}
-              onAspectRatioChange={setAspectRatio}
-              estimatedCost={estimatedCost}
-              isSubmitting={isSubmitting}
-              canSubmit={canSubmit}
-              onSubmit={submit}
-            />
-          </Stack>
+            }
+          />
         </div>
       </div>
     </Stack>
