@@ -185,6 +185,26 @@ export function videoModelBySlug(slug: string): VideoModel | undefined {
 }
 
 /**
+ * Cheapest first, which is what the picker renders.
+ *
+ * The same rule the image lineup follows (`byPrice` in
+ * `model-selector/unified-models.ts`, #341): the array's own order is the order
+ * models were added, which says nothing, and price is the one axis worth
+ * reading down a column. It matters more here than it does there -- the spread
+ * is $0.08 to $0.17 per *second*, so the bottom of the list is twice the top
+ * for the same clip.
+ *
+ * Display only. `DEFAULT_VIDEO_MODEL` is still the array's first entry, exactly
+ * as the image side keeps its default independent of the sorted view: what you
+ * start on is a judgement about quality, not a race to the cheapest.
+ */
+export function videoModelsByPrice(): Array<VideoModel> {
+  return [...VIDEO_MODELS].sort(
+    (a, b) => a.pricePerSecondCents - b.pricePerSecondCents,
+  )
+}
+
+/**
  * The endpoint this request goes to, and what it takes.
  *
  * Three modes, not two: a model may put first+last frame somewhere else

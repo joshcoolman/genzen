@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_VIDEO_MODEL,
   VIDEO_MODELS,
   aspectRatiosFor,
   endpointFor,
   frameCapacityFor,
   supportsEndImage,
   videoModelBySlug,
+  videoModelsByPrice,
 } from './models'
 
 const LTX = videoModelBySlug('ltx-2.5-fast')!
@@ -116,6 +118,17 @@ describe('entries', () => {
       expect(reachable, model.slug).toBe(true)
     }
     expect(frameCapacityFor(FLUX)).toBe(2)
+  })
+
+  it('lists cheapest first for the picker, without moving the default', () => {
+    // The same rule the image lineup follows. It matters more here: the spread
+    // is $0.08 to $0.17 per *second*, so the bottom of the list is twice the
+    // top for the same clip.
+    const prices = videoModelsByPrice().map((m) => m.pricePerSecondCents)
+    expect(prices).toEqual([...prices].sort((a, b) => a - b))
+    // Display only -- what you start on is a judgement about quality, and the
+    // cheapest model is not automatically it.
+    expect(DEFAULT_VIDEO_MODEL.slug).toBe(VIDEO_MODELS[0].slug)
   })
 
   it('starts every model on a duration it actually offers', () => {
