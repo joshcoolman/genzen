@@ -4,19 +4,38 @@ import { Clapperboard } from 'lucide-react'
 import { formatCost } from '../../models'
 import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
+import type { ReactNode } from 'react'
 import type { VideoModel } from '../../models'
-import { ActionButton, SingleSelect, Stack } from '#/components'
+import { ActionButton, SingleSelect } from '#/components'
 
 /**
- * Prompts, duration, aspect.
+ * The control column: prompts, frames, what shape and how long, Generate.
  *
- * The prompt list is the generator panel's, unchanged: one first frame can
- * carry several takes, and each prompt is its own clip. Duration and aspect
- * options are read off the model record rather than hardcoded, so a second
- * entry in `models.ts` needs nothing here.
+ * **Ordered like `GeneratorPanel` on purpose** -- prompt first, images under
+ * it, the request's own settings below those, then a full-width Generate, with
+ * the model picker last. It should feel like the same room: the two surfaces do
+ * the same job and a person moves between them in one session. It inherits
+ * `--panel-rhythm` from that panel's stylesheet for the same reason -- one
+ * value for every gap down a narrow column, because the eye reads unequal gaps
+ * as misalignment rather than as hierarchy.
+ *
+ * Not a copy of it. The differences are all real:
+ *
+ * - **Two image slots, and they are labelled.** `GeneratorPanel` dropped its
+ *   "Reference images" heading because one unlabelled strip under a prompt is
+ *   unambiguous. Two are not -- first frame and last frame do different things
+ *   -- so they carry the same quiet label the settings below use.
+ * - **Duration where the count stepper is.** Video generates one clip per
+ *   prompt; there is no "3 each" to ask for.
+ * - **The aspect control can be absent entirely**, because some endpoints have
+ *   no `aspect_ratio` param at all (#385).
+ * - **The model picker is single-select**, so the count on the button is
+ *   prompts alone rather than prompts x models x gens.
  */
 export function VideoForm({
   model,
+  framesSlot,
+  modelSlot,
   prompts,
   onUpdatePrompt,
   onAddPrompt,
@@ -34,6 +53,12 @@ export function VideoForm({
   onSubmit,
 }: {
   model: VideoModel
+  /** The first/last frame strips, between the prompts and the settings --
+   *  where the reference strip sits in `GeneratorPanel`. Passed in because the
+   *  view owns the picker they open. */
+  framesSlot: ReactNode
+  /** The model picker, last, as it is in `GeneratorPanel`. */
+  modelSlot: ReactNode
   prompts: Array<string>
   onUpdatePrompt: (index: number, value: string) => void
   onAddPrompt: () => void
@@ -43,7 +68,8 @@ export function VideoForm({
   duration: number
   onDurationChange: (value: number) => void
   aspectRatio: string
-  /** Mode-dependent: `auto` exists only when a first frame is set. */
+  /** Per endpoint. **Empty means there is no control**, not that no ratio
+   *  works -- H3's image endpoint follows the frame it is given (#385). */
   aspectOptions: Array<string>
   onAspectRatioChange: (value: string) => void
   estimatedCost: number
@@ -52,7 +78,7 @@ export function VideoForm({
   onSubmit: () => void
 }) {
   return (
-    <Stack gap={12}>
+    <div className={styles.root}>
       <PromptList
         prompts={prompts}
         onUpdatePrompt={onUpdatePrompt}
@@ -66,6 +92,8 @@ export function VideoForm({
           additional: 'Another take...',
         }}
       />
+
+      {framesSlot}
 
       <div className={styles.controls}>
         <div className={styles.control}>
@@ -84,10 +112,8 @@ export function VideoForm({
           />
         </div>
 
-        {/* Absent, not empty: MiniMax H3's image endpoint has no
-            `aspect_ratio` param -- the output follows the frame it is given --
-            so there is nothing to choose. A control with no options would say
-            the choice exists and had been taken away. */}
+        {/* Absent, not empty. A control with no options would say the choice
+            exists and had been taken away. */}
         {aspectOptions.length > 0 && (
           <div className={styles.control}>
             <span className={styles.label}>Aspect</span>
@@ -105,22 +131,27 @@ export function VideoForm({
         )}
       </div>
 
-      <div className={styles.footer}>
-        <p className={styles.note}>
-          {model.label} · {model.resolution}
-          {model.supportsAudio ? ' · audio included' : ''}
-        </p>
-        <ActionButton
-          icon={<Clapperboard size={16} />}
-          loading={isSubmitting}
-          loadingText="Queueing"
-          disabled={!canSubmit}
-          onClick={onSubmit}
-        >
-          {pendingCount > 1 ? `Generate ${pendingCount}` : 'Generate'}{' '}
-          {formatCost(estimatedCost)}
-        </ActionButton>
-      </div>
-    </Stack>
+      {/* The button takes the row whole, as it does in the panel: its label
+          carries the price, which is the only warning that a click on a 20s
+          clip costs three dollars. */}
+      <ActionButton
+        icon={<Clapperboard size={16} />}
+        loading={isSubmitting}
+        loadingText="Queueing"
+        disabled={!canSubmit}
+        onClick={onSubmit}
+        className={styles.generate}
+      >
+        {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate'}{' '}
+        {formatCost(estimatedCost)}
+      </ActionButton>
+
+      <p className={styles.note}>
+        {model.label} · {model.resolution}
+        {model.supportsAudio ? ' · audio included' : ''}
+      </p>
+
+      {modelSlot}
+    </div>
   )
 }

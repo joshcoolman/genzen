@@ -34,11 +34,30 @@ source images; `use-view.ts` owns everything after the first paint.
   the price of a still, so the image panel's "tick four models and fire" would
   be a $20 click. No header tick and no Cmd-click solo, because with one
   selection both mean nothing.
-- **The source widget and the prompt list are the generator panel's, borrowed
-  whole.** `RefImageStrip` + `ExistingImagePicker` (`max={1}`, `autoConfirm`)
-  for the first frame, `PromptList` for the takes -- none of them modified.
-  Blocked out rather than laid out: the point was to stop hand-rolling
-  equivalents, not to settle the arrangement.
+- **The control column is ordered like `GeneratorPanel`, and that is the
+  point.** Prompts, then the frame slots, then the settings, then a full-width
+  Generate, then the model picker -- the same order, inheriting the same
+  `--panel-rhythm` custom property, so the two surfaces read as the same room.
+  A person moves between them in one session. It is not a copy: two image
+  slots instead of one (and **labelled**, which that panel's single strip is
+  not -- two slots that do different things cannot both be unlabelled),
+  duration where the count stepper is, an aspect control that can be absent
+  entirely, and a single-select picker. `RefImageStrip`,
+  `ExistingImagePicker` (`max={1}`, `autoConfirm`) and `PromptList` are
+  borrowed unmodified; the frames and the picker are passed into `VideoForm` as
+  slots, because the view owns the picker dialog they open.
+- **A clip's card is `video-thumb/`, not `Thumbnail`.** The difference is the
+  `<video>`: a clip has a duration, native controls, and no poster frame
+  anywhere in the app, so bending the primitive every still renders through
+  around a media element would serve one route at everything's expense. What it
+  *does* borrow is the type scale -- the model badge is `--text-3xs` in the
+  picture's corner and the prompt is `--text-3xs` at 1.5 clamped to three
+  lines, both matching the image card exactly. Hand-written, they had drifted
+  to `--text-sm` and no badge at all, so a clip and a still read as different
+  kinds of record when they are the same row in the same table. **No overlay
+  actions**: native controls already own the bottom edge, and a second set of
+  buttons above them is two rows of controls arguing, so the verbs are text in
+  the caption. `video-list/` is now the grid and nothing else.
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the
   shot goes -- the same instruction a prompt spends three sentences failing to
