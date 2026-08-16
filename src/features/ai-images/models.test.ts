@@ -32,26 +32,6 @@ const LEGACY_ALL_IMAGE_MODELS = [
     useCase: 'Cheap, high-quality realism — great daily driver',
   },
   {
-    id: 'fal-ai/gpt-image-1.5',
-    name: 'GPT Image 1.5',
-    description: 'OpenAI, high-quality generation',
-    category: 'Specialized',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/gpt-image-1.5/edit',
-    displayPrice: '~$0.04/img',
-    useCase: 'OpenAI quality — works with references',
-  },
-  {
-    id: 'fal-ai/gpt-image-2',
-    name: 'GPT Image 2',
-    description: 'OpenAI, quality tiers + inpainting',
-    category: 'Specialized',
-    supportsImageInput: true,
-    imageInputModelId: 'fal-ai/gpt-image-2/edit',
-    displayPrice: '~$1.00/img',
-    useCase: 'Premium OpenAI — use when you know what you want',
-  },
-  {
     id: 'fal-ai/bytedance/seedream/v4.5/text-to-image',
     name: 'Seedream v4.5',
     description: 'ByteDance, multi-image reference',
@@ -93,8 +73,6 @@ const LEGACY_ALL_IMAGE_MODELS = [
  * out, because a fixture quietly edited to match the code pins nothing.
  */
 const LEGACY_EDIT_CAPS: Record<string, number> = {
-  'fal-ai/gpt-image-1.5/edit': 4,
-  'fal-ai/gpt-image-2/edit': 4,
   'fal-ai/nano-banana-2/edit': 3,
   'fal-ai/bytedance/seedream/v4/edit': 10,
   'fal-ai/bytedance/seedream/v4.5/edit': 10,
@@ -284,8 +262,8 @@ describe('imageCapacityFor', () => {
   it('resolves either endpoint of a two-endpoint model to the same capacity', () => {
     // Canvas selects by the edit endpoint and Images by the text one; a cap
     // that disagreed between them would truncate on exactly one surface.
-    expect(imageCapacityFor('fal-ai/gpt-image-1.5')).toBe(
-      imageCapacityFor('fal-ai/gpt-image-1.5/edit'),
+    expect(imageCapacityFor('fal-ai/nano-banana-2')).toBe(
+      imageCapacityFor('fal-ai/nano-banana-2/edit'),
     )
   })
 
@@ -300,7 +278,17 @@ describe('imageCapacityFor', () => {
 
 describe('getModelName', () => {
   it('names both endpoints of a two-endpoint model', () => {
-    expect(getModelName('fal-ai/gpt-image-1.5')).toBe('GPT Image 1.5')
+    expect(getModelName('fal-ai/nano-banana-2')).toBe('Nano Banana 2')
+    expect(getModelName('fal-ai/nano-banana-2/edit')).toBe('Nano Banana 2')
+  })
+
+  it('still names both endpoints of a retired two-endpoint model', () => {
+    // The GPT pair left the lineup on speed (#389). Their rows did not, and a
+    // model with two endpoints needs both named or half its images end up
+    // labelled with a raw id -- the same trap Seedream v4.5's `/edit` suffix
+    // set in #367.
+    expect(getModelName('fal-ai/gpt-image-2')).toBe('GPT Image 2')
+    expect(getModelName('fal-ai/gpt-image-2/edit')).toBe('GPT Image 2')
     expect(getModelName('fal-ai/gpt-image-1.5/edit')).toBe('GPT Image 1.5')
   })
 

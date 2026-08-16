@@ -74,28 +74,6 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     useCase: 'Cheap, high-quality realism — great daily driver',
   },
   {
-    slug: 'gpt-image-1-5',
-    name: 'GPT Image 1.5',
-    description: 'OpenAI, high-quality generation',
-    category: 'Specialized',
-    textToImage: 'fal-ai/gpt-image-1.5',
-    withImages: 'fal-ai/gpt-image-1.5/edit',
-    maxRefs: 4,
-    price: 0.04,
-    useCase: 'OpenAI quality — works with references',
-  },
-  {
-    slug: 'gpt-image-2',
-    name: 'GPT Image 2',
-    description: 'OpenAI, quality tiers + inpainting',
-    category: 'Specialized',
-    textToImage: 'fal-ai/gpt-image-2',
-    withImages: 'fal-ai/gpt-image-2/edit',
-    maxRefs: 4,
-    price: 1.0,
-    useCase: 'Premium OpenAI — use when you know what you want',
-  },
-  {
     slug: 'seedream-v4-5',
     name: 'Seedream v4.5',
     description: 'ByteDance, multi-image reference',
@@ -324,6 +302,16 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // 2.0.
   'fal-ai/flux/schnell': 'FLUX Schnell',
   'fal-ai/flux/dev': 'FLUX Dev',
+  // Cut on speed rather than output: both were slow enough through FAL to be
+  // not worth the wait. FAL carries faster-looking GPT surfaces we never tried
+  // -- `fal-ai/gpt-image-1-mini`, and an `openai/`-namespace passthrough -- and
+  // whether either earns a slot back is a research issue, not a guess made
+  // here. We also never sent a `quality` param, so the default may be the
+  // whole story.
+  'fal-ai/gpt-image-1.5': 'GPT Image 1.5',
+  'fal-ai/gpt-image-1.5/edit': 'GPT Image 1.5',
+  'fal-ai/gpt-image-2': 'GPT Image 2',
+  'fal-ai/gpt-image-2/edit': 'GPT Image 2',
   // Cut on its results rather than its wiring. Both ids are here because it
   // had two: rows made with an image carry the Kontext endpoint, and rows made
   // without one carry FLUX Dev above, which it borrowed.
