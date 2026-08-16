@@ -50,7 +50,7 @@ source images; `use-view.ts` owns everything after the first paint.
   `<video>`: a clip has a duration, native controls, and no poster frame
   anywhere in the app, so bending the primitive every still renders through
   around a media element would serve one route at everything's expense. What it
-  *does* borrow is the type scale -- the model badge is `--text-3xs` in the
+  _does_ borrow is the type scale -- the model badge is `--text-3xs` in the
   picture's corner and the prompt is `--text-3xs` at 1.5 clamped to three
   lines, both matching the image card exactly. Hand-written, they had drifted
   to `--text-sm` and no badge at all, so a clip and a still read as different
