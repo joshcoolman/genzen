@@ -27,9 +27,8 @@ export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
  *
  * FAL offers image endpoints for several models carried here as text-only
  * (Kling v3 and Omni 3 have `/image-to-image`, Recraft V3 has
- * `/image-to-image`, Grok Imagine has an `/edit` that requires only `prompt`,
- * FLUX Dev has `/image-to-image`). Wiring one is now filling in `withImages`
- * and `maxRefs` -- see #190.
+ * `/image-to-image`, FLUX Dev has `/image-to-image`). Wiring one is now filling
+ * in `withImages` and `maxRefs` -- see #190.
  */
 export interface ModelEntry {
   /** Stable identity. Survives an endpoint moving; never sent to FAL. */
@@ -192,6 +191,22 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     price: 0.009,
     useCase: 'Fastest of the cheap tier — re-renders rather than preserves',
   },
+  {
+    slug: 'grok-imagine-image-2',
+    name: 'Grok Imagine 2.0',
+    description: 'xAI, text-to-image and instruct editing',
+    category: 'Specialized',
+    textToImage: 'xai/grok-imagine-image/v2.0/text-to-image',
+    withImages: 'xai/grok-imagine-image/v2.0/edit',
+    // "A maximum of 3 images are supported" per FAL's schema, and capacity is
+    // maxRefs + 1.
+    maxRefs: 2,
+    // $0.04 (low) / $0.06 (medium) per image at 1k, $0.06 / $0.08 at 2k, plus
+    // $0.01 per input image on the edit endpoint. We send neither `quality` nor
+    // `resolution`, so this is FAL's defaults: medium at 1k.
+    price: 0.06,
+    useCase: 'xAI look — edits up to three images at once',
+  },
 ]
 
 /**
@@ -315,8 +330,13 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
 
   // Cut from the lineup: no image endpoint wired, so they could not honour
   // "attach an image or not and it works". FAL does offer image endpoints for
-  // Kling, Recraft and Grok -- re-adding any of them is one entry with
-  // `withImages` set. FLUX Schnell has no image variant at FAL at all.
+  // Kling and Recraft -- re-adding either is one entry with `withImages` set,
+  // which is how Grok came back as the versioned v2.0 pair. FLUX Schnell has no
+  // image variant at FAL at all.
+  //
+  // `xai/grok-imagine-image` is the unversioned endpoint rows were written with
+  // before that; it keeps the unversioned name so old rows do not claim to be
+  // 2.0.
   'fal-ai/flux/schnell': 'FLUX Schnell',
   'fal-ai/flux/dev': 'FLUX Dev',
   'fal-ai/kling-image/v3/text-to-image': 'Kling v3',
