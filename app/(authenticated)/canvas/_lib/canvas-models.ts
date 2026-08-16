@@ -21,8 +21,6 @@ import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
  */
 const CURATED_CANVAS_MODEL_SLUGS: Array<string> = [
   'nano-banana-2', // trusted; reasoning-guided
-  'gpt-image-2', // trusted; premium OpenAI
-  'gpt-image-1-5', // trusted; OpenAI quality
   'seedream-v4-5', // multi-image reference realism
   'flux-kontext-pro', // trusted; pro img2img refinement
 ]
