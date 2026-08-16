@@ -3,13 +3,13 @@
 import type {
   ActivityEntryDetail,
   ActivityGenerationMetadata,
-  ActivityReferenceImage,
   GenerationStatus,
 } from '#/features/activity/types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { getModelName } from '#/features/ai-images/models'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
+import { resolveGenerationInputs } from '#/features/ai-images/server/generation-inputs.server'
 
 interface GetActivityEntryInput {
   id: string
@@ -107,47 +107,14 @@ export async function getActivityEntry(
   const r = row
   const m = meta(r)
 
-  const refIds = Array.isArray(
-    (m as { reference_image_ids?: unknown }).reference_image_ids,
+  // Every alias, not just `reference_image_ids` (#380). This block used to
+  // read that one field, so an edit through a model's image endpoint -- which
+  // records its input as `source_image_id` -- showed no references at all
+  // while plainly having had one.
+  const referenceImages = await resolveGenerationInputs(
+    r.generation_metadata,
+    userId,
   )
-    ? (
-        (m as { reference_image_ids?: Array<unknown> }).reference_image_ids ??
-        []
-      ).filter((v): v is string => typeof v === 'string')
-    : []
-
-  let referenceImages: Array<ActivityReferenceImage> = []
-  if (refIds.length > 0) {
-    const refRows = await sql<
-      Array<{
-        id: string
-        storage_path: string | null
-        deleted_at: Date | null
-      }>
-    >`
-      select id, storage_path, deleted_at from user_images
-      where id in ${sql(refIds)} and user_id = ${userId}
-    `
-    const byId = new Map<
-      string,
-      { storage_path: string | null; deleted_at: Date | null }
-    >()
-    for (const rr of refRows) {
-      byId.set(rr.id, {
-        storage_path: rr.storage_path,
-        deleted_at: rr.deleted_at,
-      })
-    }
-    // Preserve metadata order; missing refs become null storage paths.
-    referenceImages = refIds.map((id) => {
-      const found = byId.get(id)
-      return {
-        id,
-        storagePath: found?.storage_path ?? null,
-        isDeleted: found?.deleted_at != null,
-      }
-    })
-  }
 
   return {
     id: r.id,

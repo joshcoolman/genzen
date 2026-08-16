@@ -2,7 +2,7 @@ Chronological record of every AI generation (image, success + failure, including
 
 ## Key Files
 
-- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage`, `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
+- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage` (an alias of ai-images' `GenerationInputImage`, not its own shape), `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
 - `server/list-activity.action.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 
 Two files left here when the Activity route was restructured, because each had a
@@ -40,6 +40,6 @@ Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted
 - FAL cost extraction is defensive: probes `cost_cents`, `price_cents`, `cost`, `price`, and nested `metering` / `fal_billing` paths. None has ever been observed in a live image-queue response — expand if one appears.
 - Model filter IDs use JSONB key `generation_metadata->>model`. Older rows that lack `model` in metadata are filtered out when any model is selected — by design.
 - Page size is 50 rows, inside the three-active-day window. `created_at::date` buckets in UTC, so a run late at night local time lands on the next day's bucket — not worth a timezone round trip at this granularity.
-- Detail panel fetches reference images from `generation_metadata.reference_image_ids` array; missing refs show "missing" placeholder. Refs preserve metadata order.
+- The detail panel's References block shows **every image the generation was given**, resolved by `ai-images/server/generation-inputs.server.ts` (#380) -- not one metadata field. The same fact is written as `reference_image_ids` or `source_image_id` depending on the submit path, and reading only the first meant an edit through a model's image endpoint showed no references at all. `parent_id` (filing) and `root_image_id` (ancestry) are deliberately excluded. Metadata order is preserved; a missing ref shows a "missing" placeholder and a trashed one is marked rather than dropped.
 - No realtime: the channel went with #173/#174. FAL polling (5s interval) runs only while pending rows exist on the current page, and a settled row triggers a silent refetch.
 - Arrow keys (left/right) cycle through entries when detail panel is open; skips when focus is in an input/textarea.
