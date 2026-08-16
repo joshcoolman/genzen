@@ -9,6 +9,7 @@ import {
   estimateCostCents,
 } from './models'
 import type { VideoRecord } from './_actions/generate-video.action'
+import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
@@ -107,6 +108,30 @@ export function useView(initialVideos: Array<VideoRecord>) {
   }, [])
 
   useGenerationPoll(pendingSince, refresh)
+
+  /**
+   * Bin a clip. `deleteGalleryImage` is the gallery's own delete, unchanged: a
+   * clip is a `user_images` row like any other, so the three outcomes it
+   * already decides between are the three this route wants -- a generating clip
+   * is cancelled at FAL first, a generating or failed row goes outright because
+   * Trash has nothing to offer for a clip that does not exist, and a finished
+   * one soft-deletes into Trash, which is already listing them (#305).
+   *
+   * The card leaves on the click and a failure re-reads, rather than this hook
+   * remembering what it removed -- the same trade the gallery makes.
+   */
+  const deleteVideo = useCallback(
+    async (id: string) => {
+      setVideos((current) => current.filter((video) => video.id !== id))
+      try {
+        await deleteGalleryImage(id)
+      } catch {
+        toast.error('Could not delete that clip')
+        await refresh()
+      }
+    },
+    [refresh],
+  )
 
   const openPicker = useCallback(
     (target: 'first' | 'last') => {
@@ -233,6 +258,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     clearSources,
     clearEndSources,
     videos,
+    deleteVideo,
     prompts,
     updatePrompt,
     addPrompt,

@@ -23,6 +23,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     clearSources,
     clearEndSources,
     videos,
+    deleteVideo,
     prompts,
     updatePrompt,
     addPrompt,
@@ -64,7 +65,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
       <div className={styles.columns}>
         <div className={styles.clips}>
-          <VideoList videos={videos} />
+          <VideoList videos={videos} onDelete={(id) => void deleteVideo(id)} />
         </div>
 
         <div className={styles.controls}>

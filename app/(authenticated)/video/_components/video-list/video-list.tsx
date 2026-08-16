@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Download, Loader2 } from 'lucide-react'
+import { AlertTriangle, Download, Loader2, Trash2 } from 'lucide-react'
 import { formatCost } from '../../models'
 import styles from './video-list.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
@@ -25,7 +25,13 @@ function durationOf(video: VideoRecord): string | null {
  * paint frame one instead of a black rectangle. Seeking works because
  * `/img/[id]` answers range requests.
  */
-export function VideoList({ videos }: { videos: Array<VideoRecord> }) {
+export function VideoList({
+  videos,
+  onDelete,
+}: {
+  videos: Array<VideoRecord>
+  onDelete: (id: string) => void
+}) {
   if (videos.length === 0) {
     return (
       <EmptyState title="No clips yet">
@@ -78,6 +84,20 @@ export function VideoList({ videos }: { videos: Array<VideoRecord> }) {
                     Download
                   </a>
                 ) : null}
+                {/* On every card, not just finished ones: clearing a failure is
+                    the commonest reason to want this, and on a generating clip
+                    it is the only way to say "stop". Unconfirmed, like the
+                    gallery's -- a finished clip goes to Trash, and the two that
+                    do not have no picture to lose. */}
+                <button
+                  type="button"
+                  className={styles.delete}
+                  onClick={() => onDelete(video.id)}
+                  aria-label="Delete clip"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
               </div>
             </div>
           </article>

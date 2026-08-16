@@ -50,7 +50,12 @@ export async function listTrashedImages(): Promise<TrashPayload> {
     from user_images
     where user_id = ${userId}
       and deleted_at is not null
-      and source in ('upload', 'ai_generated')
+      -- ai_video is here because Video can now bin a clip, and because
+      -- permanentlyDeleteImages() with no ids already destroys every trashed
+      -- row whatever its source. Left out, a trashed clip was invisible in the
+      -- one place that could restore it and still swept by Empty Trash -- gone
+      -- from a list it was never on.
+      and source in ('upload', 'ai_generated', 'ai_video')
     -- Most-recently-deleted first, and it is load-bearing: Trash is the only
     -- safety net left now that nothing reversible asks first (#236). id breaks
     -- the tie because a batch trash writes one now() across every row, and

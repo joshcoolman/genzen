@@ -54,9 +54,20 @@ source images; `use-view.ts` owns everything after the first paint.
 - **No poster frame, deliberately.** There is no ffmpeg on the server, so
   nothing can extract one; `thumbnail_path` stays NULL and
   `<video preload="metadata">` lets the browser paint frame one.
+- **Delete is the gallery's, unchanged.** `deleteGalleryImage` already decides
+  between the three outcomes this route wants -- a generating clip is cancelled
+  at FAL first, a generating or failed row goes outright because Trash has
+  nothing to offer for a clip that does not exist, and a finished one
+  soft-deletes into Trash. The card is on every clip, not just finished ones:
+  clearing a failure is the commonest reason to want it, and on a generating
+  clip it is the only way to say stop. **Trash had to be told about `ai_video`
+  for this** -- its list filtered to `upload` and `ai_generated` while its
+  Empty Trash destroyed every trashed row regardless, so a binned clip was
+  invisible in the one place that could restore it and swept anyway.
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
-'ai_generated')`. Activity and Trash pick them up for free. Putting videos in
+'ai_generated')`. Activity picks them up for free; Trash does since the delete
+  above. Putting videos in
   the library is a matter of teaching the card and the lightbox `<video>` --
   that render change is what V1 declined, not the storage.
 - **No Retry.** The endpoint exposes no seed, so an identical request returns a
