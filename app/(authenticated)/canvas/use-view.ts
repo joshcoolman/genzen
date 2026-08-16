@@ -9,6 +9,7 @@ import { useIngest } from './_hooks/use-ingest'
 import { useAutosave } from './_hooks/use-autosave'
 import { useReconcile } from './_hooks/use-reconcile'
 import { useCanvasHotkeys } from './_hooks/use-canvas-hotkeys'
+import { useCanvasPrefs } from './_hooks/use-canvas-prefs'
 import { useCanvasGenerate } from './_components/canvas-generate-dialog/use-canvas-generate'
 import type { CanvasGroup, CanvasImage, DragMode } from './_lib/types'
 // Explicitly imported: `CanvasState` is also a lib.dom global, so without this
@@ -34,12 +35,15 @@ export function useView(initial: CanvasState) {
   const [images, setImages] = useState<Array<CanvasImage>>(seed.images)
   const [groups, setGroups] = useState<Array<CanvasGroup>>(initial.groups)
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
     imageId: string
   } | null>(null)
   const dialogOpenRef = useRef(false)
+
+  const prefs = useCanvasPrefs()
 
   const { user } = useAuth()
   const {
@@ -148,8 +152,11 @@ export function useView(initial: CanvasState) {
     gRef.current = groups
   }, [groups])
   useEffect(() => {
-    dialogOpenRef.current = canvasGen.isOpen || libraryOpen
-  }, [canvasGen.isOpen, libraryOpen])
+    // The settings popover counts. It is not a dialog, so nothing stands the
+    // hotkeys down for it automatically -- and with it open, Space would still
+    // pan and Backspace would still take the selection off the board (#394).
+    dialogOpenRef.current = canvasGen.isOpen || libraryOpen || settingsOpen
+  }, [canvasGen.isOpen, libraryOpen, settingsOpen])
 
   /* -- Pointer events -- */
 
@@ -388,6 +395,10 @@ export function useView(initial: CanvasState) {
     libraryImageUrls,
     libraryLoading,
     onLibraryConfirm,
+    // settings
+    prefs,
+    settingsOpen,
+    setSettingsOpen,
     // pointer + input handlers
     onPointerDown,
     onPointerMove,

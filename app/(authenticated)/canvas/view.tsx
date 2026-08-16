@@ -5,6 +5,7 @@ import { getBounds } from './_lib/geometry'
 import { CANVAS_MAX_GROUP_SELECTION } from './_lib/canvas-models'
 import { useView } from './use-view'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
+import { CanvasSettings } from './_components/canvas-settings/canvas-settings'
 import { CanvasSurface } from './_components/canvas-surface/canvas-surface'
 import { ImageCard } from './_components/image-card/image-card'
 import { GroupBackground } from './_components/group-background/group-background'
@@ -59,6 +60,9 @@ export function View({ initial }: ViewProps) {
     libraryImageUrls,
     libraryLoading,
     onLibraryConfirm,
+    prefs,
+    settingsOpen,
+    setSettingsOpen,
     onPointerDown,
     onPointerMove,
     onPointerUp,
@@ -115,6 +119,7 @@ export function View({ initial }: ViewProps) {
         containerRef={containerRef}
         transform={transform}
         panMode={spaceHeld}
+        marqueeMode={!!marquee}
         onPointerDown={(e) => {
           if (contextMenu) setContextMenu(null)
           onPointerDown(e)
@@ -156,6 +161,9 @@ export function View({ initial }: ViewProps) {
         {images
           .filter(
             (img) =>
+              // Off by default (#394), and the zoom gate still applies on top:
+              // switched on but zoomed out, the labels are noise either way.
+              prefs.showModelLabels &&
               transform.scale >= MODEL_LABEL_MIN_SCALE &&
               !img.pending &&
               !img.failed &&
@@ -244,6 +252,13 @@ export function View({ initial }: ViewProps) {
           zoomPct={Math.round(transform.scale * 100)}
           onUpload={() => fileInputRef.current?.click()}
           onLibrary={() => setLibraryOpen(true)}
+          settings={
+            <CanvasSettings
+              prefs={prefs}
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+            />
+          }
         />
 
         <input

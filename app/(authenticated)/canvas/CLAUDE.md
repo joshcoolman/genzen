@@ -116,7 +116,13 @@ Login's `centered-panel`.
   which is why it is not `EmptyState`)
 - `context-menu`, `drop-notice`
 - `selection-actions` -- fixed bottom toolbar: upload, library, arrange,
-  group/ungroup, zoom display
+  group/ungroup, zoom display. Takes the settings control as a `settings` slot
+  rather than props, so the bar stays layout and never learns what a preference
+  is
+- `canvas-settings` -- the gear and its popover, left of the first divider with
+  the other canvas-level controls. Its open state is lifted into `use-view` so
+  it can feed `dialogOpenRef`: a popover is not a dialog, so without that Space
+  still pans and Backspace still clears the board underneath it
 - `canvas-generate-dialog` -- wraps `GeneratorPanel` from ai-images; overrides
   `handleGenerate` with the optimistic placeholder flow, single and group
 
@@ -149,6 +155,10 @@ them.
 - `use-removal.ts` -- remove-from-canvas, and dismissing a failed tile.
 - `use-reconcile.ts` -- place-what-is-unplaced, once per mount.
 - `use-autosave.ts` -- the 500ms debounce and its unload flush.
+- `use-canvas-prefs.ts` -- display preferences, one JSON blob in localStorage
+  under `genzen:canvas-prefs`. **Per browser, never per canvas**: nothing here
+  is user data, so it must not reach the `canvases` row or the arrangement save.
+  `showModelLabels` is off by default (#394).
 - `use-canvas-hotkeys.ts` -- the eleven bindings. There is no undo (#373):
   it rewound arrangement, and arrangement is the thing the board is least
   precious about.
@@ -222,6 +232,11 @@ them.
   back on screen, the rows stayed deleted, the next load dropped them for good,
   and it looked like it worked
 - Zoom range: 0.02 to 1.0 scale (default 0.5)
+- **Cursors are state, never `:active` on the surface.** Cards live inside
+  `.canvas`, so `.canvas:active` also fires on a press that landed on a card --
+  which is a drag, not a marquee. The crosshair is driven by the `marquee` the
+  view already holds, the same way `panMode` is driven by Space. `:active` is
+  fine on the card itself, where it matches only what was pressed (#394)
 - **A paste draws before it uploads.** The clipboard hands over the bytes, so
   the card renders from a local object URL at ~30ms, at its real dimensions and
   in its final position, and the upload runs underneath it. `uploading` is a

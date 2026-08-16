@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { Trash2, X } from 'lucide-react'
+import { useWheelStep } from '../../_hooks/use-wheel-step'
 import styles from './image-detail.module.css'
 import { cx } from '#/lib/utils'
 import { CopyText } from '#/components'
@@ -65,21 +66,69 @@ export function ImageDetail({
 }: ImageDetailProps) {
   const img = images[currentIndex]
   const imageUrl = imageUrls[img.id]
-  const [loaded, setLoaded] = useState(false)
   const currentThumb = useRef<HTMLButtonElement>(null)
   const stripRef = useRef<HTMLElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+  /** Which way the last step went, so preloading runs ahead of you. */
+  const directionRef = useRef<1 | -1>(1)
+  /** True while a wheel gesture is in flight. Not state: the only thing that
+   *  reads it is the filmstrip effect, and re-rendering the whole overlay on
+   *  every wheel event is exactly what this is trying to avoid. */
+  const wheelingRef = useRef(false)
+
+  // The image on screen, which trails the selection by however long the new one
+  // takes to decode. Paging used to blank the frame on every step -- `loaded`
+  // reset to false, a pulsing placeholder over an `opacity: 0` image -- even
+  // when the next image was already in cache from the preload below. At
+  // keyboard speed that reads as a load; on the wheel it strobes, and stepping
+  // instantly through a strobe is not faster than what it replaced (#393).
+  const [shownUrl, setShownUrl] = useState<string | undefined>(imageUrl)
+  /** Only once a swap is genuinely slow does the placeholder come back. */
+  const [slow, setSlow] = useState(false)
 
   useEffect(() => {
-    setLoaded(false)
-  }, [imageUrl])
+    if (!imageUrl) {
+      setShownUrl(undefined)
+      return
+    }
+    if (imageUrl === shownUrl) return
 
-  // Preload adjacent images into browser cache
-  const preloadAdjacent = useCallback(() => {
-    for (const offset of [-1, 1, -2, 2]) {
-      const adjIdx = currentIndex + offset
+    let cancelled = false
+    const show = () => {
+      if (cancelled) return
+      setShownUrl(imageUrl)
+      setSlow(false)
+    }
+
+    const next = new Image()
+    next.src = imageUrl
+    if (next.complete) {
+      // Cached: swap in the same frame, no placeholder, no flash.
+      show()
+      return
+    }
+
+    // Not cached. Hold the outgoing image rather than blanking, and only admit
+    // to loading if it takes long enough to read as one.
+    const timer = setTimeout(() => {
+      if (!cancelled) setSlow(true)
+    }, 250)
+    next.decode().then(show, show)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [imageUrl, shownUrl])
+
+  // Warm the neighbours, further ahead in the direction of travel: a wheel
+  // gesture leaves a window of +/-2 behind immediately.
+  useEffect(() => {
+    const ahead = directionRef.current
+    for (const offset of [1, 2, 3, 4, -1, -2]) {
+      const adjIdx = currentIndex + offset * ahead
       if (adjIdx < 0 || adjIdx >= images.length) continue
-      const adjImg = images[adjIdx]
-      const adjUrl = imageUrls[adjImg.id]
+      const adjUrl = imageUrls[images[adjIdx].id]
       if (adjUrl) {
         const preload = new Image()
         preload.src = adjUrl
@@ -87,25 +136,36 @@ export function ImageDetail({
     }
   }, [imageUrls, currentIndex, images])
 
-  useEffect(() => {
-    preloadAdjacent()
-  }, [preloadAdjacent])
-
   // The strip is longer than the viewport, so position feedback is most of its
   // value: hold the current thumbnail near centre rather than merely on screen.
   //
   // Scrolled by hand rather than with scrollIntoView({block: 'center'}), which
   // moved nothing here -- and silently, leaving the highlighted thumbnail off
   // screen while every other part of paging looked correct.
+  //
+  // Instant while wheeling, smooth otherwise. A smooth scroll restarts from
+  // wherever the last one reached, so under a fast gesture the rail visibly
+  // trailed the selection and never settled.
   useEffect(() => {
     const thumb = currentThumb.current
     const strip = stripRef.current
     if (!thumb || !strip) return
     strip.scrollTo({
       top: thumb.offsetTop - strip.clientHeight / 2 + thumb.clientHeight / 2,
-      behavior: 'smooth',
+      behavior: wheelingRef.current ? 'auto' : 'smooth',
     })
   }, [currentIndex])
+
+  useWheelStep(
+    rootRef,
+    (direction) => {
+      directionRef.current = direction
+      direction === 1 ? onNext() : onPrev()
+    },
+    (active) => {
+      wheelingRef.current = active
+    },
+  )
 
   useHotkey('Escape', onClose)
   useHotkey('ArrowRight', onNext)
@@ -114,25 +174,24 @@ export function ImageDetail({
   useHotkey('Backspace', () => onDelete?.())
 
   return (
-    <div className={styles.root} onClick={onClose}>
+    <div ref={rootRef} className={styles.root} onClick={onClose}>
       {/* The stage does not swallow the click. Landing on the image is the
           fastest way back to the grid: look, page a few, copy a prompt, click
           anywhere that is not a control and you are out. */}
       <div className={styles.stage}>
         <div className={styles.frame}>
-          {imageUrl ? (
+          {shownUrl ? (
             <div className={styles.imageWrap}>
-              {!loaded && (
+              {slow && (
                 <div
                   className={cx(styles.placeholder, styles.placeholderOverlay)}
                 />
               )}
               <img
-                key={imageUrl}
-                src={imageUrl}
+                key={shownUrl}
+                src={shownUrl}
                 alt={img.title}
-                className={cx(styles.image, !loaded && styles.imageLoading)}
-                onLoad={() => setLoaded(true)}
+                className={cx(styles.image, slow && styles.imageLoading)}
               />
             </div>
           ) : (

@@ -43,6 +43,19 @@ The cursor is `_hooks/use-image-detail.ts`. /images has its own near-identical
 copy, on purpose — sharing the hook is how the layout got imposed the first
 time.
 
+`_hooks/use-wheel-step.ts` is the wheel gesture (#394's sibling, #393): bound on
+the overlay root so it works with the pointer anywhere, `passive: false` so it
+takes the event rather than letting the rail scroll itself away from the image.
+`createWheelStepper` is the pure accumulator underneath it and is unit-tested —
+mapping event to step gives one image per notch on a mouse and forty on a
+trackpad flick, so deltas buy steps against a pixel budget with a rate cap.
+
+**Paging must not blank the frame.** The overlay held `loaded` state that reset
+on every URL change, so each step went image → pulsing placeholder → image even
+when the next was already cached from the preload. It now holds the outgoing
+image until the incoming one decodes, and shows the placeholder only after 250ms
+— which is the difference between a load and a strobe.
+
 ## Removability
 
 **One folder and one nav entry.** Delete `app/(authenticated)/explore/` and the
