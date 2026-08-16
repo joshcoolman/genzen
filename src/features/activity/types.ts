@@ -1,3 +1,5 @@
+import type { GenerationInputImage } from '#/features/ai-images/generation-inputs'
+
 export type GenerationStatus = 'pending' | 'completed' | 'failed'
 
 export interface ActivityGenerationMetadata {
@@ -49,11 +51,14 @@ export interface ListActivityResult {
   total: number
 }
 
-export interface ActivityReferenceImage {
-  id: string
-  storagePath: string | null
-  isDeleted: boolean
-}
+/**
+ * Aliased rather than redeclared (#380). Activity shows the images a
+ * generation was given, and so will the image card -- one shape, resolved in
+ * one place (`ai-images/server/generation-inputs.server.ts`), because two
+ * structurally identical declarations are how the underlying metadata fields
+ * drifted apart to begin with.
+ */
+export type ActivityReferenceImage = GenerationInputImage
 
 export interface ActivityEntryDetail extends ActivityEntry {
   storagePath: string | null

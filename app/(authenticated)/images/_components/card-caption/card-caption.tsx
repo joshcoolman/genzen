@@ -9,6 +9,10 @@ interface CardCaptionProps {
   /** Cmd/Ctrl-click loads the text into the generator. Omitted where that
    *  gesture would mean something else, as in select mode. */
   onUsePrompt?: (text: string) => void
+  /** The row's id, when this card is a generation with a record in Activity.
+   *  Absent on an upload, which has no run to show, and in select mode, where
+   *  every click belongs to the selection. */
+  detailId?: string
 }
 
 /**
@@ -25,8 +29,16 @@ interface CardCaptionProps {
  * read in full. The whole thing is one click away on the clipboard, and
  * Activity shows it entire. Unclamped (#284) a long prompt gave its card twice
  * the height of its neighbours, for text nobody read past the third line.
+ *
+ * `detailId` is the one thing that legitimately differs between the two
+ * states: a pending card does not get the link, because until its submit
+ * answers its id is an optimistic placeholder with no row behind it, and a
+ * link to nothing is worse than a link that arrives a moment late. That does
+ * not reopen #367 -- the text is identical throughout, and the link appears at
+ * the same moment `PendingImageCard` gives way to `ImageCard`, which is a real
+ * change of component rather than a caption drifting under you.
  */
-export function CardCaption({ text, onUsePrompt }: CardCaptionProps) {
+export function CardCaption({ text, onUsePrompt, detailId }: CardCaptionProps) {
   return (
     <div className={styles.caption}>
       {/* `silent`: the card teaches nothing on hover. Both gestures still work;
@@ -41,6 +53,28 @@ export function CardCaption({ text, onUsePrompt }: CardCaptionProps) {
         className={styles.prompt}
         textClassName={styles.promptText}
       />
+
+      {/* The whole record -- prompt, the images it was given, cost, raw
+          metadata -- rather than a lossy copy of some of it on the card
+          (#380). A card that tried to show its inputs inline would be a third
+          click target competing with open-the-viewer and Cmd-click-stage; a
+          text link is unambiguously a link, and costs the tile no geometry.
+
+          New tab on purpose. Looking up how you got here is a detour, not a
+          destination: close the tab and the grid is exactly as you left it,
+          scroll position and all. `stopPropagation` because the card's own
+          click would otherwise open the viewer on the way out. */}
+      {detailId && (
+        <a
+          href={`/activity?entry=${detailId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.details}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Details
+        </a>
+      )}
     </div>
   )
 }
