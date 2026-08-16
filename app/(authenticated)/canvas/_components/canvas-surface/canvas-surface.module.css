@@ -6,7 +6,9 @@
   left: 0;
   background: var(--bg);
   overflow: hidden;
-  cursor: crosshair;
+  /* At rest the board is something you look at, not a tool you are holding
+     (#394). The crosshair arrives with the marquee and leaves with it. */
+  cursor: default;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
@@ -17,6 +19,14 @@
   .canvas {
     left: 4rem;
   }
+}
+
+/* State, not `:active`. Cards live inside this element, so `.canvas:active`
+   would also fire on a press that landed on a card -- which is a drag, not a
+   marquee. The view already holds the marquee it draws; this is the same
+   signal. */
+.marqueeMode {
+  cursor: crosshair;
 }
 
 .panMode {

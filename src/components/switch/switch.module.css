@@ -1,0 +1,48 @@
+/* The track. Sized in rem so it follows the text beside it rather than sitting
+   at a fixed pixel height next to a label that scales. */
+.root {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  width: 2.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    border-color var(--duration-normal) var(--ease-in-out);
+}
+
+.root[data-checked] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.root:focus-visible {
+  outline: var(--border-width) solid var(--accent);
+  outline-offset: 2px;
+}
+
+.root[data-disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Offset by the track's border on both sides, or the thumb sits a pixel proud
+   of the track at the "on" end. */
+.thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: 0.1875rem;
+  border-radius: var(--radius-full);
+  background: var(--text);
+  transition: transform var(--duration-normal) var(--ease-in-out);
+}
+
+.thumb[data-checked] {
+  transform: translateX(0.875rem);
+  background: var(--accent-contrast);
+}

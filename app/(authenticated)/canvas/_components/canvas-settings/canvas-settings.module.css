@@ -1,0 +1,45 @@
+/* Matches `selection-actions`' own `.iconBtn` rather than reaching for
+   `IconButton`: this button sits in that bar, between Upload and Library, and
+   consistency inside the row beats the shared primitive on one of three. */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    color 0.1s,
+    border-color 0.1s,
+    background 0.1s;
+}
+
+.trigger:hover,
+.trigger[data-popup-open] {
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+/* Popover ships no width and no padding on purpose -- every consumer sets its
+   own. */
+.panel {
+  min-width: 15rem;
+  padding: var(--space-12);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  cursor: pointer;
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text);
+}

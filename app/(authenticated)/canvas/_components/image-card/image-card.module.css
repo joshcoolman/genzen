@@ -1,7 +1,15 @@
+/* Hovering a card says "you can click this"; the four-way move arrow said "you
+   are already dragging" before anything had been picked up (#394). `:active` is
+   safe on the card itself -- it matches the element pressed and its ancestors,
+   never its siblings, so pressing one card cannot arm the cursor on another. */
 .image {
   position: absolute;
-  cursor: move;
+  cursor: pointer;
   transition: opacity 0.15s;
+}
+
+.image:active {
+  cursor: grabbing;
 }
 
 .image img {

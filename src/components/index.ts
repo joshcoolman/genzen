@@ -84,6 +84,7 @@ export {
   type SheetContentProps,
 } from './sheet/sheet'
 export { Stack, type StackProps } from './stack/stack'
+export { Switch, type SwitchProps } from './switch/switch'
 export { Textarea, type TextareaProps } from './textarea/textarea'
 export { Thumbnail, type ThumbnailProps } from './thumbnail/thumbnail'
 export {

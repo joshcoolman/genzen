@@ -9,6 +9,8 @@ interface CanvasSurfaceProps {
   transform: Transform
   /** Space is held: the whole surface is a pan handle. */
   panMode: boolean
+  /** A marquee drag is in progress -- the only state that earns a crosshair. */
+  marqueeMode: boolean
   /** Rendered inside the transformed plane, in canvas coordinates. */
   plane: React.ReactNode
   /** Rendered over the plane, in screen coordinates. */
@@ -36,6 +38,7 @@ export function CanvasSurface({
   containerRef,
   transform,
   panMode,
+  marqueeMode,
   plane,
   children,
   ...handlers
@@ -43,7 +46,11 @@ export function CanvasSurface({
   return (
     <div
       ref={containerRef}
-      className={cx(styles.canvas, panMode && styles.panMode)}
+      className={cx(
+        styles.canvas,
+        marqueeMode && styles.marqueeMode,
+        panMode && styles.panMode,
+      )}
       tabIndex={0}
       {...handlers}
     >
