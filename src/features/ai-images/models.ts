@@ -8,8 +8,8 @@ export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
  * whether the user attached reference images:
  *
  *   textToImage  the endpoint used with no references. null when the model
- *                cannot generate from a prompt alone -- FLUX Kontext Dev lists
- *                `image_url` as required, so it has no text-to-image mode.
+ *                cannot generate from a prompt alone -- an endpoint that lists
+ *                `image_url` as required has no text-to-image mode.
  *   withImages   the endpoint used when references are attached. null when the
  *                model has no image input at all, in which case references are
  *                dropped and the prompt is sent on its own.
@@ -55,21 +55,6 @@ export interface ModelEntry {
 // Endpoint ids verified against https://fal.ai/models
 export const IMAGE_MODELS: Array<ModelEntry> = [
   // FLUX Family
-  {
-    slug: 'flux-kontext-dev',
-    name: 'FLUX Kontext Dev',
-    description: 'Fast img2img + text steering',
-    category: 'FLUX',
-    textToImage: null,
-    withImages: 'fal-ai/flux-kontext/dev',
-    // FAL lists `image_url` as required, so there is no text-to-image mode:
-    // with no image we run FLUX Dev, which is what the row is then labelled.
-    textOnlyFallback: 'fal-ai/flux/dev',
-    // The single `image_url` slot is the source image's.
-    maxRefs: 0,
-    price: 0.03,
-    useCase: 'Cheap img2img — fast iteration with a reference',
-  },
   // Kling
   // ByteDance Seedream
   {
@@ -319,10 +304,10 @@ export function modelTitleFor(falModelId: string): string {
  * them. Removing a name here does not break anything, it just makes old rows
  * show a raw endpoint id.
  *
- * Nothing here is selectable. Most of it is not submittable either -- the
- * exception is `fal-ai/flux/dev`, which is live as FLUX Kontext Dev's
- * `textOnlyFallback`. It is a routing target, not a model the user picks, which
- * is exactly why it needs a name without an entry.
+ * Nothing here is selectable, and since FLUX Kontext Dev left the lineup
+ * nothing here is submittable either -- it was the only entry with a
+ * `textOnlyFallback`, and `fal-ai/flux/dev` was the endpoint it borrowed. The
+ * mechanism stays; there is simply nothing using it today.
  */
 export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // Seedream v4 before FAL split the endpoint into /text-to-image and /edit.
@@ -339,6 +324,10 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // 2.0.
   'fal-ai/flux/schnell': 'FLUX Schnell',
   'fal-ai/flux/dev': 'FLUX Dev',
+  // Cut on its results rather than its wiring. Both ids are here because it
+  // had two: rows made with an image carry the Kontext endpoint, and rows made
+  // without one carry FLUX Dev above, which it borrowed.
+  'fal-ai/flux-kontext/dev': 'FLUX Kontext Dev',
   'fal-ai/kling-image/v3/text-to-image': 'Kling v3',
   'fal-ai/kling-image/o3/text-to-image': 'Kling Omni 3',
   'fal-ai/recraft/v3/text-to-image': 'Recraft V3',

@@ -9,6 +9,9 @@ import {
   pickerId,
 } from './models'
 
+/** Retired with FLUX Kontext Dev, which was cut on its results. Kept as a
+ *  constant because the interesting assertions about it are now the ones every
+ *  retired endpoint has to pass. */
 const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
 
 /**
@@ -18,15 +21,6 @@ const KONTEXT_DEV = 'fal-ai/flux-kontext/dev'
  * the lineup on purpose are deleted from here in the same commit.
  */
 const LEGACY_ALL_IMAGE_MODELS = [
-  {
-    id: 'fal-ai/flux-kontext/dev',
-    name: 'FLUX Kontext Dev',
-    description: 'Fast img2img + text steering',
-    category: 'FLUX',
-    supportsImageInput: true,
-    displayPrice: '~$0.03/img',
-    useCase: 'Cheap img2img — fast iteration with a reference',
-  },
   {
     id: 'fal-ai/bytedance/seedream/v4/text-to-image',
     name: 'Seedream v4',
@@ -133,7 +127,8 @@ describe('lineup, pinned to what shipped', () => {
       const m = IMAGE_MODELS.find((x) => pickerId(x) === legacy.id)!
       expect(m, legacy.id).toBeDefined()
       // `imageInputModelId` was set only when a model had a *different*
-      // endpoint to switch to, which is why Kontext Dev never had one.
+      // endpoint to switch to. Kontext Dev was the entry that had none, and it
+      // left the lineup; every model still in the fixture has one.
       const switchesTo = m.textToImage ? m.withImages : undefined
       expect(switchesTo ?? undefined, legacy.id).toBe(legacy.imageInputModelId)
       expect(m.withImages !== null, legacy.id).toBe(
@@ -204,11 +199,13 @@ describe('endpointFor', () => {
     expect(endpointFor('fal-ai/flux/schnell', true)).toBe('fal-ai/flux/schnell')
   })
 
-  it('borrows FLUX Dev when Kontext Dev is asked to run without an image', () => {
-    // FAL lists `image_url` as required on fal-ai/flux-kontext/dev, so a
-    // text-only submit to it fails outright. This replaces the hand-written
-    // KONTEXT_DEV / DRAFT_TEXT_ONLY_FALLBACK special case in use-generator.
-    expect(endpointFor(KONTEXT_DEV, false)).toBe('fal-ai/flux/dev')
+  it('leaves a retired endpoint alone in both modes', () => {
+    // Kontext Dev was the one entry with a `textOnlyFallback`: with no image it
+    // ran FLUX Dev, because FAL lists `image_url` as required on its own
+    // endpoint. Now that it is out of the lineup, nothing routes it anywhere --
+    // and nothing should, since a retired id reaches this only via a retry of a
+    // row that already named its endpoint.
+    expect(endpointFor(KONTEXT_DEV, false)).toBe(KONTEXT_DEV)
     expect(endpointFor(KONTEXT_DEV, true)).toBe(KONTEXT_DEV)
   })
 
@@ -234,10 +231,9 @@ describe('maxRefsFor', () => {
     expect(imageCapacityFor('fal-ai/bytedance/seedream/v4.5/edit')).toBe(10)
   })
 
-  it('is 0 for the single-image Kontext endpoints', () => {
-    // The source image takes their one slot; they never had an EDIT_MODELS row
-    // and so derived 0 before this refactor too.
-    expect(maxRefsFor(KONTEXT_DEV)).toBe(0)
+  it('is 0 for the single-image Kontext endpoint', () => {
+    // The source image takes its one slot; it never had an EDIT_MODELS row and
+    // so derived 0 before this refactor too.
     expect(maxRefsFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(0)
   })
 
@@ -264,12 +260,20 @@ describe('imageCapacityFor', () => {
     expect(maxRefsFor('fal-ai/nano-banana-2')).toBe(3)
   })
 
-  it('is 1 for the single-image Kontext endpoints, not 0', () => {
-    // They take exactly one image. Under the old reading that was "0 refs plus
+  it('is 1 for the single-image Kontext endpoint, not 0', () => {
+    // It takes exactly one image. Under the old reading that was "0 refs plus
     // the source"; under one set it is a capacity of one, and a strip that
     // offers a slot rather than refusing every image.
-    expect(imageCapacityFor(KONTEXT_DEV)).toBe(1)
     expect(imageCapacityFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(1)
+  })
+
+  it('is 0 for the retired Kontext Dev endpoint, which is not a regression', () => {
+    // No entry claims it any more, so the lineup has no number for it -- and
+    // `buildFalInput` is where that stops mattering: an unclaimed endpoint
+    // falls back to its schema shape, and this one takes `image_url`, so a
+    // retry of an old row still sends its one image.
+    expect(imageCapacityFor(KONTEXT_DEV)).toBe(0)
+    expect(getModelName(KONTEXT_DEV)).toBe('FLUX Kontext Dev')
   })
 
   it('is 0 when the model has no image endpoint at all', () => {
@@ -304,10 +308,14 @@ describe('getModelName', () => {
     expect(getModelName('fal-ai/flux-pro/kontext')).toBe('FLUX Kontext Pro')
   })
 
-  it('does not let a borrowed endpoint steal its owner name', () => {
-    // Kontext Dev falls back to FLUX Dev's endpoint, and a row made that way
-    // really was made by FLUX Dev -- it must not be labelled Kontext Dev.
+  it('still names both halves of a model that borrowed an endpoint', () => {
+    // Kontext Dev ran FLUX Dev's endpoint when given no image, so its rows are
+    // split across two ids and each must keep the name of the model that
+    // actually ran. Both survive its removal from the lineup -- that is what
+    // `RETIRED_MODEL_NAMES` is for, and dropping either would relabel real
+    // rows with a raw id.
     expect(getModelName('fal-ai/flux/dev')).toBe('FLUX Dev')
+    expect(getModelName('fal-ai/flux-kontext/dev')).toBe('FLUX Kontext Dev')
   })
 
   it('names every id EDIT_MODELS used to answer for', () => {
