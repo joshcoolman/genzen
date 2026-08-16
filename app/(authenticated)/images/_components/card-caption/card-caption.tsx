@@ -1,5 +1,6 @@
 'use client'
 
+import { Import } from 'lucide-react'
 import styles from './card-caption.module.css'
 import { CopyText } from '#/components'
 
@@ -9,6 +10,10 @@ interface CardCaptionProps {
   /** Cmd/Ctrl-click loads the text into the generator. Omitted where that
    *  gesture would mean something else, as in select mode. */
   onUsePrompt?: (text: string) => void
+  /** Fill the panel with everything that produced this image -- prompt,
+   *  reference images, aspect ratio (#382). Same gate as `detailId`: a
+   *  generation only, and never while a selection is running. */
+  onLoad?: () => void
   /** The row's id, when this card is a generation with a record in Activity.
    *  Absent on an upload, which has no run to show, and in select mode, where
    *  every click belongs to the selection. */
@@ -38,7 +43,12 @@ interface CardCaptionProps {
  * the same moment `PendingImageCard` gives way to `ImageCard`, which is a real
  * change of component rather than a caption drifting under you.
  */
-export function CardCaption({ text, onUsePrompt, detailId }: CardCaptionProps) {
+export function CardCaption({
+  text,
+  onUsePrompt,
+  onLoad,
+  detailId,
+}: CardCaptionProps) {
   return (
     <div className={styles.caption}>
       {/* `silent`: the card teaches nothing on hover. Both gestures still work;
@@ -64,16 +74,47 @@ export function CardCaption({ text, onUsePrompt, detailId }: CardCaptionProps) {
           destination: close the tab and the grid is exactly as you left it,
           scroll position and all. `stopPropagation` because the card's own
           click would otherwise open the viewer on the way out. */}
-      {detailId && (
-        <a
-          href={`/activity?entry=${detailId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.details}
-          onClick={(e) => e.stopPropagation()}
-        >
-          Details
-        </a>
+      {(detailId || onLoad) && (
+        <div className={styles.actions}>
+          {detailId ? (
+            <a
+              href={`/activity?entry=${detailId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.details}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Details
+            </a>
+          ) : (
+            <span />
+          )}
+
+          {/* Across from Details, and an icon rather than a word because the
+              two are different kinds of thing: Details goes somewhere, Load
+              acts on the panel you are already in. It is not Retry (which
+              resubmits this row) and not Variations (which rewrites the
+              prompt); it creates nothing and touches no row -- it fills a
+              form, and leaves the model selection alone (#382).
+
+              `title` rather than a `Tooltip`: the grid mounts one of these per
+              card, and a provider around the wall to teach one word is the
+              wrong trade. The name is on `aria-label` regardless. */}
+          {onLoad && (
+            <button
+              type="button"
+              className={styles.load}
+              aria-label="Load into the generator"
+              title="Load into the generator"
+              onClick={(e) => {
+                e.stopPropagation()
+                onLoad()
+              }}
+            >
+              <Import size={13} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   )

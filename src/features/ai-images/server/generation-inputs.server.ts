@@ -23,9 +23,14 @@ export async function resolveGenerationInputs(
   if (ids.length === 0) return []
 
   const rows = await sql<
-    Array<{ id: string; storage_path: string | null; deleted_at: Date | null }>
+    Array<{
+      id: string
+      title: string | null
+      storage_path: string | null
+      deleted_at: Date | null
+    }>
   >`
-    select id, storage_path, deleted_at from user_images
+    select id, title, storage_path, deleted_at from user_images
     where id in ${sql(ids)} and user_id = ${userId}
   `
 
@@ -38,6 +43,7 @@ export async function resolveGenerationInputs(
     const found = byId.get(id)
     return {
       id,
+      title: found?.title ?? null,
       storagePath: found?.storage_path ?? null,
       isDeleted: found?.deleted_at != null,
     }

@@ -22,6 +22,10 @@ export interface GenerationInputImage {
   id: string
   /** Null when the row is gone entirely, or never had bytes. */
   storagePath: string | null
+  /** What the library calls it. Null when the row is gone. Needed by anything
+   *  that puts the image back in the panel, where the strip labels it (#382);
+   *  Activity's own strip does not use it. */
+  title: string | null
   /** In Trash. The image is still shown, marked -- knowing the input was
    *  thrown away is the useful part, and hiding it would silently shorten the
    *  list. */
@@ -48,10 +52,18 @@ function stringArray(value: unknown): Array<string> {
  *   which is ancestry rather than input -- the thing multi-hop would walk to,
  *   not something this generation received.
  *
- * References come first because their order is the user's: index 0 is the one
- * the aspect ratio is derived from and the first submitted (#297). A row
- * carrying both is rare -- the two paths are alternatives -- so this is about
- * being defined rather than about a case that comes up.
+ * **The source comes first, and that is the order the model saw** (#382). The
+ * panel holds one ordered set and the submit splits it at index 0:
+ * `sourceImageId = primary.id`, `referenceImageIds = the rest`
+ * (`use-generator.ts`), and the server concatenates them back in that order
+ * before FAL sees them (`allImageUrls`). So a row carrying both is not rare --
+ * it is what every generation from a set of two or more looks like.
+ *
+ * This used to return the references first and append the source, which put
+ * the image the aspect ratio was derived from at the *end* of a list meant to
+ * be "what went in, in order". Harmless while the only reader was a display
+ * strip; not harmless once a reader loads the set back into the panel, where
+ * index 0 is load-bearing.
  */
 export function generationInputIds(metadata: unknown): Array<string> {
   if (!metadata || typeof metadata !== 'object') return []
@@ -60,10 +72,11 @@ export function generationInputIds(metadata: unknown): Array<string> {
     source_image_id?: unknown
   }
 
-  const ids = stringArray(m.reference_image_ids)
+  const ids: Array<string> = []
   if (typeof m.source_image_id === 'string' && m.source_image_id.length > 0) {
     ids.push(m.source_image_id)
   }
+  ids.push(...stringArray(m.reference_image_ids))
 
   return [...new Set(ids)]
 }

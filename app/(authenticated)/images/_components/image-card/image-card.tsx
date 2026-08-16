@@ -44,6 +44,8 @@ interface ImageCardProps {
   onAddReference?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the prompt: load it into the generator. */
   onUsePrompt?: (text: string) => void
+  /** Fill the panel with what produced this image (#382). */
+  onLoad?: (img: SavedAiImage) => void
   /** Groups (#319). Opens the picker dialog -- a pop-up rather than a submenu,
    *  because a flyout of group names has no way out: it commits you to picking
    *  one at the exact moment you might realise the group you wanted does not
@@ -82,6 +84,7 @@ export function ImageCard({
   onOpen,
   onAddReference,
   onUsePrompt,
+  onLoad,
   onAddToGroup,
   onRemoveFromGroup,
   onSetGroupCover,
@@ -266,6 +269,14 @@ export function ImageCard({
         <CardCaption
           text={caption}
           onUsePrompt={selectionActive ? undefined : onUsePrompt}
+          /* Same gate as `detailId` below, and for the same reason: an upload
+             has no generation to load, and in select mode every click belongs
+             to the selection. */
+          onLoad={
+            !isUpload && !selectionActive && onLoad
+              ? () => onLoad(img)
+              : undefined
+          }
           /* Generations only -- an upload has no run in Activity, so the link
              would open a panel about nothing. Absent in select mode for the
              same reason the caption stops being a copy button there: every

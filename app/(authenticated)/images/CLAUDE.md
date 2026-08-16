@@ -15,6 +15,18 @@ list once when the seed comes back full, so the grid is never short.
 
 ## Quirks
 
+- **Load fills the panel with a past generation** (#382) — a small icon in the
+  caption, across from `Details`: prompt, reference images, aspect ratio, and
+  **not the model**. The selection is the working context you are already in,
+  not part of the thing being loaded, so clobbering it would throw away the
+  deliberate half of the setup to restore the half you are about to change.
+  Leaving it alone is also what composes: load one generation, tick three
+  models, generate nine. It is not Retry (which resubmits that row) and not
+  Variations (which rewrites the prompt) — it creates nothing and touches no
+  row. It loads what it can and says what it could not, because a panel is a
+  starting point rather than a submission; `planRetry` refuses in the same
+  situation and is right to, for the opposite reason. A trashed input counts as
+  missing: restoring an image is a deliberate act.
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption

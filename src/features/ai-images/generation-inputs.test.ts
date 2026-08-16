@@ -30,13 +30,20 @@ describe('generationInputIds', () => {
     expect(generationInputIds({ root_image_id: 'root' })).toEqual([])
   })
 
-  it('keeps reference order and appends the source after it', () => {
+  it('puts the source first, because that is the order the model saw', () => {
+    // The panel holds one ordered set and the submit splits it at index 0 --
+    // `sourceImageId` is the primary, `referenceImageIds` is the rest -- and
+    // the server concatenates them back in that order before FAL sees them.
+    // This returned `['r1','r2','src']` until #382, which put the image the
+    // aspect ratio was derived from at the end of a list meaning "what went
+    // in, in order". Harmless for a display strip; not harmless once a reader
+    // loads the set back into the panel, where index 0 is load-bearing.
     expect(
       generationInputIds({
         reference_image_ids: ['r1', 'r2'],
         source_image_id: 'src',
       }),
-    ).toEqual(['r1', 'r2', 'src'])
+    ).toEqual(['src', 'r1', 'r2'])
   })
 
   it('does not repeat a source already in the reference set', () => {

@@ -70,6 +70,11 @@ anything one route renders lives with that route.
   (`parent_id`) duplicates one of them. Any surface showing inputs reads
   `generationInputIds()` and resolves through
   `server/generation-inputs.server.ts` — never a single metadata field.
+  **It returns the source first** (#382): the submit splits the panel's ordered
+  set at index 0 and the server concatenates it back that way, so source-first
+  is the order FAL actually received. It appended the source instead until a
+  reader appeared that loads the set back into the panel, where index 0 is
+  load-bearing rather than cosmetic.
   Activity did read one field, and so showed nothing at all on an edit through
   a model's image endpoint and one image too few everywhere else. The function
   ignores `parent_id` (filing, and mutable) and `root_image_id` (ancestry, not
