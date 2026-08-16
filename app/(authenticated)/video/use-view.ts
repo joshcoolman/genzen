@@ -5,11 +5,11 @@ import { useSearchParams } from 'next/navigation'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
 import {
   DEFAULT_VIDEO_MODEL,
-  VIDEO_MODELS,
   aspectRatiosFor,
   estimateCostCents,
   supportsEndImage,
   videoModelBySlug,
+  videoModelsByPrice,
 } from './models'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
@@ -61,6 +61,10 @@ export function useView(initialVideos: Array<VideoRecord>) {
     // mount and the setting resets on every page load.
     if (modelHydrated) localStorage.setItem(MODEL_KEY, model.slug)
   }, [modelHydrated, model.slug])
+
+  // Cheapest first, and stable across renders so the picker's rows are not a
+  // new array on every keystroke in the prompt box.
+  const pickerModels = useMemo(() => videoModelsByPrice(), [])
 
   const userImages = useUserImages(user.id)
 
@@ -287,7 +291,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   return {
     model,
-    models: VIDEO_MODELS,
+    models: pickerModels,
     selectModel: setModelSlug,
     modelTakesEndFrame,
     aspectOptions,
