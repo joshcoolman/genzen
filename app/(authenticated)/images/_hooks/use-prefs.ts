@@ -21,13 +21,17 @@ const DEFAULTS: Prefs = {
 /** One step, and the range it moves in. Browser zoom's own step, because the
  *  gesture is a copy of browser zoom and a different one would feel wrong next
  *  to it. */
-const ZOOM_STEP = 0.1
+// TEMPORARY (#403): 0.05 rather than 0.1 while the useful stops are being
+// found by hand -- twice the resolution to walk, and `ZoomReadout` says which
+// ones move the column count. Goes back to 0.1, or to a fixed list of stops,
+// once that is known.
+const ZOOM_STEP = 0.05
 const ZOOM_MIN = 0.5
 const ZOOM_MAX = 1.5
 
 /** Steps are floats, and 1 - 0.1 - 0.1 is 0.7999999999999999 without this. */
 const clampZoom = (z: number) =>
-  Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)) * 10) / 10
+  Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)) * 100) / 100
 
 // Only ever called from an effect, never during render -- see usePersistedState.
 //

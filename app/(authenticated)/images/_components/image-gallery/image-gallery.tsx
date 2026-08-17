@@ -1,4 +1,7 @@
+import { useRef } from 'react'
 import { GroupCard } from '../group-card/group-card'
+// TEMPORARY (#403)
+import { ZoomReadout } from '../zoom-readout/zoom-readout'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
 import { ImageCard } from '../image-card/image-card'
 import { FailedImageCard } from '../failed-image-card/failed-image-card'
@@ -112,6 +115,9 @@ export function ImageGallery({
   isSelected,
   onSelect,
 }: ImageGalleryProps) {
+  // TEMPORARY (#403), with `ZoomReadout` below.
+  const gridRef = useRef<HTMLDivElement>(null)
+
   return (
     <div className={styles.root}>
       {loadingGallery ? (
@@ -123,6 +129,7 @@ export function ImageGallery({
         </EmptyState>
       ) : (
         <div
+          ref={gridRef}
           className={styles.grid}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
@@ -239,6 +246,8 @@ export function ImageGallery({
           })}
         </div>
       )}
+      {/* TEMPORARY (#403) -- delete with the `zoom-readout` folder. */}
+      <ZoomReadout zoom={thumbZoom} gridRef={gridRef} />
     </div>
   )
 }
