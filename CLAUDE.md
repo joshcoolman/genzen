@@ -67,6 +67,7 @@ earned; see `docs/DELTAS.md`.
 | activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
 | ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
 | auth        | Password verification + signed session cookie                  | `src/features/auth/CLAUDE.md`        |
+| theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`  |
 | user-images | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md` |
 
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
