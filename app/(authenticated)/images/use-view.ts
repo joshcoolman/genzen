@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useHotkey } from '@tanstack/react-hotkeys'
 import { loadGeneration } from './_actions/load-generation.action'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
@@ -266,6 +267,26 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   const viewer = useImageViewer(viewerImages, gallery.deleteImage)
+
+  // Cmd-Ctrl-+/- zooms the grid, the way Cmd-+/- zooms the page (#403). The
+  // extra Control is what keeps the browser's own zoom reachable -- this
+  // replaces the habit of using it, it does not take the key away.
+  //
+  // Off while the viewer is up: it covers the grid, so the gesture would resize
+  // something nobody can see, and its own arrow keys are the ones in play.
+  const zoomEnabled = !viewer.isOpen
+  useHotkey('Control+Meta+=', () => prefs.zoomThumbs(1), {
+    enabled: zoomEnabled,
+    preventDefault: true,
+  })
+  useHotkey('Control+Meta+-', () => prefs.zoomThumbs(-1), {
+    enabled: zoomEnabled,
+    preventDefault: true,
+  })
+  useHotkey('Control+Meta+0', () => prefs.resetThumbZoom(), {
+    enabled: zoomEnabled,
+    preventDefault: true,
+  })
 
   const variations = useVariations({ setError })
 

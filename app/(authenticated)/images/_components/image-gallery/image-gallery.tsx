@@ -41,6 +41,9 @@ interface ImageGalleryProps {
   keyFor?: (id: string) => string
   loadingGallery: boolean
   showInfo?: boolean
+  /** A true zoom on the grid and nothing else (#284 follow-up). See the note on
+   *  the grid element itself. */
+  thumbZoom?: number
   onDelete: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
@@ -81,6 +84,7 @@ export function ImageGallery({
   imageUrls,
   loadingGallery,
   showInfo = true,
+  thumbZoom = 1,
   onDelete,
   onRetry,
   onDownload,
@@ -121,6 +125,19 @@ export function ImageGallery({
         <div
           className={styles.grid}
           style={{
+            // `zoom`, not `transform: scale()`. A transform paints smaller
+            // without touching layout, so the grid would keep its old
+            // footprint, overflow, and fit no more cards per row -- the one
+            // thing this is for. `zoom` participates in layout: px, rem,
+            // tokens, caption text and gaps all scale together and `auto-fill`
+            // recomputes. It is browser zoom aimed at one subtree, which is
+            // exactly what it is copying.
+            //
+            // It also has to be `zoom` rather than a variable `GRID_MIN_WIDTH`:
+            // scaling the column alone leaves the caption at its old size, so
+            // the text re-wraps and the card stops being the same card. Nothing
+            // in here re-wraps -- only how many fit.
+            zoom: thumbZoom,
             gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_WIDTH}, 1fr))`,
           }}
         >

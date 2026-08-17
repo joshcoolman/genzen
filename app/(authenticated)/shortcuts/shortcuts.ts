@@ -61,6 +61,11 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         what: 'Upload it',
         note: 'Into the group you are standing in, if you are in one.',
       },
+      {
+        keys: '⌘⌃+ / ⌘⌃-',
+        what: 'Zoom the thumbnails',
+        note: 'A true zoom on the grid, 10% a step between 50% and 150% — the cards and their captions scale together, so nothing re-wraps and only the number that fit a row changes. The extra Control is deliberate: ⌘+ / ⌘- stays the browser’s. ⌘⌃0 goes back to 100%.',
+      },
     ],
   },
   {
