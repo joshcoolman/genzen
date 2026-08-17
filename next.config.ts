@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
       '*.md': { loaders: ['raw-loader'], as: '*.js' },
     },
   },
+  // The dev-mode badge sits bottom-left, over the corner this app actually
+  // uses -- the canvas zoom chip, the generator dock's edge. It reports build
+  // activity and route type, neither of which is worth a permanent occupied
+  // corner when the terminal says the same thing.
+  devIndicators: false,
   // Server Function logging prints each action's serialized arguments, and this
   // app's uploads carry a base64 image -- so a single drag-and-drop buries the
   // dev terminal in several thousand lines and the request log above it. The
