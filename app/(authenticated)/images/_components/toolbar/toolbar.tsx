@@ -197,19 +197,25 @@ export function Toolbar({
               The keyboard gesture is the fast path; this is the discoverable
               one. */}
           <DropdownMenu>
-            <Labelled label="Thumbnail size">
-              <DropdownMenuTrigger
-                render={
-                  <button
-                    type="button"
-                    className={cx(styles.viewToggle, styles.viewToggleBoxed)}
-                    aria-label="Thumbnail size"
-                  >
-                    <ZoomIn className={styles.icon} />
-                  </button>
-                }
-              />
-            </Labelled>
+            {/* Opens on hover, so the stops are one gesture away rather than
+                two. No tooltip, unlike its neighbours: a tooltip and a menu
+                racing to occupy the same space under the same pointer is one
+                of them always being wrong. The menu is the better answer --
+                it says what the control does by showing what it offers. */}
+            <DropdownMenuTrigger
+              openOnHover
+              delay={120}
+              closeDelay={200}
+              render={
+                <button
+                  type="button"
+                  className={cx(styles.viewToggle, styles.viewToggleBoxed)}
+                  aria-label="Thumbnail size"
+                >
+                  <ZoomIn className={styles.icon} />
+                </button>
+              }
+            />
             {/* Centred under the glyph and only as wide as "100". The menu's
                 own 8rem min-width is sized for labelled items; three digits
                 left it mostly empty and pulled to one side. */}
