@@ -62,13 +62,13 @@ feature that needs it should fail loudly rather than assume it's there.
 **`src/features/` — domain code two or more routes need.** A folder here is
 earned; see `docs/DELTAS.md`.
 
-| Feature     | Description                                                    | CLAUDE.md                            |
-| ----------- | -------------------------------------------------------------- | ------------------------------------ |
-| activity    | Chronological cost/time log of every generation (inc failures) | `src/features/activity/CLAUDE.md`    |
-| ai-images   | Multi-model image generation, edit, variation workflows        | `src/features/ai-images/CLAUDE.md`   |
-| auth        | Password verification + signed session cookie                  | `src/features/auth/CLAUDE.md`        |
-| theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`  |
-| user-images | User image uploads, library, and asset management              | `src/features/user-images/CLAUDE.md` |
+| Feature     | Description                                                          | CLAUDE.md                            |
+| ----------- | -------------------------------------------------------------------- | ------------------------------------ |
+| activity    | Chronological cost/time log of every generation (inc failures)       | `src/features/activity/CLAUDE.md`    |
+| ai-images   | Multi-model image generation, edit, variation workflows              | `src/features/ai-images/CLAUDE.md`   |
+| auth        | Password verification + signed session cookie                        | `src/features/auth/CLAUDE.md`        |
+| theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`       |
+| user-images | User image uploads, library, and asset management                    | `src/features/user-images/CLAUDE.md` |
 
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
@@ -82,7 +82,13 @@ live with the one route that renders them:
 | Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL |
 | App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav           |
 | Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else        |
-| Shortcuts  | `app/(authenticated)/shortcuts/` — every gesture and key, from `shortcuts.ts`     |
+| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages     |
+
+**Account is a section, not a page.** `account/layout.tsx` draws a nav beside
+`Overview`, `Style` (the six colors that theme the app, `src/features/theme`)
+and `Shortcuts`. Its pages are the ones _about_ genzen rather than places you
+work, which is why only `/account` appears in the app's own rail — every path
+under it lights that one item, and a second entry would light two rails at once.
 
 `(authenticated)/_components/` also holds the generation UI Images and Canvas
 share (`generator-panel/` and what it composes). Anything one route renders
@@ -174,7 +180,7 @@ primitives catalogue.
 
 Copy `app/(authenticated)/trash/` for a simple route or `canvas/` for one with
 real state; not Activity, which established the shape but still fetches from the
-client. Every route conforms except `readme/` and `shortcuts/`, which are a
+client. Every route conforms except `readme/` and `account/shortcuts/`, which are a
 page and a stylesheet: they render fixed content and have no state, so
 `view.tsx` and `use-view.ts` would both be empty indirection. Named here rather
 than left as silent exceptions, because the value of "copy a neighbour" is that

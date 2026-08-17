@@ -1,0 +1,39 @@
+/* Mobile first: the nav is a horizontal strip above the content. A 14rem
+   column beside a phone-width page leaves neither half usable, and a settings
+   nav of three items reads fine as a row. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.sidebar {
+  min-inline-size: 0;
+}
+
+.main {
+  min-inline-size: 0;
+}
+
+@media (min-width: 48rem) {
+  .shell {
+    flex-direction: row;
+    gap: var(--space-40);
+    align-items: start;
+  }
+
+  /* Sticky against the viewport, offset by the shell's own padding
+     (`app-chrome`'s `--space-24`) so it stops flush with the content it
+     labels rather than jammed against the top edge. */
+  .sidebar {
+    position: sticky;
+    top: var(--space-24);
+    inline-size: 14rem;
+    flex-shrink: 0;
+  }
+
+  .main {
+    flex: 1;
+  }
+}
