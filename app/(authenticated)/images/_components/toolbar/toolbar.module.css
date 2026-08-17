@@ -179,3 +179,21 @@
   width: 0.875rem;
   height: 0.875rem;
 }
+
+/* Thumbnail-size flyout (#403). Numbers, not labels, so the menu's default
+   8rem min-width is mostly empty -- it shrinks to its content and centres each
+   number, which is what makes a column of three digits read as a set of
+   options rather than a ragged list. */
+.zoomMenu {
+  min-width: 0;
+}
+
+.zoomMenu button {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoomCurrent {
+  color: var(--accent);
+  font-weight: 500;
+}

@@ -36,7 +36,7 @@ const DEFAULTS: Prefs = {
  * Ascending. `zoomThumbs` walks the array, so nothing here has to be a step
  * size or divide evenly.
  */
-const ZOOM_STOPS = [0.5, 0.6, 0.75, 1] as const
+export const ZOOM_STOPS = [0.5, 0.6, 0.75, 1] as const
 
 /** The nearest stop to an arbitrary number -- so a value stored before this
  *  list existed lands on the list rather than sitting between two of them. */
@@ -85,6 +85,8 @@ export interface PrefsState {
   toggleSort: () => void
   toggleInfo: () => void
   zoomThumbs: (direction: 1 | -1) => void
+  /** Straight to a stop, for the toolbar menu. The keyboard walks instead. */
+  setThumbZoom: (zoom: number) => void
   resetThumbZoom: () => void
 }
 
@@ -150,6 +152,12 @@ export function usePrefs(): PrefsState {
           ZOOM_STOPS[
             Math.min(ZOOM_STOPS.length - 1, Math.max(0, i + direction))
           ]
+        store({ thumbZoom: next })
+        return next
+      }),
+    setThumbZoom: (zoom) =>
+      setThumbZoom(() => {
+        const next = nearestStop(zoom)
         store({ thumbZoom: next })
         return next
       }),
