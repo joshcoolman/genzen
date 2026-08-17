@@ -195,7 +195,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The set stop wears the row-hover fill and nothing else -- no accent, no
+   weight change. Same fill as `[data-highlighted]`, on purpose: pointing at the
+   one already set then changes nothing, which is the honest result, since
+   clicking it would also change nothing. */
 .zoomCurrent {
-  color: var(--accent);
-  font-weight: 500;
+  background: var(--row-hover);
+  color: var(--text);
 }
