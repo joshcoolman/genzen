@@ -45,9 +45,19 @@
   color: var(--text);
 }
 
-.viewToggleOn {
-  background: var(--surface-raised);
+/* The same lit state as `.actionOn`, not a grey one. Both are "this is
+   currently on", and two different colours for one meaning read as two
+   different kinds of control. The `:hover` twin is required rather than
+   optional: `.viewToggle:hover` outranks a bare `.viewToggleOn`, so without it
+   pointing at a lit toggle drops it back to grey. */
+.viewToggleOn,
+.viewToggleOn:hover {
+  background: color-mix(in oklab, var(--accent) 25%, transparent);
   color: var(--text);
+}
+
+.viewToggleOn:hover {
+  background: color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
 @media (min-width: 400px) {
