@@ -9,8 +9,8 @@ import {
   FolderPlus,
   Info,
   PanelRight,
-  Search,
   Upload,
+  ZoomIn,
 } from 'lucide-react'
 import { ZOOM_STOPS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
@@ -220,7 +220,7 @@ export function Toolbar({
                     className={styles.viewToggle}
                     aria-label="Thumbnail size"
                   >
-                    <Search className={styles.icon} />
+                    <ZoomIn className={styles.icon} />
                   </button>
                 }
               />
