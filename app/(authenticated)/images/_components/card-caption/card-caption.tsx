@@ -1,6 +1,6 @@
 'use client'
 
-import { Import } from 'lucide-react'
+import { Redo } from 'lucide-react'
 import styles from './card-caption.module.css'
 import { CopyText } from '#/components'
 
@@ -111,7 +111,7 @@ export function CardCaption({
                 onLoad()
               }}
             >
-              <Import size={13} />
+              <Redo size={13} />
             </button>
           )}
         </div>

@@ -7,10 +7,12 @@ import {
   ChevronLeft,
   FolderInput,
   FolderPlus,
-  Info,
   PanelRight,
+  TextInitial,
   Upload,
+  ZoomIn,
 } from 'lucide-react'
+import { ZOOM_STOPS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
 import type { ReactElement } from 'react'
@@ -175,7 +177,7 @@ export function Toolbar({
           >
             <button
               onClick={prefs.toggleSort}
-              className={styles.viewToggle}
+              className={cx(styles.viewToggle, styles.viewToggleBoxed)}
               aria-label={
                 prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
               }
@@ -188,6 +190,52 @@ export function Toolbar({
             </button>
           </Labelled>
 
+          {/* Thumbnail size (#403). A flyout of the four stops, and the
+              collapsed button shows only the icon -- what it is set to is
+              visible in the grid behind it, so a number on the button would
+              label the obvious and make the row's one variable-width control.
+              The keyboard gesture is the fast path; this is the discoverable
+              one. */}
+          <DropdownMenu>
+            {/* Opens on hover, so the stops are one gesture away rather than
+                two. No tooltip, unlike its neighbours: a tooltip and a menu
+                racing to occupy the same space under the same pointer is one
+                of them always being wrong. The menu is the better answer --
+                it says what the control does by showing what it offers. */}
+            <DropdownMenuTrigger
+              openOnHover
+              delay={120}
+              closeDelay={200}
+              render={
+                <button
+                  type="button"
+                  className={cx(styles.viewToggle, styles.viewToggleBoxed)}
+                  aria-label="Thumbnail size"
+                >
+                  <ZoomIn className={styles.icon} />
+                </button>
+              }
+            />
+            {/* Centred under the glyph and only as wide as "100". The menu's
+                own 8rem min-width is sized for labelled items; three digits
+                left it mostly empty and pulled to one side. */}
+            <DropdownMenuContent align="center" className={styles.zoomMenu}>
+              {ZOOM_STOPS.map((stop) => (
+                <DropdownMenuItem
+                  key={stop}
+                  onClick={() => prefs.setThumbZoom(stop)}
+                  /* Marked in the text colour, never with a background: the
+                     background is what hover means here, and a set value
+                     wearing the hover fill reads as "the pointer is there"
+                     rather than "this is the one". */
+                  className={cx(prefs.thumbZoom === stop && styles.zoomCurrent)}
+                >
+                  {Math.round(stop * 100)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* "Captions", not "info": what it shows is the model name and the
               prompt under each card. */}
           <Labelled label={prefs.showInfo ? 'Hide captions' : 'Show captions'}>
@@ -199,7 +247,7 @@ export function Toolbar({
               )}
               aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
             >
-              <Info className={styles.icon} />
+              <TextInitial className={styles.icon} />
             </button>
           </Labelled>
 

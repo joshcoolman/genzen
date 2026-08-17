@@ -45,6 +45,20 @@
   color: var(--text);
 }
 
+/* Sort and zoom never light up -- sort always shows an arrow and zoom opens a
+   menu -- so they sat as bare glyphs beside two controls that get a filled box
+   when on. A 1px outline in the lit fill's own colour gives them the same
+   footprint without claiming to be on. `box-sizing: border-box` is global, so
+   this costs no size. */
+.viewToggleBoxed {
+  border: 1px solid var(--surface-raised);
+}
+
+/* Lit is a raised surface, not a colour. `.actionOn` carries the identical
+   values -- the two are one state wearing one look, and the accent tint the
+   panel toggle used to have made it read as a different kind of control from
+   the toggles beside it. Accent is reserved for things that act, not for
+   things that are on. */
 .viewToggleOn {
   background: var(--surface-raised);
   color: var(--text);
@@ -84,13 +98,10 @@
   color: var(--text);
 }
 
+/* Same lit state as `.viewToggleOn`, deliberately. */
 .actionOn {
-  background: color-mix(in oklab, var(--accent) 25%, transparent);
+  background: var(--surface-raised);
   color: var(--text);
-}
-
-.actionOn:hover {
-  background: color-mix(in oklab, var(--accent) 35%, transparent);
 }
 
 .icon {
@@ -178,4 +189,26 @@
 .newGroupIcon {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+/* Thumbnail-size flyout (#403). Numbers, not labels, so the menu's default
+   8rem min-width is mostly empty -- it shrinks to its content and centres each
+   number, which is what makes a column of three digits read as a set of
+   options rather than a ragged list. */
+.zoomMenu {
+  min-width: 0;
+}
+
+.zoomMenu button {
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The set stop wears the row-hover fill and nothing else -- no accent, no
+   weight change. Same fill as `[data-highlighted]`, on purpose: pointing at the
+   one already set then changes nothing, which is the honest result, since
+   clicking it would also change nothing. */
+.zoomCurrent {
+  background: var(--row-hover);
+  color: var(--text);
 }

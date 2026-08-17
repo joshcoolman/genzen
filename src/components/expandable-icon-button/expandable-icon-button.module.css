@@ -12,13 +12,21 @@
   cursor: pointer;
 }
 
+/* Round, on `--scrim`, matching the select tick on an image card -- that one
+   was the best-looking of the set and the others are now the same object in a
+   different corner. A rounded square and a circle sitting on one card read as
+   two systems; the shape was carrying a distinction that does not exist, since
+   every one of these is the same thing: a small action floating over content.
+
+   `--scrim` rather than a mix of `--bg`: the tick used it, and one of the two
+   had to go. */
 .pill {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
-  border-radius: 0.25rem;
-  background: color-mix(in oklab, var(--bg) 80%, transparent);
+  border-radius: 50%;
+  background: var(--scrim);
   backdrop-filter: blur(8px);
   color: var(--text-muted);
   transition: all var(--duration-normal) var(--ease-in-out);
