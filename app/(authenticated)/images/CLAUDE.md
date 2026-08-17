@@ -246,6 +246,18 @@ list once when the seed comes back full, so the grid is never short.
   them -- it existed only so a card you just made was not filtered out of the
   view you made it in. The `origin` column stays; Activity reads it. Cmd-F find
   went in the same pass and is parked in #347
+- **Thumbnail zoom is `zoom` on the grid, and the stops are measured, not
+  chosen (#403).** ⌘⌃+/- walks a fixed list — 50, 60, 75, 100 — because the
+  grid is `auto-fill` over a 200px minimum, so a step only reads as a change
+  when it crosses a column-count threshold, and those are not evenly spaced. An
+  even 10% left three consecutive stops on four columns, two of which did
+  nothing. The stops were found by walking the range with a temporary readout;
+  they suit a real window width, and a wildly different one would want
+  different numbers. `zoom` rather than `transform: scale()` (which does not
+  affect layout, so no extra card ever fits) and rather than a variable column
+  width (which leaves the caption at its old size, so the text re-wraps and the
+  card stops being the same card). Not `thumbSize` returning: that was three
+  named sizes with three card treatments behind a dropdown (#284)
 - **Two localStorage namespaces.** `genzen:ai-images-prefs` holds sort and info
   as one object -- `read()` picks fields out rather than spreading, and
   `usePrefs` rewrites the key on mount, so `thumbSize` (dropped in #284) and

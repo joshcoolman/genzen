@@ -100,6 +100,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           keyFor={gallery.keyFor}
           loadingGallery={gallery.loadingGallery}
           showInfo={prefs.showInfo}
+          thumbZoom={prefs.thumbZoom}
           onDelete={gallery.deleteImage}
           onRetry={gallery.retryImage}
           onDownload={download.start}
