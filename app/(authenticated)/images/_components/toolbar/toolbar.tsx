@@ -190,21 +190,6 @@ export function Toolbar({
             </button>
           </Labelled>
 
-          {/* "Captions", not "info": what it shows is the model name and the
-              prompt under each card. */}
-          <Labelled label={prefs.showInfo ? 'Hide captions' : 'Show captions'}>
-            <button
-              onClick={prefs.toggleInfo}
-              className={cx(
-                styles.viewToggle,
-                prefs.showInfo && styles.viewToggleOn,
-              )}
-              aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
-            >
-              <TextInitial className={styles.icon} />
-            </button>
-          </Labelled>
-
           {/* Thumbnail size (#403). A flyout of the four stops, and the
               collapsed button shows only the icon -- what it is set to is
               visible in the grid behind it, so a number on the button would
@@ -244,6 +229,21 @@ export function Toolbar({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* "Captions", not "info": what it shows is the model name and the
+              prompt under each card. */}
+          <Labelled label={prefs.showInfo ? 'Hide captions' : 'Show captions'}>
+            <button
+              onClick={prefs.toggleInfo}
+              className={cx(
+                styles.viewToggle,
+                prefs.showInfo && styles.viewToggleOn,
+              )}
+              aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
+            >
+              <TextInitial className={styles.icon} />
+            </button>
+          </Labelled>
 
           {/* The generator's own control, and it stays put: it used to be a
               green `+` that vanished once the panel was open, so opening it
