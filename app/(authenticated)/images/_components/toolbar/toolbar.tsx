@@ -7,8 +7,8 @@ import {
   ChevronLeft,
   FolderInput,
   FolderPlus,
-  Info,
   PanelRight,
+  TextInitial,
   Upload,
   ZoomIn,
 } from 'lucide-react'
@@ -201,7 +201,7 @@ export function Toolbar({
               )}
               aria-label={prefs.showInfo ? 'Hide captions' : 'Show captions'}
             >
-              <Info className={styles.icon} />
+              <TextInitial className={styles.icon} />
             </button>
           </Labelled>
 
