@@ -64,7 +64,7 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       {
         keys: '⌘⌃+ / ⌘⌃-',
         what: 'Zoom the thumbnails',
-        note: 'A true zoom on the grid, 10% a step between 50% and 150% — the cards and their captions scale together, so nothing re-wraps and only the number that fit a row changes. The extra Control is deliberate: ⌘+ / ⌘- stays the browser’s. ⌘⌃0 goes back to 100%.',
+        note: 'A true zoom on the grid — cards and captions scale together, so nothing re-wraps and only the number that fit a row changes. Four stops (50%, 60%, 75%, 100%) rather than an even step, because only a change in column count reads as a change at all. The extra Control is deliberate: ⌘+ / ⌘- stays the browser’s. ⌘⌃0 goes back to 100%.',
       },
     ],
   },

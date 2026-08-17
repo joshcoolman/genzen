@@ -18,20 +18,33 @@ const DEFAULTS: Prefs = {
   thumbZoom: 1,
 }
 
-/** One step, and the range it moves in. Browser zoom's own step, because the
- *  gesture is a copy of browser zoom and a different one would feel wrong next
- *  to it. */
-// TEMPORARY (#403): 0.05 rather than 0.1 while the useful stops are being
-// found by hand -- twice the resolution to walk, and `ZoomReadout` says which
-// ones move the column count. Goes back to 0.1, or to a fixed list of stops,
-// once that is known.
-const ZOOM_STEP = 0.05
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 1.5
+/**
+ * The zoom stops, found by walking the range with a readout rather than picked
+ * (#403).
+ *
+ * Not an even percentage, because an even one does not work: the grid is
+ * `auto-fill` over a 200px minimum, so a step only reads as a change when it
+ * crosses a column-count threshold, and those are not evenly spaced. At 10%
+ * the first three stops all resolved to four columns and two of them did
+ * nothing visible.
+ *
+ * These are the four that each move the count. They are tuned to a real
+ * layout, so a wildly different window width would want different ones -- the
+ * alternative was computing them from the measured width on every keypress,
+ * which is a lot of machinery for a gallery one person looks at.
+ *
+ * Ascending. `zoomThumbs` walks the array, so nothing here has to be a step
+ * size or divide evenly.
+ */
+const ZOOM_STOPS = [0.5, 0.6, 0.75, 1] as const
 
-/** Steps are floats, and 1 - 0.1 - 0.1 is 0.7999999999999999 without this. */
-const clampZoom = (z: number) =>
-  Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z)) * 100) / 100
+/** The nearest stop to an arbitrary number -- so a value stored before this
+ *  list existed lands on the list rather than sitting between two of them. */
+function nearestStop(z: number): number {
+  return ZOOM_STOPS.reduce((best, stop) =>
+    Math.abs(stop - z) < Math.abs(best - z) ? stop : best,
+  )
+}
 
 // Only ever called from an effect, never during render -- see usePersistedState.
 //
@@ -46,7 +59,7 @@ function read(): Prefs {
       return {
         sortAsc: stored.sortAsc ?? DEFAULTS.sortAsc,
         showInfo: stored.showInfo ?? DEFAULTS.showInfo,
-        thumbZoom: clampZoom(stored.thumbZoom ?? DEFAULTS.thumbZoom),
+        thumbZoom: nearestStop(stored.thumbZoom ?? DEFAULTS.thumbZoom),
       }
     }
   } catch {
@@ -66,7 +79,7 @@ function store(partial: Partial<Prefs>) {
 export interface PrefsState {
   sortAsc: boolean
   showInfo: boolean
-  /** A true zoom on the grid, 0.5 to 1.5. See `image-gallery`. */
+  /** A true zoom on the grid, one of `ZOOM_STOPS`. See `image-gallery`. */
   thumbZoom: number
   isMobile: boolean
   toggleSort: () => void
@@ -130,7 +143,13 @@ export function usePrefs(): PrefsState {
       }),
     zoomThumbs: (direction) =>
       setThumbZoom((v) => {
-        const next = clampZoom(v + direction * ZOOM_STEP)
+        const i = ZOOM_STOPS.indexOf(
+          nearestStop(v) as (typeof ZOOM_STOPS)[number],
+        )
+        const next =
+          ZOOM_STOPS[
+            Math.min(ZOOM_STOPS.length - 1, Math.max(0, i + direction))
+          ]
         store({ thumbZoom: next })
         return next
       }),
