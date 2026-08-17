@@ -177,7 +177,7 @@ export function Toolbar({
           >
             <button
               onClick={prefs.toggleSort}
-              className={styles.viewToggle}
+              className={cx(styles.viewToggle, styles.viewToggleBoxed)}
               aria-label={
                 prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
               }
@@ -202,7 +202,7 @@ export function Toolbar({
                 render={
                   <button
                     type="button"
-                    className={styles.viewToggle}
+                    className={cx(styles.viewToggle, styles.viewToggleBoxed)}
                     aria-label="Thumbnail size"
                   >
                     <ZoomIn className={styles.icon} />
