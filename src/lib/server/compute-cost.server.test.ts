@@ -8,8 +8,7 @@ vi.mock('./fal-pricing.server', () => ({
   getFalModelPrice: (id: string) => getFalModelPrice(id),
 }))
 
-const { computeFalCostCents, computeFalCostFromTimings } =
-  await import('./compute-cost.server')
+const { computeFalCostCents } = await import('./compute-cost.server')
 
 beforeEach(() => {
   getFalModelPrice.mockReset()
@@ -20,82 +19,65 @@ const price = (unit: string, unit_price: number) => {
 }
 
 describe('computeFalCostCents', () => {
-  it('returns nothing for a compute-seconds model, because submit cannot know', () => {
-    // The #400 defect: FLUX.2 Flash and Grok fell through every branch and the
-    // row recorded no cost at all. Null is now the *intended* answer here --
-    // the figure exists only once the result does.
+  /**
+   * The rounding cases are the point of this file.
+   *
+   * `Math.round` to a whole cent was here until genzen's recorded costs were
+   * measured against FAL's actual invoices: a z-image generation costs 0.52c
+   * and recorded 1c, a 2x over-report on the cheapest tier.
+   */
+  it('keeps a sub-cent megapixel figure instead of rounding it to a whole cent', async () => {
+    price('megapixels', 0.005)
+    // 1024x1024 is 1.048 MP at half a cent a megapixel: 0.524c, not 1c.
+    await expect(
+      computeFalCostCents('fal-ai/z-image/turbo', { aspectRatio: '1:1' }),
+    ).resolves.toBeCloseTo(0.52, 2)
+  })
+
+  it('prices per image without inventing precision', async () => {
+    price('images', 0.08)
+    await expect(
+      computeFalCostCents('fal-ai/nano-banana-2', { quantity: 1 }),
+    ).resolves.toBe(8)
+  })
+
+  it('prices a clip by its duration', async () => {
+    price('seconds', 0.085)
+    await expect(
+      computeFalCostCents('blackforestlabs/flux-3/image-to-video', {
+        durationSeconds: 8,
+      }),
+    ).resolves.toBeCloseTo(68, 2)
+  })
+
+  it('returns null for a clip with no duration rather than guessing one', async () => {
+    price('seconds', 0.085)
+    await expect(
+      computeFalCostCents('blackforestlabs/flux-3/image-to-video', {}),
+    ).resolves.toBeNull()
+  })
+
+  /**
+   * `compute seconds` is priced nowhere, on purpose.
+   *
+   * #410 priced it at completion from the result's own timings. Measuring
+   * against FAL's billing killed that: the pricing API reports
+   * `0.00017 / compute seconds` for both Grok and LTX-2.5, and LTX is billed at
+   * $0.01 per unit -- so the figure is a placeholder for "no price known", not a
+   * rate. FLUX.2 Flash, the only model the mechanism actually priced, is billed
+   * per megapixel and came out 4.5x under.
+   */
+  it('returns null for a compute-seconds price rather than trusting it', async () => {
     price('compute seconds', 0.0008)
-    return expect(
+    await expect(
       computeFalCostCents('fal-ai/flux-2/flash', { aspectRatio: '1:1' }),
     ).resolves.toBeNull()
   })
-})
 
-describe('computeFalCostFromTimings', () => {
-  it('prices a compute-seconds model from its measured inference time', async () => {
-    price('compute seconds', 0.0008)
-    // A real FLUX.2 Flash edit off the local database: 12.24s at $0.0008/s is
-    // $0.0098, so 0.98 cents.
-    await expect(
-      computeFalCostFromTimings('fal-ai/flux-2/flash/edit', {
-        timings: { inference: 12.240180184002384 },
-      }),
-    ).resolves.toBe(0.98)
-  })
-
-  it('keeps a sub-cent run instead of rounding it to nothing', async () => {
-    price('compute seconds', 0.0008)
-    // A measured text-to-image run: 0.468s is $0.00037. Rounding to a whole
-    // cent stores 0, which reads as free and sums to nothing -- the same silent
-    // absence #400 is about, one layer down.
-    await expect(
-      computeFalCostFromTimings('fal-ai/flux-2/flash', {
-        timings: { inference: 0.46789862400328275 },
-      }),
-    ).resolves.toBe(0.04)
-  })
-
-  it('ignores safety_checker time, which is not obviously billed', async () => {
-    price('compute seconds', 1)
-    await expect(
-      computeFalCostFromTimings('x', {
-        timings: { inference: 2, safety_checker: 5 },
-      }),
-    ).resolves.toBe(200)
-  })
-
-  it('returns nothing for a model billed by any other unit', async () => {
-    // Already priced correctly at submit. Re-deriving it here would be a second
-    // pricing lookup that cannot produce a new fact.
-    price('images', 0.08)
-    await expect(
-      computeFalCostFromTimings('fal-ai/nano-banana-2', {
-        timings: { inference: 4 },
-      }),
-    ).resolves.toBeNull()
-  })
-
-  it('returns nothing when the result carries no timings', async () => {
-    // Grok is this case: compute-seconds billing and no timings in the payload,
-    // so there is nothing to measure. Absent beats an invented number.
-    price('compute seconds', 0.00017)
-    await expect(
-      computeFalCostFromTimings('xai/grok-imagine-image/v2.0/edit', {
-        images: [{ url: 'https://example.test/a.png' }],
-      }),
-    ).resolves.toBeNull()
-    // Cheap enough to assert: no timings means the price is never even fetched.
-    expect(getFalModelPrice).not.toHaveBeenCalled()
-  })
-
-  it('survives a missing price and a junk payload', async () => {
+  it('returns null when the endpoint has no price at all', async () => {
     getFalModelPrice.mockResolvedValue(null)
     await expect(
-      computeFalCostFromTimings('x', { timings: { inference: 3 } }),
-    ).resolves.toBeNull()
-    await expect(computeFalCostFromTimings('x', null)).resolves.toBeNull()
-    await expect(
-      computeFalCostFromTimings('x', { timings: { inference: 0 } }),
+      computeFalCostCents('something/unknown', { quantity: 1 }),
     ).resolves.toBeNull()
   })
 })

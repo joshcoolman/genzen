@@ -4,7 +4,6 @@ import {
 } from './image-storage.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
 import { failureTitle } from './create-pending-generation.server'
-import { computeFalCostFromTimings } from './compute-cost.server'
 import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
 import { createImageStorage } from '#/lib/image-storage'
@@ -90,19 +89,14 @@ export async function processImageResult(
     typeof meta.estimated_cost_cents === 'number'
       ? meta.estimated_cost_cents
       : null
-  // A `compute seconds` model has no submit-time estimate to fall back on --
-  // nothing knew how long the GPU would run -- so it wrote no cost at all and
-  // the row carried none (#400). The result's own timings are the first moment
-  // the figure exists. Null for every other unit, which is already priced.
-  const measuredCostCents = await computeFalCostFromTimings(
-    model,
-    falResultData,
-  ).catch(() => null)
-  const providerCostCents =
-    falCostCents ?? measuredCostCents ?? estimatedCostCents
+  // The submit-time estimate, unless FAL reported a cost -- which it never has
+  // on an image result. #410 put a third term between these, pricing the
+  // `compute seconds` models from the result's own timings; that came out 4.5x
+  // under what FAL actually billed, because the rate it read was a placeholder.
+  // Deleted rather than corrected: no endpoint is really billed that way.
+  const providerCostCents = falCostCents ?? estimatedCostCents
   // Activity is the only spend guard now, so it must not present a figure
-  // derived from the pricing table as something FAL reported. A measured figure
-  // is still our arithmetic over FAL's rate card, so it stays an estimate.
+  // derived from the rate card as something FAL reported.
   const providerCostIsEstimate = falCostCents == null
 
   let written

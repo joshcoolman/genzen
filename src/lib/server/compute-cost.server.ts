@@ -20,7 +20,7 @@ export async function computeFalCostCents(
   const quantity = params.quantity ?? 1
 
   if (unit === 'images' || unit === 'units') {
-    return Math.round(unit_price * quantity * 100)
+    return cents(unit_price * quantity)
   }
 
   if (unit === 'megapixels' || unit === 'processed megapixels') {
@@ -44,75 +44,41 @@ export async function computeFalCostCents(
     height = height ?? 1024
 
     const megapixels = (width * height) / 1_000_000
-    return Math.round(unit_price * megapixels * quantity * 100)
+    return cents(unit_price * megapixels * quantity)
   }
 
   if (unit === 'seconds') {
     if (params.durationSeconds == null) return null
-    return Math.round(unit_price * params.durationSeconds * quantity * 100)
+    return cents(unit_price * params.durationSeconds * quantity)
   }
 
-  // `compute seconds` is deliberately absent here: nothing at submit time knows
-  // how long the GPU will run. It is priced at completion instead, from the
-  // result's own timings -- see `computeFalCostFromTimings` below.
+  // **`compute seconds` is deliberately absent, and no longer priced anywhere.**
+  //
+  // #410 priced it at completion from the result's own `timings.inference`,
+  // against FAL's pricing API. Measuring genzen's recorded costs against FAL's
+  // actual billing showed why that was wrong: the pricing API reports
+  // `0.00017 / compute seconds` for LTX-2.5 and for Grok alike, and LTX is
+  // demonstrably billed at $0.01 per unit -- so that figure is a **placeholder
+  // returned when FAL has no real price for an endpoint**, not a rate.
+  //
+  // FLUX.2 Flash was the only model the mechanism actually priced, and FAL
+  // bills it per megapixel, not per compute second. The result was a figure
+  // 4.5x under what was charged. There is no endpoint for which
+  // `compute seconds` is the real unit, so there is nothing left to price this
+  // way; the lineup's per-image figure is both closer and honest about being an
+  // estimate.
   return null
 }
 
 /**
- * What a `compute seconds` model actually cost, from the completed result.
+ * Cents, to two decimal places of a cent.
  *
- * The only unit that cannot be priced at submit, and the reason two live models
- * -- FLUX.2 Flash and Grok Imagine 2.0 -- recorded no cost at all until #400:
- * `computeFalCostCents` returned null for them and nothing else ever asked.
- *
- * This is measured seconds at FAL's own published rate, which is the closest to
- * a real figure genzen can get without an Admin key and the usage API (#400).
- * It is still arithmetic, so the caller leaves `provider_cost_is_estimate` true.
- *
- * Returns null for any other unit. A model billed per image or per megapixel
- * was already priced correctly at submit, and re-deriving the same number here
- * would be a second pricing lookup for no new information.
+ * **Not `Math.round`**, which was here until the measurement above. A z-image
+ * generation costs 0.52c and recorded 1c -- a 2x over-report on the cheapest
+ * tier, in an app whose promise is that its figures match FAL's. The column is
+ * JSONB with no integer constraint and `formatCents` already renders four
+ * decimals, so nothing downstream wanted the rounding.
  */
-export async function computeFalCostFromTimings(
-  endpointId: string,
-  falResultData: Record<string, unknown> | null | undefined,
-): Promise<number | null> {
-  const seconds = inferenceSeconds(falResultData)
-  if (seconds == null) return null
-
-  const price = await getFalModelPrice(endpointId)
-  if (!price || price.unit !== 'compute seconds') return null
-
-  // **Not rounded to a whole cent**, unlike every branch above. A measured
-  // FLUX.2 Flash run is 0.47s, which is $0.00037 -- `Math.round` turns the one
-  // figure this function exists to produce into 0, which is a second silent
-  // wrongness dressed up as a fix. Two decimal places of a cent is exactly the
-  // precision the readers already render (`formatCents` prints four decimal
-  // places of a dollar below a cent), and the value is JSONB, so nothing in the
-  // schema ever wanted an integer.
-  return Math.round(price.unit_price * seconds * 100 * 100) / 100
-}
-
-/**
- * The GPU time a result reports, in seconds.
- *
- * FAL's image queue returns `timings: { inference, safety_checker? }`, which
- * genzen already persists on every completed row. `safety_checker` is left out
- * on purpose: it is a fraction of a second and it is not obvious FAL bills for
- * it, so counting it would be inventing a charge.
- *
- * Not every endpoint sends timings -- Grok returns none -- and one that does not
- * still records no cost. That is the honest outcome: absent beats a number
- * nothing measured.
- */
-function inferenceSeconds(
-  data: Record<string, unknown> | null | undefined,
-): number | null {
-  if (!data || typeof data !== 'object') return null
-  const timings = (data as { timings?: Record<string, unknown> }).timings
-  if (!timings || typeof timings !== 'object') return null
-  const inference = timings.inference
-  if (typeof inference !== 'number' || !Number.isFinite(inference)) return null
-  if (inference <= 0) return null
-  return inference
+function cents(dollars: number): number {
+  return Math.round(dollars * 100 * 100) / 100
 }

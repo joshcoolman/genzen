@@ -149,13 +149,13 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/flux-2/flash',
     withImages: 'fal-ai/flux-2/flash/edit',
     maxRefs: 3,
-    // Billed per compute second ($0.0008/s), not per megapixel, so this is an
-    // approximation in a way the other prices are not. Since #400 Activity does
-    // record the real cost -- the completion prices the result's own inference
-    // time -- and it bears this out: the edit endpoint measures ~12.3s, so ~1c.
-    // Text-to-image is nearer 3s and so a quarter of that; one number cannot be
-    // both, and the dearer one is the safer thing to show before a click.
-    price: 0.01,
+    // **Measured against FAL's own billing**, not its pricing API, which claims
+    // `$0.0008 / compute second` for this endpoint and is wrong: FAL bills it
+    // per megapixel like the rest of the cheap tier. A day's real invoices --
+    // 5 MP over 2 text-to-image runs, 18 over 6 edits -- put it at 2.5 MP and
+    // 3 MP a go, so $0.0125 and $0.015. One number cannot be both, and the
+    // dearer one is the safer thing to show before a click.
+    price: 0.015,
     useCase: 'Cheap reference editing — preserves the input scene',
   },
   {
@@ -183,14 +183,12 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // $0.01 per input image on the edit endpoint. We send neither `quality` nor
     // `resolution`, so this is FAL's defaults: medium at 1k.
     //
-    // **The one price we cannot reconcile** (#400). FAL's pricing API bills this
-    // endpoint at $0.00017 per *compute second*, which at any plausible runtime
-    // is a fraction of a cent -- two orders of magnitude below what xAI
-    // publishes per image. Grok is also the one endpoint that returns no
-    // `timings`, so the completion has nothing to measure and the row still
-    // records no cost. Kept at the published per-image figure deliberately:
-    // over-reporting a daily driver is the safer error, and only the usage API
-    // (an Admin key, #400) can settle which number is real.
+    // **It reconciles now, and the mystery was ours** (#400). FAL's pricing API
+    // reports `$0.00017 / compute second` here -- and reports the identical
+    // figure for LTX-2.5, which is demonstrably billed at $0.01 per unit. It is
+    // a placeholder returned when FAL has no real price for an endpoint, not a
+    // rate, so there was never a contradiction with xAI's published per-image
+    // price. This is that published figure and it stands.
     price: 0.06,
     useCase: 'xAI look — edits up to three images at once',
   },
