@@ -114,9 +114,14 @@ export const VIDEO_MODELS: Array<VideoModel> = [
         aspectRatios: [],
       },
     },
-    // $0.08/s at 768P. 480P is $0.05, 2K $0.13 and 4K $0.16 -- and 2K is FAL's
-    // *default*, so pinning 768P is the cheap choice as well as the fixed one.
-    pricePerSecondCents: 8,
+    // **6, from FAL's own invoice, not 8 from its rate card.** FAL bills this
+    // endpoint at $0.05 per second but on 1.2x the requested duration -- an 8s
+    // clip was charged 9.6 seconds, $0.48. That is 6c per second of clip you
+    // asked for, and it is the number worth showing, since the duration control
+    // is what a person is actually choosing. At 8 the estimate ran a third
+    // over. (Flux 3 bills 2x duration at $0.085 and LTX 9 units at $0.01, so
+    // their 17 and 9 were already right.)
+    pricePerSecondCents: 6,
     resolution: '768P',
     // FAL gives a range (5-15) rather than an enum, and a 7 was accepted; this
     // is a spread across it rather than a constraint FAL stated.

@@ -156,7 +156,7 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   clips at 20s is $6.80 and eight LTX clips at 6s is $4.32. Settings intersect
   across the ticked models, and the two rules differ on purpose — durations are
   a plain intersection because a rejected duration fails at FAL, but a model
-  exposing no aspect param is *excluded* from that intersection rather than
+  exposing no aspect param is _excluded_ from that intersection rather than
   emptying it, or H3 would strip the control from two models able to honour a
   choice (#417)
 
