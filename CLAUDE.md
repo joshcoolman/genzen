@@ -129,9 +129,22 @@ a one-line fix to something already merged.
 Two durable surfaces, no continuation file: the README `## Status` block (last
 shipped / up next) and open GitHub issues. Read both at session start.
 
-**Issues are ranked by three labels — `now`, `next`, `later`** — which the
-upnext app renders as group headers, most-recently-touched first within a group.
-Reordering is a label toggle, not a priority number. After changing any issue's
+**Issues are ranked by three labels — `focus`, `next`, `later`** — which the
+upnext app renders as group headers, **oldest-touched first within a group**, and
+an issue carrying none of them lands in Unsorted. Reordering is a label toggle,
+not a priority number.
+
+Two things this said wrongly until 2026-08-18, both of which cost a sort:
+
+- **`now` is an upnext bucket that has no label in this repo**, and `focus` —
+  which every ranked issue here actually uses — was not named at all. `gh` fails
+  outright on a label it cannot resolve, so a `--remove-label` naming `now`
+  removes nothing and reports success on the add, leaving an issue in two groups.
+- **The direction is ascending, not most-recent-first.** A label edit touches
+  `updatedAt`, so filing an issue *appends it to the bottom* of its group and the
+  **top of a group is the next thing to do**. Re-applying a label an issue already
+  carries is a no-op and will not move it; forcing a position takes a remove and
+  then an add. After changing any issue's
 labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
 open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
 many tabs heard it, so `0` means nothing was listening rather than nothing
