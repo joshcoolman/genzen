@@ -146,6 +146,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-18
 
+- **Generate says the act; the price sits under it** — Images read
+  `Generate 4 images` and showed **no cost anywhere**, on the route where a
+  stepper, a prompt list and multi-select models all multiply at once; Video
+  read `Generate $0.72`, naming an act after its price and changing width as
+  you changed the duration. Both now read `Estimate: $1.10` under a button
+  that says what it does. The image estimate is new and prices off the
+  lineup, not FAL's pricing API — that API disagrees with what FAL actually
+  bills on half the endpoints checked. It reports unpriced models separately
+  rather than showing a short total as a whole one. Five copies of the money
+  formatter became one, and two had already drifted: a free row read
+  `$0.0000`, and video truncated any sub-cent figure to `$0.00` — #400's bug
+  reintroduced at the display step (#416)
+
 - **Activity shows clips, which it never has** — the log filtered
   `source = 'ai_generated'` and clips are `ai_video`, so every clip ever
   generated was absent from the one surface whose job is recording what a
@@ -166,4 +179,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 - **Two models recorded no cost, and Nano Banana was priced at half** — `compute seconds` was the one FAL billing unit nothing handled, so FLUX.2 Flash and Grok wrote no cost at all; it is now priced at completion from the result's measured inference time, and deliberately not rounded to a whole cent, since a run of that model is worth $0.0004. Nano Banana 2 read $0.04 in the picker against FAL's $0.08 — the row estimate had it right, so the two halves of the app disagreed on a daily driver. Grok is the one price that still does not reconcile and says so in the lineup (#400, and #400 stays open for the usage-API work)
 - **Account is a settings area, and the app is themeable** — a rail down the left of /account holds Overview, Style and Shortcuts; `/shortcuts` moved under it and left the app's own nav. Style is six colors, and the other four palette tokens are derived from them: one `<style>` block in the authenticated layout restyles every route, server-rendered so there is no flash. **No component's styling was touched** — that was the point, and the proof that #229's palette work holds. It derives in HSL with no color library, because `tokens.css` claims one notation for every value; and it emits nothing at all without a saved row, so the defaults and the stylesheet cannot drift apart. Found on the way: `overflow-x: hidden` on the app shell had been silently disabling `position: sticky` app-wide, since nothing was sticky until this rail (#406, phases 1 and 3)
 - **Thumbnail zoom, from the keyboard or the toolbar** — ⌘⌃+ / ⌘⌃- steps the /images grid through four stops (50, 60, 75, 100), ⌘⌃0 back to 100%, and a magnifier in the toolbar opens the same stops on hover. It is `zoom` on the grid element, so cards and captions scale together and nothing re-wraps — only how many fit a row. The stops are measured rather than chosen: the grid is `auto-fill` over a 200px minimum, so only a step crossing a column-count threshold reads as a change, and an even 10% left three consecutive stops on four columns. Not #284's size switcher returning — one multiplier, no named sizes, identical card at every size. The toolbar picked up a pass on the way: lit toggles are a raised surface rather than an accent tint, sort and zoom are outlined since they never light up, and every overlay icon button is now the circle the select tick already was (#403)
-- **Explore steps on the mouse wheel** — wheel anywhere over the overlay moves one image, mouse and trackpad both, with a rate cap so an inertia tail cannot fly through the set. The handler was the small part: paging blanked the frame on every step, resetting `loaded` and showing a pulsing placeholder even when the next image was already cached. It now holds the outgoing image until the incoming one decodes, so stepping is instant rather than a strobe (#393)
