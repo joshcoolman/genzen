@@ -2,7 +2,7 @@ import { AlertCircle, CheckCircle2, Clock4 } from 'lucide-react'
 import { clsx } from 'clsx'
 import styles from './run-row.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
-import { ImageBox } from '#/components'
+import { MediaBox } from '#/components'
 import {
   formatAbsolute,
   formatDurationMs,
@@ -63,8 +63,15 @@ export function RunRow({ entry, thumbnailUrl, onSelect }: RunRowProps) {
       onClick={() => onSelect?.(entry.id)}
       className={clsx(styles.row, entry.isDeleted && styles.rowDeleted)}
     >
-      {/* Thumbnail */}
-      <ImageBox src={thumbnailUrl} alt="" size={THUMB_SIZE} fit="cover" />
+      {/* Thumbnail. A clip has no poster frame anywhere in the app, so it is
+          a `<video>` painting frame one -- see MediaBox. */}
+      <MediaBox
+        kind={entry.source === 'ai_video' ? 'video' : 'image'}
+        src={thumbnailUrl}
+        alt=""
+        size={THUMB_SIZE}
+        fit="cover"
+      />
 
       {/* Model + provider + deleted badge */}
       <div className={styles.model}>

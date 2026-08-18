@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_VIDEO_MODEL,
+  VIDEO_FILTER_PREFIX,
   VIDEO_MODELS,
   aspectRatiosFor,
   endpointFor,
+  expandVideoFilterId,
   frameCapacityFor,
   supportsEndImage,
+  videoEndpointIds,
+  videoFilterOptions,
   videoModelBySlug,
+  videoModelNameFor,
   videoModelsByPrice,
 } from './models'
 
@@ -135,5 +140,53 @@ describe('entries', () => {
     for (const model of VIDEO_MODELS) {
       expect(model.durations, model.slug).toContain(model.defaultDuration)
     }
+  })
+})
+
+/**
+ * The row-facing half (#398). These exist because Activity reasons about clips
+ * by *model* while the column holds an *endpoint*, and getting that expansion
+ * wrong is silent: the filter returns nothing and looks like "no runs yet".
+ */
+describe('endpoint identity', () => {
+  it('names a row from any endpoint the model can be submitted to', () => {
+    for (const model of VIDEO_MODELS) {
+      for (const id of videoEndpointIds(model)) {
+        expect(videoModelNameFor(id)).toBe(model.label)
+      }
+    }
+  })
+
+  it('returns undefined for an endpoint no video model claims', () => {
+    // Undefined rather than the raw id, so Activity can fall back to the image
+    // lineup instead of badging a still with a string that looks resolved.
+    expect(videoModelNameFor('fal-ai/flux-pro/kontext')).toBeUndefined()
+  })
+
+  it('expands a filter id to every endpoint of that model', () => {
+    const flux3 = VIDEO_MODELS.find((m) => m.slug === 'flux-3')!
+    const ids = expandVideoFilterId(`${VIDEO_FILTER_PREFIX}flux-3`)
+    // Three, not two: Flux 3 is the model that puts first+last frame on its own
+    // endpoint, so a filter that only knew the first two would hide those runs.
+    expect(ids).toEqual(videoEndpointIds(flux3))
+    expect(ids).toHaveLength(3)
+  })
+
+  it('leaves an image endpoint id alone', () => {
+    // Null means "not mine, pass it through" -- an image option's id already is
+    // what the column holds.
+    expect(expandVideoFilterId('fal-ai/flux-pro/kontext')).toBeNull()
+  })
+
+  it('expands an unknown slug to nothing rather than to everything', () => {
+    // A retired video model must narrow the query to zero rows, not fall
+    // through to an unfiltered list that looks like the filter did nothing.
+    expect(expandVideoFilterId(`${VIDEO_FILTER_PREFIX}gone`)).toEqual([])
+  })
+
+  it('offers one filter option per model, cheapest first', () => {
+    expect(videoFilterOptions().map((o) => o.label)).toEqual(
+      videoModelsByPrice().map((m) => m.label),
+    )
   })
 })

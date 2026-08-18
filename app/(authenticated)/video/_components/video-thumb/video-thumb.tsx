@@ -1,9 +1,10 @@
 'use client'
 
 import { AlertTriangle, Download, Loader2, Trash2 } from 'lucide-react'
-import { formatCost } from '../../models'
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
+import { firstFrameSrc } from '#/components'
+import { formatCost } from '#/features/video/models'
 
 function costOf(video: VideoRecord): string | null {
   const cents = (video.generation_metadata ?? {}).provider_cost_cents
@@ -55,7 +56,7 @@ export function VideoThumb({
         {isDone ? (
           <video
             className={styles.player}
-            src={`/img/${video.id}`}
+            src={firstFrameSrc(`/img/${video.id}`)}
             controls
             preload="metadata"
             playsInline

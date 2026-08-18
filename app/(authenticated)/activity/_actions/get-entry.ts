@@ -3,6 +3,7 @@
 import type {
   ActivityEntryDetail,
   ActivityGenerationMetadata,
+  ActivitySource,
   GenerationStatus,
 } from '#/features/activity/types'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -17,7 +18,7 @@ interface GetActivityEntryInput {
 
 interface DetailRow {
   id: string
-  source: string
+  source: ActivitySource
   storage_path: string | null
   file_name: string | null
   mime_type: string | null
@@ -59,9 +60,12 @@ function resolveThumbnailPath(
   return row.storage_path ?? null
 }
 
-function resolveModelName(modelId: string | null | undefined): string {
-  if (!modelId) return 'Unknown'
-  return getModelName(modelId)
+/** `model_label` first -- see the note on the same function in
+ *  `list-activity.action.ts`. A clip's endpoint is not in the image lineup. */
+function resolveModelName(m: ActivityGenerationMetadata): string {
+  if (m.model_label) return m.model_label
+  if (!m.model) return 'Unknown'
+  return getModelName(m.model)
 }
 
 function deriveProvider(m: ActivityGenerationMetadata): string | null {
@@ -121,7 +125,8 @@ export async function getActivityEntry(
     thumbnailPath: resolveThumbnailPath(r),
     prompt: m.prompt ?? '',
     model: m.model ?? null,
-    modelName: resolveModelName(m.model),
+    modelName: resolveModelName(m),
+    source: r.source,
     provider: deriveProvider(m),
     status: r.status,
     createdAt: r.created_at,

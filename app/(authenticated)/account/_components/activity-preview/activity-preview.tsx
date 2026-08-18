@@ -7,6 +7,7 @@ import { clsx } from 'clsx'
 import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.action'
+import { firstFrameSrc } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
 
@@ -75,7 +76,20 @@ export function ActivityPreview() {
                 )}
               >
                 <div className={styles.thumb}>
-                  {thumb ? (
+                  {thumb && entry.source === 'ai_video' ? (
+                    // A fourth copy of the same decision, and the reason this
+                    // widget is not just MediaBox: the box is 32px with its own
+                    // fallback icon, drawn by this stylesheet. Only the media
+                    // element differs -- an mp4 in an `<img>` is a broken
+                    // square, and `preload="metadata"` paints frame one (#398).
+                    <video
+                      src={firstFrameSrc(thumb)}
+                      className={styles.thumbImage}
+                      preload="metadata"
+                      muted
+                      playsInline
+                    />
+                  ) : thumb ? (
                     <img
                       src={thumb}
                       alt=""

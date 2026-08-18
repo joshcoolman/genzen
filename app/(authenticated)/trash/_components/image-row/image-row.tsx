@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
 import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
-import { Button, ConfirmDialog, ImageBox, useConfirm } from '#/components'
+import { Button, ConfirmDialog, MediaBox, useConfirm } from '#/components'
 import { formatFileSize } from '#/lib/format'
 
 const THUMB_SIZE = 96
@@ -76,25 +76,15 @@ export function ImageRow({
           until ImageBox took over the picture; the row draws it now, because
           the row is what it is a card of. */}
       <div className={styles.card}>
-        {/* A clip gets a `<video>` rather than an ImageBox: there is no poster
-            frame anywhere in the app (no ffmpeg on the server), so an mp4 in an
-            `<img>` lands on the broken-file fallback and every clip in the bin
-            looks identical. `preload="metadata"` is what paints frame one --
-            the same trick the Video route's list uses. ImageBox is not growing
-            a `kind` prop for this; its whole contract is that it shows an
-            image and nothing else. */}
-        {isVideo ? (
-          <video
-            className={styles.clip}
-            style={{ '--clip-size': `${THUMB_SIZE}px` } as React.CSSProperties}
-            src={url ?? undefined}
-            preload="metadata"
-            muted
-            playsInline
-          />
-        ) : (
-          <ImageBox src={url} alt={image.title} size={THUMB_SIZE} />
-        )}
+        {/* MediaBox rather than a hand-rolled `<video>` (#398). This row wrote
+            the decision first, the Video card had already written it, and
+            Activity was about to be the third -- so it is a component now. */}
+        <MediaBox
+          kind={isVideo ? 'video' : 'image'}
+          src={url}
+          alt={image.title}
+          size={THUMB_SIZE}
+        />
 
         <div className={styles.text}>
           <div className={styles.titleRow}>

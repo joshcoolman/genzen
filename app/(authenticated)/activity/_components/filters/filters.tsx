@@ -10,6 +10,7 @@ import {
   RETIRED_MODEL_NAMES,
   pickerId,
 } from '#/features/ai-images/models'
+import { videoFilterOptions } from '#/features/video/models'
 import { MultiSelect, SingleSelect } from '#/components'
 
 const STATUS_OPTIONS: Array<{ value: GenerationStatus; label: string }> = [
@@ -36,6 +37,11 @@ export function Filters({
     for (const m of IMAGE_MODELS) {
       out.push({ id: pickerId(m), label: m.name })
     }
+    // Video, since #398. One option per model, matching the picker -- a video
+    // model is two or three endpoints in the data, and the id here stands for
+    // all of them (`expandVideoFilterId`). Without these a clip's entries were
+    // unreachable through the filter even once the query could see them.
+    out.push(...videoFilterOptions())
     // Activity outlives the lineup: rows made by a model that has since been
     // cut still need to be filterable, or the history is there but unreachable.
     for (const [id, label] of Object.entries(RETIRED_MODEL_NAMES)) {

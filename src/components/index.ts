@@ -48,6 +48,11 @@ export { ImageBox, type ImageBoxProps } from './image-box/image-box'
 export { Input, type InputProps } from './input/input'
 export { ImageGrid, ImageGridSkeleton } from './image-grid/image-grid'
 export {
+  MediaBox,
+  firstFrameSrc,
+  type MediaBoxProps,
+} from './media-box/media-box'
+export {
   MissingKeyProvider,
   useReportError,
 } from './missing-key-dialog/missing-key-dialog'

@@ -5,9 +5,9 @@ import { ModelSelector } from '../_components/model-selector/model-selector'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
-import { frameCapacityFor } from './models'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
+import { frameCapacityFor } from '#/features/video/models'
 import { PageHeader, RefImageStrip, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {

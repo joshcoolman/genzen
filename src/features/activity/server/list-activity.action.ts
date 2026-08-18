@@ -3,12 +3,14 @@
 import type {
   ActivityEntry,
   ActivityGenerationMetadata,
+  ActivitySource,
   GenerationStatus,
   ListActivityResult,
 } from '../types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 import { getModelName } from '#/features/ai-images/models'
+import { expandVideoFilterId } from '#/features/video/models'
 
 /** How many days that produced runs the log reaches back. Days with nothing in
  *  them do not count against it. */
@@ -23,7 +25,7 @@ interface ListActivityInput {
 
 interface Row {
   id: string
-  source: string
+  source: ActivitySource
   storage_path: string | null
   status: GenerationStatus
   generation_metadata: unknown
@@ -49,9 +51,33 @@ function resolveThumbnailPath(row: Pick<Row, 'storage_path'>): string | null {
   return row.storage_path ?? null
 }
 
-function resolveModelName(modelId: string | null | undefined): string {
-  if (!modelId) return 'Unknown'
-  return getModelName(modelId)
+/**
+ * The name to show for a row's model.
+ *
+ * `model_label` first, because it is the only thing that names a clip: a video
+ * row's `model` is a video endpoint, and `getModelName` resolves against the
+ * image lineup, so before #398 every clip would have rendered a raw
+ * `lightricks/...` id. The label was pinned at submit time, which also means it
+ * survives a model leaving the lineup -- the same reason `processVideoResult`
+ * reads it rather than the catalog.
+ */
+function resolveModelName(m: ActivityGenerationMetadata): string {
+  if (m.model_label) return m.model_label
+  if (!m.model) return 'Unknown'
+  return getModelName(m.model)
+}
+
+/**
+ * Filter ids as the column holds them.
+ *
+ * An image option's id already *is* an endpoint id. A video option's is a
+ * `video:<slug>` standing for the two or three endpoints that model can be
+ * submitted to, so it expands here rather than in the component -- the
+ * component's job is to list models, and the endpoints are a fact about the
+ * data (#398).
+ */
+function expandModelFilters(ids: Array<string>): Array<string> {
+  return ids.flatMap((id) => expandVideoFilterId(id) ?? [id])
 }
 
 function deriveProvider(m: ActivityGenerationMetadata): string | null {
@@ -73,7 +99,8 @@ function parseEntry(row: Row): ActivityEntry {
     thumbnailPath: resolveThumbnailPath(row),
     prompt: m.prompt ?? '',
     model: m.model ?? null,
-    modelName: resolveModelName(m.model),
+    modelName: resolveModelName(m),
+    source: row.source,
     provider: deriveProvider(m),
     status: row.status,
     createdAt: row.created_at,
@@ -93,15 +120,21 @@ export async function listActivity(
 ): Promise<ListActivityResult> {
   const { userId } = await resolveAuth()
 
+  // Both sources. Clips are `ai_video` and were excluded outright until #398 --
+  // and they are the expensive half: a 20s Flux 3 clip is $3.40 against $0.08
+  // for the dearest still, so the ledger was blind to most of the money.
+  //
   // One predicate, three queries. It was a chain of builder calls applied to
   // two query objects through a structurally-typed `applyFilters` helper --
   // the shape that helper existed to satisfy went with supabase-js.
   const where = sql`
     where user_id = ${userId}
-      and source = 'ai_generated'
+      and source in ('ai_generated', 'ai_video')
       ${
         data.models?.length
-          ? sql`and generation_metadata->>'model' in ${sql(data.models)}`
+          ? sql`and generation_metadata->>'model' in ${sql(
+              expandModelFilters(data.models),
+            )}`
           : sql``
       }
       ${data.statuses?.length ? sql`and status in ${sql(data.statuses)}` : sql``}

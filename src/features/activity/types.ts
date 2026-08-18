@@ -2,6 +2,14 @@ import type { GenerationInputImage } from '#/features/ai-images/generation-input
 
 export type GenerationStatus = 'pending' | 'completed' | 'failed'
 
+/**
+ * What a row produced. Clips were absent from Activity entirely until #398 --
+ * the query filtered `ai_generated` while the log's whole purpose is recording
+ * what a generation cost, and clips are the only generations where that
+ * question is interesting.
+ */
+export type ActivitySource = 'ai_generated' | 'ai_video'
+
 export interface ActivityGenerationMetadata {
   prompt?: string
   model?: string
@@ -14,6 +22,12 @@ export interface ActivityGenerationMetadata {
   provider_cost_cents?: number
   /** True when the figure came from the pricing table, not from FAL itself. */
   provider_cost_is_estimate?: boolean
+  /** Written by the video submit (#367). The name of a model, pinned at submit
+   *  time, for rows whose endpoint the image lineup cannot resolve. */
+  model_label?: string
+  /** Video only. What was asked for, not what came back. */
+  duration_seconds?: number
+  resolution?: string
   thumbnail_path?: string
   fal_url?: string
   error?: { message?: string } | string
@@ -28,6 +42,9 @@ export interface ActivityEntry {
   prompt: string
   model: string | null
   modelName: string
+  /** The row was selected with this and `parseEntry` dropped it, so the client
+   *  could not branch on it even where it needed to (#398). */
+  source: ActivitySource
   provider: string | null
   status: GenerationStatus
   createdAt: string

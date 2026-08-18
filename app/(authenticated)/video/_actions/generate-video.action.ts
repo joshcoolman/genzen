@@ -7,7 +7,7 @@ import {
   endpointFor,
   estimateCostCents,
   videoModelBySlug,
-} from '../models'
+} from '#/features/video/models'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { sql } from '#/lib/server/db.server'
 import {
