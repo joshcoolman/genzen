@@ -101,7 +101,7 @@ export function GeneratorPanel({
       // remembered.
       const ok = await confirm({
         title: `Generate ${count} images?`,
-        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each, about ${formatCents(generator.estimatedCost.cents, { estimate: true })}. Cancel to change the count or the models.`,
+        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each, about ${formatCents(generator.estimatedCost.cents)}. Cancel to change the count or the models.`,
         confirmLabel: `Generate ${count}`,
         destructive: false,
       })

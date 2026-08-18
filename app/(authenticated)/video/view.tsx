@@ -12,9 +12,13 @@ import { PageHeader, RefImageStrip, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
-    model,
     models,
-    selectModel,
+    pickerModels,
+    modelSlugs,
+    toggleModel,
+    selectOnlyModel,
+    toggleAllModels,
+    durationOptions,
     modelTakesEndFrame,
     aspectOptions,
     hasFirstFrame,
@@ -40,6 +44,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     aspectRatio,
     setAspectRatio,
     estimatedCost,
+    needsConfirm,
+    promptCount,
     isSubmitting,
     canSubmit,
     submit,
@@ -75,7 +81,10 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
         <div className={styles.controls}>
           <VideoForm
-            model={model}
+            durationOptions={durationOptions}
+            modelCount={models.length}
+            promptCount={promptCount}
+            needsConfirm={needsConfirm}
             prompts={prompts}
             onUpdatePrompt={updatePrompt}
             onAddPrompt={addPrompt}
@@ -127,17 +136,17 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                 )}
               </>
             }
-            /* Last, as it is in the generator panel. Single-select (#385): a
-               clip is 20-100x the price of a still, so ticking four models
-               would be a $20 click. Its two right-hand columns are the same
-               two numbers read differently -- dollars per second, and frames
-               rather than references. No header tick and no Cmd-click solo,
-               because with one selection both mean nothing. */
+            /* Last, as it is in the generator panel, and multi-select since
+               #417: one prompt through several models is the only way to learn
+               how they differ. **One clip per model, never more** -- there is
+               no count stepper here and there will not be one. Its two
+               right-hand columns are the same two numbers read differently --
+               dollars per second, and frames rather than references. */
             modelSlot={
               <ModelSelector
-                mode="single"
-                selectedIds={[model.slug]}
-                visibleModels={models.map((m) => ({
+                mode="multi"
+                selectedIds={modelSlugs}
+                visibleModels={pickerModels.map((m) => ({
                   id: m.slug,
                   name: m.label,
                   description: m.description,
@@ -145,7 +154,9 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                   price: m.pricePerSecondCents / 100,
                   capacity: frameCapacityFor(m),
                 }))}
-                onToggleSelected={selectModel}
+                onToggleSelected={toggleModel}
+                onToggleAll={toggleAllModels}
+                onSelectOnly={selectOnlyModel}
                 stagedImageCount={sources.length + endSources.length}
                 priceLabel="$/s"
                 capacityLabel="Frames"

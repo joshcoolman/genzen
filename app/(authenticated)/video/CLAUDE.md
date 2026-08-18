@@ -1,7 +1,8 @@
 # Video
 
 An image you already made, plus a note, comes back moving (#305). Three FAL
-models -- LTX-2.5 Fast, MiniMax H3, Flux 3 -- picked one at a time (#385).
+models -- LTX-2.5 Fast, MiniMax H3, Flux 3 -- and since #417 you can tick
+several, for one clip each.
 
 Built to `docs/reference/route-shape.md`. `page.tsx` reads the clip list and the
 source images; `use-view.ts` owns everything after the first paint.
@@ -27,14 +28,25 @@ source images; `use-view.ts` owns everything after the first paint.
   works.** H3's image endpoint follows the frame it is given, so the form
   renders no Aspect row and the submit sends no `aspect_ratio`. A control with
   no options would say the choice exists and had been taken away.
-- **The picker is `ModelSelector` in `mode="single"`, the generator panel's
+- **The picker is `ModelSelector` in `mode="multi"`, the generator panel's
   own.** Its two right-hand columns are the same two numbers read differently
   -- dollars per _second_, and _frames_ rather than references -- which is all
   the component needed to be shared: two optional label props, not a fork.
-  Single-select is the money decision, not a simplification: a clip is 20-100x
-  the price of a still, so the image panel's "tick four models and fire" would
-  be a $20 click. No header tick and no Cmd-click solo, because with one
-  selection both mean nothing.
+
+  It was single-select until #417, and that was a money decision rather than a
+  simplification -- a clip is 20-100x the price of a still, so "tick four models
+  and fire" was a $20 click **when nothing on screen said so**. Three things
+  make the count safe to raise, and removing any one puts the objection back:
+  the estimate under Generate (#416), **one clip per model** (there is no count
+  stepper here and there will not be one -- the useful axis is across models,
+  not four takes from one), and a confirm above `CONFIRM_ABOVE_CENTS`.
+
+  **Prompts still multiply, and they are the axis that bites.** Two prompts and
+  three models is six clips, none of them duplicates. That is why the confirm
+  triggers on **price rather than count**, unlike `GeneratorPanel`'s
+  five-images rule: two Flux 3 clips at 20s is $6.80 and eight LTX clips at 6s
+  is $4.32, so a count says little about the size of the click.
+
 - **The control column is ordered like `GeneratorPanel`, and that is the
   point.** Prompts, then the frame slots, then the settings, then a full-width
   Generate, then a `CostNote`, then the model picker -- the same order, inheriting the same
@@ -42,8 +54,8 @@ source images; `use-view.ts` owns everything after the first paint.
   A person moves between them in one session. It is not a copy: two image
   slots instead of one (and **labelled**, which that panel's single strip is
   not -- two slots that do different things cannot both be unlabelled),
-  duration where the count stepper is, an aspect control that can be absent
-  entirely, and a single-select picker. `RefImageStrip`,
+  duration where the count stepper is (and no stepper at all), and an aspect
+  control that can be absent entirely. `RefImageStrip`,
   `ExistingImagePicker` (`max={1}`, `autoConfirm`) and `PromptList` are
   borrowed unmodified; the frames and the picker are passed into `VideoForm` as
   slots, because the view owns the picker dialog they open.
@@ -66,10 +78,12 @@ source images; `use-view.ts` owns everything after the first paint.
   exists. One picker serves both slots; `pickerTarget` says where the pick
   lands, because a second dialog would be the same component mounted twice to
   answer the same question.
-- **Several prompts, one first frame, one clip each.** The submit loops
-  sequentially rather than `Promise.all` -- each call reserves a row before it
-  contacts FAL, and firing them together interleaves the reservations against a
-  queue that answers in its own order.
+- **Several prompts, several models, one first frame, one clip each.** The
+  submit loops sequentially rather than `Promise.all` -- each call reserves a
+  row before it contacts FAL, and firing them together interleaves the
+  reservations against a queue that answers in its own order. **Prompt-major**,
+  so the first clip of every prompt arrives before the second of any: a submit
+  abandoned half way has covered the prompts rather than one prompt thoroughly.
 - **The prompt is the only required input.** Every frame slot is optional, and
   the frames decide which endpoint runs -- `textToVideo` with none,
   `withImage` with a first, `withFirstAndLastImage` with both where the model
@@ -77,13 +91,24 @@ source images; `use-view.ts` owns everything after the first paint.
   acts, not a switch: with a first frame you are animating something you made,
   with both the model solves the move between two stills, and with neither it
   invents the whole shot and the prompt has to carry it.
+- **Settings are intersected across the ticked models** (#417).
+  `sharedDurations` is a plain intersection -- a duration one model rejects
+  fails at FAL rather than in the form -- so LTX plus H3 offers 6/8/10/12 and
+  neither H3's 5 nor LTX's 20. `sharedAspectRatios` is **not** a plain
+  intersection: a model exposing no `aspect_ratio` param is _excluded_ from it
+  rather than emptying it, because an empty list means "there is no control"
+  and intersecting it literally would strip the control from the models that do
+  have one and hand FAL its default. The end-frame slot needs **every** model to
+  accept one, not any: the submit refuses an end frame an endpoint does not
+  declare, and a partial submit is the worst outcome -- half a comparison is not
+  a comparison.
 - **Aspect options are per endpoint, and that is not a nicety.** `auto` exists
   only where there is an image to match -- FAL's own enums differ, and the
   text-to-video endpoints reject it. With a first frame, 16:9 and 9:16 mean
   "recrop my picture", which crops and re-imagines; without one they are just
-  the output shape. `use-view` coerces the value when the endpoint changes --
-  and the duration too, since switching from LTX (6s up) to H3 (5-15) leaves
-  18s selected against a model that will not take it.
+  the output shape. `use-view` coerces the value when the endpoint or the
+  selection changes -- and the duration too, since ticking H3 (5-15) alongside
+  LTX leaves 18s selected against a model that will not take it.
 - **The clip is ingested into our bucket, never left on FAL.** FAL's URL is
   public, unauthenticated and not ours to keep alive -- and generation is
   non-deterministic, so a URL that 404s cannot be re-created by re-running the

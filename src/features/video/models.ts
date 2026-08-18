@@ -320,3 +320,72 @@ export function expandVideoFilterId(id: string): Array<string> | null {
   const model = videoModelBySlug(id.slice(VIDEO_FILTER_PREFIX.length))
   return model ? videoEndpointIds(model) : []
 }
+
+/**
+ * Durations every one of these models accepts.
+ *
+ * A real intersection, because a duration one model rejects is a request that
+ * fails at FAL rather than here (#417). LTX starts at 6 and steps to 20, H3
+ * runs 5-15, Flux 3 tops out at 20 -- so ticking all three narrows the control
+ * rather than offering a number that will bounce for one of them.
+ *
+ * Never empty for the current lineup, but a caller must still cope: adding a
+ * model whose durations do not overlap the others would empty it, and a
+ * silently empty control is worse than a visible clash.
+ */
+export function sharedDurations(models: Array<VideoModel>): Array<number> {
+  // `.at(0)` rather than a destructure: destructuring types the element as
+  // always present, so the empty-list guard below reads as dead code and lint
+  // fails it. `.at` is honest about an empty array.
+  const first = models.at(0)
+  if (!first) return []
+  const rest = models.slice(1)
+  return first.durations.filter((d) =>
+    rest.every((m) => m.durations.includes(d)),
+  )
+}
+
+/**
+ * Aspect ratios every one of these models offers, **ignoring the ones that
+ * offer none**.
+ *
+ * The exclusion is the whole subtlety. H3's image endpoint has no
+ * `aspect_ratio` param at all, and an empty list means "there is no control"
+ * rather than "no ratio works" -- so intersecting it literally would strip the
+ * control from LTX and Flux 3 as well, silently handing FAL its default for two
+ * models that were perfectly capable of honouring a choice. The submit already
+ * omits the param per endpoint, so a model with no options simply does not
+ * receive one.
+ */
+export function sharedAspectRatios(
+  models: Array<VideoModel>,
+  hasFirstFrame: boolean,
+  hasLastFrame = false,
+): Array<string> {
+  const lists = models
+    .map((m) => aspectRatiosFor(m, hasFirstFrame, hasLastFrame))
+    .filter((list) => list.length > 0)
+  const first = lists.at(0)
+  if (!first) return []
+  const rest = lists.slice(1)
+  return first.filter((ratio) => rest.every((list) => list.includes(ratio)))
+}
+
+/**
+ * What this submit costs, in cents: every selected model, once each.
+ *
+ * **One clip per model, never more** (#417). The image panel's count stepper is
+ * deliberately absent here -- video is slow and finicky enough that nobody
+ * wants four takes of one request from one model, and the useful axis is across
+ * models rather than within one.
+ */
+export function estimateMultiCostCents(
+  models: Array<VideoModel>,
+  duration: number,
+  clipsPerModel: number,
+): number {
+  return models.reduce(
+    (total, m) => total + estimateCostCents(m, duration) * clipsPerModel,
+    0,
+  )
+}
