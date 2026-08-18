@@ -32,11 +32,16 @@ export function CostNote({ cents, unpriced = 0, children }: CostNoteProps) {
   return (
     <p className={styles.note}>
       {cents != null && (
-        // Always an estimate. Nothing here has run yet, and FAL reports no cost
-        // even after it has.
-        <span className={styles.cost}>
-          {formatCents(cents, { estimate: true })}
-        </span>
+        // **The word, not the `~`.** Everything here is an estimate -- nothing
+        // has run, and FAL reports no cost even after it has -- but a tilde in
+        // front of a dollar figure reads as a minus sign, which is the one
+        // misreading a price must not invite. Activity keeps the `~`: it is a
+        // table column with no room for a word, and a row of them reads as a
+        // convention rather than an arithmetic operator.
+        <>
+          <span className={styles.label}>Estimate:</span>
+          <span className={styles.cost}>{formatCents(cents)}</span>
+        </>
       )}
       {children != null && <span className={styles.spec}>{children}</span>}
       {unpriced > 0 && (

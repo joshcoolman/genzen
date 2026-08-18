@@ -9,7 +9,6 @@ import styles from './generator-panel.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
-import { getModelName } from '#/features/ai-images/models'
 import { formatCents } from '#/lib/format'
 import {
   ActionButton,
@@ -92,13 +91,6 @@ export function GeneratorPanel({
    * Not `destructive`: generating is not destruction, and the red confirm
    * button is reserved for things that lose work.
    */
-  // One model by name, several by count -- five names is a paragraph under a
-  // button, and by then the names are not what you are checking.
-  const modelSummary =
-    modelSelector.selectedIds.length === 1
-      ? getModelName(modelSelector.selectedIds[0])
-      : `${modelSelector.selectedIds.length} models`
-
   async function handleGenerateClick() {
     const count = generator.totalImages
     if (count > CONFIRM_ABOVE) {
@@ -226,12 +218,14 @@ export function GeneratorPanel({
       {/* Images had no cost figure at all until #416 -- on the one route where
           a stepper, a prompt list and multi-select models all multiply, so the
           count reaches double figures from a panel showing "1". */}
+      {/* No model name beside the figure: the picker directly below this reads
+          "Multiple (8 models)" already, and two lines saying the same thing is
+          one line of noise. Video passes a spec because its own carries the
+          resolution and whether audio is included, which nothing else says. */}
       <CostNote
         cents={generator.estimatedCost.cents}
         unpriced={generator.estimatedCost.unpriced}
-      >
-        {modelSummary}
-      </CostNote>
+      />
 
       <ConfirmDialog {...dialogProps} />
 
