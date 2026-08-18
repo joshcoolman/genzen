@@ -3,6 +3,7 @@
 import { AlertTriangle, Download, Loader2, Trash2 } from 'lucide-react'
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
+import { firstFrameSrc } from '#/components'
 import { formatCost } from '#/features/video/models'
 
 function costOf(video: VideoRecord): string | null {
@@ -55,7 +56,7 @@ export function VideoThumb({
         {isDone ? (
           <video
             className={styles.player}
-            src={`/img/${video.id}`}
+            src={firstFrameSrc(`/img/${video.id}`)}
             controls
             preload="metadata"
             playsInline

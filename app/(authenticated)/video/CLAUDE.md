@@ -95,8 +95,12 @@ source images; `use-view.ts` owns everything after the first paint.
   range stalls the player with no error, which is worse than serving the whole
   object.
 - **No poster frame, deliberately.** There is no ffmpeg on the server, so
-  nothing can extract one; `thumbnail_path` stays NULL and
-  `<video preload="metadata">` lets the browser paint frame one.
+  nothing can extract one; `thumbnail_path` stays NULL and the browser paints
+  frame one instead. That takes `firstFrameSrc` from `#/components` (`#t=0.001`,
+  which makes the element seek), not `preload="metadata"` on its own -- and it
+  works only because `/img/[id]` answers range requests. Every clip surface goes
+  through the same helper (#398), so a card, a row and a thumbnail cannot
+  disagree about whether a clip has a picture.
 - **Delete is the gallery's, unchanged.** `deleteGalleryImage` already decides
   between the three outcomes this route wants -- a generating clip is cancelled
   at FAL first, a generating or failed row goes outright because Trash has
