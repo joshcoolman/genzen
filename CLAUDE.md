@@ -152,6 +152,15 @@ Two things this said wrongly until 2026-08-18, both of which cost a sort:
   happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
   on a schedule forever, including on a tab left open all weekend.
 
+**Write an issue so it makes sense cold.** The title says what is wrong or what
+to build, in words you would say out loud -- never the name of a pattern. The
+first line states the problem plainly, with no conclusion and no invented term
+ahead of its definition. Reasoning and evidence still belong there, further
+down. And an issue born from a conversation ends with **"Where this came from"**,
+naming the date and quoting what was actually said -- an issue whose origin is
+lost cannot be judged, only re-derived. If the origin is unknown, say so; a
+plausible invented one is worse.
+
 **Capture to GitHub issues, not the filesystem.** Anything worth carrying past
 this session — a plan, a task, a bug, an idea from a poke-around session ("capture
 this") — becomes an issue. Do not create plan files, handoff docs, an `ideas/`
