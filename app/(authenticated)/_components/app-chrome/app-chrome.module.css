@@ -4,7 +4,14 @@
 .shell {
   display: flex;
   min-height: 100vh;
-  overflow-x: hidden;
+  /* `clip`, not `hidden`. They look identical and are not: `hidden` on one axis
+     computes the other to `auto`, which makes this element a scroll container
+     -- and a scroll container between a `position: sticky` child and the
+     viewport silently stops the child sticking. The account rail was the first
+     thing to want that (#406); nothing else had noticed because nothing else
+     was sticky. `clip` still contains horizontal overflow and creates no
+     scroll container. */
+  overflow-x: clip;
   background: var(--bg);
 }
 
