@@ -47,6 +47,14 @@ export interface ModelEntry {
    * cheap tier unsortable, which was the only thing that would have surfaced it.
    * Approximate by nature: several models bill per megapixel or per compute
    * second, so this is what a typical image costs, not a quoted rate.
+   *
+   * **It is a second copy of a number FAL already publishes, and it drifted**
+   * (#400): Nano Banana 2 sat at half the real price for as long as anyone had
+   * been using it, because the row's estimate reads FAL's pricing API and this
+   * column does not. Every entry was checked against that API in the same pass
+   * and the rest agreed. When adding or editing one, check it the same way:
+   * `GET https://api.fal.ai/v1/models/pricing?endpoint_id=<id>`. Compute-second
+   * models are the ones that cannot agree by construction -- see Grok below.
    */
   price?: number
   useCase?: string
@@ -94,7 +102,11 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/nano-banana-2',
     withImages: 'fal-ai/nano-banana-2/edit',
     maxRefs: 3,
-    price: 0.04,
+    // $0.08, not the $0.04 this said until #400. FAL's pricing API has always
+    // said 0.08 and the row's estimate came from there, so the two halves of the
+    // app disagreed and the number you read *before* clicking was the wrong one
+    // -- on a daily driver, at half the real price.
+    price: 0.08,
     useCase: 'Reasoning-guided generation',
   },
   {
@@ -138,8 +150,11 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     withImages: 'fal-ai/flux-2/flash/edit',
     maxRefs: 3,
     // Billed per compute second ($0.0008/s), not per megapixel, so this is an
-    // approximation in a way the other prices are not. Activity records the
-    // real cost; correct it from there (#262).
+    // approximation in a way the other prices are not. Since #400 Activity does
+    // record the real cost -- the completion prices the result's own inference
+    // time -- and it bears this out: the edit endpoint measures ~12.3s, so ~1c.
+    // Text-to-image is nearer 3s and so a quarter of that; one number cannot be
+    // both, and the dearer one is the safer thing to show before a click.
     price: 0.01,
     useCase: 'Cheap reference editing — preserves the input scene',
   },
@@ -167,6 +182,15 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // $0.04 (low) / $0.06 (medium) per image at 1k, $0.06 / $0.08 at 2k, plus
     // $0.01 per input image on the edit endpoint. We send neither `quality` nor
     // `resolution`, so this is FAL's defaults: medium at 1k.
+    //
+    // **The one price we cannot reconcile** (#400). FAL's pricing API bills this
+    // endpoint at $0.00017 per *compute second*, which at any plausible runtime
+    // is a fraction of a cent -- two orders of magnitude below what xAI
+    // publishes per image. Grok is also the one endpoint that returns no
+    // `timings`, so the completion has nothing to measure and the row still
+    // records no cost. Kept at the published per-image figure deliberately:
+    // over-reporting a daily driver is the safer error, and only the usage API
+    // (an Admin key, #400) can settle which number is real.
     price: 0.06,
     useCase: 'xAI look — edits up to three images at once',
   },
