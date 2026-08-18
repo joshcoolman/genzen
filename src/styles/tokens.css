@@ -10,9 +10,9 @@
  * is allowlisted any more: the canvas subtree was the last exception and #229
  * step 3 closed it.
  *
- * Twenty-one colors: three surfaces, three control washes, two inks, one line,
- * four accent, six status/elevation, two utility. Small enough to hold in your
- * head, which is the property being bought.
+ * Twenty-two colors: three surfaces, three control washes, one recess, two
+ * inks, one line, four accent, six status/elevation, two utility. Small enough
+ * to hold in your head, which is the property being bought.
  *
  * The washes (--field, --field-hover, --row-hover) are the one group that is
  * not a flat value, and the distinction between them is load-bearing rather
@@ -70,6 +70,19 @@
      cannot do this job: they are a fill for a control sitting on the page, and
      they wash out the moment the ground comes up to meet them. */
   --row-hover: hsl(0 0% 100% / 0.07);
+
+  /* The recess: a region that sits *below* the page rather than on it -- the
+     settings nav's column is the first (#406). The exact mirror of
+     --row-hover, and grouped with it for that reason: one white wash that
+     lifts whatever ground it lands on, one black wash that sinks it.
+
+     **Not a fourth surface**, which the block above warns off for good reason.
+     A step would have to be picked relative to --bg and would be wrong the
+     moment it sat on --surface instead; a wash darkens whatever is behind it
+     by a fixed amount, so one value covers every ground. It also needs no
+     theming for the same reason --row-hover does not: there is no fixed hue in
+     it to recolor. */
+  --surface-sunken: hsl(0 0% 0% / 0.2);
 
   /* ========================================
      INK -- two. There is no third: white at 70% for captions over images was

@@ -1,0 +1,64 @@
+.columns {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-32);
+  align-items: start;
+}
+
+/* The preview is the thing worth keeping visible, so it follows the swatches
+   rather than sitting beside a squeezed column. */
+@media (max-width: 60rem) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+/* A link rather than a button: it undoes rather than does, and giving it the
+   same weight as Save would offer destruction as an equal choice. */
+.clear {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.clear:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.clear:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.clearHint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+}

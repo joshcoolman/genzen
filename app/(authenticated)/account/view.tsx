@@ -11,7 +11,9 @@ export function View() {
 
   return (
     <Stack gap={32}>
-      <PageHeader title="Account" />
+      {/* "Overview", not "Account": the nav beside it says Account, and the
+          heading names the page within that section the way Style does. */}
+      <PageHeader title="Overview" />
       <UserInfo user={user} />
       <ActivityPreview />
       <ConnectionStatus email={user.email} fal={fal} />

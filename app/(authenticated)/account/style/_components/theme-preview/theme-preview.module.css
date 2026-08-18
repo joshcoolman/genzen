@@ -1,0 +1,61 @@
+/* Every value here reads a token the inline style on `.preview` has just
+   redefined. Nothing is hardcoded, which is what makes this a preview. */
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-20);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+.body {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.row > * {
+  padding: var(--space-6) var(--space-10);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+}
+
+.accent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.soft {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.raised {
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+.footnote {
+  font-size: var(--text-2xs);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+}

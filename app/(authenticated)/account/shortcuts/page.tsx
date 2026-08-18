@@ -12,9 +12,14 @@ import { PageHeader, Stack } from '#/components'
  * on somewhere that could carry the explanation. This is it.
  *
  * A page rather than an overlay on `?`, because an overlay is only findable if
- * you already know it is there -- which is the problem, not the fix. In the
- * sidebar it is visible from everywhere, including the surfaces the gestures
- * apply to.
+ * you already know it is there -- which is the problem, not the fix.
+ *
+ * It sat in the app's own sidebar until #406, on the argument that being
+ * visible from everywhere is what makes an undiscoverable feature findable. It
+ * now lives under /account with the other pages *about* the app, which trades
+ * a little of that for a rail that lists only the places you work. Anything
+ * that makes a gesture discoverable in the surface it applies to is still
+ * unbuilt and would be the real fix.
  *
  * Static, so no `view.tsx` and no `use-view.ts` -- both would be empty
  * indirection. `readme/` is the same exception for the same reason; see

@@ -1,6 +1,5 @@
 import {
   Clapperboard,
-  Command,
   Compass,
   Frame,
   Logs,
@@ -61,16 +60,14 @@ export const navItems: Array<NavItem> = [
     icon: Trash2,
     dividerBefore: true,
   },
-  // Below the divider with Trash and Account: the three places you go *about*
-  // the app rather than to work in it. It is in the sidebar at all because the
-  // gestures it explains are invisible by design (#289) -- an overlay on `?`
-  // would only be findable by someone who already knew.
-  {
-    id: 'shortcuts',
-    label: 'Shortcuts',
-    href: '/shortcuts',
-    icon: Command,
-  },
+  // Below the divider with Trash: the places you go *about* the app rather
+  // than to work in it.
+  //
+  // Shortcuts was a third entry here until #406 and is now /account/shortcuts,
+  // a page inside the settings area. Note what that does to `isActive`, which
+  // is a `startsWith`: every settings page begins with `/account`, so they all
+  // light this one item -- which is correct, and is why nothing under /account
+  // gets its own entry here. Adding one would light two rails at once.
   {
     id: 'account',
     label: 'Account',

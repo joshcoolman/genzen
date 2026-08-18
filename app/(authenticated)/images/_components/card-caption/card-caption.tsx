@@ -52,7 +52,7 @@ export function CardCaption({
   return (
     <div className={styles.caption}>
       {/* `silent`: the card teaches nothing on hover. Both gestures still work;
-          naming them is `/shortcuts`' job, a surface that can carry the
+          naming them is `/account/shortcuts`' job, a surface that can carry the
           explanation (#289). Only the "Copied" tick survives, because it
           reports rather than instructs. */}
       <CopyText

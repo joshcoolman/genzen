@@ -1,0 +1,59 @@
+/* Mobile: a scrollable row. The eyebrow is hidden there -- the page it labels
+   is one scroll away and the horizontal space is worth more. */
+
+.nav {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+  display: none;
+}
+
+.eyebrow {
+  display: none;
+}
+
+.link {
+  padding: var(--space-8) var(--space-12);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  white-space: nowrap;
+  color: var(--text-muted);
+  transition:
+    color var(--duration-fast) var(--ease-in-out),
+    background-color var(--duration-fast) var(--ease-in-out);
+}
+
+/* Excluding the active item so hover cannot dim what is already lit -- the
+   idiom bootsy's admin nav settled on. */
+.link:not(.linkActive):hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.linkActive {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: var(--weight-medium);
+}
+
+@media (min-width: 48rem) {
+  .nav {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .eyebrow {
+    display: block;
+    padding: 0 var(--space-12) var(--space-8);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+}
