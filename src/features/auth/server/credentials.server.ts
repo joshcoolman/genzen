@@ -55,3 +55,21 @@ export async function verifyCredentials(
   const isMatch = await matchesHash(password, row?.password_hash ?? DUMMY_HASH)
   return isMatch && row ? row.id : null
 }
+
+/**
+ * Stamp a successful sign-in (#406).
+ *
+ * Deliberately **not** inside `verifyCredentials`: that function is also how a
+ * failed attempt is timed, and a write there would turn a read on the hot path
+ * into a write on every guess. This is called once, after the check passed.
+ *
+ * It never throws. A stat on a settings page is not worth failing a login for,
+ * so a broken write costs you the timestamp and nothing else.
+ */
+export async function recordLogin(userId: string): Promise<void> {
+  try {
+    await sql`update users set last_login_at = now() where id = ${userId}`
+  } catch (err) {
+    console.warn('[auth] could not record last_login_at', err)
+  }
+}

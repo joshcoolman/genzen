@@ -18,9 +18,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         email: string
         display_name: string | null
         created_at: Date
+        last_login_at: Date | null
       }>
     >`
-    select id, email, display_name, created_at from users where id = ${userId}
+    select id, email, display_name, created_at, last_login_at
+    from users where id = ${userId}
   `,
   )
   if (row === undefined) return null
@@ -29,5 +31,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     email: row.email,
     displayName: row.display_name,
     createdAt: row.created_at.toISOString(),
+    // Null until the first sign-in after migration 0008. Not backfilled from
+    // `created_at`, which would invent a login that never happened.
+    lastLoginAt: row.last_login_at?.toISOString() ?? null,
   }
 }

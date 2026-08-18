@@ -1,4 +1,8 @@
+/* A container, so the rows below reflow on the width of *this card* rather
+   than the viewport. The card is full-width on Activity and one third of the
+   overview's grid, and a media query cannot tell those apart. */
 .card {
+  container-type: inline-size;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -8,6 +12,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-8);
   padding: var(--space-16) var(--space-24);
   border-bottom: 1px solid var(--border);
 }
@@ -117,23 +122,52 @@
   text-overflow: ellipsis;
 }
 
-.duration {
+.tail {
+  display: flex;
   flex-shrink: 0;
+  align-items: baseline;
+  gap: var(--space-12);
+}
+
+.duration {
   color: var(--text-muted);
   font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
 .cost {
-  flex-shrink: 0;
   color: var(--text);
   font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
 .time {
-  flex-shrink: 0;
   color: var(--text-muted);
   font-size: var(--text-2xs);
   text-align: right;
+}
+
+/* Narrow card: the numbers move under the name instead of squeezing it out.
+   Everything is still shown -- the alternative was hiding the timestamp, and a
+   list called "Recent activity" that will not say when is not worth the space
+   it saves. The threshold is where the model name stops fitting beside them. */
+@container (max-width: 26rem) {
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .meta {
+    flex-basis: calc(100% - var(--space-32) - var(--space-12));
+  }
+
+  .tail {
+    /* Past the thumbnail, so it lines up under the name rather than under the
+       picture. Same arithmetic as the basis above: thumb width plus the gap. */
+    margin-inline-start: calc(var(--space-32) + var(--space-12));
+    justify-content: start;
+  }
+
+  .time {
+    text-align: start;
+  }
 }

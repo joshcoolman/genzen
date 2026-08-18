@@ -7,7 +7,10 @@ import {
   createSessionValue,
   sessionCookieOptions,
 } from '#/features/auth/session'
-import { verifyCredentials } from '#/features/auth/server/credentials.server'
+import {
+  recordLogin,
+  verifyCredentials,
+} from '#/features/auth/server/credentials.server'
 
 export interface LoginState {
   error: string | null
@@ -32,6 +35,8 @@ export async function login(
   if (!userId) {
     return { error: 'Invalid email or password.' }
   }
+
+  await recordLogin(userId)
 
   const store = await cookies()
   store.set(

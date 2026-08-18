@@ -1,13 +1,3 @@
-.section > :where(*:not(:last-child)) {
-  margin-bottom: var(--space-16);
-}
-
-.sectionTitle {
-  font-size: var(--text-lg);
-  line-height: var(--text-lg-leading);
-  font-weight: var(--weight-medium);
-}
-
 .card {
   padding: var(--space-24);
   border-radius: var(--radius-lg);
@@ -19,9 +9,6 @@
 }
 
 .statusTitle {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
   font-weight: var(--weight-medium);
 }
 
@@ -29,16 +16,22 @@
   margin-bottom: var(--space-12);
 }
 
+/* A block rather than a row: a check that needs a remedy is two lines, and the
+   badge has to stay on the first one beside the label. */
 .statusRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding-block: var(--space-8);
   border-bottom: 1px solid var(--border);
 }
 
 .statusRow:last-child {
   border-bottom: 0;
+}
+
+.statusHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
 }
 
 .statusLabel {
@@ -57,10 +50,22 @@
   line-height: var(--text-sm-leading);
 }
 
+/* The instruction, not the complaint -- so it reads as body text rather than
+   as more red. `--text` would fight the label above it; muted sits it below. */
+.statusRemedy {
+  margin-top: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+}
+
 .statusError {
+  margin-top: var(--space-4);
   color: var(--danger);
+  font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
+  overflow-wrap: anywhere;
 }
 
 .badge {
@@ -69,6 +74,7 @@
   font-size: var(--text-xs);
   line-height: var(--text-xs-leading);
   font-weight: var(--weight-medium);
+  white-space: nowrap;
 }
 
 .badgeChecking {
@@ -86,4 +92,11 @@
 .badgeError {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* Absent on purpose is not a fault. Deliberately the quietest badge here --
+   the same ground as the card's fields, so it reads as "nothing to see". */
+.badgeUnset {
+  background: var(--surface-raised);
+  color: var(--text-muted);
 }

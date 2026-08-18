@@ -10,6 +10,8 @@ export interface AuthUser {
   email: string
   displayName: string | null
   createdAt: string
+  /** Null until the first sign-in after migration 0008 (#406). */
+  lastLoginAt: string | null
 }
 
 export interface AuthContextType {
