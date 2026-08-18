@@ -26,10 +26,6 @@
   color: var(--text-muted);
 }
 
-.spec {
-  min-width: 0;
-}
-
 /* Only rendered when the figure is short. It has to be legible enough to
    notice and quiet enough not to look like an error. */
 .caveat {

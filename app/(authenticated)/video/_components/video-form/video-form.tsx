@@ -145,10 +145,7 @@ export function VideoForm({
         {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate video'}
       </ActionButton>
 
-      <CostNote cents={estimatedCost}>
-        {model.label} · {model.resolution}
-        {model.supportsAudio ? ' · audio included' : ''}
-      </CostNote>
+      <CostNote cents={estimatedCost} />
 
       {modelSlot}
     </div>

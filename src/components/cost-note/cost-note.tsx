@@ -7,9 +7,6 @@ export interface CostNoteProps {
   /** How many things the figure does not cover. Above zero it says so rather
    *  than letting a partial total read as a whole one. */
   unpriced?: number
-  /** The spec beside the price: the model, the resolution, whatever names what
-   *  you are about to buy. */
-  children?: React.ReactNode
 }
 
 /**
@@ -28,7 +25,7 @@ export interface CostNoteProps {
  * An app whose promise is that its figures match FAL's cannot have two places
  * deciding how a figure looks.
  */
-export function CostNote({ cents, unpriced = 0, children }: CostNoteProps) {
+export function CostNote({ cents, unpriced = 0 }: CostNoteProps) {
   return (
     <p className={styles.note}>
       {cents != null && (
@@ -43,7 +40,6 @@ export function CostNote({ cents, unpriced = 0, children }: CostNoteProps) {
           <span className={styles.cost}>{formatCents(cents)}</span>
         </>
       )}
-      {children != null && <span className={styles.spec}>{children}</span>}
       {unpriced > 0 && (
         // A total that silently omits a model is the exact failure this app
         // exists not to have. Say the figure is short, and by how many.
