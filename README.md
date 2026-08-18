@@ -146,6 +146,17 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-18
 
+- **Webhooks are gone** — 576 lines out, 33 in. Turning them on nulled out
+  Images polling while the route returned 200 on a processing failure, so a
+  result could be acknowledged and never persisted with nothing left to
+  reconcile it. Off everywhere, so nobody was ever in that state — and rather
+  than fix the trigger, the gun went: webhooks exist to avoid polling, and the
+  poll already backs off, stops on a hidden tab and stops when nothing is
+  pending. What it bought was a few seconds; what it cost was a signed-callback
+  route, a hole in a deny-by-default proxy, two env vars that had to agree, and
+  a delivery path that can silently never arrive. Polling is the only path now,
+  and nothing may switch it off (#362)
+
 - **The cost figures were measured against FAL's own invoices, and three were
   wrong** — $6.135 recorded against $6.185 billed over a full day, 0.8% low and
   exact on video and Nano Banana. The compute-seconds pricing path is **deleted**:
@@ -198,18 +209,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   `$0.0000`, and video truncated any sub-cent figure to `$0.00` — #400's bug
   reintroduced at the display step (#416)
 
-- **Activity shows clips, which it never has** — the log filtered
-  `source = 'ai_generated'` and clips are `ai_video`, so every clip ever
-  generated was absent from the one surface whose job is recording what a
-  generation cost. They are the expensive half by a wide margin: $4.50 of $6.04
-  here, from a tenth of the runs — and the account overview shipped two days
-  earlier counted them, so the same money had two answers on two pages. The
-  predicate was one line; carrying `source` to the client, naming a clip from
-  `model_label` (the image lineup cannot resolve a video endpoint), teaching the
-  model filter that one video model is two or three endpoints, and making four
-  render sites video-aware was the rest. The video lineup moved to
-  `src/features/video/` on its second consumer, and `MediaBox` is the "a clip
-  needs a `<video>`" decision made a component on its third copy. `#t=0.001` is
-  what paints a frame — `preload="metadata"` alone paints nothing, which had
-  been believed since #384 (#398, Activity half; the rest of that issue is now
-  four undecided surfaces)
