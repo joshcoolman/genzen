@@ -8,19 +8,11 @@ import styles from './activity-preview.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { listActivity } from '#/features/activity/server/list-activity.action'
 import { firstFrameSrc } from '#/components'
+import { formatCents } from '#/lib/format'
 import { imageUrl } from '#/lib/image-url'
 import { formatDurationMs, formatRelativeOrDate } from '#/lib/time-format'
 
 const PREVIEW_SIZE = 5
-
-function formatCents(cents: number | null, isEstimate = false): string {
-  if (cents == null) return '—'
-  const prefix = isEstimate ? '~' : ''
-  const dollars = cents / 100
-  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
-  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
-  return `${prefix}$${dollars.toFixed(2)}`
-}
 
 export function ActivityPreview() {
   const [entries, setEntries] = useState<Array<ActivityEntry>>([])
@@ -121,7 +113,9 @@ export function ActivityPreview() {
                       : '—'}
                   </span>
                   <span className={styles.cost}>
-                    {formatCents(entry.providerCostCents, entry.costIsEstimate)}
+                    {formatCents(entry.providerCostCents, {
+                      estimate: entry.costIsEstimate,
+                    })}
                   </span>
                   <span className={styles.time}>
                     {formatRelativeOrDate(entry.createdAt)}

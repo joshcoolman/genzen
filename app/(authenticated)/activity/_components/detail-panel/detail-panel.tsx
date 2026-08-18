@@ -6,6 +6,7 @@ import { clsx } from 'clsx'
 import { getActivityEntry } from '../../_actions/get-entry'
 import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
+import { formatCents } from '#/lib/format'
 import { imageUrl } from '#/lib/image-url'
 import {
   MediaBox,
@@ -51,16 +52,6 @@ function StatusBadge({ status }: { status: ActivityEntryDetail['status'] }) {
       {labels[status]}
     </span>
   )
-}
-
-function formatCents(cents: number | null, isEstimate = false): string {
-  if (cents == null) return '—'
-  const prefix = isEstimate ? '~' : ''
-  const dollars = cents / 100
-  if (dollars === 0) return `${prefix}$0.00`
-  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
-  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
-  return `${prefix}$${dollars.toFixed(2)}`
 }
 
 function formatBytes(bytes: number | null): string {
@@ -316,10 +307,9 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
                       : '—'}
                   </DetailRow>
                   <DetailRow label="Cost">
-                    {formatCents(
-                      detail.providerCostCents,
-                      detail.costIsEstimate,
-                    )}
+                    {formatCents(detail.providerCostCents, {
+                      estimate: detail.costIsEstimate,
+                    })}
                     {detail.costIsEstimate &&
                       detail.providerCostCents != null && (
                         <span className={styles.estimated}>estimated</span>

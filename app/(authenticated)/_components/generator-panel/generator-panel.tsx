@@ -9,10 +9,12 @@ import styles from './generator-panel.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
+import { formatCents } from '#/lib/format'
 import {
   ActionButton,
   AspectRatioSelect,
   ConfirmDialog,
+  CostNote,
   NumberStepper,
   RefImageStrip,
   useConfirm,
@@ -99,7 +101,7 @@ export function GeneratorPanel({
       // remembered.
       const ok = await confirm({
         title: `Generate ${count} images?`,
-        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each. Cancel to change the count or the models.`,
+        message: `${plural(prompts, 'prompt')} x ${plural(models, 'model')} x ${modelSelector.gensPerModel} each, about ${formatCents(generator.estimatedCost.cents, { estimate: true })}. Cancel to change the count or the models.`,
         confirmLabel: `Generate ${count}`,
         destructive: false,
       })
@@ -177,8 +179,9 @@ export function GeneratorPanel({
           from the dead source row (#297) -- it describes the request, so it
           belongs with the count rather than above the prompt. Two rows rather
           than three-in-one: in a 20rem dock a full-width Generate and a full
-          Generate label do not both fit beside these, and the label carries the
-          only warning that a click is about to cost double. */}
+          Generate label do not both fit beside these. The label carries the
+          count; the price is in the CostNote below it (#416), which is where
+          Video puts it too. */}
       <div className={styles.controls}>
         <NumberStepper
           value={modelSelector.gensPerModel}
@@ -211,6 +214,18 @@ export function GeneratorPanel({
           ? `Generate ${generator.totalImages} images`
           : 'Generate'}
       </ActionButton>
+
+      {/* Images had no cost figure at all until #416 -- on the one route where
+          a stepper, a prompt list and multi-select models all multiply, so the
+          count reaches double figures from a panel showing "1". */}
+      {/* No model name beside the figure: the picker directly below this reads
+          "Multiple (8 models)" already, and two lines saying the same thing is
+          one line of noise. Video passes a spec because its own carries the
+          resolution and whether audio is included, which nothing else says. */}
+      <CostNote
+        cents={generator.estimatedCost.cents}
+        unpriced={generator.estimatedCost.unpriced}
+      />
 
       <ConfirmDialog {...dialogProps} />
 
