@@ -128,10 +128,10 @@ export async function generateVideo({
     // up to FAL's own storage first. Same seam the image paths use.
     // One call, caller order preserved -- the helper resolves by the ids given,
     // not by whatever the database returned.
+    // The helper throws if any frame cannot be read (#364), which is what this
+    // route already wanted -- it used to length-check the result by hand,
+    // because dropping a frame silently was never acceptable here either.
     const uploaded = await uploadLibraryImagesToFal(wanted, userId)
-    if (uploaded.length !== wanted.length) {
-      throw new Error('Could not read the source image')
-    }
     const [uploadedUrl, uploadedEndUrl] = uploaded
 
     // Built from the endpoint descriptor, never from a fixed list (#385). Three
