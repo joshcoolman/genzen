@@ -39,10 +39,12 @@ export async function describeImage(
   image: string,
   mode: 'anchor' | 'reconstruct',
 ): Promise<string> {
-  // Guarding here rather than at each caller is deliberate: `caption-image`
-  // is user-initiated and should surface the missing key, while
-  // `generate-image-internal` already wraps this in a try/catch and falls back
-  // to a placeholder prompt — exactly the right behaviour in each case.
+  // Guarding here rather than at each caller, and **every caller now surfaces
+  // it**. This comment used to say `generate-image-internal` caught the throw
+  // and fell back to a placeholder prompt, calling that the right behaviour;
+  // it was not (#365). That fallback generated at full price on the one-word
+  // prompt "image", and with no ANTHROPIC_API_KEY it did so on every
+  // image-only generation, silently, forever.
   requireAiRole('fast')
 
   // Normalize input to base64 + mime

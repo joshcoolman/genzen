@@ -257,14 +257,16 @@ export async function generateImageInternal(
       // If no user prompt, ask Haiku for a plain factual description of the image
       if (!effectivePrompt) {
         promptDerivedFromSource = true
-        try {
-          effectivePrompt = await describeImage(
-            buffer.toString('base64'),
-            'anchor',
-          )
-        } catch {
-          effectivePrompt = 'image'
-        }
+        // **No fallback** (#365). This used to catch and set the prompt to the
+        // literal string "image", then generate anyway -- full price, on a
+        // one-word prompt, for a request built out of a picture. With no
+        // ANTHROPIC_API_KEY that happened on every image-only generation,
+        // quietly, forever. Every other Anthropic call in the app already fails
+        // loudly; this was the one that swallowed.
+        effectivePrompt = await describeImage(
+          buffer.toString('base64'),
+          'anchor',
+        )
       }
 
       imageUrl = await fal.storage.upload(

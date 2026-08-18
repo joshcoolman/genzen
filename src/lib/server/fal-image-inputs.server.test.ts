@@ -77,7 +77,11 @@ describe('shared FAL uploads (#313)', () => {
     mockSql.mockResolvedValue([{ id, storage_path: `path/${id}` }])
     mockUpload.mockRejectedValueOnce(new Error('bucket blew up'))
 
-    expect(await uploadLibraryImagesToFal([id], 'user-1')).toEqual([])
+    // Throws rather than returning [] since #364 -- a reference that cannot be
+    // read must not become a generation you paid for.
+    await expect(uploadLibraryImagesToFal([id], 'user-1')).rejects.toThrow(
+      /could not be read/,
+    )
 
     // The next caller must try again rather than inherit the rejection.
     mockUpload.mockResolvedValueOnce('https://fal.test/second-try')
@@ -122,5 +126,37 @@ describe('shared FAL uploads (#313)', () => {
     mockSql.mockResolvedValue([])
     expect(await uploadLibraryImageToFal(freshId(), 'user-1')).toBeNull()
     expect(mockUpload).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * #364. These are the cases where the old behaviour billed you for a request
+ * you did not build.
+ */
+describe('an unreadable reference fails before FAL is paid (#364)', () => {
+  it('throws rather than generating with the references that survived', async () => {
+    const good = freshId()
+    const gone = freshId()
+    // The row for `gone` is absent -- trashed, hard-deleted, never there.
+    mockSql.mockResolvedValue([{ id: good, storage_path: `path/${good}` }])
+    mockUpload.mockResolvedValue('https://fal.test/good')
+
+    await expect(
+      uploadLibraryImagesToFal([good, gone], 'user-1'),
+    ).rejects.toThrow(/1 of 2/)
+  })
+
+  it('says nothing was generated, because nothing was', async () => {
+    const gone = freshId()
+    mockSql.mockResolvedValue([])
+    await expect(uploadLibraryImagesToFal([gone], 'user-1')).rejects.toThrow(
+      /Nothing was generated/,
+    )
+  })
+
+  it('still returns nothing for an empty request, which is not a failure', async () => {
+    // No references selected and references-that-could-not-be-read are
+    // different facts, and only the second is an error.
+    expect(await uploadLibraryImagesToFal([], 'user-1')).toEqual([])
   })
 })

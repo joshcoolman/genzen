@@ -92,8 +92,28 @@ export async function readLibraryImageBytes(
  *  Order matters: models read the list positionally, and the prompt labels them
  *  "[Image 1, Image 2, ...]". A `Promise.all` over the ids keeps that; resolving
  *  by whatever the database returned would not, because `in (...)` has no
- *  ordering guarantee. Rows that cannot be read are dropped rather than throwing
- *  -- one missing reference should not sink a generation that has others. */
+ *  ordering guarantee.
+ *
+ *  **Throws if any image cannot be read** (#364). It used to drop them and
+ *  carry on, reasoning that one missing reference should not sink a generation
+ *  that has others -- but the generation then ran, FAL billed in full, and the
+ *  card said completed. You had built a request with three references, two were
+ *  sent, and nothing anywhere said so. A degraded result you paid for is worse
+ *  than a failure you can retry, and this is the cheap moment: no money has
+ *  been spent yet.
+ *
+ *  The source-image path always worked this way -- a generation cannot be
+ *  faithful without its source -- and references took the opposite path for no
+ *  stated reason. */
+export class ReferenceImageUnreadableError extends Error {
+  constructor(missing: number, total: number) {
+    super(
+      `${missing} of ${total} reference images could not be read. Nothing was generated.`,
+    )
+    this.name = 'ReferenceImageUnreadableError'
+  }
+}
+
 export async function uploadLibraryImagesToFal(
   imageIds: Array<string>,
   userId: string,
@@ -119,7 +139,14 @@ export async function uploadLibraryImagesToFal(
       }
     }),
   )
-  return uploaded.filter((u): u is string => u !== null)
+  const usable = uploaded.filter((u): u is string => u !== null)
+  if (usable.length !== imageIds.length) {
+    throw new ReferenceImageUnreadableError(
+      imageIds.length - usable.length,
+      imageIds.length,
+    )
+  }
+  return usable
 }
 
 /** The same, for the one image a generation calls its source. Returns null when
