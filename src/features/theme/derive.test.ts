@@ -83,12 +83,16 @@ describe('themeToCss', () => {
 
   /* Overriding a status hue would let a theme make a failure look like a
    * success, and the alpha washes have no fixed color to override. */
-  it.each(['--danger', '--warning', '--success', '--info', '--row-hover'])(
-    'leaves %s alone',
-    (token) => {
-      expect(css).not.toContain(token)
-    },
-  )
+  it.each([
+    '--danger',
+    '--warning',
+    '--success',
+    '--info',
+    '--row-hover',
+    '--surface-sunken',
+  ])('leaves %s alone', (token) => {
+    expect(css).not.toContain(token)
+  })
 
   it('leaves --field alone, since color-mix already tracks --surface-raised', () => {
     expect(css).not.toContain('--field')

@@ -1,18 +1,26 @@
+/* No gap: the rows are separated by a rule instead, the way user-info's fields
+   are. A gap *and* a divider would space the line away from both rows and read
+   as two separators. */
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
 .swatch {
   display: flex;
   align-items: center;
   gap: var(--space-16);
-  padding: var(--space-10) var(--space-12);
-  border-radius: var(--radius-md);
+  padding: var(--space-12);
+  border-bottom: var(--border-width) solid var(--border);
   cursor: pointer;
 }
 
+.swatch:last-child {
+  border-bottom: 0;
+}
+
+/* Square, unlike the rounded rows elsewhere: a radius on a row that is butted
+   against its neighbours leaves a notch at each divider. */
 .swatch:hover {
   background: var(--row-hover);
 }

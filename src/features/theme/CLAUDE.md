@@ -40,10 +40,10 @@ learn a theme exists; they read the same `var(--token)` either way.
 
 Status hues (`--danger`, `--warning`, `--success`, `--info`) — a palette that
 can recolor "this failed" can make a failure look like a success. Also
-`--row-hover` and the elevation tokens, which are alpha washes over whatever
-ground they land on and have no fixed color to override, and `--field` /
-`--field-hover`, which are already `color-mix` over `--surface-raised` and
-follow it for free.
+`--row-hover`, `--surface-sunken` and the elevation tokens, which are alpha
+washes over whatever ground they land on and have no fixed color to override,
+and `--field` / `--field-hover`, which are already `color-mix` over
+`--surface-raised` and follow it for free.
 
 ## Decided, not worth relitigating
 

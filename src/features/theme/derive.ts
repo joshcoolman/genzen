@@ -218,9 +218,9 @@ const TOKEN_NAMES: Record<keyof ThemePalette, string> = {
  *
  *   --field / --field-hover  already `color-mix(... var(--surface-raised) ...)`,
  *                            so they follow the redefined step for free
- *   --row-hover              a white alpha wash that lifts whatever ground it
- *                            lands on by a fixed amount; it has no fixed color
- *                            to override
+ *   --row-hover,             alpha washes -- one lifts whatever ground it lands
+ *   --surface-sunken         on by a fixed amount, one sinks it. Neither has a
+ *                            fixed color to override
  *   --danger/--warning/      status hues. Red has to stay red -- a palette that
  *   --success/--info         can recolor "this failed" is a palette that can
  *                            make a failure look like a success
