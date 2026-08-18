@@ -48,7 +48,12 @@ const LEGACY_ALL_IMAGE_MODELS = [
     category: 'Specialized',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/nano-banana-2/edit',
-    displayPrice: '~$0.04/img',
+    // Moved from '~$0.04/img' in #400. The fixture pins what the lineup used to
+    // carry, and here what it carried was simply wrong -- FAL charges $0.08 and
+    // always did. A fixture is a guard against drift, not a reason to keep a
+    // price at half; the guard is doing its job by making the correction show up
+    // as a deliberate edit.
+    displayPrice: '~$0.08/img',
     useCase: 'Reasoning-guided generation',
   },
   {
