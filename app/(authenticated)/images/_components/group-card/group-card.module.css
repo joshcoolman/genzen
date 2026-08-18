@@ -96,7 +96,7 @@ button.swatches:hover .swatchEmpty {
 
 .swatch,
 .swatchEmpty {
-  transition: opacity var(--dur-fast) var(--ease);
+  transition: opacity var(--duration-fast) var(--ease-in-out);
 }
 
 /* A slot with no member ghosts rather than collapsing: the row keeps its shape
@@ -144,7 +144,7 @@ button.swatches:hover .swatchEmpty {
    it. Quiet: the name is what is being scanned. */
 .total {
   flex: none;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-size: var(--text-3xs);
   white-space: nowrap;
 }
