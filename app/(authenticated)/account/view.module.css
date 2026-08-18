@@ -1,0 +1,32 @@
+/* One column on a phone, 2fr / 1fr from the medium breakpoint. Source order is
+   the mobile order: identity, usage, status, recent activity. */
+.grid {
+  display: grid;
+  gap: var(--space-24);
+}
+
+/* `minmax(0, 1fr)` on the single column, for the same reason the outer grid
+   needs it below: a grid track's default minimum is `auto`, so a card sizes to
+   its widest unbreakable content instead of to the column. `min-inline-size: 0`
+   fixes the track this column *sits in*; this fixes the cards *inside* it. Both
+   are needed -- with only the first, the page stopped scrolling sideways while
+   the status card still painted 2748px wide, straight off the screen. */
+.primary,
+.secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-24);
+  min-inline-size: 0;
+  align-content: start;
+}
+
+@media (min-width: 64rem) {
+  /* `minmax(0, …)`, not a bare `2fr 1fr`. An `fr` track's minimum is `auto`,
+     so a track grows past its share rather than making its content shrink --
+     which it did: one long provider error string in the status card pushed the
+     right column to 2748px and scrolled the whole app sideways. The `min-inline-size: 0`
+     above is not enough on its own; that constrains the item, not the track. */
+  .grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}

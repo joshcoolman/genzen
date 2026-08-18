@@ -27,6 +27,9 @@
 .field {
   display: flex;
   justify-content: space-between;
+  /* The value truncates rather than wrapping, so it needs room to shrink into
+     and a floor under the label. An email in a 1fr column is the case. */
+  gap: var(--space-16);
   padding-block: var(--space-8);
   border-bottom: 1px solid var(--border);
 }
@@ -41,11 +44,8 @@
 
 .fieldValue {
   color: var(--text);
-}
-
-.fieldValueMono {
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-leading);
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

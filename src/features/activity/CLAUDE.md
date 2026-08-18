@@ -2,7 +2,7 @@ Chronological record of every AI generation (image, success + failure, including
 
 ## Key Files
 
-- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage` (an alias of ai-images' `GenerationInputImage`, not its own shape), `ActivityGenerationMetadata`, `ActivityFilters`, `ActivityTotals`, `ListActivityResult`, `GenerationStatus`, `TOTALS_ROW_CAP` (5000)
+- `types.ts` -- `ActivityEntry`, `ActivityEntryDetail`, `ActivityReferenceImage` (an alias of ai-images' `GenerationInputImage`, not its own shape), `ActivityGenerationMetadata`, `ActivityFilters`, `ListActivityResult`, `GenerationStatus`
 - `server/list-activity.action.ts` -- paginated query over `user_images` for `source='ai_generated'`. NO status filter, NO `deleted_at` filter. Optional filter params (models, statuses). Windowed to the last `ACTIVE_DAYS` (3) days that **produced runs** — idle days do not count, so a week away does not empty the page. The window is computed over the filtered set, so narrowing to a model last used months ago still shows that model's last three working days. Cost comes from `generation_metadata.provider_cost_cents` — what FAL charged. There is no second, user-facing currency.
 
 Two files left here when the Activity route was restructured, because each had a
@@ -17,13 +17,19 @@ What remains is what Activity and Account's Recent-activity preview both use.
 
 `app/(authenticated)/activity/` -- `page.tsx` renders `view.tsx`, which composes
 components and carries no styles of its own; `use-view.ts` holds the state.
-Parts live in `_components/` (`run-table`, `run-row`, `totals`, `filters`,
+Parts live in `_components/` (`run-table`, `run-row`, `filters`,
 `detail-panel`). `activity-preview/` (the compact 5-row widget) lives with the
 one route that renders it, `app/(authenticated)/account/`.
 
+**Activity does not total anything.** A `totals` component, `ActivityTotals` and
+a `TOTALS_ROW_CAP` were documented here long after they had been deleted. The
+aggregate view is the account overview instead (`src/lib/server/account-stats.server.ts`,
+#406), which is the right home for it: it counts video as well, and Activity
+still cannot see video at all (#398).
+
 ## Data Source
 
-Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal-completion.server.ts` → `extractFalCostCents()`).
+Reads from `user_images` table with `source = 'ai_generated'`. No status/deleted_at filters. Timestamps for duration come from `generation_metadata.submitted_at` + `completed_at` | `failed_at` (all ISO strings, in JSONB). Cost stashed at FAL completion in `generation_metadata.provider_cost_cents` (see `src/lib/server/fal-completion.server.ts`), and it may be a **fraction of a cent** since #400 -- do not assume an integer.
 
 ## Shared Dependencies
 

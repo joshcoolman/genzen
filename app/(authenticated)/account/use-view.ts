@@ -1,29 +1,42 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import type { ConnectionState } from './_components/connection-status/connection-status'
+import type { ConnectionCheck } from '#/lib/server/check-connections.action'
 import { useAuth } from '#/lib/auth'
 import { checkConnections } from '#/lib/server/check-connections.action'
 
 export function useView() {
   const { user } = useAuth()
-  const [fal, setFal] = useState<{ status: ConnectionState; error?: string }>({
-    status: 'checking',
-  })
+  const [checks, setChecks] = useState<Array<ConnectionCheck>>([])
+  const [isCheckingConnections, setIsChecking] = useState(true)
 
-  // Only FAL is probed now. The old page also pinged `supabase.auth.getUser()`
-  // to prove the session was live -- there is no such round trip any more, the
-  // session is a cookie this request already carried.
+  // Probed from the client rather than in `page.tsx` on purpose: the FAL check
+  // is a network round trip, and server-loading it would hold the whole page
+  // back on the slowest thing on it. The stats are server-loaded; this fills in.
   useEffect(() => {
+    let cancelled = false
     checkConnections()
-      .then((result) => setFal(result.fal))
-      .catch((err: unknown) =>
-        setFal({
-          status: 'error',
-          error: err instanceof Error ? err.message : 'Server error',
-        }),
-      )
+      .then((result) => {
+        if (!cancelled) setChecks(result.checks)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setChecks([
+          {
+            label: 'Services',
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Server error',
+            remedy: 'The check itself failed. Is `pnpm dev` still running?',
+          },
+        ])
+      })
+      .finally(() => {
+        if (!cancelled) setIsChecking(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  return { user, fal }
+  return { user, checks, isCheckingConnections }
 }

@@ -1,17 +1,21 @@
 import styles from './connection-status.module.css'
-
-export type ConnectionState = 'checking' | 'connected' | 'error'
+import type {
+  ConnectionCheck,
+  ConnectionState,
+} from '#/lib/server/check-connections.action'
 
 const VARIANTS: Record<ConnectionState, string> = {
   checking: styles.badgeChecking,
   connected: styles.badgeConnected,
   error: styles.badgeError,
+  unset: styles.badgeUnset,
 }
 
 const LABELS: Record<ConnectionState, string> = {
   checking: 'Checking...',
   connected: 'Connected',
   error: 'Error',
+  unset: 'Not set',
 }
 
 function StatusBadge({ status }: { status: ConnectionState }) {
@@ -22,46 +26,54 @@ function StatusBadge({ status }: { status: ConnectionState }) {
   )
 }
 
-function StatusRow({
-  label,
-  status,
-  detail,
-  error,
-}: {
-  label: string
-  status: ConnectionState
-  detail?: string
-  error?: string
-}) {
+/**
+ * One check.
+ *
+ * The remedy is the point (#406). This block used to print a raw provider error
+ * string beside a red badge, which named the failure and nothing about fixing
+ * it -- and the most common failure by far, a missing `FAL_KEY`, has a one-line
+ * fix. The raw message stays, under the remedy, for the cases nothing matched.
+ */
+function StatusRow({ check }: { check: ConnectionCheck }) {
   return (
     <div className={styles.statusRow}>
-      <span className={styles.statusLabel}>{label}</span>
-      <div className={styles.statusMeta}>
-        {detail && <span className={styles.statusDetail}>{detail}</span>}
-        <StatusBadge status={status} />
-        {error && status === 'error' && (
-          <span className={styles.statusError}>{error}</span>
-        )}
+      <div className={styles.statusHead}>
+        <span className={styles.statusLabel}>{check.label}</span>
+        <div className={styles.statusMeta}>
+          {check.detail && (
+            <span className={styles.statusDetail}>{check.detail}</span>
+          )}
+          <StatusBadge status={check.status} />
+        </div>
       </div>
+      {check.status !== 'connected' && check.remedy && (
+        <p className={styles.statusRemedy}>{check.remedy}</p>
+      )}
+      {check.status === 'error' && check.error && (
+        <p className={styles.statusError}>{check.error}</p>
+      )}
     </div>
   )
 }
 
-interface ConnectionStatusProps {
-  email: string
-  fal: { status: ConnectionState; error?: string }
-}
+export function ConnectionStatus({
+  checks,
+  isLoading,
+}: {
+  checks: Array<ConnectionCheck>
+  isLoading: boolean
+}) {
+  const rows: Array<ConnectionCheck> = isLoading
+    ? [{ label: 'Services', status: 'checking' }]
+    : checks
 
-export function ConnectionStatus({ email, fal }: ConnectionStatusProps) {
   return (
-    <div className={styles.section}>
-      <h2 className={styles.sectionTitle}>Status</h2>
-      <div className={styles.card}>
-        <h3 className={styles.statusTitle}>Connection Status</h3>
-        <div className={styles.statusRows}>
-          <StatusRow label="Auth" status="connected" detail={email} />
-          <StatusRow label="FAL" status={fal.status} error={fal.error} />
-        </div>
+    <div className={styles.card}>
+      <h3 className={styles.statusTitle}>Status</h3>
+      <div className={styles.statusRows}>
+        {rows.map((check) => (
+          <StatusRow key={check.label} check={check} />
+        ))}
       </div>
     </div>
   )

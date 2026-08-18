@@ -95,17 +95,24 @@ export function ActivityPreview() {
                     {entry.prompt || 'No prompt'}
                   </span>
                 </div>
-                <span className={styles.duration}>
-                  {entry.durationMs != null
-                    ? formatDurationMs(entry.durationMs)
-                    : '—'}
-                </span>
-                <span className={styles.cost}>
-                  {formatCents(entry.providerCostCents, entry.costIsEstimate)}
-                </span>
-                <span className={styles.time}>
-                  {formatRelativeOrDate(entry.createdAt)}
-                </span>
+                {/* Grouped rather than three siblings of `.meta` (#406): in the
+                    overview's 1fr column all three fought the model name for
+                    the same line and the name lost, leaving rows of numbers
+                    with nothing to identify them. As one block it can drop to
+                    its own line when the card is narrow. */}
+                <div className={styles.tail}>
+                  <span className={styles.duration}>
+                    {entry.durationMs != null
+                      ? formatDurationMs(entry.durationMs)
+                      : '—'}
+                  </span>
+                  <span className={styles.cost}>
+                    {formatCents(entry.providerCostCents, entry.costIsEstimate)}
+                  </span>
+                  <span className={styles.time}>
+                    {formatRelativeOrDate(entry.createdAt)}
+                  </span>
+                </div>
               </li>
             )
           })}
