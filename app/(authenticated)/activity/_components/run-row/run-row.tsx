@@ -3,6 +3,7 @@ import { clsx } from 'clsx'
 import styles from './run-row.module.css'
 import type { ActivityEntry } from '#/features/activity/types'
 import { MediaBox } from '#/components'
+import { formatCents } from '#/lib/format'
 import {
   formatAbsolute,
   formatDurationMs,
@@ -41,16 +42,6 @@ function StatusIndicator({ status }: { status: ActivityEntry['status'] }) {
       <span className={styles.statusLabel}>Pending</span>
     </span>
   )
-}
-
-function formatCents(cents: number | null, isEstimate = false): string {
-  if (cents == null) return '—'
-  const prefix = isEstimate ? '~' : ''
-  const dollars = cents / 100
-  if (dollars === 0) return `${prefix}$0.00`
-  if (dollars < 0.01) return `${prefix}$${dollars.toFixed(4)}`
-  if (dollars < 1) return `${prefix}$${dollars.toFixed(3)}`
-  return `${prefix}$${dollars.toFixed(2)}`
 }
 
 export function RunRow({ entry, thumbnailUrl, onSelect }: RunRowProps) {
@@ -113,7 +104,9 @@ export function RunRow({ entry, thumbnailUrl, onSelect }: RunRowProps) {
             : 'What FAL charged'
         }
       >
-        {formatCents(entry.providerCostCents, entry.costIsEstimate)}
+        {formatCents(entry.providerCostCents, {
+          estimate: entry.costIsEstimate,
+        })}
       </div>
 
       {/* Time */}

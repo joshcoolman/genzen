@@ -17,6 +17,7 @@ import {
 } from '#/features/ai-images/constants'
 import {
   endpointFor,
+  estimateImageCostCents,
   imageCapacityFor,
   modelTitleFor,
 } from '#/features/ai-images/models'
@@ -122,6 +123,9 @@ export interface GeneratorState {
   setAspectRatio: (ratio: string) => void
   loading: boolean
   totalImages: number
+  /** Cents this submit is expected to cost, and how many selected models
+   *  carry no price so are missing from it (#416). */
+  estimatedCost: { cents: number; unpriced: number }
   canGenerate: boolean
   ratioOptions: Array<string>
   selectedStyleId: string | null
@@ -409,10 +413,12 @@ export function useGenerator({
   // the slot, and "is it non-empty" is the same rule stated over it.
   const activePromptCount = prompts.filter((p) => p.trim()).length
   const hasImages = refImages.length > 0
-  const totalImages =
-    Math.max(activePromptCount, hasImages ? 1 : 0) *
-    selectedModels.length *
-    gensPerModel
+  const runsPerModel =
+    Math.max(activePromptCount, hasImages ? 1 : 0) * gensPerModel
+  const totalImages = runsPerModel * selectedModels.length
+  // Priced off the lineup rather than FAL's pricing API -- see
+  // `estimateImageCostCents` (#416, #400).
+  const estimatedCost = estimateImageCostCents(selectedModels, runsPerModel)
   const canGenerate =
     (activePromptCount > 0 || hasImages) && selectedModels.length > 0
 
@@ -621,6 +627,7 @@ export function useGenerator({
     setAspectRatio,
     loading,
     totalImages,
+    estimatedCost,
     canGenerate,
     ratioOptions,
     selectedStyleId,

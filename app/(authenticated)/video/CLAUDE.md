@@ -37,7 +37,7 @@ source images; `use-view.ts` owns everything after the first paint.
   selection both mean nothing.
 - **The control column is ordered like `GeneratorPanel`, and that is the
   point.** Prompts, then the frame slots, then the settings, then a full-width
-  Generate, then the model picker -- the same order, inheriting the same
+  Generate, then a `CostNote`, then the model picker -- the same order, inheriting the same
   `--panel-rhythm` custom property, so the two surfaces read as the same room.
   A person moves between them in one session. It is not a copy: two image
   slots instead of one (and **labelled**, which that panel's single strip is

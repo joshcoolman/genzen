@@ -1,5 +1,6 @@
 import styles from './account-stats.module.css'
 import type { AccountStats as Stats } from '#/lib/server/account-stats.server'
+import { formatCents } from '#/lib/format'
 
 /**
  * Cents to a readable figure.
@@ -8,14 +9,6 @@ import type { AccountStats as Stats } from '#/lib/server/account-stats.server'
  * (#400), and a handful of them must not collapse to "$0.00" as though they
  * were free. Same ladder the Activity rows use.
  */
-function formatCents(cents: number): string {
-  const dollars = cents / 100
-  if (dollars === 0) return '$0.00'
-  if (dollars < 0.01) return `$${dollars.toFixed(4)}`
-  if (dollars < 1) return `$${dollars.toFixed(3)}`
-  return `$${dollars.toFixed(2)}`
-}
-
 /**
  * `sub` is a list of lines, not one string. The spend split reads
  * "$1.54 images / $4.50 video", and as a single string it wrapped wherever the

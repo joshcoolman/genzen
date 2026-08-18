@@ -5,8 +5,7 @@ import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
 import type { ReactNode } from 'react'
 import type { VideoModel } from '#/features/video/models'
-import { formatCost } from '#/features/video/models'
-import { ActionButton, SingleSelect } from '#/components'
+import { ActionButton, CostNote, SingleSelect } from '#/components'
 
 /**
  * The control column: prompts, frames, what shape and how long, Generate.
@@ -131,9 +130,10 @@ export function VideoForm({
         )}
       </div>
 
-      {/* The button takes the row whole, as it does in the panel: its label
-          carries the price, which is the only warning that a click on a 20s
-          clip costs three dollars. */}
+      {/* The button takes the row whole, as it does in the panel. Its label is
+          the act; the price sits in the CostNote below, where it can carry the
+          `~` and the spec without the control changing width as the duration
+          changes (#416). */}
       <ActionButton
         icon={<Clapperboard size={16} />}
         loading={isSubmitting}
@@ -142,14 +142,13 @@ export function VideoForm({
         onClick={onSubmit}
         className={styles.generate}
       >
-        {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate'}{' '}
-        {formatCost(estimatedCost)}
+        {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate video'}
       </ActionButton>
 
-      <p className={styles.note}>
+      <CostNote cents={estimatedCost}>
         {model.label} · {model.resolution}
         {model.supportsAudio ? ' · audio included' : ''}
-      </p>
+      </CostNote>
 
       {modelSlot}
     </div>

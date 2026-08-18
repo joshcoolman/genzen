@@ -1,0 +1,33 @@
+/* Lifted from video-form's `.note`, which is where this line already lived --
+   so the surface that had one does not shift when it moves here. */
+.note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-6);
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* The one part of the line worth reading at a glance. Not accent-coloured: it
+   is information, not a call to action, and a green price would read as a
+   discount. */
+.cost {
+  color: var(--text);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.spec {
+  min-width: 0;
+}
+
+/* Only rendered when the figure is short. It has to be legible enough to
+   notice and quiet enough not to look like an error. */
+.caveat {
+  color: var(--warning);
+}

@@ -345,3 +345,38 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   'fal-ai/recraft/v3/text-to-image': 'Recraft V3',
   'xai/grok-imagine-image': 'Grok Imagine',
 }
+
+/**
+ * What a submit will cost, in cents, and what the figure does not cover (#416).
+ *
+ * Images had no estimate at all until this — on the one route where a stepper,
+ * a prompt list and multi-select models all multiply at once, so the count
+ * reaches double figures from a panel showing "1".
+ *
+ * Priced off **this lineup, not FAL's pricing API**. That API disagrees with
+ * what FAL actually bills on half the endpoints checked, and hands back
+ * `0.00017 / compute seconds` as a placeholder where it has no price at all
+ * (#400). A pre-generation figure is worth having only if it is roughly what
+ * you get charged.
+ *
+ * `unpriced` is the honest half: `price` is optional, and a model without one
+ * contributes nothing to `cents`. Reporting that separately is what stops the
+ * total quietly under-reporting — genzen's whole cost promise is that its
+ * numbers match FAL's, so a partial figure has to say it is partial.
+ */
+export function estimateImageCostCents(
+  modelIds: Array<string>,
+  runsPerModel: number,
+): { cents: number; unpriced: number } {
+  let cents = 0
+  let unpriced = 0
+  for (const id of modelIds) {
+    const price = findModel(id)?.price
+    if (price == null) {
+      unpriced += 1
+      continue
+    }
+    cents += price * 100 * runsPerModel
+  }
+  return { cents, unpriced }
+}
