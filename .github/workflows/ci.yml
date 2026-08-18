@@ -56,6 +56,7 @@ jobs:
       - run: pnpm prettier --check .
       - run: pnpm lint
       - run: pnpm check:colors
+      - run: pnpm check:tokens
       - run: pnpm typecheck
       - run: pnpm test
 

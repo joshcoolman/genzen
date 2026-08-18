@@ -30,7 +30,7 @@
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--duration-fast) var(--ease-in-out);
 }
 
 .row:hover,
@@ -64,7 +64,7 @@
   flex: none;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 /* Lines up with the names above it rather than with their covers: it creates a

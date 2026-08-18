@@ -73,7 +73,7 @@
 /* The part a table cannot carry -- what else moves, or deliberately does not.
    Quieter than the effect it qualifies, because you only read it once. */
 .note {
-  color: var(--text-faint);
+  color: var(--text-muted);
 }
 
 @media (max-width: 40rem) {
