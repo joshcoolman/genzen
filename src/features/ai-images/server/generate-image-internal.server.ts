@@ -12,7 +12,6 @@ import {
   uploadLibraryImageToFal,
   uploadLibraryImagesToFal,
 } from '#/lib/server/fal-image-inputs.server'
-import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
 import { computeFalCostCents } from '#/lib/server/compute-cost.server'
 import {
   createPendingGeneration,
@@ -317,11 +316,9 @@ export async function generateImageInternal(
     })
 
     // Submit to FAL async queue (returns immediately)
-    const webhookUrl = getFalWebhookUrl()
 
     const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
-      ...(webhookUrl ? { webhookUrl } : {}),
     })
 
     const estimatedCostCents = await computeFalCostCents(falModelId, {

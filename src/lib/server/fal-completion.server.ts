@@ -138,10 +138,10 @@ export async function processImageResult(
 
   // No row to point at the object, and no error to say so -- an update that
   // matches nothing succeeds. Since #369 that is a real outcome rather than an
-  // impossible one: cancelling a generation deletes its row, and a webhook
-  // already in flight arrives to find it gone. Same cleanup as the catch above,
-  // because the orphan is the same orphan; not an error, because the row is
-  // missing exactly as intended.
+  // impossible one: cancelling a generation deletes its row, and a poll already
+  // in flight arrives to find it gone. Same cleanup as the catch above, because
+  // the orphan is the same orphan; not an error, because the row is missing
+  // exactly as intended.
   if (written.count === 0) {
     await createImageStorage().remove([storagePath])
     console.warn(
@@ -247,9 +247,8 @@ export async function processVideoResult(
 }
 
 export async function markGenerationFailed(recordId: string, errorMsg: string) {
-  // sql-scope-exempt: `recordId` comes from the poll scan (its own
-  // `user_id`-filtered select) or the webhook's signature-verified lookup by
-  // request_id. Neither is a caller naming a row.
+  // sql-scope-exempt: `recordId` comes from the poll scan, which is its own
+  // `user_id`-filtered select. Not a caller naming a row.
   await sql`
     update user_images
     set status = 'failed', generation_error = ${errorMsg}
@@ -260,8 +259,7 @@ export async function markGenerationFailed(recordId: string, errorMsg: string) {
 /**
  * Failure path that preserves the full structured FAL error blob in
  * generation_metadata.error while mirroring the human message to
- * generation_error. Used by the poll path and the webhook handler so the
- * UI (which reads generation_error today) and the future Phase 4 detail
+ * generation_error, so the UI (which reads generation_error) and the detail
  * panel (which reads generation_metadata.error) both get the truth.
  */
 export async function markGenerationFailedWithBlob(
@@ -270,8 +268,8 @@ export async function markGenerationFailedWithBlob(
 ) {
   const title = await failureTitle(recordId)
 
-  // sql-scope-exempt: same provenance as markGenerationFailed above -- the poll
-  // scan or the signature-verified webhook lookup.
+  // sql-scope-exempt: same provenance as markGenerationFailed above -- the
+  // poll scan's own user_id-filtered select.
   await sql`
     update user_images
     set status = 'failed',

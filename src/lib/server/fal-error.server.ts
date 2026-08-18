@@ -8,7 +8,7 @@ export interface FalErrorBlob {
   message: string
   fal_request_id?: string
   failed_at: string
-  stage: 'submit' | 'queue' | 'webhook'
+  stage: 'submit' | 'queue'
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
