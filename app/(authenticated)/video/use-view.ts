@@ -6,10 +6,10 @@ import { generateVideo, listVideos } from './_actions/generate-video.action'
 import type { VideoRecord } from './_actions/generate-video.action'
 import {
   DEFAULT_VIDEO_MODEL,
-  aspectRatiosFor,
-  estimateCostCents,
+  estimateMultiCostCents,
+  sharedAspectRatios,
+  sharedDurations,
   supportsEndImage,
-  videoModelBySlug,
   videoModelsByPrice,
 } from '#/features/video/models'
 import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
@@ -20,8 +20,39 @@ import { imageUrl } from '#/lib/image-url'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { toast } from '#/components'
 
-/** One key, one value: which model the picker is on. */
+/** Which models the picker is on. A JSON array since #417; see `readSlugs`. */
 const MODEL_KEY = 'genzen:video:model'
+
+/**
+ * Above this much, Generate asks first.
+ *
+ * A count threshold is what Images uses, and it is the wrong instrument here:
+ * two Flux 3 clips at 20s is $6.80 and eight LTX clips at 6s is $4.32, so the
+ * number of clips says little about the size of the click. Money is the thing
+ * being risked, so money is the trigger.
+ */
+const CONFIRM_ABOVE_CENTS = 500
+
+/**
+ * Stored slugs, tolerating what was stored before.
+ *
+ * This key held a bare slug until #417 (`"flux-3"`, not `["flux-3"]`). Anyone
+ * who used the route has one in localStorage, and `JSON.parse` throws on it --
+ * which would take the whole hook down on mount rather than degrading. So a
+ * value that is not an array is read as the single selection it used to mean.
+ */
+function readSlugs(): Array<string> {
+  const raw = localStorage.getItem(MODEL_KEY)
+  if (!raw) return [DEFAULT_VIDEO_MODEL.slug]
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (Array.isArray(parsed))
+      return parsed.filter((v) => typeof v === 'string')
+  } catch {
+    // Not JSON: the pre-#417 bare slug.
+  }
+  return [raw]
+}
 
 /** What the strip renders and the submit sends. One, not a set: this model
  *  takes a single first frame. */
@@ -46,21 +77,63 @@ export function useView(initialVideos: Array<VideoRecord>) {
   const { user } = useAuth()
   const searchParams = useSearchParams()
 
-  // Single-select, and deliberately (#385): a clip is 20-100x the price of a
-  // still, so the image panel's "tick four models and fire" would be $20 a
-  // click here. `videoModelBySlug` is what makes a stored slug for a model that
-  // has since been dropped fall back rather than crash.
-  const [modelSlug, setModelSlug, modelHydrated] = usePersistedState(
-    () => localStorage.getItem(MODEL_KEY) ?? DEFAULT_VIDEO_MODEL.slug,
-    DEFAULT_VIDEO_MODEL.slug,
+  // Multi-select since #417: one prompt through several models is the only way
+  // to learn how they differ, and doing it serially is three round trips and
+  // three chances to change the prompt without meaning to. Single-select was a
+  // money decision (#385) taken when nothing on screen said what a click cost;
+  // the estimate under Generate (#416) is what makes the count safe to raise,
+  // together with one clip per model and a confirm above CONFIRM_ABOVE_CENTS.
+  const [modelSlugs, setModelSlugs, modelHydrated] = usePersistedState(
+    readSlugs,
+    [DEFAULT_VIDEO_MODEL.slug],
   )
-  const model = videoModelBySlug(modelSlug) ?? DEFAULT_VIDEO_MODEL
+
+  // Resolved through the lineup, so a stored slug for a model that has since
+  // been dropped falls out rather than crashing. Cheapest first, matching the
+  // picker, so the estimate and the list agree on order.
+  const models = useMemo(
+    () => videoModelsByPrice().filter((m) => modelSlugs.includes(m.slug)),
+    [modelSlugs],
+  )
+
+  // The settings need a model even with nothing ticked -- a form whose controls
+  // vanish on deselect is worse than one showing a sensible default it cannot
+  // submit. `canSubmit` is what actually gates the request.
+  const settingsModels = models.length > 0 ? models : [DEFAULT_VIDEO_MODEL]
 
   useEffect(() => {
     // Waits on `hydrated`, or the fallback lands on top of the stored value on
     // mount and the setting resets on every page load.
-    if (modelHydrated) localStorage.setItem(MODEL_KEY, model.slug)
-  }, [modelHydrated, model.slug])
+    if (modelHydrated)
+      localStorage.setItem(MODEL_KEY, JSON.stringify(modelSlugs))
+  }, [modelHydrated, modelSlugs])
+
+  const toggleModel = useCallback(
+    (slug: string) => {
+      setModelSlugs((current) =>
+        current.includes(slug)
+          ? current.filter((s) => s !== slug)
+          : [...current, slug],
+      )
+    },
+    [setModelSlugs],
+  )
+
+  // Cmd-click, and the header tick when everything is already on: reduce to
+  // this one. The multi picker's own conventions (#358), which single-select
+  // had no use for.
+  const selectOnlyModel = useCallback(
+    (slug: string) => setModelSlugs([slug]),
+    [setModelSlugs],
+  )
+
+  const toggleAllModels = useCallback(() => {
+    setModelSlugs((current) =>
+      current.length === videoModelsByPrice().length
+        ? [DEFAULT_VIDEO_MODEL.slug]
+        : videoModelsByPrice().map((m) => m.slug),
+    )
+  }, [setModelSlugs])
 
   // Cheapest first, and stable across renders so the picker's rows are not a
   // new array on every keystroke in the prompt box.
@@ -73,10 +146,10 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // them is cheaper than sitting through one before writing the next. Same
   // component the generator panel uses.
   const [prompts, setPrompts] = useState<Array<string>>([''])
-  const [duration, setDuration] = useState(model.defaultDuration)
+  const [duration, setDuration] = useState(DEFAULT_VIDEO_MODEL.defaultDuration)
   // Seeded for the mode the route opens in (no first frame -> no `auto`).
   const [aspectRatio, setAspectRatio] = useState(
-    aspectRatiosFor(model, false)[0],
+    sharedAspectRatios([DEFAULT_VIDEO_MODEL], false)[0],
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
   // One picker, two slots. A second dialog would be the same component mounted
@@ -215,9 +288,13 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // control never shows a selection the request would refuse. An empty list is
   // the "no control" case: the form renders nothing and the submit sends
   // nothing, so there is no value to coerce to.
+  // Intersected across every ticked model (#417), so a value that one of them
+  // would reject is never offered. Models that expose no aspect param at all
+  // are excluded from the intersection rather than emptying it -- see
+  // `sharedAspectRatios`.
   const aspectOptions = useMemo(
-    () => aspectRatiosFor(model, hasFirstFrame, hasLastFrame),
-    [model, hasFirstFrame, hasLastFrame],
+    () => sharedAspectRatios(settingsModels, hasFirstFrame, hasLastFrame),
+    [settingsModels, hasFirstFrame, hasLastFrame],
   )
   useEffect(() => {
     if (aspectOptions.length > 0 && !aspectOptions.includes(aspectRatio)) {
@@ -225,17 +302,32 @@ export function useView(initialVideos: Array<VideoRecord>) {
     }
   }, [aspectOptions, aspectRatio])
 
-  // Same coercion, for the same reason: the durations are the model's, and
-  // switching from LTX (6s up) to H3 (5s up) leaves 18s selected against a
-  // model whose ceiling is 15.
+  // Same coercion, for the same reason: the durations are the models', and
+  // ticking H3 (5-15) alongside LTX leaves 18s selected against a model whose
+  // ceiling is 15. Intersected, so the control only offers what all of them
+  // take.
+  const durationOptions = useMemo(
+    () => sharedDurations(settingsModels),
+    [settingsModels],
+  )
   useEffect(() => {
-    if (!model.durations.includes(duration)) setDuration(model.defaultDuration)
-  }, [model, duration])
+    if (durationOptions.length === 0) return
+    if (!durationOptions.includes(duration)) {
+      // The cheapest model's default where it survives the intersection, so
+      // ticking a second model does not silently lengthen the clip.
+      const fallback = settingsModels[0].defaultDuration
+      setDuration(
+        durationOptions.includes(fallback) ? fallback : durationOptions[0],
+      )
+    }
+  }, [durationOptions, duration, settingsModels])
 
-  // A model that takes no end frame in any mode should not offer the slot --
-  // and anything staged in it goes, rather than being silently dropped at
-  // submit.
-  const modelTakesEndFrame = supportsEndImage(model)
+  // **Every** model, not any: the slot is offered only where all of them take
+  // one. The submit refuses an end frame the endpoint does not declare, so
+  // "any" would queue two clips and fail the third -- a partial submit is the
+  // worst outcome, because half the comparison you asked for is not a
+  // comparison.
+  const modelTakesEndFrame = settingsModels.every(supportsEndImage)
   useEffect(() => {
     if (!modelTakesEndFrame && endSources.length > 0) setEndSources([])
   }, [modelTakesEndFrame, endSources.length])
@@ -245,13 +337,22 @@ export function useView(initialVideos: Array<VideoRecord>) {
   useEffect(() => {
     if (!hasFirstFrame && endSources.length > 0) setEndSources([])
   }, [hasFirstFrame, endSources.length])
-  // Every prompt is its own clip, so the figure on the button multiplies. The
-  // per-clip price is constant; what varies is how many are queued.
-  const estimatedCost =
-    estimateCostCents(model, duration) * Math.max(filledPrompts.length, 1)
-  // The prompt is the only requirement: with no first frame the model invents
-  // the whole shot.
-  const canSubmit = filledPrompts.length > 0 && !isSubmitting
+  // Prompts x models, at one clip per model per prompt. Both axes multiply and
+  // the models are priced differently, so this sums rather than scaling one
+  // figure -- ticking Flux 3 alongside LTX costs twice what ticking a second
+  // LTX would, if that were a thing you could do.
+  const clipCount = Math.max(filledPrompts.length, 1) * models.length
+  const estimatedCost = estimateMultiCostCents(
+    models,
+    duration,
+    Math.max(filledPrompts.length, 1),
+  )
+  // A prompt and at least one model. With no first frame the model invents the
+  // whole shot, so the frames stay optional.
+  const canSubmit =
+    filledPrompts.length > 0 && models.length > 0 && !isSubmitting
+  /** Above this the form asks first -- see `CONFIRM_ABOVE_CENTS`. */
+  const needsConfirm = estimatedCost > CONFIRM_ABOVE_CENTS
 
   const submit = useCallback(async () => {
     if (filledPrompts.length === 0) return
@@ -262,15 +363,20 @@ export function useView(initialVideos: Array<VideoRecord>) {
       // contacts FAL, and firing them together would interleave the
       // reservations against a queue that answers in its own order. Sorting
       // the list out is not worth the few hundred milliseconds saved.
+      // Prompt-major rather than model-major: the first clip of every prompt
+      // arrives before the second of any, so a submit you decide to abandon
+      // half way has covered the prompts rather than one prompt thoroughly.
       for (const prompt of filledPrompts) {
-        await generateVideo({
-          ...(sourceId ? { imageId: sourceId } : {}),
-          ...(endImageId ? { endImageId } : {}),
-          prompt,
-          duration,
-          aspectRatio,
-          modelSlug: model.slug,
-        })
+        for (const m of models) {
+          await generateVideo({
+            ...(sourceId ? { imageId: sourceId } : {}),
+            ...(endImageId ? { endImageId } : {}),
+            prompt,
+            duration,
+            aspectRatio,
+            modelSlug: m.slug,
+          })
+        }
       }
       // Refresh once so the pending cards appear; the poll takes it from here.
       await refresh()
@@ -285,14 +391,18 @@ export function useView(initialVideos: Array<VideoRecord>) {
     filledPrompts,
     duration,
     aspectRatio,
-    model.slug,
+    models,
     refresh,
   ])
 
   return {
-    model,
-    models: pickerModels,
-    selectModel: setModelSlug,
+    models,
+    pickerModels,
+    modelSlugs,
+    toggleModel,
+    selectOnlyModel,
+    toggleAllModels,
+    durationOptions,
     modelTakesEndFrame,
     aspectOptions,
     hasFirstFrame,
@@ -312,12 +422,14 @@ export function useView(initialVideos: Array<VideoRecord>) {
     addPrompt,
     removePrompt,
     clearPrompts,
-    pendingCount: filledPrompts.length,
+    pendingCount: clipCount,
     duration,
     setDuration,
     aspectRatio,
     setAspectRatio,
     estimatedCost,
+    needsConfirm,
+    promptCount: Math.max(filledPrompts.length, 1),
     isSubmitting,
     canSubmit,
     submit,

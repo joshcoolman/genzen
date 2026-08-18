@@ -5,8 +5,12 @@ import {
   VIDEO_MODELS,
   aspectRatiosFor,
   endpointFor,
+  estimateCostCents,
+  estimateMultiCostCents,
   expandVideoFilterId,
   frameCapacityFor,
+  sharedAspectRatios,
+  sharedDurations,
   supportsEndImage,
   videoEndpointIds,
   videoFilterOptions,
@@ -188,5 +192,71 @@ describe('endpoint identity', () => {
     expect(videoFilterOptions().map((o) => o.label)).toEqual(
       videoModelsByPrice().map((m) => m.label),
     )
+  })
+})
+
+/**
+ * Multi-model selection (#417). These matter because getting an intersection
+ * wrong fails at FAL rather than here: a duration one model rejects is a
+ * queued request that errors after you have already paid attention to it.
+ */
+describe('multi-model settings', () => {
+  it('offers only durations every selected model takes', () => {
+    const shared = sharedDurations([LTX, H3, FLUX])
+    for (const d of shared) {
+      expect(LTX.durations).toContain(d)
+      expect(H3.durations).toContain(d)
+      expect(FLUX.durations).toContain(d)
+    }
+    // LTX starts at 6, so H3's 5 must not survive; H3 tops out at 15, so LTX's
+    // 18 and 20 must not either.
+    expect(shared).not.toContain(5)
+    expect(shared).not.toContain(18)
+    expect(shared).not.toContain(20)
+  })
+
+  it('leaves one model alone', () => {
+    expect(sharedDurations([LTX])).toEqual(LTX.durations)
+  })
+
+  it('excludes a model with no aspect control instead of emptying the list', () => {
+    // H3's image endpoint has no `aspect_ratio` param at all, which means
+    // "there is no control" -- not "no ratio works". Intersecting it literally
+    // would strip the control from LTX as well and hand FAL its default for a
+    // model perfectly able to honour a choice.
+    const shared = sharedAspectRatios([LTX, H3], true)
+    expect(aspectRatiosFor(H3, true)).toEqual([])
+    expect(shared.length).toBeGreaterThan(0)
+    expect(shared).toEqual(aspectRatiosFor(LTX, true))
+  })
+
+  it('intersects the models that do have aspect options', () => {
+    const shared = sharedAspectRatios([LTX, FLUX], true)
+    // LTX offers auto/16:9/9:16; Flux 3 offers those and more. The narrower
+    // list wins, and nothing outside it is offered.
+    expect(shared).toEqual(['auto', '16:9', '9:16'])
+  })
+
+  it('is empty when no model is selected', () => {
+    expect(sharedDurations([])).toEqual([])
+    expect(sharedAspectRatios([], true)).toEqual([])
+  })
+
+  it('sums the cost across models rather than scaling one', () => {
+    // The models are priced differently, so a single figure times a count
+    // would be wrong the moment two models disagree. LTX is 9c/s and Flux 3
+    // is 17c/s, so 6s of both is 54 + 102.
+    expect(estimateMultiCostCents([LTX, FLUX], 6, 1)).toBe(
+      estimateCostCents(LTX, 6) + estimateCostCents(FLUX, 6),
+    )
+  })
+
+  it('multiplies by prompts, one clip per model each', () => {
+    const one = estimateMultiCostCents([LTX, FLUX], 6, 1)
+    expect(estimateMultiCostCents([LTX, FLUX], 6, 3)).toBe(one * 3)
+  })
+
+  it('costs nothing with no model selected', () => {
+    expect(estimateMultiCostCents([], 6, 4)).toBe(0)
   })
 })

@@ -4,8 +4,16 @@ import { Clapperboard } from 'lucide-react'
 import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
 import type { ReactNode } from 'react'
-import type { VideoModel } from '#/features/video/models'
-import { ActionButton, CostNote, SingleSelect } from '#/components'
+import {
+  ActionButton,
+  ConfirmDialog,
+  CostNote,
+  SingleSelect,
+  useConfirm,
+} from '#/components'
+import { formatCents } from '#/lib/format'
+
+const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
 
 /**
  * The control column: prompts, frames, what shape and how long, Generate.
@@ -24,15 +32,23 @@ import { ActionButton, CostNote, SingleSelect } from '#/components'
  *   "Reference images" heading because one unlabelled strip under a prompt is
  *   unambiguous. Two are not -- first frame and last frame do different things
  *   -- so they carry the same quiet label the settings below use.
- * - **Duration where the count stepper is.** Video generates one clip per
- *   prompt; there is no "3 each" to ask for.
+ * - **Duration where the count stepper is, and there is no stepper.** One clip
+ *   per model, always (#417). Video is slow and finicky enough that nobody
+ *   wants four takes of one request from one model -- the useful axis is
+ *   across models, not within one.
  * - **The aspect control can be absent entirely**, because some endpoints have
  *   no `aspect_ratio` param at all (#385).
- * - **The model picker is single-select**, so the count on the button is
- *   prompts alone rather than prompts x models x gens.
+ * - **Generate asks above a price, not above a count.** `GeneratorPanel`
+ *   confirms above five images; here two Flux 3 clips at 20s is $6.80 and
+ *   eight LTX clips at 6s is $4.32, so the number of clips says little about
+ *   the size of the click. Money is what is being risked, so money is the
+ *   trigger.
  */
 export function VideoForm({
-  model,
+  durationOptions,
+  modelCount,
+  promptCount,
+  needsConfirm,
   framesSlot,
   modelSlot,
   prompts,
@@ -51,7 +67,12 @@ export function VideoForm({
   canSubmit,
   onSubmit,
 }: {
-  model: VideoModel
+  /** Intersected across every ticked model (#417) -- see `sharedDurations`. */
+  durationOptions: Array<number>
+  modelCount: number
+  promptCount: number
+  /** The estimate crossed the threshold; ask before submitting. */
+  needsConfirm: boolean
   /** The first/last frame strips, between the prompts and the settings --
    *  where the reference strip sits in `GeneratorPanel`. Passed in because the
    *  view owns the picker they open. */
@@ -76,6 +97,29 @@ export function VideoForm({
   canSubmit: boolean
   onSubmit: () => void
 }) {
+  const { confirm, dialogProps } = useConfirm()
+
+  /**
+   * Above a price, say what the click is buying before it buys it.
+   *
+   * The multiplication spelled out, as `GeneratorPanel` does: the surprise is
+   * never the total on its own, it is which of the two factors was larger than
+   * you remembered. Not `destructive` -- generating is not destruction, and the
+   * red confirm is for things that lose work.
+   */
+  async function handleSubmit() {
+    if (needsConfirm) {
+      const ok = await confirm({
+        title: `Generate ${pendingCount} clips?`,
+        message: `${plural(promptCount, 'prompt')} x ${plural(modelCount, 'model')}, one clip each, about ${formatCents(estimatedCost)}. Cancel to change the models or the duration.`,
+        confirmLabel: `Generate ${pendingCount}`,
+        destructive: false,
+      })
+      if (!ok) return
+    }
+    onSubmit()
+  }
+
   return (
     <div className={styles.root}>
       <PromptList
@@ -102,9 +146,9 @@ export function VideoForm({
           <SingleSelect
             value={String(duration)}
             onChange={(value) =>
-              onDurationChange(Number(value ?? model.defaultDuration))
+              onDurationChange(Number(value ?? durationOptions[0]))
             }
-            options={model.durations.map((seconds) => ({
+            options={durationOptions.map((seconds) => ({
               value: String(seconds),
               label: `${seconds}s`,
             }))}
@@ -139,11 +183,13 @@ export function VideoForm({
         loading={isSubmitting}
         loadingText="Queueing"
         disabled={!canSubmit}
-        onClick={onSubmit}
+        onClick={() => void handleSubmit()}
         className={styles.generate}
       >
         {pendingCount > 1 ? `Generate ${pendingCount} clips` : 'Generate video'}
       </ActionButton>
+
+      <ConfirmDialog {...dialogProps} />
 
       <CostNote cents={estimatedCost} />
 
