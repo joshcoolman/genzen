@@ -146,6 +146,20 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-18
 
+- **Video takes several models at once, one clip each** — one prompt through
+  LTX, H3 and Flux 3 together is the only way to learn how they differ, and
+  serially it is three round trips and three chances to change the prompt
+  without meaning to. Single-select was a money decision taken when nothing on
+  screen said what a click cost; three things replace it — the estimate under
+  Generate, **one clip per model** (no stepper, ever), and a confirm above $5.
+  The confirm triggers on **price rather than count**, unlike Images: two Flux 3
+  clips at 20s is $6.80 and eight LTX clips at 6s is $4.32. Settings intersect
+  across the ticked models, and the two rules differ on purpose — durations are
+  a plain intersection because a rejected duration fails at FAL, but a model
+  exposing no aspect param is *excluded* from that intersection rather than
+  emptying it, or H3 would strip the control from two models able to honour a
+  choice (#417)
+
 - **Generate says the act; the price sits under it** — Images read
   `Generate 4 images` and showed **no cost anywhere**, on the route where a
   stepper, a prompt list and multi-select models all multiply at once; Video
@@ -178,4 +192,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 - **The account overview earns the visit** — two columns: who you are and what you have spent on the left, service status and recent runs on the right. The figures are aggregated in SQL out of `user_images`, which _is_ the generation ledger, and **video is counted** — so this is the first surface anywhere in genzen where video spend is visible, without waiting on #398. It is also the first thing to say how lopsided that is: video is three quarters of the total. Every figure is labelled estimated, because FAL reports no cost on any image result. Two things were quietly broken and are now fixed: the status block reported a red `Error` for a FAL key that worked perfectly (the SDK throws its 404 with an empty message, so nothing matched), and every check now carries the fix rather than a raw error string. Last login needed the one migration on the page (#406, phase 2)
 - **Two models recorded no cost, and Nano Banana was priced at half** — `compute seconds` was the one FAL billing unit nothing handled, so FLUX.2 Flash and Grok wrote no cost at all; it is now priced at completion from the result's measured inference time, and deliberately not rounded to a whole cent, since a run of that model is worth $0.0004. Nano Banana 2 read $0.04 in the picker against FAL's $0.08 — the row estimate had it right, so the two halves of the app disagreed on a daily driver. Grok is the one price that still does not reconcile and says so in the lineup (#400, and #400 stays open for the usage-API work)
 - **Account is a settings area, and the app is themeable** — a rail down the left of /account holds Overview, Style and Shortcuts; `/shortcuts` moved under it and left the app's own nav. Style is six colors, and the other four palette tokens are derived from them: one `<style>` block in the authenticated layout restyles every route, server-rendered so there is no flash. **No component's styling was touched** — that was the point, and the proof that #229's palette work holds. It derives in HSL with no color library, because `tokens.css` claims one notation for every value; and it emits nothing at all without a saved row, so the defaults and the stylesheet cannot drift apart. Found on the way: `overflow-x: hidden` on the app shell had been silently disabling `position: sticky` app-wide, since nothing was sticky until this rail (#406, phases 1 and 3)
-- **Thumbnail zoom, from the keyboard or the toolbar** — ⌘⌃+ / ⌘⌃- steps the /images grid through four stops (50, 60, 75, 100), ⌘⌃0 back to 100%, and a magnifier in the toolbar opens the same stops on hover. It is `zoom` on the grid element, so cards and captions scale together and nothing re-wraps — only how many fit a row. The stops are measured rather than chosen: the grid is `auto-fill` over a 200px minimum, so only a step crossing a column-count threshold reads as a change, and an even 10% left three consecutive stops on four columns. Not #284's size switcher returning — one multiplier, no named sizes, identical card at every size. The toolbar picked up a pass on the way: lit toggles are a raised surface rather than an accent tint, sort and zoom are outlined since they never light up, and every overlay icon button is now the circle the select tick already was (#403)
