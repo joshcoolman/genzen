@@ -146,6 +146,31 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-18
 
+- **The cost figures were measured against FAL's own invoices, and three were
+  wrong** — $6.135 recorded against $6.185 billed over a full day, 0.8% low and
+  exact on video and Nano Banana. The compute-seconds pricing path is **deleted**:
+  FAL's pricing API returns `$0.00017/compute second` for both Grok and LTX-2.5,
+  and LTX is billed at $0.01 a unit, so that figure is a placeholder for "no
+  price known" rather than a rate — which is why Grok looked irreconcilable, and
+  why the mechanism came out 4.5x under on FLUX.2 Flash. Costs are no longer
+  rounded to a whole cent (a z-image run is 0.52c and recorded 1c). Reconciliation
+  against the usage API was tested and dropped: it is hourly aggregates with no
+  request id, so per-generation cost can never come from FAL (#400)
+
+- **Two silent degradations became failures before FAL is paid** — an unreadable
+  reference image was dropped and the generation ran on what survived, billed in
+  full, card marked completed; and image-only generation fell back to the literal
+  prompt "image" when the describe step failed, which with no ANTHROPIC_API_KEY
+  happened every single time. Both throw now, mark the row failed with a reason
+  and toast. A failure you can retry beats a degraded result you paid for
+  (#364, #365)
+
+- **Three custom properties were declared nowhere** — `--text-faint` in three
+  modules, and `--dur-fast` and `--ease` in two of the same files, so those
+  transitions ran with no duration and no easing. An undeclared property does not
+  error; it is dropped and the element inherits. `check:tokens` now guards it in
+  `pnpm check` and CI (#407)
+
 - **Video takes several models at once, one clip each** — one prompt through
   LTX, H3 and Flux 3 together is the only way to learn how they differ, and
   serially it is three round trips and three chances to change the prompt
@@ -189,6 +214,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   been believed since #384 (#398, Activity half; the rest of that issue is now
   four undecided surfaces)
 
-- **The account overview earns the visit** — two columns: who you are and what you have spent on the left, service status and recent runs on the right. The figures are aggregated in SQL out of `user_images`, which _is_ the generation ledger, and **video is counted** — so this is the first surface anywhere in genzen where video spend is visible, without waiting on #398. It is also the first thing to say how lopsided that is: video is three quarters of the total. Every figure is labelled estimated, because FAL reports no cost on any image result. Two things were quietly broken and are now fixed: the status block reported a red `Error` for a FAL key that worked perfectly (the SDK throws its 404 with an empty message, so nothing matched), and every check now carries the fix rather than a raw error string. Last login needed the one migration on the page (#406, phase 2)
-- **Two models recorded no cost, and Nano Banana was priced at half** — `compute seconds` was the one FAL billing unit nothing handled, so FLUX.2 Flash and Grok wrote no cost at all; it is now priced at completion from the result's measured inference time, and deliberately not rounded to a whole cent, since a run of that model is worth $0.0004. Nano Banana 2 read $0.04 in the picker against FAL's $0.08 — the row estimate had it right, so the two halves of the app disagreed on a daily driver. Grok is the one price that still does not reconcile and says so in the lineup (#400, and #400 stays open for the usage-API work)
-- **Account is a settings area, and the app is themeable** — a rail down the left of /account holds Overview, Style and Shortcuts; `/shortcuts` moved under it and left the app's own nav. Style is six colors, and the other four palette tokens are derived from them: one `<style>` block in the authenticated layout restyles every route, server-rendered so there is no flash. **No component's styling was touched** — that was the point, and the proof that #229's palette work holds. It derives in HSL with no color library, because `tokens.css` claims one notation for every value; and it emits nothing at all without a saved row, so the defaults and the stylesheet cannot drift apart. Found on the way: `overflow-x: hidden` on the app shell had been silently disabling `position: sticky` app-wide, since nothing was sticky until this rail (#406, phases 1 and 3)
