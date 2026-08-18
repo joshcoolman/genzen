@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
+import type { VideoRecord } from './_actions/generate-video.action'
 import {
   DEFAULT_VIDEO_MODEL,
   aspectRatiosFor,
@@ -10,8 +11,7 @@ import {
   supportsEndImage,
   videoModelBySlug,
   videoModelsByPrice,
-} from './models'
-import type { VideoRecord } from './_actions/generate-video.action'
+} from '#/features/video/models'
 import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'

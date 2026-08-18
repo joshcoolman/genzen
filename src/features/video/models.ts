@@ -260,3 +260,63 @@ export function estimateCostCents(model: VideoModel, duration: number): number {
 export function formatCost(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
 }
+
+/**
+ * Every endpoint id a row of this model can carry.
+ *
+ * A row's `generation_metadata.model` is the *endpoint* it was submitted to,
+ * and one model owns two or three of them. Anything that reasons about rows by
+ * model -- naming one, filtering for one -- has to expand through this.
+ */
+export function videoEndpointIds(model: VideoModel): Array<string> {
+  const { textToVideo, withImage, withFirstAndLastImage } = model.endpoints
+  const ids = [textToVideo.id, withImage.id]
+  if (withFirstAndLastImage) ids.push(withFirstAndLastImage.id)
+  return ids
+}
+
+const ENDPOINT_LABELS = new Map<string, string>(
+  VIDEO_MODELS.flatMap((m) => videoEndpointIds(m).map((id) => [id, m.label])),
+)
+
+/**
+ * The model's name for an endpoint id, or undefined if no model claims it.
+ *
+ * Undefined rather than the raw id, so a caller can fall back to the image
+ * lineup instead of being handed a string that looks like an answer.
+ */
+export function videoModelNameFor(endpointId: string): string | undefined {
+  return ENDPOINT_LABELS.get(endpointId)
+}
+
+/**
+ * The prefix marking a filter option as "this whole video model" (#398).
+ *
+ * Activity's model filter is one row per model, matching the picker, but a
+ * video model is two or three endpoints in the data. Rather than list them
+ * separately -- which would split one model across three unreadable rows -- an
+ * option carries the slug and the query expands it with `expandVideoFilterId`.
+ * Prefixed because the same array holds raw image endpoint ids, and a slug like
+ * `flux-3` next to `fal-ai/flux-pro/kontext` needs to be distinguishable.
+ */
+export const VIDEO_FILTER_PREFIX = 'video:'
+
+/** One option per model, for a filter that lists models rather than endpoints. */
+export function videoFilterOptions(): Array<{ id: string; label: string }> {
+  return videoModelsByPrice().map((m) => ({
+    id: `${VIDEO_FILTER_PREFIX}${m.slug}`,
+    label: m.label,
+  }))
+}
+
+/**
+ * A filter id back to the endpoint ids it stands for.
+ *
+ * Null for anything that is not one of ours, so a caller can pass the id
+ * through untouched -- an image endpoint id already *is* what the column holds.
+ */
+export function expandVideoFilterId(id: string): Array<string> | null {
+  if (!id.startsWith(VIDEO_FILTER_PREFIX)) return null
+  const model = videoModelBySlug(id.slice(VIDEO_FILTER_PREFIX.length))
+  return model ? videoEndpointIds(model) : []
+}

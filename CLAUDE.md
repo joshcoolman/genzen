@@ -69,20 +69,21 @@ earned; see `docs/DELTAS.md`.
 | auth        | Password verification + signed session cookie                        | `src/features/auth/CLAUDE.md`        |
 | theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`       |
 | user-images | User image uploads, library, and asset management                    | `src/features/user-images/CLAUDE.md` |
+| video       | The video lineup: three models, their endpoints, and what each takes | `src/features/video/CLAUDE.md`       |
 
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                             |
-| ---------- | --------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                 |
-| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working        |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                 |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                  |
-| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — image to video, LTX-2.5 on FAL |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav           |
-| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else        |
-| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages     |
+| Surface    | Where                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                     |
+| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working            |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                     |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                      |
+| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav               |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else            |
+| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages         |
 
 **Account is a section, not a page.** `account/layout.tsx` draws a nav beside
 `Overview`, `Style` (the six colors that theme the app, `src/features/theme`)
@@ -141,15 +142,15 @@ Two things this said wrongly until 2026-08-18, both of which cost a sort:
   outright on a label it cannot resolve, so a `--remove-label` naming `now`
   removes nothing and reports success on the add, leaving an issue in two groups.
 - **The direction is ascending, not most-recent-first.** A label edit touches
-  `updatedAt`, so filing an issue *appends it to the bottom* of its group and the
+  `updatedAt`, so filing an issue _appends it to the bottom_ of its group and the
   **top of a group is the next thing to do**. Re-applying a label an issue already
   carries is a no-op and will not move it; forcing a position takes a remove and
   then an add. After changing any issue's
-labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
-open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
-many tabs heard it, so `0` means nothing was listening rather than nothing
-happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
-on a schedule forever, including on a tab left open all weekend.
+  labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
+  open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
+  many tabs heard it, so `0` means nothing was listening rather than nothing
+  happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
+  on a schedule forever, including on a tab left open all weekend.
 
 **Capture to GitHub issues, not the filesystem.** Anything worth carrying past
 this session — a plan, a task, a bug, an idea from a poke-around session ("capture

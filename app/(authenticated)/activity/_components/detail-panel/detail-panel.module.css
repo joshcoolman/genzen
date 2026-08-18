@@ -28,6 +28,16 @@
   box-shadow: var(--shadow-overlay);
 }
 
+/* A clip takes the clicks back. The strip is `pointer-events: none` so a click
+   beside the picture closes the sheet, which is right for a still -- there is
+   nothing there to click. A clip has a scrub bar, and controls you cannot reach
+   are worse than no controls, so only the element itself opts back in. Clicking
+   the surrounding dim still closes. */
+.previewClip {
+  composes: previewImage;
+  pointer-events: auto;
+}
+
 /* Size and spacing through Sheet's custom properties -- re-declaring `width` or
    `gap` here would race sheet.module.css on bundle order. Full-bleed below
    640px, where 28rem would be wider than the screen anyway. */

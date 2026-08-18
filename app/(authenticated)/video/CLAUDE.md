@@ -8,10 +8,11 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
-- **`models.ts` is the lineup, and both the form and the submit read it.**
-  Durations, aspect ratios, resolution, price and **the request's own param
-  names** come off the record. Route-owned because one route uses it; promote it
-  to `src/features/` the day Canvas wants to animate a card.
+- **The lineup is `src/features/video/models.ts`, not this folder** -- promoted
+  in #398, when Activity became its second consumer and needed to name and
+  filter clips. Durations, aspect ratios, resolution, price and the request's
+  own param names all come off those records; the form and the submit read
+  them. Every decision about _this route_ is still here.
 - **A mode is an endpoint, and an endpoint is a descriptor rather than an id**
   (#385). Adding the second and third models is what forced it: Flux 3 puts
   first+last frame on a _separate_ endpoint that requires both and calls the
@@ -108,10 +109,14 @@ source images; `use-view.ts` owns everything after the first paint.
   invisible in the one place that could restore it and swept anyway.
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
-'ai_generated')`. Activity picks them up for free; Trash does since the delete
-  above. Putting videos in
-  the library is a matter of teaching the card and the lightbox `<video>` --
-  that render change is what V1 declined, not the storage.
+'ai_generated')`. **Activity did not pick them up for free** -- this file said
+  it did, and every clip was absent from the log for as long as the route has
+  existed (#398). Trash was wrong in the same way until #384. Both claims were
+  written from the storage model, and both were false the day they were written:
+  a surface shows clips when its _query_ does, and each one is a decision. Fixed
+  now for Activity and Trash. Putting videos in the library is still declined --
+  it is a matter of teaching the card and the lightbox `<video>`, which is the
+  render change V1 passed on, not the storage.
 - **No Retry.** The endpoint exposes no seed, so an identical request returns a
   _different_ clip, while `retry-plan.ts` promises a faithful replay. Rather
   than give one control two meanings, generating again is the same two clicks.

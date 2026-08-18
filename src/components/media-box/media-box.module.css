@@ -1,0 +1,26 @@
+/* Deliberately the same geometry as image-box.module.css: a clip and a still
+   sit in the same column of the same table, so the two must not be a pixel
+   apart. Not `composes:` -- that would make the image primitive's stylesheet
+   load for a call site that renders no image. */
+.box {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: var(--media-box-size);
+  height: var(--media-box-size);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--image-backing);
+  padding: var(--media-box-pad);
+}
+
+.clip {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.clipCover {
+  composes: clip;
+  object-fit: cover;
+}

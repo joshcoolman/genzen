@@ -8,11 +8,12 @@ import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
 import { imageUrl } from '#/lib/image-url'
 import {
-  ImageBox,
+  MediaBox,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  firstFrameSrc,
 } from '#/components'
 import {
   formatAbsolute,
@@ -234,7 +235,21 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
           pointer-events-none so clicks pass through to the overlay (close). */}
       {open && detail && thumbUrl && (
         <div className={styles.preview}>
-          <img src={thumbUrl} alt="" className={styles.previewImage} />
+          {detail.source === 'ai_video' ? (
+            // Controls, unlike the two square boxes: this is the full-size
+            // preview, and a clip you can see but not play is a still with
+            // extra steps. `muted` so opening a row never makes noise.
+            <video
+              src={firstFrameSrc(thumbUrl)}
+              className={styles.previewClip}
+              preload="metadata"
+              controls
+              muted
+              playsInline
+            />
+          ) : (
+            <img src={thumbUrl} alt="" className={styles.previewImage} />
+          )}
         </div>
       )}
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -243,7 +258,8 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
             <SheetTitle className={styles.sheetTitle}>Generation</SheetTitle>
             {detail && (
               <div className={styles.summary}>
-                <ImageBox
+                <MediaBox
+                  kind={detail.source === 'ai_video' ? 'video' : 'image'}
                   src={thumbUrl}
                   alt=""
                   size={SUMMARY_THUMB_SIZE}

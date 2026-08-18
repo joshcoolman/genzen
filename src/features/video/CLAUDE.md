@@ -1,0 +1,42 @@
+The video lineup: three FAL models, their endpoints, and what each endpoint
+takes. Headless -- no `.tsx` here, and there is no server code either.
+
+`models.ts` was `app/(authenticated)/video/models.ts` until #398, which is when
+it earned a second consumer: Activity has to name and filter the clips it can
+finally see. Its own doc predicted the promotion. **The route is still where
+video is built** -- `app/(authenticated)/video/CLAUDE.md` holds every decision
+about the form, the picker and the card; this folder holds only the catalog.
+
+## Key Files
+
+- `models.ts` -- `VIDEO_MODELS`, `endpointFor`, `aspectRatiosFor`,
+  `estimateCostCents`, and the row-facing helpers below
+- `models.test.ts` -- pins every endpoint id and param name against FAL's
+  OpenAPI spec, which was read by hand. A wrong id fails at FAL, not here
+
+## Quirks
+
+- **A mode is an endpoint, and an endpoint is a descriptor rather than an id**
+  (#385). The models disagree about more than their names -- Flux 3 puts
+  first+last frame on a separate endpoint that calls the first frame
+  `start_image_url`, H3's image endpoint has no `aspect_ratio` at all. Each
+  endpoint carries `firstFrameParam`, `acceptsEndImage` and its own
+  `aspectRatios`, and the submit builds its input from that.
+- **An empty `aspectRatios` means there is no control**, not that no ratio
+  works.
+- **One model is two or three endpoint ids in the data.** A row's
+  `generation_metadata.model` is the endpoint it was submitted to, so anything
+  reasoning about rows by model expands through `videoEndpointIds`.
+  `videoModelNameFor` names a row from it and returns **undefined** rather than
+  the raw id, so a caller can fall back to the image lineup instead of being
+  handed a string that looks like an answer.
+- **`videoFilterOptions` ids are prefixed `video:`** (#398). Activity's model
+  filter is one row per model, matching the picker, but the column holds
+  endpoints -- so an option carries the slug and the query expands it with
+  `expandVideoFilterId`. The prefix exists because the same array holds raw
+  image endpoint ids alongside these.
+- **A row's name is still read from the row, not from here.** The submit writes
+  `model_label` and `processVideoResult` spends it. Now that this module is
+  importable from `.server.ts` that is no longer forced, but it is still right:
+  the label is pinned at submit time, so cutting a model from the lineup does
+  not rename the clips it made.

@@ -1,11 +1,11 @@
 'use client'
 
 import { Clapperboard } from 'lucide-react'
-import { formatCost } from '../../models'
 import { PromptList } from '../../../_components/prompt-list/prompt-list'
 import styles from './video-form.module.css'
 import type { ReactNode } from 'react'
-import type { VideoModel } from '../../models'
+import type { VideoModel } from '#/features/video/models'
+import { formatCost } from '#/features/video/models'
 import { ActionButton, SingleSelect } from '#/components'
 
 /**

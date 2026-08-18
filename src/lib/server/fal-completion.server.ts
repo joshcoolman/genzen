@@ -193,10 +193,12 @@ export async function processVideoResult(
 
   const meta = record?.generation_metadata ?? {}
   const prompt = typeof meta.prompt === 'string' ? meta.prompt : ''
-  // The label is read from the row, not from a catalog: the video lineup lives
-  // in `app/(authenticated)/video/models.ts` (one route owns it), and a
-  // `.server.ts` module here must not reach into a route folder to resolve a
-  // name. The submit writes `model_label`; this only spends it.
+  // The label is read from the row, not from a catalog. That started as a
+  // constraint -- the lineup was route-owned and a `.server.ts` module must not
+  // reach into a route folder -- and since #398 promoted it to
+  // `src/features/video/models` it is a choice. Still the right one: the label
+  // was pinned at submit time, so cutting a model from the lineup does not
+  // rename the clips it made.
   const title =
     (typeof meta.model_label === 'string' ? meta.model_label : '') ||
     (typeof meta.model === 'string' ? meta.model : '') ||
