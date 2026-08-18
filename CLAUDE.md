@@ -205,7 +205,7 @@ it is safe.
 - Route protection is deny-by-default in `proxy.ts`; a new public path must be
   added to its `PUBLIC_PATHS`, or it redirects to /login
 - There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone. Two scripts guard it, both in `pnpm check` and CI: `check:colors` (no raw color outside tokens.css, #229) and `check:tokens` (no `var(--x)` that is declared nowhere, #407 -- an undeclared property does not error, it is dropped, so this breaks silently)
-- FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.action.ts`
+- FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.action.ts`. **There are no webhooks** -- the route, the flag and the env vars went in #362. Polling is the only path a result reaches the app, which is why nothing may switch it off
 - **Pasting an image you already own uploads it again, as a new row.** The
   clipboard used to carry the record id instead (#213) so it did not; the only
   thing that put an id there was the Cmd-F overlay, and both went in #348. If

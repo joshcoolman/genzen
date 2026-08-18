@@ -34,16 +34,12 @@ const DEV_URL = `http://localhost:${DEV_PORT}/`
  * this can run alongside ~/repos/bootsy. The R2_ prefix is historical -- the
  * storage layer is plain S3 pointed by R2_ENDPOINT.
  *
- * Webhooks must stay false: localhost cannot receive them, and `true` disables
- * the polling loops that are the only other way results reach the UI.
  */
 const LOCAL_ENV = {
   R2_ENDPOINT: 'http://localhost:9010',
   R2_ACCESS_KEY_ID: 'genzenlocal',
   R2_SECRET_ACCESS_KEY: 'genzenlocal',
   R2_BUCKET_NAME: 'genzen-images',
-  ENABLE_FAL_WEBHOOKS: 'false',
-  NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS: 'false',
   // The `postgres` service in docker-compose.yml. Port 5434 because 5432 is
   // usually a system Postgres and 5433 is bootsy's.
   DATABASE_URL: 'postgres://genzen:genzen@localhost:5434/genzen',

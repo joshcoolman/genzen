@@ -7,7 +7,6 @@ import { buildFalInput } from './fal-params.server'
 import type { RetryMetadata } from '../retry-plan'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
-import { getFalWebhookUrl } from '#/lib/server/fal-webhook-url.server'
 import { assertFalKey } from '#/lib/server/fal-key.server'
 import { uploadBufferToFal } from '#/lib/server/fal-image-upload.server'
 import {
@@ -140,10 +139,8 @@ export async function retryGeneration(data: RetryGenerationInput) {
       safetyLevel: 'permissive',
     })
 
-    const webhookUrl = getFalWebhookUrl()
     const { request_id } = await (fal.queue.submit as any)(falModelId, {
       input: falInput,
-      ...(webhookUrl ? { webhookUrl } : {}),
     })
     const estimatedCostCents = await computeFalCostCents(falModelId, {
       aspectRatio: plan.aspectRatio,

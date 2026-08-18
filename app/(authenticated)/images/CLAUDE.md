@@ -208,8 +208,8 @@ list once when the seed comes back full, so the grid is never short.
   filed it in Trash -- from the one click that plainly means "I do not want
   this". The cancel is best effort and never fatal; the row goes either way,
   and it goes _outright_, on the same grounds as a failed one: there is no
-  picture, so Trash has nothing to offer. A webhook landing after the row is
-  gone discards its result rather than orphaning the object.
+  picture, so Trash has nothing to offer. A poll landing after the row is gone
+  discards its result rather than orphaning the object.
 - **A card's React key is not its id (#353).** A generation's card is born with
   an optimistic id and swaps it for its record id the moment the submit answers
   (#313). The id was the key, so React saw one card removed and a different one

@@ -100,7 +100,7 @@ fails the build.
 | `src/features/<name>/` | Domain modules. **Each has its own `CLAUDE.md` — read it before editing the feature.**    |
 | `src/lib/server/`      | `.server.ts` = never client-importable; `.action.ts` = a `'use server'` module.           |
 | `src/components/`      | Primitives, one folder each, imported from the root barrel `#/components`.                |
-| `app/api/`             | Route handlers (e.g. `app/api/fal-webhook/route.ts`).                                     |
+| `app/api/`             | Route handlers (`app/api/auth/sign-out/`).                                                |
 | `migrations/`          | Numbered SQL migrations, applied by `pnpm db:migrate`.                                    |
 | `docs/SPEC.md`         | What the app does and the rules that must hold.                                           |
 | `docs/OVERVIEW.md`     | What genzen is, and what it deliberately is not.                                          |
@@ -112,8 +112,8 @@ fails the build.
 itself and prompts you for the one value that is actually yours, the FAL key.
 
 `.env.example` is the reference for deploying, split into Required (a Postgres
-URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic, FAL
-webhooks). [`docs/deploying.md`](docs/deploying.md) covers the rest: what a
+URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic).
+[`docs/deploying.md`](docs/deploying.md) covers the rest: what a
 deployment needs, the two non-default settings, and how the first user is made.
 
 The `R2_*` names are historical and are staying that way (#242). The storage
@@ -213,4 +213,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   what paints a frame — `preload="metadata"` alone paints nothing, which had
   been believed since #384 (#398, Activity half; the rest of that issue is now
   four undecided surfaces)
-

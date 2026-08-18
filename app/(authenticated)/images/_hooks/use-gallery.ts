@@ -160,7 +160,7 @@ export function useGallery({
     void loadSavedImages({ silent: true })
   }, [initial.length, loadSavedImages])
 
-  // Poll FAL for pending generations (skipped when webhooks are enabled).
+  // Poll FAL for pending generations. The only delivery path there is.
   //
   // The poll is also how the gallery finds out anything changed. There used to
   // be a `postgres_changes` channel here doing that, but it went with #174:
@@ -169,15 +169,17 @@ export function useGallery({
   //
   // The timer itself is `useGenerationPoll` -- backoff, tab-visibility and
   // giving up live there, shared with Video and Activity (#327).
+  // Unconditional since #362 removed webhooks. It used to be nulled out when
+  // `NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS` was true, which meant turning that flag on
+  // switched off the only thing that could rescue a delivery the webhook
+  // acknowledged and failed to persist.
   const oldestPending =
-    process.env.NEXT_PUBLIC_ENABLE_FAL_WEBHOOKS === 'true'
-      ? null
-      : (savedImages
-          .filter((img) => img.status === 'pending' && !isOptimisticId(img.id))
-          .reduce<
-            string | null
-          >((oldest, img) => (!oldest || img.created_at < oldest ? img.created_at : oldest), null) ??
-        null)
+    savedImages
+      .filter((img) => img.status === 'pending' && !isOptimisticId(img.id))
+      .reduce<
+        string | null
+      >((oldest, img) => (!oldest || img.created_at < oldest ? img.created_at : oldest), null) ??
+    null
 
   useGenerationPoll(oldestPending, () => loadSavedImages({ silent: true }))
 

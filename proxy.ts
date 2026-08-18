@@ -29,14 +29,16 @@ export const config = {
  */
 const PUBLIC_PATHS = new Set(['/login', '/api/auth/sign-out'])
 
-// FAL calls this one back with a signed body of its own; it carries no session
-// cookie and must not be redirected to /login.
-const PUBLIC_PREFIXES = ['/api/fal-webhook']
+// Empty since #362 removed the FAL webhook route, which was its only member.
+// Kept rather than deleted: deny-by-default means any future callback endpoint
+// needs a line here, and an empty list is a shorter thing to find than a
+// mechanism that has to be reinvented.
+const PUBLIC_PREFIXES: Array<string> = []
 
 /**
  * Public paths a signed-in user is bounced away from. Deliberately narrower
  * than PUBLIC_PATHS: bouncing every public path meant a signed-in user could
- * not reach sign-out, and the webhook could not be delivered.
+ * not reach sign-out.
  *
  * This split is what closes a redirect loop. `proxy.ts` only checks that the
  * cookie's signature is valid; the dashboard layout additionally requires the
