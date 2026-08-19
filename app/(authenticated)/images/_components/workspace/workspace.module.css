@@ -2,6 +2,12 @@
    20rem is the panel's own width, not spacing, so no token goes that far. */
 
 .workspace {
+  /* Fills the chrome's main area so the empty space under the grid belongs to
+     this route rather than to `<main>`, which every route shares (#439). It is
+     what makes a click down there mean "clear the selection" -- without it the
+     click lands on the chrome, which has no business knowing this route has a
+     selection at all. */
+  min-block-size: 100%;
   transition: all var(--duration-slow) var(--ease-in-out);
 }
 
