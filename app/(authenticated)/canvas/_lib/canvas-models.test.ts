@@ -12,15 +12,23 @@ import {
   pickerId,
 } from '#/features/ai-images/models'
 
-const KONTEXT_PRO_ID = 'fal-ai/flux-pro/kontext/text-to-image'
+/* **No curated canvas model holds only one image any more.** FLUX Kontext Pro
+   was the example these two cases were written around, and #304 replaced it
+   with FLUX.2 Pro, which takes eight. The rule still matters -- a one-image
+   model must appear at refCount 0 and vanish at refCount 1 -- so it is asserted
+   against the registry rather than a named id, and holds again the day such a
+   model is curated. */
+const singleImageIds = () =>
+  CANVAS_MODELS.filter((m) => m.maxRefs === 0).map(pickerId)
 const SEEDREAM_45_ID = 'fal-ai/bytedance/seedream/v4.5/text-to-image'
 
 /**
  * Canvas is image-in -> image-out: every model offered here generates *from* the
  * selected image. Catching a mis-registered model is the whole point of these
- * invariants -- they fail fast on the exact data bug that shipped FLUX Kontext
- * Pro pointed at a text-to-image endpoint (source image silently dropped, output
- * generated from the prompt alone). Pure registry checks, no network/FAL calls.
+ * invariants -- they fail fast on the exact data bug that once shipped FLUX
+ * Kontext Pro pointed at a text-to-image endpoint (source image silently
+ * dropped, output generated from the prompt alone). Pure registry checks, no
+ * network/FAL calls.
  */
 describe('canvas model registry invariants', () => {
   it('offers at least one model (the curated list never silently empties)', () => {
@@ -67,12 +75,14 @@ describe('canvas reference-capacity gating', () => {
     expect(ids).toEqual(CANVAS_MODELS.map(pickerId))
   })
 
-  it('refCount 0 includes single-image-only models (e.g. Kontext Pro)', () => {
-    expect(canvasModelIdsForRefCount(0)).toContain(KONTEXT_PRO_ID)
+  it('refCount 0 includes single-image-only models', () => {
+    const ids = canvasModelIdsForRefCount(0)
+    for (const id of singleImageIds()) expect(ids).toContain(id)
   })
 
-  it('a group (refCount >= 1) drops models with no edit endpoint (Kontext Pro)', () => {
-    expect(canvasModelIdsForRefCount(1)).not.toContain(KONTEXT_PRO_ID)
+  it('a group (refCount >= 1) drops models that hold only one image', () => {
+    const ids = canvasModelIdsForRefCount(1)
+    for (const id of singleImageIds()) expect(ids).not.toContain(id)
   })
 
   it('no model qualifies beyond the largest reference capacity', () => {
@@ -85,12 +95,15 @@ describe('canvas reference-capacity gating', () => {
     )
   })
 
-  it('CANVAS_EDIT_MODELS excludes single-image-only models (Kontext Pro)', () => {
-    // Kontext Pro's img2img endpoint takes one image, which the source occupies
-    // (maxRefs 0), so it must not appear in the group-capable edit-model list.
-    expect(CANVAS_EDIT_MODELS.some((m) => m.name === 'FLUX Kontext Pro')).toBe(
-      false,
-    )
+  it('CANVAS_EDIT_MODELS excludes single-image-only models', () => {
+    // Their img2img endpoint takes one image, which the source occupies
+    // (maxRefs 0), so they must not appear in the group-capable edit-model list.
+    // `CANVAS_EDIT_MODELS` is derived as `maxRefs > 0`, so a one-image model
+    // is excluded by construction -- asserted here so the derivation cannot
+    // change without this failing.
+    for (const m of CANVAS_EDIT_MODELS) {
+      expect(m.maxRefImages).toBeGreaterThan(0)
+    }
   })
 
   it('every CANVAS_EDIT_MODELS entry maps to a real image endpoint', () => {

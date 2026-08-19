@@ -22,7 +22,7 @@ import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 const CURATED_CANVAS_MODEL_SLUGS: Array<string> = [
   'nano-banana-2', // trusted; reasoning-guided
   'seedream-v4-5', // multi-image reference realism
-  'flux-kontext-pro', // trusted; pro img2img refinement
+  'flux-2-pro', // BFL's production model; replaced Kontext Pro in #304
 ]
 
 /** Curated models, hard-gated to those that actually accept an input image. */
@@ -56,7 +56,8 @@ export interface CanvasEditModel {
 /**
  * Curated canvas models that have an edit endpoint (i.e. accept additional
  * reference images), paired with their per-model reference cap. Models without
- * an edit endpoint (e.g. FLUX Kontext Pro — single-image img2img only) are
+ * an edit endpoint (single-image img2img only — FLUX Kontext Pro was the
+ * example until #304) are
  * excluded: they can't take a group. Order follows `CANVAS_MODELS`.
  */
 export const CANVAS_EDIT_MODELS: Array<CanvasEditModel> = CANVAS_MODELS.filter(

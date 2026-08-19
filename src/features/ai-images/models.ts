@@ -15,15 +15,15 @@ export type ModelCategory = 'FLUX' | 'Kling' | 'Specialized' | 'Other'
  *                dropped and the prompt is sent on its own.
  *   maxRefs      how many ADDITIONAL reference images the model accepts,
  *                beyond the source image. Not the endpoint's total image
- *                capacity: both Kontext endpoints take exactly one image, and
- *                the source image is already it, so their maxRefs is 0.
- *
- * A model with no text-to-image endpoint of its own may borrow one via
- * `textOnlyFallback` -- the user picks one name and gets whichever endpoint
- * fits. The borrowed endpoint stays out of the name index, so history rows
- * label it as the model that actually ran.
+ *                capacity: z-image's editor takes exactly one image and the
+ *                source image is already it, so its maxRefs is 0.
  *
  * Both null is not a model. At least one endpoint must be set.
+ *
+ * There was a third slot, `textOnlyFallback`, letting a model with no
+ * text-to-image endpoint borrow one. FLUX Kontext Dev was its only user, and it
+ * went with #304 -- a FLUX.2 entry has a real text-to-image endpoint, so
+ * nothing needs to borrow.
  *
  * FAL offers image endpoints for several models carried here as text-only
  * (Kling v3 and Omni 3 have `/image-to-image`, Recraft V3 has
@@ -38,8 +38,6 @@ export interface ModelEntry {
   category: ModelCategory
   textToImage: string | null
   withImages: string | null
-  /** Borrowed endpoint for the no-image case. Only for `textToImage: null`. */
-  textOnlyFallback?: string
   maxRefs: number
   /**
    * Dollars per image, as a number so the picker can align and sort it (#341).
@@ -110,18 +108,28 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     useCase: 'Reasoning-guided generation',
   },
   {
-    slug: 'flux-kontext-pro',
-    name: 'FLUX Kontext Pro',
-    description: 'Pro img2img + text steering',
+    slug: 'flux-2-pro',
+    name: 'FLUX.2 Pro',
+    description: 'BFL production model, up to 8 images',
     category: 'FLUX',
-    textToImage: 'fal-ai/flux-pro/kontext/text-to-image',
-    // The single-image Kontext editor. Without switching to it the source
-    // image was silently dropped and it generated from the prompt alone.
-    withImages: 'fal-ai/flux-pro/kontext',
-    // Single-image endpoint; the source image occupies its one slot.
-    maxRefs: 0,
-    price: 0.04,
-    useCase: 'Pro img2img — solid for refinement work',
+    textToImage: 'fal-ai/flux-2-pro',
+    withImages: 'fal-ai/flux-2-pro/edit',
+    // **8 is BFL's number, not FAL's.** The `/edit` schema declares
+    // `image_urls` as an unbounded array with no `maxItems`, so nothing here is
+    // enforced by the endpoint; this is the figure Black Forest Labs publishes.
+    // Capacity is maxRefs + 1.
+    maxRefs: 7,
+    // **Derived, not measured on this endpoint.** FAL prices it per *processed
+    // megapixel* at $0.03, and a day of real invoices put its FLUX.2 siblings
+    // at 2.5 MP a text-to-image run and 3 MP an edit (#400) -- so roughly
+    // $0.075 and $0.09. The dearer is what a person should read before
+    // clicking. Re-measure against `/v1/models/usage` once there are runs.
+    //
+    // It replaced FLUX Kontext Pro, which was $0.04 an image: **this is about
+    // twice the price for eight reference images instead of one**, and that
+    // trade was the whole of #304.
+    price: 0.09,
+    useCase: 'Best FLUX quality — and the one that takes many references',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
   // comparison: the same prompt across all three costs under two cents.
@@ -208,7 +216,7 @@ export function endpointFor(modelId: string, hasSourceImage: boolean): string {
   const m = findModel(modelId)
   if (!m) return modelId
   if (hasSourceImage && m.withImages) return m.withImages
-  return m.textToImage ?? m.textOnlyFallback ?? m.withImages ?? modelId
+  return m.textToImage ?? m.withImages ?? modelId
 }
 
 /** Additional reference images this model accepts, beyond the source image. */
@@ -247,9 +255,7 @@ function findModel(modelId: string): ModelEntry | undefined {
 export const ALL_ENDPOINT_IDS: Array<string> = [
   ...new Set(
     IMAGE_MODELS.flatMap((m) =>
-      [m.textToImage, m.withImages, m.textOnlyFallback].filter(
-        (id): id is string => !!id,
-      ),
+      [m.textToImage, m.withImages].filter((id): id is string => !!id),
     ),
   ),
 ]
@@ -259,8 +265,6 @@ export const ALL_ENDPOINT_IDS: Array<string> = [
  * `images.model` stores the *resolved* endpoint, so history rows hold ids like
  * `fal-ai/gpt-image-1.5/edit` and both of a model's endpoints must resolve.
  *
- * A `textOnlyFallback` is deliberately absent: it belongs to the model that
- * owns it, and a row made through the borrow really was made by that model.
  */
 const ENDPOINT_NAMES = new Map<string, string>(
   IMAGE_MODELS.flatMap((m) =>
@@ -304,10 +308,10 @@ export function modelTitleFor(falModelId: string): string {
  * them. Removing a name here does not break anything, it just makes old rows
  * show a raw endpoint id.
  *
- * Nothing here is selectable, and since FLUX Kontext Dev left the lineup
- * nothing here is submittable either -- it was the only entry with a
- * `textOnlyFallback`, and `fal-ai/flux/dev` was the endpoint it borrowed. The
- * mechanism stays; there is simply nothing using it today.
+ * Nothing here is selectable and nothing here is submittable. The one mechanism
+ * that could submit to a retired endpoint -- FLUX Kontext Dev borrowing
+ * `fal-ai/flux/dev` for its text-only case -- went with #304, along with the
+ * `textOnlyFallback` slot itself.
  */
 export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // Seedream v4 before FAL split the endpoint into /text-to-image and /edit.
@@ -338,6 +342,13 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // had two: rows made with an image carry the Kontext endpoint, and rows made
   // without one carry FLUX Dev above, which it borrowed.
   'fal-ai/flux-kontext/dev': 'FLUX Kontext Dev',
+  // Replaced by FLUX.2 Pro in #304, on BFL's own advice: "All FLUX.2 models
+  // natively support both text-to-image generation AND image-to-image editing
+  // via reference images. There's no need to use legacy FLUX.1 Kontext models
+  // for editing tasks." Both endpoints, because a row made with an image
+  // carries the editor and a row made without carries the other.
+  'fal-ai/flux-pro/kontext': 'FLUX Kontext Pro',
+  'fal-ai/flux-pro/kontext/text-to-image': 'FLUX Kontext Pro',
   'fal-ai/kling-image/v3/text-to-image': 'Kling v3',
   'fal-ai/kling-image/o3/text-to-image': 'Kling Omni 3',
   'fal-ai/recraft/v3/text-to-image': 'Recraft V3',
