@@ -1,12 +1,16 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { stampFrameSource } from './_actions/stamp-frame.action'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
+import { usePersistedState } from '#/lib/use-persisted-state'
+
+/** Which clip you were working on, so the next visit opens where you left it. */
+const PICKED_KEY = 'genzen:lab:frames:clips'
 
 /** A frame pulled out of a clip, as this page knows it. */
 export interface ExtractedFrame {
@@ -69,10 +73,35 @@ export function useView(clips: Array<VideoRecord>) {
   const { user } = useAuth()
 
   const videoRef = useRef<HTMLVideoElement>(null)
+
   /* An array, and the picker is written for more than one, though only one can
      be picked today. Several clips at once -- stitching, comparing -- is the
-     obvious next question and this should not be the thing standing in its way. */
-  const [picked, setPicked] = useState<Array<VideoRecord>>([])
+     obvious next question and this should not be the thing standing in its way.
+
+     **Remembered across visits.** The ids are what is stored, not the rows: a
+     row goes stale and a clip can be trashed between visits, so what comes back
+     is filtered against the clips that still exist. Coming back to this page to
+     an empty stage is a picker dialog in the way of every session, for a choice
+     that had already been made. */
+  const [pickedIds, setPickedIds, hydrated] = usePersistedState<
+    Array<string>
+  >(() => {
+    try {
+      const raw = localStorage.getItem(PICKED_KEY)
+      return raw ? (JSON.parse(raw) as Array<string>) : []
+    } catch {
+      return []
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    localStorage.setItem(PICKED_KEY, JSON.stringify(pickedIds))
+  }, [hydrated, pickedIds])
+
+  const picked = pickedIds
+    .map((id) => clips.find((c) => c.id === id))
+    .filter((c): c is VideoRecord => !!c)
   const [frames, setFrames] = useState<Array<ExtractedFrame>>([])
   const [isExtracting, setIsExtracting] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -161,11 +190,14 @@ export function useView(clips: Array<VideoRecord>) {
     clips,
     clip,
     picked,
-    pickClips: setPicked,
+    pickClips: useCallback(
+      (next: Array<VideoRecord>) => setPickedIds(next.map((c) => c.id)),
+      [setPickedIds],
+    ),
     removeClip: useCallback(
       (id: string) =>
-        setPicked((current) => current.filter((c) => c.id !== id)),
-      [],
+        setPickedIds((current) => current.filter((c) => c !== id)),
+      [setPickedIds],
     ),
     videoRef,
     frames,

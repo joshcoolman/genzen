@@ -100,8 +100,15 @@ export function ClipPicker({
           ) : (
             <div className={styles.tiles}>
               {clips.map((clip) => {
-                const selected = selectedIds.has(clip.id)
-                const picked = pickedIds.has(clip.id)
+                /* The one already loaded reads as chosen and stays clickable:
+                   with a single slot the picker is how you *change* clips, and
+                   greying out the current one makes the dialog look broken when
+                   you open it to look around and decide to keep what you had. */
+                const selected =
+                  selectedIds.has(clip.id) ||
+                  (autoConfirm && pickedIds.has(clip.id))
+                // Only where a second copy would be meaningless.
+                const alreadyIn = !autoConfirm && pickedIds.has(clip.id)
 
                 return (
                   <button
@@ -109,21 +116,30 @@ export function ClipPicker({
                     type="button"
                     className={selected ? styles.tileSelected : styles.tile}
                     onClick={() => toggle(clip.id)}
-                    disabled={picked}
+                    disabled={alreadyIn}
                     aria-pressed={selected}
                     /* The prompt, which is the only thing that tells two clips
                        from the same model apart, and far too long to print
                        under 132px of picture. */
                     title={clip.description ?? clip.title}
                   >
+                    {/* `contain`, not `cover`. A square crop of a 720x1280
+                        clip is the middle band of it -- the subject's face is
+                        the first thing gone -- so a portrait clip and a
+                        landscape one from the same prompt became two tiles
+                        showing the same strip of background, and one of them
+                        read as missing from the dialog entirely. Letterboxed,
+                        the shape of the clip is visible too, which is a fact
+                        worth having when you are choosing one. */}
                     <MediaBox
                       kind="video"
                       src={`/img/${clip.id}`}
                       alt={clip.title}
                       size={TILE}
-                      fit="cover"
+                      fit="contain"
+                      pad={0}
                     />
-                    {selected && (
+                    {selectedIds.has(clip.id) && (
                       <span className={styles.check}>
                         <Check />
                       </span>

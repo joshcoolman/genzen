@@ -56,7 +56,13 @@ the kind of question the lab exists to settle by use rather than by argument.
   is what `MediaBox` exists to avoid (#398), landing across Images, Canvas and
   Video to serve one lab page. Its source filters mean nothing for clips either.
   `max` defaults to 1 and nothing assumes it — several clips at once is a
-  number, not a rewrite. If this proves out, the real generalisation gets
+  number, not a rewrite. **The tile swaps the clip rather than removing it**,
+  and the choice is remembered across visits: removing was the only way back to
+  the picker for a while, so changing clips meant watching the page collapse to
+  a plus button and grow a player back. Tiles are `contain`, not `cover` — a
+  square crop of a 720x1280 clip is the middle band of it, so a portrait clip
+  and a landscape one from the same prompt became two tiles of the same
+  background and one read as missing from the dialog. If this proves out, the real generalisation gets
   designed against two consumers instead of a guess.
 - **The grid is this session's extractions, not a query.** Persisting it would
   need a way to ask for "frames", which needs a marker the library query knows
