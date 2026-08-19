@@ -29,7 +29,9 @@ export const UNIFIED_EDIT_MODELS: Array<UnifiedModel> = IMAGE_MODELS.filter(
   description: m.description,
   capability: 'edit' as const,
   maxRefImages: m.maxRefs,
-  price: m.price,
+  // The image endpoint's price, where it differs -- this list *is* the image
+  // context, so there is nothing ambiguous to resolve (#304).
+  price: m.editPrice ?? m.price,
   capacity: imageCapacityFor(m.slug),
 }))
 
@@ -81,6 +83,32 @@ export function getModelsByCapability(
   return byPrice(
     capability === 'generate' ? UNIFIED_GENERATE_MODELS : UNIFIED_EDIT_MODELS,
   )
+}
+
+/**
+ * The same models, priced for the endpoint that will actually run (#304).
+ *
+ * A megapixel-billed model costs about twice as much through its image
+ * endpoint, because FAL's `processed megapixels` counts what you send as well
+ * as what comes back. The estimate under Generate switches on this, so a `$`
+ * column that did not would put two different prices for one click on screen at
+ * once -- which is the drift this repo keeps having to unpick.
+ *
+ * Applied at the call site rather than inside `getModelsByCapability`, because
+ * only the panel knows what is staged: the selector hook is built before the
+ * generator that owns the reference set.
+ */
+export function pricedForImages(
+  models: Array<UnifiedModel>,
+  hasImages: boolean,
+): Array<UnifiedModel> {
+  if (!hasImages) return models
+  return models.map((m) => {
+    const entry = IMAGE_MODELS.find(
+      (e) => pickerId(e) === m.id || e.withImages === m.id,
+    )
+    return entry?.editPrice ? { ...m, price: entry.editPrice } : m
+  })
 }
 
 export function getDefaultSelectedId(capability: ModelCapability): string {

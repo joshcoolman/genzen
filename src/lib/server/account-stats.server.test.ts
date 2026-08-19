@@ -79,6 +79,9 @@ describe('foldModels', () => {
       },
     ])
 
+    // FLUX Kontext Pro left the lineup in #304 and still resolves, via
+    // `RETIRED_MODEL_NAMES` -- which is the point: images outlive the models
+    // that made them, and a retired row must not degrade to a raw endpoint id.
     expect(folded.map((m) => m.name)).toEqual([
       'FLUX Kontext Pro',
       'Seedream v4',

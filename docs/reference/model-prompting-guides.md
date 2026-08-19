@@ -9,7 +9,7 @@ in the lab (#424), where a change to an instruction can actually be judged.
 
 | Model                               | Guide                                                                                                                                                                       |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FLUX (Kontext, FLUX.2)              | [black-forest-labs/skills](https://github.com/black-forest-labs/skills) — `flux-image-best-practices/rules/*.md`; also [docs.bfl.ml/llms.txt](https://docs.bfl.ml/llms.txt) |
+| FLUX.2                              | [black-forest-labs/skills](https://github.com/black-forest-labs/skills) — `flux-image-best-practices/rules/*.md`; also [docs.bfl.ml/llms.txt](https://docs.bfl.ml/llms.txt) |
 | Nano Banana 2                       | [Google Cloud: Ultimate prompting guide for Nano Banana](https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana)               |
 | Seedream v4 / v4.5                  | [fal: Seedream v4.5 prompt guide](https://fal.ai/learn/devs/seedream-v4-5-prompt-guide)                                                                                     |
 | GPT Image (retired from the lineup) | [OpenAI cookbook: GPT Image models prompting guide](https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide)                            |
@@ -33,14 +33,14 @@ preferences.
   GPT Image both expect them referenced by index — "apply Image 2's style to
   Image 1's subject". genzen sends an ordered set and says nothing about it.
 - **Editing and generating are different prompt languages** for every one of
-  these. Kontext edits want terse instructions ("Change the car colour to red"),
+  these. FLUX edits want terse instructions ("Change the car colour to red"),
   not scene descriptions.
 
 ## What genzen does today
 
 `src/lib/prompts/enhance-prompt.md` prescribes one dense paragraph, 40–120 words,
 subject-first, "describe what is present, never what is absent". That is close to
-optimal for Kontext and Seedream, mediocre for Nano Banana, and wrong for the
+optimal for FLUX and Seedream, mediocre for Nano Banana, and wrong for the
 segment-and-constraint models.
 
 **Enhance does not know which model it is for.** `enhance-prompt.action.ts` takes

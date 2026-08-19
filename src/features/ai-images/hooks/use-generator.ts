@@ -377,7 +377,11 @@ export function useGenerator({
   const totalImages = runsPerModel * selectedModels.length
   // Priced off the lineup rather than FAL's pricing API -- see
   // `estimateImageCostCents` (#416, #400).
-  const estimatedCost = estimateImageCostCents(selectedModels, runsPerModel)
+  const estimatedCost = estimateImageCostCents(
+    selectedModels,
+    runsPerModel,
+    hasImages,
+  )
   const canGenerate =
     (activePromptCount > 0 || hasImages) && selectedModels.length > 0
 

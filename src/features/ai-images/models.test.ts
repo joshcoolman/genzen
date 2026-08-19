@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   IMAGE_MODELS,
   endpointFor,
+  estimateImageCostCents,
   getModelName,
   imageCapacityFor,
   maxRefsFor,
@@ -57,14 +58,24 @@ const LEGACY_ALL_IMAGE_MODELS = [
     useCase: 'Reasoning-guided generation',
   },
   {
-    id: 'fal-ai/flux-pro/kontext/text-to-image',
-    name: 'FLUX Kontext Pro',
-    description: 'Pro img2img + text steering',
+    // Replaced FLUX Kontext Pro in #304, on BFL's own advice not to use FLUX.1
+    // Kontext for editing any more. Roughly twice the price per image, for
+    // eight reference images instead of one -- which was the trade the issue
+    // existed to weigh, so the fixture change is the deliberate edit it should
+    // show up as.
+    id: 'fal-ai/flux-2-pro',
+    name: 'FLUX.2 Pro',
+    description: 'BFL production model, up to 8 images',
     category: 'FLUX',
     supportsImageInput: true,
-    imageInputModelId: 'fal-ai/flux-pro/kontext',
-    displayPrice: '~$0.04/img',
-    useCase: 'Pro img2img — solid for refinement work',
+    imageInputModelId: 'fal-ai/flux-2-pro/edit',
+    // `price` is the *generate* figure. The lineup gained `editPrice` in #304,
+    // because every megapixel-billed model costs about twice as much through
+    // its image endpoint -- FAL's `processed megapixels` counts what you send
+    // as well as what comes back. This fixture pins the base; the split is
+    // covered below.
+    displayPrice: '~$0.045/img',
+    useCase: 'Best FLUX quality — and the one that takes many references',
   },
 ]
 
@@ -148,24 +159,6 @@ describe('entries', () => {
       if (m.maxRefs > 0) expect(m.withImages, m.slug).not.toBeNull()
     }
   })
-
-  it('only borrows a text endpoint when it has none of its own', () => {
-    for (const m of IMAGE_MODELS) {
-      if (m.textOnlyFallback) expect(m.textToImage, m.slug).toBeNull()
-    }
-  })
-
-  it('gives every borrowed endpoint a name', () => {
-    // A borrow points at an endpoint no entry owns, so nothing else guarantees
-    // it resolves. Cutting FLUX Dev from the lineup without leaving its name
-    // behind would relabel every Kontext-Dev-without-an-image row a raw id.
-    for (const m of IMAGE_MODELS) {
-      if (!m.textOnlyFallback) continue
-      expect(getModelName(m.textOnlyFallback), m.slug).not.toBe(
-        m.textOnlyFallback,
-      )
-    }
-  })
 })
 
 describe('endpointFor', () => {
@@ -214,10 +207,10 @@ describe('maxRefsFor', () => {
     expect(imageCapacityFor('fal-ai/bytedance/seedream/v4.5/edit')).toBe(10)
   })
 
-  it('is 0 for the single-image Kontext endpoint', () => {
-    // The source image takes its one slot; it never had an EDIT_MODELS row and
-    // so derived 0 before this refactor too.
-    expect(maxRefsFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(0)
+  it('is 0 for a single-image editor', () => {
+    // z-image's editor takes exactly one image and the source occupies it.
+    // FLUX Kontext Pro was the example here until #304 replaced it.
+    expect(maxRefsFor('fal-ai/z-image/turbo')).toBe(0)
   })
 
   it('is 0 for a model with no image endpoint', () => {
@@ -243,11 +236,17 @@ describe('imageCapacityFor', () => {
     expect(maxRefsFor('fal-ai/nano-banana-2')).toBe(3)
   })
 
-  it('is 1 for the single-image Kontext endpoint, not 0', () => {
+  it('is 1 for a single-image editor, not 0', () => {
     // It takes exactly one image. Under the old reading that was "0 refs plus
     // the source"; under one set it is a capacity of one, and a strip that
     // offers a slot rather than refusing every image.
-    expect(imageCapacityFor('fal-ai/flux-pro/kontext/text-to-image')).toBe(1)
+    expect(imageCapacityFor('fal-ai/z-image/turbo')).toBe(1)
+  })
+
+  it("is 8 for FLUX.2 Pro, which is BFL's number and not the schema's", () => {
+    // The `/edit` schema declares `image_urls` with no `maxItems`, so nothing
+    // in the endpoint enforces this (#304).
+    expect(imageCapacityFor('fal-ai/flux-2-pro')).toBe(8)
   })
 
   it('is 0 for the retired Kontext Dev endpoint, which is not a regression', () => {
@@ -273,10 +272,12 @@ describe('imageCapacityFor', () => {
   })
 
   it('minimum across a mixed selection is the small model, not the first', () => {
-    // The silent-truncation bug the panel had: Nano Banana 2 and FLUX Kontext
-    // Pro ticked together offered four slots, and FLUX -- whose schema takes
-    // `image_url`, not `image_urls` -- received the first image alone.
-    const selection = ['fal-ai/nano-banana-2', 'fal-ai/flux-pro/kontext']
+    // The silent-truncation bug the panel had: a four-image model and a
+    // one-image model ticked together offered four slots, and the one-image
+    // model -- whose schema takes `image_url`, not `image_urls` -- received the
+    // first image alone. FLUX Kontext Pro was the original example; z-image's
+    // editor is the same shape since #304 replaced it.
+    const selection = ['fal-ai/nano-banana-2', 'fal-ai/z-image/turbo']
     expect(Math.min(...selection.map(imageCapacityFor))).toBe(1)
   })
 })
@@ -338,9 +339,7 @@ describe('modelTitleFor', () => {
       for (const hasImages of [false, true]) {
         const endpoint = endpointFor(pickerId(m), hasImages)
         // What the browser guesses at click time is what the server resolves
-        // and writes. A borrowed text-only endpoint is the deliberate
-        // exception -- the row really was made by the model it borrowed from.
-        if (m.textOnlyFallback && endpoint === m.textOnlyFallback) continue
+        // and writes.
         expect(modelTitleFor(endpoint), `${m.slug}/${hasImages}`).toBe(m.name)
       }
     }
@@ -354,5 +353,46 @@ describe('modelTitleFor', () => {
 
   it('falls back to the raw id rather than rendering an empty badge', () => {
     expect(modelTitleFor('fal-ai/unknown-thing')).toBe('fal-ai/unknown-thing')
+  })
+})
+
+/**
+ * #304. The estimate has to change with the *kind* of request, not only its
+ * count: attaching an image switches the endpoint, and for a megapixel-billed
+ * model that endpoint is about twice the price.
+ */
+describe('estimateImageCostCents', () => {
+  it('charges the edit price when an image is attached', () => {
+    const generate = estimateImageCostCents(['fal-ai/flux-2-pro'], 1, false)
+    const edit = estimateImageCostCents(['fal-ai/flux-2-pro'], 1, true)
+    expect(generate.cents).toBeCloseTo(4.5, 5)
+    expect(edit.cents).toBeCloseTo(7.5, 5)
+  })
+
+  it('leaves a per-image model alone, because its price does not split', () => {
+    // Nano Banana bills per image rather than per megapixel, so sending one
+    // costs no more than not sending one.
+    const generate = estimateImageCostCents(['fal-ai/nano-banana-2'], 1, false)
+    const edit = estimateImageCostCents(['fal-ai/nano-banana-2'], 1, true)
+    expect(edit.cents).toBe(generate.cents)
+  })
+
+  it('multiplies across models and runs', () => {
+    const two = estimateImageCostCents(
+      ['fal-ai/flux-2-pro', 'fal-ai/nano-banana-2'],
+      3,
+      false,
+    )
+    expect(two.cents).toBeCloseTo((4.5 + 8) * 3, 5)
+  })
+
+  it('counts a model with no price rather than dropping it silently', () => {
+    const { cents, unpriced } = estimateImageCostCents(
+      ['not-a-model'],
+      1,
+      false,
+    )
+    expect(cents).toBe(0)
+    expect(unpriced).toBe(1)
   })
 })
