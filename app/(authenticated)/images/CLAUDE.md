@@ -255,7 +255,13 @@ list once when the seed comes back full, so the grid is never short.
   loose. So: `All | Generations | Uploads`, top level only, **under the toolbar
   rather than in it** -- a scope is a statement about what you are looking at,
   not an action, and sitting among the buttons is part of why the old pills read
-  as one more control.
+  as one more control. **It is a caption, not a control**: a hairline across the
+  width, the three words at the right end at the chip type size, and the current
+  one simply lit. Not `SingleSelect` -- its segmented pills carry the weight of
+  something you press, and three filled chips above the wall compete with the
+  pictures, which is the one thing a gallery's chrome must not do. Ink is the
+  whole selected state, and nothing bolds: a weight change would shift the other
+  two along the row each time the scope changed.
   **Uploads ignores grouping entirely** -- every upload, grouped or not, and no
   group cards, because there is nothing left for them to stand in for. The other
   scopes filter what is loose, since the group-card collapse is the payoff at

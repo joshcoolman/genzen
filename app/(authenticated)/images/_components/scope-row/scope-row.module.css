@@ -1,8 +1,35 @@
-/* A row of its own, so the scope is not read as another tool. Nothing else
-   lives here yet; if something does, it belongs to "what am I looking at"
-   rather than "what can I do". */
+/* A rule across the width with the scope at the right end. The line is what
+   separates "what I am looking at" from the wall of pictures below it, and it
+   costs a hairline rather than three filled chips. */
 .row {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  justify-content: flex-end;
+  gap: var(--space-12);
+  padding-block-end: var(--space-8);
+  border-block-end: var(--border-width) solid var(--border);
+}
+
+/* The chip type size, with none of the chip. Bare text so the row reads as a
+   caption over the grid; the only thing that ever changes is the ink. */
+.item {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.item:hover {
+  color: var(--text);
+}
+
+/* Lit, and nothing else. A weight change here would shift the other two along
+   the row every time the scope changed. */
+.itemOn {
+  color: var(--text);
 }
