@@ -1,0 +1,9 @@
+/* A page title, not a label: this is the one element that says the grid below
+   it is a group rather than the library. */
+.heading {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--text);
+}

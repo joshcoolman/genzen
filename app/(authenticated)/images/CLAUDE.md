@@ -223,8 +223,14 @@ list once when the seed comes back full, so the grid is never short.
   has in mind, so it gets a blob preview immediately; the picker takes many at
   once and previews would land in upload order, so the cards would appear to
   shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
-- **Upload is the leftmost control, and where it puts things depends on where
-  you are (#348).** At top level it is a menu: _Upload_ lands loose, _Upload to
+- **Upload is primary, and where it puts things depends on where you are
+  (#348, #432).** Green, Generate's weight, at the same size it always was --
+  it was flat and transparent like New group beside it, which made the one
+  control that puts things into this page look like the least important thing
+  on it. The same green in both states, because a button that is primary in a
+  group and flat at top level reads as two different buttons for the same act.
+  Inside a group it is the second control, after the way out: where you are,
+  then what you do here. At top level it is a menu: _Upload_ lands loose, _Upload to
   group_ picks a destination first, leaving you at top level with a toast
   naming the group. **Inside a group there is no menu** -- it goes straight to
   the file picker and the files land in the open group, and a paste does the
@@ -369,15 +375,30 @@ group` opens a dialog because a flyout of names commits you to picking one at
   somewhere that does not exist yet is a rename. The source's frozen cover is
   discarded and the target keeps its own -- re-covering the destination would
   silently undo a choice someone made
+- **You can only trash a group from inside it** (#431). The card used to carry
+  a trash icon in the same corner an image card carries one, in a grid that
+  mixes the two -- so the click that bins a whole group was available from the
+  one view showing least about what is in it. It is a labelled control in the
+  toolbar now, alongside the way out, where you are looking at the contents
+  when you press it. The card's `...` keeps Rename, Move and Ungroup, none of
+  which destroy anything, which also leaves the two kinds of card legible at a
+  glance: one overlay icon on a group, two on an image.
+- **Entering a group changes the shape of the page** (#432). The name is an
+  `<h1>` above the thumbnails -- a blog post's title over its own post -- and
+  the toolbar keeps a back control that names the destination, `< Images`. One
+  control used to be both, and a thing that is mostly telling you where you are
+  does not read as a button: the name sat at the size of the pills beside it,
+  so opening a group looked identical to the top level. Nothing moves and
+  nothing hides; a heading arrives where there was none.
 - **Trashing clears `group_id`, on all three soft-delete paths.** Restore has
   one destination, always. Restoring into a remembered group sounds tidier and
   fails worse -- the image is not where you look for it and nothing on screen
   says why, so it reads as a failed restore. Consequence: a trashed image is
-  already not a member, so no group read filters `deleted_at`. The group card's
-  own delete icon asks first and then trashes the members, which is safe to
-  offer only because Trash is the way back; `Ungroup` is the twin that keeps
+  already not a member, so no group read filters `deleted_at`. Trashing a group asks first
+  and then trashes the members, which is safe to offer only because Trash is
+  the way back; `Ungroup` is the twin that keeps
   every picture -- named that rather than "Dissolve", which sounds like the
-  images go with it
+  images go with it. The trash itself is the toolbar's since #431
 - Failed generations delete outright rather than soft-delete, so they never
   reach Trash -- see `src/features/ai-images/CLAUDE.md`
 

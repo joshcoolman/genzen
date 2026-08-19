@@ -109,44 +109,43 @@
   height: 1rem;
 }
 
-/* Groups (#319) -- both of these live in `.scope`, which is the slot the origin
-   pills occupy. They are never on screen together: the crumb replaces the pills
-   and the button both. */
+/* Groups (#319) -- these all live in `.scope`, the slot the origin pills used
+   to occupy. Which ones are on screen depends on where you are: inside a group
+   it is Back and Trash group, at top level it is New group. Upload is in both. */
 
-/* The way out of a group, and the group's name in one control. Reads as a
-   heading rather than a button because it is mostly telling you where you are;
-   the chevron is what says it is also a way back. */
-.crumb {
+/* The way out, and only that (#432). It carried the group's name too until
+   then, and a control that is mostly telling you where you are does not read
+   as a button -- so the one thing that looked like a title was the one thing
+   that was clickable, and the name of the place you were in was set at the
+   size of the filter pills beside it. The name is an `<h1>` over the grid now;
+   this names the destination, which is what a chevron pointing left means. */
+.back {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: var(--space-4);
-  min-width: 0;
   padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--text);
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background-color var(--duration-normal) var(--ease-in-out);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
 }
 
-.crumb:hover {
+.back:hover {
   background: var(--surface-raised);
+  color: var(--text);
 }
 
-.crumbIcon {
+.backIcon {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
-  color: var(--text-muted);
-}
-
-.crumbName {
-  overflow: hidden;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 /* Quieter than the pills beside it: making a group is occasional, and filtering
@@ -174,12 +173,37 @@
   color: var(--text);
 }
 
-/* Upload is the same chip as New group -- same border, size and hover. They sit
-   next to each other and are the same kind of thing: a thing you do to the
-   library, as opposed to the view toggles on the right. Composed rather than
-   sharing a class so either can move without dragging the other. */
+/* Upload is New group's chip carrying Generate's weight (#432). It was flat
+   and transparent like its neighbour, which made the one control that puts
+   things into this page look like the least important thing on it. Same size,
+   same padding -- a change of weight, not of scale -- and the same green in
+   both states: a button that is primary in a group and flat at top level reads
+   as two different buttons, and it is the same act either way. */
 .upload {
   composes: newGroup;
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.upload:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  opacity: 0.9;
+}
+
+/* Trashing a group happens from inside it, never from the grid (#431). Quiet
+   until pointed at -- it is the only irreversible-looking thing in this row,
+   so it should not be competing with Upload for attention; the confirm dialog
+   is what actually guards it. */
+.trashGroup {
+  composes: newGroup;
+  border-color: transparent;
+}
+
+.trashGroup:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .uploadIcon {
