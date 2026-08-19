@@ -69,13 +69,16 @@ export function useView(clips: Array<VideoRecord>) {
   const { user } = useAuth()
 
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [clipId, setClipId] = useState<string | null>(clips.at(0)?.id ?? null)
+  /* An array, and the picker is written for more than one, though only one can
+     be picked today. Several clips at once -- stitching, comparing -- is the
+     obvious next question and this should not be the thing standing in its way. */
+  const [picked, setPicked] = useState<Array<VideoRecord>>([])
   const [frames, setFrames] = useState<Array<ExtractedFrame>>([])
   const [isExtracting, setIsExtracting] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const clip = clips.find((c) => c.id === clipId) ?? null
+  const clip = picked.at(0) ?? null
 
   const extract = useCallback(async () => {
     const video = videoRef.current
@@ -157,7 +160,13 @@ export function useView(clips: Array<VideoRecord>) {
   return {
     clips,
     clip,
-    selectClip: setClipId,
+    picked,
+    pickClips: setPicked,
+    removeClip: useCallback(
+      (id: string) =>
+        setPicked((current) => current.filter((c) => c.id !== id)),
+      [],
+    ),
     videoRef,
     frames,
     isExtracting,

@@ -2,10 +2,11 @@
 
 import { Trash2 } from 'lucide-react'
 import { LabPage } from '../_components/lab-page/lab-page'
+import { ClipInput } from './_components/clip-input/clip-input'
 import { useView } from './use-view'
 import styles from './view.module.css'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
-import { ActionButton, Button, EmptyState, MediaBox } from '#/components'
+import { ActionButton, Button, EmptyState } from '#/components'
 
 function stamp(seconds: number): string {
   return `${seconds.toFixed(2)}s`
@@ -26,31 +27,17 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
         </EmptyState>
       ) : (
         <>
-          {/* Every finished clip, first frame showing. A row rather than a
-              picker dialog: switching clips is the loop this page exists to
-              run, and a dialog puts two clicks in front of every switch. */}
-          <div className={styles.clips}>
-            {clips.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={
-                  c.id === v.clip?.id ? styles.clipActive : styles.clip
-                }
-                onClick={() => v.selectClip(c.id)}
-                aria-pressed={c.id === v.clip?.id}
-                title={c.description ?? c.title}
-              >
-                <MediaBox
-                  kind="video"
-                  src={`/img/${c.id}`}
-                  alt={c.title}
-                  size={72}
-                  fit="cover"
-                />
-              </button>
-            ))}
-          </div>
+          {/* The plus button, and the picker behind it. A scrolling row of
+              every clip was the first version and it is fine at eleven and
+              useless at five hundred; picking an image already works this way,
+              so picking a clip should too. */}
+          <ClipInput
+            clips={clips}
+            picked={v.picked}
+            onPick={v.pickClips}
+            onRemove={v.removeClip}
+            disabled={v.isExtracting}
+          />
 
           {v.clip && (
             <div className={styles.stage}>

@@ -47,6 +47,17 @@ the kind of question the lab exists to settle by use rather than by argument.
 - **Both deletes trash rather than destroy**, through `deleteGalleryImage`. A
   wrong click on Clear is recoverable and nothing here reaches outside the page
   irreversibly.
+- **The clip picker is the app's image picker's shape, rebuilt here.** Same
+  dialog, same tiles, same footer counter, same plus button on a strip — because
+  picking a clip should feel like picking a reference image. It is not
+  `ExistingImagePicker` with a flag: that renders `Thumbnail`, which is an
+  `<img>`, and an mp4 in an `<img>` is the broken-file icon. Teaching it video
+  means a media element inside the primitive every still renders through, which
+  is what `MediaBox` exists to avoid (#398), landing across Images, Canvas and
+  Video to serve one lab page. Its source filters mean nothing for clips either.
+  `max` defaults to 1 and nothing assumes it — several clips at once is a
+  number, not a rewrite. If this proves out, the real generalisation gets
+  designed against two consumers instead of a guess.
 - **The grid is this session's extractions, not a query.** Persisting it would
   need a way to ask for "frames", which needs a marker the library query knows
   about, which is the schema this folder may not grow. The frames themselves

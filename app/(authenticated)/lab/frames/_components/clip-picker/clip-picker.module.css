@@ -1,0 +1,102 @@
+/* The picker's shape is `ExistingImagePicker`'s: fixed-height wide dialog, the
+   grid scrolling inside it, filters' worth of chrome left off because a clip
+   has nothing to filter by. */
+.popup {
+  --dialog-overflow: hidden;
+}
+
+.grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-4);
+}
+
+/* `auto-fill` at a fixed column rather than `minmax(x, 1fr)`: MediaBox is sized
+   in px, so a stretching column would leave the picture behind. */
+.tiles {
+  /* Paired with `TILE` in the component, for the same reason the strip's is. */
+  --tile: 132px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--tile));
+  justify-content: start;
+  gap: var(--space-12);
+}
+
+.tile,
+.tileSelected {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+}
+
+.tile:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+/* Solid brand border on the chosen tile -- the same answer the image picker
+   gives, so the two dialogs do not disagree about what "selected" looks like. */
+.tileSelected {
+  border-color: var(--accent);
+}
+
+.tile:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.check {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  padding: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.check > svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.facts {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-48);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.footer {
+  flex-shrink: 0;
+  padding-top: var(--space-16);
+  border-top: var(--border-width) solid var(--border);
+}
+
+.footerInner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.count {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
