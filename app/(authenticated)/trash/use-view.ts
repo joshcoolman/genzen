@@ -1,12 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   listTrashedImages,
   permanentlyDeleteImages,
   restoreImages,
 } from './_actions/trash'
-import type { TrashPayload } from './_actions/trash'
 import type { UserImage } from '#/features/user-images/types'
 import { imageUrl } from '#/lib/image-url'
 import { useSelection } from '#/lib/use-selection'
@@ -15,7 +14,7 @@ import { useSelection } from '#/lib/use-selection'
  * Trash list state.
  *
  * The first read is the server component's -- `page.tsx` runs
- * `listTrashedImages()` and hands the result in as `initial`, so there is no
+ * `listTrashedImages()` and hands the rows in as `initial`, so there is no
  * loading state and no empty first paint. This hook owns every read after
  * that: each mutation is optimistic and then refetches, which is why the
  * server payload is a seed rather than the source of truth.
@@ -23,16 +22,13 @@ import { useSelection } from '#/lib/use-selection'
  * No realtime (#174). Trash only changes from an action on this page or a
  * delete elsewhere, and either way the next visit re-reads it.
  *
- * `canvasLinkedIds` drives both the badge and the disabled state on the delete
- * controls, but is not what enforces the lock: `permanentlyDeleteImages`
- * recomputes the set server-side and returns the ids it actually destroyed.
+ * Every row here is deletable (#446). There is no canvas lock and no badge:
+ * trashing takes the image off every board it was on, so nothing in the bin is
+ * being held for something the user would have to go and find.
  */
-export function useView(initial: TrashPayload) {
-  const [images, setImages] = useState<Array<UserImage>>(initial.images)
+export function useView(initial: Array<UserImage>) {
+  const [images, setImages] = useState<Array<UserImage>>(initial)
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
-  const [canvasLinkedIds, setCanvasLinkedIds] = useState<Set<string>>(
-    () => new Set(initial.links.canvasIds),
-  )
   const [busyId, setBusyId] = useState<string | null>(null)
   const [isEmptying, setIsEmptying] = useState(false)
   const [isBatchRunning, setIsBatchRunning] = useState(false)
@@ -50,14 +46,13 @@ export function useView(initial: TrashPayload) {
   }, [])
 
   useEffect(() => {
-    signInBackground(initial.images)
-  }, [initial.images, signInBackground])
+    signInBackground(initial)
+  }, [initial, signInBackground])
 
   const refetch = useCallback(async () => {
     try {
-      const { images: rows, links } = await listTrashedImages()
+      const rows = await listTrashedImages()
       setImages(rows)
-      setCanvasLinkedIds(new Set(links.canvasIds))
       signInBackground(rows)
     } catch {
       console.error('Failed to load trashed images')
@@ -88,22 +83,20 @@ export function useView(initial: TrashPayload) {
 
   const permanentDeleteMany = useCallback(
     async (ids: Array<string>) => {
-      const requested = ids.filter((id) => !canvasLinkedIds.has(id))
-      if (requested.length === 0) return
+      if (ids.length === 0) return
 
-      forget(new Set(requested))
+      forget(new Set(ids))
       try {
-        const deleted = await permanentlyDeleteImages(requested)
-        // The server may have refused some of them -- a card can land on the
-        // canvas between the page load and the click. Re-read rather than trust
-        // the optimism.
-        if (deleted.length !== requested.length) await refetch()
+        const deleted = await permanentlyDeleteImages(ids)
+        // A row can go from another tab between the load and the click, so
+        // re-read rather than trust the optimism when the counts disagree.
+        if (deleted.length !== ids.length) await refetch()
       } catch (err) {
         await refetch()
         throw err
       }
     },
-    [canvasLinkedIds, forget, refetch],
+    [forget, refetch],
   )
 
   const restore = useCallback(
@@ -155,12 +148,10 @@ export function useView(initial: TrashPayload) {
   )
 
   const emptyTrash = useCallback(async () => {
-    const deletable = images.filter((img) => !canvasLinkedIds.has(img.id))
-    if (deletable.length === 0) return
+    if (images.length === 0) return
 
     setIsEmptying(true)
-    // Keep the locked rows on screen; the server decides the rest.
-    setImages(images.filter((img) => canvasLinkedIds.has(img.id)))
+    setImages([])
     try {
       await permanentlyDeleteImages()
       await refetch()
@@ -170,7 +161,7 @@ export function useView(initial: TrashPayload) {
     } finally {
       setIsEmptying(false)
     }
-  }, [images, canvasLinkedIds, refetch])
+  }, [images, refetch])
 
   const signFullResUrls = useCallback(
     async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
@@ -185,17 +176,9 @@ export function useView(initial: TrashPayload) {
     [],
   )
 
-  const deletableCount = useMemo(
-    () => images.filter((img) => !canvasLinkedIds.has(img.id)).length,
-    [images, canvasLinkedIds],
-  )
-
   return {
     images,
     imageUrls,
-    canvasLinkedIds,
-    lockedCount: canvasLinkedIds.size,
-    deletableCount,
     busyId,
     isEmptying,
     isBatchRunning,

@@ -86,17 +86,6 @@
   gap: var(--space-4);
 }
 
-/* Reserved whether or not there is a Delete to put in it, so Restore's left
-   edge is the same on every row. A linked row has no Delete -- it cannot be
-   permanently deleted while a canvas still points at it -- and without the
-   reservation that row's Restore sits where the row above it draws Delete. */
-.deleteSlot {
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  min-width: 5.75rem;
-}
-
 /* The ported Button does not size its children's svgs -- that is the call
    site's job, deliberately, after the shadcn one's invisible
    `[&_svg:not([class*='size-'])]` rule made every h-3 w-3 here dead. */

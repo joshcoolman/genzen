@@ -103,8 +103,31 @@ export async function removeCanvasMembers(
 }
 
 /**
- * Which images are on a canvas. Membership is the whole answer -- a trashed
- * image is still on the canvas until it is taken off it (#375).
+ * Take images off every canvas they are on, whatever canvas that is.
+ *
+ * Called by each soft-delete path (#446): trashing an image clears its canvas
+ * membership the same way it clears `group_id`, so restore has one destination
+ * -- the library -- and Trash never holds a row it refuses to destroy. The
+ * lock and its "Canvas" badge (#212, #375) are gone with it: preserving an
+ * image because it was on a board is what made emptying the bin a chore of
+ * hunting down boards, and with several boards that chore scales.
+ */
+export async function clearCanvasMembership(
+  userId: string,
+  imageIds: Array<string>,
+): Promise<void> {
+  const list = imageIds.filter(Boolean)
+  if (list.length === 0) return
+
+  await sql`
+    delete from canvas_images
+    where user_id = ${userId} and image_id in ${sql(list)}
+  `
+}
+
+/**
+ * Which images are on a canvas. Membership is the whole answer -- and trashing
+ * now clears it (#446), so nothing here is a card the user cannot see.
  */
 export async function listCanvasMemberIds(
   userId: string,

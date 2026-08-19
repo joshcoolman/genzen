@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   addCanvasMembers,
+  clearCanvasMembership,
   ensureDefaultCanvas,
   listCanvasMemberIds,
   removeCanvasMembers,
@@ -10,7 +11,7 @@ import { sql } from './db.server'
 
 // Membership is now rows (#212), so these are the guarantees the canvas reads
 // depend on: one card per image, position that survives being written to twice,
-// and membership that outlives a trip through Trash.
+// and membership that a trash clears off every board (#446).
 //
 // Runs against the local Postgres from docker-compose (DATABASE_URL), like
 // `credentials.server.test.ts`. A real database rather than a mock is the whole
@@ -78,26 +79,28 @@ describe('membership', () => {
     expect(await memberIds()).toEqual([b])
   })
 
-  it('ignores Trash entirely: a card leaves the board only when removed', async () => {
+  it('clears off every canvas at once, whatever board the card is on', async () => {
     const c = await makeImage('c')
+    const [second] = await sql<Array<{ id: string }>>`
+      insert into canvases (user_id, name) values (${userId}, 'Second')
+      returning id
+    `
     await addCanvasMembers(userId, canvasId, [
       { imageId: c, x: 40, y: 50, width: 200, height: 300 },
     ])
+    await addCanvasMembers(userId, second.id, [
+      { imageId: c, x: 0, y: 0, width: 100, height: 100 },
+    ])
 
-    // Trash is a library state and the canvas is not the library (#375).
-    // Tidying a group must not wipe a card off a board nobody was looking at,
-    // so the card stays and Trash locks the row against a permanent delete.
-    await sql`update user_images set deleted_at = now() where id = ${c}`
-    expect(await memberIds()).toContain(c)
+    // What every soft-delete path calls (#446). A trashed image is on no board,
+    // so a restore has one destination and Trash holds nothing it will refuse
+    // to destroy -- the chore the old lock created.
+    await clearCanvasMembership(userId, [c])
 
-    await sql`update user_images set deleted_at = null where id = ${c}`
-    expect(await memberIds()).toContain(c)
+    expect(await memberIds()).not.toContain(c)
+    expect(await listCanvasMemberIds(userId, second.id)).toEqual([])
 
-    const [row] = await sql<Array<{ x: number; y: number }>>`
-      select x, y from canvas_images
-      where canvas_id = ${canvasId} and image_id = ${c}
-    `
-    expect(row).toMatchObject({ x: 40, y: 50 })
+    await sql`delete from canvases where id = ${second.id}`
   })
 })
 

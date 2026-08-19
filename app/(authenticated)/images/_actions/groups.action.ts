@@ -2,6 +2,7 @@
 
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
+import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
 
 /**
  * Groups (#319). Images-only, so they live with the route rather than in
@@ -415,8 +416,9 @@ export async function dissolveImageGroup(groupId: string): Promise<GroupWrite> {
  * restore from there like anything else. Nothing is destroyed here, which is
  * what separates this from the delete-group-and-its-images that #319 refused.
  *
- * `group_id = null` on the same statement, as every other trash path does:
- * restore has one destination. That also means the group row is left with no
+ * `group_id = null` on the same statement, as every other trash path does,
+ * and canvas membership cleared alongside it (#446): restore has one
+ * destination. That also means the group row is left with no
  * members by the time it is deleted, so the delete cannot cascade anywhere.
  */
 export async function trashImageGroup(groupId: string): Promise<GroupWrite> {
@@ -427,6 +429,10 @@ export async function trashImageGroup(groupId: string): Promise<GroupWrite> {
     where user_id = ${userId} and group_id = ${groupId} and deleted_at is null
     returning id
   `
+  await clearCanvasMembership(
+    userId,
+    rows.map((r) => r.id),
+  )
   await sql`
     delete from image_groups where id = ${groupId} and user_id = ${userId}
   `

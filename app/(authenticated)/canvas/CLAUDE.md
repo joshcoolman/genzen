@@ -52,13 +52,18 @@ the durable structure; the canvas is where things are tried.
 The canvas therefore does not reach into the library at all. It adds and removes
 membership rows and nothing else -- no `deleted_at`, no `group_id`.
 
-**And the library does not reach into the canvas** (#375). The member read has
-no `deleted_at` filter: trashing an image to tidy a group leaves it on the board,
-because Trash is a library state and the board is not the library. A card leaves
-when it is taken off, and at no other time. What keeps that honest is Trash's
-lock -- a row still holding membership cannot be permanently deleted, so nothing
-can be destroyed out from under a canvas nobody is looking at. Remove it from the
-canvas and the lock lifts.
+**Trashing an image takes it off every board** (#446). The library reaches into
+the canvas in exactly this one place, and only on the way to Trash: a soft
+delete clears `canvas_images` the way it already cleared `group_id`, so restore
+has one destination -- the library -- and Trash never holds a row it refuses to
+destroy. #375 had the opposite rule, with a badge and a delete lock to explain
+it; what that cost was hunting down the board a card was still on before the bin
+could be emptied, and with several boards it is several places to look. The
+price is that a card can vanish from a board you were not looking at: the
+cheaper problem, because the board is scratch and the deletion was deliberate.
+
+The member read still has no `deleted_at` filter, and does not need one -- a
+trashed row has no membership left to read.
 
 **One reconcile rule: place what is unplaced.** A membership row may arrive with
 no position, because a generation's row is written server-side the moment it is
@@ -88,7 +93,7 @@ generation could evict it.
    request
 4. Display -> a `/img/[id]` URL from `#/lib/image-url`, resolved server-side by
    `loadCanvasState()`. The bucket is private (#226); nothing reads an object
-   address. Trashed images render like any other (#375)
+   address
 5. Remove from canvas -> the `canvas_images` row goes, the `user_images` row
    is untouched. **The only way a card leaves.** It was replaced by a
    Move-to-Trash in #236 and came back in #373. #236's reasoning -- removal

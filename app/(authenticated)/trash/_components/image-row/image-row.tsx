@@ -1,7 +1,6 @@
 'use client'
 
 import { CheckCircle2, Circle, RotateCcw, X } from 'lucide-react'
-import { LinkBadge } from '../link-badge/link-badge'
 import styles from './image-row.module.css'
 import type { UserImage } from '#/features/user-images/types'
 import { Button, ConfirmDialog, MediaBox, useConfirm } from '#/components'
@@ -30,9 +29,6 @@ interface ImageRowProps {
    *  the verbs while it is. */
   hasSelection: boolean
   busy: boolean
-  /** Still on a canvas: badged, and not deletable until it is taken off
-   *  (#375). */
-  onCanvas: boolean
   onToggle: (id: string, shiftKey: boolean) => void
   onRestore: (id: string) => void
   onDelete: (id: string) => void
@@ -44,7 +40,6 @@ export function ImageRow({
   selected,
   hasSelection,
   busy,
-  onCanvas,
   onToggle,
   onRestore,
   onDelete,
@@ -89,7 +84,6 @@ export function ImageRow({
         <div className={styles.text}>
           <div className={styles.titleRow}>
             <p className={styles.title}>{image.title}</p>
-            {onCanvas && <LinkBadge />}
           </div>
           <p className={styles.meta}>
             {isVideo
@@ -106,30 +100,24 @@ export function ImageRow({
 
         {!hasSelection && (
           <div className={styles.actions}>
-            {/* Delete first, and its slot is held open even on a locked row
-                that has no Delete. Restore is the button you click many times
-                in a row -- down a list of things you want back -- so it has to
-                be in the same place on every row. Appending Delete after it
-                moved Restore left whenever a row had one, which puts Delete
-                under a finger that is repeating a Restore click. Destructive
-                verbs do not get to move under a repeating hand. */}
-            <div className={styles.deleteSlot}>
-              {!onCanvas && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={styles.deleteButton}
-                  disabled={busy}
-                  onClick={(e: React.MouseEvent) => {
-                    e.stopPropagation()
-                    void askThenDelete()
-                  }}
-                >
-                  <X className={styles.buttonIcon} />
-                  Delete
-                </Button>
-              )}
-            </div>
+            {/* Delete first, then Restore, and the order is deliberate:
+                Restore is the button you click many times in a row -- down a
+                list of things you want back -- so it has to sit in the same
+                place on every row. Appending Delete after it would move
+                Restore under a finger that is repeating a Restore click. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className={styles.deleteButton}
+              disabled={busy}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation()
+                void askThenDelete()
+              }}
+            >
+              <X className={styles.buttonIcon} />
+              Delete
+            </Button>
             <Button
               variant="ghost"
               size="sm"
