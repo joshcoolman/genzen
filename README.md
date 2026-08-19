@@ -208,4 +208,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   formatter became one, and two had already drifted: a free row read
   `$0.0000`, and video truncated any sub-cent figure to `$0.00` — #400's bug
   reintroduced at the display step (#416)
-
