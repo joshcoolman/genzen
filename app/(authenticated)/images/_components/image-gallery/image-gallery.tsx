@@ -74,6 +74,9 @@ interface ImageGalleryProps {
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  /** A click on the grid's own background -- the gaps between cards. Clearing
+   *  the selection is what it means (#439); absent when there is none. */
+  onBackgroundClick?: () => void
 }
 
 export function ImageGallery({
@@ -105,9 +108,17 @@ export function ImageGallery({
   selectionActive,
   isSelected,
   onSelect,
+  onBackgroundClick,
 }: ImageGalleryProps) {
+  /* The gaps between cards are empty space too, and they belong to the grid
+     rather than to the frame around it (#439). Identity again, never a bubbled
+     click: everything in this grid is something you can click on purpose. */
+  const clearOnBackground = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onBackgroundClick?.()
+  }
+
   return (
-    <div className={styles.root}>
+    <div className={styles.root} onClick={clearOnBackground}>
       {loadingGallery ? (
         <ImageGridSkeleton />
       ) : cells.length === 0 ? (
@@ -118,6 +129,7 @@ export function ImageGallery({
       ) : (
         <div
           className={styles.grid}
+          onClick={clearOnBackground}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
             // without touching layout, so the grid would keep its old

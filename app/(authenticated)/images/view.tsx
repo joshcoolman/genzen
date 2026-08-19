@@ -70,7 +70,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
   return (
     <>
-      <Workspace pushed={dock.open}>
+      {/* Clicking away from a selection is what clears it everywhere else, and
+          it was Deselect all or Escape here (#439). Passed only while
+          something is picked, so an ordinary click on the background of an
+          ordinary page stays an ordinary click. */}
+      <Workspace
+        pushed={dock.open}
+        onBackgroundClick={selectMode ? selection.clearSelection : undefined}
+      >
         <Toolbar
           prefs={prefs}
           panelOpen={dock.open}
@@ -142,6 +149,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           selectionActive={selectMode}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}
+          onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 
         <SelectionActions
