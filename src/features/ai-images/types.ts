@@ -52,5 +52,9 @@ export interface SavedAiImage {
      *  which is what makes their presence the whole condition for the note. */
     images_requested?: number
     images_used?: number
+    /** What the generation cost, written once at completion (#400). Activity's
+     *  figure; read here so a lab run can price itself per result. */
+    provider_cost_cents?: number
+    provider_cost_is_estimate?: boolean
   } | null
 }
