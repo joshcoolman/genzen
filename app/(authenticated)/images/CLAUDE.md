@@ -247,12 +247,34 @@ list once when the seed comes back full, so the grid is never short.
   again a moment later. A row born in the group is never loose, so there is
   nothing to render and nothing to retract, and the optimistic card carries
   the same `group_id` from its first frame
-- **The gallery has no origin filter, and no find (#348).** Pills scoped it by
-  `origin` until working with them on All made the point: a group is a scope you
-  made on purpose, and it is the only one worth having. `reveal()` went with
-  them -- it existed only so a card you just made was not filtered out of the
-  view you made it in. The `origin` column stays; Activity reads it. Cmd-F find
-  went in the same pass and is parked in #347
+- **The origin scope is back, on a row of its own (#444).** #348 removed the
+  pills on the grounds that a group is the only scope worth having, and that
+  held for everything except one question a group cannot answer: **"show me my
+  uploads"**, wherever they sit. The workaround was a hand-made group called
+  Uploads, which decays the moment you upload again, because new uploads land
+  loose. So: `All | Generations | Uploads`, top level only, **under the toolbar
+  rather than in it** -- a scope is a statement about what you are looking at,
+  not an action, and sitting among the buttons is part of why the old pills read
+  as one more control. **It is a caption, not a control**: a hairline across the
+  width, the three words at the right end at the chip type size, and the current
+  one simply lit. Not `SingleSelect` -- its segmented pills carry the weight of
+  something you press, and three filled chips above the wall compete with the
+  pictures, which is the one thing a gallery's chrome must not do. Ink is the
+  whole selected state, and nothing bolds: a weight change would shift the other
+  two along the row each time the scope changed.
+  **Uploads ignores grouping entirely** -- every upload, grouped or not, and no
+  group cards, because there is nothing left for them to stand in for. The other
+  scopes filter what is loose, since the group-card collapse is the payoff at
+  top level. Inside a group there is no scope control at all: the group is
+  already the scope, and two stacked scoping controls only ask which one wins.
+  Filtering is client-side -- the gallery holds every row and `origin` is
+  immutable. `revealAll()` replaces the old `reveal()`: making something is an
+  implicit request to see it, so an upload or a submit widens the scope to
+  `all` rather than switching to the matching one -- widening never takes away
+  what you were looking at. A stored scope is validated against
+  `ORIGIN_FILTERS` on read, keeping #348's real lesson: a scope the control
+  cannot show would apply with nothing on screen to undo it. Cmd-F find went in
+  #348's pass and is still parked in #347
 - **Thumbnail zoom is `zoom` on the grid, and the stops are measured, not
   chosen (#403).** ⌘⌃+/- walks a fixed list — 50, 60, 75, 100 — because the
   grid is `auto-fill` over a 200px minimum, so a step only reads as a change
