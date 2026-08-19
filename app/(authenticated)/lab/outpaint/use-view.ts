@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { OUTPAINT_MODEL_IDS } from './outpaint-models'
 import { buildOutpaintPrompt } from './outpaint-prompt'
 import type { PickedImage } from '../_components/image-input/image-input'
 import {
@@ -28,7 +29,8 @@ export interface OutpaintResult {
   costCents: number | null
 }
 
-/** One press of Generate: a source, a shape, and one result per model. */
+/** One source image's share of a press: a shape, and one result per model.
+ *  Several images make several of these from one click (#441). */
 export interface OutpaintRun {
   key: number
   source: PickedImage
@@ -53,23 +55,52 @@ export interface OutpaintRun {
  * All four smear and it is the instruction; three clean and one not and you
  * have learned which model to reach for.
  *
+ * **And several images, for the opposite reason** (#441). The ratio and the
+ * models are the settings; the images are the input. Reframing four stills to
+ * 16:9 used to be four trips through the same three controls, changing only
+ * the picker. Images x models generations from one press, which is why the
+ * count is on the button and the press asks first past `CONFIRM_ABOVE_CENTS`.
+ *
  * `origin: 'images'` on every row, which is a small lie -- there is no `lab`
  * origin and adding one is a migration, which a lab page does not get to have.
  */
+/**
+ * How many images the strip takes. Not a limit anything enforces downstream --
+ * each generation is its own request with one source -- just a number past
+ * which a press is more likely to be a slip than an intention.
+ */
+export const MAX_SOURCES = 8
+
+/**
+ * Above this much, Generate asks first.
+ *
+ * Money rather than a count, as Video does it (#417): eight z-image runs is
+ * four cents and eight Nano Banana runs is sixty-four, so the number of
+ * generations says little about the size of the click. This is the one lab
+ * page that spends real money, and multiplying images by models is how a press
+ * that looks the same as the last one costs eight times more.
+ */
+const CONFIRM_ABOVE_CENTS = 100
+
 export function useView() {
   const { user } = useAuth()
   const userImages = useUserImages(user.id)
 
-  // 'sidebar' is every model with an image endpoint, which is the whole of
-  // what can be asked to outpaint. Its own storage scope, so tinkering here
-  // does not rewrite the selection Images opens with.
+  // 'sidebar' is every model with an image endpoint, narrowed by
+  // `OUTPAINT_MODEL_IDS` to the ones that can actually be asked to extend a
+  // frame. Its own storage scope, so tinkering here does not rewrite the
+  // selection Images opens with.
   const modelSelector = useModelSelector({
     capability: 'sidebar',
     mode: 'multi',
+    allowedIds: OUTPAINT_MODEL_IDS,
     storageScope: 'lab-outpaint',
   })
 
   const [picked, setPicked] = useState<Array<PickedImage>>([])
+  /** Run keys, monotonic. `runs.length` was enough while a press made one run;
+   *  four runs from one press would all read the same length and collide. */
+  const nextKey = useRef(1)
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(
     'landscape',
   )
@@ -79,8 +110,6 @@ export function useView() {
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const source = picked.at(0)
-
   // Priced for the image endpoint, which is the only one this page hits: a
   // megapixel-billed model costs about twice as much through it (#304), so a
   // figure taken from the text-to-image price would be half the truth.
@@ -89,10 +118,22 @@ export function useView() {
     [modelSelector.models],
   )
 
+  // One generation per image per model, so the images are the `runsPerModel`
+  // factor. Both axes multiply and the models are priced differently, which is
+  // why this sums per model rather than scaling one figure.
   const estimatedCost = useMemo(
-    () => estimateImageCostCents(modelSelector.selectedIds, 1, true),
-    [modelSelector.selectedIds],
+    () =>
+      estimateImageCostCents(
+        modelSelector.selectedIds,
+        Math.max(picked.length, 1),
+        true,
+      ),
+    [modelSelector.selectedIds, picked.length],
   )
+
+  /** What one press will make. On the button, because a press with four images
+   *  and four models looks exactly like a press with one of each. */
+  const generationCount = picked.length * modelSelector.selectedIds.length
 
   /** The oldest run still waiting, which is what paces the poll (#327). */
   const pendingSince = useMemo(() => {
@@ -144,32 +185,47 @@ export function useView() {
   useGenerationPoll(pendingSince, refresh)
 
   const run = useCallback(async () => {
-    if (!source || modelSelector.selectedIds.length === 0) return
+    if (picked.length === 0 || modelSelector.selectedIds.length === 0) return
 
     setIsRunning(true)
     setError(null)
     const prompt = buildOutpaintPrompt(aspectRatio, guidance)
-    const results: Array<OutpaintResult> = []
+    const startedAt = new Date().toISOString()
+    const made: Array<OutpaintRun> = []
 
     try {
-      // Sequential, as Video submits: each call reserves a row before it
-      // reaches FAL, and firing them together interleaves the reservations
-      // against a queue that answers in its own order.
-      for (const modelId of modelSelector.selectedIds) {
-        const created = await generateImage({
-          prompt,
-          model: modelId,
-          origin: 'images',
+      // Image-major: every model's attempt at the first picture lands before
+      // any of the second, so a submit abandoned half way has finished some
+      // images rather than started all of them.
+      for (const source of picked) {
+        const results: Array<OutpaintResult> = []
+        // Sequential, as Video submits: each call reserves a row before it
+        // reaches FAL, and firing them together interleaves the reservations
+        // against a queue that answers in its own order.
+        for (const modelId of modelSelector.selectedIds) {
+          const created = await generateImage({
+            prompt,
+            model: modelId,
+            origin: 'images',
+            aspectRatio,
+            sourceImageId: source.id,
+          })
+          results.push({
+            recordId: created.recordId,
+            modelName: getModelName(created.model),
+            status: 'pending',
+            url: null,
+            error: null,
+            costCents: null,
+          })
+        }
+        made.push({
+          key: nextKey.current++,
+          source,
           aspectRatio,
-          sourceImageId: source.id,
-        })
-        results.push({
-          recordId: created.recordId,
-          modelName: getModelName(created.model),
-          status: 'pending',
-          url: null,
-          error: null,
-          costCents: null,
+          guidance: guidance.trim(),
+          startedAt,
+          results,
         })
       }
     } catch (err) {
@@ -178,29 +234,36 @@ export function useView() {
       setIsRunning(false)
     }
 
-    if (results.length > 0) {
-      setRuns((current) => [
-        {
-          key: current.length + 1,
-          source,
-          aspectRatio,
-          guidance: guidance.trim(),
-          startedAt: new Date().toISOString(),
-          results,
-        },
-        ...current,
-      ])
+    if (made.length > 0) {
+      // Newest first, and the images in the order they were picked -- the
+      // reverse would put the last picture at the top of a press you read
+      // downwards.
+      setRuns((current) => [...made.reverse(), ...current])
       // Once, so the pending cards have something to settle against; the poll
       // takes it from here.
       await refresh()
     }
-  }, [source, modelSelector.selectedIds, aspectRatio, guidance, refresh])
+  }, [picked, modelSelector.selectedIds, aspectRatio, guidance, refresh])
 
   return {
     userImages,
     picked,
-    setPicked,
-    clearPicked: useCallback(() => setPicked([]), []),
+    /** Appends what the picker hands back, minus anything already on the strip
+     *  and anything past `MAX_SOURCES`. */
+    addPicked: useCallback((incoming: Array<PickedImage>) => {
+      setPicked((current) => {
+        const have = new Set(current.map((p) => p.id))
+        return [...current, ...incoming.filter((p) => !have.has(p.id))].slice(
+          0,
+          MAX_SOURCES,
+        )
+      })
+    }, []),
+    removePicked: useCallback(
+      (id: string) =>
+        setPicked((current) => current.filter((p) => p.id !== id)),
+      [],
+    ),
     orientation,
     setOrientation,
     aspectRatio,
@@ -210,11 +273,13 @@ export function useView() {
     modelSelector,
     visibleModels,
     estimatedCost,
+    generationCount,
+    needsConfirm: estimatedCost.cents > CONFIRM_ABOVE_CENTS,
     runs,
     clear: useCallback(() => setRuns([]), []),
     isRunning,
     error,
-    canRun: !!source && modelSelector.selectedIds.length > 0 && !isRunning,
+    canRun: generationCount > 0 && !isRunning,
     run,
   }
 }
