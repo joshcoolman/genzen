@@ -1,13 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PromptOrigins } from '#/features/ai-images/prompt-origins'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { optimisticId } from '#/lib/optimistic-id'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
-import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.action'
 import { useReportError } from '#/components'
 import {
   LANDSCAPE_RATIOS,
@@ -21,14 +19,9 @@ import {
   imageCapacityFor,
   modelTitleFor,
 } from '#/features/ai-images/models'
-import { recordPromptOrigin } from '#/features/ai-images/prompt-origins'
 import { systemInstructionsPrefix } from '#/features/ai-images/system-instructions'
 
 const EMPTY_PROMPTS: Array<string> = ['']
-
-/** How many enhance pairs to keep in localStorage. Only the ones still sitting
- *  in the textarea can ever be read, so this is a cap, not a policy. */
-const MAX_PROMPT_ORIGINS = 20
 
 /**
  * One image in the generator's set. Always a library row: since #297 the only
@@ -155,9 +148,6 @@ export interface GeneratorState {
    *  0, which is the one case that still disables the strip -- there is nothing
    *  to attach images to. */
   maxRefImages: number
-  /** Index of the prompt currently being enhanced, or null. */
-  enhancingPromptIndex: number | null
-  handleEnhancePrompt: (index: number) => Promise<void>
 }
 
 export function useGenerator({
@@ -175,7 +165,7 @@ export function useGenerator({
 }: UseGeneratorOptions): GeneratorState {
   // Surfaces failures the user can act on: a missing provider key opens the
   // key dialog, anything else toasts. `setError` alone was not enough — the AI
-  // Images page never rendered it, so enhance failures vanished entirely.
+  // Images page never rendered it, so failures vanished entirely.
   const reportError = useReportError()
 
   // Read the latest prefix at submit time without re-creating handleGenerate.
@@ -187,40 +177,12 @@ export function useGenerator({
   groupIdRef.current = groupId ?? null
   const promptsKey = `${storagePrefix}:prompts`
   const legacyPromptKey = `${storagePrefix}:prompt`
-  const promptOriginsKey = `${storagePrefix}:prompt-origins`
   const orientationKey = `${storagePrefix}:orientation`
   const aspectRatioKey = `${storagePrefix}:aspect-ratio`
 
   function persistPrompts(next: Array<string>) {
     localStorage.setItem(promptsKey, JSON.stringify(next))
     localStorage.removeItem(legacyPromptKey)
-  }
-
-  // Enhance overwrites the textarea, and the typed prompt is the irreplaceable
-  // one: an enhanced prompt can be re-derived from it, intent cannot be
-  // re-derived from an enhanced prompt (#210). Written on enhance, read at
-  // submit; no render reads it, hence a ref. See `prompt-origins.ts`.
-  const promptOriginsRef = useRef<PromptOrigins>({})
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(promptOriginsKey)
-      if (stored) promptOriginsRef.current = JSON.parse(stored)
-    } catch {
-      /* ignore */
-    }
-  }, [])
-
-  function rememberPromptOrigin(enhanced: string, previous: string) {
-    const next = recordPromptOrigin(
-      promptOriginsRef.current,
-      enhanced,
-      previous,
-      MAX_PROMPT_ORIGINS,
-    )
-    if (next === promptOriginsRef.current) return
-    promptOriginsRef.current = next
-    localStorage.setItem(promptOriginsKey, JSON.stringify(next))
   }
 
   const [prompts, setPromptsRaw] = usePersistedState<Array<string>>(() => {
@@ -253,9 +215,6 @@ export function useGenerator({
     '16:9',
   )
   const [loading, setLoading] = useState(false)
-  const [enhancingPromptIndex, setEnhancingPromptIndex] = useState<
-    number | null
-  >(null)
   const [selectedStyleId, setSelectedStyleId] = useState<string | null>(null)
   const [refImages, setRefImages] = useState<Array<RefImage>>([])
 
@@ -461,10 +420,10 @@ export function useGenerator({
       const referenceImageIds = restIds.length > 0 ? restIds : undefined
       const sourceImageId = hasImages ? primary.id : undefined
 
-      // Three distinct facts, and the row has room for one: what was typed,
-      // what the enhancer made of it, and what was sent. `prompt` stays the
-      // sent string (retry replays it); the other two ride along so a past
-      // generation's inputs are recoverable (#210).
+      // Two distinct facts, and the row has room for one: what was typed and
+      // what was sent. `prompt` stays the sent string, because retry replays
+      // it; the typed one rides along so a past generation's input is
+      // recoverable (#210).
       const promptPlans = promptsToRun.map((promptText) => {
         const typedPrompt = promptText.trim()
         // System instructions (#272) lead, then whatever the host prepends --
@@ -475,7 +434,6 @@ export function useGenerator({
         return {
           typedPrompt,
           finalPrompt,
-          originalPrompt: promptOriginsRef.current[typedPrompt],
         }
       })
 
@@ -504,11 +462,10 @@ export function useGenerator({
 
       const results = await Promise.allSettled(
         calls.map((c) => {
-          const { typedPrompt, finalPrompt, originalPrompt } = c.plan
+          const { typedPrompt, finalPrompt } = c.plan
           return generateImage({
             origin,
             prompt: finalPrompt,
-            ...(originalPrompt ? { originalPrompt } : {}),
             ...(typedPrompt !== finalPrompt ? { typedPrompt } : {}),
             model: c.resolved,
             aspectRatio,
@@ -582,33 +539,6 @@ export function useGenerator({
     }
   }
 
-  const handleEnhancePrompt = useCallback(
-    async (index: number) => {
-      if (enhancingPromptIndex !== null) return
-      const current = prompts[index]?.trim()
-      if (!current) {
-        reportError('Enter a prompt before enhancing.')
-        return
-      }
-      setEnhancingPromptIndex(index)
-      try {
-        const { enhancedPrompt } = await enhancePrompt({ prompt: current })
-        rememberPromptOrigin(enhancedPrompt, current)
-        setPromptsRaw((prev) => {
-          const next = [...prev]
-          next[index] = enhancedPrompt
-          persistPrompts(next)
-          return next
-        })
-      } catch (err) {
-        reportError(err, 'Failed to enhance prompt')
-      } finally {
-        setEnhancingPromptIndex(null)
-      }
-    },
-    [enhancingPromptIndex, prompts, reportError],
-  )
-
   const clearPrompts = useCallback(() => {
     setPromptsRaw([''])
     persistPrompts([''])
@@ -643,7 +573,5 @@ export function useGenerator({
     removeRefImage,
     setPrimaryImage,
     maxRefImages,
-    enhancingPromptIndex,
-    handleEnhancePrompt,
   }
 }

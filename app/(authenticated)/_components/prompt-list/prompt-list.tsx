@@ -15,15 +15,6 @@ interface PromptListProps {
   // Optional: clear all prompts back to single empty textarea
   onClearPrompts?: () => void
   /**
-   * Enhance prompt via LLM. Currently unrendered -- it is set aside pending the
-   * rewrite in #309, because every run came back more verbose than wanted. The
-   * prop and the spinner state stay wired so restoring it is a button, not a
-   * rebuild. Generating from nothing is a separate control in `headerSlot`.
-   */
-  onEnhancePrompt?: (index: number) => void | Promise<void>
-  // Index of the prompt currently being enhanced (shows spinner on that row)
-  enhancingPromptIndex?: number | null
-  /**
    * Rendered at the right of the Add prompt row, opposite the button.
    * A slot rather than a prop per occupant: what goes there today is Generate
    * prompt, which is a way of *filling* a prompt rather than a prompt, and must
@@ -47,7 +38,6 @@ export function PromptList({
     additional: 'Additional prompt...',
   },
   onClearPrompts,
-  enhancingPromptIndex,
   actionSlot,
 }: PromptListProps) {
   // Only a multi-row list gets Clear. Tying it to "is there any text" made it
@@ -72,7 +62,6 @@ export function PromptList({
         )}
       </div>
       {prompts.map((promptText, index) => {
-        const isEnhancing = enhancingPromptIndex === index
         return (
           <div key={index} className={styles.field}>
             <Textarea
@@ -82,7 +71,7 @@ export function PromptList({
               }
               value={promptText}
               onChange={(e) => onUpdatePrompt(index, e.target.value)}
-              disabled={disabled || isEnhancing}
+              disabled={disabled}
               rows={index === 0 ? 4 : 3}
               className={styles.textarea}
             />

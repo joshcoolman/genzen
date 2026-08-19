@@ -22,7 +22,7 @@ list once when the seed comes back full, so the grid is never short.
   deliberate half of the setup to restore the half you are about to change.
   Leaving it alone is also what composes: load one generation, tick three
   models, generate nine. It is not Retry (which resubmits that row) and not
-  Variations (which rewrites the prompt) — it creates nothing and touches no
+  a variation (which rewrites the prompt) — it creates nothing and touches no
   row. It loads what it can and says what it could not, because a panel is a
   starting point rather than a submission; `planRetry` refuses in the same
   situation and is right to, for the opposite reason. A trashed input counts as
@@ -202,7 +202,7 @@ list once when the seed comes back full, so the grid is never short.
   a generation moved on the way to both of its endings. The `...` menu needs no
   such gate: `ImageCard` renders only for `completed` rows (pending and failed
   have their own components, and `status` is constrained to those three), so
-  gating Download and Describe on it would be dead code.
+  gating Download on it would be dead code.
 - **Trash on a generating card cancels it** (#369). It used to soft-delete the
   row and leave FAL running, which finished the picture, billed for it, and
   filed it in Trash -- from the one click that plainly means "I do not want
@@ -404,3 +404,11 @@ Vertical spacing in the panel is one knob, `--panel-rhythm` on
 `generator-panel.module.css`'s root, inherited by `PromptList` and
 `ModelSelector`. Change that rather than spot-fixing a gap -- three components
 each picking their own is how it drifted to 12/8/4.
+
+## Not here
+
+**Enhance, Describe and Variations are in the lab** (`app/(authenticated)/lab/`,
+#424). They were dialogs on this route and could not be improved there — a
+dialog holds "type, get one result, close" and nothing more. They come back when
+they work the way they are supposed to, and until then this route behaves as
+though they never existed.

@@ -7,8 +7,6 @@ import {
   FolderMinus,
   FolderPlus,
   ImageIcon,
-  Layers,
-  MessageSquare,
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
@@ -33,8 +31,6 @@ interface ImageCardProps {
   showInfo?: boolean
   onDelete?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  onDescribe?: (img: SavedAiImage) => void
-  onGenerateVariations?: (img: SavedAiImage) => void
   /** Take this still to /video as the first frame (#305). */
   onAnimate?: (img: SavedAiImage) => void
   /** The card click: opens the lightbox over everything. */
@@ -78,8 +74,6 @@ export function ImageCard({
   showInfo = true,
   onDelete,
   onDownload,
-  onDescribe,
-  onGenerateVariations,
   onAnimate,
   onOpen,
   onAddReference,
@@ -107,18 +101,6 @@ export function ImageCard({
           <DropdownMenuItem onClick={() => onDownload(img)}>
             <Download />
             Download
-          </DropdownMenuItem>
-        )}
-        {onDescribe && (
-          <DropdownMenuItem onClick={() => onDescribe(img)}>
-            <MessageSquare />
-            Describe
-          </DropdownMenuItem>
-        )}
-        {onGenerateVariations && img.status === 'completed' && (
-          <DropdownMenuItem onClick={() => onGenerateVariations(img)}>
-            <Layers />
-            Generate Variations
           </DropdownMenuItem>
         )}
         {onAnimate && img.status === 'completed' && (
@@ -169,8 +151,7 @@ export function ImageCard({
   // carried the filename -- a card with a name in the corner and a blank grey
   // strip under it. The two swap: the badge says what kind of thing this is,
   // the way a generation's badge names the model, and the filename moves down
-  // to where the prompt would be. A description still wins if one was written,
-  // since Describe would otherwise have nowhere to show.
+  // to where the prompt would be. A description still wins if one was written.
   const isUpload = img.origin === 'upload'
   const badge = isUpload ? 'Upload' : img.title
   const caption = isUpload

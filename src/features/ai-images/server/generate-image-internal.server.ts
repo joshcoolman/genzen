@@ -28,7 +28,6 @@ export interface GenerateImageInput {
   /** What the user typed before the enhancer rewrote it, when it did (#210).
    *  Recorded, not read: the enhanced prompt is re-derivable from this, the
    *  reverse is not, so the typed one is the fact worth keeping. */
-  originalPrompt?: string
   /** The textarea contents at submit, when `prompt` is not that -- canvas
    *  prepends auto-generated `[Image 1, ...]` labels. Absent when identical. */
   typedPrompt?: string
@@ -80,7 +79,6 @@ export async function generateImageInternal(
 
   const {
     prompt,
-    originalPrompt,
     typedPrompt,
     model,
     aspectRatio,
@@ -165,7 +163,6 @@ export async function generateImageInternal(
       // Captured with no reader today, deliberately: unused *code* rots, unused
       // *data* accrues, and a UI can be built over a captured fact at any time
       // while an uncaptured one is gone. See docs/DELTAS.md.
-      ...(originalPrompt ? { original_prompt: originalPrompt } : {}),
       ...(typedPrompt && typedPrompt !== prompt.trim()
         ? { sent_prompt: prompt.trim() }
         : {}),

@@ -10,7 +10,6 @@ import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
 import { useImageViewer } from './_hooks/use-image-viewer'
-import { useVariations } from './_hooks/use-variations'
 import { useGroups } from './_hooks/use-groups'
 import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
@@ -288,8 +287,6 @@ export function useView(initial: Array<SavedAiImage>) {
     preventDefault: true,
   })
 
-  const variations = useVariations({ setError })
-
   const selection = useSelection({ items: images.map((img) => img.id) })
 
   /**
@@ -366,10 +363,6 @@ export function useView(initial: Array<SavedAiImage>) {
       setIsBatchDeleting(false)
     }
   }, [images, selection, gallery])
-
-  const [describeTarget, setDescribeTarget] = useState<SavedAiImage | null>(
-    null,
-  )
 
   // ---------------------------------------------------------------------
   // Groups (#319)
@@ -752,11 +745,6 @@ export function useView(initial: Array<SavedAiImage>) {
     [router],
   )
 
-  /** The source image's URL, for the variation dialog's preview. */
-  const variationSourceUrl = variations.pendingSourceImage
-    ? gallery.imageUrls[variations.pendingSourceImage.id]
-    : undefined
-
   return {
     images,
     cells,
@@ -792,10 +780,6 @@ export function useView(initial: Array<SavedAiImage>) {
     isBatchDeleting,
     deleteSelected,
     viewer,
-    variations,
-    variationSourceUrl,
-    describeTarget,
-    setDescribeTarget,
     addReference,
     usePromptText,
     loadIntoPanel,
