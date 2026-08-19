@@ -1,0 +1,95 @@
+.clips {
+  display: flex;
+  gap: var(--space-8);
+  overflow-x: auto;
+  padding-bottom: var(--space-4);
+}
+
+.clip,
+.clipActive {
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.clipActive {
+  border-color: var(--accent);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.player {
+  inline-size: 100%;
+  max-block-size: 60vh;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-12);
+}
+
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+/* The clip's own aspect, set inline from `videoWidth`/`videoHeight` -- the
+   frame is the video's pixels, so anything else here would be a crop. */
+.image {
+  inline-size: 100%;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  object-fit: contain;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.meta {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.destructive {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.destructive:hover:not(:disabled) {
+  color: var(--danger);
+}
+
+.destructive:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

@@ -11,7 +11,9 @@ import { PageHeader } from '#/components'
  *   three pages and not one surface with three buttons (#424).
  * - **the file that steers it.** The whole point of the lab is that you change
  *   an instruction and look at what happens, so the page says which file to
- *   open. Every one of them is markdown since #322.
+ *   open. Every one of them is markdown since #322. Optional: an experiment
+ *   that sends nothing to a model has no instruction to name, and printing an
+ *   empty line for one would say there is a file to go and edit.
  */
 export function LabPage({
   title,
@@ -22,16 +24,18 @@ export function LabPage({
 }: {
   title: string
   question: string
-  instructionFile: string
+  instructionFile?: string
   error?: string | null
   children: React.ReactNode
 }) {
   return (
     <div className={styles.page}>
       <PageHeader title={title} description={question} />
-      <p className={styles.instruction}>
-        Steered by <code className={styles.file}>{instructionFile}</code>
-      </p>
+      {instructionFile && (
+        <p className={styles.instruction}>
+          Steered by <code className={styles.file}>{instructionFile}</code>
+        </p>
+      )}
       {error && <p className={styles.error}>{error}</p>}
       {children}
     </div>
