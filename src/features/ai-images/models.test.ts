@@ -68,7 +68,7 @@ const LEGACY_ALL_IMAGE_MODELS = [
     category: 'FLUX',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-pro/edit',
-    displayPrice: '~$0.09/img',
+    displayPrice: '~$0.075/img',
     useCase: 'Best FLUX quality — and the one that takes many references',
   },
 ]

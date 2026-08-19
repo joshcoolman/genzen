@@ -119,16 +119,20 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // enforced by the endpoint; this is the figure Black Forest Labs publishes.
     // Capacity is maxRefs + 1.
     maxRefs: 7,
-    // **Derived, not measured on this endpoint.** FAL prices it per *processed
-    // megapixel* at $0.03, and a day of real invoices put its FLUX.2 siblings
-    // at 2.5 MP a text-to-image run and 3 MP an edit (#400) -- so roughly
-    // $0.075 and $0.09. The dearer is what a person should read before
-    // clicking. Re-measure against `/v1/models/usage` once there are runs.
+    // **Measured against FAL's own invoices, not extrapolated.** It bills per
+    // *processed megapixel* at $0.03, and real runs came in at **1.5 MP for a
+    // text-to-image ($0.045) and 2.5 MP for an edit ($0.075)**. Carrying the
+    // dearer, because it is what a person should read before clicking -- but
+    // note the spread is nearly 2x, so this figure is honest for an edit and
+    // pessimistic for a plain generate. One number per model cannot be both.
     //
-    // It replaced FLUX Kontext Pro, which was $0.04 an image: **this is about
-    // twice the price for eight reference images instead of one**, and that
-    // trade was the whole of #304.
-    price: 0.09,
+    // An earlier guess of $0.09, extrapolated from its FLUX.2 siblings, was
+    // wrong in both directions: this model's text-to-image run is *smaller*
+    // than Flash's, not larger. Sibling megapixel counts do not transfer.
+    //
+    // It replaced FLUX Kontext Pro at $0.04 an image: **roughly twice the price
+    // for eight reference images instead of one**, which was the whole of #304.
+    price: 0.075,
     useCase: 'Best FLUX quality — and the one that takes many references',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
