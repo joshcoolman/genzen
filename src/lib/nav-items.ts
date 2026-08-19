@@ -1,6 +1,7 @@
 import {
   Clapperboard,
   Compass,
+  FlaskConical,
   Frame,
   Logs,
   Sparkles,
@@ -68,6 +69,14 @@ export const navItems: Array<NavItem> = [
   // is a `startsWith`: every settings page begins with `/account`, so they all
   // light this one item -- which is correct, and is why nothing under /account
   // gets its own entry here. Adding one would light two rails at once.
+  // Same rule as Account: one entry, and everything under it lights this one
+  // item. The experiments are in the lab's own nav (#424).
+  {
+    id: 'lab',
+    label: 'Lab',
+    href: '/lab',
+    icon: FlaskConical,
+  },
   {
     id: 'account',
     label: 'Account',

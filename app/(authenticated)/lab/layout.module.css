@@ -1,0 +1,62 @@
+/* Mobile first: the nav is a horizontal strip above the content. A 14rem
+   column beside a phone-width page leaves neither half usable, and a settings
+   nav of three items reads fine as a row. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* A wash rather than a surface step, so the column reads as recessed on
+   whatever the page's background happens to be -- including a themed one. */
+.sidebar {
+  min-inline-size: 0;
+  padding: var(--space-12);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+}
+
+.main {
+  min-inline-size: 0;
+}
+
+@media (min-width: 48rem) {
+  .shell {
+    flex-direction: row;
+    gap: var(--space-40);
+    align-items: start;
+  }
+
+  /* A full-bleed rail: it escapes the padding every other route sits inside.
+     Three things make that work, and they are load-bearing together:
+
+     - negative block and inline-start margins cancel `app-chrome`'s
+       `--space-24` padding, so the rail meets the icon rail on the left and
+       the viewport top and bottom with no seam. **That value is repeated from
+       app-chrome.module.css** -- if the shell's padding changes, this breaks
+       visibly rather than silently, which is the only reason it is tolerable.
+     - `margin-inline-end` puts the same 24px back, so the rail's footprint in
+       the flex line is unchanged and the content column does not shift. The
+       ask was a bleeding rail, not a moved page.
+     - a fixed `100vh` with `top: 0` keeps it filling the viewport as the
+       content scrolls past. The negative block margins also stop it forcing
+       24px of page scroll on a short page. */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    block-size: 100vh;
+    inline-size: 14rem;
+    flex-shrink: 0;
+    margin-block: calc(var(--space-24) * -1);
+    margin-inline-start: calc(var(--space-24) * -1);
+    margin-inline-end: var(--space-24);
+    padding: var(--space-24) var(--space-12);
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  .main {
+    flex: 1;
+  }
+}

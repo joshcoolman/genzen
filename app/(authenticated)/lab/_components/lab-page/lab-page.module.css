@@ -1,0 +1,29 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  max-inline-size: 48rem;
+}
+
+.instruction {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-normal);
+}
+
+.file {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.error {
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid color-mix(in oklab, var(--danger) 40%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+}

@@ -124,8 +124,6 @@ export function GeneratorPanel({
           additional: 'Additional prompt...',
         }}
         onClearPrompts={generator.clearPrompts}
-        onEnhancePrompt={generator.handleEnhancePrompt}
-        enhancingPromptIndex={generator.enhancingPromptIndex}
         /* Filling a prompt is not a prompt, so it is passed in rather than
            built in: PromptList never learns that prompts can be generated.
            Beside Add prompt because both are ways of getting a row filled.

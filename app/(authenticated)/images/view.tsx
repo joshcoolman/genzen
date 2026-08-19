@@ -1,9 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { DescribeDialog } from './_components/describe-dialog/describe-dialog'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
-import { VariationPromptsDialog } from './_components/variation-prompts-dialog/variation-prompts-dialog'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { GroupNameDialog } from './_components/group-name-dialog/group-name-dialog'
@@ -40,10 +38,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     isBatchDeleting,
     deleteSelected,
     viewer,
-    variations,
-    variationSourceUrl,
-    describeTarget,
-    setDescribeTarget,
     addReference,
     usePromptText,
     loadIntoPanel,
@@ -104,8 +98,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDelete={gallery.deleteImage}
           onRetry={gallery.retryImage}
           onDownload={download.start}
-          onDescribe={setDescribeTarget}
-          onGenerateVariations={variations.openVariationDialog}
           onAnimate={animate}
           onOpen={viewer.open}
           onAddReference={addReference}
@@ -162,30 +154,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}
-      />
-
-      <VariationPromptsDialog
-        open={variations.variationDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) variations.cancelVariationPreview()
-        }}
-        prompts={variations.variationPrompts}
-        loading={variations.generatingPrompts}
-        onGenerate={(guidance, count) =>
-          void variations.handlePreviewVariations(guidance, count)
-        }
-        onApply={(prompts) =>
-          variations.handleApplyVariations(
-            prompts,
-            generator.appendPrompts,
-            variationSourceUrl,
-            generator.setPrimaryImage,
-          )
-        }
-        sourceImageUrl={variationSourceUrl}
-        referenceImages={[]}
-        onAddReference={() => {}}
-        onRemoveReference={() => {}}
       />
 
       {viewer.isOpen && (
@@ -330,19 +298,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       />
 
       <DownloadDialog download={download} />
-
-      {describeTarget && (
-        <DescribeDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setDescribeTarget(null)
-          }}
-          imageUrl={gallery.imageUrls[describeTarget.id]}
-          imageId={describeTarget.id}
-          currentDescription={describeTarget.description}
-          onSave={() => void gallery.refresh()}
-        />
-      )}
     </>
   )
 }

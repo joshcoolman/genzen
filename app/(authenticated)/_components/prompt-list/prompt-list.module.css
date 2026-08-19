@@ -1,5 +1,5 @@
-/* The stack of prompt textareas, each with a clear/remove button top-right and
-   an Enhance chip bottom-right, plus the dashed row that adds more. */
+/* The stack of prompt textareas, each with a clear/remove button top-right,
+   plus the dashed row that adds more. */
 
 /* Takes the containing panel's rhythm where there is one -- see
    `generator-panel.module.css`. The fallback is what this always drew. */
@@ -44,7 +44,7 @@
    `--text-3xs` rather than the house 14px: a prompt is the longest text anyone
    types into this app and the panel is 20rem wide, so the default size spent
    most of its sentences scrolling. It matches the MiniButton chips sitting on
-   and under the field (Enhance, Add prompt), which is what makes it read as a
+   and under the field (Add prompt), which is what makes it read as a
    deliberate size rather than a shrunken one. `1.5` because the scale has no
    `3xs` leading -- generous, since small text in a narrow column needs the
    line separation more, not less. Set through the property Textarea exposes,
@@ -83,15 +83,6 @@
 }
 
 /* Placement only -- the chip itself is `MiniButton`. */
-/* Held for Enhance, which is set aside pending #309 -- nothing renders with
-   this today. Generating from nothing is a header control, not a per-row one,
-   so it does not use this. */
-.enhance {
-  position: absolute;
-  bottom: var(--space-6);
-  right: var(--space-6);
-}
-
 /* Add prompt and the action slot split the row evenly, each centring its own
    label. Two ways of filling a prompt, given equal weight and the panel's full
    width, rather than a pair of chips marooned at opposite edges.

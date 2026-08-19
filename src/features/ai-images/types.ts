@@ -35,8 +35,6 @@ export interface SavedAiImage {
     seed?: number
     elapsed?: number
     generation_type?: string
-    /** What the user typed before the enhancer rewrote it (#210). */
-    original_prompt?: string
     /** Pre-#367 rows only: the textarea contents back when `prompt` held the
      *  sent string. The two swapped roles, so nothing writes this any more. */
     typed_prompt?: string

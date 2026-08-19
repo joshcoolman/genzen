@@ -93,7 +93,7 @@ export function CardCaption({
           {/* Across from Details, and an icon rather than a word because the
               two are different kinds of thing: Details goes somewhere, Load
               acts on the panel you are already in. It is not Retry (which
-              resubmits this row) and not Variations (which rewrites the
+              resubmits this row) and not a variation (which rewrites the
               prompt); it creates nothing and touches no row -- it fills a
               form, and leaves the model selection alone (#382).
 

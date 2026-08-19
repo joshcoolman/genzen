@@ -1,0 +1,69 @@
+# Lab
+
+Where a feature is worked on before it is part of the app (#424). Three pages
+today: Enhance, Describe, Variations — all of which existed in `/images`, none
+of which could be improved there.
+
+## Why these three are here
+
+Each was a button that opened a dialog that closed. A dialog holds "type, get
+one result, close" and nothing more, so that is exactly as far as each got —
+then it went stale, got rediscovered, felt cumbersome, and was kept anyway
+because the idea was good. The idea was never the problem.
+
+**They are not a workflow.** They look composable and are not: each answers a
+different question about a different input, which is why they are three pages
+and not one surface with three buttons.
+
+| page          | input      | the question                                         |
+| ------------- | ---------- | ---------------------------------------------------- |
+| `enhance/`    | vague text | Is the output too verbose? Did it keep what I meant? |
+| `describe/`   | an image   | Accurate without being padded or over-specific?      |
+| `variations/` | an image   | Does it understand my intent? Are the prompts good?  |
+
+## Quirks
+
+- **Every page names the file that steers it.** `LabPage` takes an
+  `instructionFile` and prints it, because the point of the lab is changing an
+  instruction and seeing what happens. All of them are `.md` since #322 — a lab
+  for tuning instructions is worthless if changing one means editing code.
+- **Runs accumulate; the input is shown beside the output.** Every question here
+  is comparative — too verbose _than what_ — and the dialogs these replaced
+  showed only the result, which is most of why they could not be tuned.
+  `RunCard` also prints a character count, since "too verbose" is the commonest
+  judgement and counting by eye is what nobody does.
+- **Results are lost on navigation, deliberately.** Storage is a decision worth
+  making later; something half-persisted is worse than something honestly
+  temporary.
+- **Describe exposes both modes, and one of them has never been visible.**
+  `reconstruct` writes a prompt to regenerate the picture, `anchor` writes a
+  short factual description to steer an image-to-image run. The dialog this
+  replaced hard-coded `reconstruct`, so half the feature was unreachable.
+- **Variations does not generate.** The dialog it replaces fired the prompts
+  immediately; here the prompts are the output and nothing is spent. Firing them
+  is the natural end state for that page and is not built.
+- **The lab may import from the app. The app may never import from the lab.**
+  Reuse `RefImageStrip`, `ExistingImagePicker`, `useUserImages` freely — an
+  experiment that hand-rolls its own is not testing its own idea. But the moment
+  `images/` reaches back in here, deletion stops being deletion and becomes a
+  refactor. Worth an ESLint rule the way `server-suffix.js` guards the
+  `.server.ts` boundary; not written yet.
+- **A lab page adds no migrations.** A folder deletes cleanly, a migration does
+  not. Reuse `user_images` and stash anything needed in `generation_metadata`,
+  which is jsonb and already an open namespace. Deliberately more awkward than a
+  real schema: outgrowing it is what earns promotion out, and the migration is
+  the ceremony of graduating.
+- **`layout.module.css` is a copy of `account/`'s, not a shared module.** Same
+  shape — a nav column beside the content, one entry in the app's rail, every
+  path under it lighting that one item. A stylesheet two sections import is a
+  thread to unpick when this folder is deleted.
+- **`/lab` redirects to `/lab/enhance`.** The rail entry has to point somewhere,
+  and an index listing three links the nav beside it already shows would be a
+  page whose only content is a duplicate of its own navigation.
+
+## Promotion
+
+A feature comes back into the app when it works the way it is supposed to —
+Josh's bar: _"yes, this works 100% the way I would expect it."_ Worth writing
+down per feature before the work, or it is a judgement relitigated each time. A
+lab you only ever add to is the same staleness with a different address.
