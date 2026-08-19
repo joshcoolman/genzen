@@ -214,16 +214,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   deliberately unanswered — that is the question the page exists to settle by use
   (#317)
 
-- **FLUX.2 Pro replaces FLUX Kontext Pro, and the estimate learned that editing
-  costs more** — BFL's own advice is not to use FLUX.1 Kontext for editing any
-  more, and the trade was roughly twice the price for eight reference images
-  instead of one. Measuring it produced the more useful finding: **every
-  megapixel-billed model costs about twice as much through its image endpoint**,
-  because FAL's `processed megapixels` counts the images you send as well as the
-  one you get back. So the lineup gained `editPrice`, and both the estimate under
-  Generate and the picker's `$` column now switch on whether something is staged
-  — the same fact `endpointFor` already used to choose the endpoint. An earlier
-  extrapolated price was wrong in both directions; sibling megapixel counts do
-  not transfer, only the rate does. Found on the way: Canvas curated
-  `flux-kontext-pro` by slug, which would have silently shrunk its picker from
-  three models to two with nothing failing (#304)
