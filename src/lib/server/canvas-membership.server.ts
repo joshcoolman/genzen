@@ -10,29 +10,27 @@ import { first, sql } from './db.server'
 // could not name *which* canvas, hold a position, or carry a foreign key -- was
 // dropped in `migrations/0005`.
 
-/** The single canvas a user has today, created on first need. */
-export async function ensureDefaultCanvas(userId: string): Promise<string> {
-  const existing = first(
+/**
+ * Resolve a canvas id the client named, or fail.
+ *
+ * Every canvas-scoped write takes its id from the browser now that there are
+ * several (#446), and `canvas_images` carries `user_id` from `resolveAuth()` --
+ * so without this a forged id would file a row of yours into someone else's
+ * board. Returns the id so callers read as `const canvasId = await
+ * requireCanvas(...)`.
+ */
+export async function requireCanvas(
+  userId: string,
+  canvasId: string,
+): Promise<string> {
+  const found = first(
     await sql<Array<{ id: string }>>`
       select id from canvases
-      where user_id = ${userId}
-      order by created_at
-      limit 1
+      where id = ${canvasId} and user_id = ${userId}
     `,
   )
-  if (existing) return existing.id
-
-  // `on conflict do nothing` is not available here -- there is no unique
-  // constraint on user_id, because multiple canvases are the point of the table.
-  // Two concurrent first-loads could therefore each insert one; the read above
-  // orders by created_at so both sessions still converge on the same canvas.
-  const created = first(
-    await sql<Array<{ id: string }>>`
-      insert into canvases (user_id) values (${userId}) returning id
-    `,
-  )
-  if (!created) throw new Error('Failed to create canvas')
-  return created.id
+  if (!found) throw new Error('Canvas not found')
+  return found.id
 }
 
 interface MemberPosition {

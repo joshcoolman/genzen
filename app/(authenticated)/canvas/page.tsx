@@ -1,10 +1,11 @@
-import { loadCanvasState } from './_actions/canvas'
+import { listCanvases } from './_actions/canvases'
 import { View } from './view'
 
+// The index (#446). `/canvas` used to be the one board; it is now the list of
+// them, and a board lives at `/canvas/[id]`.
+//
 // Reads on the server and seeds the view, per `docs/reference/route-shape.md`.
-// The canvas has no skeleton and no empty first paint: every member's position
-// and public URL is resolved before the first render (#212).
-export default async function CanvasPage() {
-  const initial = await loadCanvasState()
+export default async function CanvasIndexPage() {
+  const initial = await listCanvases()
   return <View initial={initial} />
 }

@@ -89,9 +89,10 @@ interface UseGeneratorOptions {
     recordId: string | null
     error: string | null
   }) => void
-  /** Tag generations as canvas-owned, so they are reclaimable on canvas load.
-   *  Membership only -- which surface made it is `origin` (#207). */
-  onCanvas?: boolean
+  /** The canvas being worked in, if the host is a board. Generations join it
+   *  at reserve time, so they are reclaimable on load. Membership only -- which
+   *  surface made it is `origin` (#207). */
+  canvasId?: string
   /** The group the host is currently inside, or null at top level (#319).
    *  Every generation submitted from in there is filed into it -- that is the
    *  half of a group that makes it a place to work rather than a folder. */
@@ -164,7 +165,7 @@ export function useGenerator({
   onAfterSubmit,
   onSubmitStart,
   onSubmitOutcome,
-  onCanvas,
+  canvasId,
   groupId,
   promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
@@ -488,7 +489,7 @@ export function useGenerator({
             ...(sourceImageId ? { sourceImageId } : {}),
             ...(selectedStyleId ? { styleId: selectedStyleId } : {}),
             ...(referenceImageIds ? { referenceImageIds } : {}),
-            ...(onCanvas ? { onCanvas: true } : {}),
+            ...(canvasId ? { canvasId } : {}),
             ...(groupIdRef.current ? { groupId: groupIdRef.current } : {}),
           }).then(
             (value) => {

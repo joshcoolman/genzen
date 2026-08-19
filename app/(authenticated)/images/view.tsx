@@ -5,7 +5,6 @@ import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { GroupHeading } from './_components/group-heading/group-heading'
-import { GroupNameDialog } from './_components/group-name-dialog/group-name-dialog'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { ScopeRow } from './_components/scope-row/scope-row'
@@ -14,7 +13,7 @@ import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { ConfirmDialog } from '#/components'
+import { ConfirmDialog, NameDialog } from '#/components'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
   // Where an "Upload to group" batch is headed, held across the gap between
@@ -264,7 +263,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         onCancel={closeGroupFlow}
       />
 
-      <GroupNameDialog
+      <NameDialog
         open={groupFlow?.kind === 'create'}
         title="New group"
         confirmLabel="Create"
@@ -275,7 +274,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         onCancel={closeGroupFlow}
       />
 
-      <GroupNameDialog
+      <NameDialog
         open={groupFlow?.kind === 'rename'}
         title="Rename group"
         initialName={groupFlow?.kind === 'rename' ? groupFlow.group.name : ''}

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import { GeneratorPanel } from '../../../_components/generator-panel/generator-panel'
-import { SystemInstructionsButton } from '../../../_components/system-instructions-button/system-instructions-button'
+import { GeneratorPanel } from '../../../../_components/generator-panel/generator-panel'
+import { SystemInstructionsButton } from '../../../../_components/system-instructions-button/system-instructions-button'
 import styles from './canvas-generate-dialog.module.css'
 import type { useCanvasGenerate } from './use-canvas-generate'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '#/components'

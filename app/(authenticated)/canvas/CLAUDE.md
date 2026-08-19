@@ -1,7 +1,21 @@
 # Canvas
 
-Spatial moodboard: infinite pan-and-zoom canvas for arranging images, with
+Spatial moodboards: infinite pan-and-zoom boards for arranging images, with
 grouping, masonry layout, and AI generation from the selection.
+
+**There are several, and the route is two routes** (#446):
+
+- `/canvas` is the **index** -- a card per board (cover, name, count, swatch
+  strip), plus New canvas, Rename and Delete canvas. Its files are this folder's
+  own `page.tsx` / `view.tsx` / `use-view.ts`, with `_actions/canvases.ts` and
+  `_components/canvas-card/`.
+- `/canvas/[id]` is **a board**, and everything else in this file is about that:
+  `[id]/` holds the whole canvas surface, its hooks, lib and `_actions/canvas.ts`.
+
+Deleting a canvas destroys an arrangement and never a picture -- `canvas_images`
+cascades on `canvas_id` and no `user_images` row is touched. The index creates
+nothing on read: an account with no boards shows an empty state, because a list
+that silently re-seeded itself would make deleting your last board look broken.
 
 ## Not in the nav, on purpose (2026-08-19)
 
@@ -14,7 +28,7 @@ app, and not a lab experiment either. The lab is for a small focused question
 with an answer ("does seeking land on the frame you stopped on"). Canvas has no
 such question; it works, and it is a place to try larger ideas in. Generating
 from a multi-image selection is the one already worth having; multiple canvases
-is the next thing to explore.
+landed in #446 and is the next thing to live with.
 
 So the reason it left the rail is not that it is broken or unused-and-doomed.
 Being a top-level destination made it read as finished, and an unfinished thing
@@ -88,7 +102,8 @@ generation could evict it.
    #213); the clipboard no longer carries a record id, so pasting one uploads
    the bytes as a new row (#348)
 3. AI generation -> the `canvas_images` row is written _at the insert_
-   (`createPendingGeneration`'s `onCanvas`), unplaced; the client places it on
+   (`createPendingGeneration`'s `canvasId`, which the board supplies and the
+   server checks with `requireCanvas`), unplaced; the client places it on
    load. Rows also carry `origin = 'canvas'` (#207) -- the canvas authored the
    request
 4. Display -> a `/img/[id]` URL from `#/lib/image-url`, resolved server-side by
@@ -122,9 +137,12 @@ interface CanvasImage {
 
 ## Shape
 
-The route has the standard shape (`docs/reference/route-shape.md`): `page.tsx`
-reads on the server, `view.tsx` composes and carries no styles, `use-view.ts`
-holds the state. #189 split the 1698-line `infinite-canvas.tsx` into that,
+Both routes have the standard shape (`docs/reference/route-shape.md`):
+`page.tsx` reads on the server, `view.tsx` composes and carries no styles,
+`use-view.ts` holds the state. The board's `page.tsx` is the first canvas page
+that can be asked for something absent -- an id this user does not own 404s
+exactly like one that never existed, because `loadCanvasState` returns null for
+both. #189 split the 1698-line `infinite-canvas.tsx` into that,
 plus `_hooks/` and one folder per component; the file and its 412-line
 stylesheet are gone.
 
@@ -227,10 +245,17 @@ them.
   Trash is reached only from Images and owns restore on its own.
   Membership used to be an id-only query from the browser, so an id from
   anywhere flipped a row (#173).
-- `#/lib/server/canvas-membership.server.ts` -- `ensureDefaultCanvas`,
-  `addCanvasMembers`, `removeCanvasMembers`, `listCanvasMemberIds`. Shared,
-  because the generation insert path writes membership too. One canvas per user
-  today; `canvases.id` is the seam for more.
+- `#/lib/server/canvas-membership.server.ts` -- `requireCanvas`,
+  `addCanvasMembers`, `removeCanvasMembers`, `clearCanvasMembership`,
+  `listCanvasMemberIds`. Shared, because the generation insert path writes
+  membership too, and because trashing an image clears it from every board
+  (#446). **Every canvas id now arrives from the browser**, so anything that
+  _inserts_ passes it through `requireCanvas` first -- an update or delete does
+  not need to, its `where` already names `user_id` and matches nothing.
+  `ensureDefaultCanvas` is gone with the single-canvas assumption.
+- `_actions/canvases.ts` -- the index's reads and writes: `listCanvases`
+  (one query for the boards, one windowed query for every card's previews),
+  `createCanvas`, `renameCanvas`, `deleteCanvas`.
 
 ## Shared Dependencies
 

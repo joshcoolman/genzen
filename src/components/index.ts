@@ -58,6 +58,7 @@ export {
   useReportError,
 } from './missing-key-dialog/missing-key-dialog'
 export { MiniButton, type MiniButtonProps } from './mini-button/mini-button'
+export { NameDialog } from './name-dialog/name-dialog'
 export { MobileDialogHeader } from './mobile-dialog-header/mobile-dialog-header'
 export {
   MultiSelect,

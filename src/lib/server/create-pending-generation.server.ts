@@ -1,8 +1,5 @@
 import { first, jsonb, sql } from './db.server'
-import {
-  addCanvasMembers,
-  ensureDefaultCanvas,
-} from './canvas-membership.server'
+import { addCanvasMembers, requireCanvas } from './canvas-membership.server'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { modelTitleFor } from '#/features/ai-images/models'
 
@@ -45,8 +42,10 @@ interface CreatePendingGenerationOptions {
    *  lives in a route-owned catalog this module must not import. */
   title?: string
   idempotencyKey?: string
-  /** Put the row on the canvas, so the generation is reclaimable on canvas load */
-  onCanvas?: boolean
+  /** Put the row on this canvas, so the generation is reclaimable on canvas
+   *  load. The board says which one now that there are several (#446); it is
+   *  verified against the caller's user id before a membership row is written. */
+  canvasId?: string
   /** File the row into a group at birth (#319). This is the half of grouping
    *  that makes it not a folder: you declare where you are working once, and
    *  the filing is a byproduct rather than a chore afterwards. */
@@ -68,7 +67,7 @@ export async function createPendingGeneration({
   // Bound after `falModelId` on purpose: the default reads it.
   title = modelTitleFor(falModelId),
   idempotencyKey,
-  onCanvas,
+  canvasId,
   groupId,
   sortOrder,
 }: CreatePendingGenerationOptions): Promise<{ recordId: string }> {
@@ -124,8 +123,8 @@ export async function createPendingGeneration({
   // generation reclaimable when the client navigates away before FAL answers.
   // The client has not decided where the card goes yet, and under #212 it does
   // not have to -- the load pass places whatever is unplaced.
-  if (onCanvas) {
-    const canvasId = await ensureDefaultCanvas(userId)
+  if (canvasId) {
+    await requireCanvas(userId, canvasId)
     await addCanvasMembers(userId, canvasId, [{ imageId: record.id }])
   }
 

@@ -1,0 +1,57 @@
+/* Floats over the plane, top left, clear of the selection bar at the bottom.
+   Sized to its content: the plane behind it is a click target for panning and
+   marquee, so a row running the width of the viewport would eat those. */
+.row {
+  position: absolute;
+  top: var(--space-16);
+  left: var(--space-16);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: fit-content;
+  padding: var(--space-4) var(--space-12) var(--space-4) var(--space-4);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+/* On a canvas the ground behind is arbitrary -- images, groups, empty plane --
+   so unlike the group heading this one carries its own surface. */
+.row:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.backIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* The board's name, at the size of the other floating chrome rather than a page
+   title: it labels a surface you are working on, it is not a header for content
+   below it. */
+.name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+  white-space: nowrap;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
