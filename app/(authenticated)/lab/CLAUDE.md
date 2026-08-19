@@ -79,12 +79,19 @@ Generate as it is on Images and Video, and each result card carries what FAL
 charged — the one page built for experimenting cannot be the one place you
 cannot see what experimenting costs.
 
-- **It asks plainly, and composites nothing.** The picture goes to the model
-  with `outpaint.md` and the target ratio, and that is all. Whether that is
-  enough is the open question: the alternative is drawing the source onto a
-  canvas at the target shape in the browser (#317 proved we can) and asking the
-  model to fill the empty bars alone. Nothing in the page assumes either
-  answer — settle it by looking at results, not by arguing.
+- **It asks plainly, composites nothing, and that turned out to be enough.**
+  The picture goes to the model with `outpaint.md` and the target ratio, and
+  that is all — no canvas, no empty bars drawn for the model to fill, no crop.
+  That was the open question the page existed to settle, and Josh settled it by
+  use on 2026-08-19: portrait sources to 5:4 and to 1:1 both came back right.
+  **So the compositing alternative is not needed and should not be built
+  speculatively** (#317 proved the browser could do it; nothing has asked it
+  to).
+  Worth knowing for whoever edits the instruction: any ratio change has two
+  valid answers, pad or crop, and the `.md` commits to padding and forbids the
+  other outright. It is written entirely in the language of growth, with no
+  clause for a target that is smaller in some dimension — that gap was looked
+  for and did not show up in results, so it stays as it is.
 - **Multi-select models, because there are two questions in one press.** Is the
   instruction good, and can this model outpaint at all? A smeared result answers
   neither alone; four models answer both at once. Same reason Video's selector
