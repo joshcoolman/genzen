@@ -35,13 +35,17 @@ export const navItems: Array<NavItem> = [
     href: '/images',
     icon: Sparkles,
   },
-  // Canvas, hidden from the rail on 2026-08-19 -- **commented out, not
-  // deleted**. It is not being used, and the question is whether it is missed
-  // once it stops being an obvious place to go. The route, its folder and its
-  // CLAUDE.md are all untouched and `/canvas` still works if typed; this entry
-  // is the only thing anywhere that links to it, so hiding it here hides it
-  // everywhere. Uncomment to bring it back; delete this block and the route
-  // folder if the answer turns out to be "not missed".
+  // **Canvas is deliberately not in the rail, and is not going anywhere**
+  // (2026-08-19). It is in development rather than unproven: a place to try
+  // ideas -- generating from a multi-image selection is the one already worth
+  // having, multiple canvases is next -- which is exactly why it should not sit
+  // in the app's main navigation implying it is finished. Unlisted is what
+  // stopped it being a distraction; `/canvas` typed in the URL bar still works,
+  // and this entry is the only link to it anywhere, so commenting it out is the
+  // whole mechanism.
+  //
+  // **Do not delete the route.** It earns its way back into the rail by being
+  // used a lot, and nothing else. See `app/(authenticated)/canvas/CLAUDE.md`.
   // {
   //   id: 'canvas',
   //   label: 'Canvas',

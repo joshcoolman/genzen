@@ -3,6 +3,36 @@
 Spatial moodboard: infinite pan-and-zoom canvas for arranging images, with
 grouping, masonry layout, and AI generation from the selection.
 
+## Not in the nav, on purpose (2026-08-19)
+
+Canvas is **unlisted**: its entry in `src/lib/nav-items.ts` is commented out,
+and that entry was the only link to it anywhere, so the route is reachable only
+by typing `/canvas`. Nothing about the route changed.
+
+**It is in development, which is a third thing** -- not a finished part of the
+app, and not a lab experiment either. The lab is for a small focused question
+with an answer ("does seeking land on the frame you stopped on"). Canvas has no
+such question; it works, and it is a place to try larger ideas in. Generating
+from a multi-image selection is the one already worth having; multiple canvases
+is the next thing to explore.
+
+So the reason it left the rail is not that it is broken or unused-and-doomed.
+Being a top-level destination made it read as finished, and an unfinished thing
+in the main navigation pulls at you every time you see it -- Josh's words:
+_"this isn't prime time, why is it a major part of the app?"_ Unlisted, it
+stopped being a distraction and started being useful.
+
+**It earns the rail back by being reached for often, and by nothing else.**
+Deleting it is not the plan and was considered and rejected: the arguments for
+removal were real (26 files outside this folder carry a canvas branch, two
+tables, an `origin` value) and the answer was still no.
+
+Two things follow for anyone working here:
+
+- **Do not delete this folder or its tables** without Josh saying so directly.
+- **Do not add it back to `nav-items.ts`** as a tidy-up. The absence is the
+  decision.
+
 ## Architecture: a canvas is a container (#212)
 
 `canvases` holds the viewport and the groupings; `canvas_images` holds
