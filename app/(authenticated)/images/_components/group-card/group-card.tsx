@@ -1,12 +1,6 @@
 'use client'
 
-import {
-  FolderInput,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Unlink,
-} from 'lucide-react'
+import { FolderInput, MoreHorizontal, Pencil, Unlink } from 'lucide-react'
 import styles from './group-card.module.css'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import {
@@ -39,7 +33,6 @@ interface GroupCardProps {
    *  card does not know about the other groups and does not need to. */
   onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
-  onTrash: (group: ImageGroupSummary) => void
   /** The strip is a toggle: expanded, it keeps its five columns and grows down
    *  through every member (#352). Absent for an empty group -- there is nothing
    *  to disclose. */
@@ -57,10 +50,11 @@ interface GroupCardProps {
  * A group in the grid, and it is **an image card with three deviations** --
  * not a card of its own kind.
  *
- * Same contained image at its natural ratio, same two overlay icons, same grey
- * caption block. What differs: the corner that names the model says
- * `Image group`, the caption's text is the group's name rather than a prompt,
- * and a row of member swatches sits under it in the grey.
+ * Same contained image at its natural ratio, same grey caption block. What
+ * differs: the corner that names the model says `Image group`, the caption's
+ * text is the group's name rather than a prompt, a row of member swatches sits
+ * under it in the grey, and it wears one overlay icon where an image wears two
+ * -- the trash is not offered here (#431).
  *
  * It was briefly its own shape -- cover-cropped, forced square, swatches
  * floating over the picture -- and next to its neighbours it read as a
@@ -79,7 +73,6 @@ export function GroupCard({
   onRename,
   onMove,
   onDissolve,
-  onTrash,
   onToggleMembers,
   expanded = false,
   members,
@@ -185,15 +178,6 @@ export function GroupCard({
     </DropdownMenu>
   )
 
-  const deleteButton = (
-    <ExpandableIconButton
-      icon={<Trash2 className={styles.actionIcon} />}
-      label="Trash group"
-      variant="destructive"
-      onClick={() => onTrash(group)}
-    />
-  )
-
   return (
     <Thumbnail
       url={coverUrl}
@@ -206,8 +190,16 @@ export function GroupCard({
          one navigates *and* drops the selection on the way in -- so a stray
          click here used to throw away the picking that was in progress. */
       dimmed={selectionActive}
+      /* `...` and nothing else. The trash that sat in the opposite corner went
+         in #431: it was the same icon in the same place an image card carries
+         one, in a grid that mixes the two, so the click that bins a whole
+         group was available from the one view that shows least about what is
+         in it. It lives in the toolbar inside the group now. The menu's three
+         verbs -- Rename, Move, Ungroup -- destroy nothing.
+
+         The card is also legible as a group at a glance for it: one overlay
+         icon here, two on an image. */
       overlayActionsLeft={selectionActive ? undefined : moreButton}
-      overlayActions={selectionActive ? undefined : deleteButton}
       /* Blank, deliberately. An empty group said so in white text under a
          folder icon, which glared -- and said nothing the card was not already
          saying twice, in the name and in "0 images". Still a fallback rather

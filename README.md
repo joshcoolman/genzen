@@ -146,6 +146,20 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-19
 
+- **Groups look and behave like somewhere you went** — opening one now puts its
+  name over the thumbnails as a proper heading, with a round back button beside
+  it and the whole heading clickable to leave — a single small toolbar control
+  used to be both the name and the way out, and read as neither (#432). The
+  toolbar keeps no crumb, so Upload stays leftmost and never shifts between the
+  two states; it is also green now, the weight Generate has, since the one
+  control that puts things into the page was styled like the least important
+  thing on it. And **a group can only be
+  trashed from inside it** (#431): the card's trash icon was in the same corner
+  an image card's is, in a grid that mixes the two, so the click that bins a
+  whole group was available from the view that shows least about what is in it.
+  It is a labelled control in the toolbar now, which also leaves a group card
+  wearing one overlay icon where an image wears two
+
 - **A Variations run goes straight to the Images panel** — "Load in Images" on
   a run in the lab fills the generator's prompt list with the whole set and puts
   the source image in slot 0; you navigate to Images and press Generate. It
@@ -208,10 +222,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   is reachable for the first time — the dialog hard-coded the other one.
   `/images` is left as though none of it was ever there, down to a localStorage
   map that would have read empty forever while looking live (#424)
-
-- **Every model instruction is a `.md` file** — six of them, three previously
-  written inline in TypeScript, the worst passed as a string argument mid-call.
-  The split was by nothing but what era the feature was written in. Two tests
-  hold it: nothing but markdown in `src/lib/prompts/`, and no long
-  model-addressed string anywhere in `src/` or `app/`. Changing what a model is
-  told is a text edit now, which is what makes the lab worth having (#322)

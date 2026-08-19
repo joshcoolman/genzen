@@ -1,0 +1,52 @@
+/* Sized to its content, never the width of the column: the whole row is a
+   click target, and a target running the full page width would send you back
+   from a click in empty space. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  width: fit-content;
+  cursor: pointer;
+}
+
+/* Round, where every other control in this route is square or a chip. That is
+   the point -- it is the one navigational control on the page, and it should
+   not read as another tool. */
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+/* Hovering the name lights the circle: the two are one control, and only the
+   circle can show it. */
+.row:hover .back {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.backIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* A page title, not a label: this is the one element that says the grid below
+   it is a group rather than the library. */
+.heading {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--text);
+}

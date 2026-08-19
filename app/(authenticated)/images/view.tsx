@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
+import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupNameDialog } from './_components/group-name-dialog/group-name-dialog'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
@@ -84,9 +85,20 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
               : undefined
           }
           groupName={activeGroup?.name}
-          onLeaveGroup={leaveGroup}
+          /* Only inside a group, which is the whole point of #431: you are
+             looking at the contents when you press it. */
+          onTrashGroup={
+            activeGroup
+              ? () =>
+                  setGroupFlow({ kind: 'confirm-trash', group: activeGroup })
+              : undefined
+          }
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
+
+        {activeGroup && (
+          <GroupHeading name={activeGroup.name} onBack={leaveGroup} />
+        )}
 
         <ImageGallery
           cells={cells}
@@ -119,9 +131,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           }
           onDissolveGroup={(group) =>
             setGroupFlow({ kind: 'confirm-dissolve', group })
-          }
-          onTrashGroup={(group) =>
-            setGroupFlow({ kind: 'confirm-trash', group })
           }
           onAddToGroup={(img) => startAddToGroup([img.id])}
           onRemoveFromGroup={

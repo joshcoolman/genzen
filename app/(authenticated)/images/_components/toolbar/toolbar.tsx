@@ -4,11 +4,11 @@ import { useRef } from 'react'
 import {
   ArrowDown,
   ArrowUp,
-  ChevronLeft,
   FolderInput,
   FolderPlus,
   PanelRight,
   TextInitial,
+  Trash2,
   Upload,
   ZoomIn,
 } from 'lucide-react'
@@ -62,9 +62,13 @@ interface ToolbarProps {
    * nothing to pick from, which is what collapses the menu to a plain button.
    */
   onUploadToGroup?: () => void
-  /** The group being worked in, or null at top level (#319). */
+  /** The group being worked in, or null at top level (#319). The name *and*
+   *  the way back are a heading above the grid since #432; this row only needs
+   *  to know whether it is inside one. */
   groupName?: string | null
-  onLeaveGroup: () => void
+  /** Trash the open group. Only ever passed inside one -- see the control
+   *  below (#431). */
+  onTrashGroup?: () => void
   onNewGroup: () => void
 }
 
@@ -75,7 +79,7 @@ export function Toolbar({
   onUpload,
   onUploadToGroup,
   groupName,
-  onLeaveGroup,
+  onTrashGroup,
   onNewGroup,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -95,15 +99,17 @@ export function Toolbar({
           e.target.value = ''
         }}
       />
-      {/* Upload is the leftmost control in both states, so its position never
-          moves. Inside a group the chevron follows it -- that is the same
-          navigation the browser's Back button performs, since the group is in
-          the URL.
+      {/* **Upload is leftmost in both states, and nothing precedes it.** The
+          crumb that used to sit here shifted it right on the way into a group,
+          so the one control whose meaning never changes moved every time you
+          opened one. The group's name and the way back are an `<h1>` and a
+          round button over the thumbnails instead (#432) -- the control here
+          was trying to be both the title and the navigation, which is why it
+          read as neither.
 
-          No page title: the sidebar says which route this is, and "Images"
-          above a grid of images said nothing. The origin pills stood here
-          until #348 -- a group is a scope you made on purpose, and it turned
-          out to be the only one worth having. */}
+          No page title at top level: the sidebar says which route this is, and
+          "Images" above a grid of images said nothing. The origin pills stood
+          in this slot until #348. */}
       <div className={styles.scope}>
         {/* The menu is top level only. Inside a group Upload goes straight to
             the file picker and the files land in the open group: a group is a
@@ -144,15 +150,24 @@ export function Toolbar({
         )}
 
         {groupName ? (
-          <button
-            type="button"
-            className={styles.crumb}
-            onClick={onLeaveGroup}
-            aria-label="Leave group"
-          >
-            <ChevronLeft className={styles.crumbIcon} />
-            <span className={styles.crumbName}>{groupName}</span>
-          </button>
+          /* **The one destructive act on a group, and it lives in here**
+             (#431). It used to be a trash icon on the group card, in the same
+             corner an image card carries one, in a grid that mixes the two --
+             so the click that bins a whole group was available from the one
+             place you can see least about what it holds. Here you are looking
+             at the contents when you press it. Labelled rather than a bare
+             glyph for the same reason: the icon on its own is what was
+             ambiguous. */
+          onTrashGroup && (
+            <button
+              type="button"
+              className={styles.trashGroup}
+              onClick={onTrashGroup}
+            >
+              <Trash2 className={styles.newGroupIcon} />
+              Trash group
+            </button>
+          )
         ) : (
           /* An empty group is a legitimate way to start: name the thing you
              are about to work on, then generate into it. Without this the only
