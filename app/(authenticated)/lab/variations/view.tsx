@@ -5,7 +5,13 @@ import { LabPage } from '../_components/lab-page/lab-page'
 import { RunCard } from '../_components/run-card/run-card'
 import styles from './view.module.css'
 import { COUNTS, useView } from './use-view'
-import { ActionButton, Button, SingleSelect, Textarea } from '#/components'
+import {
+  ActionButton,
+  Button,
+  MiniButton,
+  SingleSelect,
+  Textarea,
+} from '#/components'
 
 export function View() {
   const v = useView()
@@ -57,12 +63,24 @@ export function View() {
         )}
       </div>
 
-      {v.runs.map((r, i) => (
+      {v.runs.map((r) => (
         <RunCard
-          key={v.runs.length - i}
+          key={r.key}
           label={r.title}
           input={r.guidance || undefined}
           outputs={r.prompts}
+          /* Fills the Images panel and stops (#433). Nothing runs, nothing is
+             spent, and you navigate to Images yourself -- following the
+             results from here is cross-route state the lab has no business
+             holding. */
+          actions={
+            <MiniButton
+              onClick={() => v.loadInImages(r)}
+              disabled={v.loadedKey === r.key}
+            >
+              {v.loadedKey === r.key ? 'Loaded' : 'Load in Images'}
+            </MiniButton>
+          }
         />
       ))}
     </LabPage>

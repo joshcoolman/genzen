@@ -129,6 +129,11 @@ export interface GeneratorState {
   clearPrompts: () => void
   /** Add prompts to the end of the list, leaving what is there alone. */
   appendPrompts: (texts: Array<string>) => void
+  /** Swap the whole list for this one (#433). A handoff from another page
+   *  replaces rather than appends: the panel is a single working surface, and
+   *  a set of variations merged into a half-written list is a run nobody can
+   *  read. An empty list leaves the one blank row the panel always has. */
+  replacePrompts: (texts: Array<string>) => void
   /** The set. Ordered and unbounded; index 0 drives the aspect ratio and is
    *  submitted first. Nothing else distinguishes a member. */
   refImages: Array<RefImage>
@@ -257,6 +262,12 @@ export function useGenerator({
       persistPrompts(next)
       return next
     })
+  }, [])
+
+  const replacePrompts = useCallback((texts: Array<string>) => {
+    const next = texts.length > 0 ? texts : ['']
+    setPromptsRaw(next)
+    persistPrompts(next)
   }, [])
 
   const appendPrompts = useCallback((texts: Array<string>) => {
@@ -570,6 +581,7 @@ export function useGenerator({
     handleGenerate,
     clearPrompts,
     appendPrompts,
+    replacePrompts,
     refImages,
     addRefImages,
     pushRefImage,

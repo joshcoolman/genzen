@@ -29,6 +29,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
 .block {
   display: flex;
   flex-direction: column;
