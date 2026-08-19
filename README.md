@@ -146,6 +146,26 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-18
 
+- **A lab, and three features moved into it** — Enhance, Describe and Variations
+  were all good ideas, all unfinished, and none of them improvable where they
+  lived: each was a button opening a dialog that closed, and a dialog holds
+  "type, get one result, close" and nothing more. `/lab` is a section shaped like
+  `/account`, with three pages rather than one surface — they look composable and
+  are not, each asking a different question about a different input. Each page
+  **names the file that steers it**, keeps the input beside the output, and
+  counts characters, which is the comparison the dialogs made impossible: an
+  eight-word prompt through Enhance comes back at 649. Describe's `anchor` mode
+  is reachable for the first time — the dialog hard-coded the other one.
+  `/images` is left as though none of it was ever there, down to a localStorage
+  map that would have read empty forever while looking live (#424)
+
+- **Every model instruction is a `.md` file** — six of them, three previously
+  written inline in TypeScript, the worst passed as a string argument mid-call.
+  The split was by nothing but what era the feature was written in. Two tests
+  hold it: nothing but markdown in `src/lib/prompts/`, and no long
+  model-addressed string anywhere in `src/` or `app/`. Changing what a model is
+  told is a text edit now, which is what makes the lab worth having (#322)
+
 - **Webhooks are gone** — 576 lines out, 33 in. Turning them on nulled out
   Images polling while the route returned 200 on a processing failure, so a
   result could be acknowledged and never persisted with nothing left to
@@ -181,30 +201,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   transitions ran with no duration and no easing. An undeclared property does not
   error; it is dropped and the element inherits. `check:tokens` now guards it in
   `pnpm check` and CI (#407)
-
-- **Video takes several models at once, one clip each** — one prompt through
-  LTX, H3 and Flux 3 together is the only way to learn how they differ, and
-  serially it is three round trips and three chances to change the prompt
-  without meaning to. Single-select was a money decision taken when nothing on
-  screen said what a click cost; three things replace it — the estimate under
-  Generate, **one clip per model** (no stepper, ever), and a confirm above $5.
-  The confirm triggers on **price rather than count**, unlike Images: two Flux 3
-  clips at 20s is $6.80 and eight LTX clips at 6s is $4.32. Settings intersect
-  across the ticked models, and the two rules differ on purpose — durations are
-  a plain intersection because a rejected duration fails at FAL, but a model
-  exposing no aspect param is _excluded_ from that intersection rather than
-  emptying it, or H3 would strip the control from two models able to honour a
-  choice (#417)
-
-- **Generate says the act; the price sits under it** — Images read
-  `Generate 4 images` and showed **no cost anywhere**, on the route where a
-  stepper, a prompt list and multi-select models all multiply at once; Video
-  read `Generate $0.72`, naming an act after its price and changing width as
-  you changed the duration. Both now read `Estimate: $1.10` under a button
-  that says what it does. The image estimate is new and prices off the
-  lineup, not FAL's pricing API — that API disagrees with what FAL actually
-  bills on half the endpoints checked. It reports unpriced models separately
-  rather than showing a short total as a whole one. Five copies of the money
-  formatter became one, and two had already drifted: a free row read
-  `$0.0000`, and video truncated any sub-cent figure to `$0.00` — #400's bug
-  reintroduced at the display step (#416)
