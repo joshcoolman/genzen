@@ -55,6 +55,20 @@ export interface ModelEntry {
    * models are the ones that cannot agree by construction -- see Grok below.
    */
   price?: number
+  /**
+   * Dollars per image on the **image** endpoint, when it differs.
+   *
+   * It differs for every megapixel-billed model, by roughly 2x, and the reason
+   * is in FAL's unit name: `processed megapixels` counts the images you send as
+   * well as the one you get back. So an edit is at minimum two images' worth of
+   * pixels, and a model priced per *image* (Nano Banana, Seedream) has no such
+   * split and leaves this unset.
+   *
+   * Measured off FAL's invoices (#304), not derived. Sample sizes are small --
+   * one to seven runs per endpoint -- so treat these as good rather than exact,
+   * and re-check with `/v1/models/usage` if a figure looks wrong.
+   */
+  editPrice?: number
   useCase?: string
 }
 
@@ -132,7 +146,8 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     //
     // It replaced FLUX Kontext Pro at $0.04 an image: **roughly twice the price
     // for eight reference images instead of one**, which was the whole of #304.
-    price: 0.075,
+    price: 0.045,
+    editPrice: 0.075,
     useCase: 'Best FLUX quality — and the one that takes many references',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
@@ -151,6 +166,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // both Kontext entries.
     maxRefs: 0,
     price: 0.005,
+    editPrice: 0.007,
     useCase: 'Cheapest fast draft — fire several and skim',
   },
   {
@@ -167,7 +183,8 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // 5 MP over 2 text-to-image runs, 18 over 6 edits -- put it at 2.5 MP and
     // 3 MP a go, so $0.0125 and $0.015. One number cannot be both, and the
     // dearer one is the safer thing to show before a click.
-    price: 0.015,
+    price: 0.005,
+    editPrice: 0.01,
     useCase: 'Cheap reference editing — preserves the input scene',
   },
   {
@@ -178,7 +195,8 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     textToImage: 'fal-ai/flux-2/klein/4b',
     withImages: 'fal-ai/flux-2/klein/4b/edit',
     maxRefs: 3,
-    price: 0.009,
+    price: 0.006,
+    editPrice: 0.012,
     useCase: 'Fastest of the cheap tier — re-renders rather than preserves',
   },
   {
@@ -380,11 +398,19 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
 export function estimateImageCostCents(
   modelIds: Array<string>,
   runsPerModel: number,
+  hasImages: boolean,
 ): { cents: number; unpriced: number } {
   let cents = 0
   let unpriced = 0
   for (const id of modelIds) {
-    const price = findModel(id)?.price
+    const m = findModel(id)
+    // **The endpoint decides the price, and the images decide the endpoint.**
+    // `endpointFor` already switches to `withImages` when something is staged,
+    // and for every megapixel-billed model that endpoint costs about twice as
+    // much -- FAL's `processed megapixels` counts what you send as well as what
+    // comes back. Estimating both at one figure meant the number moved when
+    // the count changed and never when the *kind* of request did.
+    const price = (hasImages ? m?.editPrice : undefined) ?? m?.price
     if (price == null) {
       unpriced += 1
       continue

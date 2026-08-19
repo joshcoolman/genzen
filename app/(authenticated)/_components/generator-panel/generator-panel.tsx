@@ -9,6 +9,7 @@ import styles from './generator-panel.module.css'
 import type { GeneratorState } from '#/features/ai-images/hooks/use-generator'
 import type { UserImage } from '#/features/user-images/types'
 import type { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
+import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
 import { formatCents } from '#/lib/format'
 import {
   ActionButton,
@@ -233,7 +234,12 @@ export function GeneratorPanel({
         mode="multi"
         persistKey="genzen:model-panel:expanded"
         selectedIds={modelSelector.selectedIds}
-        visibleModels={modelSelector.models}
+        // Priced for the endpoint this click will hit, so the column and the
+        // estimate above it cannot disagree (#304).
+        visibleModels={pricedForImages(
+          modelSelector.models,
+          generator.refImages.length > 0,
+        )}
         stagedImageCount={generator.refImages.length}
         onToggleSelected={modelSelector.toggleSelected}
         onToggleAll={modelSelector.toggleAll}

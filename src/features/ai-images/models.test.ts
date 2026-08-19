@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   IMAGE_MODELS,
   endpointFor,
+  estimateImageCostCents,
   getModelName,
   imageCapacityFor,
   maxRefsFor,
@@ -68,7 +69,12 @@ const LEGACY_ALL_IMAGE_MODELS = [
     category: 'FLUX',
     supportsImageInput: true,
     imageInputModelId: 'fal-ai/flux-2-pro/edit',
-    displayPrice: '~$0.075/img',
+    // `price` is the *generate* figure. The lineup gained `editPrice` in #304,
+    // because every megapixel-billed model costs about twice as much through
+    // its image endpoint -- FAL's `processed megapixels` counts what you send
+    // as well as what comes back. This fixture pins the base; the split is
+    // covered below.
+    displayPrice: '~$0.045/img',
     useCase: 'Best FLUX quality — and the one that takes many references',
   },
 ]
@@ -347,5 +353,46 @@ describe('modelTitleFor', () => {
 
   it('falls back to the raw id rather than rendering an empty badge', () => {
     expect(modelTitleFor('fal-ai/unknown-thing')).toBe('fal-ai/unknown-thing')
+  })
+})
+
+/**
+ * #304. The estimate has to change with the *kind* of request, not only its
+ * count: attaching an image switches the endpoint, and for a megapixel-billed
+ * model that endpoint is about twice the price.
+ */
+describe('estimateImageCostCents', () => {
+  it('charges the edit price when an image is attached', () => {
+    const generate = estimateImageCostCents(['fal-ai/flux-2-pro'], 1, false)
+    const edit = estimateImageCostCents(['fal-ai/flux-2-pro'], 1, true)
+    expect(generate.cents).toBeCloseTo(4.5, 5)
+    expect(edit.cents).toBeCloseTo(7.5, 5)
+  })
+
+  it('leaves a per-image model alone, because its price does not split', () => {
+    // Nano Banana bills per image rather than per megapixel, so sending one
+    // costs no more than not sending one.
+    const generate = estimateImageCostCents(['fal-ai/nano-banana-2'], 1, false)
+    const edit = estimateImageCostCents(['fal-ai/nano-banana-2'], 1, true)
+    expect(edit.cents).toBe(generate.cents)
+  })
+
+  it('multiplies across models and runs', () => {
+    const two = estimateImageCostCents(
+      ['fal-ai/flux-2-pro', 'fal-ai/nano-banana-2'],
+      3,
+      false,
+    )
+    expect(two.cents).toBeCloseTo((4.5 + 8) * 3, 5)
+  })
+
+  it('counts a model with no price rather than dropping it silently', () => {
+    const { cents, unpriced } = estimateImageCostCents(
+      ['not-a-model'],
+      1,
+      false,
+    )
+    expect(cents).toBe(0)
+    expect(unpriced).toBe(1)
   })
 })
