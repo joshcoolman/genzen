@@ -17,9 +17,11 @@ import { useIsMobile } from '#/lib/use-is-mobile'
  * a stored pref from before #348 may still name it, which is why the type
  * keeps it.
  */
+/** Order is the row's, left to right: the work first, everything second, the
+ *  material you went and got last. */
 export const ORIGIN_FILTERS = [
-  'all',
   'images',
+  'all',
   'uploads',
   // 'canvas',
 ] as const satisfies ReadonlyArray<OriginFilter>
@@ -27,8 +29,8 @@ export const ORIGIN_FILTERS = [
 export type OriginFilter = 'images' | 'uploads' | 'canvas' | 'all'
 
 export const ORIGIN_FILTER_LABELS: Record<OriginFilter, string> = {
-  all: 'All',
   images: 'Generations',
+  all: 'All',
   uploads: 'Uploads',
   canvas: 'Canvas',
 }
@@ -46,10 +48,10 @@ const DEFAULTS: Prefs = {
   sortAsc: false,
   showInfo: true,
   thumbZoom: 1,
-  // **All**, not generations as it was before #348. Working with everything
-  // together is the normal state; the scope is for the moment you go looking
-  // for one upload, not the state you live in.
-  originFilter: 'all',
+  // Matches the first pill, so the row and the starting state agree. The
+  // choice persists, so this is only ever seen on a fresh profile -- which is
+  // why it follows the ordering rather than arguing for itself.
+  originFilter: 'images',
 }
 
 /**

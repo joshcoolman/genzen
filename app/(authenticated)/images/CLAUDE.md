@@ -268,7 +268,13 @@ list once when the seed comes back full, so the grid is never short.
   top level. Inside a group there is no scope control at all: the group is
   already the scope, and two stacked scoping controls only ask which one wins.
   Filtering is client-side -- the gallery holds every row and `origin` is
-  immutable. `revealAll()` replaces the old `reveal()`: making something is an
+  immutable. The row reads `Generations | All | Uploads`: the work first,
+  everything second, the material you went and got last. **All is the safety
+  net rather than the head of the row** -- it is the only scope where a _loose_
+  upload is visible in the working view, so it stays even though it and
+  Generations look alike whenever almost everything is grouped. The stored
+  choice survives a refresh, so the default is only ever seen on a fresh
+  profile; it matches the first pill so the two agree. `revealAll()` replaces the old `reveal()`: making something is an
   implicit request to see it, so an upload or a submit widens the scope to
   `all` rather than switching to the matching one -- widening never takes away
   what you were looking at. A stored scope is validated against
