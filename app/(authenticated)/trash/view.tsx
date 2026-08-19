@@ -5,16 +5,13 @@ import { EmptyDialog } from './_components/empty-dialog/empty-dialog'
 import { ImageList } from './_components/image-list/image-list'
 import { SelectionBar } from './_components/selection-bar/selection-bar'
 import { useView } from './use-view'
-import type { TrashPayload } from './_actions/trash'
+import type { UserImage } from '#/features/user-images/types'
 import { PageHeader, Stack, TooltipProvider } from '#/components'
 
-export function View({ initial }: { initial: TrashPayload }) {
+export function View({ initial }: { initial: Array<UserImage> }) {
   const {
     images,
     imageUrls,
-    canvasLinkedIds,
-    lockedCount,
-    deletableCount,
     busyId,
     isEmptying,
     isBatchRunning,
@@ -37,9 +34,7 @@ export function View({ initial }: { initial: TrashPayload }) {
           title="Trash"
           description={
             hasImages
-              ? `${images.length} ${images.length === 1 ? 'item' : 'items'}${
-                  lockedCount > 0 ? ` (${lockedCount} on the canvas)` : ''
-                }`
+              ? `${images.length} ${images.length === 1 ? 'item' : 'items'}`
               : undefined
           }
           aside={
@@ -51,7 +46,6 @@ export function View({ initial }: { initial: TrashPayload }) {
                 />
                 <EmptyDialog
                   total={images.length}
-                  deletable={deletableCount}
                   busy={isEmptying}
                   onConfirm={emptyTrash}
                 />
@@ -66,7 +60,6 @@ export function View({ initial }: { initial: TrashPayload }) {
           selectedIds={selection.selectedIds}
           hasSelection={selection.count > 0}
           busyId={busyId}
-          canvasLinkedIds={canvasLinkedIds}
           onToggle={selection.toggle}
           onRestore={restore}
           onDelete={permanentDelete}

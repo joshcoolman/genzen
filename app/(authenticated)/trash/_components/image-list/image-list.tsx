@@ -12,7 +12,6 @@ interface ImageListProps {
   selectedIds: Set<string>
   hasSelection: boolean
   busyId: string | null
-  canvasLinkedIds: Set<string>
   onToggle: (id: string, shiftKey: boolean) => void
   onRestore: (id: string) => void
   onDelete: (id: string) => void
@@ -24,7 +23,6 @@ export function ImageList({
   selectedIds,
   hasSelection,
   busyId,
-  canvasLinkedIds,
   onToggle,
   onRestore,
   onDelete,
@@ -48,7 +46,6 @@ export function ImageList({
           selected={selectedIds.has(image.id)}
           hasSelection={hasSelection}
           busy={busyId === image.id}
-          onCanvas={canvasLinkedIds.has(image.id)}
           onToggle={onToggle}
           onRestore={onRestore}
           onDelete={onDelete}

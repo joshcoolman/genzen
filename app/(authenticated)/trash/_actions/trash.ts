@@ -14,38 +14,19 @@ import { removeImages } from '#/features/user-images/server/remove-images.action
 // browser, on data the browser had fetched earlier -- a client that skipped it
 // deleted whatever it liked.
 //
-// **Canvas membership blocks a permanent delete** (#212, removed in #371,
-// restored in #375). The history is worth keeping because the same rule was
-// right, then wrong, then right again for a structural reason.
-//
-// #212 added the lock, and it deadlocked: the only way a card left a canvas was
-// a trash that deliberately kept the membership row, so every image deleted
-// from a canvas arrived here permanently undeletable with no gesture anywhere
-// that cleared it. #371 removed the lock, correctly, because a lock with no key
-// is just a wall.
-//
-// #373 cut the key. Remove-from-canvas exists again, the canvas no longer
-// filters `deleted_at`, and a trashed image stays on the board until it is
-// taken off it. So the badge here is now a live fact about something the user
-// can see, and the lock is what stops an Empty Trash from destroying a card off
-// a canvas nobody was looking at. Remove it from the canvas and the row becomes
-// deletable.
+// **Nothing in this list is locked.** Canvas membership used to block a
+// permanent delete (#212, removed in #371, restored in #375), with a "Canvas"
+// badge to explain why. #446 inverted it at the source: every soft-delete path
+// now clears canvas membership the way it already cleared `group_id`, so a row
+// that reaches this list is on no board and there is nothing left to preserve.
+// What the lock actually cost was a chore -- you could not empty the bin
+// without going to find the board a card was still on, and with several boards
+// that is several places to look.
 
-export interface TrashLinks {
-  /** Trashed ids that still hold a canvas membership row: still on the board,
-   *  so not deletable until they are taken off it. */
-  canvasIds: Array<string>
-}
-
-export interface TrashPayload {
-  images: Array<UserImage>
-  links: TrashLinks
-}
-
-export async function listTrashedImages(): Promise<TrashPayload> {
+export async function listTrashedImages(): Promise<Array<UserImage>> {
   const { userId } = await resolveAuth()
 
-  const images = await sql<Array<UserImage>>`
+  return sql<Array<UserImage>>`
     select ${userImageColumns()}
     from user_images
     where user_id = ${userId}
@@ -64,27 +45,6 @@ export async function listTrashedImages(): Promise<TrashPayload> {
     -- the mistake being looked for.
     order by deleted_at desc, id desc
   `
-
-  const links = await computeLinks(
-    userId,
-    images.map((img) => img.id),
-  )
-  return { images, links }
-}
-
-/** Which trashed ids are still on a canvas: badge, and the delete lock. */
-async function computeLinks(
-  userId: string,
-  trashedIds: Array<string>,
-): Promise<TrashLinks> {
-  if (trashedIds.length === 0) return { canvasIds: [] }
-
-  const rows = await sql<Array<{ image_id: string }>>`
-    select distinct image_id from canvas_images
-    where user_id = ${userId} and image_id in ${sql(trashedIds)}
-  `
-
-  return { canvasIds: rows.map((r) => r.image_id) }
 }
 
 export async function restoreImages(ids: Array<string>): Promise<void> {
@@ -98,11 +58,11 @@ export async function restoreImages(ids: Array<string>): Promise<void> {
 }
 
 /**
- * Permanently delete trashed images, skipping any still on a canvas.
+ * Permanently delete trashed images.
  *
  * Pass no ids to empty the trash. Returns the ids actually destroyed, so the
- * caller can reconcile rather than assume its request was honoured wholesale --
- * the locked set is recomputed here, so it is not something a client can skip.
+ * caller can reconcile against what happened rather than assume its request
+ * matched the bin -- a row can go from another tab between load and click.
  */
 export async function permanentlyDeleteImages(
   ids?: Array<string>,
@@ -111,7 +71,7 @@ export async function permanentlyDeleteImages(
 
   if (ids && ids.length === 0) return []
 
-  const candidates = await sql<
+  const targets = await sql<
     Array<{
       id: string
       storage_path: string | null
@@ -125,14 +85,6 @@ export async function permanentlyDeleteImages(
       ${ids ? sql`and id in ${sql(ids)}` : sql``}
   `
 
-  if (candidates.length === 0) return []
-
-  const { canvasIds } = await computeLinks(
-    userId,
-    candidates.map((c) => c.id),
-  )
-  const locked = new Set(canvasIds)
-  const targets = candidates.filter((c) => !locked.has(c.id))
   if (targets.length === 0) return []
 
   const targetIds = targets.map((t) => t.id)

@@ -5,6 +5,7 @@ import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { removeImages } from '#/features/user-images/server/remove-images.action'
 import { cancelFalRequest } from '#/lib/server/fal-cancel.server'
+import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
 
 // The gallery's reads and deletes, which the browser used to run directly
 // against Supabase. As in user-images (#173), the change that matters is that
@@ -120,10 +121,12 @@ export async function trashGalleryImages(
   }
 
   if (rest.length > 0) {
+    const restIds = rest.map((r) => r.id)
     await sql`
       update user_images set deleted_at = now(), group_id = null
-      where user_id = ${userId} and id = any(${rest.map((r) => r.id)})
+      where user_id = ${userId} and id = any(${restIds})
     `
+    await clearCanvasMembership(userId, restIds)
   }
 }
 
@@ -184,19 +187,16 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
     return
   }
 
-  // Canvas membership is deliberately untouched (#212). Trashing is a library
-  // operation; evicting the image from a canvas as a side effect destroyed an
-  // arrangement, and canvas reads already filter `deleted_at is null`.
-  //
-  // Group membership is the opposite call, and on purpose (#319): trashing
-  // clears it, so restore has one destination, always. Remembering the group
+  // Trashing clears group membership (#319) and canvas membership (#446)
+  // alike, so restore has one destination, always. Remembering the container
   // and restoring into it sounds tidier and fails worse -- you restore an
   // image, look for it at top level, and it is not there, because it silently
-  // went back into a group you had forgotten it belonged to. Nothing on screen
+  // went back into a group or onto a board you had forgotten. Nothing on screen
   // explains that, so it reads as a failed restore. The cost is re-adding it,
   // and you can see the image the whole time.
   await sql`
     update user_images set deleted_at = now(), group_id = null
     where id = ${imageId} and user_id = ${userId}
   `
+  await clearCanvasMembership(userId, [imageId])
 }

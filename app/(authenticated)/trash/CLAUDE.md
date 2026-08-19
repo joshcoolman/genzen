@@ -25,20 +25,15 @@ read after that.
   and a clip's title is its model, so several read identically. `preload="metadata"`
   paints frame one, the same trick Video's own list uses. `ImageBox` is not
   growing a `kind` prop for it
-- **An image still on a canvas cannot be permanently deleted.** Added in #212,
-  removed in #371, restored in #375 — and the reversals are the point. #212's
-  lock had no key: the only way a card left a canvas was a trash that kept the
-  `canvas_images` row, so every canvas image landed here undeletable forever
-  with no gesture anywhere that cleared it. #371 removed it. #373 cut the key —
-  remove-from-canvas is a verb again — and #375 made a trashed image _stay_ on
-  the board, so the badge names something the user can see and the lock is what
-  stops an Empty Trash from destroying a card off a live canvas. Remove it from
-  the canvas to delete it
+- **Nothing in the bin is locked, and there is no "Canvas" badge.** Both existed
+  to protect a card that was still on a board (#212, #371, #375); #446 inverted
+  it at the source — every soft-delete path clears canvas membership the way it
+  clears `group_id`, so a row that reaches this list is on no board. Do not
+  reintroduce either as a safety net: preserving an image because it was on a
+  canvas is what made emptying the bin a chore of going to find the board first,
+  and with several boards that is several places to look
 - Being a generation's source used to count as a link too, and went with
-  genealogy (#204). Canvas membership is the only one left
-- `links.canvasIds` drives the badge and the disabled state, but is not the
-  guard: `permanentlyDeleteImages` recomputes the set server-side and returns
-  what it actually destroyed, so a client cannot skip it
+  genealogy (#204). Canvas membership was the last one, and it is gone
 - Mutations are optimistic with a refetch on error
 - No realtime (#174). Trash only changes from an action on this page or a delete
   elsewhere, and either way the next visit re-reads it

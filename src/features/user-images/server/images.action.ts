@@ -4,6 +4,7 @@ import type { UserImage } from '../types'
 import { userImageColumns } from '#/lib/server/user-image-columns.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
+import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
 
 // Server actions for the image queries the browser used to run directly against
 // Supabase.
@@ -130,26 +131,23 @@ export async function updateImageMeta(
 }
 
 /**
- * Move an image to Trash. Deliberately does *not* touch canvas membership
- * (#212): trashing is a library operation, and evicting the image from a canvas
- * as a side effect destroyed an arrangement the user would have to rebuild by
- * hand. Membership survives, so restoring puts the card back where it was.
+ * Move an image to Trash.
  *
- * Canvas reads filter `deleted_at is null`, so a trashed image stops rendering
- * on its own. Until the canvas's mount-time prune is gone, that prune still
- * strips the image locally and the next layout save drops the membership row --
- * so this write is correct but not yet sufficient on its own.
+ * `group_id = null` here too, not just in the gallery's delete (#319): restore
+ * has one destination whichever surface did the trashing, and three paths that
+ * disagree is three different restores. Canvas membership goes the same way
+ * (#446) -- it used to survive a trash so a restore put the card back on the
+ * board, which left Trash holding rows it refused to destroy until you went
+ * and found the board.
  */
 export async function softDeleteImage(id: string): Promise<void> {
   const { userId } = await resolveAuth()
 
-  // `group_id = null` here too, not just in the gallery's delete (#319):
-  // restore has one destination whichever surface did the trashing, and three
-  // paths that disagree is three different restores.
   await sql`
     update user_images set deleted_at = now(), group_id = null
     where id = ${id} and user_id = ${userId}
   `
+  await clearCanvasMembership(userId, [id])
 }
 
 export async function updateImageDescription(
