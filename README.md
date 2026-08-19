@@ -146,6 +146,16 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-19
 
+- **A Variations run goes straight to the Images panel** — "Load in Images" on
+  a run in the lab fills the generator's prompt list with the whole set and puts
+  the source image in slot 0; you navigate to Images and press Generate. It
+  replaces what is in the panel rather than merging into it, the model selection
+  is left alone, and nothing runs or is spent. The seam is one named module,
+  `src/lib/panel-handoff.ts` — a single record, read once and cleared on
+  arrival, deliberately not a queue and not a subscription. Judging whether the
+  prompts are good was all the page could do before; judging the pictures took
+  four copies, four pastes and re-attaching the source by hand (#433)
+
 - **Widen a picture without writing the prompt** — a new lab page,
   `/lab/outpaint`: pick an image, pick a target aspect ratio, optionally nudge
   it, and generate. The instruction is `src/lib/prompts/outpaint.md`, so tuning
@@ -205,14 +215,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   hold it: nothing but markdown in `src/lib/prompts/`, and no long
   model-addressed string anywhere in `src/` or `app/`. Changing what a model is
   told is a text edit now, which is what makes the lab worth having (#322)
-
-- **Webhooks are gone** — 576 lines out, 33 in. Turning them on nulled out
-  Images polling while the route returned 200 on a processing failure, so a
-  result could be acknowledged and never persisted with nothing left to
-  reconcile it. Off everywhere, so nobody was ever in that state — and rather
-  than fix the trigger, the gun went: webhooks exist to avoid polling, and the
-  poll already backs off, stops on a hidden tab and stops when nothing is
-  pending. What it bought was a few seconds; what it cost was a signed-callback
-  route, a hole in a deny-by-default proxy, two env vars that had to agree, and
-  a delivery path that can silently never arrive. Polling is the only path now,
-  and nothing may switch it off (#362)

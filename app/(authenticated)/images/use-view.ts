@@ -17,6 +17,7 @@ import type { SavedAiImage } from '#/features/ai-images/types'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
+import { takePanelHandoff } from '#/lib/panel-handoff'
 import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useSelection } from '#/lib/use-selection'
@@ -157,6 +158,28 @@ export function useView(initial: Array<SavedAiImage>) {
       void groups.refresh()
     },
   })
+
+  /**
+   * A handoff waiting from another page, applied once (#433).
+   *
+   * The lab's Variations page composes a set of prompts about one image and
+   * has nowhere to run them; this is where they land. Read and cleared in the
+   * same call, so a reload of Images does not refill a panel that has since
+   * been edited, and the sender is told nothing -- its "Loaded" is a local
+   * flag, not a fact anyone reconciles.
+   *
+   * The model selection is deliberately untouched, matching how loading a past
+   * generation already behaves: the selection is the working context you are
+   * already in, not part of the thing being loaded.
+   */
+  useEffect(() => {
+    const handoff = takePanelHandoff()
+    if (!handoff) return
+    generator.replacePrompts(handoff.prompts)
+    if (handoff.primaryImage) generator.setPrimaryImage(handoff.primaryImage)
+    // Once, on mount: a delivery is consumed by the read, so a second run
+    // would have nothing to apply even if the deps changed.
+  }, [])
 
   /**
    * What each group has in play right now, and the one moment worth re-reading.

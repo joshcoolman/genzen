@@ -19,6 +19,7 @@ export function RunCard({
   input,
   output,
   outputs,
+  actions,
 }: {
   label: string
   /** What was asked. Omitted where the input is an image rather than text. */
@@ -26,6 +27,10 @@ export function RunCard({
   output?: string
   /** For a run that emits several things, like variation prompts. */
   outputs?: Array<string>
+  /** What this run can be *done with*, beside its length readout (#433). A slot
+   *  rather than a prop per verb: judging the output is what every page here
+   *  shares, and what you then do with it is what none of them do the same. */
+  actions?: React.ReactNode
 }) {
   const all = outputs ?? (output != null ? [output] : [])
 
@@ -33,11 +38,14 @@ export function RunCard({
     <section className={styles.card}>
       <header className={styles.header}>
         <span className={styles.label}>{label}</span>
-        <span className={styles.count}>
-          {all.length === 1
-            ? `${output?.length ?? 0} chars`
-            : `${all.length} results`}
-        </span>
+        <div className={styles.headerRight}>
+          <span className={styles.count}>
+            {all.length === 1
+              ? `${output?.length ?? 0} chars`
+              : `${all.length} results`}
+          </span>
+          {actions}
+        </div>
       </header>
 
       {input && (

@@ -3,13 +3,18 @@
 import { useCallback, useState } from 'react'
 import type { PickedImage } from '../_components/image-input/image-input'
 import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.action'
+import { writePanelHandoff } from '#/lib/panel-handoff'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
 
 export interface VariationRun {
+  /** Stable across the list, which prepends -- an index would move under the
+   *  "Loaded" flag every time a new run lands. */
+  key: number
   guidance: string
   title: string
   prompts: Array<string>
+  source: PickedImage
 }
 
 /** The action caps at 4 (`Math.min(data.count, 4)`), so offering more would be
@@ -37,6 +42,7 @@ export function useView() {
   const [runs, setRuns] = useState<Array<VariationRun>>([])
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadedKey, setLoadedKey] = useState<number | null>(null)
 
   const image = picked.at(0)
 
@@ -56,9 +62,11 @@ export function useView() {
       })
       setRuns((current) => [
         {
+          key: current.length + 1,
           guidance: guidance.trim(),
           title: image.title,
           prompts: result.prompts,
+          source: image,
         },
         ...current,
       ])
@@ -69,8 +77,34 @@ export function useView() {
     }
   }, [image, count, guidance])
 
+  /**
+   * Hand a run to the Images panel and say so (#433).
+   *
+   * The page could copy the prompts out one at a time -- that is what it did,
+   * and four copies, four pastes and re-attaching the source by hand is why
+   * this page could judge the prompts but never the pictures.
+   *
+   * **It fills a form and stops.** Nothing generates, nothing is spent, and
+   * nothing here follows what Images then does with it: that would be
+   * cross-route state, which is not what the lab is for. The flag is local --
+   * if the panel changes underneath it, the button is stale and that is fine.
+   */
+  const loadInImages = useCallback((variationRun: VariationRun) => {
+    writePanelHandoff({
+      // The guidance leads, per #433. Note that the panel runs every non-empty
+      // prompt, so this is a generation of its own.
+      prompts: variationRun.guidance
+        ? [variationRun.guidance, ...variationRun.prompts]
+        : variationRun.prompts,
+      primaryImage: variationRun.source,
+    })
+    setLoadedKey(variationRun.key)
+  }, [])
+
   return {
     userImages,
+    loadInImages,
+    loadedKey,
     picked,
     setPicked,
     clearPicked: useCallback(() => setPicked([]), []),

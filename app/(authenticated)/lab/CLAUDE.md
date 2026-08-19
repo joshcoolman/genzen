@@ -122,9 +122,23 @@ item.
   `reconstruct` writes a prompt to regenerate the picture, `anchor` writes a
   short factual description to steer an image-to-image run. The dialog this
   replaced hard-coded `reconstruct`, so half the feature was unreachable.
-- **Variations does not generate.** The dialog it replaces fired the prompts
-  immediately; here the prompts are the output and nothing is spent. Firing them
-  is the natural end state for that page and is not built.
+- **Variations does not generate. It hands the run over** (#433). The dialog it
+  replaced fired the prompts immediately; here the prompts are the output and
+  nothing is spent. "Load in Images" fills the generator panel — the whole set
+  of prompts, plus the source image in slot 0 — and stops. You navigate to
+  Images and press Generate yourself. **No load-and-run**: following the results
+  would mean the lab holding cross-route state, which is not what it is for.
+  The confirmation is a local flag on the button, not a fact anyone stores; if
+  the panel changes underneath it, the button is stale and that is fine.
+- **The handoff lives in `src/lib/panel-handoff.ts`, not in this folder.** It is
+  the door between a page that composes a request and the page that runs it, and
+  it has to be somewhere both may import — a module under `lab/` that Images
+  read would be the app reaching into the lab, which is the one direction that
+  is barred. One record, overwritten by each write, read once and cleared on
+  arrival: the panel is a single working surface, so a second handoff replacing
+  the first is the honest behaviour, and a reload of Images must not refill a
+  panel that has since been edited. Enhance and any later page wanting the same
+  door use this one.
 - **The lab may import from the app. The app may never import from the lab.**
   Reuse `RefImageStrip`, `ExistingImagePicker`, `useUserImages` freely — an
   experiment that hand-rolls its own is not testing its own idea. But the moment
