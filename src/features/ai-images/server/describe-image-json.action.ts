@@ -2,6 +2,7 @@
 
 import { generateObject } from 'ai'
 import { z } from 'zod'
+import describeJsonPrompt from '#/lib/prompts/describe-json.md'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 
@@ -59,8 +60,7 @@ export async function describeImageJson(data: DescribeImageJsonInput) {
   const { object } = await generateObject({
     model: ai.vision,
     maxOutputTokens: 4096,
-    system:
-      'You are a precise visual analysis engine. Output coordinates and attributes for image editing.',
+    system: describeJsonPrompt,
     schema: imageSchema,
     messages: [
       {

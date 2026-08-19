@@ -5,10 +5,7 @@ import { generateText } from 'ai'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
-import {
-  IMAGE_VARIATION_SYSTEM,
-  variationUserContent,
-} from '#/lib/prompts/image-variation'
+import imageVariationSystem from '#/lib/prompts/image-variation.md'
 import { createImageStorage } from '#/lib/image-storage'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
@@ -170,7 +167,7 @@ export async function generateVariationPrompts(
     const response = await generateText({
       model: ai.reasoning,
       maxOutputTokens: 300,
-      system: IMAGE_VARIATION_SYSTEM,
+      system: imageVariationSystem,
       messages: [{ role: 'user', content: userContent }],
     })
 
@@ -186,4 +183,38 @@ export async function generateVariationPrompts(
     sourceImageId,
     falImageUrl,
   }
+}
+
+/**
+ * The message turn that carries the image and the ask.
+ *
+ * Lives here rather than in `src/lib/prompts/`, which holds prose and nothing
+ * else (#322). This is assembly -- it interleaves a base64 image with text and
+ * branches on whether there is an image at all -- so it belongs with the caller.
+ * Everything that steers the *output* is in `image-variation.md`.
+ */
+function variationUserContent(opts: {
+  avoidSection: string
+  hasImage: boolean
+  imageBase64?: { data: string; mediaType: string }
+  rootPrompt: string
+  guidance?: string
+}) {
+  const guidanceSection = opts.guidance?.trim()
+    ? `\n\nUser guidance: ${opts.guidance.trim()}`
+    : ''
+
+  if (opts.hasImage && opts.imageBase64) {
+    return [
+      {
+        type: 'image' as const,
+        image: `data:${opts.imageBase64.mediaType};base64,${opts.imageBase64.data}`,
+      },
+      {
+        type: 'text' as const,
+        text: `Look at this image. Write a short directive for the next shot -- just the change, not the scene.${opts.avoidSection}${guidanceSection}`,
+      },
+    ]
+  }
+  return `Write a short variation directive for this scene:\n\n${opts.rootPrompt}${opts.avoidSection}${guidanceSection}`
 }

@@ -1,0 +1,52 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const ROOT = new URL('../../../', import.meta.url).pathname
+const PROMPTS = join(ROOT, 'src/lib/prompts')
+
+/**
+ * #322. Three of six instructions had been written inline in TypeScript, and
+ * the split was not by anything meaningful — it was by what era the feature was
+ * written in. These two tests are what stop that drifting back.
+ *
+ * The point is not tidiness. Someone who wants to see what happens if image
+ * variations get weirder should be able to open `image-variation.md`, rewrite a
+ * paragraph and run it — no TypeScript, no hunting. That is only true if every
+ * instruction is a file whose name says what it steers.
+ */
+describe('model instructions live in .md files (#322)', () => {
+  it('has nothing but markdown in src/lib/prompts', () => {
+    const stray = readdirSync(PROMPTS).filter(
+      (f) => !f.endsWith('.md') && f !== 'prompts.test.ts',
+    )
+    expect(stray).toEqual([])
+  })
+
+  it('has no instruction written inline in a TypeScript file', () => {
+    // Deliberately narrow: a long string that addresses the model directly.
+    // Short user turns like "Describe this image." are assembly, not steering,
+    // and are allowed to stay beside the message they are part of.
+    const offenders: Array<string> = []
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        if (entry === 'node_modules' || entry.startsWith('.')) continue
+        const full = join(dir, entry)
+        if (statSync(full).isDirectory()) {
+          walk(full)
+          continue
+        }
+        if (!/\.tsx?$/.test(full)) continue
+        const text = readFileSync(full, 'utf8')
+        for (const m of text.matchAll(/`([^`]{200,})`/g)) {
+          if (/\bYou are\b|\bYour job is\b/.test(m[1])) {
+            offenders.push(full.slice(ROOT.length))
+          }
+        }
+      }
+    }
+    walk(join(ROOT, 'src'))
+    walk(join(ROOT, 'app'))
+    expect(offenders).toEqual([])
+  })
+})

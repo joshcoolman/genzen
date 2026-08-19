@@ -1,35 +1,13 @@
 import { generateText } from 'ai'
+import anchorPrompt from '#/lib/prompts/describe-anchor.md'
+import reconstructPrompt from '#/lib/prompts/describe-reconstruct.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 
-const ANCHOR_PROMPT = `You are an image description engine for an image-to-image generation pipeline. The generative model will receive both your description and the source image. Your job is to anchor the generation, not reconstruct the image from text.
-
-Describe the image the way a human would at a glance — the essentials only.
-
-Include:
-- Shot type and framing
-- Subject basics (age range, gender, hair, clothing in broad strokes)
-- Background in 2-3 words
-- Lighting quality
-- Any single standout visual detail
-
-Rules:
-- Keep it under 40 words
-- No interpretation, no emotion, no narrative
-- No specific facial expressions
-- Broad strokes, not forensic detail
-- Comma-separated phrases or one short sentence`
-
-const RECONSTRUCT_PROMPT = `You are an image-to-prompt converter for an image generation pipeline. Your output will be fed directly to a text-to-image model as the prompt. Output ONLY the prompt text -- no headers, labels, hashtags, markdown, or commentary.
-
-Write a concise visual description suitable for image generation. Include:
-- Subject and composition
-- For people: specific physical appearance -- ethnicity, gender, approximate age, build, hair color/style, and distinguishing features. These details are critical for generation fidelity.
-- Style, medium, and artistic qualities
-- Lighting, color palette, and mood
-- Key visual details
-
-Keep it under 400 characters. Plain text only. No line breaks.`
-
+// **Not a `.md`, deliberately.** These are the one-line turn that carries the
+// image, not instructions that steer the output -- a file containing "Describe
+// this image." would be a file nobody would ever open to change the result.
+// The steering lives in `describe-anchor.md` and `describe-reconstruct.md`,
+// which is what #322 is actually protecting.
 const USER_TEXT: Record<string, string> = {
   anchor: 'Describe this image.',
   reconstruct: 'Write an image generation prompt for this image.',
@@ -78,7 +56,7 @@ export async function describeImage(
 
   const { text } = await generateText({
     model: ai.fast,
-    system: mode === 'anchor' ? ANCHOR_PROMPT : RECONSTRUCT_PROMPT,
+    system: mode === 'anchor' ? anchorPrompt : reconstructPrompt,
     messages: [
       {
         role: 'user',
