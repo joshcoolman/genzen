@@ -135,6 +135,11 @@ export function useView(initial: Array<SavedAiImage>) {
     // server (#313). The upload path has always done this; generation never
     // adopted it, which is why pasting felt instant and generating did not.
     onSubmitStart: (placeholders) => {
+      // Making something is an implicit request to see it (#444). Generating
+      // while scoped to Uploads would otherwise draw a card into a list that
+      // hides it, so the scope widens to `all` -- it never narrows, so nothing
+      // you were looking at leaves the screen.
+      prefs.revealAll()
       for (const p of placeholders) {
         gallery.addOptimisticCard(pendingCard(p, activeGroupId))
       }
@@ -235,12 +240,41 @@ export function useView(initial: Array<SavedAiImage>) {
   // At top level a grouped image is *absent*, not shown twice: the group card
   // stands in for its members. If members also appeared loose, the wall would
   // be exactly as tall as before.
+  /**
+   * **Uploads ignores grouping entirely: every upload, grouped or not** (#444).
+   *
+   * The other scopes are a filter over what is loose, because at top level a
+   * group card stands in for its members and that collapse is the whole payoff
+   * -- a wall of thirty becomes three cards and eight loose pictures. Uploads
+   * is not that kind of question. An upload is something you put there
+   * deliberately, and "show me my uploads" means all of them; where each one
+   * happens to sit is somebody else's concern. So this scope shows no group
+   * cards either -- there is nothing left for them to stand in for.
+   *
+   * This is the rule that replaces keeping a group called Uploads by hand,
+   * which decayed every time you uploaded again.
+   */
+  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
+
+  // Group first, then scope, then order. The filter is client-side on purpose:
+  // the gallery already holds every row, so switching scopes is instant and
+  // costs no round trip -- and `origin` is immutable, so a filtered-out row
+  // cannot become stale.
+  //
+  // Inside a group there is no origin filtering at all -- the group is already
+  // the scope, and two scoping controls stacked on each other only raise the
+  // question of which one wins.
   const scoped = useMemo(() => {
     if (activeGroupId) {
       return gallery.images.filter((img) => img.group_id === activeGroupId)
     }
-    return gallery.images.filter((img) => !img.group_id)
-  }, [gallery.images, activeGroupId])
+    if (uploadsIgnoreGroups) {
+      return gallery.images.filter((img) => img.origin === 'upload')
+    }
+    const loose = gallery.images.filter((img) => !img.group_id)
+    if (prefs.originFilter === 'all') return loose
+    return loose.filter((img) => img.origin === prefs.originFilter)
+  }, [gallery.images, activeGroupId, uploadsIgnoreGroups, prefs.originFilter])
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
@@ -265,19 +299,22 @@ export function useView(initial: Array<SavedAiImage>) {
         image.sort_order ?? new Date(image.created_at).getTime() / 1000,
     }))
     // Groups appear at top level only: inside one there is nothing to nest.
-    const groupCells = activeGroupId
-      ? []
-      : groups.groups.map((group) => ({
-          cell: { kind: 'group' as const, group },
-          sortOrder: group.sort_order,
-        }))
+    // And not under Uploads, which shows every upload wherever it sits -- a
+    // group card there would stand in for members already on screen.
+    const groupCells =
+      activeGroupId || uploadsIgnoreGroups
+        ? []
+        : groups.groups.map((group) => ({
+            cell: { kind: 'group' as const, group },
+            sortOrder: group.sort_order,
+          }))
 
     const ordered = [...groupCells, ...imageCells].sort(
       (a, b) => b.sortOrder - a.sortOrder,
     )
     const cellsDesc = ordered.map((o) => o.cell)
     return prefs.sortAsc ? cellsDesc.reverse() : cellsDesc
-  }, [scoped, groups.groups, activeGroupId, prefs.sortAsc])
+  }, [scoped, groups.groups, activeGroupId, uploadsIgnoreGroups, prefs.sortAsc])
 
   // The list the grid renders, minus the cards with nothing to look at (#270).
   // Scoped and sorted exactly like the grid -- inside a group that is the
@@ -510,6 +547,9 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const uploadFiles = useCallback(
     (files: Array<File>, groupId: string | null = activeGroupId) => {
+      // Same rule as a generation: an upload while scoped to Generations would
+      // land somewhere the grid is not showing.
+      prefs.revealAll()
       // The destination is held for the length of the batch, so the group card
       // can say it is busy while the bytes are still going up (#350). The rows
       // themselves cannot carry this: they get their `group_id` when the batch
@@ -539,7 +579,7 @@ export function useView(initial: Array<SavedAiImage>) {
         if (name) toast(`Uploaded to ${name}`)
       })
     },
-    [uploadFilesRaw, activeGroupId, groups.groups],
+    [uploadFilesRaw, activeGroupId, groups.groups, prefs],
   )
 
   /**

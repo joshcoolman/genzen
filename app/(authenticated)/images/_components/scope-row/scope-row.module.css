@@ -1,0 +1,8 @@
+/* A row of its own, so the scope is not read as another tool. Nothing else
+   lives here yet; if something does, it belongs to "what am I looking at"
+   rather than "what can I do". */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}

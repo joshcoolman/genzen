@@ -4,10 +4,40 @@ import { useEffect } from 'react'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useIsMobile } from '#/lib/use-is-mobile'
 
+/**
+ * What the grid is scoped to (#444).
+ *
+ * Removed in #348 on the grounds that a group is the only scope worth having,
+ * and brought back because one question a group cannot answer kept coming up:
+ * **"show me my uploads"** -- wherever they happen to sit. The workaround was
+ * making a group called Uploads by hand, which decays the moment you upload
+ * again, because new uploads land loose.
+ *
+ * `canvas` is commented rather than deleted: it is a real `origin` value, and
+ * a stored pref from before #348 may still name it, which is why the type
+ * keeps it.
+ */
+export const ORIGIN_FILTERS = [
+  'all',
+  'images',
+  'uploads',
+  // 'canvas',
+] as const satisfies ReadonlyArray<OriginFilter>
+
+export type OriginFilter = 'images' | 'uploads' | 'canvas' | 'all'
+
+export const ORIGIN_FILTER_LABELS: Record<OriginFilter, string> = {
+  all: 'All',
+  images: 'Generations',
+  uploads: 'Uploads',
+  canvas: 'Canvas',
+}
+
 interface Prefs {
   sortAsc: boolean
   showInfo: boolean
   thumbZoom: number
+  originFilter: OriginFilter
 }
 
 const PREFS_KEY = 'genzen:ai-images-prefs'
@@ -16,6 +46,10 @@ const DEFAULTS: Prefs = {
   sortAsc: false,
   showInfo: true,
   thumbZoom: 1,
+  // **All**, not generations as it was before #348. Working with everything
+  // together is the normal state; the scope is for the moment you go looking
+  // for one upload, not the state you live in.
+  originFilter: 'all',
 }
 
 /**
@@ -60,12 +94,22 @@ function read(): Prefs {
         sortAsc: stored.sortAsc ?? DEFAULTS.sortAsc,
         showInfo: stored.showInfo ?? DEFAULTS.showInfo,
         thumbZoom: nearestStop(stored.thumbZoom ?? DEFAULTS.thumbZoom),
+        originFilter: isOriginFilter(stored.originFilter)
+          ? stored.originFilter
+          : DEFAULTS.originFilter,
       }
     }
   } catch {
     // ignore
   }
   return DEFAULTS
+}
+
+/** A stored value only counts if the control can still show it -- `canvas` is
+ *  a legal `OriginFilter` with no pill, so a pref naming it would scope the
+ *  grid with nothing on screen to undo it. */
+function isOriginFilter(value: unknown): value is OriginFilter {
+  return ORIGIN_FILTERS.includes(value as (typeof ORIGIN_FILTERS)[number])
 }
 
 function store(partial: Partial<Prefs>) {
@@ -79,6 +123,12 @@ function store(partial: Partial<Prefs>) {
 export interface PrefsState {
   sortAsc: boolean
   showInfo: boolean
+  /** What the grid is scoped to, top level only (#444). */
+  originFilter: OriginFilter
+  setOriginFilter: (filter: OriginFilter) => void
+  /** Widen to `all` when something just made would land outside the scope --
+   *  making a thing is an implicit request to see it. Only ever widens. */
+  revealAll: () => void
   /** A true zoom on the grid, one of `ZOOM_STOPS`. See `image-gallery`. */
   thumbZoom: number
   isMobile: boolean
@@ -112,6 +162,11 @@ export function usePrefs(): PrefsState {
     DEFAULTS.thumbZoom,
   )
 
+  const [originFilter, setOriginFilterState] = usePersistedState(
+    () => read().originFilter,
+    DEFAULTS.originFilter,
+  )
+
   const isMobile = useIsMobile()
 
   // `thumbZoom` is not `thumbSize` coming back. That was three named sizes,
@@ -119,11 +174,13 @@ export function usePrefs(): PrefsState {
   // driven from the keyboard with no control on screen, and every size looks
   // like the same gallery because nothing about the card changes (#284).
   //
-  // `thumbSize` was stored here until #284 and `originFilter` until #348.
-  // Purged on mount rather than on the next write, because someone who never
-  // touches sort or captions again would otherwise keep stored settings nothing
-  // reads -- and a stored scope nothing renders is worse than dead weight: it
-  // would apply with no control on screen to undo it.
+  // `thumbSize` was stored here until #284, and `originFilter` was purged the
+  // same way between #348 and #444 -- it is back, and `isOriginFilter` above is
+  // what keeps the old lesson: a stored scope the control cannot show is worse
+  // than dead weight, because it would apply with nothing on screen to undo
+  // it. Purged on mount rather than on the next write, since someone who never
+  // touches sort or captions again would otherwise keep settings nothing
+  // reads.
   useEffect(() => {
     store({})
   }, [])
@@ -132,6 +189,21 @@ export function usePrefs(): PrefsState {
     sortAsc,
     showInfo,
     thumbZoom,
+    originFilter,
+    setOriginFilter: (filter: OriginFilter) => {
+      store({ originFilter: filter })
+      setOriginFilterState(filter)
+    },
+    // Widens to `all` rather than switching to the matching scope, which is
+    // what the pre-#348 `reveal()` did. Switching hides whatever you were
+    // looking at to show the new thing; widening only ever adds.
+    revealAll: () => {
+      setOriginFilterState((current) => {
+        if (current === 'all') return current
+        store({ originFilter: 'all' })
+        return 'all'
+      })
+    },
     isMobile,
     toggleSort: () =>
       setSortAsc((v) => {

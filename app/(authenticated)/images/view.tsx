@@ -8,6 +8,7 @@ import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupNameDialog } from './_components/group-name-dialog/group-name-dialog'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
+import { ScopeRow } from './_components/scope-row/scope-row'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -103,8 +104,15 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
 
-        {activeGroup && (
+        {/* Top level only -- inside a group the group is already the scope
+            (#444), and the heading takes this row's place. */}
+        {activeGroup ? (
           <GroupHeading name={activeGroup.name} onBack={leaveGroup} />
+        ) : (
+          <ScopeRow
+            value={prefs.originFilter}
+            onChange={prefs.setOriginFilter}
+          />
         )}
 
         <ImageGallery
