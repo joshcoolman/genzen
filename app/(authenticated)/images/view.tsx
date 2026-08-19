@@ -85,7 +85,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
               : undefined
           }
           groupName={activeGroup?.name}
-          onLeaveGroup={leaveGroup}
           /* Only inside a group, which is the whole point of #431: you are
              looking at the contents when you press it. */
           onTrashGroup={
@@ -97,7 +96,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
 
-        {activeGroup && <GroupHeading name={activeGroup.name} />}
+        {activeGroup && (
+          <GroupHeading name={activeGroup.name} onBack={leaveGroup} />
+        )}
 
         <ImageGallery
           cells={cells}

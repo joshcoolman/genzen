@@ -109,44 +109,10 @@
   height: 1rem;
 }
 
-/* Groups (#319) -- these all live in `.scope`, the slot the origin pills used
-   to occupy. Which ones are on screen depends on where you are: inside a group
-   it is Back and Trash group, at top level it is New group. Upload is in both. */
-
-/* The way out, and only that (#432). It carried the group's name too until
-   then, and a control that is mostly telling you where you are does not read
-   as a button -- so the one thing that looked like a title was the one thing
-   that was clickable, and the name of the place you were in was set at the
-   size of the filter pills beside it. The name is an `<h1>` over the grid now;
-   this names the destination, which is what a chevron pointing left means. */
-.back {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  font: inherit;
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-normal) var(--ease-in-out),
-    color var(--duration-normal) var(--ease-in-out);
-}
-
-.back:hover {
-  background: var(--surface-raised);
-  color: var(--text);
-}
-
-.backIcon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
+/* Groups (#319) -- these live in `.scope`, the slot the origin pills used to
+   occupy. Upload is first in both states and never moves; what follows it is
+   Trash group inside a group and New group at top level. The way back is not
+   here at all -- it is the heading over the grid (#432). */
 
 /* Quieter than the pills beside it: making a group is occasional, and filtering
    is the thing this row is mostly for. */

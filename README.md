@@ -147,11 +147,13 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 2026-08-19
 
 - **Groups look and behave like somewhere you went** — opening one now puts its
-  name over the thumbnails as a proper heading and leaves a `‹ Images` back
-  control in the toolbar, where a single small control used to be both the name
-  and the way out and read as neither (#432). Upload is green in both states,
-  the weight Generate has, since the one control that puts things into the page
-  was styled like the least important thing on it. And **a group can only be
+  name over the thumbnails as a proper heading, with a round back button beside
+  it and the whole heading clickable to leave — a single small toolbar control
+  used to be both the name and the way out, and read as neither (#432). The
+  toolbar keeps no crumb, so Upload stays leftmost and never shifts between the
+  two states; it is also green now, the weight Generate has, since the one
+  control that puts things into the page was styled like the least important
+  thing on it. And **a group can only be
   trashed from inside it** (#431): the card's trash icon was in the same corner
   an image card's is, in a grid that mixes the two, so the click that bins a
   whole group was available from the view that shows least about what is in it.

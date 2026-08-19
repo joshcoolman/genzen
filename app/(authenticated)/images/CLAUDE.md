@@ -229,8 +229,9 @@ list once when the seed comes back full, so the grid is never short.
   control that puts things into this page look like the least important thing
   on it. The same green in both states, because a button that is primary in a
   group and flat at top level reads as two different buttons for the same act.
-  Inside a group it is the second control, after the way out: where you are,
-  then what you do here. At top level it is a menu: _Upload_ lands loose, _Upload to
+  **It is leftmost in both states and nothing precedes it**: a crumb in front
+  of it shifted the one control whose meaning never changes every time you
+  opened a group. At top level it is a menu: _Upload_ lands loose, _Upload to
   group_ picks a destination first, leaving you at top level with a toast
   naming the group. **Inside a group there is no menu** -- it goes straight to
   the file picker and the files land in the open group, and a paste does the
@@ -384,11 +385,14 @@ group` opens a dialog because a flyout of names commits you to picking one at
   which destroy anything, which also leaves the two kinds of card legible at a
   glance: one overlay icon on a group, two on an image.
 - **Entering a group changes the shape of the page** (#432). The name is an
-  `<h1>` above the thumbnails -- a blog post's title over its own post -- and
-  the toolbar keeps a back control that names the destination, `< Images`. One
-  control used to be both, and a thing that is mostly telling you where you are
-  does not read as a button: the name sat at the size of the pills beside it,
-  so opening a group looked identical to the top level. Nothing moves and
+  `<h1>` above the thumbnails -- a blog post's title over its own post -- with
+  a round back button beside it, and the whole heading is the target: an
+  icon-only control is small for the commonest gesture in a group, and the name
+  is what you are leaving. One toolbar control used to be both the title and
+  the navigation, and a thing that is mostly telling you where you are does not
+  read as a button: the name sat at the size of the pills beside it, so opening
+  a group looked identical to the top level. **The toolbar has no crumb at
+  all** -- one there pushed Upload right on the way in. Nothing moves and
   nothing hides; a heading arrives where there was none.
 - **Trashing clears `group_id`, on all three soft-delete paths.** Restore has
   one destination, always. Restoring into a remembered group sounds tidier and
