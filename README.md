@@ -144,7 +144,21 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
-2026-08-18
+2026-08-19
+
+- **FLUX.2 Pro replaces FLUX Kontext Pro, and the estimate learned that editing
+  costs more** — BFL's own advice is not to use FLUX.1 Kontext for editing any
+  more, and the trade was roughly twice the price for eight reference images
+  instead of one. Measuring it produced the more useful finding: **every
+  megapixel-billed model costs about twice as much through its image endpoint**,
+  because FAL's `processed megapixels` counts the images you send as well as the
+  one you get back. So the lineup gained `editPrice`, and both the estimate under
+  Generate and the picker's `$` column now switch on whether something is staged
+  — the same fact `endpointFor` already used to choose the endpoint. An earlier
+  extrapolated price was wrong in both directions; sibling megapixel counts do
+  not transfer, only the rate does. Found on the way: Canvas curated
+  `flux-kontext-pro` by slug, which would have silently shrunk its picker from
+  three models to two with nothing failing (#304)
 
 - **A lab, and three features moved into it** — Enhance, Describe and Variations
   were all good ideas, all unfinished, and none of them improvable where they
@@ -195,9 +209,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   happened every single time. Both throw now, mark the row failed with a reason
   and toast. A failure you can retry beats a degraded result you paid for
   (#364, #365)
-
-- **Three custom properties were declared nowhere** — `--text-faint` in three
-  modules, and `--dur-fast` and `--ease` in two of the same files, so those
-  transitions ran with no duration and no easing. An undeclared property does not
-  error; it is dropped and the element inherits. `check:tokens` now guards it in
-  `pnpm check` and CI (#407)
