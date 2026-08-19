@@ -2,7 +2,6 @@ import {
   Clapperboard,
   Compass,
   FlaskConical,
-  Frame,
   Logs,
   Sparkles,
   Trash2,
@@ -36,12 +35,19 @@ export const navItems: Array<NavItem> = [
     href: '/images',
     icon: Sparkles,
   },
-  {
-    id: 'canvas',
-    label: 'Canvas',
-    href: '/canvas',
-    icon: Frame,
-  },
+  // Canvas, hidden from the rail on 2026-08-19 -- **commented out, not
+  // deleted**. It is not being used, and the question is whether it is missed
+  // once it stops being an obvious place to go. The route, its folder and its
+  // CLAUDE.md are all untouched and `/canvas` still works if typed; this entry
+  // is the only thing anywhere that links to it, so hiding it here hides it
+  // everywhere. Uncomment to bring it back; delete this block and the route
+  // folder if the answer turns out to be "not missed".
+  // {
+  //   id: 'canvas',
+  //   label: 'Canvas',
+  //   href: '/canvas',
+  //   icon: Frame,
+  // },
   {
     id: 'video',
     label: 'Video',
