@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Four pages
+Where a feature is worked on before it is part of the app (#424). Five pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames is the other kind: something the app has
 never been able to do at all**, built here first so it can be used for real
@@ -68,6 +68,40 @@ the kind of question the lab exists to settle by use rather than by argument.
   need a way to ask for "frames", which needs a marker the library query knows
   about, which is the schema this folder may not grow. The frames themselves
   survive in Images; only the run is lost, same as every other page here.
+
+## Outpaint is the one that spends money
+
+Widen a picture to a shape it does not have, without typing the prompt that
+asks for it (#430). Everything else here costs fractions of a cent at Claude;
+one press of this against four models is real FAL spend, and the page exists to
+be pressed repeatedly while the instruction is tuned. So the estimate is under
+Generate as it is on Images and Video, and each result card carries what FAL
+charged — the one page built for experimenting cannot be the one place you
+cannot see what experimenting costs.
+
+- **It asks plainly, and composites nothing.** The picture goes to the model
+  with `outpaint.md` and the target ratio, and that is all. Whether that is
+  enough is the open question: the alternative is drawing the source onto a
+  canvas at the target shape in the browser (#317 proved we can) and asking the
+  model to fill the empty bars alone. Nothing in the page assumes either
+  answer — settle it by looking at results, not by arguing.
+- **Multi-select models, because there are two questions in one press.** Is the
+  instruction good, and can this model outpaint at all? A smeared result answers
+  neither alone; four models answer both at once. Same reason Video's selector
+  is multi (#417).
+- **Rows are written with `origin: 'images'`,** which is a small lie. The column
+  is constrained to `upload | images | canvas` and widening it is a migration,
+  which a lab page does not get.
+- **Results settle through the app's own poll.** They are `user_images` rows, so
+  `useGenerationPoll` plus a re-read of the library is the whole mechanism —
+  and the pictures survive in Images while the run itself does not, exactly as
+  Frames' do.
+
+Promotion, when the instruction settles, is two surfaces at different arities:
+`...` on a thumbnail for one image, and a verb on the selection bar for one
+generation per selected image. That bar's verbs are all free and reversible
+today, so the first one that spends money carries its count and cost on the
+item.
 
 ## Quirks
 

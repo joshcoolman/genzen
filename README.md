@@ -146,6 +146,18 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-19
 
+- **Widen a picture without writing the prompt** — a new lab page,
+  `/lab/outpaint`: pick an image, pick a target aspect ratio, optionally nudge
+  it, and generate. The instruction is `src/lib/prompts/outpaint.md`, so tuning
+  it is a text edit — which is most of what the page is for. Models are
+  multi-select, because one press has to separate two questions: is the
+  instruction any good, and can this model outpaint at all. It asks the model
+  plainly and composites nothing; whether that is enough, or whether the source
+  has to be drawn onto a canvas at the target shape first, is the open question
+  the page exists to settle. It is also the first thing in the lab that spends
+  real FAL money, so the estimate sits under Generate and each result card
+  carries what the run cost (#430)
+
 - **Pull a still out of a clip** — a new lab page, `/lab/frames`: pick one of
   your clips the way you pick a reference image (a plus button, a picker
   dialog), scrub, press Extract frame, and the frame lands in a grid below at
@@ -204,14 +216,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   route, a hole in a deny-by-default proxy, two env vars that had to agree, and
   a delivery path that can silently never arrive. Polling is the only path now,
   and nothing may switch it off (#362)
-
-- **The cost figures were measured against FAL's own invoices, and three were
-  wrong** — $6.135 recorded against $6.185 billed over a full day, 0.8% low and
-  exact on video and Nano Banana. The compute-seconds pricing path is **deleted**:
-  FAL's pricing API returns `$0.00017/compute second` for both Grok and LTX-2.5,
-  and LTX is billed at $0.01 a unit, so that figure is a placeholder for "no
-  price known" rather than a rate — which is why Grok looked irreconcilable, and
-  why the mechanism came out 4.5x under on FLUX.2 Flash. Costs are no longer
-  rounded to a whole cent (a z-image run is 0.52c and recorded 1c). Reconciliation
-  against the usage API was tested and dropped: it is hourly aggregates with no
-  request id, so per-generation cost can never come from FAL (#400)

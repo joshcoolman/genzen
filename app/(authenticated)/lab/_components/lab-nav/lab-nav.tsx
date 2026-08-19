@@ -13,6 +13,7 @@ const SECTIONS = [
   { href: '/lab/describe', label: 'Describe' },
   { href: '/lab/variations', label: 'Variations' },
   { href: '/lab/frames', label: 'Frames' },
+  { href: '/lab/outpaint', label: 'Outpaint' },
 ]
 
 export function LabNav() {
