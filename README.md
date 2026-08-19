@@ -146,6 +146,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-19
 
+- **Outpaint takes several images at once** — the lab page's ratio and models
+  are the settings and the images are the input, so reframing four stills is one
+  press instead of four trips through the same controls. Images × models
+  generations from one click, so the count is on the button and a press over a
+  dollar says how big it is first. Z-Image Turbo is off this page's model list:
+  its image endpoint is denoise-from-image with a strength dial, not instruct
+  editing, so it cannot extend a frame (#441)
+
 - **Groups look and behave like somewhere you went** — opening one now puts its
   name over the thumbnails as a proper heading, with a round back button beside
   it and the whole heading clickable to leave — a single small toolbar control
@@ -209,16 +217,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   not transfer, only the rate does. Found on the way: Canvas curated
   `flux-kontext-pro` by slug, which would have silently shrunk its picker from
   three models to two with nothing failing (#304)
-
-- **A lab, and three features moved into it** — Enhance, Describe and Variations
-  were all good ideas, all unfinished, and none of them improvable where they
-  lived: each was a button opening a dialog that closed, and a dialog holds
-  "type, get one result, close" and nothing more. `/lab` is a section shaped like
-  `/account`, with three pages rather than one surface — they look composable and
-  are not, each asking a different question about a different input. Each page
-  **names the file that steers it**, keeps the input beside the output, and
-  counts characters, which is the comparison the dialogs made impossible: an
-  eight-word prompt through Enhance comes back at 649. Describe's `anchor` mode
-  is reachable for the first time — the dialog hard-coded the other one.
-  `/images` is left as though none of it was ever there, down to a localStorage
-  map that would have read empty forever while looking live (#424)

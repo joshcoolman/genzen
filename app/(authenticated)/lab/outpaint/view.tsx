@@ -4,18 +4,40 @@ import { ImageInput } from '../_components/image-input/image-input'
 import { LabPage } from '../_components/lab-page/lab-page'
 import { ModelSelector } from '../../_components/model-selector/model-selector'
 import { OutpaintRunCard } from './_components/outpaint-run-card/outpaint-run-card'
-import { useView } from './use-view'
+import { MAX_SOURCES, useView } from './use-view'
 import styles from './view.module.css'
 import {
   ActionButton,
   AspectRatioSelect,
   Button,
+  ConfirmDialog,
   CostNote,
   Textarea,
+  useConfirm,
 } from '#/components'
+import { formatCents } from '#/lib/format'
 
 export function View() {
   const v = useView()
+  const { confirm, dialogProps } = useConfirm()
+
+  /** Past a threshold the press says how big it is first (#441). Four images
+   *  across four models is sixteen generations from a control that looks
+   *  exactly like one. */
+  async function handleGenerate() {
+    if (
+      v.needsConfirm &&
+      !(await confirm({
+        title: `Generate ${v.generationCount} images?`,
+        message: `${v.picked.length} image${v.picked.length === 1 ? '' : 's'} through ${v.modelSelector.selectedIds.length} model${v.modelSelector.selectedIds.length === 1 ? '' : 's'}, at about ${formatCents(v.estimatedCost.cents)}.`,
+        confirmLabel: 'Generate',
+        destructive: false,
+      }))
+    ) {
+      return
+    }
+    await v.run()
+  }
 
   return (
     <LabPage
@@ -29,8 +51,9 @@ export function View() {
         imageUrls={v.userImages.imageUrls}
         isLoading={v.userImages.isLoading}
         picked={v.picked}
-        onPick={v.setPicked}
-        onClear={v.clearPicked}
+        max={MAX_SOURCES}
+        onPick={v.addPicked}
+        onClear={v.removePicked}
         onOpen={() => void v.userImages.refresh()}
         disabled={v.isRunning}
       />
@@ -56,13 +79,13 @@ export function View() {
           disabled={v.isRunning}
         />
         <ActionButton
-          onClick={() => void v.run()}
+          onClick={() => void handleGenerate()}
           loading={v.isRunning}
           loadingText="Sending"
           disabled={!v.canRun}
         >
-          {v.modelSelector.selectedIds.length > 1
-            ? `Generate ${v.modelSelector.selectedIds.length} images`
+          {v.generationCount > 1
+            ? `Generate ${v.generationCount} images`
             : 'Generate'}
         </ActionButton>
         {v.runs.length > 0 && (
@@ -80,11 +103,17 @@ export function View() {
         unpriced={v.estimatedCost.unpriced}
       />
 
+      <ConfirmDialog {...dialogProps} />
+
       <ModelSelector
         mode="multi"
         selectedIds={v.modelSelector.selectedIds}
         visibleModels={v.visibleModels}
-        stagedImageCount={v.picked.length}
+        /* One, always -- never `picked.length`. The strip holds the images a
+           press iterates over, but each request carries exactly one source, so
+           dimming the models that hold fewer than four because four are staged
+           would be reporting a limit nothing here is near (#441). */
+        stagedImageCount={1}
         onToggleSelected={v.modelSelector.toggleSelected}
         onToggleAll={v.modelSelector.toggleAll}
         onSelectOnly={(id) => v.modelSelector.selectOnly([id])}

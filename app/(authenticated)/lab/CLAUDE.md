@@ -158,6 +158,26 @@ item.
   and an index listing three links the nav beside it already shows would be a
   page whose only content is a duplicate of its own navigation.
 
+## Who tests what
+
+**A lab page is verified in a session only to the point of "it is not broken"**
+-- it renders, the controls are wired, a submit reaches the provider, nothing
+throws. **Whether the output is any good is Josh's call.** That is the whole
+reason these pages exist: the judgement is the work, and it needs the eye of the
+person who knows what they were after.
+
+Two things follow, both learned by getting them wrong on Outpaint (#441):
+
+- **Do not spend real money proving a page works.** A render and a wired control
+  cost nothing to check. If a live generation is genuinely needed, it is one
+  image through one cheap model -- sixteen generations to confirm a button is
+  not a test, it is a bill.
+- **A test whose inputs cannot show the failure is worse than none**, because it
+  reports success. Outpainting 16:9 frames to 16:9 asks the model for the
+  picture it was already handed: every result comes back correct and the page is
+  unproven. The sources have to differ from the target in the way the feature is
+  about.
+
 ## Promotion
 
 A feature comes back into the app when it works the way it is supposed to —

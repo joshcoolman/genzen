@@ -13,7 +13,7 @@ export interface PickedImage {
 }
 
 /**
- * Pick one image out of the library.
+ * Pick images out of the library.
  *
  * `RefImageStrip` plus `ExistingImagePicker`, both borrowed unmodified — the
  * same pair the video route uses for its frame slots. A lab experiment that
@@ -25,6 +25,7 @@ export function ImageInput({
   imageUrls,
   isLoading,
   picked,
+  max = 1,
   onPick,
   onClear,
   onOpen,
@@ -34,8 +35,16 @@ export function ImageInput({
   imageUrls: Record<string, string>
   isLoading: boolean
   picked: Array<PickedImage>
+  /**
+   * How many images this experiment takes. One by default -- Describe and
+   * Variations each ask a question about a single picture. Outpaint passes
+   * more (#441): the ratio and the models are the settings, the images are the
+   * input, and there was never a reason for only one.
+   */
+  max?: number
   onPick: (picked: Array<PickedImage>) => void
-  onClear: () => void
+  /** Drop one image, by id. */
+  onClear: (id: string) => void
   onOpen: () => void
   disabled?: boolean
 }) {
@@ -45,7 +54,7 @@ export function ImageInput({
     <div className={styles.wrap}>
       <RefImageStrip
         images={picked}
-        max={1}
+        max={max}
         onAdd={() => {
           onOpen()
           setOpen(true)
@@ -60,15 +69,20 @@ export function ImageInput({
         imageUrls={imageUrls}
         isLoading={isLoading}
         alreadyCollectedIds={new Set(picked.map((p) => p.id))}
+        /* Appends rather than replaces, so a second visit to the picker adds
+           to what is already on the strip -- `alreadyCollectedIds` above is
+           what stops the same image arriving twice. */
         onConfirm={(selected) =>
           onPick(
             selected
-              .slice(0, 1)
+              .slice(0, max)
               .map((s) => ({ id: s.id, url: s.url, title: s.title })),
           )
         }
-        max={1}
-        autoConfirm
+        max={max}
+        /* One image confirms on the click; several need a Done, which is what
+           the picker's footer already is. */
+        autoConfirm={max === 1}
       />
     </div>
   )
