@@ -1,12 +1,13 @@
 'use server'
 
 import { generateText } from 'ai'
+import type { VisionImage } from '#/lib/server/vision-image.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 import imageVariationSystem from '#/lib/prompts/image-variation.md'
 import imageVariationMultiSystem from '#/lib/prompts/image-variation-multi.md'
-import { createImageStorage } from '#/lib/image-storage'
+import { loadVisionImage } from '#/lib/server/vision-image.server'
 import { MAX_VARIATION_IMAGES } from '#/features/ai-images/constants'
 
 interface GenerateVariationPromptsInput {
@@ -20,11 +21,6 @@ interface GenerateVariationPromptsInput {
   count: number
   existingPrompts?: Array<string>
   guidance?: string
-}
-
-type ImageBytes = {
-  data: string
-  mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
 }
 
 export async function generateVariationPrompts(
@@ -111,9 +107,9 @@ export async function generateVariationPrompts(
     storagePaths = [path]
   }
 
-  const images: Array<ImageBytes> = []
+  const images: Array<VisionImage> = []
   for (const path of storagePaths) {
-    const bytes = path ? await loadImageBytes(path) : null
+    const bytes = path ? await loadVisionImage(path) : null
     // One unreadable picture drops the whole set rather than renumbering what
     // is left: a combine whose "image 2" silently became image 3 is worse than
     // one that falls back to describing the scene in words.
@@ -196,36 +192,6 @@ export async function generateVariationPrompts(
   return { prompts }
 }
 
-/** Bytes off the bucket, sniffed for type. Null if it cannot be read, which is
- *  not fatal -- the model falls back to the scene described in words. */
-async function loadImageBytes(storagePath: string): Promise<ImageBytes | null> {
-  try {
-    // Straight from the bucket -- #226 left no URL for a fetch to use.
-    const blob = await createImageStorage().download(storagePath)
-    const buffer = await blob.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
-    let mediaType: ImageBytes['mediaType'] = 'image/jpeg'
-    if (
-      bytes[0] === 0x89 &&
-      bytes[1] === 0x50 &&
-      bytes[2] === 0x4e &&
-      bytes[3] === 0x47
-    ) {
-      mediaType = 'image/png'
-    } else if (
-      bytes[0] === 0x52 &&
-      bytes[1] === 0x49 &&
-      bytes[2] === 0x46 &&
-      bytes[3] === 0x46
-    ) {
-      mediaType = 'image/webp'
-    }
-    return { data: Buffer.from(buffer).toString('base64'), mediaType }
-  } catch {
-    return null
-  }
-}
-
 /**
  * The message turn that carries the images and the ask.
  *
@@ -242,7 +208,7 @@ async function loadImageBytes(storagePath: string): Promise<ImageBytes | null> {
  */
 function variationUserContent(opts: {
   avoidSection: string
-  images: Array<ImageBytes>
+  images: Array<VisionImage>
   rootPrompt: string
   guidance?: string
 }) {
@@ -254,7 +220,7 @@ function variationUserContent(opts: {
     return `Write a short variation directive for this scene:\n\n${opts.rootPrompt}${opts.avoidSection}${guidanceSection}`
   }
 
-  const asImage = (img: ImageBytes) => ({
+  const asImage = (img: VisionImage) => ({
     type: 'image' as const,
     image: `data:${img.mediaType};base64,${img.data}`,
   })

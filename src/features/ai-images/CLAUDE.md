@@ -149,6 +149,15 @@ anything one route renders lives with that route.
   root-image resolution (four pictures the user chose have no root) and the
   anti-repeat query (the schema cannot ask about past variations of a
   particular set).
+- **Vision gets a downscaled copy, never the original**
+  (`src/lib/server/vision-image.server.ts`). Not an optimisation: originals held
+  for one image and failed outright the first time two went in one message --
+  Node destroyed the HTTP/2 session mid-upload (`ERR_HTTP2_INVALID_SESSION`) and
+  the AI SDK retried into `Cannot connect to API`, an error naming everything
+  except the size of what was sent. Long edge 1568, which is what Claude scales
+  to anyway, re-encoded to JPEG so the type is known rather than sniffed, and
+  `rotate()` first because a re-encode drops the EXIF orientation that was
+  keeping a portrait photo upright.
 - **`imageLabelPrefix` is what makes "image 2" mean anything** (#436). A
   generation is one prompt string plus one ordered array with no per-image
   field, so the numbers are words in the prompt, prepended at submit for any set
