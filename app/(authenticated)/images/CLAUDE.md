@@ -26,7 +26,13 @@ list once when the seed comes back full, so the grid is never short.
   row. It loads what it can and says what it could not, because a panel is a
   starting point rather than a submission; `planRetry` refuses in the same
   situation and is right to, for the opposite reason. A trashed input counts as
-  missing: restoring an image is a deliberate act.
+  missing: restoring an image is a deliberate act. **It replaces the whole prompt
+  list, not row 0** (#458): it was `setPrompt` until the panel routinely held
+  several, and after a Variations run loads four (#436) a Load left you with
+  five prompts and Generate ran all of them. **Activity carries the same verb as
+  a button** (#458), reaching the panel through the handoff rather than directly;
+  the two behave identically on purpose, since two things called Load that
+  differ is worse than either one alone.
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption

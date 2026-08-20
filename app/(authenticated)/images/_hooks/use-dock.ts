@@ -8,6 +8,16 @@ const OPEN_KEY = 'genzen:generator-panel-open'
 export interface DockState {
   open: boolean
   setOpen: (open: boolean) => void
+  /**
+   * Whether the stored value has landed yet.
+   *
+   * Exposed because anything that wants to *force* the panel open on mount has
+   * to wait for it. `open` starts at the fallback `true` and only becomes the
+   * stored value a tick later, so a `setOpen(true)` fired before that is not
+   * ignored -- it is silently undone by the hydration that follows, which looks
+   * exactly like the call never happened (#458).
+   */
+  hydrated: boolean
 }
 
 /**
@@ -33,5 +43,5 @@ export function useDock(): DockState {
     localStorage.setItem(OPEN_KEY, String(open))
   }, [open, openHydrated])
 
-  return { open, setOpen }
+  return { open, setOpen, hydrated: openHydrated }
 }

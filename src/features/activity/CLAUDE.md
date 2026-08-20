@@ -54,3 +54,15 @@ Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips w
 - The detail panel's References block shows **every image the generation was given**, resolved by `ai-images/server/generation-inputs.server.ts` (#380) -- not one metadata field. The same fact is written as `reference_image_ids` or `source_image_id` depending on the submit path, and reading only the first meant an edit through a model's image endpoint showed no references at all. `parent_id` (filing) and `root_image_id` (ancestry) are deliberately excluded. Metadata order is preserved; a missing ref shows a "missing" placeholder and a trashed one is marked rather than dropped.
 - No realtime: the channel went with #173/#174. FAL polling (5s interval) runs only while pending rows exist on the current page, and a settled row triggers a silent refetch.
 - Arrow keys (left/right) cycle through entries when detail panel is open; skips when focus is in an input/textarea.
+
+- **Load generation hands a run to the Images panel** (#458). The detail panel's
+  one verb: prompt and reference images into the generator, then `/images`.
+  Aspect ratio, generations-per-model and the model selection are all left
+  alone -- the selection is the working context you are already in, not part of
+  the thing being loaded. Images only; a clip's generation would arrive at the
+  wrong kind of model. It goes through `src/lib/panel-handoff.ts`, the same door
+  the lab uses (#433), and reuses `loadGeneration` rather than re-deriving the
+  payload -- that action moved out of Images' `_actions/` when this became its
+  second consumer. **The missing-inputs warning is said here, before
+  navigating**: the handoff carries a request and never a result, so a toast on
+  the far side would need the door to grow a field nothing else wants.

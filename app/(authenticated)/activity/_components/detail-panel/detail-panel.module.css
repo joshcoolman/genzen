@@ -350,3 +350,15 @@
 .jsonLiteral {
   color: hsl(195.8 100% 50%);
 }
+
+/* Full width under the summary: it acts on the whole generation above it, not
+   on any one field further down. */
+.loadButton {
+  width: 100%;
+  margin-top: var(--space-12);
+}
+
+.loadIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}

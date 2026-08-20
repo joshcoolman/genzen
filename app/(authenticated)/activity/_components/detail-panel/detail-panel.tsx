@@ -1,20 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertCircle, Check, CheckCircle2, Clock4, Copy } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Clock4,
+  Copy,
+  PanelRightOpen,
+} from 'lucide-react'
 import { clsx } from 'clsx'
 import { getActivityEntry } from '../../_actions/get-entry'
 import styles from './detail-panel.module.css'
 import type { ActivityEntryDetail } from '#/features/activity/types'
 import { formatCents } from '#/lib/format'
 import { imageUrl } from '#/lib/image-url'
+import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
+import { writePanelHandoff } from '#/lib/panel-handoff'
 import {
+  Button,
   MediaBox,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   firstFrameSrc,
+  toast,
 } from '#/components'
 import {
   formatAbsolute,
@@ -24,6 +36,71 @@ import {
 
 /** Matches the 64px the summary block was sized at by hand. */
 const SUMMARY_THUMB_SIZE = 64
+
+/**
+ * Make another one like this (#458).
+ *
+ * Activity is where you look at what you have made, and the obvious next
+ * thought about one of them is another run. That took copying the prompt,
+ * navigating, pasting, and re-picking every reference by hand.
+ *
+ * **It fills a form and takes you to it.** Nothing is submitted and nothing is
+ * spent -- the same contract as Images' own Load (#382) and the lab's handoff
+ * (#433), which is the door this goes through. Model selection, generations per
+ * model and the aspect ratio are all left alone: the selection is the working
+ * context you are already in, not part of the thing being loaded.
+ *
+ * Images only, because the panel it fills is the image generator. A clip's
+ * generation would arrive there as a prompt for the wrong kind of model.
+ *
+ * The missing-inputs warning is said **here, before navigating**, rather than
+ * carried across. The handoff is a request and never a result, and the sender
+ * is deliberately told nothing about what the panel does with it -- so a toast
+ * on the far side would need the door to grow a field it has no other use for.
+ */
+function LoadGenerationButton({ detail }: { detail: ActivityEntryDetail }) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  return (
+    <Button
+      variant="secondary"
+      className={styles.loadButton}
+      disabled={isLoading}
+      onClick={() => {
+        setIsLoading(true)
+        loadGeneration(detail.id)
+          .then((loaded) => {
+            writePanelHandoff({
+              prompts: [loaded.prompt],
+              images: loaded.images.map((i) => ({
+                id: i.id,
+                url: imageUrl(i.id),
+                title: i.title,
+              })),
+            })
+            if (loaded.missing > 0) {
+              toast(
+                loaded.missing === 1
+                  ? 'One image from that generation is no longer available'
+                  : `${loaded.missing} images from that generation are no longer available`,
+              )
+            }
+            router.push('/images')
+          })
+          .catch((e: unknown) => {
+            toast.error(
+              e instanceof Error ? e.message : 'Could not load that generation',
+            )
+            setIsLoading(false)
+          })
+      }}
+    >
+      <PanelRightOpen className={styles.loadIcon} />
+      Load generation
+    </Button>
+  )
+}
 
 interface DetailPanelProps {
   entryId: string | null
@@ -266,6 +343,9 @@ export function DetailPanel({ entryId, onClose }: DetailPanelProps) {
                   </div>
                 </div>
               </div>
+            )}
+            {detail && detail.source !== 'ai_video' && (
+              <LoadGenerationButton detail={detail} />
             )}
           </SheetHeader>
 
