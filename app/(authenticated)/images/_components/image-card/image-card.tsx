@@ -272,6 +272,11 @@ export function ImageCard({
       {selectionActive && onSelect && (
         <div
           className={styles.selectOverlay}
+          /* Also the sweep's hit target (#440). It is exactly the card's
+             rectangle and it exists only in select mode, which is the only
+             time a sweep can run -- so the selectable set needs no marking of
+             its own, and a group, pending or failed card is never found. */
+          data-select-id={img.id}
           onClick={(e) => {
             e.stopPropagation()
             onSelect(img.id, e.shiftKey)

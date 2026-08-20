@@ -124,6 +124,33 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
+- **Shift-drag sweeps a region into the selection (#440).** Only once select
+  mode is on, which is what keeps a stray shift-drag from doing anything while
+  you are just looking. Deliberately loose rather than a graphics-program
+  marquee: the drag can **start on top of a card**, hitting is **intersection**
+  (clipping a corner is enough), and it **only ever adds** -- precision is the
+  thing the gesture exists to avoid, so `addMany` and not `toggle`. Shift-click
+  still extends a range from the last card toggled; the two agree rather than
+  collide, since both mean "add several" and one is a click. The hit targets
+  are each card's `selectOverlay`, which is exactly the card's rectangle and
+  exists only in select mode -- so group, pending and failed cards are never
+  found and need no special case. `_hooks/use-sweep-select.ts` owns it, and two
+  things there are decisions rather than details. **The rectangles are measured
+  once, at drag start**, in page coordinates: the grid does not reflow during a
+  drag, so re-measuring per pointer move would buy nothing and cost a layout
+  pass a frame at a hundred cards. **Auto-scroll at the viewport edge is not
+  implemented** -- a sweep covers one screenful, which is most sweeps, and it is
+  the one thing that would invalidate that measurement. The marquee is drawn
+  `position: fixed` outside the grid, because the grid carries `zoom` (#403) and
+  a rectangle inside it would be scaled with the cards. The drag never calls
+  `preventDefault` on the pointerdown -- that suppresses the browser's text
+  selection and native image drag in one line, but it also risks the click, and
+  a shift-press that never crosses the threshold has to reach the card as an
+  ordinary shift-click; `selectstart` and `dragstart` are cancelled instead. The
+  click that follows a committed sweep **is** swallowed, and the flag that does
+  it is cleared by the next press as well as by the click it waits for: a sweep
+  that ends where no click follows otherwise leaves it armed to eat an
+  unrelated click later
 - **A click opens the viewer, and #308's in-place preview is gone.** For three
   days the click turned the grid area, and only the grid area, into one large
   image -- toolbar still there, no scrim, hidden click zones in the outer

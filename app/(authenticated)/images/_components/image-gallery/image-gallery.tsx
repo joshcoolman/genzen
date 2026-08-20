@@ -1,3 +1,4 @@
+import { useSweepSelect } from '../../_hooks/use-sweep-select'
 import { GroupCard } from '../group-card/group-card'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
 import { ImageCard } from '../image-card/image-card'
@@ -6,6 +7,7 @@ import styles from './image-gallery.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import { getModelName } from '#/features/ai-images/models'
+import { cx } from '#/lib/utils'
 import { EmptyState, ImageGridSkeleton } from '#/components'
 
 /* One size. The switcher went in #284 -- large was the only setting ever used,
@@ -74,6 +76,9 @@ interface ImageGalleryProps {
   selectionActive?: boolean
   isSelected?: (id: string) => boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  /** Shift-drag across the grid (#440): every card the rectangle touches
+   *  joins. Additive only -- see `useSweepSelect`. */
+  onSweepSelect?: (ids: Array<string>) => void
   /** A click on the grid's own background -- the gaps between cards. Clearing
    *  the selection is what it means (#439); absent when there is none. */
   onBackgroundClick?: () => void
@@ -108,8 +113,18 @@ export function ImageGallery({
   selectionActive,
   isSelected,
   onSelect,
+  onSweepSelect,
   onBackgroundClick,
 }: ImageGalleryProps) {
+  /* Shift-drag to sweep (#440). Only once select mode is on, which is what
+     keeps it from doing anything while you are just looking. Shift-click
+     already extends a range from the last card toggled; these agree rather
+     than collide -- both mean "add several", one is a click and one is a
+     drag. */
+  const sweep = useSweepSelect({
+    enabled: Boolean(selectionActive && onSweepSelect),
+    onSweep: onSweepSelect ?? (() => {}),
+  })
   /* The gaps between cards are empty space too, and they belong to the grid
      rather than to the frame around it (#439). Identity again, never a bubbled
      click: everything in this grid is something you can click on purpose. */
@@ -128,8 +143,9 @@ export function ImageGallery({
         </EmptyState>
       ) : (
         <div
-          className={styles.grid}
+          className={cx(styles.grid, sweep.sweeping && styles.sweeping)}
           onClick={clearOnBackground}
+          onPointerDown={sweep.onPointerDown}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
             // without touching layout, so the grid would keep its old
@@ -241,6 +257,21 @@ export function ImageGallery({
             )
           })}
         </div>
+      )}
+
+      {/* Outside the grid on purpose: the grid carries `zoom`, and a rectangle
+          drawn inside it would be scaled along with the cards. Fixed, in
+          client coordinates, over everything and taking nothing. */}
+      {sweep.rect && (
+        <div
+          className={styles.marquee}
+          style={{
+            left: sweep.rect.left,
+            top: sweep.rect.top,
+            width: sweep.rect.width,
+            height: sweep.rect.height,
+          }}
+        />
       )}
     </div>
   )
