@@ -7,8 +7,16 @@
 // reads like a bad key, not a shadowed one.
 //
 // `local:up` already checks this, but `pnpm dev` is run directly far more often,
-// so the check belongs here too. Warns and exits 0: a shadowed key is not a
-// reason to refuse to start.
+// so the check belongs here too.
+//
+// **An EMPTY export refuses to start; a stale one only warns.** The warning was
+// the whole check until Aug 2026, when an `export FAL_KEY=""` cost two separate
+// debugging sessions -- new keys minted, .env.local re-pasted, server restarted,
+// logged out and back in -- because the banner had scrolled away above a request
+// log by the time anything failed. There is no reason to run the app with a
+// variable exported as empty over a real value in .env.local, so it is not a
+// judgement call worth leaving open. A stale non-empty value still warns: that
+// one can be deliberate, like pointing at another account for an afternoon.
 import { existsSync, readFileSync } from 'node:fs'
 
 const ENV_LOCAL = new URL('../.env.local', import.meta.url)
@@ -35,17 +43,31 @@ const shadowed = WATCHED.filter((name) => {
   return file && shell !== file
 })
 
+const empty = shadowed.filter((name) => process.env[name] === '')
+
 if (shadowed.length) {
-  console.warn('')
+  const say = empty.length ? console.error : console.warn
+  say('')
   for (const name of shadowed) {
     const shell = process.env[name]
     const file = (text.match(new RegExp(`^${name}=(.*)$`, 'm')) ?? [])[1].trim()
-    console.warn(
+    say(
       `!! ${name} is exported in your shell (${shell === '' ? 'EMPTY STRING' : mask(shell)}) and OVERRIDES .env.local (${mask(file)}).`,
     )
   }
-  console.warn('   Editing .env.local will not change what the app uses.')
-  console.warn(
-    '   `unset <NAME>` in this shell, or remove the export from your dotfiles.\n',
+  say('   Editing .env.local will not change what the app uses.')
+  say(
+    '   `unset <NAME>` in this shell, or remove the export from your dotfiles.',
   )
+  if (empty.length) {
+    say(
+      `   Refusing to start: ${empty.join(', ')} exported as an empty string.`,
+    )
+    say(
+      '   Nothing in the app can work around this, and it reports itself as a\n' +
+        '   missing key, which sends you to the file that is already correct.\n',
+    )
+    process.exit(1)
+  }
+  say('')
 }
