@@ -76,7 +76,7 @@ live with the one route that renders them:
 
 | Surface    | Where                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` (has its CLAUDE.md)                                     |
+| Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/` (has its CLAUDE.md)  |
 | Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working            |
 | Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                     |
 | Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                      |

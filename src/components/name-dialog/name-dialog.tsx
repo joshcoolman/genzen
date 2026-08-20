@@ -1,20 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import styles from './group-name-dialog.module.css'
+import { Button } from '../button/button'
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
-} from '#/components'
+} from '../dialog/dialog'
+import { Input } from '../input/input'
+import styles from './name-dialog.module.css'
 
-interface GroupNameDialogProps {
+interface NameDialogProps {
   open: boolean
-  /** "New group" when creating, the current name when renaming. */
+  /** "New canvas", "Rename group" -- what the dialog is for, in the header. */
   title: string
   initialName?: string
   confirmLabel: string
@@ -23,25 +23,25 @@ interface GroupNameDialogProps {
 }
 
 /**
- * A name, and nothing else (#319).
+ * A name, and nothing else (#319, shared with canvases in #446).
  *
- * The only modal step in the whole feature, and it stays that way on purpose:
- * the previous attempt at grouping also asked which image should represent the
- * group, and that second question is what turned "these go together" into a
- * chore. The cover is picked automatically and changed later from an image's
- * own menu, so this is one field and two buttons.
+ * Written for groups, where it is the only modal step in the feature and stays
+ * that way on purpose: the previous attempt at grouping also asked which image
+ * should represent the group, and that second question is what turned "these go
+ * together" into a chore. Naming a canvas asks exactly as little, which is why
+ * this is a primitive rather than two dialogs.
  *
  * Enter submits, because a one-field dialog that makes you aim at a button is
  * asking for a click it does not need.
  */
-export function GroupNameDialog({
+export function NameDialog({
   open,
   title,
   initialName = '',
   confirmLabel,
   onSubmit,
   onCancel,
-}: GroupNameDialogProps) {
+}: NameDialogProps) {
   const [name, setName] = useState(initialName)
 
   // Reseeded on open rather than on mount: the dialog stays mounted between

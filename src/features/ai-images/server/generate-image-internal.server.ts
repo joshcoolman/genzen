@@ -46,8 +46,9 @@ export interface GenerateImageInput {
   referenceImageIds?: Array<string>
   parentImageId?: string
   idempotencyKey?: string
-  /** Mark the created row as living on the canvas, so it's reclaimable on load */
-  onCanvas?: boolean
+  /** The canvas this generation was submitted from, if any: its row joins that
+   *  board at reserve time, so it is reclaimable on load (#446). */
+  canvasId?: string
   /** File the result into a group (#319) -- set when the generator submitted
    *  from inside one. Verified against the caller's user id before it is
    *  written; see `createPendingGeneration`. */
@@ -157,7 +158,7 @@ export async function generateImageInternal(
     prompt: (typedPrompt ?? prompt).trim(),
     aspectRatio,
     idempotencyKey: data.idempotencyKey,
-    onCanvas: data.onCanvas,
+    canvasId: data.canvasId,
     groupId: data.groupId,
     extraMetadata: {
       // Captured with no reader today, deliberately: unused *code* rots, unused

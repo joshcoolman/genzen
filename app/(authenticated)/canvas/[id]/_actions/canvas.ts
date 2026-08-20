@@ -5,8 +5,8 @@ import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
 import {
   addCanvasMembers,
-  ensureDefaultCanvas,
   removeCanvasMembers,
+  requireCanvas,
 } from '#/lib/server/canvas-membership.server'
 import { imageUrl } from '#/lib/image-url'
 
@@ -44,6 +44,7 @@ export interface CanvasMemberRecord {
 
 export interface CanvasState {
   canvasId: string
+  name: string
   /** NULL for a canvas nobody has panned yet; the client supplies its default. */
   transform: Transform | null
   groups: Array<CanvasGroup>
@@ -51,26 +52,32 @@ export interface CanvasState {
 }
 
 /**
- * The whole canvas, in one query pair. Read on the server by `page.tsx` and
- * handed to the view as its initial state, so there is no loading gate and no
- * empty first paint.
+ * One canvas, in one query pair. Read on the server by `page.tsx` and handed to
+ * the view as its initial state, so there is no loading gate and no empty first
+ * paint.
  *
- * Creates the canvas row on first call. That is a write on a read path, which is
- * worth it to keep every later call trivial: it happens once per account, and
- * concurrent first loads converge because `ensureDefaultCanvas` reads oldest-first.
+ * Returns null for an id this user does not own, which the page turns into a
+ * 404 -- a board is addressable now (#446), so a stale link and a stranger's id
+ * are the same thing and neither may say whether the row exists.
  */
-export async function loadCanvasState(): Promise<CanvasState> {
+export async function loadCanvasState(
+  canvasId: string,
+): Promise<CanvasState | null> {
   const { userId } = await resolveAuth()
-  const canvasId = await ensureDefaultCanvas(userId)
 
   const canvas = first(
     await sql<
-      Array<{ transform: Transform | null; groups: Array<CanvasGroup> | null }>
+      Array<{
+        name: string
+        transform: Transform | null
+        groups: Array<CanvasGroup> | null
+      }>
     >`
-      select transform, groups from canvases
+      select name, transform, groups from canvases
       where id = ${canvasId} and user_id = ${userId}
     `,
   )
+  if (!canvas) return null
 
   const rows = await sql<Array<Omit<CanvasMemberRecord, 'url'>>>`
     select
@@ -83,17 +90,10 @@ export async function loadCanvasState(): Promise<CanvasState> {
     order by ci.created_at
   `
 
-  // **No `deleted_at` filter, deliberately (#375).** Trash is a library state
-  // and the canvas is not the library: a card leaves the board when it is
-  // removed from the board, and at no other time. Trashing an image from Images
-  // to tidy a group used to wipe it off a canvas the user was not looking at,
-  // which is the library reaching into the canvas -- the mirror of the reach
-  // #373 took out in the other direction.
-  //
-  // What keeps this honest is the lock in Trash: an image with a membership row
-  // cannot be permanently deleted, so a card on the board can never be
-  // destroyed underneath it. Remove it from the canvas first, and the lock
-  // lifts.
+  // **No `deleted_at` filter, and none needed (#446).** Trashing an image
+  // clears its membership on every board, so a trashed row cannot be read here
+  // in the first place. The filter would be belt-and-braces over a row that
+  // does not exist.
   const images = rows.map((row) => ({
     ...row,
     url: row.storage_path ? imageUrl(row.image_id) : null,
@@ -101,8 +101,9 @@ export async function loadCanvasState(): Promise<CanvasState> {
 
   return {
     canvasId,
-    transform: canvas?.transform ?? null,
-    groups: canvas?.groups ?? [],
+    name: canvas.name,
+    transform: canvas.transform ?? null,
+    groups: canvas.groups ?? [],
     images,
   }
 }
@@ -175,6 +176,7 @@ export async function addImagesToCanvas(
   >,
 ): Promise<void> {
   const { userId } = await resolveAuth()
+  await requireCanvas(userId, canvasId)
   await addCanvasMembers(userId, canvasId, members)
 }
 

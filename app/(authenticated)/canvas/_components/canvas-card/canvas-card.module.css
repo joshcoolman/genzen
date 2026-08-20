@@ -1,0 +1,92 @@
+/* Everything a CanvasCard adds to a Thumbnail, which is deliberately little --
+   the card is an image card with three deviations, the same trade GroupCard
+   made: the corner label, the caption's heading, and a swatch row in the grey.
+   No fixed aspect ratio and no cover-crop, because a square cropped tile beside
+   contained ones reads as a different kind of card rather than one of them
+   carrying something extra. */
+
+.menuIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* The corner an image card fills with the model name, matched exactly. */
+.kind {
+  position: absolute;
+  right: var(--space-8);
+  bottom: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* An empty board draws nothing in the image area. The height keeps the tile
+   from collapsing to its caption, so a new canvas is a card among cards. */
+.empty {
+  width: 100%;
+  min-height: 8rem;
+}
+
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.name {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-3xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.total {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+}
+
+/* Five across, sized by the column. This row is the whole tell that the card
+   stands for more than one picture, so it gets real room in the grey rather
+   than floating over the image. */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  width: 100%;
+}
+
+/* A slot with no member ghosts rather than collapsing: the row keeps its shape
+   on every card, and a half-full one reads as room for more. */
+.swatch,
+.swatchEmpty {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+}
+
+.swatchEmpty {
+  background-color: var(--slot-empty);
+}

@@ -83,6 +83,7 @@ describe('stateToImages', () => {
   it('reports which members still need a position', () => {
     const { images, unplacedIds } = stateToImages({
       canvasId: 'c',
+      name: 'Canvas',
       transform: null,
       groups: [],
       images: [

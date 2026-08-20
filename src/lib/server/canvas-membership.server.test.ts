@@ -3,15 +3,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   addCanvasMembers,
   clearCanvasMembership,
-  ensureDefaultCanvas,
   listCanvasMemberIds,
   removeCanvasMembers,
+  requireCanvas,
 } from './canvas-membership.server'
 import { sql } from './db.server'
 
 // Membership is now rows (#212), so these are the guarantees the canvas reads
 // depend on: one card per image, position that survives being written to twice,
-// and membership that a trash clears off every board (#446).
+// membership that a trash clears off every board, and an id from the browser
+// that cannot name a board someone else owns (#446).
 //
 // Runs against the local Postgres from docker-compose (DATABASE_URL), like
 // `credentials.server.test.ts`. A real database rather than a mock is the whole
@@ -20,6 +21,15 @@ import { sql } from './db.server'
 const EMAIL = `${randomUUID()}@example.com`
 let userId: string
 let canvasId: string
+
+/** A canvas of this user's, by name. */
+async function makeCanvas(name: string): Promise<string> {
+  const [row] = await sql<Array<{ id: string }>>`
+    insert into canvases (user_id, name) values (${userId}, ${name})
+    returning id
+  `
+  return row.id
+}
 
 /** A completed library image, the way an upload lands. */
 async function makeImage(title: string): Promise<string> {
@@ -42,7 +52,7 @@ beforeAll(async () => {
     returning id
   `
   userId = user.id
-  canvasId = await ensureDefaultCanvas(userId)
+  canvasId = await makeCanvas('Canvas')
 })
 
 afterAll(async () => {
@@ -50,15 +60,29 @@ afterAll(async () => {
   await sql.end()
 })
 
-describe('ensureDefaultCanvas', () => {
-  it('returns the same canvas on every call', async () => {
-    expect(await ensureDefaultCanvas(userId)).toBe(canvasId)
-    expect(await ensureDefaultCanvas(userId)).toBe(canvasId)
+describe('requireCanvas', () => {
+  it('resolves a canvas this user owns and refuses one they do not', async () => {
+    expect(await requireCanvas(userId, canvasId)).toBe(canvasId)
 
-    const [{ count }] = await sql<Array<{ count: string }>>`
-      select count(*)::int as count from canvases where user_id = ${userId}
+    const [stranger] = await sql<Array<{ id: string }>>`
+      insert into users (email, password_hash)
+      values (${`${randomUUID()}@example.com`}, 'unused')
+      returning id
     `
-    expect(Number(count)).toBe(1)
+    const [theirs] = await sql<Array<{ id: string }>>`
+      insert into canvases (user_id, name) values (${stranger.id}, 'Theirs')
+      returning id
+    `
+
+    // The id reaches the server from the browser now that a board is
+    // addressable (#446), and `canvas_images` carries user_id from
+    // resolveAuth() -- so without this check a forged id would file your row
+    // into someone else's board.
+    await expect(requireCanvas(userId, theirs.id)).rejects.toThrow(
+      /Canvas not found/,
+    )
+
+    await sql`delete from users where id = ${stranger.id}`
   })
 })
 
@@ -81,14 +105,11 @@ describe('membership', () => {
 
   it('clears off every canvas at once, whatever board the card is on', async () => {
     const c = await makeImage('c')
-    const [second] = await sql<Array<{ id: string }>>`
-      insert into canvases (user_id, name) values (${userId}, 'Second')
-      returning id
-    `
+    const secondId = await makeCanvas('Second')
     await addCanvasMembers(userId, canvasId, [
       { imageId: c, x: 40, y: 50, width: 200, height: 300 },
     ])
-    await addCanvasMembers(userId, second.id, [
+    await addCanvasMembers(userId, secondId, [
       { imageId: c, x: 0, y: 0, width: 100, height: 100 },
     ])
 
@@ -98,9 +119,9 @@ describe('membership', () => {
     await clearCanvasMembership(userId, [c])
 
     expect(await memberIds()).not.toContain(c)
-    expect(await listCanvasMemberIds(userId, second.id)).toEqual([])
+    expect(await listCanvasMemberIds(userId, secondId)).toEqual([])
 
-    await sql`delete from canvases where id = ${second.id}`
+    await sql`delete from canvases where id = ${secondId}`
   })
 })
 

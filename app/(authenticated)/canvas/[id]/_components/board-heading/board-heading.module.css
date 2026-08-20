@@ -1,0 +1,62 @@
+/* Floats over the plane, top left, clear of the selection bar at the bottom.
+   Sized to its content: the plane behind it is a click target for panning and
+   marquee, so a row running the width of the viewport would eat those. */
+.row {
+  position: absolute;
+  top: var(--space-16);
+  left: var(--space-16);
+  /* Above the plane and its screen-space overlays, in the band the selection
+     bar already occupies. */
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: fit-content;
+  /* Roomy on purpose: it is one of two controls on a surface that is otherwise
+     all drag target, and a thin pill next to an infinite canvas is a hard
+     thing to hit. */
+  padding: var(--space-8) var(--space-16) var(--space-8) var(--space-8);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
+}
+
+/* On a canvas the ground behind is arbitrary -- images, groups, empty plane --
+   so unlike the group heading this one carries its own surface. */
+.row:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.backIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* The board's name, at the size of the other floating chrome rather than a page
+   title: it labels a surface you are working on, it is not a header for content
+   below it. */
+.name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+  white-space: nowrap;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

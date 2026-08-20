@@ -58,6 +58,7 @@ function boundsOf(imgs: Array<CanvasImage>): Rect {
 }
 
 export function useCanvasGenerate(
+  canvasId: string,
   setImages: React.Dispatch<React.SetStateAction<Array<CanvasImage>>>,
   getImages: () => Array<CanvasImage>,
   revealBounds: (b: Rect) => void,
@@ -355,7 +356,7 @@ export function useCanvasGenerate(
     setError,
     storagePrefix: 'genzen-canvas',
     onAfterSubmit: handleAfterSubmit,
-    onCanvas: true,
+    canvasId,
     promptPrefix: labelPrefix,
   })
 
