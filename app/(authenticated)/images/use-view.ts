@@ -181,7 +181,10 @@ export function useView(initial: Array<SavedAiImage>) {
     const handoff = takePanelHandoff()
     if (!handoff) return
     generator.replacePrompts(handoff.prompts)
-    if (handoff.primaryImage) generator.setPrimaryImage(handoff.primaryImage)
+    // The whole set, in the order it was written against (#436) -- the prompts
+    // may name the images by number, so replacing is the only correct move:
+    // merging into whatever the panel already held would renumber them.
+    if (handoff.images) generator.replaceRefImages(handoff.images)
     // Once, on mount: a delivery is consumed by the read, so a second run
     // would have nothing to apply even if the deps changed.
   }, [])

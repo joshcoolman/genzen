@@ -45,9 +45,16 @@ export interface PanelHandoff {
   /** Replaces the panel's list outright. Empty entries are the caller's
    *  business; the submit ignores them. */
   prompts: Array<string>
-  /** Goes to slot 0 -- the slot the aspect ratio follows and the submit sends
-   *  first. Omitted leaves the panel's set alone. */
-  primaryImage?: HandoffImage
+  /**
+   * The panel's reference set, in order. Replaces whatever is there; omitted
+   * leaves it alone.
+   *
+   * Ordered because the order is load-bearing (#436): index 0 drives the
+   * aspect ratio and is submitted first, and the prompts riding along may name
+   * the rest by number. A set delivered in a different order than the prompts
+   * were written against is prompts pointing at the wrong pictures.
+   */
+  images?: Array<HandoffImage>
 }
 
 /** Leave a handoff for the next panel to mount. Overwrites any previous one. */
@@ -80,11 +87,20 @@ export function takePanelHandoff(): PanelHandoff | null {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
-    const { prompts, primaryImage } = parsed as PanelHandoff
+    const { prompts, images } = parsed as PanelHandoff
     if (!Array.isArray(prompts)) return null
+    // Cast back to "might be anything": the declared type is what a writer
+    // promised, and this is reading a string out of storage that a previous
+    // version of the app -- or nothing at all -- may have written.
+    const valid = Array.isArray(images)
+      ? (images as Array<Partial<HandoffImage> | null>).filter(
+          (img): img is HandoffImage =>
+            typeof img?.id === 'string' && img.id.length > 0,
+        )
+      : []
     return {
       prompts: prompts.filter((p) => typeof p === 'string'),
-      ...(primaryImage?.id ? { primaryImage } : {}),
+      ...(valid.length > 0 ? { images: valid } : {}),
     }
   } catch {
     return null

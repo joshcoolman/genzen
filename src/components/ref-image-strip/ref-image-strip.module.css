@@ -71,6 +71,24 @@
   }
 }
 
+/* Which image the prompt means when it says "image 2". Top-left, opposite the
+   remove marker, and always visible -- it is a fact about the set, not a
+   response to a gesture. */
+.ordinal {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  min-width: 0.875rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--surface) 75%, transparent);
+  color: var(--text);
+  font-size: var(--text-3xs);
+  line-height: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* The image dims with it, so the whole tile reads as the thing about to go. */
 .frameRemovable .image {
   transition: opacity var(--duration-normal) var(--ease-in-out);

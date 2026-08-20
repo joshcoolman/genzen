@@ -20,3 +20,23 @@ export function pushRef(
 ): Array<RefImage> {
   return [image, ...prev.filter((r) => r.id !== image.id)]
 }
+
+/**
+ * The labels that tell a model which picture is which (#436).
+ *
+ * A generation sends one prompt string and one ordered array of images, with no
+ * per-image field, so "image 2" can only ever be words in the prompt. This is
+ * those words, prepended at submit: `[Image 1, Image 2]\n\n`.
+ *
+ * Pure and tested for the same reason `pushRef` is -- a prefix that disagrees
+ * with the set it was built from is invisible. Nothing about it looks wrong; a
+ * prompt naming image 2 just quietly gets image 3.
+ *
+ * Empty below two images: a lone "[Image 1]" is a number for a picture nothing
+ * needs to distinguish from another.
+ */
+export function imageLabelPrefix(count: number): string {
+  if (count < 2) return ''
+  const labels = Array.from({ length: count }, (_, i) => `Image ${i + 1}`)
+  return `[${labels.join(', ')}]\n\n`
+}

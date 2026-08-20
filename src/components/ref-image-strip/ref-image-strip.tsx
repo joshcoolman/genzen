@@ -32,13 +32,27 @@ export function RefImageStrip({
   showLabels,
 }: RefImageStripProps) {
   const removable = !!onRemove && !disabled
+  /** Derived, not a prop: the number matters exactly when a prompt could name
+   *  it, and that is the same condition the submit prefix uses. A host opting
+   *  out would be a strip whose numbers disagree with the prompt. */
+  const numbered = images.length > 1
 
   return (
     <div className={cx(styles.root, showLabels && styles.rootLabelled)}>
-      {images.map((img) => {
+      {images.map((img, index) => {
         const frame = (
           <>
             <img src={img.url} alt={img.title} className={styles.image} />
+            {/* The number the prompt says out loud. `useGenerator` prepends
+                `[Image 1, Image 2, ...]` at submit for exactly this set, so
+                without it the strip and the prompt agree only by luck (#436).
+                Hidden at one image, where the prefix does not apply either and
+                a lone "1" is a badge for nothing. */}
+            {numbered && (
+              <span className={styles.ordinal} aria-hidden="true">
+                {index + 1}
+              </span>
+            )}
             {/* Revealed on hover, and not the target: aiming at a 12px corner
                 is a lot of precision for "I do not want this one", and four red
                 dots is a lot of alarm for a row you are mostly just looking at.

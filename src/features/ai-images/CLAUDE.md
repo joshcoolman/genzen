@@ -34,9 +34,8 @@ anything one route renders lives with that route.
   only consumer, and `features/` is earned by two.
 - **System instructions are read from storage at submit, never passed in**
   (#272). `system-instructions.ts` is one global value under one key, prepended
-  by `useGenerator` ahead of the host's own `promptPrefix` — so Images and
-  Canvas both get it with no wiring and the composition order lives in one
-  place. `use-system-instructions.ts` is for the UI that edits it and is not on
+  by `useGenerator` ahead of the image labels — so Images and Canvas both get it
+  with no wiring and the composition order lives in one place. `use-system-instructions.ts` is for the UI that edits it and is not on
   the submit path.
 - **One set, not a source plus references (#297).** `useGenerator` holds an
   ordered, **unbounded** `refImages`, and every member is a library
@@ -52,17 +51,18 @@ anything one route renders lives with that route.
   into one ordered `image_urls`, and it survives only because
   `generation_metadata` (and so `retry-plan.ts`) is written in those terms.
 - **Three ends to the set.** `addRefImages` appends, for picking several at
-  once; `pushRefImage` unshifts, for the one-at-a-time
-  gesture that means "use this one" (Cmd-click a card, #284) — it evicted the
-  last until #341, and nothing replaced the limit;
-  `setPrimaryImage` replaces slot 0 and keeps the rest, and applying variations
-  is its only caller -- the prompts are _of_ that image. `setPrimaryImage` was
-  briefly the Cmd-click binding and should not be again: replacing meant
-  clicking three cards left one image, and against a single-image model it is
-  indistinguishable from `pushRefImage`, so the bug hides exactly where it is
-  most likely to be tested. The ordering is `pushRef` in `ref-images.ts` --
-  pure, so it is unit-tested, because a silent eviction at the wrong end is
-  invisible.
+  once; `pushRefImage` unshifts, for the one-at-a-time gesture that means "use
+  this one" (Cmd-click a card, #284) — it evicted the last until #341, and
+  nothing replaced the limit; `replaceRefImages` swaps the whole set, which is
+  how a Canvas selection and a lab handoff both arrive. There was a fourth,
+  `setPrimaryImage`, replacing slot 0 and keeping the rest; it went with #436,
+  when Variations started handing over a whole ordered set instead of one
+  source. Do not reintroduce it as a card gesture, which it briefly was:
+  replacing meant clicking three cards left one image, and against a
+  single-image model it is indistinguishable from `pushRefImage`, so the bug
+  hides exactly where it is most likely to be tested. The ordering is `pushRef`
+  in `ref-images.ts` -- pure, so it is unit-tested, because a silent eviction at
+  the wrong end is invisible.
 - **"What went into this generation" has one answer, `generation-inputs.ts`**
   (#380). The split above is why: index 0 goes over the wire as
   `sourceImageId` and the rest as `referenceImageIds`, so the same fact lands
@@ -139,6 +139,24 @@ anything one route renders lives with that route.
   Reference images widget, never from the grid and never by uploading.
 - Variations rewrite the prompt with Claude Sonnet against the source image
   ("creative tension") to stop quality drift.
+- **A variation can be about up to four images** (#436, `MAX_VARIATION_IMAGES`
+  in `constants.ts` -- there rather than beside the action, since a
+  `'use server'` module exports only async functions). One image and several
+  are different questions and take different instruction files:
+  `image-variation.md` says "describe only what changes", which is wrong for a
+  combine, so `image-variation-multi.md` handles those and names the pictures by
+  number. Two mechanisms switch **off** for a set rather than generalising --
+  root-image resolution (four pictures the user chose have no root) and the
+  anti-repeat query (the schema cannot ask about past variations of a
+  particular set).
+- **`imageLabelPrefix` is what makes "image 2" mean anything** (#436). A
+  generation is one prompt string plus one ordered array with no per-image
+  field, so the numbers are words in the prompt, prepended at submit for any set
+  larger than one. Derived in `useGenerator` from its own set: Canvas used to
+  build them when its dialog opened, so editing the strip afterwards left the
+  prompt describing the previous selection. `RefImageStrip` numbers its tiles on
+  the same condition, and `ref-images.test.ts` pins the ordering -- a prefix
+  that disagrees with its set is invisible.
 
 ## Gotchas
 

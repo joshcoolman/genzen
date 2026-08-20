@@ -73,8 +73,6 @@ export function useCanvasGenerate(
   // Number of reference images in the current selection (selection size - 1, the
   // primary). Scopes the model list to models that can hold them.
   const [groupRefCount, setGroupRefCount] = useState(0)
-  // Auto image labels prepended to the prompt at submit ("[Image 1, Image 2,...]").
-  const [labelPrefix, setLabelPrefix] = useState('')
 
   const sourceRef = useRef<CanvasImage | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -357,7 +355,6 @@ export function useCanvasGenerate(
     storagePrefix: 'genzen-canvas',
     onAfterSubmit: handleAfterSubmit,
     canvasId,
-    promptPrefix: labelPrefix,
   })
 
   // Optimistic generation: create placeholders, then fire server call.
@@ -504,8 +501,10 @@ export function useCanvasGenerate(
 
   // Open the Generate dialog for a selection. The first image is the primary
   // (Image 1, the source, shown up top); the rest pre-fill the reference strip
-  // (Image 2..N). Models are scoped to those that can hold the references, and
-  // every image is auto-labeled so the user can reference it by number.
+  // (Image 2..N). Models are scoped to those that can hold the references.
+  // The `[Image 1, ...]` labels are no longer built here: `useGenerator`
+  // derives them from its own set at submit (#436), so editing the strip after
+  // this runs no longer leaves the prompt describing the old selection.
   const open = useCallback(
     async (selection: Array<CanvasImage>) => {
       if (selection.length === 0) return
@@ -515,11 +514,6 @@ export function useCanvasGenerate(
       setError(null)
 
       setGroupRefCount(extras.length)
-      setLabelPrefix(
-        selection.length > 1
-          ? `[${selection.map((_, i) => `Image ${i + 1}`).join(', ')}]\n\n`
-          : '',
-      )
 
       // The whole selection becomes the set, in order (#297). Canvas already
       // believed this -- it labels the selection `[Image 1, Image 2, ...]` and

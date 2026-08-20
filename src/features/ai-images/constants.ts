@@ -42,3 +42,16 @@ export const RATIO_TO_SIZE: Record<string, { width: number; height: number }> =
     '5:4': { width: 1280, height: 1024 },
     '4:5': { width: 1024, height: 1280 },
   }
+
+/**
+ * How many pictures one run of variation prompts may be about (#436).
+ *
+ * A coverage number, not a model fact: broad enough that most image models
+ * holding references can take the set, and the action that reads it writes
+ * text rather than generating, so no model's real limit is under test.
+ *
+ * Here rather than beside that action because a `'use server'` module may
+ * export nothing but async functions, and the page picking the images needs
+ * the same number.
+ */
+export const MAX_VARIATION_IMAGES = 4
