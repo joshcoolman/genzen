@@ -144,6 +144,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
+- **Variations writes prompts about up to four pictures at once** — "combine
+  these and match the illustration style of the one with the clouds" is a
+  variation, and the lab page can now express it: every picked image reaches
+  the model, in order, under a second instruction file written for a combine.
+  The prompts it writes name images by number, and the number is made real at
+  submit — `useGenerator` prepends `[Image 1, Image 2, ...]` for any set larger
+  than one, so Images honours it and not only Canvas, and the reference strip
+  numbers its tiles to match. Guidance now rides on every prompt instead of
+  going over as a prompt of its own, so each generation hears the context that
+  shaped it. Root-image resolution and the anti-repeat query switch off for a
+  set rather than being generalised: four pictures you chose have no root
+  (#436, folding in the numbering half of #300)
+
 2026-08-19
 
 - **Shift-drag across the grid to pick several images** — once one image is
@@ -191,13 +204,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   whole group was available from the view that shows least about what is in it.
   It is a labelled control in the toolbar now, which also leaves a group card
   wearing one overlay icon where an image wears two
-
-- **A Variations run goes straight to the Images panel** — "Load in Images" on
-  a run in the lab fills the generator's prompt list with the whole set and puts
-  the source image in slot 0; you navigate to Images and press Generate. It
-  replaces what is in the panel rather than merging into it, the model selection
-  is left alone, and nothing runs or is spent. The seam is one named module,
-  `src/lib/panel-handoff.ts` — a single record, read once and cleared on
-  arrival, deliberately not a queue and not a subscription. Judging whether the
-  prompts are good was all the page could do before; judging the pictures took
-  four copies, four pastes and re-attaching the source by hand (#433)

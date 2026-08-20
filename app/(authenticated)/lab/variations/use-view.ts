@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import type { PickedImage } from '../_components/image-input/image-input'
 import { generateVariationPrompts } from '#/features/ai-images/server/generate-variation-prompts.action'
+import { MAX_VARIATION_IMAGES } from '#/features/ai-images/constants'
 import { writePanelHandoff } from '#/lib/panel-handoff'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
@@ -14,12 +15,16 @@ export interface VariationRun {
   guidance: string
   title: string
   prompts: Array<string>
-  source: PickedImage
+  /** The set the prompts were written against, in the order they were shown to
+   *  the model. Handed over whole, because a prompt may name "image 2". */
+  sources: Array<PickedImage>
 }
 
 /** The action caps at 4 (`Math.min(data.count, 4)`), so offering more would be
  *  a control that lies. */
 export const COUNTS = [1, 2, 3, 4]
+
+export { MAX_VARIATION_IMAGES }
 
 /**
  * Variations, on its own page (#424).
@@ -31,6 +36,12 @@ export const COUNTS = [1, 2, 3, 4]
  *
  * The dialog this replaces fired the prompts immediately. Here they are the
  * output — nothing is generated and nothing is spent.
+ *
+ * **Several images is a different question, asked on the same page** (#436).
+ * "Combine these and match the illustration style of the one with the clouds"
+ * is a variation, and it needs the model to see every picture and to be able to
+ * name them. Which instruction file steers a run therefore depends on how many
+ * images are in it, and the page says which one is live.
  */
 export function useView() {
   const { user } = useAuth()
@@ -53,10 +64,11 @@ export function useView() {
     try {
       const result = await generateVariationPrompts({
         // The action requires a non-empty prompt and uses it as the root
-        // description. The image's own title is what the app passes; keeping
-        // that means this page exercises the same path the app does.
+        // description when there is no picture it can read. The image's own
+        // title is what the app passes; keeping that means this page exercises
+        // the same path the app does.
         prompt: image.title,
-        sourceImageId: image.id,
+        sourceImageIds: picked.map((p) => p.id),
         count,
         guidance: guidance.trim() || undefined,
       })
@@ -64,9 +76,9 @@ export function useView() {
         {
           key: current.length + 1,
           guidance: guidance.trim(),
-          title: image.title,
+          title: picked.length === 1 ? image.title : `${picked.length} images`,
           prompts: result.prompts,
-          source: image,
+          sources: picked,
         },
         ...current,
       ])
@@ -75,7 +87,7 @@ export function useView() {
     } finally {
       setIsRunning(false)
     }
-  }, [image, count, guidance])
+  }, [image, picked, count, guidance])
 
   /**
    * Hand a run to the Images panel and say so (#433).
@@ -91,12 +103,17 @@ export function useView() {
    */
   const loadInImages = useCallback((variationRun: VariationRun) => {
     writePanelHandoff({
-      // The guidance leads, per #433. Note that the panel runs every non-empty
-      // prompt, so this is a generation of its own.
+      // Guidance rides on every prompt rather than going over as a prompt of
+      // its own (#436). It is standing context for the whole run -- keep the
+      // sparkles, drop the DJ set -- and the panel runs every non-empty
+      // prompt, so a slot of its own was one generation of the context and N
+      // that had never heard it. Concatenated, not labelled as two halves: the
+      // panel has no notion of a two-part prompt.
       prompts: variationRun.guidance
-        ? [variationRun.guidance, ...variationRun.prompts]
+        ? variationRun.prompts.map((p) => `${variationRun.guidance}\n\n${p}`)
         : variationRun.prompts,
-      primaryImage: variationRun.source,
+      // The whole set, in the order the prompts were written against.
+      images: variationRun.sources,
     })
     setLoadedKey(variationRun.key)
   }, [])
@@ -106,8 +123,24 @@ export function useView() {
     loadInImages,
     loadedKey,
     picked,
-    setPicked,
-    clearPicked: useCallback(() => setPicked([]), []),
+    /** Appends what the picker hands back, minus anything already on the strip
+     *  and anything past `MAX_VARIATION_IMAGES`. The picker returns only what
+     *  was newly ticked, so replacing would drop the set built up over two
+     *  visits to it -- and here order is the contract, so an append is also
+     *  what keeps "image 2" meaning the second one you chose. */
+    addPicked: useCallback((incoming: Array<PickedImage>) => {
+      setPicked((current) => {
+        const have = new Set(current.map((p) => p.id))
+        return [...current, ...incoming.filter((p) => !have.has(p.id))].slice(
+          0,
+          MAX_VARIATION_IMAGES,
+        )
+      })
+    }, []),
+    removePicked: useCallback(
+      (id: string) => setPicked((prev) => prev.filter((p) => p.id !== id)),
+      [],
+    ),
     guidance,
     setGuidance,
     count,
@@ -118,5 +151,12 @@ export function useView() {
     error,
     canRun: !!image && !isRunning,
     run,
+    /** Which file is steering the next run. The lab's whole point is editing
+     *  the instruction and looking at what happens, so a page that forked its
+     *  instruction has to say which fork is live. */
+    instructionFile:
+      picked.length > 1
+        ? 'src/lib/prompts/image-variation-multi.md'
+        : 'src/lib/prompts/image-variation.md',
   }
 }

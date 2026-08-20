@@ -32,12 +32,12 @@ describe('panel handoff', () => {
   it('is collected once and then gone', () => {
     writePanelHandoff({
       prompts: ['a', 'b'],
-      primaryImage: { id: 'img-1', url: '/img/img-1', title: 'cat' },
+      images: [{ id: 'img-1', url: '/img/img-1', title: 'cat' }],
     })
 
     const first = takePanelHandoff()
     expect(first?.prompts).toEqual(['a', 'b'])
-    expect(first?.primaryImage?.id).toBe('img-1')
+    expect(first?.images?.[0]?.id).toBe('img-1')
 
     // The second mount -- a reload of Images, or a route that mounts twice --
     // must not re-apply a delivery the user has since edited away.
@@ -49,6 +49,26 @@ describe('panel handoff', () => {
     writePanelHandoff({ prompts: ['first'] })
     writePanelHandoff({ prompts: ['second'] })
     expect(takePanelHandoff()?.prompts).toEqual(['second'])
+  })
+
+  // The prompts may say "image 2" (#436), and the number is only ever a
+  // position in this array -- a set that arrives reordered is prompts pointing
+  // at the wrong pictures.
+  it('keeps the image set in the order it was written', () => {
+    writePanelHandoff({
+      prompts: ['combine image 1 and image 2'],
+      images: [
+        { id: 'clouds', url: '/img/clouds', title: 'clouds' },
+        { id: 'figure', url: '/img/figure', title: 'figure' },
+        { id: 'texture', url: '/img/texture', title: 'texture' },
+      ],
+    })
+
+    expect(takePanelHandoff()?.images?.map((i) => i.id)).toEqual([
+      'clouds',
+      'figure',
+      'texture',
+    ])
   })
 
   it('returns null for a record it cannot read, and clears it', () => {

@@ -21,7 +21,25 @@ and not one surface with three buttons.
 | ------------- | ---------- | ---------------------------------------------------- |
 | `enhance/`    | vague text | Is the output too verbose? Did it keep what I meant? |
 | `describe/`   | an image   | Accurate without being padded or over-specific?      |
-| `variations/` | an image   | Does it understand my intent? Are the prompts good?  |
+| `variations/` | 1-4 images | Does it understand my intent? Are the prompts good?  |
+
+**Variations takes up to four images** (#436), which is not a fourth question —
+it is the same one asked of a combine: "make the result match the illustration
+style of the image with the clouds" is intent like any other. Two things follow,
+both worth knowing before editing the page:
+
+- **The instruction file forks on how many images are in the run**, so the page
+  prints whichever fork is live rather than a fixed path. `image-variation.md`
+  tells the model it may describe only what changes; that is right for one
+  picture and wrong for a combine, where naming what each one contributes is the
+  whole directive.
+- **The numbers in a prompt are a contract with `useGenerator`, not
+  decoration.** A prompt saying "image 2" only means anything because the submit
+  prepends `[Image 1, Image 2, ...]` — see `src/features/ai-images/CLAUDE.md`.
+  That half lives in the app, deliberately: the lab does not generate, so a
+  numbering contract it kept to itself would be one Images never honours. It is
+  not lab code leaking outward, and moving it under `lab/` would break the
+  feature silently.
 
 ## Frames is not one of them
 
@@ -132,7 +150,7 @@ item.
 - **Variations does not generate. It hands the run over** (#433). The dialog it
   replaced fired the prompts immediately; here the prompts are the output and
   nothing is spent. "Load in Images" fills the generator panel — the whole set
-  of prompts, plus the source image in slot 0 — and stops. You navigate to
+  of prompts, plus the images they were written against, in order — and stops. You navigate to
   Images and press Generate yourself. **No load-and-run**: following the results
   would mean the lab holding cross-route state, which is not what it is for.
   The confirmation is a local flag on the button, not a fact anyone stores; if

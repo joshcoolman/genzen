@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GenerationOrigin } from '#/lib/types/db'
-import { pushRef } from '#/features/ai-images/ref-images'
+import { imageLabelPrefix, pushRef } from '#/features/ai-images/ref-images'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { optimisticId } from '#/lib/optimistic-id'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
@@ -97,12 +97,6 @@ interface UseGeneratorOptions {
    *  Every generation submitted from in there is filed into it -- that is the
    *  half of a group that makes it a place to work rather than a folder. */
   groupId?: string | null
-  /**
-   * Text prepended to every submitted prompt (not shown in the textarea). Used by
-   * canvas multi-image generate to auto-label images ("[Image 1, Image 2, ...]")
-   * so the model can be referenced by number without the user typing it.
-   */
-  promptPrefix?: string
 }
 
 export interface GeneratorState {
@@ -142,12 +136,6 @@ export interface GeneratorState {
   pushRefImage: (image: RefImage) => void
   replaceRefImages: (images: Array<RefImage>) => void
   removeRefImage: (id: string) => void
-  /** Put this image in slot 0, keeping the rest of the set. Applying variations
-   *  is the one caller: the prompts are *of* that image, so it belongs in the
-   *  slot the aspect ratio follows. Not a card gesture -- Cmd-click adds
-   *  (`pushRefImage`), because replacing meant clicking three cards left one
-   *  image. */
-  setPrimaryImage: (image: RefImage) => void
   /** How many images the *smallest* selected model holds. Advisory since #341:
    *  nothing clamps the set to it. It is what the panel reports, and the submit
    *  truncates per model rather than to this minimum. Zero selected models is
@@ -167,16 +155,12 @@ export function useGenerator({
   onSubmitOutcome,
   canvasId,
   groupId,
-  promptPrefix,
 }: UseGeneratorOptions): GeneratorState {
   // Surfaces failures the user can act on: a missing provider key opens the
   // key dialog, anything else toasts. `setError` alone was not enough — the AI
   // Images page never rendered it, so failures vanished entirely.
   const reportError = useReportError()
 
-  // Read the latest prefix at submit time without re-creating handleGenerate.
-  const promptPrefixRef = useRef(promptPrefix ?? '')
-  promptPrefixRef.current = promptPrefix ?? ''
   // A ref for the same reason, and a sharper one: leaving a group must not be
   // able to strand an in-flight submit against the group you just left.
   const groupIdRef = useRef(groupId ?? null)
@@ -330,15 +314,6 @@ export function useGenerator({
     setRefImages((prev) => prev.filter((img) => img.id !== id))
   }, [])
 
-  /** Slot 0, keeping the rest. The one asymmetry left in the set: index 0 is
-   *  what the aspect ratio is derived from and what the submit sends first. */
-  const setPrimaryImage = useCallback((image: RefImage) => {
-    setRefImages((prev) => {
-      const rest = prev.slice(1).filter((img) => img.id !== image.id)
-      return [image, ...rest]
-    })
-  }, [])
-
   // The aspect ratio follows whatever is in slot 0 (#297). One effect rather
   // than a call inside every mutator: a removal that promotes image 2 to the
   // front is just as much "a new first image" as a pick is, and only a
@@ -436,17 +411,29 @@ export function useGenerator({
       const referenceImageIds = restIds.length > 0 ? restIds : undefined
       const sourceImageId = hasImages ? primary.id : undefined
 
+      // What "image 2" means, established for the model in the only place it
+      // can be: a generation is one prompt string plus one ordered array, with
+      // no per-image field to fill in (#436). So the numbers are words in the
+      // prompt, and they have to match the order the set goes out in.
+      //
+      // Derived here from the set rather than passed by the host, which is how
+      // Canvas did it: it computed the labels once when its dialog opened, so
+      // adding or removing an image in the panel afterwards left the prompt
+      // describing the previous selection. Nothing to label at one image --
+      // "[Image 1]" is a number for a picture nothing needs to distinguish.
+      const labelPrefix = imageLabelPrefix(refImages.length)
+
       // Two distinct facts, and the row has room for one: what was typed and
       // what was sent. `prompt` stays the sent string, because retry replays
       // it; the typed one rides along so a past generation's input is
       // recoverable (#210).
       const promptPlans = promptsToRun.map((promptText) => {
         const typedPrompt = promptText.trim()
-        // System instructions (#272) lead, then whatever the host prepends --
-        // canvas image labels describe the references this prompt talks about,
-        // so they belong next to the prompt. Read from storage at submit rather
-        // than passed in: one global value, and both hosts get it for free.
-        const finalPrompt = `${systemInstructionsPrefix()}${promptPrefixRef.current}${typedPrompt}`
+        // System instructions (#272) lead, then the image labels -- they
+        // describe the references this prompt talks about, so they belong next
+        // to the prompt. Instructions are read from storage at submit rather
+        // than passed in: one global value, and every host gets it for free.
+        const finalPrompt = `${systemInstructionsPrefix()}${labelPrefix}${typedPrompt}`
         return {
           typedPrompt,
           finalPrompt,
@@ -588,7 +575,6 @@ export function useGenerator({
     pushRefImage,
     replaceRefImages,
     removeRefImage,
-    setPrimaryImage,
     maxRefImages,
   }
 }

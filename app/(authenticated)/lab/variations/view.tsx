@@ -4,7 +4,7 @@ import { ImageInput } from '../_components/image-input/image-input'
 import { LabPage } from '../_components/lab-page/lab-page'
 import { RunCard } from '../_components/run-card/run-card'
 import styles from './view.module.css'
-import { COUNTS, useView } from './use-view'
+import { COUNTS, MAX_VARIATION_IMAGES, useView } from './use-view'
 import {
   ActionButton,
   Button,
@@ -20,7 +20,9 @@ export function View() {
     <LabPage
       title="Variations"
       question="Does it understand your intent, and are the prompts any good?"
-      instructionFile="src/lib/prompts/image-variation.md"
+      /* Forked on how many images are in the run (#436), so the page has to
+         name the fork that is live rather than a fixed file. */
+      instructionFile={v.instructionFile}
       error={v.error}
     >
       <ImageInput
@@ -28,8 +30,9 @@ export function View() {
         imageUrls={v.userImages.imageUrls}
         isLoading={v.userImages.isLoading}
         picked={v.picked}
-        onPick={v.setPicked}
-        onClear={v.clearPicked}
+        max={MAX_VARIATION_IMAGES}
+        onPick={v.addPicked}
+        onClear={v.removePicked}
         onOpen={() => void v.userImages.refresh()}
         disabled={v.isRunning}
       />
@@ -38,7 +41,7 @@ export function View() {
         value={v.guidance}
         onChange={(e) => v.setGuidance(e.target.value)}
         rows={2}
-        placeholder="Optional guidance — e.g. a bunch of different camera angles"
+        placeholder="Optional guidance — e.g. a bunch of different camera angles, or combine these and match the illustration style of the one with the clouds"
         disabled={v.isRunning}
       />
 
