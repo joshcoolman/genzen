@@ -146,6 +146,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-19
 
+- **Shift-drag across the grid to pick several images** — once one image is
+  selected, sweeping adds every card the rectangle touches, live as it crosses
+  them. Loose rather than a graphics-program marquee: it can start on top of a
+  card, clipping a corner is enough, and it only ever adds. Shift-click still
+  extends a range from the last card toggled — both mean "add several", one is
+  a click. One screenful per sweep; there is no auto-scroll at the edge (#440)
 - **Canvases are a set, not a single board** — `/canvas` is now an index of your
   boards (cover, name, count, swatch strip; New canvas, Rename, Delete canvas)
   and a board lives at `/canvas/[id]`, naming itself in the corner with the way
@@ -195,15 +201,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   arrival, deliberately not a queue and not a subscription. Judging whether the
   prompts are good was all the page could do before; judging the pictures took
   four copies, four pastes and re-attaching the source by hand (#433)
-
-- **Widen a picture without writing the prompt** — a new lab page,
-  `/lab/outpaint`: pick an image, pick a target aspect ratio, optionally nudge
-  it, and generate. The instruction is `src/lib/prompts/outpaint.md`, so tuning
-  it is a text edit — which is most of what the page is for. Models are
-  multi-select, because one press has to separate two questions: is the
-  instruction any good, and can this model outpaint at all. It asks the model
-  plainly and composites nothing; whether that is enough, or whether the source
-  has to be drawn onto a canvas at the target shape first, is the open question
-  the page exists to settle. It is also the first thing in the lab that spends
-  real FAL money, so the estimate sits under Generate and each result card
-  carries what the run cost (#430)

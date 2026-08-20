@@ -156,6 +156,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           selectionActive={selectMode}
           isSelected={selection.isSelected}
           onSelect={selection.toggle}
+          /* Shift-drag sweeps a region into the selection (#440). Additive
+             only, which is why it is `addMany` and not `toggle`. */
+          onSweepSelect={selection.addMany}
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 

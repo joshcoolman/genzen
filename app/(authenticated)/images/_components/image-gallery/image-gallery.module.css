@@ -14,3 +14,22 @@
      made three ordinary cards grow a tall grey foot to match it. */
   align-items: start;
 }
+
+/* While a sweep is running (#440). The pointerdown default is already
+   prevented, which stops a selection starting; this stops one the browser
+   extends from somewhere else, and turns off the native image drag. */
+.sweeping {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The rectangle. Fixed and outside the grid so the grid's `zoom` does not
+   scale it, and inert so it never becomes the pointer's target mid-drag. */
+.marquee {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}

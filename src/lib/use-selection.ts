@@ -10,6 +10,11 @@ interface UseSelectionOptions {
 interface UseSelectionReturn {
   selectedIds: Set<string>
   toggle: (id: string, shiftKey?: boolean) => void
+  /** Add every id at once, removing nothing (#440's shift-drag sweep). A
+   *  sweep re-sends every card its rectangle has touched on each pointer move,
+   *  so this has to be idempotent and additive -- toggling would make a card
+   *  flicker in and out as the rectangle wobbled over it. */
+  addMany: (ids: Array<string>) => void
   selectAll: () => void
   clearSelection: () => void
   isSelected: (id: string) => boolean
@@ -71,6 +76,16 @@ export function useSelection({
     [items],
   )
 
+  const addMany = useCallback((ids: Array<string>) => {
+    setSelectedIds((prev) => {
+      const missing = ids.filter((id) => !prev.has(id))
+      if (missing.length === 0) return prev
+      const next = new Set(prev)
+      for (const id of missing) next.add(id)
+      return next
+    })
+  }, [])
+
   const selectAll = useCallback(() => {
     setSelectedIds(new Set(items))
   }, [items])
@@ -88,6 +103,7 @@ export function useSelection({
   return {
     selectedIds,
     toggle,
+    addMany,
     selectAll,
     clearSelection,
     isSelected,
