@@ -144,18 +144,32 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
+2026-08-20
+
 - **Variations writes prompts about up to four pictures at once** — "combine
   these and match the illustration style of the one with the clouds" is a
-  variation, and the lab page can now express it: every picked image reaches
-  the model, in order, under a second instruction file written for a combine.
-  The prompts it writes name images by number, and the number is made real at
-  submit — `useGenerator` prepends `[Image 1, Image 2, ...]` for any set larger
-  than one, so Images honours it and not only Canvas, and the reference strip
-  numbers its tiles to match. Guidance now rides on every prompt instead of
-  going over as a prompt of its own, so each generation hears the context that
-  shaped it. Root-image resolution and the anti-repeat query switch off for a
-  set rather than being generalised: four pictures you chose have no root
-  (#436, folding in the numbering half of #300)
+  variation, and the lab page can now express it: every picked image reaches the
+  model, in order, under a second instruction file written for a combine. The
+  prompts it writes name images by number, and the number is made real at submit
+  — `useGenerator` prepends `[Image 1, Image 2, ...]` for any set larger than
+  one, so Images honours it and not only Canvas, and the reference strip numbers
+  its tiles to match. Those references can be written by hand too, which is why
+  #300's `@` autocomplete closed unbuilt: it would not change a byte of what
+  reaches FAL. Guidance now rides on every prompt rather than going over as a
+  prompt of its own, so each generation hears the context that shaped it. And
+  **vision now gets a downscaled copy of a picture, never the original** —
+  not an optimisation: two full-size images in one message destroyed the HTTP/2
+  session mid-upload, which the AI SDK reported as "Cannot connect to API",
+  naming everything except the size of what was sent (#436)
+
+- **`pnpm dev` refuses to start when a key is exported as an empty string** — an
+  `export FAL_KEY=""` in a shell dotfile beats `.env.local`, because every
+  dotenv loader skips a name already in the environment. The app then reports
+  "FAL_KEY is not set" against a file that plainly holds the key, sending you to
+  the one place the problem is not. `check-env-shadow.mjs` had warned all along
+  and the banner scrolled away twice, so it exits 1 now. A stale non-empty value
+  still only warns — pointing at another account for an afternoon is a real
+  thing to do
 
 2026-08-19
 
@@ -190,17 +204,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   dollar says how big it is first. Z-Image Turbo is off this page's model list:
   its image endpoint is denoise-from-image with a strength dial, not instruct
   editing, so it cannot extend a frame (#441)
-
-- **Groups look and behave like somewhere you went** — opening one now puts its
-  name over the thumbnails as a proper heading, with a round back button beside
-  it and the whole heading clickable to leave — a single small toolbar control
-  used to be both the name and the way out, and read as neither (#432). The
-  toolbar keeps no crumb, so Upload stays leftmost and never shifts between the
-  two states; it is also green now, the weight Generate has, since the one
-  control that puts things into the page was styled like the least important
-  thing on it. And **a group can only be
-  trashed from inside it** (#431): the card's trash icon was in the same corner
-  an image card's is, in a grid that mixes the two, so the click that bins a
-  whole group was available from the view that shows least about what is in it.
-  It is a labelled control in the toolbar now, which also leaves a group card
-  wearing one overlay icon where an image wears two
