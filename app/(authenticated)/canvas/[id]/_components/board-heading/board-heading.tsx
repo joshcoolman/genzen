@@ -17,10 +17,22 @@ import styles from './board-heading.module.css'
  *
  * A `Link`, not a router push: it is navigation to a real address, so it should
  * open in a new tab on a modifier-click like any other.
+ *
+ * `stopPropagation` on the press is what makes it clickable at all, and it is
+ * the same line the selection bar carries. The surface starts a marquee on any
+ * press that is not a card and takes pointer capture with it, and a captured
+ * pointer delivers the click that follows to the container rather than to the
+ * link -- so without it this looked dead while quietly dragging a selection
+ * box. Every screen-space control over the plane needs it.
  */
 export function BoardHeading({ name }: { name: string }) {
   return (
-    <Link href="/canvas" className={styles.row} title="All canvases">
+    <Link
+      href="/canvas"
+      className={styles.row}
+      title="All canvases"
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       <span className={styles.back} aria-hidden="true">
         <ChevronLeft className={styles.backIcon} />
       </span>

@@ -207,4 +207,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   the page exists to settle. It is also the first thing in the lab that spends
   real FAL money, so the estimate sits under Generate and each result card
   carries what the run cost (#430)
-

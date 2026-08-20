@@ -5,12 +5,17 @@
   position: absolute;
   top: var(--space-16);
   left: var(--space-16);
-  z-index: 2;
+  /* Above the plane and its screen-space overlays, in the band the selection
+     bar already occupies. */
+  z-index: 30;
   display: flex;
   align-items: center;
   gap: var(--space-8);
   width: fit-content;
-  padding: var(--space-4) var(--space-12) var(--space-4) var(--space-4);
+  /* Roomy on purpose: it is one of two controls on a surface that is otherwise
+     all drag target, and a thin pill next to an infinite canvas is a hard
+     thing to hit. */
+  padding: var(--space-8) var(--space-16) var(--space-8) var(--space-8);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-full);
   background: var(--surface-raised);
@@ -34,8 +39,8 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .backIcon {
