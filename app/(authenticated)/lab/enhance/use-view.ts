@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { readLastRun, writeLastRun } from './last-run'
 import type { EnhanceCard, EnhanceRun } from './last-run'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -43,19 +43,34 @@ export function useView() {
     storageScope: 'lab-enhance',
   })
 
-  // The last run outlives navigation, so the page is read once on mount rather
-  // than starting empty. Gated so the first render (which is also the server's)
-  // has nothing, and the write-back below cannot fire before the read.
-  const hydrated = useRef(false)
+  /**
+   * The last run outlives navigation, so the page is read once on mount rather
+   * than starting empty, and the prompt box comes back with it — the point is
+   * pressing Enhance again after editing a `.md`, which means the words have to
+   * still be there.
+   *
+   * **`hydrated` is state, not a ref, and that is the whole fix.** With a ref
+   * set inside the read effect, the write effect below fired on the same commit
+   * with `run` still null and wiped the record it had just read. It survived a
+   * plain reload — the re-render put it straight back — but React's dev
+   * double-mount reads storage *after* that wipe and finds nothing, so the run
+   * vanished exactly where it was supposed to persist. State defers the first
+   * write to the commit after the read, where there is something to write.
+   */
+  const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
-    setRun(readLastRun())
-    hydrated.current = true
+    const stored = readLastRun()
+    if (stored) {
+      setRun(stored)
+      setPrompt(stored.prompt)
+    }
+    setHydrated(true)
   }, [])
 
   useEffect(() => {
-    if (!hydrated.current) return
+    if (!hydrated) return
     writeLastRun(run)
-  }, [run])
+  }, [hydrated, run])
 
   const selectedModels = useMemo(
     () =>

@@ -191,6 +191,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // recolour a mug it returns the same mug, at any strength. It is here so an
     // attached image is used rather than dropped, not as an editor.
     withImages: 'fal-ai/z-image/turbo/image-to-image',
+    promptGuide: 'src/lib/prompts/guide-z-image-turbo.md',
     // One `image_url` slot, and the attached image is it -- same arithmetic as
     // both Kontext entries.
     maxRefs: 0,

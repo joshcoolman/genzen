@@ -1,4 +1,5 @@
 import nanoBananaGuide from '#/lib/prompts/guide-nano-banana-2.md'
+import zImageGuide from '#/lib/prompts/guide-z-image-turbo.md'
 import { IMAGE_MODELS } from '#/features/ai-images/models'
 
 /**
@@ -10,13 +11,14 @@ import { IMAGE_MODELS } from '#/features/ai-images/models'
  * assembled at runtime resolves to nothing. So the price of a guide is one line
  * here, and the test below is what stops that line being forgotten.
  *
- * A model with no `promptGuide` is not an error, and is the normal case: seven
+ * A model with no `promptGuide` is not an error, and is the normal case: six
  * of eight fall back to `enhance-prompt.md`. **An empty map is a valid state**
  * -- the mechanism is worth keeping at zero guides, because the cost of holding
  * it open is this file and the cost of rebuilding it is a feature.
  */
 const GUIDES: Record<string, string> = {
   'src/lib/prompts/guide-nano-banana-2.md': nanoBananaGuide,
+  'src/lib/prompts/guide-z-image-turbo.md': zImageGuide,
 }
 
 /** Every guide path the lineup declares. Exported for the test. */
