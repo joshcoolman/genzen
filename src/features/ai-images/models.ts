@@ -72,10 +72,10 @@ export interface ModelEntry {
   useCase?: string
   /**
    * Repo-relative path to the `.md` that tells the enhancer how *this* model
-   * wants to be written to (#463). Vendors contradict each other on the
-   * specifics -- FLUX.2 publishes a comma-separated slot order and asks you to
-   * start short; Nano Banana says a keyword list "won't cut it" and wants
-   * narrative sentences. One shared instruction cannot be right for both.
+   * wants to be written to (#463). Nano Banana says a keyword list "won't cut
+   * it" and wants narrative sentences, which no amount of rewording the shared
+   * instruction produces -- it is a different output structure, not a different
+   * vocabulary.
    *
    * **A path, not the text.** This module is client-bundled by the model
    * selector, and the guides are only read server-side; shipping them to the
@@ -83,10 +83,16 @@ export interface ModelEntry {
    * path to the imported string. The path itself *is* wanted on the client --
    * a lab page's job is to name the file that steers it.
    *
-   * **Optional on purpose.** No guide means `enhance-prompt.md`, so a model
-   * without one still enhances. Two written and the rest falling back is the
-   * intended state, not a gap: the comparison between guided and unguided is
-   * the experiment.
+   * **Optional on purpose, and mostly unset.** No guide means
+   * `enhance-prompt.md`, so a model without one still enhances. Seven of eight
+   * fall back today and that is the intended state, not a gap.
+   *
+   * **A guide earns its place by diverging from the baseline, and loses it when
+   * it stops.** FLUX.2 had one until the baseline became FLUX's own discipline
+   * genericized; the two then said the same thing in the same shape -- 218
+   * characters against 183 on the same prompt -- so the guide was carrying
+   * nothing and went. Before adding one, check the baseline is actually wrong
+   * for that model rather than merely not written with it in mind.
    */
   promptGuide?: string
 }
@@ -172,7 +178,6 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // BFL publishes one prompting guide for FLUX.2, so Flash and Klein can
     // point at this same file when they are wired up -- a guide is per family
     // where the family agrees, not per entry by rule.
-    promptGuide: 'src/lib/prompts/guide-flux-2.md',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
   // comparison: the same prompt across all three costs under two cents.
