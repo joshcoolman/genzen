@@ -48,3 +48,11 @@ segment-and-constraint models.
 model and `endpointFor()` already resolves generate-vs-edit — it is simply not
 threaded through. That is the smallest real change if per-model enhancement is
 ever wanted.
+
+## The other half
+
+This file collects what each model says it wants to **read**.
+[`qwenvl-preset-prompts.md`](./qwenvl-preset-prompts.md) is the writing side —
+how a vision model gets steered into producing a prompt at all, quoted from a
+ComfyUI node pack that gives its users a dropdown of named instructions where
+genzen's Describe has two hardcoded modes.
