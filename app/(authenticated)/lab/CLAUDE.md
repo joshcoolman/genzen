@@ -17,11 +17,11 @@ because the idea was good. The idea was never the problem.
 different question about a different input, which is why they are three pages
 and not one surface with three buttons.
 
-| page          | input      | the question                                         |
-| ------------- | ---------- | ---------------------------------------------------- |
-| `enhance/`    | vague text | Is the output too verbose? Did it keep what I meant? |
-| `describe/`   | an image   | Accurate without being padded or over-specific?      |
-| `variations/` | 1-4 images | Does it understand my intent? Are the prompts good?  |
+| page          | input      | the question                                        |
+| ------------- | ---------- | --------------------------------------------------- |
+| `enhance/`    | one idea   | Does a model's own instruction beat the shared one? |
+| `describe/`   | an image   | Accurate without being padded or over-specific?     |
+| `variations/` | 1-4 images | Does it understand my intent? Are the prompts good? |
 
 **Variations takes up to four images** (#436), which is not a fourth question —
 it is the same one asked of a combine: "make the result match the illustration
@@ -134,15 +134,38 @@ item.
   `instructionFile` and prints it, because the point of the lab is changing an
   instruction and seeing what happens. All of them are `.md` since #322 — a lab
   for tuning instructions is worthless if changing one means editing code.
+  **Enhance names one file per card instead**, because it is steered by a set:
+  a model with a `promptGuide` is enhanced by that file and a model without one
+  by the shared `enhance-prompt.md`, so a single line at the top would be wrong
+  for most of the grid under it (#465). `LabPage` still takes the prop; Enhance
+  is the one page that passes nothing to it.
 - **Runs accumulate; the input is shown beside the output.** Every question here
   is comparative — too verbose _than what_ — and the dialogs these replaced
   showed only the result, which is most of why they could not be tuned.
   `RunCard` also prints a character count, since "too verbose" is the commonest
   judgement and counting by eye is what nobody does.
+  **Enhance compares across rather than down**: one press writes one card per
+  selected model, all from the same words, so the comparison is the grid and a
+  second press replaces it. `RunCard` grew a `note` for the file behind each
+  card and a `placeholder` for one still out or failed — a card holds its place
+  from the first frame, because results dropped in as they landed would reorder
+  the comparison under the eye reading it.
 - **Results are lost on navigation, deliberately.** (Frames included — its
   images persist in the library, its grid does not.) Storage is a decision worth
   making later; something half-persisted is worse than something honestly
   temporary.
+  **Enhance is the exception, and it is a narrow one** (#465): its last run
+  survives, in `enhance/last-run.ts`. One record, overwritten by the next press
+  and emptied only by Clear — the shape `panel-handoff` already is, and not a
+  history. That is what keeps the rule intact rather than bent: the objection is
+  to something half-persisted, and one record is either entirely there or
+  entirely gone. It earns it by being the page you leave to go and edit a `.md`
+  and come back to, which is the whole loop.
+
+  It is under `enhance/` rather than in `src/lib/` because one page writes it
+  and the same page reads it. `panel-handoff` sits in `src/lib/` for the
+  opposite reason — two routes hold opposite ends of it.
+
 - **Describe exposes both modes, and one of them has never been visible.**
   `reconstruct` writes a prompt to regenerate the picture, `anchor` writes a
   short factual description to steer an image-to-image run. The dialog this

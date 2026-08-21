@@ -3,3 +3,53 @@
   align-items: center;
   gap: var(--space-8);
 }
+
+/* The prompt these cards were written from. Quiet, because it is the thing you
+   already typed -- the comparison is between the cards, not against this. */
+.source {
+  display: flex;
+  gap: var(--space-8);
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-relaxed);
+}
+
+.sourceLabel {
+  flex-shrink: 0;
+  font-size: var(--text-3xs);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-prose);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.pending {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* One model failing is not the run failing: the other cards are still the
+   comparison, so this sits in the card rather than in the page's error line. */
+.cardError {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+
+/* Collapsed by default. Most runs have no steer, and an empty five-row box
+   above the model list would read as something left unfilled. */
+.steering summary {
+  cursor: pointer;
+}
+
+.steeringSummary {
+  margin-block-end: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.steering[open] .steeringSummary {
+  color: var(--text);
+}

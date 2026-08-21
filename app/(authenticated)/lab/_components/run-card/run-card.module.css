@@ -64,3 +64,11 @@
   line-height: var(--leading-relaxed);
   white-space: pre-wrap;
 }
+
+/* The instruction file behind this card. A path is the thing you go and open,
+   so it is set in code like every other path the lab prints. */
+.note {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+}
