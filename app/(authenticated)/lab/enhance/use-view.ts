@@ -30,6 +30,7 @@ const SHARED_INSTRUCTION = 'src/lib/prompts/enhance-prompt.md'
  */
 export function useView() {
   const [prompt, setPrompt] = useState('')
+  const [steering, setSteering] = useState('')
   const [run, setRun] = useState<EnhanceRun | null>(null)
   const [isRunning, setIsRunning] = useState(false)
 
@@ -63,6 +64,7 @@ export function useView() {
     if (stored) {
       setRun(stored)
       setPrompt(stored.prompt)
+      setSteering(stored.steering)
     }
     setHydrated(true)
   }, [])
@@ -82,6 +84,7 @@ export function useView() {
 
   const enhance = useCallback(async () => {
     const input = prompt.trim()
+    const steer = steering.trim()
     if (!input || selectedModels.length === 0) return
 
     setIsRunning(true)
@@ -98,7 +101,7 @@ export function useView() {
       output: '',
       error: null,
     }))
-    setRun({ prompt: input, cards })
+    setRun({ prompt: input, steering: steer, cards })
 
     const settle = (modelId: string, patch: Partial<EnhanceCard>) =>
       setRun((current) =>
@@ -122,6 +125,7 @@ export function useView() {
           const { enhancedPrompt } = await enhancePrompt({
             prompt: input,
             modelSlug: slugFor(card.modelId),
+            ...(steer ? { steering: steer } : {}),
           })
           settle(card.modelId, { status: 'done', output: enhancedPrompt })
         } catch (err) {
@@ -134,13 +138,15 @@ export function useView() {
     )
 
     setIsRunning(false)
-  }, [prompt, selectedModels])
+  }, [prompt, steering, selectedModels])
 
   const clear = useCallback(() => setRun(null), [])
 
   return {
     prompt,
     setPrompt,
+    steering,
+    setSteering,
     run,
     isRunning,
     modelSelector,

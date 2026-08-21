@@ -22,6 +22,22 @@ export function View() {
         placeholder="One idea, written any way at all — e.g. a dragon stuck in a grocery store"
         disabled={v.isRunning}
       />
+      {/* Below the idea, because it is the standing thing and the idea is what
+          changes run to run -- and optional, so it must not sit between the box
+          you type in and the button you press. */}
+      <details className={styles.steering}>
+        <summary className={styles.steeringSummary}>
+          Steering {v.steering.trim() ? '· on' : '· optional'}
+        </summary>
+        <Textarea
+          value={v.steering}
+          onChange={(e) => v.setSteering(e.target.value)}
+          rows={5}
+          placeholder="How the picture should look — world, medium, palette, mood. Paste one in from anywhere; its own word counts and formatting rules are ignored, only the look is used."
+          disabled={v.isRunning}
+        />
+      </details>
+
       <div className={styles.actions}>
         <ActionButton
           onClick={() => void v.enhance()}
@@ -59,6 +75,13 @@ export function View() {
           <p className={styles.source}>
             <span className={styles.sourceLabel}>From</span> {v.run.prompt}
           </p>
+          {/* Once, above the grid: the steer is the same for every card, so it
+              is a property of the run and not of any one result. */}
+          {v.run.steering && (
+            <p className={styles.source}>
+              <span className={styles.sourceLabel}>Steer</span> {v.run.steering}
+            </p>
+          )}
 
           {v.run.cards.map((card) => (
             <RunCard

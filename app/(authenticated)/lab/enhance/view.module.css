@@ -37,3 +37,19 @@
   color: var(--danger);
   font-size: var(--text-xs);
 }
+
+/* Collapsed by default. Most runs have no steer, and an empty five-row box
+   above the model list would read as something left unfilled. */
+.steering summary {
+  cursor: pointer;
+}
+
+.steeringSummary {
+  margin-block-end: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.steering[open] .steeringSummary {
+  color: var(--text);
+}

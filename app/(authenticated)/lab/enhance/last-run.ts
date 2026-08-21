@@ -44,6 +44,10 @@ export interface EnhanceRun {
   /** What was asked, kept beside the results: the box above is editable, so by
    *  the time you read a card it may no longer hold the prompt that made it. */
   prompt: string
+  /** The steering in force when this ran, if any. Kept for the same reason as
+   *  the prompt — it is half of what produced these cards, and a grid you
+   *  cannot attribute is not evidence. */
+  steering: string
   cards: Array<EnhanceCard>
 }
 
@@ -70,7 +74,9 @@ export function readLastRun(): EnhanceRun | null {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!parsed || typeof parsed !== 'object') return null
-    const { prompt, cards } = parsed as EnhanceRun
+    // Runs written before steering existed carry no such field; an absent
+    // steer and an empty one are the same thing.
+    const { prompt, steering, cards } = parsed as EnhanceRun
     if (typeof prompt !== 'string' || !Array.isArray(cards)) return null
     // Cast back to "might be anything": the declared type is what a writer
     // promised, and this is a string an older version of the app may have left.
@@ -87,7 +93,11 @@ export function readLastRun(): EnhanceRun | null {
           : c,
       )
     if (valid.length === 0) return null
-    return { prompt, cards: valid }
+    return {
+      prompt,
+      steering: typeof steering === 'string' ? steering : '',
+      cards: valid,
+    }
   } catch {
     return null
   }
