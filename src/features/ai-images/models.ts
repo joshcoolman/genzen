@@ -70,6 +70,25 @@ export interface ModelEntry {
    */
   editPrice?: number
   useCase?: string
+  /**
+   * Repo-relative path to the `.md` that tells the enhancer how *this* model
+   * wants to be written to (#463). Vendors contradict each other on the
+   * specifics -- FLUX.2 publishes a comma-separated slot order and asks you to
+   * start short; Nano Banana says a keyword list "won't cut it" and wants
+   * narrative sentences. One shared instruction cannot be right for both.
+   *
+   * **A path, not the text.** This module is client-bundled by the model
+   * selector, and the guides are only read server-side; shipping them to the
+   * browser buys nothing. `src/lib/server/prompt-guides.server.ts` maps the
+   * path to the imported string. The path itself *is* wanted on the client --
+   * a lab page's job is to name the file that steers it.
+   *
+   * **Optional on purpose.** No guide means `enhance-prompt.md`, so a model
+   * without one still enhances. Two written and the rest falling back is the
+   * intended state, not a gap: the comparison between guided and unguided is
+   * the experiment.
+   */
+  promptGuide?: string
 }
 
 // Endpoint ids verified against https://fal.ai/models
@@ -120,6 +139,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // -- on a daily driver, at half the real price.
     price: 0.08,
     useCase: 'Reasoning-guided generation',
+    promptGuide: 'src/lib/prompts/guide-nano-banana-2.md',
   },
   {
     slug: 'flux-2-pro',
@@ -149,6 +169,10 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     price: 0.045,
     editPrice: 0.075,
     useCase: 'Best FLUX quality — and the one that takes many references',
+    // BFL publishes one prompting guide for FLUX.2, so Flash and Klein can
+    // point at this same file when they are wired up -- a guide is per family
+    // where the family agrees, not per entry by rule.
+    promptGuide: 'src/lib/prompts/guide-flux-2.md',
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
   // comparison: the same prompt across all three costs under two cents.

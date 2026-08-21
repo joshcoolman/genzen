@@ -22,13 +22,22 @@ preferences.
 - **Word order is reversed between vendors.** FLUX and Seedream want the subject
   first, and Seedream explicitly weights earlier tokens. GPT Image wants
   background/scene, then subject, then details, then constraints.
-- **Negative prompts.** FLUX has none, and BFL says negation makes output worse —
-  describe the positive alternative instead. Seedream supports them and its guide
-  recommends 15–25 terms. Any single rule is wrong for part of the lineup.
-- **Shape of the text.** FLUX and Seedream want one flowing description
-  (Seedream: 30–100 words). GPT Image wants labelled segments, line breaks, and a
-  preservation list — "change only X, keep everything else the same" — or it
-  drifts on faces, logos and text.
+- **Negative prompts.** BFL is explicit: "Most FLUX models do not support
+  negative prompts", and negation backfires because the model fixates on the
+  thing named. Both FLUX.2 and Nano Banana tell you to write the positive
+  replacement instead. **Re-checked 2026-08-21:** the Seedream v4.5 guide does
+  not mention negative prompts at all — an earlier version of this file said it
+  recommended 15–25 terms, which its current guide does not support.
+- **Shape of the text.** **Re-checked 2026-08-21 and this was wrong about
+  FLUX.** FLUX.2's guide publishes a slot order — `[SUBJECT], [LOCATION],
+[STYLE], [CAMERA], [LIGHTING], [COLORS], [EFFECT], [EXTRAS]` — and a length
+  ladder (10–30 short, 30–80 normal, 80–300+ for multi-subject), with "Start
+  short. Add only what changes the image." Nano Banana wants the opposite:
+  "A simple list of keywords won't cut it; you need to describe the scene
+  narratively." Seedream wants 30–100 words and weights earlier tokens. GPT
+  Image wants labelled segments, line breaks, and a preservation list — "change
+  only X, keep everything else the same" — or it drifts on faces, logos and
+  text.
 - **Reference images want to be named in the prompt.** Nano Banana (up to 14) and
   GPT Image both expect them referenced by index — "apply Image 2's style to
   Image 1's subject". genzen sends an ordered set and says nothing about it.

@@ -3,10 +3,22 @@
 import { generateText } from 'ai'
 import enhancePromptSkill from '#/lib/prompts/enhance-prompt.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
+import { promptGuideFor } from '#/lib/server/prompt-guides.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 
 interface EnhancePromptInput {
   prompt: string
+  /**
+   * Which model is about to receive this (#463). When it declares a
+   * `promptGuide`, that file replaces `enhance-prompt.md` outright rather than
+   * appending to it: FLUX.2 wants a comma-separated slot order and Nano Banana
+   * wants narrative sentences, and a shared base with a per-model tail can only
+   * vary the wording, never the structure.
+   *
+   * Optional, and most of the lineup has no guide -- those enhance exactly as
+   * they did before.
+   */
+  modelSlug?: string
 }
 
 /** The .md is prompt-craft a human edits, so it keeps the frontmatter block the
@@ -27,10 +39,12 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     throw new Error('Prompt is empty — nothing to enhance.')
   }
 
+  const guide = promptGuideFor(data.modelSlug)
+
   const response = await generateText({
     model: ai.reasoning,
     maxOutputTokens: 600,
-    system: stripFrontmatter(enhancePromptSkill),
+    system: guide ?? stripFrontmatter(enhancePromptSkill),
     messages: [
       {
         role: 'user',
@@ -44,5 +58,5 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     throw new Error('Model returned an empty response.')
   }
 
-  return { enhancedPrompt: enhanced }
+  return { enhancedPrompt: enhanced, guided: guide != null }
 }
