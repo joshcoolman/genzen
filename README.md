@@ -8,6 +8,12 @@ The open issues labelled [`focus`](https://github.com/joshcoolman/genzen/labels/
 then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
 the ranking; a list here would be a second copy of it that drifts.
 
+Both `focus` issues are correctness, and they come before the lab ladder on
+purpose. #461 is the sharp one: FAL's safety checker returns HTTP 200 with a
+black image, so a blocked generation is stored, billed and shown as an ordinary
+success — on 11 of 30 models, Z-Image Turbo among them, which is the draft
+engine the lab workflow is built on.
+
 ## Run it locally
 
 You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
