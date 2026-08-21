@@ -288,6 +288,29 @@ export function imageCapacityFor(modelId: string): number {
   return m.maxRefs + 1
 }
 
+/**
+ * The slug behind a picker id, since a selection carries an endpoint and
+ * `promptGuideFor` is keyed by slug (#465).
+ *
+ * Undefined when nothing in the lineup claims the id -- a retired endpoint
+ * still sitting in someone's localStorage, which is the case the enhancer must
+ * not turn into a wrong guide.
+ */
+export function slugFor(modelId: string): string | undefined {
+  return findModel(modelId)?.slug
+}
+
+/**
+ * The `.md` that steers this model's enhancer, or undefined for the models
+ * still on the shared instruction (#463).
+ *
+ * A path rather than the text, so a lab page can name the file to go and edit
+ * without the guides being bundled into the browser.
+ */
+export function promptGuidePathFor(modelId: string): string | undefined {
+  return findModel(modelId)?.promptGuide
+}
+
 function findModel(modelId: string): ModelEntry | undefined {
   return IMAGE_MODELS.find(
     (m) =>
