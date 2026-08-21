@@ -56,3 +56,6 @@ This file collects what each model says it wants to **read**.
 how a vision model gets steered into producing a prompt at all, quoted from a
 ComfyUI node pack that gives its users a dropdown of named instructions where
 genzen's Describe has two hardcoded modes.
+
+Sibling: [`qwenvl-preset-prompts.md`](./qwenvl-preset-prompts.md) — a captured
+preset library from a ComfyUI node pack, the writing side of the same question.
