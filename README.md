@@ -146,6 +146,16 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 2026-08-20
 
+- **Load a past generation into the panel, from Activity** — the detail panel's
+  one verb: prompt and reference images into the Images generator, then it takes
+  you there. Aspect, generations-per-model and the model selection are left
+  alone. Two bugs came out with it, both older than the button: Images' own Load
+  wrote only the first prompt row, so loading after a Variations run left five
+  prompts and Generate ran all five; and a handoff filled the panel without
+  opening it, which with the dock collapsed looked like a click that did
+  nothing. That second one types, lints, builds and tests clean while doing
+  nothing visible — it was only found by driving a browser (#458)
+
 - **Variations writes prompts about up to four pictures at once** — "combine
   these and match the illustration style of the one with the clouds" is a
   variation, and the lab page can now express it: every picked image reaches the
@@ -196,11 +206,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   the library — and nothing in the bin is held back. The cost is that a card can
   vanish from a board you were not looking at, which is the cheaper problem: the
   board is scratch and the deletion was deliberate (#446, step 1)
-
-- **Outpaint takes several images at once** — the lab page's ratio and models
-  are the settings and the images are the input, so reframing four stills is one
-  press instead of four trips through the same controls. Images × models
-  generations from one click, so the count is on the button and a press over a
-  dollar says how big it is first. Z-Image Turbo is off this page's model list:
-  its image endpoint is denoise-from-image with a strength dial, not instruct
-  editing, so it cannot extend a frame (#441)
