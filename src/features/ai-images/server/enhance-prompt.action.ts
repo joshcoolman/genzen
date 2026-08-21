@@ -21,15 +21,6 @@ interface EnhancePromptInput {
   modelSlug?: string
 }
 
-/** The .md is prompt-craft a human edits, so it keeps the frontmatter block the
- *  skills registry used to read. It is metadata, not instruction — strip it. */
-function stripFrontmatter(raw: string): string {
-  if (!raw.startsWith('---')) return raw.trim()
-  const end = raw.indexOf('\n---', 3)
-  if (end === -1) return raw.trim()
-  return raw.slice(end + 4).trim()
-}
-
 export async function enhancePrompt(data: EnhancePromptInput) {
   await resolveAuth()
   requireAiRole('reasoning')
@@ -44,7 +35,7 @@ export async function enhancePrompt(data: EnhancePromptInput) {
   const response = await generateText({
     model: ai.reasoning,
     maxOutputTokens: 600,
-    system: guide ?? stripFrontmatter(enhancePromptSkill),
+    system: guide ?? enhancePromptSkill.trim(),
     messages: [
       {
         role: 'user',
