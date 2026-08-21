@@ -21,6 +21,13 @@
  *   local flag on a button, not a fact anyone stores or reconciles. If the
  *   panel changes underneath it, the button is stale, and that is fine.
  *
+ * **Two senders now** (#458): the lab's Variations page, and Activity's Load
+ * generation. Neither knows the other exists and neither knows what Images does
+ * with the delivery -- which is what keeps this a door rather than a protocol.
+ * A sender that needs to say something about its own read (Activity warns about
+ * inputs that no longer resolve) says it before navigating, rather than growing
+ * a field here.
+ *
  * localStorage rather than a URL param or a router state object: the payload
  * carries several prompts, and it has to survive a full page load, which is
  * what a link to another route is.

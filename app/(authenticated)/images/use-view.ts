@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { loadGeneration } from './_actions/load-generation.action'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
 import { usePrefs } from './_hooks/use-prefs'
@@ -14,6 +13,7 @@ import { useGroups } from './_hooks/use-groups'
 import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -177,7 +177,14 @@ export function useView(initial: Array<SavedAiImage>) {
    * generation already behaves: the selection is the working context you are
    * already in, not part of the thing being loaded.
    */
+  const handoffTaken = useRef(false)
   useEffect(() => {
+    // After the dock's stored open/closed state has landed, never before: this
+    // opens the panel, and `open` starts at its fallback and is corrected a
+    // tick later, so an earlier call is undone rather than obeyed.
+    if (!dock.hydrated || handoffTaken.current) return
+    handoffTaken.current = true
+
     const handoff = takePanelHandoff()
     if (!handoff) return
     generator.replacePrompts(handoff.prompts)
@@ -185,9 +192,15 @@ export function useView(initial: Array<SavedAiImage>) {
     // may name the images by number, so replacing is the only correct move:
     // merging into whatever the panel already held would renumber them.
     if (handoff.images) generator.replaceRefImages(handoff.images)
-    // Once, on mount: a delivery is consumed by the read, so a second run
-    // would have nothing to apply even if the deps changed.
-  }, [])
+    // Open it, the way every other load does. A handoff fills a form, and a
+    // form you cannot see has not been filled as far as anyone watching is
+    // concerned -- with the dock collapsed, arriving here from Activity's Load
+    // (#458) looked like a click that did nothing.
+    dock.setOpen(true)
+    // The ref, not an empty dep list: this has to wait for hydration, so it
+    // cannot be a mount-only effect, and a delivery must still be collected
+    // exactly once.
+  }, [dock, generator])
 
   /**
    * What each group has in play right now, and the one moment worth re-reading.
@@ -755,7 +768,13 @@ export function useView(initial: Array<SavedAiImage>) {
       try {
         const loaded = await loadGeneration(img.id)
 
-        generator.setPrompt(loaded.prompt)
+        // The whole list, not row 0. `setPrompt` writes prompts[0] and leaves
+        // the rest, which was invisible until the panel routinely held several
+        // -- a Variations run loads four (#436), so Load used to leave you with
+        // five prompts and Generate ran all of them. The panel is a single
+        // working surface; a past generation merged into a half-written list is
+        // a run nobody can read (#458).
+        generator.replacePrompts([loaded.prompt])
         generator.replaceRefImages(
           loaded.images.map((i) => ({
             id: i.id,

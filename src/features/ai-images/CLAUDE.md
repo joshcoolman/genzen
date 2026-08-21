@@ -80,6 +80,13 @@ anything one route renders lives with that route.
   ignores `parent_id` (filing, and mutable) and `root_image_id` (ancestry, not
   input) on purpose; both are named in its comments so the exclusions are not
   re-litigated as oversights.
+- **`load-generation.action.ts` is "put that generation back in a panel", and
+  it is not `planRetry`.** Both read `generation_metadata`; a retry reproduces a
+  request and this fills a form, which is why it returns the _typed_ prompt
+  rather than the sent one, loads what still resolves rather than refusing, and
+  never touches the model. It lives here rather than under a route because
+  Images' card icon (#382) and Activity's button (#458) both call it -- the
+  second consumer is what earned it the move.
 - **Two prompt writers, opposite operations, separate contracts.**
   `enhance-prompt.action.ts` expands text it is given; `generate-prompt.action.ts`
   invents from nothing and is capped at 20–45 words. They must not share a
