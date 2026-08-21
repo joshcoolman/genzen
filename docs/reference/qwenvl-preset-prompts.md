@@ -128,5 +128,4 @@
 
 ---
 
-Source: [`1038lab/ComfyUI-QwenVL`](https://github.com/1038lab/ComfyUI-QwenVL),
-`AILab_System_Prompts.json`, GPL-3.0. Quoted verbatim, for study.
+Source: [AILab_System_Prompts.json](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/AILab_System_Prompts.json)
