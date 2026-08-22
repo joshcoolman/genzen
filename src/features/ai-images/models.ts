@@ -70,6 +70,31 @@ export interface ModelEntry {
    */
   editPrice?: number
   useCase?: string
+  /**
+   * Repo-relative path to the `.md` that tells the enhancer how *this* model
+   * wants to be written to (#463). Nano Banana says a keyword list "won't cut
+   * it" and wants narrative sentences, which no amount of rewording the shared
+   * instruction produces -- it is a different output structure, not a different
+   * vocabulary.
+   *
+   * **A path, not the text.** This module is client-bundled by the model
+   * selector, and the guides are only read server-side; shipping them to the
+   * browser buys nothing. `src/lib/server/prompt-guides.server.ts` maps the
+   * path to the imported string. The path itself *is* wanted on the client --
+   * a lab page's job is to name the file that steers it.
+   *
+   * **Optional on purpose, and mostly unset.** No guide means
+   * `enhance-prompt.md`, so a model without one still enhances. Seven of eight
+   * fall back today and that is the intended state, not a gap.
+   *
+   * **A guide earns its place by diverging from the baseline, and loses it when
+   * it stops.** FLUX.2 had one until the baseline became FLUX's own discipline
+   * genericized; the two then said the same thing in the same shape -- 218
+   * characters against 183 on the same prompt -- so the guide was carrying
+   * nothing and went. Before adding one, check the baseline is actually wrong
+   * for that model rather than merely not written with it in mind.
+   */
+  promptGuide?: string
 }
 
 // Endpoint ids verified against https://fal.ai/models
@@ -120,6 +145,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // -- on a daily driver, at half the real price.
     price: 0.08,
     useCase: 'Reasoning-guided generation',
+    promptGuide: 'src/lib/prompts/guide-nano-banana-2.md',
   },
   {
     slug: 'flux-2-pro',
@@ -149,6 +175,9 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     price: 0.045,
     editPrice: 0.075,
     useCase: 'Best FLUX quality — and the one that takes many references',
+    // BFL publishes one prompting guide for FLUX.2, so Flash and Klein can
+    // point at this same file when they are wired up -- a guide is per family
+    // where the family agrees, not per entry by rule.
   },
   // Cheap/fast tier (#262). Three rather than one because the point is
   // comparison: the same prompt across all three costs under two cents.
@@ -162,6 +191,7 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     // recolour a mug it returns the same mug, at any strength. It is here so an
     // attached image is used rather than dropped, not as an editor.
     withImages: 'fal-ai/z-image/turbo/image-to-image',
+    promptGuide: 'src/lib/prompts/guide-z-image-turbo.md',
     // One `image_url` slot, and the attached image is it -- same arithmetic as
     // both Kontext entries.
     maxRefs: 0,
@@ -262,6 +292,29 @@ export function imageCapacityFor(modelId: string): number {
   const m = findModel(modelId)
   if (!m?.withImages) return 0
   return m.maxRefs + 1
+}
+
+/**
+ * The slug behind a picker id, since a selection carries an endpoint and
+ * `promptGuideFor` is keyed by slug (#465).
+ *
+ * Undefined when nothing in the lineup claims the id -- a retired endpoint
+ * still sitting in someone's localStorage, which is the case the enhancer must
+ * not turn into a wrong guide.
+ */
+export function slugFor(modelId: string): string | undefined {
+  return findModel(modelId)?.slug
+}
+
+/**
+ * The `.md` that steers this model's enhancer, or undefined for the models
+ * still on the shared instruction (#463).
+ *
+ * A path rather than the text, so a lab page can name the file to go and edit
+ * without the guides being bundled into the browser.
+ */
+export function promptGuidePathFor(modelId: string): string | undefined {
+  return findModel(modelId)?.promptGuide
 }
 
 function findModel(modelId: string): ModelEntry | undefined {

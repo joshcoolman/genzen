@@ -8,17 +8,22 @@
   background: var(--surface);
 }
 
+/* Wraps rather than squeezes. In a narrow column the label, the file path and
+   the count cannot all sit on one line, and flexbox's answer is to break the
+   words inside them -- a model name over two lines reads as two models. */
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-12);
+  gap: var(--space-4) var(--space-12);
 }
 
 .label {
   color: var(--text);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  white-space: nowrap;
 }
 
 /* A length readout, because "too verbose" is the commonest thing being judged
@@ -31,8 +36,16 @@
 
 .headerRight {
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4) var(--space-8);
+  min-inline-size: 0;
+}
+
+/* The path may break; it is a filename, not a name, and a wrapped one is still
+   readable. Everything else in the header must not. */
+.note {
+  overflow-wrap: anywhere;
 }
 
 .block {
@@ -63,4 +76,12 @@
   font-size: var(--text-xs);
   line-height: var(--leading-relaxed);
   white-space: pre-wrap;
+}
+
+/* The instruction file behind this card. A path is the thing you go and open,
+   so it is set in code like every other path the lab prints. */
+.note {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
 }

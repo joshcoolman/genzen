@@ -16,17 +16,27 @@ import { CopyButton } from '#/components'
  */
 export function RunCard({
   label,
+  note,
   input,
   output,
   outputs,
+  placeholder,
   actions,
 }: {
   label: string
+  /** A second, quieter identity for the run — the Enhance grid names the
+   *  instruction file that produced each card here, because one card per model
+   *  means the page can no longer name a single file at the top (#465). */
+  note?: string
   /** What was asked. Omitted where the input is an image rather than text. */
   input?: string
   output?: string
   /** For a run that emits several things, like variation prompts. */
   outputs?: Array<string>
+  /** Shown in place of the output when there is none yet — a card still out, or
+   *  one that failed. A card holds its place in the grid either way, so the
+   *  comparison does not reflow as answers land (#465). */
+  placeholder?: React.ReactNode
   /** What this run can be *done with*, beside its length readout (#433). A slot
    *  rather than a prop per verb: judging the output is what every page here
    *  shares, and what you then do with it is what none of them do the same. */
@@ -39,11 +49,14 @@ export function RunCard({
       <header className={styles.header}>
         <span className={styles.label}>{label}</span>
         <div className={styles.headerRight}>
-          <span className={styles.count}>
-            {all.length === 1
-              ? `${output?.length ?? 0} chars`
-              : `${all.length} results`}
-          </span>
+          {note && <code className={styles.note}>{note}</code>}
+          {all.length > 0 && (
+            <span className={styles.count}>
+              {all.length === 1
+                ? `${output?.length ?? 0} chars`
+                : `${all.length} results`}
+            </span>
+          )}
           {actions}
         </div>
       </header>
@@ -55,11 +68,19 @@ export function RunCard({
         </div>
       )}
 
+      {all.length === 0 && placeholder}
+
       {all.map((value, i) => (
         <div key={i} className={styles.block}>
-          <span className={styles.blockLabel}>
-            {all.length === 1 ? 'Out' : `Out ${i + 1}`}
-          </span>
+          {/* `Out` earns its place only where it separates the result from
+              something else: an `In` above it, or the other outputs beside it.
+              A card that is one result and nothing else reads it as the label
+              of a field to fill in (#465). */}
+          {(input != null || all.length > 1) && (
+            <span className={styles.blockLabel}>
+              {all.length === 1 ? 'Out' : `Out ${i + 1}`}
+            </span>
+          )}
           <div className={styles.outputRow}>
             <p className={styles.text}>{value}</p>
             <CopyButton text={value} />

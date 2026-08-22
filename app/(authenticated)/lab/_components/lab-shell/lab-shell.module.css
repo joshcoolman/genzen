@@ -1,6 +1,10 @@
 /* Mobile first: the nav is a horizontal strip above the content. A 14rem
    column beside a phone-width page leaves neither half usable, and a settings
-   nav of three items reads fine as a row. */
+   nav of three items reads fine as a row.
+
+   A copy of `account/`'s, not a shared module -- same reason as ever: the lab
+   is meant to be deletable by deleting its folder, and a stylesheet two
+   sections import is a thread to unpick. */
 
 .shell {
   display: flex;
@@ -54,9 +58,23 @@
     padding: var(--space-24) var(--space-12);
     border-radius: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    transition: inline-size var(--duration-slow) var(--ease-in-out);
   }
 
   .main {
     flex: 1;
+  }
+}
+
+/* Collapsed: a strip wide enough for the toggle and nothing else. The rail
+   still bleeds and still fills the viewport -- it narrows, it does not vanish,
+   so the way back is always in the same place rather than somewhere in the
+   page. Mobile has no collapsed state: the nav is a horizontal strip there and
+   collapsing a row of five words buys nothing. */
+@media (min-width: 48rem) {
+  .sidebarCollapsed {
+    inline-size: 3.25rem;
+    padding-inline: var(--space-8);
   }
 }

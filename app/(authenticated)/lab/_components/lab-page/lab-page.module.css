@@ -1,8 +1,15 @@
+/* A reading width. One stacked column of prose is the default shape here, and
+   a full-width line of it is a line you lose your place in. */
 .page {
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
   max-inline-size: 48rem;
+}
+
+/* Except where the page lays out its own columns -- see `wide`. */
+.pageWide {
+  max-inline-size: none;
 }
 
 .instruction {
