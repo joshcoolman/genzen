@@ -1,11 +1,64 @@
+/* Mobile first: one column, inputs above results. You type before you read, and
+   a 20rem rail beside a phone-width page leaves neither half usable. */
+
+.split {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  min-inline-size: 0;
+  order: -1;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  min-inline-size: 0;
+}
+
+@media (min-width: 64rem) {
+  /* 20rem is the Images dock's width, matched deliberately: the same job on two
+     routes should not be two different widths. It is a panel measurement, not
+     spacing, which is why no token goes that far. */
+  .split {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+    gap: var(--space-32);
+  }
+
+  /* Explicit cells rather than source order, so the DOM can keep inputs-first
+     for a phone and a screen reader while the eye gets results-first. */
+  .results {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  /* Sticky, because the point of the page is pressing Enhance again after
+     editing a `.md`, and a long grid should not mean scrolling back up to do
+     it. The offset clears the app chrome's own top padding. */
+  .inputs {
+    grid-column: 2;
+    grid-row: 1;
+    position: sticky;
+    top: var(--space-24);
+    order: 0;
+  }
+}
+
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-8);
 }
 
-/* The prompt these cards were written from. Quiet, because it is the thing you
-   already typed -- the comparison is between the cards, not against this. */
+/* The prompt and the steer these cards were written from. Quiet, because they
+   are what you already typed -- the comparison is between the cards, not
+   against these. */
 .source {
   display: flex;
   gap: var(--space-8);
@@ -24,6 +77,30 @@
   letter-spacing: var(--tracking-wider);
 }
 
+/* A pasted steer can be a page of text, and the echo of an input must not push
+   the results it produced off the screen. Four lines is enough to recognise
+   which steer is in force, and the whole of it is in the rail beside it.
+
+   Declared after `.source` on purpose: it replaces that rule's `display: flex`
+   with the box the clamp needs, and CSS modules give both the same specificity,
+   so source order is what decides it. */
+.steerEcho {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+/* What the middle column says before there is anything in it. The column is
+   most of the page, and an empty one reads as broken rather than as waiting. */
+.empty {
+  margin: 0;
+  max-inline-size: 44ch;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
 .pending {
   margin: 0;
   color: var(--text-muted);
@@ -38,8 +115,8 @@
   font-size: var(--text-xs);
 }
 
-/* Collapsed by default. Most runs have no steer, and an empty five-row box
-   above the model list would read as something left unfilled. */
+/* Collapsed by default. Most runs have no steer, and an empty six-row box in
+   the rail would read as something left unfilled. */
 .steering summary {
   cursor: pointer;
 }

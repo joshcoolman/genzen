@@ -198,10 +198,33 @@ item.
   which is jsonb and already an open namespace. Deliberately more awkward than a
   real schema: outgrowing it is what earns promotion out, and the migration is
   the ceremony of graduating.
-- **`layout.module.css` is a copy of `account/`'s, not a shared module.** Same
+- **The rail collapses, and `layout.tsx` is a shell around a client
+  component.** The collapsed state lives above both columns — the aside narrows
+  and the main widens together — so `LabShell` owns it and the layout renders
+  only that. It is still a layout, which is the property worth keeping: the nav
+  is not remounted on navigation and the active item does not flicker.
+  Collapsed persists, because a rail you re-collapse every visit is one you stop
+  collapsing. Collapsed shows each page's initial rather than an icon — five
+  experiments with no visual identity would need five invented glyphs, each of
+  which has to be learned, and an initial is already the name.
+  `lab-shell.module.css` is a copy of `account/`'s, not a shared module. Same
   shape — a nav column beside the content, one entry in the app's rail, every
   path under it lighting that one item. A stylesheet two sections import is a
   thread to unpick when this folder is deleted.
+- **`LabPage` caps at a reading width, and Enhance opts out with `wide`.** One
+  stacked column of prose is the default shape here and a full-width line of it
+  is a line you lose your place in. The cap is wrong the moment a page lays out
+  its own columns: it then applies to the column _and_ its rail together, so the
+  rail eats the reading width instead of sitting beside it — and collapsing the
+  nav to gain space gains none. That was live for one build (#465).
+- **Enhance puts its inputs in a right-hand rail**, the shape Images has and for
+  the same reason: composing and reading are different jobs, and stacked they
+  mean every run pushes the controls off the top. On the right, because the
+  lab's own nav is already a left rail and two down one edge read as one
+  confused one. 20rem matches the Images dock deliberately — the same job on two
+  routes should not be two widths. The DOM keeps inputs first so a phone and a
+  screen reader get them first; explicit grid cells put results first for the
+  eye.
 - **`/lab` redirects to `/lab/enhance`.** The rail entry has to point somewhere,
   and an index listing three links the nav beside it already shows would be a
   page whose only content is a duplicate of its own navigation.

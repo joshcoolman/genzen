@@ -1,5 +1,6 @@
 import styles from './lab-page.module.css'
 import { PageHeader } from '#/components'
+import { cx } from '#/lib/utils'
 
 /**
  * The frame every lab page shares.
@@ -20,16 +21,27 @@ export function LabPage({
   question,
   instructionFile,
   error,
+  wide,
   children,
 }: {
   title: string
   question: string
   instructionFile?: string
   error?: string | null
+  /**
+   * Drop the reading-width cap, for a page that lays out its own columns.
+   *
+   * The cap is right for the default shape here — one stacked column of prose,
+   * where a full-width line is a line you lose your place in. It is wrong the
+   * moment a page puts a rail beside that column: the cap then applies to both
+   * together, so the rail eats the reading width rather than sitting beside it,
+   * and collapsing the nav to gain space gains none.
+   */
+  wide?: boolean
   children: React.ReactNode
 }) {
   return (
-    <div className={styles.page}>
+    <div className={cx(styles.page, wide && styles.pageWide)}>
       <PageHeader title={title} description={question} />
       {instructionFile && (
         <p className={styles.instruction}>
