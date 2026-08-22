@@ -150,6 +150,24 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Last shipped
 
+2026-08-22
+
+- **Enhance writes to the model it is for, and the lab can prove it** — every
+  prompt used to be rewritten the same way whatever model was about to receive
+  it. A model can now carry its own instruction file and gets that instead of
+  the shared one. `/lab/enhance` is where you see the difference: one idea,
+  several models, one press, a card per model naming the file that steered it,
+  and the run survives navigating away. The shared instruction turned out to be
+  a _skill_ written in April for the AD assistant's registry and never read
+  against what it produced — ten mandatory steps, each demanding a film stock or
+  a colour harmony whether the idea implied one or not, turning eight words into
+  1072 characters. It is now FLUX's discipline with the vendor stripped out, at 183. Two models keep a guide of their own, and FLUX.2 lost the one it had once
+  the baseline said the same thing: a per-model file that merely agrees with the
+  default will drift out of sync and be believed anyway. Steering is the second
+  input — what the picture should look like, appended below the model's format
+  rules and losing every conflict with them, because a steer pasted in from
+  another session arrives carrying its own word count and structure (#463, #465)
+
 2026-08-20
 
 - **Load a past generation into the panel, from Activity** — the detail panel's
@@ -203,12 +221,3 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   arrangement and never a picture, and generations now name the board they were
   made on rather than assuming there is only one — an id the server checks
   belongs to you before it writes a card (#446, step 2)
-- **Trashing an image takes it off every canvas** — Trash used to keep a card on
-  its board, badge it "Canvas", and refuse to permanently delete it until you
-  went and found the board to remove it there. Emptying the bin was a chore of
-  hunting, and with several boards coming it would be several places to hunt. So
-  the rule is inverted at the source: every soft-delete path clears canvas
-  membership the way it already cleared `group_id`, restore has one destination —
-  the library — and nothing in the bin is held back. The cost is that a card can
-  vanish from a board you were not looking at, which is the cheaper problem: the
-  board is scratch and the deletion was deliberate (#446, step 1)
