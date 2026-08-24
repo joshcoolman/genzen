@@ -19,8 +19,8 @@ longer talks to the database.
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
 - `server/upload-image.action.ts` -- server action wrapper for image upload
-- `server/upload-image-internal.server.ts` -- core async implementation for R2 upload with magic-byte validation and user-scoped path enforcement
-- `server/remove-images.action.ts` -- Server function for deleting images from R2 storage (batch, user-scoped)
+- `server/upload-image-internal.server.ts` -- core async implementation for the bucket upload, with magic-byte validation and user-scoped path enforcement
+- `server/remove-images.action.ts` -- Server function for deleting images from the bucket (batch, user-scoped)
 - `server/create-thumbnail.action.ts` -- Server function for async thumbnail generation post-upload
 
 ## Route and UI
@@ -33,8 +33,10 @@ canvas routes. The library picker they both open is
 
 ## Shared Dependencies
 
-- `#/lib/auth` -- useAuth for user context
-- `#/components` -- `Thumbnail`, `ImageGrid`, `ActionButton`
+Headless, so this is short. What the folder imports, in full: `resolveAuth`,
+`sql`, `createImageStorage`, `imageUrl`, `userImageColumns`,
+`generateAndStoreThumbnail`, and React. No `#/components`, no `#/lib/auth` --
+the routes that consume this feature bring those.
 
 ## Quirks / Notes
 
@@ -57,6 +59,8 @@ canvas routes. The library picker they both open is
   browser reads images from `/img/[id]`, which resolves identity from the cookie
   and filters the row by `user_id`. Build URLs only through `#/lib/image-url`.
 - Storage goes through `createImageStorage()` from `#/lib/image-storage`
-- `images.color_palette` and the `ColorPalette` type in `types.ts` are a column
-  and a shape with nothing writing them -- there is no palette generator
+- `user_images.color_palette` and the `ColorPalette` type in `types.ts` are a
+  column and a shape with nothing writing them -- there is no palette generator.
+  The column is selected into every image read and indexed on a predicate that
+  is always false; #472 has the details
 - Max upload size: 50MB; allowed types: JPEG, PNG, WebP, GIF

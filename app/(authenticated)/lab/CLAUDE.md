@@ -226,8 +226,8 @@ item.
   screen reader get them first; explicit grid cells put results first for the
   eye.
 - **`/lab` redirects to `/lab/enhance`.** The rail entry has to point somewhere,
-  and an index listing three links the nav beside it already shows would be a
-  page whose only content is a duplicate of its own navigation.
+  and an index listing the same five links the nav beside it already shows
+  would be a page whose only content is a duplicate of its own navigation.
 
 ## Who tests what
 

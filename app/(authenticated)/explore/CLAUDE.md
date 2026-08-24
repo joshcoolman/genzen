@@ -66,8 +66,9 @@ live here now.
 ## Quirks
 
 - **`columns`, not a JS masonry.** A width rather than a count, so the column
-  count falls out of the space available and the collapsing sidebar needs no
-  breakpoint. The cost is reading order — items fill down each column, then
+  count falls out of the space available and no breakpoint is needed. (The
+  justification used to name the collapsing sidebar; that collapse was retired
+  in #471, and the property still earns its place on its own.) The cost is reading order — items fill down each column, then
   across — which is the right trade on a surface with no order worth following
 - **The rows are a snapshot.** `page.tsx` loads once and nothing polls. A
   generation finishing while you browse does not appear until you reload, which

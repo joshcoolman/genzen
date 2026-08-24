@@ -2,18 +2,6 @@
 
 A personal workspace for working with AI image models.
 
-## Up next
-
-The open issues labelled [`focus`](https://github.com/joshcoolman/genzen/labels/focus),
-then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
-the ranking; a list here would be a second copy of it that drifts.
-
-Both `focus` issues are correctness, and they come before the lab ladder on
-purpose. #461 is the sharp one: FAL's safety checker returns HTTP 200 with a
-black image, so a blocked generation is stored, billed and shown as an ordinary
-success — on 11 of 30 models, Z-Image Turbo among them, which is the draft
-engine the lab workflow is built on.
-
 ## Run it locally
 
 You need Docker, pnpm, and **Node 22.13+**. No cloud account is required
@@ -30,7 +18,7 @@ nothing is mocked.
 
 ```bash
 pnpm install
-pnpm local:up                  # asks for your FAL key, sets up everything else
+pnpm local:up                  # asks for your API keys, sets up everything else
 pnpm dev                       # http://localhost:3000
 ```
 
@@ -77,8 +65,9 @@ about it — that's the usual reason generation 401s.
 | `pnpm dev`             | Next dev server on :3000                                                                                                        |
 | `pnpm build`           | Production build                                                                                                                |
 | `pnpm test`            | Vitest                                                                                                                          |
-| `pnpm check`           | Prettier + ESLint --fix + color check (run before commit)                                                                       |
+| `pnpm check`           | Prettier + ESLint --fix + color and token checks (run before commit)                                                            |
 | `pnpm check:colors`    | Fail on a raw color outside `tokens.css`                                                                                        |
+| `pnpm check:tokens`    | Fail on a `var(--x)` that is declared nowhere                                                                                   |
 | `pnpm typecheck`       | `tsc --noEmit` (the build typechecks too)                                                                                       |
 | `pnpm db:migrate`      | Apply pending `migrations/*.sql`                                                                                                |
 | `pnpm users`           | List/add/delete logins; `-h` for usage, `--local` for docker. Reaching a _deployed_ database needs an authenticated Railway CLI |
@@ -94,7 +83,7 @@ about it — that's the usual reason generation 401s.
 | Auth        | scrypt + signed session cookie, own `users` table     |
 | Storage     | S3 — MinIO locally, a Railway bucket in production    |
 | Images      | FAL                                                   |
-| Text/vision | Anthropic — assistant, prompt work, and vision        |
+| Text/vision | Anthropic — prompt work, and vision                   |
 
 ## Repo map
 
@@ -115,7 +104,9 @@ fails the build.
 ## Env
 
 **Locally there is nothing to configure.** `pnpm local:up` writes `.env.local`
-itself and prompts you for the one value that is actually yours, the FAL key.
+itself and prompts you for the values that are actually yours: your FAL key,
+and your Anthropic key if you want the AI-assisted features. The app runs
+without the second.
 
 `.env.example` is the reference for deploying, split into Required (a Postgres
 URL, a session secret, FAL, an S3 bucket) and Optional (Anthropic).
@@ -137,9 +128,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 - No Tailwind and no CSS framework. `src/styles/tokens.css` is the token layer,
   `src/styles/base.css` the reset; everything else is a `.module.css` beside its
   component. `src/styles.css` imports those two and nothing else. Colors live
-  in `tokens.css` alone — `pnpm check:colors` enforces it (#229).
+  in `tokens.css` alone — `pnpm check:colors` enforces it (#229), and
+  `pnpm check:tokens` fails on a `var(--x)` declared nowhere (#407). The second
+  matters because an undeclared property does not error, it is dropped, so it
+  breaks silently.
 - `.server.ts` must never be imported from client code; `.action.ts` is a `'use server'` module meant to be. Lint enforces the split (#241).
-- FAL generation status is reconciled via on-demand polling in `src/lib/server/check-pending-generations.action.ts`. Webhooks are optional and gated by env.
+- FAL generation status is reconciled via on-demand polling in
+  `src/lib/server/check-pending-generations.action.ts`. **There are no webhooks** —
+  the route, the flag and the env vars went in #362, and polling is the only path
+  by which a result reaches the app.
 - The bucket is private, so there are no public object URLs to persist. Images
   are served by the app at `/img/[id]`, which resolves identity from the cookie
   and filters the row by `user_id`. `src/lib/image-url.ts` is the only place a
@@ -148,76 +145,19 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
   so a click always leaves a card behind — pending, completed, or failed with a
   reason and a Retry.
 
-## Last shipped
+## Status
 
-2026-08-22
+**Last shipped**
 
-- **Enhance writes to the model it is for, and the lab can prove it** — every
-  prompt used to be rewritten the same way whatever model was about to receive
-  it. A model can now carry its own instruction file and gets that instead of
-  the shared one. `/lab/enhance` is where you see the difference: one idea,
-  several models, one press, a card per model naming the file that steered it,
-  and the run survives navigating away. The shared instruction turned out to be
-  a _skill_ written in April for the AD assistant's registry and never read
-  against what it produced — ten mandatory steps, each demanding a film stock or
-  a colour harmony whether the idea implied one or not, turning eight words into
-  1072 characters. It is now FLUX's discipline with the vendor stripped out, at 183. Two models keep a guide of their own, and FLUX.2 lost the one it had once
-  the baseline said the same thing: a per-model file that merely agrees with the
-  default will drift out of sync and be believed anyway. Steering is the second
-  input — what the picture should look like, appended below the model's format
-  rules and losing every conflict with them, because a steer pasted in from
-  another session arrives carrying its own word count and structure (#463, #465)
+- 2026-08-24 — A dead-code and stale-docs sweep: `knip.jsonc`, corrections across the docs and `CLAUDE.md` files, and a toast that had been lying since March (#472, #473)
+- 2026-08-22 — Enhance writes to the model it is for, and `/lab/enhance` shows the difference; steering is a second input (#463, #465, #466)
+- 2026-08-20 — Load a past generation into the panel from Activity (#458)
+- 2026-08-20 — Variations writes prompts about up to four pictures at once, numbered and honoured at submit (#436)
+- 2026-08-20 — `pnpm dev` refuses to start when a key is exported as an empty string (#437)
+- 2026-08-19 — Canvases are a set: `/canvas` is an index, a board is `/canvas/[id]` (#446)
 
-2026-08-20
+**Up next**
 
-- **Load a past generation into the panel, from Activity** — the detail panel's
-  one verb: prompt and reference images into the Images generator, then it takes
-  you there. Aspect, generations-per-model and the model selection are left
-  alone. Two bugs came out with it, both older than the button: Images' own Load
-  wrote only the first prompt row, so loading after a Variations run left five
-  prompts and Generate ran all five; and a handoff filled the panel without
-  opening it, which with the dock collapsed looked like a click that did
-  nothing. That second one types, lints, builds and tests clean while doing
-  nothing visible — it was only found by driving a browser (#458)
-
-- **Variations writes prompts about up to four pictures at once** — "combine
-  these and match the illustration style of the one with the clouds" is a
-  variation, and the lab page can now express it: every picked image reaches the
-  model, in order, under a second instruction file written for a combine. The
-  prompts it writes name images by number, and the number is made real at submit
-  — `useGenerator` prepends `[Image 1, Image 2, ...]` for any set larger than
-  one, so Images honours it and not only Canvas, and the reference strip numbers
-  its tiles to match. Those references can be written by hand too, which is why
-  #300's `@` autocomplete closed unbuilt: it would not change a byte of what
-  reaches FAL. Guidance now rides on every prompt rather than going over as a
-  prompt of its own, so each generation hears the context that shaped it. And
-  **vision now gets a downscaled copy of a picture, never the original** —
-  not an optimisation: two full-size images in one message destroyed the HTTP/2
-  session mid-upload, which the AI SDK reported as "Cannot connect to API",
-  naming everything except the size of what was sent (#436)
-
-- **`pnpm dev` refuses to start when a key is exported as an empty string** — an
-  `export FAL_KEY=""` in a shell dotfile beats `.env.local`, because every
-  dotenv loader skips a name already in the environment. The app then reports
-  "FAL_KEY is not set" against a file that plainly holds the key, sending you to
-  the one place the problem is not. `check-env-shadow.mjs` had warned all along
-  and the banner scrolled away twice, so it exits 1 now. A stale non-empty value
-  still only warns — pointing at another account for an afternoon is a real
-  thing to do
-
-2026-08-19
-
-- **Shift-drag across the grid to pick several images** — once one image is
-  selected, sweeping adds every card the rectangle touches, live as it crosses
-  them. Loose rather than a graphics-program marquee: it can start on top of a
-  card, clipping a corner is enough, and it only ever adds. Shift-click still
-  extends a range from the last card toggled — both mean "add several", one is
-  a click. One screenful per sweep; there is no auto-scroll at the edge (#440)
-- **Canvases are a set, not a single board** — `/canvas` is now an index of your
-  boards (cover, name, count, swatch strip; New canvas, Rename, Delete canvas)
-  and a board lives at `/canvas/[id]`, naming itself in the corner with the way
-  back beside it. No schema work: `canvases` always had a row per board and an
-  id, which was the seam this was waiting on. Deleting a canvas destroys an
-  arrangement and never a picture, and generations now name the board they were
-  made on rather than assuming there is only one — an id the server checks
-  belongs to you before it writes a card (#446, step 2)
+The open issues labelled [`focus`](https://github.com/joshcoolman/genzen/labels/focus),
+then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
+the ranking; a list here would be a second copy of it that drifts.

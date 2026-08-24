@@ -81,13 +81,13 @@ list once when the seed comes back full, so the grid is never short.
   moves. One image modifier, not two: Cmd-click used to replace slot 0 and
   Cmd-Shift-click push onto the rest, which distinguished nothing once the
   source slot was gone and made the wrong one the default -- clicking three
-  cards left one image. The push goes on the _front_ and evicts the last
-  (`pushRef` in
+  cards left one image. The push goes on the _front_ (`pushRef` in
   `src/features/ai-images/ref-images.ts`, which is unit-tested), the opposite
-  end from `addRefImages`: the gesture means "use this one", so a full set has
-  to make room rather than refuse. Only the eviction toasts -- gaining an image
-  is its own feedback, losing one is not. At capacity 1 every click evicts,
-  which is correct, and is why a single-image model hides a wrong binding here.
+  end from `addRefImages`: the gesture means "use this one", so the newest is
+  the one a smaller model keeps. **Nothing is evicted and nothing toasts** --
+  see the cap bullet above; gaining an image is its own feedback. The toast
+  that reported an eviction outlived the eviction by five months and was
+  removed in #473.
   **Neither shortcut names itself any more, and the card says nothing on
   hover.** They used to: "Add" over the image while Cmd was held, "Load Prompt"
   in place of the prompt's "Copy". Both went -- a two-word hover is the wrong
@@ -335,14 +335,16 @@ list once when the seed comes back full, so the grid is never short.
   open flag is an older single-value key, and its `pinned` twin is now dead
   storage that nothing reads. Every write-through waits on `usePersistedState`'s
   `hydrated` flag, or the fallback lands on top of the stored value on mount
-- **`on_canvas` is still derived, and no longer shown.** It comes per read from
-  an `exists` over `canvas_images`, never stored -- the boolean column of that
-  name drifted from the membership rows that are the truth and went in #205.
-  The card carried an "On canvas" marker for it (#216, so trashing an arranged
-  image was not a surprise); the marker went, on the grounds that the card is
-  crowded and the warning was not paying for its space. The read is left in
-  place because it is a cheap subquery and the fact is still true -- the seam
-  to show it again, here or in Trash's link badge, is `SavedAiImage.on_canvas`
+- **`on_canvas` is no longer derived, and no longer shown.** It used to come
+  per read from an `exists` over `canvas_images`, never stored -- the boolean
+  column of that name drifted from the membership rows that are the truth and
+  went in #205. The card carried an "On canvas" marker for it (#216, so
+  trashing an arranged image was not a surprise); the marker went in #314, on
+  the grounds that the card is crowded and the warning was not paying for its
+  space. #330 then took the subquery out too: every read of the library was
+  paying an index probe per row for a value nothing read. `SavedAiImage.on_canvas`
+  stays on the type as the seam -- the surface that wants it again reads it for
+  the rows it renders, rather than the whole library paying in advance
 - **A group is this view with a filter, and that is the whole constraint
   (#319).** `?group=<id>` -- same `view.tsx`, same toolbar, same cards. Not a
   route segment and not a component of its own, because #204's grouping died

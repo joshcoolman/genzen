@@ -719,27 +719,19 @@ export function useView(initial: Array<SavedAiImage>) {
         return
       }
       dock.setOpen(true)
-      // Onto the front, evicting the last. A full set is the normal case for
-      // this gesture, not the exception -- see `pushRef`.
+      // Onto the front, and nothing leaves. Adding is its own feedback -- the
+      // strip visibly gains an image -- so this says nothing.
       //
-      // Adding is its own feedback: the set visibly gains an image. Dropping
-      // one is not, and it is the half you would want to know about, so it is
-      // the only outcome that says anything. At capacity 1 every click evicts,
-      // which is correct and also why a single-image model made the old
-      // replace-slot-0 binding impossible to tell apart from this one.
-      const evicts =
-        generator.refImages.length >= generator.maxRefImages &&
-        !generator.refImages.some((r) => r.id === img.id)
+      // It used to toast when the push evicted the last image, which was the
+      // half worth reporting because losing one is invisible. Nothing has
+      // evicted since #341 (`pushRef`), and the toast outlived it: it fired
+      // whenever the set was at `maxRefImages`, telling you an image had
+      // dropped while it was still on screen. Found by #472's sweep.
       generator.pushRefImage({
         id: img.id,
         url: imageUrl(img.id),
         title: img.title,
       })
-      if (evicts) {
-        toast(
-          `Image added; the last one dropped (max ${generator.maxRefImages})`,
-        )
-      }
     },
     [generator, dock],
   )

@@ -176,7 +176,7 @@ Login's `centered-panel`.
   the other canvas-level controls. Its open state is lifted into `use-view` so
   it can feed `dialogOpenRef`: a popover is not a dialog, so without that Space
   still pans and Backspace still clears the board underneath it
-- `canvas-generate-dialog` -- wraps `GeneratorPanel` from ai-images; overrides
+- `canvas-generate-dialog` -- wraps `GeneratorPanel` from `(authenticated)/_components/`; overrides
   `handleGenerate` with the optimistic placeholder flow, single and group
 
 ## Generate flow (single + multi unified)
@@ -216,7 +216,7 @@ them.
   it rewound arrangement, and arrangement is the thing the board is least
   precious about.
 
-- `use-canvas-generate.ts` -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` puts the whole selection in the generator's set in order (#297), scopes models by capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
+- `use-canvas-generate.ts` (in `_components/canvas-generate-dialog/`, beside the dialog it drives, not in `_hooks/`) -- `useCanvasGenerate()`: composes `useGenerator` + `useModelSelector` + `useUserImages`. `open(selection)` puts the whole selection in the generator's set in order (#297), scopes models by capacity, auto-labels images, creates optimistic placeholders, polls for completion. Pre-fills prompt from `generation_metadata` (single-image only).
 
 ## Lib
 
@@ -260,10 +260,10 @@ them.
 ## Shared Dependencies
 
 - `#/features/ai-images/hooks/use-generator` -- prompt state, the image set, generation submission
-- `../_components/generator-panel/generator-panel` -- reused UI for generation controls
+- `app/(authenticated)/_components/generator-panel/generator-panel` -- reused UI for generation controls
 - `#/features/ai-images/server/generate-image.action` -- server action for multi-image combination
 - `#/features/user-images/` -- `useUserImages` for upload
-- `../_components/existing-image-picker/existing-image-picker` -- library picker
+- `app/(authenticated)/_components/existing-image-picker/existing-image-picker` -- library picker
 - `#/features/user-images/lib/file-hash` -- `computeFileHash` for dedup on upload
 - `#/lib/server/check-pending-generations.action` -- triggers FAL status checks
 

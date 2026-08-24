@@ -34,13 +34,17 @@ Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips w
 
 ## Shared Dependencies
 
-- `#/lib/auth` -- useAuth for the current user (id and email; there is no token)
-- `#/lib/time-format` -- `formatRelativeOrDate`, `formatAbsolute`, `formatDurationMs`
-- `#/features/ai-images/models` -- `getModelName`, `IMAGE_MODELS` (filter options)
-- `#/features/video/models` -- `videoFilterOptions`, `expandVideoFilterId` (the video half of the same filter)
-- `#/lib/server/auth.server` -- requireAuth
-- `#/lib/server/check-pending-generations.action` -- FAL polling for pending rows
-- `#/components` -- `Sheet`/`SheetContent` for the detail panel
+This folder is two files. What they import, in full:
+
+- `#/lib/server/auth.server` -- `resolveAuth`
+- `#/lib/server/db.server` -- `sql`, `first`
+- `#/features/ai-images/models` -- `getModelName`
+- `#/features/video/models` -- `expandVideoFilterId` (the video half of the filter)
+- `#/features/ai-images/generation-inputs` -- the shared input shape
+
+The route at `app/(authenticated)/activity/` is what pulls in `#/lib/auth`,
+`#/lib/time-format`, `#/components` and the poll. Those are the route's, not
+this feature's -- this file documents both, and the distinction was lost once.
 
 ## Quirks / Notes
 
@@ -52,7 +56,7 @@ Reads from `user_images` with `source in ('ai_generated','ai_video')` -- clips w
 - **A clip's thumbnail is a `<video>`, via `MediaBox`** (`#/components`). There is no poster frame anywhere in the app — no ffmpeg on the server, so `thumbnail_path` is NULL on every clip — and an mp4 in an `<img>` lands on the broken-file fallback. The detail panel's large preview gets `controls`; the two square boxes do not. That component exists because the decision had been made three times (Video's card, Trash's row, then here).
 - Page size is 50 rows, inside the three-active-day window. `created_at::date` buckets in UTC, so a run late at night local time lands on the next day's bucket — not worth a timezone round trip at this granularity.
 - The detail panel's References block shows **every image the generation was given**, resolved by `ai-images/server/generation-inputs.server.ts` (#380) -- not one metadata field. The same fact is written as `reference_image_ids` or `source_image_id` depending on the submit path, and reading only the first meant an edit through a model's image endpoint showed no references at all. `parent_id` (filing) and `root_image_id` (ancestry) are deliberately excluded. Metadata order is preserved; a missing ref shows a "missing" placeholder and a trashed one is marked rather than dropped.
-- No realtime: the channel went with #173/#174. FAL polling (5s interval) runs only while pending rows exist on the current page, and a settled row triggers a silent refetch.
+- No realtime: the channel went with #173/#174. FAL polling runs only while pending rows exist on the current page, and a settled row triggers a silent refetch. The interval is not fixed -- `useGenerationPoll` backs off by the age of the oldest pending work (5s under a minute, 15s under five, 30s after) and stops entirely while the tab is hidden.
 - Arrow keys (left/right) cycle through entries when detail panel is open; skips when focus is in an input/textarea.
 
 - **Load generation hands a run to the Images panel** (#458). The detail panel's

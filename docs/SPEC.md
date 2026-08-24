@@ -28,6 +28,16 @@ in the library.
 **Library / user images** — everything generated or uploaded, filterable, the
 source for reference images and canvas placements.
 
+**Video** — the same loop for clips: a prompt, a model, optionally a starting
+image. Three models, each with its own endpoints and costs.
+
+**Lab** — where a single step of the work is put on its own page and judged
+before it earns a place in the panel: Enhance, Describe, Variations, Frames,
+Outpaint. Each states the question it is asking and shows the instruction file
+it sends, so what the model was told is on screen with what it returned.
+
+**Explore** — browsing what is already there, not working on it.
+
 **Activity** — a chronological log of every generation including failures, each
 with its cost and duration.
 
@@ -53,9 +63,12 @@ with its cost and duration.
   is how things move through the app, not a convenience laid over some other
   mechanism. What it forbids is the alternative: "move to…" pickers, destination
   dialogs, a step that asks where something should go. You already know — you
-  are holding it. An internal copy carries a **reference** to the row, never its
-  bytes (`src/lib/image-clipboard.ts`), so pasting something you already own
-  never duplicates it.
+  are holding it. An internal copy used to carry a **reference** to the row
+  rather than its bytes, so pasting something you already owned did not
+  duplicate it; the only surface that put an id on the clipboard was the Cmd-F
+  overlay, and both went in #348. **Today a paste carries bytes and uploads a
+  new row, even for an image you already have.** That is a gap, not the intent
+  -- #347 holds what putting the id back would take.
 - **Throwing things away stays cheap.** Generation is exploratory and most of
   what it produces is disposable — the work depends on being able to trash a
   batch and start over without hesitating. So the app must never accumulate
