@@ -1,6 +1,18 @@
-/* The icon rail. Below 768px it is icons only whatever the collapsed setting
-   says -- there is no room for labels -- so `isCollapsed` only changes the
-   desktop layout. */
+/* The icon rail. Icons only, at every width.
+
+   It used to expand to 13rem behind a toggle, removed in 4c16d18 (2026-03-27)
+   on the grounds that the tooltips make the icons self-explanatory. The hook
+   behind it survived that commit as a `getSnapshot` returning a hardcoded
+   `true`, and every `!isCollapsed` branch survived with it -- eleven of them,
+   guarded on a constant, plus the rules below that nothing could reach.
+
+   **Re-enabling it would have overlapped the content, not moved it.** The
+   rail is `position: fixed` and `app-chrome` offsets the page by a hard
+   `var(--space-64)`; the same commit that hardcoded the collapse also removed
+   the paired margin. So the widened rail would have covered 9rem of whatever
+   was underneath. If an expanding rail is ever wanted here, that offset is the
+   thing to fix first -- see `lab/_components/lab-shell/`, which does it by
+   narrowing a column in the flow rather than a fixed overlay. */
 
 .root {
   position: fixed;
@@ -61,40 +73,8 @@
   color: var(--text);
 }
 
-.label {
-  display: none;
-  flex: 1;
-}
-
 .icon {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
-}
-
-@media (min-width: 48rem) {
-  .rootExpanded {
-    width: 13rem;
-  }
-
-  .itemExpanded {
-    justify-content: flex-start;
-  }
-
-  .itemActive.itemExpanded {
-    border-left: 2px solid var(--accent);
-  }
-
-  .label {
-    display: inline;
-  }
-}
-
-/* When the sidebar is expanded the labels are already visible on desktop, so
-   the tooltip would just repeat them. It stays for the narrow layout, where the
-   rail is icons only. Was `md:hidden`. */
-@media (min-width: 768px) {
-  .hideOnDesktop {
-    display: none;
-  }
 }
