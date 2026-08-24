@@ -1,0 +1,41 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  // Knip is not a dependency -- it is run on demand with `npx knip`. This file
+  // exists because an unconfigured run is worse than no run: the first one
+  // (#472) was roughly 80% noise and several of its findings were wrong.
+  //
+  // What it still cannot see, and what #472 is really about: code that is
+  // imported normally, runs, type-checks, and is dead anyway -- a hook whose
+  // snapshot is a literal, a branch reachable only from a removed feature, a
+  // prompt file whose text describes a capability that no longer exists.
+  // Nothing here helps with those.
+
+  "entry": [
+    // Run by pnpm scripts (db:migrate, users, local:up) and by `pnpm check`.
+    "scripts/*.mjs",
+    // Consumed by eslint.config.js, which knip's eslint plugin reads but does
+    // not follow into a local rules directory.
+    "eslint-rules/*.js",
+  ],
+  "project": [
+    "app/**/*.{ts,tsx}",
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.mjs",
+    "eslint-rules/**/*.js",
+  ],
+
+  "ignoreDependencies": [
+    // Named as a string in next.config.ts's turbopack rules, so there is no
+    // import to count. It is what makes every src/lib/prompts/*.md importable
+    // as text -- #322's whole enforcement mechanism. Removing it breaks the
+    // build.
+    "raw-loader",
+  ],
+
+  // Every component in src/components/ exports its own Props interface beside
+  // it, and a route's use-view.ts exports the state shape its view consumes.
+  // Reporting those as unused types buried the report; this keeps a type only
+  // when nothing in its own file uses it either.
+  "ignoreExportsUsedInFile": true,
+}
