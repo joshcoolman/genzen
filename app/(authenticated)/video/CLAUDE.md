@@ -149,7 +149,9 @@ source images; `use-view.ts` owns everything after the first paint.
 - **No Retry.** The endpoint exposes no seed, so an identical request returns a
   _different_ clip, while `retry-plan.ts` promises a faithful replay. Rather
   than give one control two meanings, generating again is the same two clicks.
-- **Nothing pushes.** The 5s poll runs only while a clip is pending, and it
-  calls the same `checkPendingGenerations` the gallery does -- which dispatches
+- **Nothing pushes.** The poll runs only while a clip is pending, and it
+  calls the same `checkPendingGenerations` the gallery does through the same
+  `useGenerationPoll` -- so it inherits that hook's backoff (5s under a minute,
+  15s under five, 30s after) and its pause while the tab is hidden -- which dispatches
   on `source` to `processVideoResult`, because FAL returns `video.url` here and
   `images[]` for a still.

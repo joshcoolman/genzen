@@ -19,12 +19,15 @@ read after that.
   source it can destroy. Clips were the case that made the gap real: Video
   gained a delete, and a trashed clip was invisible in the one place that could
   restore it while Empty Trash still swept it
-- **A clip's row renders a `<video>`, not an `ImageBox`.** There is no poster
+- **A clip's row renders `MediaBox`, not an `ImageBox`.** There is no poster
   frame anywhere in the app (no ffmpeg on the server), so an mp4 in an `<img>`
   is the broken-file fallback and every clip in the bin looks the same —
-  and a clip's title is its model, so several read identically. `preload="metadata"`
-  paints frame one, the same trick Video's own list uses. `ImageBox` is not
-  growing a `kind` prop for it
+  and a clip's title is its model, so several read identically. The frame comes
+  from `firstFrameSrc()`, which appends `#t=0.001` to make the element seek;
+  `preload="metadata"` on its own paints nothing, which was believed for a while
+  and is written up in `#/components/media-box`. The `kind` prop went on that
+  new primitive rather than on `ImageBox` (#398), after the decision came up
+  three times
 - **Nothing in the bin is locked, and there is no "Canvas" badge.** Both existed
   to protect a card that was still on a board (#212, #371, #375); #446 inverted
   it at the source — every soft-delete path clears canvas membership the way it

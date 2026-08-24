@@ -91,10 +91,13 @@ anything one route renders lives with that route.
   `enhance-prompt.action.ts` expands text it is given; `generate-prompt.action.ts`
   invents from nothing and is capped at 20–45 words. They must not share a
   prose file: running the expander on an empty field is what produced the
-  verbose output Generate exists to avoid, and enhance's own contract is a
-  10-step pipeline targeting 40–120 words. Both read their instructions from
-  `src/lib/prompts/*.md`, which a human edits, so both strip the frontmatter
-  block before sending it.
+  verbose output Generate exists to avoid, and enhance's own contract asks for
+  30–80 words, dropping to 10–30 for a simple subject and past 80 only for a
+  genuinely multi-subject scene. It used to be a ten-step pipeline; #463 cut
+  that after reading it against its own output. Both read their instructions
+  from `src/lib/prompts/*.md`, which a human edits. Only `generate-prompt.md`
+  still carries a frontmatter block, and `stripFrontmatter` exists to remove it
+  -- a leftover of the skills registry #203 deleted.
 
   **Enhance has no caller in the app.** It is exercised from
   `app/(authenticated)/lab/enhance` since #424 — the panel's button and the

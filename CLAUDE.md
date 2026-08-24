@@ -2,7 +2,7 @@ Next.js App Router (React 19 + Turbopack), Postgres, FAL AI (image gen), CSS Mod
 
 ## Commands
 
-- `pnpm check` -- prettier + eslint fix (run before commit)
+- `pnpm check` -- prettier, eslint fix, and the colour and token checks (run before commit)
 - `pnpm build` -- production build (run after check, before commit)
 - `pnpm test` -- vitest
 
@@ -74,16 +74,18 @@ earned; see `docs/DELTAS.md`.
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
 live with the one route that renders them:
 
-| Surface    | Where                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------- |
-| Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/` (has its CLAUDE.md)  |
-| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working            |
-| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                     |
-| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                      |
-| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature |
-| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav               |
-| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else            |
-| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages         |
+| Surface    | Where                                                                                                                       |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Canvas     | `app/(authenticated)/canvas/` — index; a board is `canvas/[id]/`. One CLAUDE.md at `canvas/` covers both                    |
+| Explore    | `app/(authenticated)/explore/` (has its CLAUDE.md) — browsing, not working                                                  |
+| Images     | `app/(authenticated)/images/` (has its CLAUDE.md)                                                                           |
+| Lab        | `app/(authenticated)/lab/` (has its CLAUDE.md) — one step of the work per page, judged before it earns a place in the panel |
+| Activity   | `app/(authenticated)/activity/` — the route; the log itself is a feature                                                    |
+| Trash      | `app/(authenticated)/trash/` (has its CLAUDE.md)                                                                            |
+| Video      | `app/(authenticated)/video/` (has its CLAUDE.md) — the route; the lineup is a feature                                       |
+| App chrome | `app/(authenticated)/_components/` — shell, chrome, sidebar, mobile nav                                                     |
+| Readme     | `app/(authenticated)/readme/` — renders README.md at /readme, nothing else                                                  |
+| Account    | `app/(authenticated)/account/` — the settings area: its own nav and sub-pages                                               |
 
 **Account is a section, not a page.** `account/layout.tsx` draws a nav beside
 `Overview`, `Style` (the six colors that theme the app, `src/features/theme`)
@@ -169,8 +171,8 @@ deliberately. Update the README `## Status` block at natural beats so the front
 door always reflects the current state.
 
 `docs/` is small on purpose: `OVERVIEW.md` (what genzen is), `SPEC.md` (what it
-does and must do), `DELTAS.md` (the deltas from the house standard) and
-`reference/`. **Never a plan** — plans are issues, and a parked one rots. That is
+does and must do), `DELTAS.md` (the deltas from the house standard),
+`deploying.md` (the deployment contract) and `reference/`. **Never a plan** — plans are issues, and a parked one rots. That is
 genzen's only rule here; `reference/` otherwise follows the standard, which asks
 for no particular name or structure. There is no in-app docs viewer — that route
 and `src/lib/docs/` were deleted; `docs/` is plain repo files, not bundled
