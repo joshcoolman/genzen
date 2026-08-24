@@ -13,14 +13,12 @@ import {
   TooltipTrigger,
   useConfirm,
 } from '#/components'
-import { useSidebarCollapsed } from '#/lib/use-sidebar-collapsed'
 
 import { navItems } from '#/lib/nav-items'
 import { cx } from '#/lib/utils'
 
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname()
-  const { isCollapsed } = useSidebarCollapsed()
 
   const accountItem = navItems.find((item) => item.id === 'account')!
 
@@ -44,13 +42,7 @@ export function Sidebar({ className }: { className?: string }) {
   }
 
   return (
-    <aside
-      className={cx(
-        styles.root,
-        !isCollapsed && styles.rootExpanded,
-        className,
-      )}
-    >
+    <aside className={cx(styles.root, className)}>
       {/* Navigation */}
       <TooltipProvider delay={0}>
         <nav className={styles.nav}>
@@ -62,22 +54,11 @@ export function Sidebar({ className }: { className?: string }) {
                 <Tooltip>
                   <TooltipTrigger
                     render={<Link href={item.href} />}
-                    className={cx(
-                      styles.item,
-                      !isCollapsed && styles.itemExpanded,
-                      active && styles.itemActive,
-                    )}
+                    className={cx(styles.item, active && styles.itemActive)}
                   >
                     <item.icon className={styles.icon} />
-                    {!isCollapsed && (
-                      <span className={styles.label}>{item.label}</span>
-                    )}
                   </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className={isCollapsed ? undefined : styles.hideOnDesktop}
-                    sideOffset={8}
-                  >
+                  <TooltipContent side="right" sideOffset={8}>
                     {item.label}
                   </TooltipContent>
                 </Tooltip>
@@ -89,22 +70,11 @@ export function Sidebar({ className }: { className?: string }) {
             <Tooltip key={item.id}>
               <TooltipTrigger
                 render={<Link href={item.href} />}
-                className={cx(
-                  styles.item,
-                  !isCollapsed && styles.itemExpanded,
-                  isActive(item) && styles.itemActive,
-                )}
+                className={cx(styles.item, isActive(item) && styles.itemActive)}
               >
                 <item.icon className={styles.icon} />
-                {!isCollapsed && (
-                  <span className={styles.label}>{item.label}</span>
-                )}
               </TooltipTrigger>
-              <TooltipContent
-                side="right"
-                className={isCollapsed ? undefined : styles.hideOnDesktop}
-                sideOffset={8}
-              >
+              <TooltipContent side="right" sideOffset={8}>
                 {item.label}
               </TooltipContent>
             </Tooltip>
@@ -117,16 +87,11 @@ export function Sidebar({ className }: { className?: string }) {
             <TooltipTrigger
               render={<button type="button" />}
               onClick={() => void askThenSignOut()}
-              className={cx(styles.item, !isCollapsed && styles.itemExpanded)}
+              className={styles.item}
             >
               <LogOut className={styles.icon} />
-              {!isCollapsed && <span className={styles.label}>Log out</span>}
             </TooltipTrigger>
-            <TooltipContent
-              side="right"
-              className={isCollapsed ? undefined : styles.hideOnDesktop}
-              sideOffset={8}
-            >
+            <TooltipContent side="right" sideOffset={8}>
               Log out
             </TooltipContent>
           </Tooltip>
