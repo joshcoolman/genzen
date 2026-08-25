@@ -101,3 +101,8 @@ export {
   TooltipTrigger,
 } from './tooltip/tooltip'
 export { toast, Toaster } from './toast/toast'
+export {
+  ZipDownloadDialog,
+  type ZipDownloadDialogProps,
+  type ZipDownloadImage,
+} from './zip-download-dialog/zip-download-dialog'

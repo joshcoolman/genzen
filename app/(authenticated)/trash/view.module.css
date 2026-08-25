@@ -1,0 +1,7 @@
+/* Matches the Empty button beside it: the ported Button does not size
+   children's svgs, so the call site does. */
+.downloadIcon {
+  margin-right: var(--space-8);
+  width: 1rem;
+  height: 1rem;
+}

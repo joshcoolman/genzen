@@ -1,10 +1,3 @@
-/* The ported Button does not size children's svgs; the call site does. */
-.triggerIcon {
-  margin-right: var(--space-8);
-  width: 1rem;
-  height: 1rem;
-}
-
 /* No margin: the footer button's own gap already separates icon from label. */
 .footerIcon {
   width: 1rem;
@@ -17,6 +10,15 @@
 
 .label {
   display: block;
+  margin-bottom: var(--space-8);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  font-weight: var(--weight-medium);
+}
+
+.labelStacked {
+  display: block;
+  margin-top: var(--space-16);
   margin-bottom: var(--space-8);
   font-size: var(--text-sm);
   line-height: var(--text-sm-leading);

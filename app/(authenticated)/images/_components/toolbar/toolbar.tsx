@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import {
   ArrowDown,
   ArrowUp,
+  Download,
   FolderInput,
   FolderPlus,
   PanelRight,
@@ -66,6 +67,9 @@ interface ToolbarProps {
    *  the way back are a heading above the grid since #432; this row only needs
    *  to know whether it is inside one. */
   groupName?: string | null
+  /** Download the open group as a zip (#477). Only ever passed inside one --
+   *  the set it exports is what the grid is showing. */
+  onDownloadGroup?: () => void
   /** Trash the open group. Only ever passed inside one -- see the control
    *  below (#431). */
   onTrashGroup?: () => void
@@ -79,6 +83,7 @@ export function Toolbar({
   onUpload,
   onUploadToGroup,
   groupName,
+  onDownloadGroup,
   onTrashGroup,
   onNewGroup,
 }: ToolbarProps) {
@@ -150,24 +155,43 @@ export function Toolbar({
         )}
 
         {groupName ? (
-          /* **The one destructive act on a group, and it lives in here**
-             (#431). It used to be a trash icon on the group card, in the same
-             corner an image card carries one, in a grid that mixes the two --
-             so the click that bins a whole group was available from the one
-             place you can see least about what it holds. Here you are looking
-             at the contents when you press it. Labelled rather than a bare
-             glyph for the same reason: the icon on its own is what was
-             ambiguous. */
-          onTrashGroup && (
-            <button
-              type="button"
-              className={styles.trashGroup}
-              onClick={onTrashGroup}
-            >
-              <Trash2 className={styles.newGroupIcon} />
-              Trash group
-            </button>
-          )
+          /* Inside a group, the acts that are about the group itself
+             (#431, #477) -- both of them here because this is where you can
+             see what they will apply to. */
+          <>
+            {/* Exporting the group you are standing in, for the same reason
+                Trash group lives here: the contents are on screen. Left of
+                Trash group so the harmless act is not the one that moves when
+                the destructive one appears. */}
+            {onDownloadGroup && (
+              <button
+                type="button"
+                className={styles.downloadGroup}
+                onClick={onDownloadGroup}
+              >
+                <Download className={styles.newGroupIcon} />
+                Download
+              </button>
+            )}
+            {/* **The one destructive act on a group, and it lives in here**
+                (#431). It used to be a trash icon on the group card, in the
+                same corner an image card carries one, in a grid that mixes the
+                two -- so the click that bins a whole group was available from
+                the one place you can see least about what it holds. Here you
+                are looking at the contents when you press it. Labelled rather
+                than a bare glyph for the same reason: the icon on its own is
+                what was ambiguous. */}
+            {onTrashGroup && (
+              <button
+                type="button"
+                className={styles.trashGroup}
+                onClick={onTrashGroup}
+              >
+                <Trash2 className={styles.newGroupIcon} />
+                Trash group
+              </button>
+            )}
+          </>
         ) : (
           /* An empty group is a legitimate way to start: name the thing you
              are about to work on, then generate into it. Without this the only

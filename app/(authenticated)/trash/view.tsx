@@ -1,12 +1,20 @@
 'use client'
 
-import { DownloadDialog } from './_components/download-dialog/download-dialog'
+import { useState } from 'react'
+import { Download } from 'lucide-react'
 import { EmptyDialog } from './_components/empty-dialog/empty-dialog'
 import { ImageList } from './_components/image-list/image-list'
 import { SelectionBar } from './_components/selection-bar/selection-bar'
+import styles from './view.module.css'
 import { useView } from './use-view'
 import type { UserImage } from '#/features/user-images/types'
-import { PageHeader, Stack, TooltipProvider } from '#/components'
+import {
+  Button,
+  PageHeader,
+  Stack,
+  TooltipProvider,
+  ZipDownloadDialog,
+} from '#/components'
 
 export function View({ initial }: { initial: Array<UserImage> }) {
   const {
@@ -21,9 +29,9 @@ export function View({ initial }: { initial: Array<UserImage> }) {
     restoreSelected,
     deleteSelected,
     emptyTrash,
-    signFullResUrls,
   } = useView(initial)
 
+  const [downloadOpen, setDownloadOpen] = useState(false)
   const hasImages = images.length > 0
 
   return (
@@ -40,10 +48,14 @@ export function View({ initial }: { initial: Array<UserImage> }) {
           aside={
             hasImages ? (
               <Stack gap={8} direction="row">
-                <DownloadDialog
-                  images={images}
-                  signFullResUrls={signFullResUrls}
-                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setDownloadOpen(true)}
+                >
+                  <Download className={styles.downloadIcon} />
+                  Download
+                </Button>
                 <EmptyDialog
                   total={images.length}
                   busy={isEmptying}
@@ -63,6 +75,14 @@ export function View({ initial }: { initial: Array<UserImage> }) {
           onToggle={selection.toggle}
           onRestore={restore}
           onDelete={permanentDelete}
+        />
+
+        <ZipDownloadDialog
+          open={downloadOpen}
+          onOpenChange={setDownloadOpen}
+          images={images}
+          defaultName={`trash-${new Date().toISOString().slice(0, 10)}`}
+          title="Download Trash Images"
         />
 
         <SelectionBar

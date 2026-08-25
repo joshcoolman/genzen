@@ -163,19 +163,6 @@ export function useView(initial: Array<UserImage>) {
     }
   }, [images, refetch])
 
-  const signFullResUrls = useCallback(
-    async (imgs: Array<UserImage>): Promise<Record<string, string>> => {
-      const urls: Record<string, string> = {}
-      {
-        for (const img of imgs) {
-          if (img.storage_path) urls[img.id] = imageUrl(img.id)
-        }
-      }
-      return urls
-    },
-    [],
-  )
-
   return {
     images,
     imageUrls,
@@ -188,6 +175,5 @@ export function useView(initial: Array<UserImage>) {
     restoreSelected,
     deleteSelected,
     emptyTrash,
-    signFullResUrls,
   }
 }
