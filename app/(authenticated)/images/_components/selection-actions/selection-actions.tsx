@@ -1,6 +1,6 @@
 'use client'
 
-import { FolderMinus, FolderPlus, Trash2 } from 'lucide-react'
+import { FolderMinus, FolderPlus, LayoutGrid, Trash2 } from 'lucide-react'
 import styles from './selection-actions.module.css'
 import { Button, SelectionDrawer } from '#/components'
 
@@ -14,6 +14,11 @@ interface SelectionActionsProps {
   onAddToGroup: () => void
   /** Only inside a group: the selected images return to top level. */
   onRemoveFromGroup?: () => void
+  /** Composite the selection into one downloadable sheet (#476). */
+  onCreateReferenceSheet: () => void
+  /** The sheet is built on the server and can take a while; the rest of the
+   *  drawer stays live while it does. */
+  sheetBusy: boolean
 }
 
 /**
@@ -31,6 +36,8 @@ export function SelectionActions({
   onDelete,
   onAddToGroup,
   onRemoveFromGroup,
+  onCreateReferenceSheet,
+  sheetBusy,
 }: SelectionActionsProps) {
   return (
     <SelectionDrawer count={count} onClear={onClear}>
@@ -56,6 +63,21 @@ export function SelectionActions({
           Remove from group
         </Button>
       )}
+      {/* **A selection action, not a group feature** (#476). Groups are only
+          one place a selection happens, so this sits beside Add to group
+          rather than on the group page -- which is also what means there is no
+          mode to enter, and no question about what it does with nothing
+          picked. It downloads; nothing is stored. */}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={busy}
+        loading={sheetBusy}
+        onClick={onCreateReferenceSheet}
+      >
+        {!sheetBusy && <LayoutGrid className={styles.icon} />}
+        {sheetBusy ? 'Building sheet...' : 'Create reference sheet'}
+      </Button>
       {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
           sit until you empty it. Red belongs to the one verb that cannot be
           undone, which is Trash's own Delete Forever. */}

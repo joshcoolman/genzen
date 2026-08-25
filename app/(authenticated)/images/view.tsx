@@ -33,6 +33,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     prefs,
     dock,
     download,
+    referenceSheet,
     uploadFiles,
     selection,
     selectMode,
@@ -172,6 +173,10 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         <SelectionActions
           count={selection.count}
           busy={isBatchDeleting}
+          /* One more verb in the drawer rather than a mode or a dialog
+             (#476): selection already exists everywhere this makes sense. */
+          sheetBusy={referenceSheet.busy}
+          onCreateReferenceSheet={() => void referenceSheet.create(selectedIds)}
           onClear={selection.clearSelection}
           onDelete={() => void deleteSelected()}
           onAddToGroup={() => startAddToGroup(selectedIds)}

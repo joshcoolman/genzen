@@ -130,6 +130,32 @@ list once when the seed comes back full, so the grid is never short.
   faded, and its body `inert` rather than merely dimmed, since a panel that
   looks off but still takes clicks and Tab stops is a lie. Its header stays
   live so the gear is still reachable
+- **Create reference sheet is a selection verb, not a group feature (#476).**
+  It composites the picked images onto one black sheet and downloads it --
+  nothing is stored, and there is no sheet object, no mode and no dialog. It
+  lives in the drawer because groups are only one place a selection happens.
+  The layout is `src/lib/justified-rows.ts` (pure, tested) and the compositing is
+  `src/lib/server/reference-sheet.server.ts`, reached through
+  `POST /api/reference-sheet`, which answers with the PNG itself. **Justified rows, not native
+  sizes**: every row is exactly the sheet's width and every image in a row the
+  same height, so two pictures of the same shape come out the same size and the
+  sheet has no black in it. Placing at source resolution instead made cell area
+  a function of which model made the picture. **Cell count is the budget, not
+  pixels**: a model downscales a reference before it looks at it, so the sheet
+  is built at a 2048 long edge, a cell lands at about `2048 / sqrt(sum of
+aspect ratios)`, and a bigger sheet would only squeeze the same detail
+  harder. **Uncapped on purpose** -- V1 exists to find
+  where a stitched sheet stops holding identity, and a guessed cap would make
+  the guess untestable. **The file is named after the group** --
+  `select-one-11imgs.png`, `reference-sheet-11imgs.png` outside one -- so two
+  runs are compared by reading two filenames. The group comes from the rows,
+  not from the client, and a selection spanning groups has no single name. Cell
+  size rides in the toast instead: it is read once on the way out, not
+  something to sort a folder by. **An unreadable row is skipped, not fatal** --
+  the library holds video, and a clip in the selection used to fail the whole
+  sheet. Whether a sheet ever becomes a
+  stored class is the interesting design and is deliberately deferred until
+  this has been used.
 - **Shift-drag sweeps a region into the selection (#440).** Only once select
   mode is on, which is what keeps a stray shift-drag from doing anything while
   you are just looking. Deliberately loose rather than a graphics-program
