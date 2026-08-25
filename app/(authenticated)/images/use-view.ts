@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { useDock } from './_hooks/use-dock'
 import { useDownload } from './_hooks/use-download'
+import { useReferenceSheet } from './_hooks/use-reference-sheet'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
@@ -111,6 +112,9 @@ export function useView(initial: Array<SavedAiImage>) {
   const prefs = usePrefs()
   const dock = useDock()
   const download = useDownload()
+  // Selection-based, not group-based (#476): a sheet is made of whatever is
+  // picked, wherever it was picked.
+  const referenceSheet = useReferenceSheet()
 
   const modelSelector = useModelSelector({
     capability: 'sidebar',
@@ -855,6 +859,7 @@ export function useView(initial: Array<SavedAiImage>) {
     prefs,
     dock,
     download,
+    referenceSheet,
     uploadFiles,
     selection,
     selectMode,
