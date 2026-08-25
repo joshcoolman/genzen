@@ -32,6 +32,14 @@ const nextConfig: NextConfig = {
       // note on MAX_FILE_SIZE in src/features/user-images/types.ts.
       bodySizeLimit: '22mb',
     },
+    // **The limit that actually bites, and it is not the one above** (#482).
+    // `proxy.ts` runs on every request, so Next clones every request body for
+    // it, and that clone is capped here -- default 10485760, exactly 10MB.
+    // Past the cap it does not fail: it truncates and passes the first 10MB
+    // on, so the action receives a cut JSON string and reports an unterminated
+    // string at position 10484432. A `console.warn` in the dev terminal is the
+    // only other trace. Both numbers have to admit the same payload.
+    proxyClientMaxBodySize: '22mb',
   },
 }
 

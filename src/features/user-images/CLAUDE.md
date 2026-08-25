@@ -64,11 +64,14 @@ the routes that consume this feature bring those.
   The column is selected into every image read and indexed on a predicate that
   is always false; #472 has the details
 - **Max upload size: 15MB** (`MAX_FILE_SIZE` in `types.ts`); allowed types:
-  JPEG, PNG, WebP, GIF. **That number and `bodySizeLimit` in `next.config.ts`
-  are one decision** (#482): a file reaches the server base64'd inside a Server
-  Action call, a third larger than itself, so the action's body limit is the
-  real ceiling. It said 50MB here and 10mb there, nothing checked either, and a
-  9MB file failed with a card that silently disappeared. Raising the cap means
-  raising both. `saveFileToLibrary` refuses an oversized file before encoding
+  JPEG, PNG, WebP, GIF. **That number and two limits in
+  `next.config.ts` are one decision** (#482): a file reaches the server base64'd
+  inside a Server Action call, a third larger than itself, and passes through
+  `proxy.ts` on the way -- so `serverActions.bodySizeLimit` **and**
+  `experimental.proxyClientMaxBodySize` both have to admit it. The second is the
+  one that actually bit: it defaults to exactly 10MB and **truncates rather than
+  failing**, so a 9MB upload reached the action as a cut JSON string
+  ("Unterminated string in JSON at position 10484432") with only a `console.warn`
+  in the dev terminal. Raising the cap means raising all three. `saveFileToLibrary` refuses an oversized file before encoding
   it, and every upload failure now says why -- the old `catch {}` in
   `use-uploads.ts` was the whole reason this read as "uploads just don't work"
