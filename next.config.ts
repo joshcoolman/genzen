@@ -24,11 +24,22 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Reference images reach the server through a direct Server Action call
-      // rather than a native multipart submit, so they are subject to this
-      // limit -- the 1MB default is well under a typical phone photo.
-      bodySizeLimit: '10mb',
+      // Uploads and reference images reach the server through a direct Server
+      // Action call rather than a native multipart submit, base64'd -- so this
+      // is the real upload ceiling, and it is a third larger than the file it
+      // has to admit. 22mb takes MAX_FILE_SIZE's 15MB (20MB encoded) with room
+      // for the rest of the payload. The two numbers move together; see the
+      // note on MAX_FILE_SIZE in src/features/user-images/types.ts.
+      bodySizeLimit: '22mb',
     },
+    // **The limit that actually bites, and it is not the one above** (#482).
+    // `proxy.ts` runs on every request, so Next clones every request body for
+    // it, and that clone is capped here -- default 10485760, exactly 10MB.
+    // Past the cap it does not fail: it truncates and passes the first 10MB
+    // on, so the action receives a cut JSON string and reports an unterminated
+    // string at position 10484432. A `console.warn` in the dev terminal is the
+    // only other trace. Both numbers have to admit the same payload.
+    proxyClientMaxBodySize: '22mb',
   },
 }
 

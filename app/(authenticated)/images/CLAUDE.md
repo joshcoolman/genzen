@@ -146,8 +146,13 @@ list once when the seed comes back full, so the grid is never short.
 aspect ratios)`, and a bigger sheet would only squeeze the same detail
   harder. **Uncapped on purpose** -- V1 exists to find
   where a stitched sheet stops holding identity, and a guessed cap would make
-  the guess untestable. **The file is named after the group** --
-  `select-one-11imgs.png`, `reference-sheet-11imgs.png` outside one -- so two
+  the guess untestable. **JPEG at quality 95, not PNG** (#482): the
+  sheet is a photographic composite on opaque black, which PNG stored at ~9MB
+  for twelve cells against ~1.1MB for JPEG -- and the app's own upload path
+  could not take the 9MB one back, which is the download -> re-upload -> prompt
+  loop the feature exists for. The cells composited in stay lossless; only the
+  encode on the way out is lossy. **The file is named after the group** --
+  `select-one-11imgs.jpg`, `reference-sheet-11imgs.jpg` outside one -- so two
   runs are compared by reading two filenames. The rule is
   `src/lib/download-name.ts`, shared with the selection zip; the group comes
   from the rows, not from the client, and a selection spanning groups has no

@@ -34,8 +34,20 @@ const CONCURRENCY = 4
  */
 const MAX_SOURCE_PIXELS = 400_000_000
 
+/** High enough that the sheet is not what limits a likeness -- the cell size
+ *  is (see the note on the long edge). Measured on a twelve-cell sheet: 95
+ *  lands at ~1.1MB, 90 at ~0.8MB, and the PNG it replaced at 9MB. */
+const JPEG_QUALITY = 95
+
 export interface ReferenceSheet {
-  png: Buffer
+  /** JPEG, not PNG (#482). The sheet is a photographic composite on opaque
+   *  black, which PNG stores at around 9MB for twelve cells and JPEG at ~1MB
+   *  -- and the app's own upload path could not take the 9MB one back, which
+   *  is the loop this feature exists for. Quality 95 is indistinguishable at
+   *  the cell sizes that decide anything, and every model downscales the sheet
+   *  before it looks at it. The cells composited into it stay lossless PNG;
+   *  only the encode on the way out is lossy, so nothing is compressed twice. */
+  image: Buffer
   cells: number
   width: number
   height: number
@@ -165,7 +177,7 @@ export async function buildReferenceSheet(
     }),
   )
 
-  const png = await sharp({
+  const image = await sharp({
     create: {
       width: layout.width,
       height: layout.height,
@@ -174,13 +186,16 @@ export async function buildReferenceSheet(
     },
   })
     .composite(cells)
-    .png()
+    // `mozjpeg` for the smaller file at the same quality; the sheet is built
+    // once and then travels, so the extra encode time is not the cost that
+    // matters.
+    .jpeg({ quality: JPEG_QUALITY, mozjpeg: true })
     .toBuffer()
 
-  const { width = 0, height = 0 } = await sharp(png).metadata()
+  const { width = 0, height = 0 } = await sharp(image).metadata()
 
   return {
-    png,
+    image,
     cells: usable.length,
     width,
     height,
@@ -220,7 +235,7 @@ async function sheetGroupName(
 }
 
 /**
- * `select-one-11imgs.png`, or `reference-sheet-11imgs.png` outside a group.
+ * `select-one-11imgs.jpg`, or `reference-sheet-11imgs.jpg` outside a group.
  *
  * **The count is in the name because otherwise the experiment has no record.**
  * V1 is uncapped on purpose -- the technical ceiling is far past the useful one,
@@ -235,5 +250,5 @@ async function sheetGroupName(
  * rather than something to sort a folder by.
  */
 export function referenceSheetFileName(sheet: ReferenceSheet): string {
-  return `${countedBaseName(sheet.groupName, sheet.cells, 'reference-sheet')}.png`
+  return `${countedBaseName(sheet.groupName, sheet.cells, 'reference-sheet')}.jpg`
 }

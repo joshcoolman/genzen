@@ -11,7 +11,7 @@ import { toast } from '#/components'
  */
 const TIMEOUT_MS = 180_000
 
-const FALLBACK_NAME = 'reference-sheet.png'
+const FALLBACK_NAME = 'reference-sheet.jpg'
 
 /** The server names the file, because only it knows the cell count and the
  *  finished dimensions -- and those are the record of what was tried. */

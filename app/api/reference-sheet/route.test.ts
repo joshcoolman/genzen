@@ -8,7 +8,7 @@ vi.mock('#/lib/server/auth.server', () => ({
 vi.mock('#/lib/server/reference-sheet.server', () => ({
   buildReferenceSheet: (...args: Array<unknown>) =>
     buildReferenceSheet(...args),
-  referenceSheetFileName: () => 'select-one-2imgs.png',
+  referenceSheetFileName: () => 'select-one-2imgs.jpg',
 }))
 
 const { POST } = await import('./route')
@@ -27,7 +27,7 @@ describe('POST /api/reference-sheet', () => {
   beforeEach(() => {
     buildReferenceSheet.mockReset()
     buildReferenceSheet.mockResolvedValue({
-      png: Buffer.from([1, 2, 3]),
+      image: Buffer.from([1, 2, 3]),
       cells: 2,
       width: 2048,
       height: 1536,
@@ -35,13 +35,13 @@ describe('POST /api/reference-sheet', () => {
     })
   })
 
-  it('returns the sheet as a png, named by the server', async () => {
+  it('returns the sheet as a jpeg, named by the server', async () => {
     const response = await POST(post({ ids: [ID_A, ID_B] }))
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('content-type')).toBe('image/png')
+    expect(response.headers.get('content-type')).toBe('image/jpeg')
     expect(response.headers.get('content-disposition')).toContain(
-      'select-one-2imgs.png',
+      'select-one-2imgs.jpg',
     )
     // The toast reads these; only the server knows them.
     expect(response.headers.get('x-sheet-cells')).toBe('2')
