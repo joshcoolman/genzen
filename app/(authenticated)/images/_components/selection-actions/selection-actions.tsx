@@ -1,6 +1,12 @@
 'use client'
 
-import { FolderMinus, FolderPlus, LayoutGrid, Trash2 } from 'lucide-react'
+import {
+  Download,
+  FolderMinus,
+  FolderPlus,
+  LayoutGrid,
+  Trash2,
+} from 'lucide-react'
 import styles from './selection-actions.module.css'
 import { Button, SelectionDrawer } from '#/components'
 
@@ -19,6 +25,9 @@ interface SelectionActionsProps {
   /** The sheet is built on the server and can take a while; the rest of the
    *  drawer stays live while it does. */
   sheetBusy: boolean
+  /** Zip exactly these images (#480) -- opens the same dialog the group page
+   *  uses, handed the selection instead of the group. */
+  onDownloadZip: () => void
 }
 
 /**
@@ -38,6 +47,7 @@ export function SelectionActions({
   onRemoveFromGroup,
   onCreateReferenceSheet,
   sheetBusy,
+  onDownloadZip,
 }: SelectionActionsProps) {
   return (
     <SelectionDrawer count={count} onClear={onClear}>
@@ -77,6 +87,18 @@ export function SelectionActions({
       >
         {!sheetBusy && <LayoutGrid className={styles.icon} />}
         {sheetBusy ? 'Building sheet...' : 'Create reference sheet'}
+      </Button>
+      {/* The group page keeps its own Download, because wanting a whole group
+          without picking through it is the common case. This is the other
+          scope: exactly what is selected, wherever it came from (#480). */}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={busy}
+        onClick={onDownloadZip}
+      >
+        <Download className={styles.icon} />
+        Download zip
       </Button>
       {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
           sit until you empty it. Red belongs to the one verb that cannot be

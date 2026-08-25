@@ -2,6 +2,7 @@ import sharp from 'sharp'
 import { first, sql } from './db.server'
 import { justifiedLayout } from '#/lib/justified-rows'
 import { createImageStorage } from '#/lib/image-storage'
+import { countedBaseName } from '#/lib/download-name'
 
 /**
  * One sheet of several pictures, for use as a single reference image (#476).
@@ -218,16 +219,6 @@ async function sheetGroupName(
   return found?.name ?? null
 }
 
-/** `Select One` -> `select-one`. Lowercase, hyphens, nothing the OS reads as
- *  structure -- and never empty, since a group may legitimately be named `...`. */
-function slug(name: string): string {
-  const cleaned = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return cleaned || 'reference-sheet'
-}
-
 /**
  * `select-one-11imgs.png`, or `reference-sheet-11imgs.png` outside a group.
  *
@@ -244,6 +235,5 @@ function slug(name: string): string {
  * rather than something to sort a folder by.
  */
 export function referenceSheetFileName(sheet: ReferenceSheet): string {
-  const base = sheet.groupName ? slug(sheet.groupName) : 'reference-sheet'
-  return `${base}-${sheet.cells}imgs.png`
+  return `${countedBaseName(sheet.groupName, sheet.cells, 'reference-sheet')}.png`
 }

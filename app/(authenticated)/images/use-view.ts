@@ -116,6 +116,13 @@ export function useView(initial: Array<SavedAiImage>) {
   // picked, wherever it was picked.
   const referenceSheet = useReferenceSheet()
 
+  /**
+   * Zipping the selection (#480). Its own flag rather than a `groupFlow` kind:
+   * the scope is the selection, which exists at top level and across groups,
+   * so there is no group to carry.
+   */
+  const [zipSelectionOpen, setZipSelectionOpen] = useState(false)
+
   const modelSelector = useModelSelector({
     capability: 'sidebar',
     mode: 'multi',
@@ -860,6 +867,8 @@ export function useView(initial: Array<SavedAiImage>) {
     dock,
     download,
     referenceSheet,
+    zipSelectionOpen,
+    setZipSelectionOpen,
     uploadFiles,
     selection,
     selectMode,

@@ -148,14 +148,26 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   where a stitched sheet stops holding identity, and a guessed cap would make
   the guess untestable. **The file is named after the group** --
   `select-one-11imgs.png`, `reference-sheet-11imgs.png` outside one -- so two
-  runs are compared by reading two filenames. The group comes from the rows,
-  not from the client, and a selection spanning groups has no single name. Cell
+  runs are compared by reading two filenames. The rule is
+  `src/lib/download-name.ts`, shared with the selection zip; the group comes
+  from the rows, not from the client, and a selection spanning groups has no
+  single name. Cell
   size rides in the toast instead: it is read once on the way out, not
   something to sort a folder by. **An unreadable row is skipped, not fatal** --
   the library holds video, and a clip in the selection used to fail the whole
   sheet. Whether a sheet ever becomes a
   stored class is the interesting design and is deliberately deferred until
   this has been used.
+- **Download zip is the second selection verb (#480).** It opens the same
+  `ZipDownloadDialog` the group page uses, handed exactly what is picked, so
+  six of an eleven-image group no longer means making a group of those six
+  first. The group page keeps its own Download: wanting the whole group without
+  picking through it is the common case. Its default name follows the reference
+  sheet's rule -- `select-one-6imgs.zip`, `selection-6imgs.zip` outside a group
+  -- but derives it in the browser from `activeGroup`, because the zip is built
+  client-side from images already on screen and never touches a route. So a
+  select-everything download and the group page's own download of the same
+  images produce different names; the count is the part that says which.
 - **Shift-drag sweeps a region into the selection (#440).** Only once select
   mode is on, which is what keeps a stray shift-drag from doing anything while
   you are just looking. Deliberately loose rather than a graphics-program
