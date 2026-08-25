@@ -1,6 +1,6 @@
 import sharp from 'sharp'
 import { sql } from './db.server'
-import { bestLayout } from '#/lib/shelf-pack'
+import { justifiedLayout } from '#/lib/justified-rows'
 import { createImageStorage } from '#/lib/image-storage'
 
 /**
@@ -12,7 +12,11 @@ import { createImageStorage } from '#/lib/image-storage'
  * the same detail squeezed harder. Eleven cells at that size leaves a face
  * inside a full-body shot around 40px, which is gone; six cells leaves a
  * head-and-shoulders crop around 250px, which is not. So the sheet is built at
- * ~2048 and the number of cells is the thing that decides whether it works.
+ * 2048 and the number of cells is the thing that decides whether it works.
+ *
+ * With justified rows that budget is arithmetic rather than a surprise: a cell
+ * is about `2048 / sqrt(A)` tall, where `A` is the sum of the aspect ratios. Six
+ * square cells are ~836px each, eleven ~617px, forty ~324px.
  */
 const LONG_EDGE = 2048
 
@@ -22,22 +26,21 @@ const CONCURRENCY = 4
 
 /**
  * Deliberately uncapped cell count (that is what V1 is for), but not
- * deliberately unbounded memory. sharp refuses an image over ~268MP and the
- * packed sheet is the biggest thing here -- roughly the source area over the
- * fill ratio. This refuses first, at a size that leaves room, and says what to
+ * deliberately unbounded memory. The sheet itself is bounded now -- it is never
+ * larger than `LONG_EDGE` square -- so what is left to bound is the originals
+ * being decoded to measure and scale them. This refuses first and says what to
  * do about it.
  */
-const MAX_PACKED_PIXELS = 250_000_000
+const MAX_SOURCE_PIXELS = 400_000_000
 
 export interface ReferenceSheet {
   png: Buffer
   cells: number
   width: number
   height: number
-  /** The layout before the sheet was scaled down -- what the packer decided,
-   *  which is not what the file ends up being. */
-  packedWidth: number
-  packedHeight: number
+  rows: number
+  /** The height of a cell in the first row, in sheet pixels. */
+  cellHeight: number
   fill: number
 }
 
@@ -63,11 +66,13 @@ async function mapWithConcurrency<T, TResult>(
 /**
  * Composite the given images, in the order given, onto one black sheet.
  *
- * Nothing is cropped and nothing is resized on the way in -- the packer works
- * at native size and the finished sheet is scaled once at the end, so every
- * cell keeps its share of the result. Black rather than white or transparent:
- * it is the quietest background to hand a model, and a transparent PNG
- * flattens to white in enough places to be a surprise.
+ * **Nothing is cropped, and every cell is scaled rather than placed at its
+ * source resolution.** Placing at native size made cell area a function of
+ * which model made the picture -- a 1536x768 frame took twice the sheet of a
+ * 720x1280 one, and two pictures of the same shape came out different sizes.
+ * Aspect ratios are kept exactly; only scale changes. Black rather than white
+ * or transparent: it is the quietest background to hand a model, and a
+ * transparent PNG flattens to white in enough places to be a surprise.
  *
  * Ids are filtered by `userId` here, not by the caller.
  */
@@ -112,18 +117,37 @@ export async function buildReferenceSheet(
   const usable = sources.filter((source) => source.width && source.height)
   if (usable.length === 0) throw new Error('No readable images')
 
-  const layout = bestLayout(usable)
-  if (layout.width * layout.height > MAX_PACKED_PIXELS) {
+  const pixels = usable.reduce((sum, s) => sum + s.width * s.height, 0)
+  if (pixels > MAX_SOURCE_PIXELS) {
     throw new Error(
       'That is more image than one sheet can hold. Select fewer and try again.',
     )
   }
 
-  // Two passes, and it has to be two: sharp resizes before it composites
-  // whatever order the calls are written in, so a single chain shrinks the
-  // black canvas first and then refuses every full-res cell as too large to
-  // fit it.
-  const packed = await sharp({
+  const layout = justifiedLayout(usable, LONG_EDGE)
+
+  // Each cell is scaled to its own box before anything is composited. That is
+  // what makes the sheet's size independent of the sources' -- and it also
+  // sidesteps sharp resizing before it composites whatever order the calls are
+  // written in, which is what made the earlier native-size version need a
+  // second full-sheet pass over a canvas many times this one's area.
+  const cells = await mapWithConcurrency(
+    layout.placements,
+    CONCURRENCY,
+    async (placement) => ({
+      input: await sharp(usable[placement.index].buffer)
+        // `fill` rather than `inside`: the box already carries the image's own
+        // aspect, so the only difference is a rounded pixel, and `inside` would
+        // answer with a box a pixel short of the one being placed.
+        .resize(placement.width, placement.height, { fit: 'fill' })
+        .png()
+        .toBuffer(),
+      left: placement.x,
+      top: placement.y,
+    }),
+  )
+
+  const png = await sharp({
     create: {
       width: layout.width,
       height: layout.height,
@@ -131,18 +155,7 @@ export async function buildReferenceSheet(
       background: { r: 0, g: 0, b: 0 },
     },
   })
-    .composite(
-      layout.placements.map((placement) => ({
-        input: usable[placement.index].buffer,
-        left: placement.x,
-        top: placement.y,
-      })),
-    )
-    .png()
-    .toBuffer()
-
-  const png = await sharp(packed)
-    .resize(LONG_EDGE, LONG_EDGE, { fit: 'inside', withoutEnlargement: true })
+    .composite(cells)
     .png()
     .toBuffer()
 
@@ -153,8 +166,10 @@ export async function buildReferenceSheet(
     cells: usable.length,
     width,
     height,
-    packedWidth: layout.width,
-    packedHeight: layout.height,
+    rows: layout.rows,
+    /** What one cell is worth, which is the number that decides whether a
+     *  sheet still holds a likeness -- see the note on the long edge. */
+    cellHeight: layout.placements[0]?.height ?? 0,
     fill: layout.fill,
   }
 }
