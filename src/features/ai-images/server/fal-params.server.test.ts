@@ -109,3 +109,41 @@ describe('image truncation', () => {
     expect(built.imagesUsed).toBe(7)
   })
 })
+
+/**
+ * A model's own defaults are not neutral (#485). GPT Image 2 renders at `high`
+ * unless told otherwise -- 142 seconds against 17-35 at `low` -- which is what
+ * took it out of the lineup in #389. The param is the model's, so it lives in
+ * the lineup, and this is the seam that carries it to FAL.
+ */
+describe('params the lineup pins', () => {
+  it('sends GPT Image 2 at low quality, on both its endpoints', async () => {
+    withSchema({ imageInputParam: 'image_urls' })
+    for (const id of ['fal-ai/gpt-image-2', 'fal-ai/gpt-image-2/edit']) {
+      const built = await buildFalInput({ modelId: id, prompt: 'x' })
+      expect(built.input.quality).toBe('low')
+      expect(built.input.output_format).toBe('jpeg')
+    }
+  })
+
+  it('lets a caller override one', async () => {
+    // The lineup sets a baseline, not a ceiling: a lab page comparing tiers
+    // has to be able to ask for a dearer one.
+    withSchema({})
+    const built = await buildFalInput({
+      modelId: 'fal-ai/gpt-image-2',
+      prompt: 'x',
+      extraParams: { quality: 'high' },
+    })
+    expect(built.input.quality).toBe('high')
+  })
+
+  it('adds nothing for a model that pins nothing', async () => {
+    withSchema({})
+    const built = await buildFalInput({
+      modelId: 'fal-ai/nano-banana-2',
+      prompt: 'x',
+    })
+    expect(built.input).toEqual({ prompt: 'x' })
+  })
+})
