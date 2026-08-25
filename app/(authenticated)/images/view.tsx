@@ -14,6 +14,7 @@ import { Workspace } from './_components/workspace/workspace'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { ConfirmDialog, NameDialog, ZipDownloadDialog } from '#/components'
+import { countedBaseName } from '#/lib/download-name'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
   // Where an "Upload to group" batch is headed, held across the gap between
@@ -34,6 +35,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     dock,
     download,
     referenceSheet,
+    zipSelectionOpen,
+    setZipSelectionOpen,
     uploadFiles,
     selection,
     selectMode,
@@ -65,9 +68,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setGroupCoverImage,
   } = useView(initial)
 
-  const selectedIds = images
-    .filter((img) => selection.isSelected(img.id))
-    .map((img) => img.id)
+  const selectedImages = images.filter((img) => selection.isSelected(img.id))
+  const selectedIds = selectedImages.map((img) => img.id)
 
   return (
     <>
@@ -177,6 +179,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
              (#476): selection already exists everywhere this makes sense. */
           sheetBusy={referenceSheet.busy}
           onCreateReferenceSheet={() => void referenceSheet.create(selectedIds)}
+          onDownloadZip={() => setZipSelectionOpen(true)}
           onClear={selection.clearSelection}
           onDelete={() => void deleteSelected()}
           onAddToGroup={() => startAddToGroup(selectedIds)}
@@ -349,6 +352,23 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         images={images}
         defaultName={groupFlow?.kind === 'download' ? groupFlow.group.name : ''}
         title="Download group"
+      />
+
+      {/* The same dialog, handed the selection instead of the group (#480).
+          The name is derived here rather than on the server -- unlike the
+          reference sheet, the zip never touches a route: it is built in the
+          browser from the images already on screen, so the group it came from
+          is `activeGroup` and nothing else knows. */}
+      <ZipDownloadDialog
+        open={zipSelectionOpen}
+        onOpenChange={setZipSelectionOpen}
+        images={selectedImages}
+        defaultName={countedBaseName(
+          activeGroup?.name,
+          selectedImages.length,
+          'selection',
+        )}
+        title="Download selection"
       />
     </>
   )
