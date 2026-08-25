@@ -50,10 +50,15 @@ export async function POST(request: Request) {
     headers: {
       'content-type': 'image/png',
       'content-length': String(sheet.png.byteLength),
-      // The client reads the name from here rather than composing its own --
-      // the cell count and the finished dimensions are the record of what was
-      // tried, and only the server knows them.
+      // The client reads the name from here rather than composing its own: the
+      // group it came from and the image count are the record of what was
+      // tried, and only the server knows either.
       'content-disposition': `attachment; filename="${referenceSheetFileName(sheet)}"`,
+      // What one cell is worth, for the toast. Only the server knows it, and it
+      // is the number that predicts whether a likeness survives the sheet --
+      // read once on the way out, which is why it is not in the filename.
+      'x-sheet-cells': String(sheet.cells),
+      'x-sheet-cell-height': String(sheet.cellHeight),
       'cache-control': 'no-store',
     },
   })

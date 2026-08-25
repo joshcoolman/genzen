@@ -8,7 +8,7 @@ vi.mock('#/lib/server/auth.server', () => ({
 vi.mock('#/lib/server/reference-sheet.server', () => ({
   buildReferenceSheet: (...args: Array<unknown>) =>
     buildReferenceSheet(...args),
-  referenceSheetFileName: () => 'reference-sheet-2cells-2048x1536.png',
+  referenceSheetFileName: () => 'select-one-2imgs.png',
 }))
 
 const { POST } = await import('./route')
@@ -31,6 +31,7 @@ describe('POST /api/reference-sheet', () => {
       cells: 2,
       width: 2048,
       height: 1536,
+      cellHeight: 768,
     })
   })
 
@@ -40,8 +41,11 @@ describe('POST /api/reference-sheet', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('image/png')
     expect(response.headers.get('content-disposition')).toContain(
-      'reference-sheet-2cells-2048x1536.png',
+      'select-one-2imgs.png',
     )
+    // The toast reads these; only the server knows them.
+    expect(response.headers.get('x-sheet-cells')).toBe('2')
+    expect(response.headers.get('x-sheet-cell-height')).toBe('768')
     expect(await response.arrayBuffer()).toHaveProperty('byteLength', 3)
   })
 

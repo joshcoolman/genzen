@@ -60,9 +60,18 @@ export function useReferenceSheet(): ReferenceSheetState {
         return
       }
 
-      saveAs(
-        await response.blob(),
-        nameFrom(response.headers.get('content-disposition')),
+      const name = nameFrom(response.headers.get('content-disposition'))
+      saveAs(await response.blob(), name)
+
+      // Says what was actually made, because the sheet leaves for the file
+      // system and this is the last chance to say it. Cell height is the number
+      // that decides whether a face survives being one cell of many.
+      const cells = response.headers.get('x-sheet-cells')
+      const cellHeight = response.headers.get('x-sheet-cell-height')
+      toast.success(
+        cells && cellHeight
+          ? `${name} -- ${cells} images at ${cellHeight}px each`
+          : name,
       )
     } catch (err) {
       toast.error(

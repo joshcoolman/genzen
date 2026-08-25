@@ -146,8 +146,14 @@ list once when the seed comes back full, so the grid is never short.
 aspect ratios)`, and a bigger sheet would only squeeze the same detail
   harder. **Uncapped on purpose** -- V1 exists to find
   where a stitched sheet stops holding identity, and a guessed cap would make
-  the guess untestable; the filename carries the cell count and dimensions so
-  two runs can be compared by reading them. Whether a sheet ever becomes a
+  the guess untestable. **The file is named after the group** --
+  `select-one-11imgs.png`, `reference-sheet-11imgs.png` outside one -- so two
+  runs are compared by reading two filenames. The group comes from the rows,
+  not from the client, and a selection spanning groups has no single name. Cell
+  size rides in the toast instead: it is read once on the way out, not
+  something to sort a folder by. **An unreadable row is skipped, not fatal** --
+  the library holds video, and a clip in the selection used to fail the whole
+  sheet. Whether a sheet ever becomes a
   stored class is the interesting design and is deliberately deferred until
   this has been used.
 - **Shift-drag sweeps a region into the selection (#440).** Only once select

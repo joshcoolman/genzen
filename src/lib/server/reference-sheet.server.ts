@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { sql } from './db.server'
+import { first, sql } from './db.server'
 import { justifiedLayout } from '#/lib/justified-rows'
 import { createImageStorage } from '#/lib/image-storage'
 
@@ -42,6 +42,9 @@ export interface ReferenceSheet {
   /** The height of a cell in the first row, in sheet pixels. */
   cellHeight: number
   fill: number
+  /** The group every selected image sits in, if they all sit in one. Names the
+   *  file; absent for a selection made at top level or across groups. */
+  groupName: string | null
 }
 
 async function mapWithConcurrency<T, TResult>(
@@ -82,8 +85,10 @@ export async function buildReferenceSheet(
 ): Promise<ReferenceSheet> {
   if (imageIds.length === 0) throw new Error('No images selected')
 
-  const rows = await sql<Array<{ id: string; storage_path: string | null }>>`
-    select id, storage_path
+  const rows = await sql<
+    Array<{ id: string; storage_path: string | null; group_id: string | null }>
+  >`
+    select id, storage_path, group_id
     from user_images
     where user_id = ${userId}
       and id = any(${imageIds})
@@ -99,22 +104,34 @@ export async function buildReferenceSheet(
 
   if (paths.length === 0) throw new Error('No images found')
 
+  const groupName = await sheetGroupName(userId, rows)
+
   const storage = createImageStorage()
   const sources = await mapWithConcurrency(paths, CONCURRENCY, async (path) => {
-    const file = await storage.download(path)
-    // `rotate()` with no argument applies the EXIF orientation and drops the
-    // tag. Without it a phone upload packs at its stored dimensions and then
-    // lands in the sheet turned on its side -- the one way this could crop
-    // something without ever calling a crop.
-    const buffer = await sharp(Buffer.from(await file.arrayBuffer()))
-      .rotate()
-      .png()
-      .toBuffer()
-    const { width = 0, height = 0 } = await sharp(buffer).metadata()
-    return { buffer, width, height }
+    try {
+      const file = await storage.download(path)
+      // `rotate()` with no argument applies the EXIF orientation and drops the
+      // tag. Without it a phone upload packs at its stored dimensions and then
+      // lands in the sheet turned on its side -- the one way this could crop
+      // something without ever calling a crop.
+      const buffer = await sharp(Buffer.from(await file.arrayBuffer()))
+        .rotate()
+        .png()
+        .toBuffer()
+      const { width = 0, height = 0 } = await sharp(buffer).metadata()
+      return width && height ? { buffer, width, height } : null
+    } catch {
+      // **One unreadable row must not cost the whole sheet.** The library holds
+      // video alongside stills, and a clip in the selection made sharp throw on
+      // the first buffer it saw -- so a sheet of ten pictures failed outright
+      // because an eleventh thing was not a picture. Skipped rather than
+      // reported: the count in the filename and the toast is what actually
+      // landed, so the sheet says how many it is made of.
+      return null
+    }
   })
 
-  const usable = sources.filter((source) => source.width && source.height)
+  const usable = sources.filter((source) => source !== null)
   if (usable.length === 0) throw new Error('No readable images')
 
   const pixels = usable.reduce((sum, s) => sum + s.width * s.height, 0)
@@ -171,19 +188,62 @@ export async function buildReferenceSheet(
      *  sheet still holds a likeness -- see the note on the long edge. */
     cellHeight: layout.placements[0]?.height ?? 0,
     fill: layout.fill,
+    groupName,
   }
 }
 
 /**
- * `reference-sheet-12cells-1861x2048.png`.
+ * The one group every selected image is in, or null.
  *
- * **The parameters are in the filename because otherwise the experiment has no
- * record.** V1 is uncapped on purpose -- the technical ceiling is far past the
- * useful one, so "select a lot and see if it chokes" produces no signal: forty
- * cells composites fine and looks fine, and the only symptom is weaker
- * generations later with nothing connecting the two. Comparing a 6-cell run
- * against a 12-cell one is then reading two filenames.
+ * Derived from the rows rather than taken from the caller: the client knows
+ * which group is open, but a name that ends up on a file the user keeps should
+ * come from the same query that authorised the images. A selection spanning two
+ * groups, or made at top level, has no single name and gets the generic one.
+ */
+async function sheetGroupName(
+  userId: string,
+  rows: Array<{ group_id: string | null }>,
+): Promise<string | null> {
+  const groupIds = new Set(rows.map((row) => row.group_id))
+  if (groupIds.size !== 1) return null
+  const [groupId] = [...groupIds]
+  if (!groupId) return null
+
+  const found = first(
+    await sql<Array<{ name: string }>>`
+      select name from image_groups
+      where id = ${groupId} and user_id = ${userId}
+    `,
+  )
+  return found?.name ?? null
+}
+
+/** `Select One` -> `select-one`. Lowercase, hyphens, nothing the OS reads as
+ *  structure -- and never empty, since a group may legitimately be named `...`. */
+function slug(name: string): string {
+  const cleaned = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return cleaned || 'reference-sheet'
+}
+
+/**
+ * `select-one-11imgs.png`, or `reference-sheet-11imgs.png` outside a group.
+ *
+ * **The count is in the name because otherwise the experiment has no record.**
+ * V1 is uncapped on purpose -- the technical ceiling is far past the useful one,
+ * so "select a lot and see if it chokes" produces no signal: forty images
+ * composite fine and look fine, and the only symptom is weaker generations later
+ * with nothing connecting the two. Comparing a 6-image run against a 12-image
+ * one is then reading two filenames.
+ *
+ * Nothing else rides along. The sheet's pixel dimensions are derivable and are
+ * not what anyone compares, and cell size -- the number that actually predicts
+ * whether a likeness survives -- is read once, on the way out, so it is a toast
+ * rather than something to sort a folder by.
  */
 export function referenceSheetFileName(sheet: ReferenceSheet): string {
-  return `reference-sheet-${sheet.cells}cells-${sheet.width}x${sheet.height}.png`
+  const base = sheet.groupName ? slug(sheet.groupName) : 'reference-sheet'
+  return `${base}-${sheet.cells}imgs.png`
 }
