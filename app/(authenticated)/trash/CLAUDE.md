@@ -1,7 +1,9 @@
 # Trash
 
 Soft-delete recovery for user images: restore, permanent delete, batch
-operations, and a ZIP download of everything in the bin.
+operations, and a ZIP download of everything in the bin. That dialog is
+`ZipDownloadDialog` in `#/components` since #477 -- the group page downloads
+through the same one, so a change here changes both.
 
 Built to `docs/reference/route-shape.md`. `page.tsx` is a server component that
 reads and hands the payload to `view.tsx` as `initial`; `use-view.ts` owns every
