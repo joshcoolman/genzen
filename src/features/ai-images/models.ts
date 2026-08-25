@@ -95,6 +95,23 @@ export interface ModelEntry {
    * for that model rather than merely not written with it in mind.
    */
   promptGuide?: string
+  /**
+   * Endpoint params sent on every submit to this model, on top of the ones
+   * `buildFalInput` derives from the schema (#485).
+   *
+   * For when a model's *default* is the wrong default for genzen. GPT Image 2
+   * defaults `quality` to `high`, which is a 142-second render; `low` is 17-35s
+   * and a tenth the price, and is the only reason the model is in the lineup at
+   * all. Sending nothing is not neutral — it is agreeing with whatever the
+   * endpoint decided.
+   *
+   * Fixed, not user-facing. A dial in the panel is a different change (#486);
+   * this is the baseline a dial would start from.
+   *
+   * Applied after size and safety and before the caller's `extraParams`, so a
+   * retry or a lab page can still override one.
+   */
+  params?: Record<string, unknown>
 }
 
 // Endpoint ids verified against https://fal.ai/models
@@ -252,7 +269,45 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     price: 0.06,
     useCase: 'xAI look — edits up to three images at once',
   },
+  {
+    slug: 'gpt-image-2',
+    name: 'GPT Image 2',
+    description: 'OpenAI, strong text and scene coherence',
+    category: 'Specialized',
+    textToImage: 'fal-ai/gpt-image-2',
+    withImages: 'fal-ai/gpt-image-2/edit',
+    // `image_urls` declares `maxItems: 16`, and capacity is maxRefs + 1.
+    maxRefs: 15,
+    // **Back from retirement on a param, not a new endpoint** (#389 cut it,
+    // #485 returns it). It was dropped for taking 142 seconds a render, which
+    // was `quality` defaulting to `high` because we sent no `quality` at all.
+    // At `low` the same prompt came back in 17-35s, and an edit in 20s.
+    //
+    // ~$0.003 an image at that quality, measured off FAL's usage API across
+    // three runs (two generates and an edit) that billed $0.0094 together --
+    // so this is a good average rather than a per-call figure, and the split
+    // between the two endpoints is below what three runs can resolve. `high`
+    // costs roughly seventy times as much, which is the other half of why the
+    // lineup does not offer it.
+    price: 0.003,
+    editPrice: 0.005,
+    // See `params` on ModelEntry: this is the whole reason the model is
+    // usable, so it lives in the lineup rather than at the call site.
+    params: { quality: 'low', output_format: 'jpeg' },
+    useCase: 'Legible text in the image — signage, labels, UI',
+  },
 ]
+
+/**
+ * Params this model is always submitted with (#485).
+ *
+ * Empty for every model but GPT Image 2, and that is the intended state: a
+ * fixed param is an admission that an endpoint's default is wrong for us, not a
+ * place to put tuning.
+ */
+export function fixedParamsFor(modelId: string): Record<string, unknown> {
+  return findModel(modelId)?.params ?? {}
+}
 
 /**
  * The id a model is picked and persisted by. Still an endpoint rather than the
@@ -403,16 +458,14 @@ export const RETIRED_MODEL_NAMES: Record<string, string | undefined> = {
   // 2.0.
   'fal-ai/flux/schnell': 'FLUX Schnell',
   'fal-ai/flux/dev': 'FLUX Dev',
-  // Cut on speed rather than output: both were slow enough through FAL to be
-  // not worth the wait. FAL carries faster-looking GPT surfaces we never tried
-  // -- `fal-ai/gpt-image-1-mini`, and an `openai/`-namespace passthrough -- and
-  // whether either earns a slot back is a research issue, not a guess made
-  // here. We also never sent a `quality` param, so the default may be the
-  // whole story.
+  // Cut on speed in #389, and the default *was* the whole story: neither ever
+  // received a `quality` param, so both rendered at `high`. GPT Image 2 is back
+  // in the lineup above at `low`; 1.5 is not, because 2 supersedes it and one
+  // GPT entry is enough. `fal-ai/gpt-image-1-mini` renders in ~9s for half a
+  // cent and remains untried in the app -- the cheap-tier slot if one is ever
+  // wanted.
   'fal-ai/gpt-image-1.5': 'GPT Image 1.5',
   'fal-ai/gpt-image-1.5/edit': 'GPT Image 1.5',
-  'fal-ai/gpt-image-2': 'GPT Image 2',
-  'fal-ai/gpt-image-2/edit': 'GPT Image 2',
   // Cut on its results rather than its wiring. Both ids are here because it
   // had two: rows made with an image carry the Kontext endpoint, and rows made
   // without one carry FLUX Dev above, which it borrowed.

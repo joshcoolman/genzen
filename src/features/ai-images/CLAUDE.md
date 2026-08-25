@@ -16,7 +16,12 @@ anything one route renders lives with that route.
   because `images.model` stores the resolved one. The legacy
   `ALL_IMAGE_MODELS` / `IMAGE_INPUT_MODELS` / `EDIT_MODELS` shape is gone (#190);
   `models.test.ts` keeps their numbers as fixtures so a lineup edit cannot
-  quietly change a cap or a name that used to be pinned.
+  quietly change a cap or a name that used to be pinned. An entry may also pin
+  `params`, sent to FAL on every submit to that model (#485) — for an endpoint
+  whose *default* is wrong for genzen, which so far is GPT Image 2 alone: it
+  renders at `quality: 'high'` unless told otherwise, and that is a
+  142-second render against 17-35 at `low`. Not a place to put tuning; a dial
+  is #486.
 - **`fal-params.server.ts` is the one param resolver, and the only enforcer of a
   model's image limit (#341).** `buildFalInput()` resolves size, safety and image
   params per model schema for every path — generate, variations, retry. Some

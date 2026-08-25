@@ -4,7 +4,7 @@
  */
 import { fetchModelSchema } from './fal-schema.server'
 import { RATIO_TO_SIZE } from '#/features/ai-images/constants'
-import { imageCapacityFor } from '#/features/ai-images/models'
+import { fixedParamsFor, imageCapacityFor } from '#/features/ai-images/models'
 
 // Maps our aspect ratios to resolution strings for models like GPT Image 1.5
 // that accept a fixed enum of "WIDTHxHEIGHT" values
@@ -129,6 +129,11 @@ export async function buildFalInput(
       input.image_url = sent[0]
     }
   }
+
+  // Params the lineup pins for this model (#485). Before `extraParams`, so a
+  // caller can still override one; after size and safety, because a model that
+  // pins a size means it.
+  Object.assign(input, fixedParamsFor(opts.modelId))
 
   // Extra params (num_images, guidance_scale, etc.)
   if (opts.extraParams) {

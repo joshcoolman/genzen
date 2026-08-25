@@ -7,13 +7,13 @@ in the lab (#424), where a change to an instruction can actually be judged.
 
 ## The guides
 
-| Model                               | Guide                                                                                                                                                                       |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FLUX.2                              | [black-forest-labs/skills](https://github.com/black-forest-labs/skills) — `flux-image-best-practices/rules/*.md`; also [docs.bfl.ml/llms.txt](https://docs.bfl.ml/llms.txt) |
-| Nano Banana 2                       | [Google Cloud: Ultimate prompting guide for Nano Banana](https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana)               |
-| Seedream v4 / v4.5                  | [fal: Seedream v4.5 prompt guide](https://fal.ai/learn/devs/seedream-v4-5-prompt-guide)                                                                                     |
-| Z-Image Turbo                       | [Tongyi-MAI/Z-Image-Turbo prompting guide](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo/discussions/8) (HF discussion, from the authors)                                 |
-| GPT Image (retired from the lineup) | [OpenAI cookbook: GPT Image models prompting guide](https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide)                            |
+| Model              | Guide                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FLUX.2             | [black-forest-labs/skills](https://github.com/black-forest-labs/skills) — `flux-image-best-practices/rules/*.md`; also [docs.bfl.ml/llms.txt](https://docs.bfl.ml/llms.txt) |
+| Nano Banana 2      | [Google Cloud: Ultimate prompting guide for Nano Banana](https://cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana)               |
+| Seedream v4 / v4.5 | [fal: Seedream v4.5 prompt guide](https://fal.ai/learn/devs/seedream-v4-5-prompt-guide)                                                                                     |
+| Z-Image Turbo      | [Tongyi-MAI/Z-Image-Turbo prompting guide](https://huggingface.co/Tongyi-MAI/Z-Image-Turbo/discussions/8) (HF discussion, from the authors)                                 |
+| GPT Image 2        | [OpenAI cookbook: GPT Image models prompting guide](https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide)                            |
 
 ## Where they disagree
 
