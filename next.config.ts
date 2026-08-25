@@ -24,10 +24,13 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Reference images reach the server through a direct Server Action call
-      // rather than a native multipart submit, so they are subject to this
-      // limit -- the 1MB default is well under a typical phone photo.
-      bodySizeLimit: '10mb',
+      // Uploads and reference images reach the server through a direct Server
+      // Action call rather than a native multipart submit, base64'd -- so this
+      // is the real upload ceiling, and it is a third larger than the file it
+      // has to admit. 22mb takes MAX_FILE_SIZE's 15MB (20MB encoded) with room
+      // for the rest of the payload. The two numbers move together; see the
+      // note on MAX_FILE_SIZE in src/features/user-images/types.ts.
+      bodySizeLimit: '22mb',
     },
   },
 }

@@ -4,7 +4,9 @@ import { createThumbnail } from '../server/create-thumbnail.action'
 import { createImageRecord } from '../server/images.action'
 import { removeImages } from '../server/remove-images.action'
 import { uploadImage } from '../server/upload-image.action'
+import { MAX_FILE_SIZE } from '../types'
 import type { UserImage } from '../types'
+import { formatFileSize } from '#/lib/format'
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer()
@@ -50,6 +52,16 @@ export async function saveFileToLibrary({
   groupId = null,
 }: SaveToLibraryInput): Promise<UserImage> {
   if (!userId) throw new Error('User not authenticated')
+
+  // Refused here rather than by the action's body limit. An oversized file
+  // otherwise gets base64'd in the browser first -- a copy a third larger than
+  // itself, built to be thrown away -- and comes back as a network error with
+  // nothing in it to show anyone.
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(
+      `${file.name} is ${formatFileSize(file.size)}. The limit is ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
+    )
+  }
 
   const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
   const storagePath = `${userId}/${Date.now()}_${crypto.randomUUID()}_${sanitizedFileName}`

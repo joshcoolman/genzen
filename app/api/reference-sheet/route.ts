@@ -7,7 +7,7 @@ import { resolveAuth } from '#/lib/server/auth.server'
 const UUID = /^[0-9a-f-]{36}$/i
 
 /**
- * POST a selection of image ids, get one composited sheet back as a PNG (#476).
+ * POST a selection of image ids, get one composited sheet back as a JPEG (#476).
  *
  * **A route returning a blob, not a server action.** The sheet is bytes headed
  * straight for the user's disk and nothing else -- it is never stored, never a
@@ -46,10 +46,10 @@ export async function POST(request: Request) {
     return new Response(message, { status: 422 })
   }
 
-  return new Response(new Uint8Array(sheet.png), {
+  return new Response(new Uint8Array(sheet.image), {
     headers: {
-      'content-type': 'image/png',
-      'content-length': String(sheet.png.byteLength),
+      'content-type': 'image/jpeg',
+      'content-length': String(sheet.image.byteLength),
       // The client reads the name from here rather than composing its own: the
       // group it came from and the image count are the record of what was
       // tried, and only the server knows either.

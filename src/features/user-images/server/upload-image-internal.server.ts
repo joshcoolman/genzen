@@ -1,8 +1,12 @@
+import { MAX_FILE_SIZE } from '../types'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { createImageStorage } from '#/lib/image-storage'
 
 function validateImageBuffer(buffer: Buffer): string {
-  if (buffer.length > 50 * 1024 * 1024) throw new Error('File too large')
+  if (buffer.length > MAX_FILE_SIZE)
+    throw new Error(
+      `File is larger than ${MAX_FILE_SIZE / 1024 / 1024}MB and cannot be uploaded`,
+    )
   const magic = buffer.subarray(0, 4)
   if (magic[0] === 0xff && magic[1] === 0xd8) return 'image/jpeg'
   if (

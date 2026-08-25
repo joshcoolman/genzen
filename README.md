@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-25 — A reference sheet is a ~1MB JPEG instead of a 9MB PNG, uploads are really capped at 15MB, and a failed upload says why (#482)
 - 2026-08-25 — Download a zip of exactly the images you selected, named for the group they came from (#480)
 - 2026-08-25 — Create a reference sheet from selected images: justified rows onto one black sheet, downloaded and named for the group it came from (#476)
 - 2026-08-24 — Download a group as a zip, naming both the zip and the files inside it; the numbering is padded so it sorts, which fixes Trash's exports too (#477)
 - 2026-08-24 — A dead-code and stale-docs sweep: `knip.jsonc`, corrections across the docs and `CLAUDE.md` files, and a toast that had been lying since March (#472, #473)
 - 2026-08-22 — Enhance writes to the model it is for, and `/lab/enhance` shows the difference; steering is a second input (#463, #465, #466)
-- 2026-08-20 — Load a past generation into the panel from Activity (#458)
 
 **Up next**
 

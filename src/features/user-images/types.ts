@@ -59,7 +59,21 @@ const ALLOWED_MIME_TYPES = [
   'image/gif',
 ] as const
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+/**
+ * The largest file the library takes, in bytes (#482).
+ *
+ * **This number and `bodySizeLimit` in `next.config.ts` are one decision.** An
+ * upload reaches the server base64'd inside a Server Action call, which is a
+ * third larger than the file, so the action's body limit is the real ceiling
+ * and this was fiction until they were set together: the declared limit said
+ * 50MB, nothing checked it, and a 9MB file failed at 10mb-of-base64 with a
+ * card that just disappeared. 15MB of file is 20MB encoded, which is what the
+ * 22mb body limit is for.
+ *
+ * Raising it means raising both. Removing it properly means not sending bytes
+ * through an action at all -- a presigned PUT straight to the bucket (#483).
+ */
+export const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15MB
 
 /**
  * Schema for creating a new user image

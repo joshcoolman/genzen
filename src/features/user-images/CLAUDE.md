@@ -63,4 +63,12 @@ the routes that consume this feature bring those.
   column and a shape with nothing writing them -- there is no palette generator.
   The column is selected into every image read and indexed on a predicate that
   is always false; #472 has the details
-- Max upload size: 50MB; allowed types: JPEG, PNG, WebP, GIF
+- **Max upload size: 15MB** (`MAX_FILE_SIZE` in `types.ts`); allowed types:
+  JPEG, PNG, WebP, GIF. **That number and `bodySizeLimit` in `next.config.ts`
+  are one decision** (#482): a file reaches the server base64'd inside a Server
+  Action call, a third larger than itself, so the action's body limit is the
+  real ceiling. It said 50MB here and 10mb there, nothing checked either, and a
+  9MB file failed with a card that silently disappeared. Raising the cap means
+  raising both. `saveFileToLibrary` refuses an oversized file before encoding
+  it, and every upload failure now says why -- the old `catch {}` in
+  `use-uploads.ts` was the whole reason this read as "uploads just don't work"

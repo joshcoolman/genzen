@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react'
 import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { toast } from '#/components'
 import { imageUrl } from '#/lib/image-url'
 import { optimisticId } from '#/lib/optimistic-id'
 
@@ -83,8 +84,18 @@ export function useUploads(
         if (url) gallery.setImageUrl(created.id, url)
         void gallery.refresh({ silent: true })
         return created.id
-      } catch {
+      } catch (err) {
         gallery.removeOptimisticCard(tempId)
+        // **Say why** (#482). A failed upload used to take its card away and
+        // nothing else, so a file over the limit read as the app declining
+        // without comment -- which is exactly how a 9MB reference sheet
+        // presented itself. The size message is a sentence worth showing; the
+        // rest reads the same to whoever dropped the file.
+        toast.error(
+          err instanceof Error && err.message
+            ? err.message
+            : `Could not upload ${file.name}`,
+        )
         return null
       }
     },
