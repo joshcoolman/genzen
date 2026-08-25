@@ -467,6 +467,10 @@ export function useView(initial: Array<SavedAiImage>) {
     // source group rather than image ids: the images are not enumerated
     // client-side at all -- at top level the grid does not even hold them.
     | { kind: 'move'; group: ImageGroupSummary }
+    // Naming and downloading the open group as a zip (#477). Carries the
+    // group for its name; the images come from the grid, which inside a group
+    // is exactly the group's contents.
+    | { kind: 'download'; group: ImageGroupSummary }
     | { kind: 'confirm-dissolve'; group: ImageGroupSummary }
     | { kind: 'confirm-trash'; group: ImageGroupSummary }
     | null

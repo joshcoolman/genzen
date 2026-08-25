@@ -13,7 +13,7 @@ import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
 import { useView } from './use-view'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import { ConfirmDialog, NameDialog } from '#/components'
+import { ConfirmDialog, NameDialog, ZipDownloadDialog } from '#/components'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
   // Where an "Upload to group" batch is headed, held across the gap between
@@ -92,6 +92,13 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
               : undefined
           }
           groupName={activeGroup?.name}
+          /* Same rule as Trash group: only inside one, where the set it
+             exports is what you are looking at (#477). */
+          onDownloadGroup={
+            activeGroup
+              ? () => setGroupFlow({ kind: 'download', group: activeGroup })
+              : undefined
+          }
           /* Only inside a group, which is the whole point of #431: you are
              looking at the contents when you press it. */
           onTrashGroup={
@@ -325,6 +332,19 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       />
 
       <DownloadDialog download={download} />
+
+      {/* The group's images as a zip (#477). `images` inside a group is the
+          group's contents in the order the grid shows them, so what downloads
+          is what is on screen. */}
+      <ZipDownloadDialog
+        open={groupFlow?.kind === 'download'}
+        onOpenChange={(open) => {
+          if (!open) closeGroupFlow()
+        }}
+        images={images}
+        defaultName={groupFlow?.kind === 'download' ? groupFlow.group.name : ''}
+        title="Download group"
+      />
     </>
   )
 }

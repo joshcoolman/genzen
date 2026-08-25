@@ -158,6 +158,14 @@
   opacity: 0.9;
 }
 
+/* Downloading the open group as a zip (#477). Same quiet chip as its
+   neighbours -- exporting is occasional, and the dialog is where the naming
+   happens. */
+.downloadGroup {
+  composes: newGroup;
+  border-color: transparent;
+}
+
 /* Trashing a group happens from inside it, never from the grid (#431). Quiet
    until pointed at -- it is the only irreversible-looking thing in this row,
    so it should not be competing with Upload for attention; the confirm dialog
