@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Check } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Upload } from 'lucide-react'
 import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
+import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { useAuth } from '#/lib/auth'
 import {
   Button,
   Dialog,
@@ -13,6 +15,7 @@ import {
   DialogTitle,
   ImageGrid,
   Thumbnail,
+  toast,
 } from '#/components'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
@@ -31,6 +34,17 @@ interface ExistingImagePickerProps {
   initialSelectedIds?: Set<string>
   /** When true, immediately confirm after the first selection (useful for single-select pickers). */
   autoConfirm?: boolean
+  /**
+   * Re-read the library. Passing it turns on Upload (#489): the picker writes
+   * the files itself, then asks for the list again, because the rows it renders
+   * are the caller's and it has no way to add to them.
+   *
+   * The whole reason it is here: wanting a reference image that is still on
+   * disk meant closing this dialog, finding the toolbar's Upload, uploading,
+   * reopening this, and finding the new tile -- five steps to answer the
+   * question the dialog had just asked.
+   */
+  onRefresh?: () => Promise<void>
 }
 
 export function ExistingImagePicker({
@@ -45,9 +59,18 @@ export function ExistingImagePicker({
   excludeIds,
   initialSelectedIds,
   autoConfirm,
+  onRefresh,
 }: ExistingImagePickerProps) {
+  const { user } = useAuth()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  /* Upload only where the caller can show the result, and never in a
+     single-pick picker, where the first file would confirm and close the
+     dialog before the second finished. */
+  const canUpload = Boolean(onRefresh) && !autoConfirm
 
   // When picker opens with initialSelectedIds, pre-check them
   useEffect(() => {
@@ -113,6 +136,53 @@ export function ExistingImagePicker({
     })
   }
 
+  /**
+   * Files straight into the library from inside the picker, then selected.
+   *
+   * Auto-selecting is the point: you only reach for Upload here because you
+   * came looking for an image to attach, so landing the files and leaving them
+   * untouched would be answering a different question. The dialog stays open
+   * -- upload two, glance at them, Add Selected.
+   *
+   * Uploads are sequential, not `Promise.all`: each file is base64'd into a
+   * Server Action call, and a handful of large ones in flight together is the
+   * shape that hits the body limits in #482.
+   */
+  const uploadFiles = async (files: Array<File>) => {
+    setUploadingCount(files.length)
+    const uploadedIds: Array<string> = []
+    for (const file of files) {
+      try {
+        const created = await saveFileToLibrary({
+          userId: user.id,
+          file,
+          title: file.name,
+        })
+        uploadedIds.push(created.id)
+      } catch (err) {
+        // Say why -- the size limit is the common failure and it is a sentence
+        // worth reading (#482).
+        toast.error(
+          err instanceof Error && err.message
+            ? err.message
+            : `Could not upload ${file.name}`,
+        )
+      }
+    }
+    setUploadingCount(0)
+    await onRefresh?.()
+    if (uploadedIds.length > 0) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        for (const id of uploadedIds) {
+          if (max !== undefined && next.size >= max) break
+          next.add(id)
+        }
+        return next
+      })
+    }
+  }
+
   const handleConfirm = () => {
     const selected = images
       .filter((img) => selectedIds.has(img.id))
@@ -161,6 +231,37 @@ export function ExistingImagePicker({
               {btn.label}
             </button>
           ))}
+
+          {/* Above the grid rather than in the footer, and opposite the
+              filters: those three narrow what is already here, this brings
+              something that is not. */}
+          {canUpload && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className={styles.fileInput}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? [])
+                  if (files.length > 0) void uploadFiles(files)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                className={styles.upload}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingCount > 0}
+              >
+                <Upload className={styles.uploadIcon} />
+                {uploadingCount > 0
+                  ? `Uploading ${uploadingCount}...`
+                  : 'Upload'}
+              </button>
+            </>
+          )}
         </div>
 
         <div className={styles.grid}>

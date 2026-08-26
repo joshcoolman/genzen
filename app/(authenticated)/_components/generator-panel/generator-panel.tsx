@@ -51,11 +51,12 @@ interface GeneratorPanelProps {
  * The panel Images and Canvas both generate from.
  *
  * There is no source image (#297). There is an ordered set of zero to N
- * reference images and one widget that fills it, and the widget's only way in
- * is the library -- uploading is the Images toolbar's job and nowhere else's.
- * The row of source buttons that used to sit above the prompt is gone with it,
- * along with the chip, the Describe/JSON pair and five separate ways to put an
- * image in two different state slots.
+ * reference images and one widget that fills it, and its way in is the library
+ * picker -- which uploads as well as picks since #489, so a file on disk no
+ * longer means a trip to the Images toolbar and back. The row of source buttons
+ * that used to sit above the prompt is gone, along with the chip, the
+ * Describe/JSON pair and five separate ways to put an image in two different
+ * state slots.
  */
 export function GeneratorPanel({
   generator,
@@ -167,6 +168,10 @@ export function GeneratorPanel({
         imageUrls={userImages.imageUrls}
         isLoading={userImages.isLoading}
         alreadyCollectedIds={new Set(generator.refImages.map((r) => r.id))}
+        /* Turns on the picker's own Upload (#489). The reference you want is
+           often a file on disk, and getting it in used to mean leaving this
+           dialog for the Images toolbar and coming back. */
+        onRefresh={userImages.refresh}
         onConfirm={(selected) =>
           generator.addRefImages(
             selected.map((s) => ({ id: s.id, url: s.url, title: s.title })),
