@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-26 — The library picker uploads: pick files from inside the dialog and they land selected, instead of closing it for the toolbar's Upload and coming back (#489)
+- 2026-08-26 — Select mode reads off the border, not the dimming: unpicked images stay lit with a grey frame, so only the unselectable group cards dim (#488)
 - 2026-08-25 — GPT Image 2 is back in the lineup, rendering at `low` quality: 17-35s instead of the 142s that got it cut, and about a tenth of a cent an image (#485)
 - 2026-08-25 — A reference sheet is a ~1MB JPEG instead of a 9MB PNG, uploads are really capped at 15MB, and a failed upload says why (#482)
 - 2026-08-25 — Download a zip of exactly the images you selected, named for the group they came from (#480)
 - 2026-08-25 — Create a reference sheet from selected images: justified rows onto one black sheet, downloaded and named for the group it came from (#476)
-- 2026-08-24 — Download a group as a zip, naming both the zip and the files inside it; the numbering is padded so it sorts, which fixes Trash's exports too (#477)
-- 2026-08-24 — A dead-code and stale-docs sweep: `knip.jsonc`, corrections across the docs and `CLAUDE.md` files, and a toast that had been lying since March (#472, #473)
 
 **Up next**
 
