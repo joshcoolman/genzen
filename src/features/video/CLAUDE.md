@@ -1,5 +1,5 @@
 The video lineup: three FAL models, their endpoints, and what each endpoint
-takes. Headless -- no `.tsx` here, and there is no server code either.
+takes, plus pulling a still frame out of a clip. Headless -- no `.tsx` here.
 
 `models.ts` was `app/(authenticated)/video/models.ts` until #398, which is when
 it earned a second consumer: Activity has to name and filter the clips it can
@@ -13,6 +13,21 @@ about the form, the picker and the card; this folder holds only the catalog.
   `estimateCostCents`, and the row-facing helpers below
 - `models.test.ts` -- pins every endpoint id and param name against FAL's
   OpenAPI spec, which was read by hand. A wrong id fails at FAL, not here
+- `frame-capture.ts` -- `captureFrame` (a mounted player's current frame) and
+  `captureLastFrame` (a clip's end, from its URL). Browser-only: there is no
+  ffmpeg on the server and nothing there decodes video
+- `server/stamp-frame.action.ts` -- writes `frame_source` into the frame's
+  `generation_metadata`, so a still knows which clip it was cut from
+
+**Frame capture arrived the same way `models.ts` did** (#494): it lived in
+`lab/frames/use-view.ts` until Video's Continue wanted it, and a mechanism two
+surfaces share cannot sit under `lab/` -- the app may never import from the lab.
+
+**`captureLastFrame` lands _near_ the end, not provably on the last sample.**
+Seeking to exactly `duration` decodes nothing, so it seeks 0.05s short, and a
+browser may still snap to the nearest keyframe. For continuing a sequence that
+is the same frame to the eye; anything needing the exact final sample needs
+something else.
 
 ## Quirks
 

@@ -71,6 +71,25 @@ source images; `use-view.ts` owns everything after the first paint.
   actions**: native controls already own the bottom edge, and a second set of
   buttons above them is two rows of controls arguing, so the verbs are text in
   the caption. `video-list/` is now the grid and nothing else.
+- **Continue carries on from a clip's last frame** (#494). One press reads the
+  frame at the end of a finished clip, saves it as an ordinary upload, and sets
+  it as the first frame -- replacing five manual steps that all worked
+  (generate, open `lab/frames`, scrub to the end, extract, come back and pick
+  it). Enough friction that a four-clip sequence did not get made.
+
+  **It sets up the next generation and stops.** No auto-run: the point is a
+  frame in the slot, not a submitted job. The prompt is cleared rather than
+  carried over, because the frame is the continuity and the words are about
+  what happens next. Any end frame is dropped for the same reason -- it
+  described where the _last_ clip was going.
+
+  It sits above a rule in the caption, alone on the left, with the facts and
+  the file verbs pushed right below it: Download and Delete act on the clip in
+  front of you, Continue starts the next one, and a row mixing the two read as
+  three file operations. The mechanism is `src/features/video/frame-capture.ts`,
+  shared with `lab/frames` -- and it lands _near_ the end of the clip rather
+  than provably on the last sample, so a seam may be a frame or two loose.
+
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the
   shot goes -- the same instruction a prompt spends three sentences failing to

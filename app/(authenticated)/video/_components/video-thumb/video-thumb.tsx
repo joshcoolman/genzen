@@ -1,6 +1,12 @@
 'use client'
 
-import { AlertTriangle, Download, Loader2, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  CornerDownRight,
+  Download,
+  Loader2,
+  Trash2,
+} from 'lucide-react'
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { firstFrameSrc } from '#/components'
@@ -38,13 +44,25 @@ function durationOf(video: VideoRecord): string | null {
  * native controls sitting over its bottom edge, and a second set of buttons
  * above them is two rows of controls arguing. So the verbs live in the caption
  * as text, where they cannot collide with the scrubber.
+ *
+ * **Continue sits above the rule, on its own** (#494). It is the one verb here
+ * that starts new work rather than acting on this row -- Download and Delete
+ * are about the clip in front of you, Continue is about the next one -- so it
+ * reads as a separate act instead of the third item in a row of file
+ * operations. The facts moved to the right of that row at the same time, which
+ * is what leaves the left edge to it.
  */
 export function VideoThumb({
   video,
   onDelete,
+  onContinue,
+  isContinuing,
 }: {
   video: VideoRecord
   onDelete: (id: string) => void
+  /** Absent while there is nothing to continue from -- see `isDone`. */
+  onContinue: (video: VideoRecord) => void
+  isContinuing: boolean
 }) {
   const cost = costOf(video)
   const duration = durationOf(video)
@@ -83,10 +101,27 @@ export function VideoThumb({
 
       <div className={styles.caption}>
         <p className={styles.prompt}>{video.description}</p>
+        {/* Finished clips only: there is no last frame of a clip that does not
+            exist yet, and a failed one has no frames at all. */}
+        {isDone ? (
+          <button
+            type="button"
+            className={styles.continue}
+            onClick={() => onContinue(video)}
+            disabled={isContinuing}
+          >
+            {isContinuing ? (
+              <Loader2 className={styles.spinner} size={12} />
+            ) : (
+              <CornerDownRight size={12} />
+            )}
+            {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
+          </button>
+        ) : null}
         <div className={styles.facts}>
+          <span className={styles.spacer} />
           {duration ? <span>{duration}</span> : null}
           {cost ? <span>{cost}</span> : null}
-          <span className={styles.spacer} />
           {isDone ? (
             <a
               className={styles.action}
