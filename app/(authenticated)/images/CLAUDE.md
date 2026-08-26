@@ -48,15 +48,14 @@ list once when the seed comes back full, so the grid is never short.
   neighbours for text nobody read past line three. Hiding the caption entirely
   is still the info toggle's job
 - **There is no source image; there is one set (#297).** The panel holds an
-  ordered set of zero to N **Reference images**, filled from the library and
-  from nowhere else. Index 0 is the only asymmetry left: the aspect ratio is
-  derived from it, and it is submitted first. **Upload happens in exactly one
-  place, the toolbar's Upload icon**, and picking from the library in exactly
-  one, the widget. The panel's own upload used to take a single file and
-  silently make it the source, so "put these in my library" also repointed the
-  generator with nothing saying so. The cost is that upload-and-immediately-use
-  is two gestures now; `reveal()` widens the scope to wherever the file landed,
-  so the second is a click rather than a hunt
+  ordered set of zero to N **Reference images**. Index 0 is the only asymmetry
+  left: the aspect ratio is derived from it, and it is submitted first. **Two
+  ways in, both inside the panel or under your fingers**: the library picker
+  (which uploads from disk since #489) and a paste on this route, which uploads
+  the image and pushes it onto the front of the set in one gesture (#491). The
+  toolbar's Upload button and its "Upload to group" flow are gone -- they were a
+  second route to the same act, further from where the image gets used, and
+  upload-and-immediately-use cost two gestures because of it
 - **Nothing caps the set (#341).** Stage as many images as you like against any
   selection; each model takes what its endpoint holds, `buildFalInput` drops the
   rest, and `images_used`/`images_requested` on the row make the card say "1 of
@@ -295,34 +294,27 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   id can change underneath it. The one remount left in that burst is
   `PendingImageCard` giving way to `ImageCard`, which is a real change of
   component and not a key problem
-- **A paste previews, the file picker does not.** A paste is one image the user
-  has in mind, so it gets a blob preview immediately; the picker takes many at
-  once and previews would land in upload order, so the cards would appear to
-  shuffle. Both paths are `ingest()` in `_hooks/use-uploads.ts`
-- **Upload is primary, and where it puts things depends on where you are
-  (#348, #432).** Green, Generate's weight, at the same size it always was --
-  it was flat and transparent like New group beside it, which made the one
-  control that puts things into this page look like the least important thing
-  on it. The same green in both states, because a button that is primary in a
-  group and flat at top level reads as two different buttons for the same act.
-  **It is leftmost in both states and nothing precedes it**: a crumb in front
-  of it shifted the one control whose meaning never changes every time you
-  opened a group. At top level it is a menu: _Upload_ lands loose, _Upload to
-  group_ picks a destination first, leaving you at top level with a toast
-  naming the group. **Inside a group there is no menu** -- it goes straight to
-  the file picker and the files land in the open group, and a paste does the
-  same. That is a deliberate exception to "one way to do things": a group is a
-  focus session, and asking which group you meant while standing in one is
-  ceremony. The menu is also absent with no groups to pick from.
-  **A destination is set at insert, not by a write afterwards (#350).**
-  `createImageRecord` takes the group id and resolves it through a subquery
-  that names the user, so a guessed uuid lands the upload loose rather than in
-  a stranger's group. Filing the batch after the fact -- one
-  `addImagesToGroup` for the lot, which was the right instinct about round
-  trips -- meant every thumbnail appeared at top level and was pulled out
-  again a moment later. A row born in the group is never loose, so there is
-  nothing to render and nothing to retract, and the optimistic card carries
-  the same `group_id` from its first frame
+- **Paste is the only way a file enters this route, and it does both halves**
+  (#491). `_hooks/use-uploads.ts` uploads the image into the library -- into the
+  open group, if you are standing in one -- and then hands it to `pushReference`
+  in `use-view.ts`, the same function Cmd-click on a card uses, so it lands at
+  the front of the reference set with the panel open. A screenshot pasted here
+  is almost always about to be generated from; making that two gestures was the
+  friction. It gets a blob preview immediately, being one image the user is
+  holding in mind. Choosing a file from disk belongs to the library picker
+  inside the panel (#489)
+- **Where an upload lands depends on where you are (#348, #350).** At top level
+  a pasted image lands loose; inside a group it lands in the open group, with no
+  dialog -- a group is a focus session, and asking which group you meant while
+  standing in one is ceremony. **A destination is set at insert, not by a write
+  afterwards.** `createImageRecord` takes the group id and resolves it through a
+  subquery that names the user, so a guessed uuid lands the upload loose rather
+  than in a stranger's group. Filing the batch after the fact -- one
+  `addImagesToGroup` for the lot, which was the right instinct about round trips
+  -- meant every thumbnail appeared at top level and was pulled out again a
+  moment later. A row born in the group is never loose, so there is nothing to
+  render and nothing to retract, and the optimistic card carries the same
+  `group_id` from its first frame
 - **The origin scope is back, on a row of its own (#444).** #348 removed the
   pills on the grounds that a group is the only scope worth having, and that
   held for everything except one question a group cannot answer: **"show me my
@@ -449,11 +441,10 @@ group` opens a dialog because a flyout of names commits you to picking one at
   every settle a reason to re-read the groups, and each of those is a server
   action that re-renders the whole route. The summaries are re-read **once per
   burst** -- when a group's in-flight count reaches zero -- because that is the
-  only moment the strip has something new to show. Uploads are counted from
-  their destination rather than from the rows: a file on its way up has no
-  `group_id` until its row exists, so the destination is what is counted while
-  the bytes are going up -- without it the one kind of work the card could not
-  see was an upload aimed at it
+  only moment the strip has something new to show. It counts pending rows and
+  nothing else. A parallel count of uploads-in-flight, keyed by destination, went
+  with the toolbar's Upload (#491): a paste only ever targets the group you are
+  already looking at, where the card itself is on screen
 - **Clicking the swatch strip grows it through the whole group (#352).** The
   strip keeps its five columns and its first row; the card just gets taller,
   five across, for as many rows as the group needs, at one even gap in both

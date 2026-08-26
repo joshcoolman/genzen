@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type { GalleryState } from './use-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
@@ -35,13 +35,21 @@ function skeletonCard(
 }
 
 /**
- * Getting an image into the gallery, from the file picker or from a paste.
+ * Getting an image into the gallery. **Paste is the only way in** (#491).
  *
- * Both paths are the same three steps -- optimistic card, upload, swap for the
- * real row -- and differ only in the preview. A paste is one image the user is
- * holding in mind, so it gets a blob preview immediately. The picker takes many
- * at once and shows none: previews would land in upload order and the cards
- * would appear to shuffle.
+ * There was a file picker in the toolbar, and an "Upload to group" flow beside
+ * it that asked where the batch was headed before opening the OS dialog. Both
+ * are gone: the library picker inside the generator panel took over choosing
+ * files from disk (#489), which left the toolbar offering a second route to the
+ * same thing, one click further from where the images are used.
+ *
+ * So the paste is the upload, and what it does is deliberately the whole
+ * gesture: the file lands in the library *and* goes to the front of the
+ * reference strip, because a screenshot pasted into this route is almost always
+ * about to be generated from. `onDone` is where the second half happens.
+ *
+ * Three steps -- optimistic card, upload, swap for the real row. A paste is one
+ * image the user is holding in mind, so it gets a blob preview immediately.
  *
  * The swap is by the upload's own return value. It used to match on title
  * against a realtime INSERT (#174), which two files of the same name broke.
@@ -49,22 +57,28 @@ function skeletonCard(
 export function useUploads(
   userId: string | undefined,
   gallery: GalleryState,
-  /** The open group, which a paste lands in the same way a picked file does
-   *  (#348's rule -- standing in a group makes it the destination). Null at
-   *  top level. */
+  /** The open group, which a paste lands in (#348's rule -- standing in a
+   *  group makes it the destination). Null at top level. */
   activeGroupId: string | null,
+  {
+    onStart,
+    onDone,
+  }: {
+    /** Before the optimistic card appears, so the grid is showing the bucket
+     *  the card is about to land in. */
+    onStart: () => void
+    /** The row, once it exists. */
+    onDone: (image: { id: string; title: string }) => void
+  },
 ) {
   const ingest = useCallback(
-    async (
-      file: File,
-      { preview, groupId }: { preview: boolean; groupId: string | null },
-    ) => {
+    async (file: File, groupId: string | null) => {
       if (!userId) return null
       const tempId = optimisticId()
       gallery.addOptimisticCard(skeletonCard(tempId, file.name, groupId))
 
-      const previewUrl = preview ? URL.createObjectURL(file) : null
-      if (previewUrl) gallery.setImageUrl(tempId, previewUrl)
+      const previewUrl = URL.createObjectURL(file)
+      gallery.setImageUrl(tempId, previewUrl)
 
       try {
         const created = await saveFileToLibrary({
@@ -78,12 +92,12 @@ export function useUploads(
         )
         // Hold the blob preview until the refresh brings a real URL --
         // swapping to nothing would blink the card empty.
-        const url = created.storage_path
-          ? imageUrl(created.id, 'thumb')
-          : previewUrl
-        if (url) gallery.setImageUrl(created.id, url)
+        gallery.setImageUrl(
+          created.id,
+          created.storage_path ? imageUrl(created.id, 'thumb') : previewUrl,
+        )
         void gallery.refresh({ silent: true })
-        return created.id
+        return created
       } catch (err) {
         gallery.removeOptimisticCard(tempId)
         // **Say why** (#482). A failed upload used to take its card away and
@@ -102,28 +116,11 @@ export function useUploads(
     [userId, gallery],
   )
 
-  /**
-   * `groupId` is the destination, and it travels with each file (#350).
-   *
-   * There is no filing step any more. The batch used to upload loose and then
-   * make one `addImagesToGroup` call -- one write rather than one per file,
-   * which was the right instinct about round trips and the wrong answer for
-   * what it looked like: every thumbnail landed at top level and was pulled
-   * out again a moment later. The insert takes the group now, so the cards are
-   * never anywhere they should not be, and the group's own summary is re-read
-   * once when the batch drains (`use-view`).
-   */
-  const uploadFiles = useCallback(
-    async (files: Array<File>, groupId: string | null = null) => {
-      const ids = (
-        await Promise.all(
-          files.map((file) => ingest(file, { preview: false, groupId })),
-        )
-      ).filter((id): id is string => id !== null)
-      return ids
-    },
-    [ingest],
-  )
+  // Held in a ref so the listener binds once per gallery, not once per render:
+  // neither callback is stable, and re-attaching a document handler on every
+  // keystroke elsewhere on the page is work for nothing.
+  const handlers = useRef({ onStart, onDone })
+  handlers.current = { onStart, onDone }
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -134,13 +131,15 @@ export function useUploads(
         const file = item.getAsFile()
         if (!file) continue
         e.preventDefault()
-        void ingest(file, { preview: true, groupId: activeGroupId })
+        handlers.current.onStart()
+        void ingest(file, activeGroupId).then((created) => {
+          if (created)
+            handlers.current.onDone({ id: created.id, title: created.title })
+        })
         return
       }
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
   }, [ingest, activeGroupId])
-
-  return { uploadFiles }
 }

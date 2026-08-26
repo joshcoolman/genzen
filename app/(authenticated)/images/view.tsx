@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
@@ -17,13 +16,6 @@ import { ConfirmDialog, NameDialog, ZipDownloadDialog } from '#/components'
 import { countedBaseName } from '#/lib/download-name'
 
 export function View({ initial }: { initial: Array<SavedAiImage> }) {
-  // Where an "Upload to group" batch is headed, held across the gap between
-  // choosing the group and the OS file dialog coming back. A ref, not state:
-  // nothing renders from it, and a re-render between the two would be a bug
-  // rather than a repaint.
-  const uploadTargetRef = useRef<string | null>(null)
-  const groupUploadInputRef = useRef<HTMLInputElement>(null)
-
   const {
     images,
     cells,
@@ -37,7 +29,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     referenceSheet,
     zipSelectionOpen,
     setZipSelectionOpen,
-    uploadFiles,
     selection,
     selectMode,
     isBatchDeleting,
@@ -57,7 +48,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setGroupFlow,
     closeGroupFlow,
     startAddToGroup,
-    startUploadToGroup,
     addToGroup,
     createGroup,
     removeFromGroup,
@@ -85,15 +75,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           prefs={prefs}
           panelOpen={dock.open}
           onTogglePanel={() => dock.setOpen(!dock.open)}
-          onUpload={uploadFiles}
-          /* Absent inside a group (the open one is the destination) and absent
-             with no groups to choose from -- either way the toolbar collapses
-             to a plain Upload button. */
-          onUploadToGroup={
-            !activeGroupId && groups.groups.length > 0
-              ? startUploadToGroup
-              : undefined
-          }
           groupName={activeGroup?.name}
           /* Same rule as Trash group: only inside one, where the set it
              exports is what you are looking at (#477). */
@@ -212,36 +193,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,
           or confirm the two that change what exists. */}
-      {/* The destination for an upload that has not happened yet (#348).
-          Picking is a user gesture, so clicking the file input from inside
-          `onPick` opens the OS dialog -- doing it a tick later would not. */}
-      <input
-        ref={groupUploadInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        hidden
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
-          e.target.value = ''
-          const groupId = uploadTargetRef.current
-          uploadTargetRef.current = null
-          if (files.length > 0 && groupId) uploadFiles(files, groupId)
-        }}
-      />
-      <GroupPickerDialog
-        open={groupFlow?.kind === 'upload-target'}
-        groups={groups.groups}
-        count={0}
-        onPick={(groupId) => {
-          closeGroupFlow()
-          uploadTargetRef.current = groupId
-          groupUploadInputRef.current?.click()
-        }}
-        onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
-        onCancel={closeGroupFlow}
-      />
-
       <GroupPickerDialog
         open={groupFlow?.kind === 'pick'}
         groups={groups.groups}

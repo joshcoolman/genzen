@@ -229,16 +229,14 @@ export function useView(initial: Array<SavedAiImage>) {
    * batch is filed, after the last byte. Without this, uploading into a group
    * from top level is the one kind of work the card cannot see.
    */
-  const [uploadingInto, setUploadingInto] = useState<Record<string, number>>({})
-
   const workingByGroup = useMemo(() => {
-    const counts: Record<string, number> = { ...uploadingInto }
+    const counts: Record<string, number> = {}
     for (const img of gallery.images) {
       if (!img.group_id || img.status !== 'pending') continue
       counts[img.group_id] = (counts[img.group_id] ?? 0) + 1
     }
     return counts
-  }, [gallery.images, uploadingInto])
+  }, [gallery.images])
 
   /**
    * Refresh the summaries when a group *finishes*, not when each image lands.
@@ -468,10 +466,6 @@ export function useView(initial: Array<SavedAiImage>) {
    */
   const [groupFlow, setGroupFlow] = useState<
     | { kind: 'pick'; targets: Array<string> }
-    // Picking where an upload is about to go, before any file has been chosen
-    // (#348). No `targets`: the images do not exist yet, which is what makes it
-    // its own kind rather than a 'pick' with an empty list.
-    | { kind: 'upload-target' }
     | { kind: 'create'; targets: Array<string> }
     | { kind: 'rename'; group: ImageGroupSummary }
     // Picking where a whole group's contents are headed (#350). Carries the
@@ -488,18 +482,6 @@ export function useView(initial: Array<SavedAiImage>) {
   >(null)
 
   const closeGroupFlow = useCallback(() => setGroupFlow(null), [])
-
-  /**
-   * "Upload to group" from the toolbar: choose the destination, then the files.
-   *
-   * Never offered with no groups to choose from -- the toolbar renders a plain
-   * Upload button in that case, since "file these into nothing, or go make a
-   * group first" is the same non-choice `GroupPickerDialog` already refuses.
-   */
-  const startUploadToGroup = useCallback(
-    () => setGroupFlow({ kind: 'upload-target' }),
-    [],
-  )
 
   /**
    * "Add to group", from the card menu or the selection drawer.
@@ -562,56 +544,51 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * Uploading, with the open group as the default destination (#348).
+   * A pasted image onto the front of the reference strip (#491).
    *
-   * At top level `activeGroupId` is null and files land loose. Inside a group
-   * they land in it, with no dialog: a group is a focus session, and asking
-   * which group you meant while you are standing in one is ceremony. That is
-   * a deliberate exception to "one way to do things" -- the toolbar's menu is
-   * top-level only, and the reasoning is on the toolbar.
+   * Shared with `addReference` below (Cmd-click on a card), which is the same
+   * act from a picture that already exists. Both open the panel: a power move
+   * whose entire effect is inside a closed panel has no feedback at all.
    */
-  const { uploadFiles: uploadFilesRaw } = useUploads(
-    user.id,
-    gallery,
-    activeGroupId,
-  )
-
-  const uploadFiles = useCallback(
-    (files: Array<File>, groupId: string | null = activeGroupId) => {
-      // Same rule as a generation: an upload while scoped to Generations would
-      // land somewhere the grid is not showing.
-      prefs.revealAll()
-      // The destination is held for the length of the batch, so the group card
-      // can say it is busy while the bytes are still going up (#350). The rows
-      // themselves cannot carry this: they get their `group_id` when the batch
-      // is filed, which is the moment the work is over.
-      if (groupId) {
-        setUploadingInto((prev) => ({
-          ...prev,
-          [groupId]: (prev[groupId] ?? 0) + files.length,
-        }))
+  const pushReference = useCallback(
+    (image: { id: string; title: string }) => {
+      // Refusing out loud: the strip is disabled only when the selected model
+      // takes no images at all, and a gesture that reports nothing and adds
+      // nothing is worse than one that says no.
+      if (generator.maxRefImages === 0) {
+        toast('The selected model does not take images')
+        return
       }
-      void uploadFilesRaw(files, groupId).then(() => {
-        if (groupId) {
-          setUploadingInto((prev) => {
-            const left = (prev[groupId] ?? 0) - files.length
-            const next = { ...prev }
-            if (left > 0) next[groupId] = left
-            else delete next[groupId]
-            return next
-          })
-        }
-        // Only the explicit to-a-group upload speaks. Uploading into the group
-        // you are looking at needs no announcement -- the cards are right
-        // there. Filing from top level moves them somewhere you are not, so
-        // without this the only visible effect is a card gaining a new cover.
-        if (!groupId || groupId === activeGroupId) return
-        const name = groups.groups.find((g) => g.id === groupId)?.name
-        if (name) toast(`Uploaded to ${name}`)
+      dock.setOpen(true)
+      // Onto the front, and nothing leaves. Adding is its own feedback -- the
+      // strip visibly gains an image -- so this says nothing.
+      generator.pushRefImage({
+        id: image.id,
+        url: imageUrl(image.id),
+        title: image.title,
       })
     },
-    [uploadFilesRaw, activeGroupId, groups.groups, prefs],
+    [generator, dock],
   )
+
+  /**
+   * **Paste is the only way a file gets into this route** (#491), and it does
+   * both halves of the gesture: the image is uploaded to the library and it
+   * becomes the reference image, because a screenshot pasted here is almost
+   * always about to be generated from. Choosing a file from disk is the
+   * library picker's job now, inside the panel where it is used (#489).
+   *
+   * The open group is the destination. At top level `activeGroupId` is null and
+   * the image lands loose; inside a group it lands in it, with no dialog -- a
+   * group is a focus session, and asking which group you meant while you are
+   * standing in one is ceremony (#348).
+   */
+  useUploads(user.id, gallery, activeGroupId, {
+    // Same rule as a generation: an upload while scoped to Generations would
+    // land somewhere the grid is not showing.
+    onStart: prefs.revealAll,
+    onDone: pushReference,
+  })
 
   /**
    * Create, and stay where you are. Always -- empty group or not.
@@ -726,29 +703,9 @@ export function useView(initial: Array<SavedAiImage>) {
   const addReference = useCallback(
     (img: SavedAiImage) => {
       if (!img.storage_path) return
-      // Refusing out loud, the same way the paste path does (#213): the set
-      // caps at the selected model's `maxRefImages`, and a gesture that reports
-      // nothing and adds nothing is worse than one that says no.
-      if (generator.maxRefImages === 0) {
-        toast('The selected model does not take images')
-        return
-      }
-      dock.setOpen(true)
-      // Onto the front, and nothing leaves. Adding is its own feedback -- the
-      // strip visibly gains an image -- so this says nothing.
-      //
-      // It used to toast when the push evicted the last image, which was the
-      // half worth reporting because losing one is invisible. Nothing has
-      // evicted since #341 (`pushRef`), and the toast outlived it: it fired
-      // whenever the set was at `maxRefImages`, telling you an image had
-      // dropped while it was still on screen. Found by #472's sweep.
-      generator.pushRefImage({
-        id: img.id,
-        url: imageUrl(img.id),
-        title: img.title,
-      })
+      pushReference({ id: img.id, title: img.title })
     },
-    [generator, dock],
+    [pushReference],
   )
 
   const usePromptText = useCallback(
@@ -851,7 +808,6 @@ export function useView(initial: Array<SavedAiImage>) {
     setGroupFlow,
     closeGroupFlow,
     startAddToGroup,
-    startUploadToGroup,
     addToGroup,
     createGroup,
     removeFromGroup,
@@ -869,7 +825,6 @@ export function useView(initial: Array<SavedAiImage>) {
     referenceSheet,
     zipSelectionOpen,
     setZipSelectionOpen,
-    uploadFiles,
     selection,
     selectMode,
     isBatchDeleting,
