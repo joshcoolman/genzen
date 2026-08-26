@@ -8,6 +8,18 @@
   box-shadow: 0 0 0 1px var(--accent);
 }
 
+/* Select mode, not picked. The same thickened border the selected tile wears,
+   in grey: it says "this one is selectable" in the one language the grid
+   already uses for "this one is taken", so the two read as the same control at
+   two states. Dimming used to carry that job and could not -- a dimmed image
+   next to a dimmed group card (which really is unselectable here) said the
+   same thing about both, so clicks went to groups and nothing happened. Full
+   opacity is now the tell: images stay lit, groups go grey. */
+.selectableTile {
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 1px var(--text-muted);
+}
+
 .menuIcon,
 .actionIcon {
   width: 0.875rem;

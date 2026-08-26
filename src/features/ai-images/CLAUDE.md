@@ -18,7 +18,7 @@ anything one route renders lives with that route.
   `models.test.ts` keeps their numbers as fixtures so a lineup edit cannot
   quietly change a cap or a name that used to be pinned. An entry may also pin
   `params`, sent to FAL on every submit to that model (#485) — for an endpoint
-  whose *default* is wrong for genzen, which so far is GPT Image 2 alone: it
+  whose _default_ is wrong for genzen, which so far is GPT Image 2 alone: it
   renders at `quality: 'high'` unless told otherwise, and that is a
   142-second render against 17-35 at `low`. Not a place to put tuning; a dial
   is #486.

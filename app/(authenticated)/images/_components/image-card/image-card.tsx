@@ -176,13 +176,14 @@ export function ImageCard({
       bottomRightBadge={badge}
       selected={selected}
       selectedClassName={styles.selectedTile}
-      /* Entering select mode dims the whole grid, because nothing is picked
-         yet -- the mode announcing itself. After that it answers "which ones
-         did I take" from across the grid, which a 20px corner glyph cannot.
-         `dimmed` rather than a local class: it is already 50% on the tile
-         root, where nothing transitions, and the image itself carries a
-         load-fade transition that would have eased this too. */
-      dimmed={selectionActive && !selected}
+      /* Select mode reads off the border alone: accent when taken, grey when
+         not, nothing when the mode is off. The unpicked card used to dim to
+         50% instead, which put it in the same state as a group card -- and a
+         group genuinely cannot be selected, so the grid was telling you the
+         one thing about images that is not true of them. */
+      className={
+        selectionActive && !selected ? styles.selectableTile : undefined
+      }
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : deleteButton}
       imageOverlay={
