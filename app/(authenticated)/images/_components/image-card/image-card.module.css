@@ -8,6 +8,27 @@
   box-shadow: 0 0 0 1px var(--accent);
 }
 
+/* Select mode, not picked. The same thickened border the selected tile wears,
+   in grey: it says "this one is selectable" in the one language the grid
+   already uses for "this one is taken", so the two read as the same control at
+   two states. Dimming used to carry that job and could not -- a dimmed image
+   next to a dimmed group card (which really is unselectable here) said the
+   same thing about both, so clicks went to groups and nothing happened. Full
+   opacity is now the tell: images stay lit, groups go grey. */
+.selectableTile {
+  /* Between `--border` and `--text-muted`: at full `--text-muted` the grid
+     read as a page of outlined boxes competing with the pictures. It only has
+     to be a step up from the resting border, not an announcement.
+
+     The opacity is deliberately almost nothing -- a selected card is fully lit
+     and an unpicked one is a hair behind it, which you read without noticing
+     you read it. Anything stronger is the dimming this replaced. */
+  border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border));
+  box-shadow: 0 0 0 1px
+    color-mix(in oklab, var(--text-muted) 50%, var(--border));
+  opacity: 0.88;
+}
+
 .menuIcon,
 .actionIcon {
   width: 0.875rem;
