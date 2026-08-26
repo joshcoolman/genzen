@@ -33,6 +33,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     clearEndSources,
     videos,
     deleteVideo,
+    continueFrom,
+    isContinuing,
     prompts,
     updatePrompt,
     addPrompt,
@@ -76,7 +78,12 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
       <div className={styles.columns}>
         <div className={styles.clips}>
-          <VideoList videos={videos} onDelete={(id) => void deleteVideo(id)} />
+          <VideoList
+            videos={videos}
+            onDelete={(id) => void deleteVideo(id)}
+            onContinue={(video) => void continueFrom(video)}
+            continuingId={isContinuing}
+          />
         </div>
 
         <div className={styles.controls}>

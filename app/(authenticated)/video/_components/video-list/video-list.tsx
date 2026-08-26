@@ -16,9 +16,14 @@ import { EmptyState } from '#/components'
 export function VideoList({
   videos,
   onDelete,
+  onContinue,
+  continuingId,
 }: {
   videos: Array<VideoRecord>
   onDelete: (id: string) => void
+  onContinue: (video: VideoRecord) => void
+  /** The clip whose last frame is being read, if any -- one at a time. */
+  continuingId: string | null
 }) {
   if (videos.length === 0) {
     return (
@@ -31,7 +36,13 @@ export function VideoList({
   return (
     <div className={styles.list}>
       {videos.map((video) => (
-        <VideoThumb key={video.id} video={video} onDelete={onDelete} />
+        <VideoThumb
+          key={video.id}
+          video={video}
+          onDelete={onDelete}
+          onContinue={onContinue}
+          isContinuing={continuingId === video.id}
+        />
       ))}
     </div>
   )
