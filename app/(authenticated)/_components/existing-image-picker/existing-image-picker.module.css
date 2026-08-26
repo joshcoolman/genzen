@@ -8,12 +8,48 @@
 
 /* The one picker (#297). The library-picker-dialog twin went with the source
    chip that was its only other consumer, so there is a single answer to "pick
-   an image from my library" again. Uploading is not one of this dialog's jobs:
-   it is the Images toolbar's, and only there. */
+   an image from my library" again. It uploads too since #489, wherever the
+   caller passes `onRefresh` -- the file you want to attach is often one this
+   dialog has never seen. */
 .filters {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+}
+
+/* Opposite the source filters, which is what the auto margin is for. */
+.upload {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-left: auto;
+  padding: var(--space-6) var(--space-12);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: background-color var(--duration-normal) var(--ease-out);
+}
+
+.upload:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--surface-raised) 80%, transparent);
+}
+
+.upload:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.uploadIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.fileInput {
+  display: none;
 }
 
 .filter {
