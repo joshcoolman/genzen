@@ -1,16 +1,13 @@
 'use client'
 
-import { useRef } from 'react'
 import {
   ArrowDown,
   ArrowUp,
   Download,
-  FolderInput,
   FolderPlus,
   PanelRight,
   TextInitial,
   Trash2,
-  Upload,
   ZoomIn,
 } from 'lucide-react'
 import { ZOOM_STOPS } from '../../_hooks/use-prefs'
@@ -31,11 +28,11 @@ import { cx } from '#/lib/utils'
 
 /**
  * Every tool in this row is a bare glyph, and they are not all the same kind of
- * thing -- sort and captions change the view, select changes what a click
- * means, upload and generate do something once. Four identical-looking icons
- * left that unsaid, so select read as another show/hide switch.
+ * thing -- sort and captions change the view, the panel toggle shows the
+ * generator. Identical-looking icons left that unsaid, so one read as another
+ * show/hide switch.
  *
- * A label each, rather than fewer icons: all five are used.
+ * A label each, rather than fewer icons: all of them are used.
  */
 function Labelled({
   label,
@@ -57,12 +54,6 @@ interface ToolbarProps {
   /** The generator panel. Its control stays put whichever way it is showing. */
   panelOpen: boolean
   onTogglePanel: () => void
-  onUpload: (files: Array<File>) => void
-  /**
-   * Open the destination picker for an upload (#348). Absent when there is
-   * nothing to pick from, which is what collapses the menu to a plain button.
-   */
-  onUploadToGroup?: () => void
   /** The group being worked in, or null at top level (#319). The name *and*
    *  the way back are a heading above the grid since #432; this row only needs
    *  to know whether it is inside one. */
@@ -80,80 +71,25 @@ export function Toolbar({
   prefs,
   panelOpen,
   onTogglePanel,
-  onUpload,
-  onUploadToGroup,
   groupName,
   onDownloadGroup,
   onTrashGroup,
   onNewGroup,
 }: ToolbarProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const openFilePicker = () => fileInputRef.current?.click()
-
   return (
     <div className={styles.toolbar}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        multiple
-        className={styles.fileInput}
-        onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
-          if (files.length > 0) onUpload(files)
-          e.target.value = ''
-        }}
-      />
-      {/* **Upload is leftmost in both states, and nothing precedes it.** The
-          crumb that used to sit here shifted it right on the way into a group,
-          so the one control whose meaning never changes moved every time you
-          opened one. The group's name and the way back are an `<h1>` and a
-          round button over the thumbnails instead (#432) -- the control here
-          was trying to be both the title and the navigation, which is why it
-          read as neither.
+      {/* **No Upload button, and no file input behind one** (#491). Choosing a
+          file from disk belongs to the library picker inside the generator
+          panel (#489) -- where the image is about to be used -- and everything
+          else arrives by paste, which uploads it and makes it the reference
+          image in one gesture. A second route to the same thing, further from
+          the work, is what was here.
 
-          No page title at top level: the sidebar says which route this is, and
-          "Images" above a grid of images said nothing. The origin pills stood
-          in this slot until #348. */}
+          No page title either: the sidebar says which route this is, and
+          "Images" above a grid of images said nothing. The group's name and the
+          way back are an `<h1>` and a round button over the thumbnails (#432).
+          The origin pills stood in this slot until #348. */}
       <div className={styles.scope}>
-        {/* The menu is top level only. Inside a group Upload goes straight to
-            the file picker and the files land in the open group: a group is a
-            focus session, and asking which group you meant while you are
-            standing in one is ceremony. A deliberate exception to "one way to
-            do things" -- and the only one, since `onUploadToGroup` is also
-            absent when there are no groups to pick from. */}
-        {onUploadToGroup ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <button type="button" className={styles.upload}>
-                  <Upload className={styles.uploadIcon} />
-                  Upload
-                </button>
-              }
-            />
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={openFilePicker}>
-                <Upload />
-                Upload
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onUploadToGroup}>
-                <FolderInput />
-                Upload to group
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <button
-            type="button"
-            className={styles.upload}
-            onClick={openFilePicker}
-          >
-            <Upload className={styles.uploadIcon} />
-            Upload
-          </button>
-        )}
-
         {groupName ? (
           /* Inside a group, the acts that are about the group itself
              (#431, #477) -- both of them here because this is where you can

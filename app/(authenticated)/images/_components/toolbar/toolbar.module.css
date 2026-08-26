@@ -1,6 +1,6 @@
-/* Below the custom 400px breakpoint the two view toggles drop and select,
-   upload and the panel toggle survive: sort and captions are refinements, and
-   there is no room for them. */
+/* Below the custom 400px breakpoint the two view toggles drop and the panel
+   toggle survives: sort and captions are refinements, and there is no room for
+   them. */
 
 .toolbar {
   display: flex;
@@ -74,10 +74,6 @@
   }
 }
 
-.fileInput {
-  display: none;
-}
-
 .action {
   display: flex;
   align-items: center;
@@ -139,25 +135,6 @@
   color: var(--text);
 }
 
-/* Upload is New group's chip carrying Generate's weight (#432). It was flat
-   and transparent like its neighbour, which made the one control that puts
-   things into this page look like the least important thing on it. Same size,
-   same padding -- a change of weight, not of scale -- and the same green in
-   both states: a button that is primary in a group and flat at top level reads
-   as two different buttons, and it is the same act either way. */
-.upload {
-  composes: newGroup;
-  border-color: transparent;
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.upload:hover {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  opacity: 0.9;
-}
-
 /* Downloading the open group as a zip (#477). Same quiet chip as its
    neighbours -- exporting is occasional, and the dialog is where the naming
    happens. */
@@ -168,8 +145,8 @@
 
 /* Trashing a group happens from inside it, never from the grid (#431). Quiet
    until pointed at -- it is the only irreversible-looking thing in this row,
-   so it should not be competing with Upload for attention; the confirm dialog
-   is what actually guards it. */
+   so it should not be competing with its neighbours for attention; the confirm
+   dialog is what actually guards it. */
 .trashGroup {
   composes: newGroup;
   border-color: transparent;
@@ -178,10 +155,6 @@
 .trashGroup:hover {
   background: var(--danger-soft);
   color: var(--danger);
-}
-
-.uploadIcon {
-  composes: newGroupIcon;
 }
 
 .newGroupIcon {

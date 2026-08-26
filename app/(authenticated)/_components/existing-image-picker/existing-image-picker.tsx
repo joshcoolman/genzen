@@ -40,9 +40,10 @@ interface ExistingImagePickerProps {
    * are the caller's and it has no way to add to them.
    *
    * The whole reason it is here: wanting a reference image that is still on
-   * disk meant closing this dialog, finding the toolbar's Upload, uploading,
-   * reopening this, and finding the new tile -- five steps to answer the
-   * question the dialog had just asked.
+   * disk meant closing this dialog, finding the Upload button in the /images
+   * toolbar, uploading, reopening this, and finding the new tile -- five steps
+   * to answer the question the dialog had just asked. That button is gone
+   * (#491); this is now the only place a file is chosen from disk.
    */
   onRefresh?: () => Promise<void>
 }
