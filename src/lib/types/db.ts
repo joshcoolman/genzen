@@ -67,6 +67,9 @@ export type UserImageRow = {
   group_id: string | null
   /** timestamptz; selected as an ISO string. */
   deleted_at: string | null
+  /** Hidden from the grid without being trashed (#504). timestamptz; selected
+   *  as an ISO string. Independent of `deleted_at`. */
+  hidden_at: string | null
   /** timestamptz; selected as an ISO string. */
   created_at: string
   /** timestamptz; selected as an ISO string. */

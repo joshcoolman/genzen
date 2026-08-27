@@ -15,6 +15,15 @@ export interface SavedAiImage {
    *  the truth. Absent on a card that has not come back from the server yet. */
   on_canvas?: boolean
   deleted_at?: string | null
+  /**
+   * Hidden from the grid, without being trashed (#504).
+   *
+   * Independent of `deleted_at`: the picture is still in its group, still
+   * owned, still one click from coming back. The gallery holds hidden rows
+   * like any other and decides per render whether to draw them, so unhiding
+   * costs no round trip.
+   */
+  hidden_at?: string | null
   /** The one group this image sits in, or null for top level (#319). Cleared
    *  on trash, so a restored image always comes back at top level. */
   group_id?: string | null

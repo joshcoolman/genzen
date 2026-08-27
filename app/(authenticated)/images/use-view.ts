@@ -9,6 +9,7 @@ import { useReferenceSheet } from './_hooks/use-reference-sheet'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
+import { useVisibility } from './_hooks/use-visibility'
 import { useImageViewer } from './_hooks/use-image-viewer'
 import { useGroups } from './_hooks/use-groups'
 import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
@@ -108,6 +109,11 @@ export function useView(initial: Array<SavedAiImage>) {
   const leaveGroup = useCallback(() => router.push('/images'), [router])
 
   const gallery = useGallery({ userId: user.id, initial })
+
+  // What the grid is allowed to draw (#504): hidden rows, and the focus
+  // spotlight. Sits above the scope filter below rather than inside it,
+  // because it applies inside a group and at top level alike.
+  const visibility = useVisibility(gallery)
   const userImages = useUserImages(user.id)
   const prefs = usePrefs()
   const dock = useDock()
@@ -290,16 +296,26 @@ export function useView(initial: Array<SavedAiImage>) {
   // the scope, and two scoping controls stacked on each other only raise the
   // question of which one wins.
   const scoped = useMemo(() => {
+    // Visibility first (#504), so every branch below inherits it and none can
+    // forget: a hidden image is hidden inside a group, at top level, and under
+    // every scope. A per-branch filter would be four places to keep in step.
+    const shown = gallery.images.filter(visibility.visible)
     if (activeGroupId) {
-      return gallery.images.filter((img) => img.group_id === activeGroupId)
+      return shown.filter((img) => img.group_id === activeGroupId)
     }
     if (uploadsIgnoreGroups) {
-      return gallery.images.filter((img) => img.origin === 'upload')
+      return shown.filter((img) => img.origin === 'upload')
     }
-    const loose = gallery.images.filter((img) => !img.group_id)
+    const loose = shown.filter((img) => !img.group_id)
     if (prefs.originFilter === 'all') return loose
     return loose.filter((img) => img.origin === prefs.originFilter)
-  }, [gallery.images, activeGroupId, uploadsIgnoreGroups, prefs.originFilter])
+  }, [
+    gallery.images,
+    visibility.visible,
+    activeGroupId,
+    uploadsIgnoreGroups,
+    prefs.originFilter,
+  ])
 
   const images = prefs.sortAsc ? [...scoped].reverse() : scoped
 
@@ -330,7 +346,25 @@ export function useView(initial: Array<SavedAiImage>) {
       activeGroupId || uploadsIgnoreGroups
         ? []
         : groups.groups.map((group) => ({
-            cell: { kind: 'group' as const, group },
+            // The swatches are filtered here rather than in the read that
+            // builds them (#504). A hidden image showing on a group card is
+            // exactly the "I hid this and can still see it" case, and doing it
+            // client-side is what makes the swatches track Show hidden -- a
+            // server filter would leave them stale the moment it is toggled.
+            //
+            // `count` is deliberately untouched: it is a fact about the group,
+            // not a description of what is on screen, and a card reporting 8
+            // because 4 are hidden would be a different group every time the
+            // toggle moved.
+            cell: {
+              kind: 'group' as const,
+              group: {
+                ...group,
+                preview_image_ids: group.preview_image_ids.filter(
+                  (id) => !visibility.withheldIds.has(id),
+                ),
+              },
+            },
             sortOrder: group.sort_order,
           }))
 
@@ -339,7 +373,24 @@ export function useView(initial: Array<SavedAiImage>) {
     )
     const cellsDesc = ordered.map((o) => o.cell)
     return prefs.sortAsc ? cellsDesc.reverse() : cellsDesc
-  }, [scoped, groups.groups, activeGroupId, uploadsIgnoreGroups, prefs.sortAsc])
+  }, [
+    scoped,
+    groups.groups,
+    visibility.withheldIds,
+    activeGroupId,
+    uploadsIgnoreGroups,
+    prefs.sortAsc,
+  ])
+
+  // The expanded group strip (#352), minus anything hidden (#504).
+  const visibleGroupMembers = useMemo(() => {
+    if (visibility.withheldIds.size === 0) return groups.members
+    const out: Record<string, Array<string>> = {}
+    for (const [groupId, ids] of Object.entries(groups.members)) {
+      out[groupId] = ids.filter((id) => !visibility.withheldIds.has(id))
+    }
+    return out
+  }, [groups.members, visibility.withheldIds])
 
   // The list the grid renders, minus the cards with nothing to look at (#270).
   // Scoped and sorted exactly like the grid -- inside a group that is the
@@ -430,6 +481,33 @@ export function useView(initial: Array<SavedAiImage>) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [selectMode, selection])
+
+  /**
+   * The drawer's Hide and Focus (#504).
+   *
+   * Both leave select mode, as every batch action does: the selection named
+   * the set, the set is now the view, and staying in the mode leaves ticks on
+   * cards you just finished acting on.
+   *
+   * Focus does *not* hide anything -- it is a spotlight, and the images it
+   * excludes are untouched. So it is the reversible one of the pair, and its
+   * way out is the strip under the grid rather than an undo.
+   */
+  const hideSelected = useCallback(async () => {
+    const ids = images
+      .filter((img) => selection.selectedIds.has(img.id))
+      .map((img) => img.id)
+    selection.clearSelection()
+    await visibility.hide(ids)
+  }, [images, selection, visibility])
+
+  const focusSelected = useCallback(() => {
+    const ids = images
+      .filter((img) => selection.selectedIds.has(img.id))
+      .map((img) => img.id)
+    selection.clearSelection()
+    visibility.focusOn(ids)
+  }, [images, selection, visibility])
 
   const [isBatchDeleting, setIsBatchDeleting] = useState(false)
 
@@ -800,6 +878,7 @@ export function useView(initial: Array<SavedAiImage>) {
     gallery,
     groups,
     workingByGroup,
+    visibleGroupMembers,
     activeGroup,
     activeGroupId,
     openGroup,
@@ -827,6 +906,9 @@ export function useView(initial: Array<SavedAiImage>) {
     setZipSelectionOpen,
     selection,
     selectMode,
+    visibility,
+    hideSelected,
+    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,

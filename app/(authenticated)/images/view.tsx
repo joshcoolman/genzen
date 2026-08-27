@@ -7,6 +7,7 @@ import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { ScopeRow } from './_components/scope-row/scope-row'
+import { HiddenBar } from './_components/hidden-bar/hidden-bar'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -31,6 +32,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setZipSelectionOpen,
     selection,
     selectMode,
+    visibility,
+    hideSelected,
+    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,
@@ -40,6 +44,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     animate,
     groups,
     workingByGroup,
+    visibleGroupMembers,
     activeGroup,
     activeGroupId,
     openGroup,
@@ -94,6 +99,18 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
 
+        {/* Above the wall, not under it (#504): a statement about pictures
+            that are missing is no use in the place you reach after running out
+            of pictures. */}
+        <HiddenBar
+          hidden={visibility.hiddenImages}
+          imageUrls={gallery.imageUrls}
+          onShowAll={() => void visibility.showAll()}
+          onUnhide={(id) => void visibility.unhide([id])}
+          focusCount={visibility.focusIds?.size ?? null}
+          onClearFocus={visibility.clearFocus}
+        />
+
         {/* Top level only -- inside a group the group is already the scope
             (#444), and the heading takes this row's place. */}
         {activeGroup ? (
@@ -113,6 +130,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           showInfo={prefs.showInfo}
           thumbZoom={prefs.thumbZoom}
           onDelete={gallery.deleteImage}
+          onHide={(img) => void visibility.hide([img.id])}
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onAnimate={animate}
@@ -122,7 +140,10 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onLoad={(img) => void loadIntoPanel(img)}
           workingByGroup={workingByGroup}
           expandedGroupIds={groups.expandedIds}
-          groupMembers={groups.members}
+          /* Same rule as the swatches on a collapsed card (#504): the
+             expanded strip is pictures, so a hidden one does not belong in it,
+             and filtering here is what keeps it in step with Show hidden. */
+          groupMembers={visibleGroupMembers}
           onToggleGroupMembers={groups.toggleExpanded}
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
@@ -163,6 +184,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDownloadZip={() => setZipSelectionOpen(true)}
           onClear={selection.clearSelection}
           onDelete={() => void deleteSelected()}
+          onHide={() => void hideSelected()}
+          onFocus={focusSelected}
           onAddToGroup={() => startAddToGroup(selectedIds)}
           onRemoveFromGroup={
             activeGroupId ? () => void removeFromGroup(selectedIds) : undefined

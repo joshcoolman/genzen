@@ -47,6 +47,8 @@ interface ImageGalleryProps {
    *  the grid element itself. */
   thumbZoom?: number
   onDelete: (img: SavedAiImage) => void
+  /** #504. Passed straight through to the card's corner icon. */
+  onHide: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onAnimate?: (img: SavedAiImage) => void
@@ -91,6 +93,7 @@ export function ImageGallery({
   showInfo = true,
   thumbZoom = 1,
   onDelete,
+  onHide,
   onRetry,
   onDownload,
   onAnimate,
@@ -238,6 +241,7 @@ export function ImageGallery({
                 key={keyFor?.(img.id) ?? img.id}
                 img={img}
                 imageUrl={imageUrls[img.id]}
+                onHide={onHide}
                 objectFit="contain"
                 showInfo={showInfo}
                 onDelete={onDelete}

@@ -33,6 +33,35 @@ list once when the seed comes back full, so the grid is never short.
   a button** (#458), reaching the panel through the handoff rather than directly;
   the two behave identically on purpose, since two things called Load that
   differ is worse than either one alone.
+- **The corner icon hides; Cmd makes it Trash** (#504). Trashing was the path
+  of least resistance for tidying a group because it was the only one-click
+  thing there, so the ease moved to the safe verb and the destructive one kept
+  the same spot behind a modifier. A second icon was the thing to avoid -- a
+  row of them in a card corner is more to mis-click, and the mis-click that
+  matters is the destructive one. The drawer's plain Trash stays the fallback
+  and the deliberate bulk case; both are at `/account/shortcuts`.
+  **Hide and focus are one predicate** (`isVisible` in `_hooks/use-visibility.ts`),
+  because "hide these eight" and "show only these two" are the same filtered
+  view from opposite ends. Only hiding persists: `hidden_at` is a column,
+  independent of `deleted_at` -- trashing does not clear it, so a restore puts
+  a hidden image back hidden. Focus dies with the page, and **wins over hidden
+  rather than intersecting with it**, or a focus would silently drop images you
+  had just selected. Applied once above the scope filter, so a group, top level
+  and every scope inherit it. **Group swatches and the expanded member strip
+  are filtered client-side**, not in the reads that build them -- the client
+  holds every row, so the filter costs no round trip; a group's `count` is
+  left alone, being a fact about the group rather than a description of the
+  screen. **The bar above the grid is the feature, not the hiding**: hidden
+  state you cannot see is a slower kind of lost. It was a quiet rule _under_
+  the grid for one build, which is the one place it cannot work -- you reach
+  it after running out of pictures, which is when you have stopped looking.
+  Toned, at the top, and absent entirely when there is nothing to say.
+  **Clicking it opens a tray of the hidden pictures**; a thumbnail there is
+  one click from coming back, and `Show` on the bar brings all of them.
+  **Hidden rows are never drawn in the grid** -- the first shape toggled them
+  back in among the visible ones while still calling them hidden, which read
+  as broken: "4 hidden" over four visible pictures. The tray is a holding
+  area, plainly somewhere else, so the wall stays true
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption

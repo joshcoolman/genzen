@@ -39,6 +39,16 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         what: 'Add that image to Reference images',
         note: 'Opens the panel. Goes on the front of the set and evicts the last one when it is full — a full set is the normal case for this gesture, so it makes room rather than refusing.',
       },
+      {
+        keys: 'Click a card’s corner icon',
+        what: 'Hide it',
+        note: 'It leaves the grid and stays in its group, still yours. The strip under the grid says how many are hidden; Show puts all of them back.',
+      },
+      {
+        keys: '⌘-hover a card’s corner icon',
+        what: 'It becomes Trash',
+        note: 'The destructive one takes a modifier on purpose — the corner used to be Trash outright, which made destroying work the easiest way to tidy a group. The selection drawer keeps a plain Trash button for the deliberate case.',
+      },
       { keys: 'Click a prompt', what: 'Copy the whole thing' },
       {
         keys: '⌘-click a prompt',

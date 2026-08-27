@@ -2,9 +2,11 @@
 
 import {
   Download,
+  EyeOff,
   FolderMinus,
   FolderPlus,
   LayoutGrid,
+  ScanSearch,
   Trash2,
 } from 'lucide-react'
 import styles from './selection-actions.module.css'
@@ -25,6 +27,11 @@ interface SelectionActionsProps {
   /** The sheet is built on the server and can take a while; the rest of the
    *  drawer stays live while it does. */
   sheetBusy: boolean
+  /** Take the selection out of the grid without destroying it (#504). */
+  onHide: () => void
+  /** Show only the selection (#504). The same filtered view from the other
+   *  end -- nothing is written, and the strip under the grid is the way out. */
+  onFocus: () => void
   /** Zip exactly these images (#480) -- opens the same dialog the group page
    *  uses, handed the selection instead of the group. */
   onDownloadZip: () => void
@@ -47,6 +54,8 @@ export function SelectionActions({
   onRemoveFromGroup,
   onCreateReferenceSheet,
   sheetBusy,
+  onHide,
+  onFocus,
   onDownloadZip,
 }: SelectionActionsProps) {
   return (
@@ -99,6 +108,22 @@ export function SelectionActions({
       >
         <Download className={styles.icon} />
         Download zip
+      </Button>
+      {/* The pair that narrow what is on screen (#504), from opposite ends:
+          Focus shows only these, Hide removes only these. Neither destroys
+          anything, which is why they sit among the ordinary verbs and not
+          beside Trash.
+
+          Focus first, because it is the one that turned out to be the real
+          gesture -- wanting to look at two images rather than to get rid of
+          eight. */}
+      <Button variant="secondary" size="sm" disabled={busy} onClick={onFocus}>
+        <ScanSearch className={styles.icon} />
+        Focus
+      </Button>
+      <Button variant="secondary" size="sm" disabled={busy} onClick={onHide}>
+        <EyeOff className={styles.icon} />
+        {`Hide ${count}`}
       </Button>
       {/* Not `danger`, and not "Delete": this moves rows to Trash, where they
           sit until you empty it. Red belongs to the one verb that cannot be
