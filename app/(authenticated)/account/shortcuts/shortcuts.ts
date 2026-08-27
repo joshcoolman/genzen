@@ -47,7 +47,7 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       {
         keys: '⌘-hover a card’s corner icon',
         what: 'It becomes Trash',
-        note: 'The destructive one takes a modifier on purpose — the corner used to be Trash outright, which made destroying work the easiest way to tidy a group. The selection drawer keeps a plain Trash button for the deliberate case.',
+        note: 'The destructive one takes a modifier on purpose — the corner used to be Trash outright, which made destroying work the easiest way to tidy a group. You never have to know this gesture: the card’s ••• menu has Move to trash, and the selection drawer keeps a plain Trash button for the deliberate case.',
       },
       { keys: 'Click a prompt', what: 'Copy the whole thing' },
       {
