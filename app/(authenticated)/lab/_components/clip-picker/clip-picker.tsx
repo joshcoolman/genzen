@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
 import { clipFacts } from '../clip-facts'
 import styles from './clip-picker.module.css'
-import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
+import type { VideoRecord } from '../../../video/_actions/generate-video.action'
 import {
   Button,
   Dialog,
@@ -38,6 +38,10 @@ const TILE = 132
  * So: this shape, in the lab, where it can be used before anyone decides
  * whether the app's picker should grow a video mode. If it proves out, the real
  * generalisation gets designed against two consumers instead of a guess.
+ *
+ * **Shared across lab pages, which is why it sits in `lab/_components/`.**
+ * Frames built it and Sequence wanted it whole (#497); a second copy under
+ * another page's `_components/` would be the same dialog drifting into two.
  *
  * **`max` defaults to 1 and the whole thing is written for more.** Selection is
  * a set and the caller takes an array, so picking several clips — to stitch, to

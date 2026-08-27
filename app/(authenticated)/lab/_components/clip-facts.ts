@@ -1,4 +1,4 @@
-import type { VideoRecord } from '../../../video/_actions/generate-video.action'
+import type { VideoRecord } from '../../video/_actions/generate-video.action'
 
 /**
  * What a clip says about itself in one line: the model, and how long it runs.

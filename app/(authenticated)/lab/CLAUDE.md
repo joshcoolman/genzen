@@ -1,10 +1,10 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Five pages
+Where a feature is worked on before it is part of the app (#424). Six pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
-none could be improved there. **Frames is the other kind: something the app has
-never been able to do at all**, built here first so it can be used for real
-before anyone decides where it belongs (#317).
+none could be improved there. **Frames and Sequence are the other kind: things
+the app has never been able to do at all**, built here first so they can be used
+for real before anyone decides where they belong (#317, #497).
 
 ## Why these three are here
 
@@ -41,10 +41,39 @@ both worth knowing before editing the page:
   not lab code leaking outward, and moving it under `lab/` would break the
   feature silently.
 
+## Sequence is not one of them either
+
+Clips made by Continue (#494) are meant to be watched as one thing and there was
+no way to watch them as one thing. Its question: **does the order actually cut
+together?** Nothing is generated and nothing is stored — pick clips, drag them
+into order, press play.
+
+- **Two `<video>` elements ping-ponging, not one swapping its `src`.** The
+  visible one plays while the next loads hidden; at `ended` they swap which is on
+  top. The join has to be free of a stutter, because the join is the thing being
+  judged — one element reloading blanks for a beat at every boundary and the page
+  would lie about the answer. The idle one is hidden with `opacity`, never
+  `display` or `visibility`, either of which lets a browser stop decoding.
+- **Its own Play/Pause, and no scrubber.** A `<video>`'s native bar knows only
+  its own clip, so it would read 0:00-0:06 of whichever one is showing and reset
+  at every join. A scrubber of our own is worse: one that spans clips needs a
+  global timeline, and a global timeline is what turns this into an editor.
+- **It looks like a timeline and is not one.** Equal-width tiles whatever the
+  clip's length; no ruler, no playhead, no trims. The question is arrangement,
+  not pacing. Proportional widths are one multiplication away —
+  `duration_seconds` is already on the row — and deliberately not taken.
+- **A correct order is visible before you press play.** In a Continue chain each
+  clip opens on the frame the one before it ended on, so the tiles rhyme; a tile
+  that does not resemble its left neighbour's ending is misplaced. That is why
+  they are first frames.
+- **The clip picker moved to `lab/_components/`** when this page wanted it whole.
+  Two lab pages share it; a second copy under another page's `_components/` is
+  the same dialog drifting into two.
+
 ## Frames is not one of them
 
 It answers a question about a mechanism rather than about prose, which is why it
-is the one page with no instruction file to name — `LabPage`'s `instructionFile`
+is one of the two pages with no instruction file to name (Sequence is the other) — `LabPage`'s `instructionFile`
 is optional for it, and printing an empty one would say there is a file to go
 and edit.
 
@@ -208,9 +237,9 @@ item.
   only that. It is still a layout, which is the property worth keeping: the nav
   is not remounted on navigation and the active item does not flicker.
   Collapsed persists, because a rail you re-collapse every visit is one you stop
-  collapsing. Collapsed shows each page's initial rather than an icon — five
-  experiments with no visual identity would need five invented glyphs, each of
-  which has to be learned, and an initial is already the name.
+  collapsing. Collapsed shows each page's initial rather than an icon —
+  experiments with no visual identity would each need an invented glyph that has
+  to be learned, and an initial is already the name.
   `lab-shell.module.css` is a copy of `account/`'s, not a shared module. Same
   shape — a nav column beside the content, one entry in the app's rail, every
   path under it lighting that one item. A stylesheet two sections import is a
@@ -230,8 +259,8 @@ item.
   screen reader get them first; explicit grid cells put results first for the
   eye.
 - **`/lab` redirects to `/lab/enhance`.** The rail entry has to point somewhere,
-  and an index listing the same five links the nav beside it already shows
-  would be a page whose only content is a duplicate of its own navigation.
+  and an index listing the same links the nav beside it already shows would be a
+  page whose only content is a duplicate of its own navigation.
 
 ## Who tests what
 
