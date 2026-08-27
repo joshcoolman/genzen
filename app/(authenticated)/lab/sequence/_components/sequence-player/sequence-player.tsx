@@ -8,6 +8,22 @@ import type { VideoRecord } from '../../../../video/_actions/generate-video.acti
 const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
 
 /**
+ * Empty an element so the stage is actually blank.
+ *
+ * Dropping `src` alone is not enough: the last decoded frame stays painted, so
+ * removing the final clip from the run left the video that had just been
+ * playing sitting on top of the "add clips" message. `load()` is what resets
+ * the element to nothing, and the pause stops a clip that is still running from
+ * carrying on inaudibly against a source that is already gone.
+ */
+function blank(el: HTMLVideoElement) {
+  if (!el.getAttribute('src')) return
+  el.pause()
+  el.removeAttribute('src')
+  el.load()
+}
+
+/**
  * One stage that plays a run of clips end to end.
  *
  * **Two `<video>` elements, ping-ponging.** The visible one plays while the
@@ -69,11 +85,6 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
   const clipsRef = useRef(clips)
   clipsRef.current = clips
 
-  /* Set when a restart needs the new active element to play once its source has
-     been assigned. Assigning `src` and calling `play()` in the same tick plays
-     whatever was loaded before it. */
-  const playWhenReady = useRef(false)
-
   /**
    * Keep each element pointed at the right clip: the active one at `index`, the
    * idle one at `index + 1`, ready to take over.
@@ -95,7 +106,7 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
       if (currentSrc && !current.src.endsWith(currentSrc)) {
         current.src = currentSrc
       } else if (!currentSrc) {
-        current.removeAttribute('src')
+        blank(current)
       }
     }
 
@@ -105,14 +116,8 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
         const nextSrc = srcFor(nextClip)
         if (!idle.src.endsWith(nextSrc)) idle.src = nextSrc
       } else {
-        idle.removeAttribute('src')
+        blank(idle)
       }
-    }
-
-    if (playWhenReady.current && current && currentSrc) {
-      playWhenReady.current = false
-      current.currentTime = 0
-      void current.play()
     }
   }, [index, active, clips])
 
@@ -135,23 +140,43 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
   )
 
   /**
-   * Back to the first clip, and play. Reaching the end never loops on its own.
+   * Back to clip 1 and play, from wherever the run had got to.
    *
-   * Nothing plays in here: the effect above assigns the sources first and then
-   * honours `playWhenReady`, because assigning `src` and calling `play()` in the
-   * same tick plays whatever was loaded before it.
+   * **Done here rather than by setting state and letting the effect do it.**
+   * That was the first version and it did nothing at all when the run was
+   * already on clip 1: `setIndex(0)` and `setActive(0)` are no-ops then, React
+   * bails out of the render, the effect never re-runs -- and the pause it had
+   * already done was the only thing that happened. Pressing Start over stopped
+   * the video.
+   *
+   * So the element is driven directly and the state follows. Element `a` always
+   * takes clip 1, whichever of the two happened to be playing. When it already
+   * holds that clip the seek is a `currentTime` of 0 and costs nothing; when it
+   * was holding the preloaded next clip it takes a new source, and `play()`
+   * waits for the data on its own -- no `currentTime` first, since a fresh
+   * source starts at zero anyway and seeking before metadata lands is ignored.
    */
   const restart = useCallback(() => {
-    const current = els[active].current
-    // The element that is about to stop being active keeps its buffer and would
-    // otherwise carry on playing underneath the new one.
-    current?.pause()
+    const first = a.current
+    if (clips.length === 0 || !first) return
+
+    // Both, not just the visible one: the other is mid-clip with its own buffer
+    // and would otherwise keep playing underneath.
+    b.current?.pause()
+    first.pause()
+
+    const src = srcFor(clips[0])
+    if (first.src.endsWith(src)) first.currentTime = 0
+    else first.src = src
+
     setAtEnd(false)
-    setIsPlaying(true)
-    playWhenReady.current = true
     setActive(0)
     setIndex(0)
-  }, [active])
+    setIsPlaying(true)
+    // Swallowed: reassigning `src` can abort an in-flight play with an
+    // AbortError that means nothing here.
+    void first.play().catch(() => {})
+  }, [clips])
 
   const toggle = useCallback(() => {
     if (clips.length === 0) return
