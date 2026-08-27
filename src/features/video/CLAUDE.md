@@ -14,8 +14,10 @@ about the form, the picker and the card; this folder holds only the catalog.
 - `models.test.ts` -- pins every endpoint id and param name against FAL's
   OpenAPI spec, which was read by hand. A wrong id fails at FAL, not here
 - `frame-capture.ts` -- `captureFrame` (a mounted player's current frame) and
-  `captureLastFrame` (a clip's end, from its URL). Browser-only: there is no
-  ffmpeg on the server and nothing there decodes video
+  `captureLastFrame` (a clip's end, from its URL). Browser-only, because the
+  frame being asked for is the one on screen. Since #499 the server can decode
+  video, which makes `captureLastFrame`'s imprecision a choice rather than a
+  limit -- see the note below
 - `server/stamp-frame.action.ts` -- writes `frame_source` into the frame's
   `generation_metadata`, so a still knows which clip it was cut from
 

@@ -12,10 +12,14 @@ export interface MediaBoxProps extends ImageBoxProps {
 /**
  * A square that shows a picture **or a clip's first frame**.
  *
- * The clip half is a `<video>` with no controls: there is no poster frame
- * anywhere in the app -- no ffmpeg on the server, so `thumbnail_path` is NULL
- * on every clip -- and an mp4 handed to an `<img>` lands on the broken-file
- * fallback, which makes every clip in a list look identical.
+ * The clip half is a `<video>` with no controls: an mp4 handed to an `<img>`
+ * lands on the broken-file fallback, which makes every clip in a list look
+ * identical.
+ *
+ * **Clips have had a real `thumbnail_path` since #499** -- ingest extracts
+ * frame one -- and nothing here reads it yet. Switching this to an `<img>` on
+ * `imageUrl(id, 'thumb')` is #500, and it has to keep this path for clips made
+ * before that landed, which have no poster and were never backfilled.
  *
  * **This exists because the decision had been made three times** (#398): the
  * Video route's card, Trash's row, and then Activity. It is a sibling of

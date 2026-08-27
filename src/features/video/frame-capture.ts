@@ -1,8 +1,12 @@
 /**
  * Pulling a still out of a clip, in the browser.
  *
- * There is no ffmpeg on the server and nothing there can decode video, so the
- * extraction has to happen where the frame is already decoded. `toBlob` is only
+ * The frame being asked for is the one on screen -- the player's current
+ * position, which only the browser knows -- so the extraction happens where it
+ * is already decoded. Since #499 the server can decode video too, which makes
+ * `captureLastFrame`'s "near the end, not provably the last sample" a choice
+ * rather than a limit; an exact final frame is now buildable server-side if
+ * anything asks for one. `toBlob` is only
  * allowed because clips are served from `/img/[id]`, our own origin, so the
  * canvas is not tainted -- a clip served from FAL's URL would throw instead.
  * Both consumers today play from `/img/[id]`; anything reaching for these with

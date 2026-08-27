@@ -81,13 +81,16 @@ Its question: **does seeking land on the frame you stopped on?** A `<video>` may
 seek to the nearest keyframe, and whether that is good enough decides whether
 anything more precise is worth building. Deliberately unanswered up front — it is
 the kind of question the lab exists to settle by use rather than by argument.
+**Since #499 there is something more precise to build**: ffmpeg is in the app and
+can be asked for an exact frame. That does not answer the question, it just means
+a "no" now has somewhere to go.
 
 - **The capture happens in the browser, on a canvas, and the mechanism is no
   longer this page's** (#494). `captureFrame` and the stamp action moved to
   `src/features/video/` when Video's Continue wanted the same thing — this page
-  imports them like any other app module, which is the allowed direction. There
-  is no ffmpeg on the server and nothing there can decode video, so it has to
-  happen where the frame already is. `toBlob` is only allowed because clips come
+  imports them like any other app module, which is the allowed direction. The
+  frame wanted is the one on screen — wherever the player was scrubbed to — so
+  it has to happen where that frame already is. `toBlob` is only allowed because clips come
   from `/img/[id]`, our own origin, so the canvas is not tainted — a clip served
   from FAL's URL would throw. `videoWidth`/`videoHeight` _is_ the clip's aspect,
   so nothing computes one.

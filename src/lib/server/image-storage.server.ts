@@ -6,6 +6,10 @@ interface StoredAsset {
   fileName: string
   fileHash: string
   fileSize: number
+  // The bytes that were just uploaded, handed back so a caller that needs to
+  // read the file does not have to fetch it out of the bucket again (#499).
+  // A clip is 20-30MB and the poster frame is wanted immediately.
+  bytes: Uint8Array
 }
 
 /**
@@ -40,7 +44,7 @@ async function downloadAndStore(
 
   await createImageStorage().upload(storagePath, bytes, { contentType })
 
-  return { storagePath, fileName, fileHash, fileSize: bytes.length }
+  return { storagePath, fileName, fileHash, fileSize: bytes.length, bytes }
 }
 
 export async function downloadAndStoreImage(
