@@ -3,7 +3,7 @@
 import { Camera } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import styles from './screenshot-probe.module.css'
-import type {CaptureTarget, CapturedView} from '#/lib/capture-view';
+import type { CaptureTarget, CapturedView } from '#/lib/capture-view'
 import {
   Button,
   Dialog,
@@ -14,11 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '#/components'
-import {
-  
-  
-  captureView
-} from '#/lib/capture-view'
+import { captureView } from '#/lib/capture-view'
 
 /**
  * A throwaway probe for one question: **can the app draw a picture of itself
@@ -44,7 +40,16 @@ import {
  * the page, and closing it for a frame first still left the two pictures
  * showing two different moments.
  */
-export function ScreenshotProbe({ className }: { className?: string }) {
+export function ScreenshotProbe({
+  className,
+  iconClassName,
+}: {
+  /** The rail's item class. */
+  className?: string
+  /** The rail's icon class -- passed rather than redeclared, so the camera is
+      sized by the same rule as every other icon beside it and cannot drift. */
+  iconClassName?: string
+}) {
   const [run, setRun] = useState<CapturedView | null>(null)
   const [target, setTarget] = useState<CaptureTarget>('viewport')
   const [busy, setBusy] = useState(false)
@@ -83,7 +88,7 @@ export function ScreenshotProbe({ className }: { className?: string }) {
           disabled={busy}
           className={className}
         >
-          <Camera className={styles.icon} />
+          <Camera className={iconClassName} />
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={8}>
           Screenshot probe

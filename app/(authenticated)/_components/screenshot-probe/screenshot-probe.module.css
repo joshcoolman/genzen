@@ -1,11 +1,6 @@
-/* The trigger takes the rail's own item class from its parent, so there is no
-   size, colour or hover state here -- a second set would be the rail's styling
-   drifting into two places. */
-
-.icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
+/* The trigger takes the rail's own item and icon classes from its parent, so
+   there is no size, colour or hover state here -- a second set would be the
+   rail's styling drifting into two places. */
 
 .body {
   display: flex;

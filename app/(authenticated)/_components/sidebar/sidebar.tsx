@@ -66,11 +66,6 @@ export function Sidebar({ className }: { className?: string }) {
               </div>
             )
           })}
-          {/* Spike: can the app draw a picture of itself worth sending to a
-              model? In the rail because the question is about whichever route
-              you are standing on, and the way to answer it is to walk around
-              the app pressing this. Saves nothing; deletes in one commit. */}
-          <ScreenshotProbe className={styles.item} />
           <div className={styles.divider} />
           {[accountItem].map((item) => (
             <Tooltip key={item.id}>
@@ -103,6 +98,18 @@ export function Sidebar({ className }: { className?: string }) {
           </Tooltip>
           <ConfirmDialog {...dialogProps} />
         </nav>
+        {/* Spike: can the app draw a picture of itself worth sending to a
+            model? At the foot of the rail rather than among the nav items --
+            it goes nowhere, and the way to answer the question is to walk the
+            app pressing it, which wants it out from under the eye rather than
+            in the run of places you are choosing between. Saves nothing;
+            deletes in one commit. */}
+        <div className={styles.foot}>
+          <ScreenshotProbe
+            className={styles.item}
+            iconClassName={styles.icon}
+          />
+        </div>
       </TooltipProvider>
     </aside>
   )
