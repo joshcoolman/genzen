@@ -1,6 +1,12 @@
 'use client'
 
-import { FolderInput, MoreHorizontal, Pencil, Unlink } from 'lucide-react'
+import {
+  FolderInput,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Unlink,
+} from 'lucide-react'
 import styles from './group-card.module.css'
 import type { ImageGroupSummary } from '../../_hooks/use-groups'
 import {
@@ -33,6 +39,9 @@ interface GroupCardProps {
    *  card does not know about the other groups and does not need to. */
   onMove?: (group: ImageGroupSummary) => void
   onDissolve: (group: ImageGroupSummary) => void
+  /** Trash the group and every picture in it (#431 reversed deliberately --
+   *  see the note on the menu below). Absent means the item is not offered. */
+  onTrash?: (group: ImageGroupSummary) => void
   /** The strip is a toggle: expanded, it keeps its five columns and grows down
    *  through every member (#352). Absent for an empty group -- there is nothing
    *  to disclose. */
@@ -73,6 +82,7 @@ export function GroupCard({
   onRename,
   onMove,
   onDissolve,
+  onTrash,
   onToggleMembers,
   expanded = false,
   members,
@@ -174,6 +184,38 @@ export function GroupCard({
           <Unlink />
           Ungroup
         </DropdownMenuItem>
+        {/* **The destructive one, and it is here on purpose now.** #431 pulled
+            it off this card so the click that bins a whole group was not
+            available from the view that shows least about what it holds, and
+            put it in the toolbar inside the group. It is in both places as of
+            this change: reaching it meant opening the group first, which is
+            three steps to bin something you have already decided about.
+
+            What keeps that safe is the confirm, which names the group and
+            counts the pictures -- "Autumn and its 41 images go to Trash" -- so
+            the number you are agreeing to is on screen even when the contents
+            are not. Last in the menu, after the two that keep the pictures.
+
+            Not red: the images go to Trash and come back from it. Red belongs
+            to Delete Forever, the one verb that cannot be undone. It warms on
+            hover, the same way the toolbar's does.
+
+            **"Move to trash" here, "Trash group" in the toolbar inside the
+            group, and the difference is not sloppiness.** Name the target only
+            where it is ambiguous. On this card you are pointing at the group
+            -- the badge on the tile already says "Image group" -- so repeating
+            it is a word that carries nothing. Inside the group the toolbar
+            sits next to verbs that act on selected *images*, and there "Trash"
+            alone would not say which thing goes. */}
+        {onTrash && (
+          <DropdownMenuItem
+            className={styles.destructive}
+            onClick={() => onTrash(group)}
+          >
+            <Trash2 />
+            Move to trash
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -194,8 +236,9 @@ export function GroupCard({
          in #431: it was the same icon in the same place an image card carries
          one, in a grid that mixes the two, so the click that bins a whole
          group was available from the one view that shows least about what is
-         in it. It lives in the toolbar inside the group now. The menu's three
-         verbs -- Rename, Move, Ungroup -- destroy nothing.
+         in it. It lives in the toolbar inside the group -- and, since this
+         change, in the menu below as well, guarded by the confirm rather than
+         by being hard to reach.
 
          The card is also legible as a group at a glance for it: one overlay
          icon here, two on an image. */

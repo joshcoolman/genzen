@@ -169,3 +169,13 @@ button.swatches:hover .swatchEmpty {
     opacity: 1;
   }
 }
+
+/* Trashing a group is reversible -- the pictures sit in Trash until it is
+   emptied -- so this is not red at rest. Red is Delete Forever's, the one verb
+   that cannot be undone. It warms on hover exactly as the in-group toolbar's
+   own trash does, so the two entry points read as one action. */
+.destructive:hover,
+.destructive[data-highlighted] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}

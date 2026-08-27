@@ -88,8 +88,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
               ? () => setGroupFlow({ kind: 'download', group: activeGroup })
               : undefined
           }
-          /* Only inside a group, which is the whole point of #431: you are
-             looking at the contents when you press it. */
+          /* Still here, where you are looking at the contents when you press
+             it. No longer the only way in: the group card's menu offers it
+             too, guarded by the same confirm. */
           onTrashGroup={
             activeGroup
               ? () =>
@@ -157,6 +158,12 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           }
           onDissolveGroup={(group) =>
             setGroupFlow({ kind: 'confirm-dissolve', group })
+          }
+          /* The same confirm the in-group toolbar opens, on the same flow --
+             it names the group and counts the pictures, so it reads correctly
+             from a card that shows neither. */
+          onTrashGroup={(group) =>
+            setGroupFlow({ kind: 'confirm-trash', group })
           }
           onAddToGroup={(img) => startAddToGroup([img.id])}
           onRemoveFromGroup={
