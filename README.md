@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-27 — Move to trash is in an image's ••• menu now, not only behind Cmd on the corner icon — the menu is where people look, and the shortcuts page says so (#510)
 - 2026-08-27 — Trash a group from its card's menu instead of only from inside it, with the confirm naming the group and counting its images (#509)
 - 2026-08-27 — Narrow the library picker to one group: source stopped narrowing anything once everything is AI Generated, so the dialog gets a group dropdown (#508)
 - 2026-08-27 — Hide images instead of trashing them: the card's corner icon hides (Cmd makes it Trash), a bar above the grid says how many and opens a tray to bring them back one at a time, and Focus shows only what you picked (#504)
 - 2026-08-27 — A screenshot probe in the sidebar rail: the app draws a picture of itself, viewport or content, so a model can be shown what you are looking at rather than told about it (#506)
 - 2026-08-27 — ffmpeg is in the app, and a generated clip gets a real poster frame at ingest, plus its real dimensions read off that frame (#499)
-- 2026-08-26 — Sequence, a lab page: pick clips, drag them into order, watch the run back to back to see whether it actually cuts together (#497)
 
 **Up next**
 
