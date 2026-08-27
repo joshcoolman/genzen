@@ -4,7 +4,6 @@ import {
   CheckCircle2,
   Clapperboard,
   Download,
-  Eye,
   EyeOff,
   FolderMinus,
   FolderPlus,
@@ -37,8 +36,6 @@ interface ImageCardProps {
   /** Take it out of the grid without destroying it (#504). When set, this is
    *  what the corner icon does, and Trash moves behind Cmd. */
   onHide?: (img: SavedAiImage) => void
-  /** Put a hidden one back. Set only while hidden rows are being shown. */
-  onUnhide?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   /** Take this still to /video as the first frame (#305). */
   onAnimate?: (img: SavedAiImage) => void
@@ -83,7 +80,6 @@ export function ImageCard({
   showInfo = true,
   onDelete,
   onHide,
-  onUnhide,
   onDownload,
   onAnimate,
   onOpen,
@@ -151,22 +147,17 @@ export function ImageCard({
 
   // The corner icon (#504). Hide by default, Trash under Cmd -- see
   // `CornerAction`. Without `onHide` it is the plain Trash it always was.
-  const cornerAction = onUnhide ? (
-    <ExpandableIconButton
-      icon={<Eye className={styles.actionIcon} />}
-      label="Unhide"
-      onClick={() => onUnhide(img)}
-    />
-  ) : onHide && onDelete ? (
-    <CornerAction img={img} onHide={onHide} onDelete={onDelete} />
-  ) : onDelete ? (
-    <ExpandableIconButton
-      icon={<Trash2 className={styles.actionIcon} />}
-      label="Delete"
-      variant="destructive"
-      onClick={() => onDelete(img)}
-    />
-  ) : undefined
+  const cornerAction =
+    onHide && onDelete ? (
+      <CornerAction img={img} onHide={onHide} onDelete={onDelete} />
+    ) : onDelete ? (
+      <ExpandableIconButton
+        icon={<Trash2 className={styles.actionIcon} />}
+        label="Delete"
+        variant="destructive"
+        onClick={() => onDelete(img)}
+      />
+    ) : undefined
 
   // An upload has no prompt, so its caption block was empty and its badge
   // carried the filename -- a card with a name in the corner and a blank grey

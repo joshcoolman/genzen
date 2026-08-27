@@ -23,13 +23,13 @@ function image(id: string, hidden: boolean): SavedAiImage {
  */
 describe('isVisible', () => {
   it('draws everything when nothing is hidden or focused', () => {
-    expect(isVisible(image('a', false), null, false)).toBe(true)
+    expect(isVisible(image('a', false), null)).toBe(true)
   })
 
-  it('withholds a hidden image, and shows it again on the toggle', () => {
-    const hidden = image('a', true)
-    expect(isVisible(hidden, null, false)).toBe(false)
-    expect(isVisible(hidden, null, true)).toBe(true)
+  it('withholds a hidden image', () => {
+    // There is no peek: the only way back is Show, which clears `hidden_at`
+    // on every hidden row, so a hidden image is never drawn while it is one.
+    expect(isVisible(image('a', true), null)).toBe(false)
   })
 
   it('lets focus override hidden rather than intersecting with it', () => {
@@ -37,7 +37,7 @@ describe('isVisible', () => {
     // they had just selected, leaving the strip's count disagreeing with the
     // grid -- and nothing on screen would say why.
     const focus = new Set(['a'])
-    expect(isVisible(image('a', true), focus, false)).toBe(true)
-    expect(isVisible(image('b', false), focus, false)).toBe(false)
+    expect(isVisible(image('a', true), focus)).toBe(true)
+    expect(isVisible(image('b', false), focus)).toBe(false)
   })
 })

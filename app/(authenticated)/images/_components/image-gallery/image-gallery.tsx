@@ -49,9 +49,6 @@ interface ImageGalleryProps {
   onDelete: (img: SavedAiImage) => void
   /** #504. Passed straight through to the card's corner icon. */
   onHide: (img: SavedAiImage) => void
-  /** Set only while hidden rows are being shown, which is what turns the
-   *  corner icon into an Unhide. */
-  onUnhide?: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   onAnimate?: (img: SavedAiImage) => void
@@ -97,7 +94,6 @@ export function ImageGallery({
   thumbZoom = 1,
   onDelete,
   onHide,
-  onUnhide,
   onRetry,
   onDownload,
   onAnimate,
@@ -246,7 +242,6 @@ export function ImageGallery({
                 img={img}
                 imageUrl={imageUrls[img.id]}
                 onHide={onHide}
-                onUnhide={onUnhide}
                 objectFit="contain"
                 showInfo={showInfo}
                 onDelete={onDelete}

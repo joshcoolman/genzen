@@ -119,13 +119,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           thumbZoom={prefs.thumbZoom}
           onDelete={gallery.deleteImage}
           onHide={(img) => void visibility.hide([img.id])}
-          /* Only while hidden rows are on screen: that is the one state in
-             which an Unhide has a card to sit on. */
-          onUnhide={
-            visibility.showHidden
-              ? (img) => void visibility.unhide([img.id])
-              : undefined
-          }
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onAnimate={animate}
@@ -173,8 +166,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             eye arrives here after running out of pictures (#504). */}
         <VisibilityStrip
           hiddenCount={visibility.hiddenCount}
-          showHidden={visibility.showHidden}
-          onToggleHidden={visibility.setShowHidden}
+          onShowAll={() => void visibility.showAll()}
           focusCount={visibility.focusIds?.size ?? null}
           onClearFocus={visibility.clearFocus}
         />

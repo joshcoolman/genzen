@@ -42,7 +42,7 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       {
         keys: 'Click a card’s corner icon',
         what: 'Hide it',
-        note: 'It leaves the grid and stays in its group, still yours. The strip under the grid says how many are hidden and puts them back.',
+        note: 'It leaves the grid and stays in its group, still yours. The strip under the grid says how many are hidden; Show puts all of them back.',
       },
       {
         keys: '⌘-hover a card’s corner icon',
