@@ -3,6 +3,7 @@ import {
   downloadAndStoreVideo,
 } from './image-storage.server'
 import { generateThumbnailInBackground } from './generate-thumbnail.server'
+import { extractVideoPoster } from './video-poster.server'
 import { failureTitle } from './create-pending-generation.server'
 import { first, jsonb, sql } from './db.server'
 import type { FalErrorBlob } from './fal-error.server'
@@ -158,12 +159,16 @@ export async function processImageResult(
  *
  * A separate function rather than a branch inside that one: the result shape
  * differs (`{ video: { url } }` against `{ images: [{ url }] }`), and so does
- * everything downstream -- no thumbnail, no dimensions, and the FAL URL kept in
- * metadata as the degradation path when a later ingest fails.
+ * everything downstream -- the poster comes out of a container rather than off
+ * a still, and the FAL URL is kept in metadata as the degradation path when a
+ * later ingest fails.
  *
- * `width`, `height` and `thumbnail_path` stay NULL: there is no ffmpeg on the
- * server, so nothing here can read a frame. The card uses
- * `<video preload="metadata">` and lets the browser paint frame one.
+ * Frame one becomes `thumbnail_path` and the file's own dimensions and duration
+ * are read in the same pass (#499). Inline rather than fire-and-forget like the
+ * image thumbnail: the bytes are already in hand, it is a few hundred
+ * milliseconds against a generation that took 30-300 seconds, and it lands
+ * everything in one write. A clip whose poster fails keeps NULL columns and the
+ * `<video preload="metadata">` tile it had before.
  */
 export async function processVideoResult(
   recordId: string,
@@ -175,8 +180,10 @@ export async function processVideoResult(
     throw new Error('No video URL in FAL result')
   }
 
-  const { storagePath, fileName, fileHash, fileSize } =
+  const { storagePath, fileName, fileHash, fileSize, bytes } =
     await downloadAndStoreVideo(userId, videoUrl)
+
+  const poster = await extractVideoPoster(userId, storagePath, bytes)
 
   const record = first(
     await sql<Array<{ generation_metadata: Record<string, unknown> | null }>>`
@@ -215,6 +222,9 @@ export async function processVideoResult(
       update user_images
       set status = 'completed',
           storage_path = ${storagePath},
+          thumbnail_path = ${poster?.thumbnailPath ?? null},
+          width = ${poster?.width ?? null},
+          height = ${poster?.height ?? null},
           file_name = ${fileName},
           file_hash = ${fileHash},
           file_size = ${fileSize},
@@ -229,6 +239,12 @@ export async function processVideoResult(
               // playable link beats a dead record. Not the source of truth --
               // `storage_path` is, and `/img/[id]` is the only URL the UI uses.
               fal_video_url: videoUrl,
+              // Beside `duration_seconds`, never over it: that one is what was
+              // asked for at submit time and what the estimate was priced on.
+              // This is what arrived.
+              ...(poster?.durationSeconds != null && {
+                measured_duration_seconds: poster.durationSeconds,
+              }),
               timings: falResultData.timings,
               completed_at: new Date().toISOString(),
               ...(providerCostCents != null && {
@@ -239,7 +255,11 @@ export async function processVideoResult(
       where id = ${recordId} and user_id = ${userId}
     `
   } catch (err) {
-    await createImageStorage().remove([storagePath])
+    // The poster goes with the clip -- otherwise the row is gone and a stray
+    // thumbnail sits in the bucket with nothing referencing it.
+    await createImageStorage().remove(
+      poster ? [storagePath, poster.thumbnailPath] : [storagePath],
+    )
     throw new Error(
       `Update failed: ${err instanceof Error ? err.message : String(err)}`,
     )

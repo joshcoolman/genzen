@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { ScreenshotProbe } from '../screenshot-probe/screenshot-probe'
 import styles from './sidebar.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
@@ -97,6 +98,18 @@ export function Sidebar({ className }: { className?: string }) {
           </Tooltip>
           <ConfirmDialog {...dialogProps} />
         </nav>
+        {/* Spike: can the app draw a picture of itself worth sending to a
+            model? At the foot of the rail rather than among the nav items --
+            it goes nowhere, and the way to answer the question is to walk the
+            app pressing it, which wants it out from under the eye rather than
+            in the run of places you are choosing between. Saves nothing;
+            deletes in one commit. */}
+        <div className={styles.foot}>
+          <ScreenshotProbe
+            className={styles.item}
+            iconClassName={styles.icon}
+          />
+        </div>
       </TooltipProvider>
     </aside>
   )

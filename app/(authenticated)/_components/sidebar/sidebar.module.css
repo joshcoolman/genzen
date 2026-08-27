@@ -14,7 +14,11 @@
    thing to fix first -- see `lab/_components/lab-shell/`, which does it by
    narrowing a column in the flow rather than a fixed overlay. */
 
+/* `display` was missing under the `flex-direction` below, which `.nav`'s
+   `flex: 1` had been quietly relying on. Declared now that something sits
+   below the nav and has to be pushed to the foot by it. */
 .root {
+  display: flex;
   position: fixed;
   top: 0;
   left: 0;
@@ -37,6 +41,13 @@
    divider instead and the last two rail items sit 4px too high. */
 .nav > :where(*:not(:last-child)) {
   margin-bottom: var(--space-4);
+}
+
+/* Outside `.nav`, so the nav's `flex: 1` pushes it to the bottom of the rail
+   and the run of `margin-bottom` between nav items does not reach it. */
+.foot {
+  padding: var(--space-16);
+  padding-top: 0;
 }
 
 .divider {

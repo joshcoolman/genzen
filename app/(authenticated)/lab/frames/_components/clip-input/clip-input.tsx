@@ -18,9 +18,9 @@ const TILE = 56
  * **`RefImageStrip`'s geometry with a clip in the slot** — the same 3.5rem
  * tile, the same dashed add square, the same n/max counter at the end, because
  * choosing a clip should feel like choosing a reference image. It is not that
- * component: the strip renders an `<img>`, and there is no poster frame
- * anywhere in the app for a clip to put in one (no ffmpeg on the server), so
- * the filled slot has to be a `MediaBox`.
+ * component: the strip renders an `<img>`, and no surface reads a clip's
+ * poster frame yet -- ingest has written one since #499, but switching the
+ * tiles over is #500 -- so the filled slot has to be a `MediaBox`.
  *
  * A scrolling row of every clip was the first version of this, and it is fine
  * at eleven clips and useless at five hundred. A dialog is the thing that

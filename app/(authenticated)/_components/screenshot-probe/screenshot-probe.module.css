@@ -1,0 +1,28 @@
+/* The trigger takes the rail's own item and icon classes from its parent, so
+   there is no size, colour or hover state here -- a second set would be the
+   rail's styling drifting into two places. */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.facts {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}

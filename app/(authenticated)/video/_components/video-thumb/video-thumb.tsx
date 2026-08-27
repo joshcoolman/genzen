@@ -10,7 +10,7 @@ import {
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { firstFrameSrc } from '#/components'
-import { formatCost } from '#/features/video/models'
+import { clipDurationSeconds, formatCost } from '#/features/video/models'
 
 function costOf(video: VideoRecord): string | null {
   const cents = (video.generation_metadata ?? {}).provider_cost_cents
@@ -18,19 +18,22 @@ function costOf(video: VideoRecord): string | null {
 }
 
 function durationOf(video: VideoRecord): string | null {
-  const seconds = (video.generation_metadata ?? {}).duration_seconds
-  return typeof seconds === 'number' ? `${seconds}s` : null
+  const seconds = clipDurationSeconds(video)
+  return seconds != null ? `${seconds}s` : null
 }
 
 /**
  * One clip: the player, the model on it, the prompt under it.
  *
  * **Its own component rather than `Thumbnail`, and the difference is the
- * `<video>`.** A clip is not a picture with a play button -- it has a duration,
- * native controls, and no poster frame anywhere in the app (no ffmpeg on the
- * server), so `preload="metadata"` painting frame one is what stands in for
- * one. Bending `Thumbnail` around that would put a media element inside the
- * primitive every still in the app renders through, to serve one route.
+ * `<video>`.** A clip is not a picture with a play button -- it has a duration
+ * and native controls, so the element itself paints frame one. Bending
+ * `Thumbnail` around that would put a media element inside the primitive every
+ * still in the app renders through, to serve one route.
+ *
+ * Ingest has written a real poster frame for every clip since #499 and nothing
+ * here reads it; #500 is the switchover, and it has to keep this path for the
+ * clips made before it that were never backfilled.
  *
  * **What it does borrow is the type scale**, deliberately: the model badge is
  * `--text-3xs` in the picture's bottom-right corner exactly as `Thumbnail`

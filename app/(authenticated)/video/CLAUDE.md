@@ -138,13 +138,21 @@ source images; `use-view.ts` owns everything after the first paint.
   in `src/lib/http-range.ts` is the parser, and it is unit-tested -- a wrong
   range stalls the player with no error, which is worse than serving the whole
   object.
-- **No poster frame, deliberately.** There is no ffmpeg on the server, so
-  nothing can extract one; `thumbnail_path` stays NULL and the browser paints
-  frame one instead. That takes `firstFrameSrc` from `#/components` (`#t=0.001`,
-  which makes the element seek), not `preload="metadata"` on its own -- and it
-  works only because `/img/[id]` answers range requests. Every clip surface goes
-  through the same helper (#398), so a card, a row and a thumbnail cannot
-  disagree about whether a clip has a picture.
+- **A clip has a real poster frame, and the tiles do not use it yet.** Since
+  #499 ingest runs ffmpeg over the bytes it just stored: frame one becomes
+  `thumbnail_path` like any image thumbnail, and `width`, `height` and
+  `generation_metadata.measured_duration_seconds` are read off the file in the
+  same pass. So `/img/[id]?v=thumb` serves a ~15KB WebP for a clip exactly as it
+  does for a still.
+  **Every clip surface is still a `<video>`** -- the switchover is #500, kept
+  separate so the poster existed before anything was deleted for it. That takes
+  `firstFrameSrc` from `#/components` (`#t=0.001`, which makes the element
+  seek), not `preload="metadata"` on its own, and it works only because
+  `/img/[id]` answers range requests. Every clip surface goes through the same
+  helper (#398), so a card, a row and a thumbnail cannot disagree about whether
+  a clip has a picture.
+  **Clips made before #499 have no poster** -- no backfill was run -- so
+  whatever #500 builds needs the `<video>` path as a fallback, not as dead code.
 - **Delete is the gallery's, unchanged.** `deleteGalleryImage` already decides
   between the three outcomes this route wants -- a generating clip is cancelled
   at FAL first, a generating or failed row goes outright because Trash has

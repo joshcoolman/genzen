@@ -22,9 +22,10 @@ read after that.
   source it can destroy. Clips were the case that made the gap real: Video
   gained a delete, and a trashed clip was invisible in the one place that could
   restore it while Empty Trash still swept it
-- **A clip's row renders `MediaBox`, not an `ImageBox`.** There is no poster
-  frame anywhere in the app (no ffmpeg on the server), so an mp4 in an `<img>`
-  is the broken-file fallback and every clip in the bin looks the same —
+- **A clip's row renders `MediaBox`, not an `ImageBox`.** An mp4 in an `<img>`
+  is the broken-file fallback, so every clip in the bin would look the same —
+  (clips have had a real poster frame since #499, but no surface reads it yet;
+  that is #500) —
   and a clip's title is its model, so several read identically. The frame comes
   from `firstFrameSrc()`, which appends `#t=0.001` to make the element seek;
   `preload="metadata"` on its own paints nothing, which was believed for a while
