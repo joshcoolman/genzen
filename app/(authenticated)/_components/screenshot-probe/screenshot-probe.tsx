@@ -16,11 +16,19 @@ import {
  * A throwaway probe for one question: **can the app draw a picture of itself
  * that is worth sending to a model?**
  *
- * Nothing here is saved. The blob lives in an object URL for as long as the
- * dialog is open and is revoked when it closes. No row, no bucket, no library
+ * Nothing here is saved. The blobs live in object URLs for as long as the
+ * dialog is open and are revoked when it closes. No row, no bucket, no library
  * entry -- the tail of that already exists (`saveFileToLibrary`, see
  * `images/_hooks/use-uploads.ts`) and deliberately is not wired up, because
  * the thing being judged is the picture, not the plumbing.
+ *
+ * **Both framings are captured on the one press, and the dialog only toggles
+ * between them.** Capturing on demand from inside the open dialog was the
+ * first shape and it was wrong twice over: the dialog portals into
+ * `document.body`, so a `viewport` re-capture walked into its own backdrop and
+ * drew that instead of the page, and even with the dialog closed for the frame
+ * the two pictures were then of two different moments. One press, one moment,
+ * two crops of it.
  *
  * Viewport only, on purpose. Everything on screen is already rendered and
  * decoded, so the two problems that make full-page capture hard -- virtualised
@@ -32,39 +40,38 @@ import {
  * the same constraint Frames works under.
  */
 export function ScreenshotProbe() {
-  const [shot, setShot] = useState<Shot | null>(null)
+  const [run, setRun] = useState<Run | null>(null)
+  const [target, setTarget] = useState<Target>('viewport')
   const [busy, setBusy] = useState(false)
 
-  const capture = useCallback(async (target: Target) => {
+  const capture = useCallback(async () => {
     setBusy(true)
-    // The dialog has to be off screen first. It portals into `document.body`,
-    // so a re-capture taken while it is open walks straight into its own
-    // backdrop and modal and draws those instead of the page -- `viewport`
-    // came back blank, while `content` survived only because `<main>` sits
-    // behind the overlay at its own geometry, untouched.
-    //
-    // Closing and reopening rather than filtering the portal out: the portal
-    // is Base UI's to place, and a selector guessing at it is a silent failure
-    // the day that changes. A capture that photographs the wrong thing does
-    // not throw, it just looks wrong, which is the failure this whole probe
-    // exists to catch.
-    setShot(null)
-    await painted()
     try {
-      setShot(await grab(target))
+      const [viewport, content] = await Promise.all([
+        grab('viewport'),
+        grab('content'),
+      ])
+      setTarget('viewport')
+      setRun({ viewport, content })
     } catch (error) {
       console.error('[screenshot-probe]', error)
-      setShot(null)
+      setRun(null)
     } finally {
       setBusy(false)
     }
   }, [])
 
-  // The object URL outlives no dialog. Revoked on replacement and on close.
+  // The object URLs outlive no dialog. Revoked when the run is replaced or
+  // the dialog closes.
   useEffect(() => {
-    if (!shot) return
-    return () => URL.revokeObjectURL(shot.url)
-  }, [shot])
+    if (!run) return
+    return () => {
+      URL.revokeObjectURL(run.viewport.url)
+      URL.revokeObjectURL(run.content.url)
+    }
+  }, [run])
+
+  const shot = run?.[target]
 
   return (
     <>
@@ -72,7 +79,7 @@ export function ScreenshotProbe() {
         type="button"
         data-screenshot-probe
         className={styles.trigger}
-        onClick={() => capture('viewport')}
+        onClick={() => void capture()}
         disabled={busy}
         title="Screenshot probe"
         aria-label="Screenshot probe"
@@ -81,8 +88,8 @@ export function ScreenshotProbe() {
       </button>
 
       <Dialog
-        open={shot !== null}
-        onOpenChange={(open) => !open && setShot(null)}
+        open={run !== null}
+        onOpenChange={(open) => !open && setRun(null)}
       >
         <DialogContent size="wide">
           <DialogHeader>
@@ -90,8 +97,22 @@ export function ScreenshotProbe() {
           </DialogHeader>
           {shot && (
             <div className={styles.body}>
+              <div className={styles.actions}>
+                <Button
+                  variant={target === 'viewport' ? 'primary' : 'secondary'}
+                  onClick={() => setTarget('viewport')}
+                >
+                  Whole viewport
+                </Button>
+                <Button
+                  variant={target === 'content' ? 'primary' : 'secondary'}
+                  onClick={() => setTarget('content')}
+                >
+                  Content only
+                </Button>
+              </div>
               <p className={styles.facts}>
-                {shot.target} &middot; {shot.width}&times;{shot.height} &middot;{' '}
+                {shot.width}&times;{shot.height} &middot;{' '}
                 {Math.round(shot.bytes / 1024)} KB &middot; {shot.ms} ms
               </p>
               {/* A blob URL, not a library image -- next/image would want a
@@ -101,22 +122,6 @@ export function ScreenshotProbe() {
                 alt="Captured page"
                 className={styles.preview}
               />
-              <div className={styles.actions}>
-                <Button
-                  variant="secondary"
-                  onClick={() => capture('viewport')}
-                  disabled={busy}
-                >
-                  Whole viewport
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => capture('content')}
-                  disabled={busy}
-                >
-                  Content only
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>
@@ -125,22 +130,12 @@ export function ScreenshotProbe() {
   )
 }
 
-/**
- * Resolves once the browser has actually painted a frame. One rAF fires before
- * the coming paint, so the dialog would still be on screen for it; the second
- * is after. `setTimeout(0)` is not equivalent -- it can run before the frame.
- */
-function painted() {
-  return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
-}
-
 type Target = 'viewport' | 'content'
+
+type Run = Record<Target, Shot>
 
 interface Shot {
   url: string
-  target: Target
   width: number
   height: number
   bytes: number
@@ -191,10 +186,10 @@ async function grab(target: Target): Promise<Shot> {
     filter: (n: Node) =>
       !(n instanceof Element && n.hasAttribute('data-screenshot-probe')),
   })
+
   const bitmap = await createImageBitmap(blob)
   return {
     url: URL.createObjectURL(blob),
-    target,
     width: bitmap.width,
     height: bitmap.height,
     bytes: blob.size,
