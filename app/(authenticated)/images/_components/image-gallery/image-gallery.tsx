@@ -71,6 +71,8 @@ interface ImageGalleryProps {
   /** Undefined when there is nowhere to move to -- the card hides the item. */
   onMoveGroup?: (group: ImageGroupSummary) => void
   onDissolveGroup?: (group: ImageGroupSummary) => void
+  /** Trash a group from its card. Absent leaves the menu non-destructive. */
+  onTrashGroup?: (group: ImageGroupSummary) => void
   onAddToGroup?: (img: SavedAiImage) => void
   onRemoveFromGroup?: (img: SavedAiImage) => void
   onSetGroupCover?: (img: SavedAiImage) => void
@@ -110,6 +112,7 @@ export function ImageGallery({
   onRenameGroup,
   onMoveGroup,
   onDissolveGroup,
+  onTrashGroup,
   onAddToGroup,
   onRemoveFromGroup,
   onSetGroupCover,
@@ -200,6 +203,7 @@ export function ImageGallery({
                   onRename={onRenameGroup ?? (() => {})}
                   onMove={onMoveGroup}
                   onDissolve={onDissolveGroup ?? (() => {})}
+                  onTrash={onTrashGroup}
                   selectionActive={selectionActive}
                 />
               )

@@ -22,7 +22,7 @@ longer talks to the database.
   and name, for narrowing the shared picker to one. Deliberately not
   `listImageGroups()` in `images/_actions/`, which carries a cover, a preview
   strip and a live count for the Images grid and sits with the route owning
-  every group *write* -- four routes render the picker, so it may not reach
+  every group _write_ -- four routes render the picker, so it may not reach
   into one of them
 - `server/upload-image.action.ts` -- server action wrapper for image upload
 - `server/upload-image-internal.server.ts` -- core async implementation for the bucket upload, with magic-byte validation and user-scoped path enforcement
