@@ -18,6 +18,12 @@ longer talks to the database.
   page doubles the query. `useUserImages.create` delegates to it
 - `lib/filename-parser.ts` -- Converts filenames to title-case display names
 - `server/images.action.ts` -- list / create / update / soft-delete, user scoped by `resolveAuth()`
+- `server/image-groups.action.ts` -- `listImageGroupNames()`: every group's id
+  and name, for narrowing the shared picker to one. Deliberately not
+  `listImageGroups()` in `images/_actions/`, which carries a cover, a preview
+  strip and a live count for the Images grid and sits with the route owning
+  every group *write* -- four routes render the picker, so it may not reach
+  into one of them
 - `server/upload-image.action.ts` -- server action wrapper for image upload
 - `server/upload-image-internal.server.ts` -- core async implementation for the bucket upload, with magic-byte validation and user-scoped path enforcement
 - `server/remove-images.action.ts` -- Server function for deleting images from the bucket (batch, user-scoped)

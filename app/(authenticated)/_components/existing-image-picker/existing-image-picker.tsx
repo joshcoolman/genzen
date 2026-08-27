@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, Upload } from 'lucide-react'
+import { Check, ChevronDown, Upload } from 'lucide-react'
 import styles from './existing-image-picker.module.css'
 import type { CollectedImage, UserImage } from '#/features/user-images/types'
+import type { ImageGroupName } from '#/features/user-images/server/image-groups.action'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
+import { listImageGroupNames } from '#/features/user-images/server/image-groups.action'
 import { useAuth } from '#/lib/auth'
 import {
   Button,
@@ -13,12 +15,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   ImageGrid,
   Thumbnail,
   toast,
 } from '#/components'
 
 type SourceFilter = 'all' | 'upload' | 'ai_generated'
+
+/** A group's id, or null for every image whatever its group. */
+type GroupFilter = string | null
 
 interface ExistingImagePickerProps {
   open: boolean
@@ -65,6 +74,8 @@ export function ExistingImagePicker({
   const { user } = useAuth()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
+  const [groupFilter, setGroupFilter] = useState<GroupFilter>(null)
+  const [groups, setGroups] = useState<Array<ImageGroupName>>([])
   const [uploadingCount, setUploadingCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -72,6 +83,24 @@ export function ExistingImagePicker({
      single-pick picker, where the first file would confirm and close the
      dialog before the second finished. */
   const canUpload = Boolean(onRefresh) && !autoConfirm
+
+  /* Names are fetched here rather than passed in: four routes render this
+     dialog and none of them has a reason to know about groups. Re-read on
+     every open because a group can be created or renamed in Images while this
+     component stays mounted. Failure is silent -- the dropdown simply does not
+     appear, and the picker works exactly as it did before it existed. */
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    listImageGroupNames()
+      .then((rows) => {
+        if (!cancelled) setGroups(rows)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   // When picker opens with initialSelectedIds, pre-check them
   useEffect(() => {
@@ -92,10 +121,29 @@ export function ExistingImagePicker({
       sourceFilter === 'all'
         ? images
         : images.filter((img) => img.source === sourceFilter)
+    if (groupFilter !== null) {
+      result = result.filter((img) => img.group_id === groupFilter)
+    }
     if (excludeIds?.size)
       result = result.filter((img) => !excludeIds.has(img.id))
     return result
-  }, [images, sourceFilter, excludeIds])
+  }, [images, sourceFilter, groupFilter, excludeIds])
+
+  /* Only groups with something in this picker's list, because an option that
+     filters to an empty grid is a dead end you have to back out of. `images`
+     is already the caller's scoped list, so a picker that excludes videos
+     never offers a group of nothing but videos. */
+  const groupOptions = useMemo(() => {
+    const present = new Set(
+      images.map((img) => img.group_id).filter((id): id is string => !!id),
+    )
+    return { named: groups.filter((g) => present.has(g.id)) }
+  }, [images, groups])
+
+  const groupLabel =
+    groupFilter === null
+      ? 'All'
+      : (groups.find((g) => g.id === groupFilter)?.name ?? 'All')
 
   const alreadyCollectedImages = useMemo(
     () => filteredImages.filter((img) => effectiveCollectedIds.has(img.id)),
@@ -232,6 +280,41 @@ export function ExistingImagePicker({
               {btn.label}
             </button>
           ))}
+
+          {/* Only when there is a group to pick: a dropdown over a library
+              with no groups in it is a control that cannot do anything. A
+              dropdown rather than more pills because the count is unbounded --
+              three sources fit on a row, thirty groups do not.
+
+              It reads "All" and then the group names, the same word the source
+              pills use for the same idea. Two "All"s sit next to each other and
+              that is fine: they narrow different things, and the one that is
+              open tells you which. */}
+          {groupOptions.named.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={`${styles.filter} ${styles.groupTrigger} ${
+                  groupFilter !== null ? styles.filterSelected : ''
+                }`}
+              >
+                {groupLabel}
+                <ChevronDown className={styles.groupChevron} />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setGroupFilter(null)}>
+                  All
+                </DropdownMenuItem>
+                {groupOptions.named.map((g) => (
+                  <DropdownMenuItem
+                    key={g.id}
+                    onClick={() => setGroupFilter(g.id)}
+                  >
+                    {g.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Above the grid rather than in the footer, and opposite the
               filters: those three narrow what is already here, this brings
