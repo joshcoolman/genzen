@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pause, Play, RotateCcw } from 'lucide-react'
+import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
 import styles from './sequence-player.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 
@@ -28,6 +28,11 @@ const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
  * is deliberately no scrubber of our own either: one that spans clips needs a
  * global timeline, which is the line this page does not cross (#497).
  *
+ * **Sound is on by default and mutes both elements at once.** A run is one
+ * thing to watch, so a mute that applied to whichever element happened to be on
+ * top would come back at the next join. Autoplay policy is not in the way here:
+ * every play starts from a button, so a browser allows the audio.
+ *
  * **Start over is its own button, available whenever there is a run** -- not a
  * state the Play button falls into at the end. Rearranging and re-watching from
  * the top is the loop this page exists for, and having to reach the end (or
@@ -44,6 +49,17 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
   const [active, setActive] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [atEnd, setAtEnd] = useState(false)
+  const [muted, setMuted] = useState(false)
+
+  /* Set on the elements rather than through the `muted` attribute, which React
+     does not keep in sync with the property after the first render -- a known
+     gap, and the reason a `muted={...}` prop silently stops working. Both
+     elements, always, so the idle one is already right when it takes over. */
+  useEffect(() => {
+    for (const ref of [a, b]) {
+      if (ref.current) ref.current.muted = muted
+    }
+  }, [muted])
 
   /* Read inside the `ended` handler, which is bound to an element rather than
      re-created per render -- the handler must see the run as it is now, not as
@@ -208,6 +224,17 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
         >
           <RotateCcw size={14} />
           Start over
+        </button>
+        <button
+          type="button"
+          className={styles.transport}
+          onClick={() => setMuted((m) => !m)}
+          disabled={empty}
+          aria-pressed={muted}
+          aria-label={muted ? 'Unmute' : 'Mute'}
+        >
+          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          {muted ? 'Muted' : 'Sound'}
         </button>
         {/* Which clip of how many, and nothing about time. The count is the one
             fact a run has that a single clip does not. */}
