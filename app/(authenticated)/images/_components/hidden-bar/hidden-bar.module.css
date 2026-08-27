@@ -10,15 +10,15 @@
 .bar {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-4);
   width: 100%;
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-4) var(--space-8);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface-raised);
   color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-leading);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
   text-align: left;
 }
 
@@ -44,9 +44,27 @@
   color: var(--text);
 }
 
+/* The eye is the Show-all target, so it gets a hit area of its own rather
+   than being decoration beside the count. */
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  cursor: pointer;
+}
+
+.iconButtonOn {
+  background: var(--surface);
+  color: var(--accent);
+}
+
 .icon {
-  width: 1rem;
-  height: 1rem;
+  width: 0.875rem;
+  height: 0.875rem;
   flex-shrink: 0;
 }
 
@@ -55,8 +73,8 @@
 }
 
 .chevron {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: 0.75rem;
+  height: 0.75rem;
   flex-shrink: 0;
   transition: transform var(--duration-normal) var(--ease-in-out);
 }
@@ -65,25 +83,14 @@
   transform: rotate(180deg);
 }
 
-.action {
-  color: var(--text);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-.action:hover {
-  color: var(--accent);
-}
-
-/* The holding area. Deliberately not the grid's shape -- small, in a row that
-   wraps, so it reads as somewhere pictures are being kept rather than as more
-   of the wall. */
+/* The holding area. Small thumbs in a wrapping row rather than the grid's
+   shape, so it reads as somewhere pictures are being kept -- but at full
+   strength, because the point of opening it is to recognise one. */
 .tray {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-8);
-  padding: var(--space-12);
+  gap: var(--space-4);
+  padding: var(--space-8);
   border: 1px solid var(--border);
   border-top: none;
   border-bottom-left-radius: var(--radius-md);
@@ -94,48 +101,25 @@
 .thumb {
   position: relative;
   display: block;
-  width: 4rem;
-  height: 4rem;
+  width: 3.25rem;
+  height: 3.25rem;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
+  background: var(--bg);
   cursor: pointer;
 }
 
+.thumb:hover {
+  border-color: var(--accent);
+}
+
+/* `contain` on the dark square, the way the grid renders a thumbnail: a square
+   crop of a portrait picture is its middle band, and two portraits from one
+   prompt would crop to the same stripe. */
 .thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  /* Held back, not on show: the tray is a list of things that are not in the
-     grid, and full-strength thumbnails read as a second gallery. */
-  opacity: 0.55;
-  transition: opacity var(--duration-normal) var(--ease-in-out);
-}
-
-.thumb:hover img {
-  opacity: 1;
-}
-
-.thumbEmpty {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.thumbHint {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 2px 0;
-  background: var(--surface);
-  color: var(--text);
-  font-size: var(--text-2xs);
-  text-align: center;
-  opacity: 0;
-  transition: opacity var(--duration-normal) var(--ease-in-out);
-}
-
-.thumb:hover .thumbHint {
-  opacity: 1;
+  object-fit: contain;
 }

@@ -52,7 +52,7 @@ list once when the seed comes back full, so the grid is never short.
   holds every row, so the filter costs no round trip; a group's `count` is
   left alone, being a fact about the group rather than a description of the
   screen. **The bar above the grid is the feature, not the hiding**: hidden
-  state you cannot see is a slower kind of lost. It was a quiet rule *under*
+  state you cannot see is a slower kind of lost. It was a quiet rule _under_
   the grid for one build, which is the one place it cannot work -- you reach
   it after running out of pictures, which is when you have stopped looking.
   Toned, at the top, and absent entirely when there is nothing to say.

@@ -46,6 +46,7 @@ export function HiddenBar({
   onClearFocus,
 }: HiddenBarProps) {
   const [open, setOpen] = useState(false)
+  const [overIcon, setOverIcon] = useState(false)
 
   if (focusCount !== null) {
     // Focus is the louder statement and it replaces the count on purpose:
@@ -79,15 +80,19 @@ export function HiddenBar({
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <EyeOff className={styles.icon} />
-        <span className={styles.count}>{hidden.length} hidden</span>
-        <ChevronDown
-          className={cx(styles.chevron, open && styles.chevronOpen)}
-        />
+        {/* The icon *is* Show all. A link at the far end of the row was a
+            second control competing with the one thing the row does, so the
+            blunt undo moved onto the eye -- hovering it lights it and renames
+            the count, which is the whole explanation and costs no width. */}
         <span
-          className={styles.action}
+          className={cx(styles.iconButton, overIcon && styles.iconButtonOn)}
           role="button"
           tabIndex={0}
+          aria-label="Show all hidden images"
+          onMouseEnter={() => setOverIcon(true)}
+          onMouseLeave={() => setOverIcon(false)}
+          onFocus={() => setOverIcon(true)}
+          onBlur={() => setOverIcon(false)}
           onClick={(e) => {
             e.stopPropagation()
             onShowAll()
@@ -99,8 +104,14 @@ export function HiddenBar({
             onShowAll()
           }}
         >
-          Show
+          <EyeOff className={styles.icon} />
         </span>
+        <span className={styles.count}>
+          {overIcon ? 'Show all' : `${hidden.length} hidden`}
+        </span>
+        <ChevronDown
+          className={cx(styles.chevron, open && styles.chevronOpen)}
+        />
       </button>
 
       {open && (
@@ -116,15 +127,15 @@ export function HiddenBar({
               title={`Show ${img.title}`}
               onClick={() => onUnhide(img.id)}
             >
-              {imageUrls[img.id] ? (
-                /* A plain `img`: these are 4rem thumbs of a URL the gallery
+              {imageUrls[img.id] && (
+                /* A plain `img`: these are small thumbs of a URL the gallery
                    already resolved, and `Thumbnail` carries a whole overlay
-                   and badge system the tray has no use for. */
+                   and badge system the tray has no use for. `contain` on a
+                   dark square, as the grid does -- a square crop of a portrait
+                   picture is its middle band, and two portraits from one
+                   prompt crop to the same stripe. */
                 <img src={imageUrls[img.id]} alt={img.title} />
-              ) : (
-                <span className={styles.thumbEmpty} />
               )}
-              <span className={styles.thumbHint}>Show</span>
             </button>
           ))}
         </div>
