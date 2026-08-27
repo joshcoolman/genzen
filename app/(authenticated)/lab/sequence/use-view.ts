@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import { aspectRatio } from '../_components/clip-facts'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
 
 /**
@@ -19,6 +20,15 @@ import type { VideoRecord } from '../../video/_actions/generate-video.action'
 export function useView(clips: Array<VideoRecord>) {
   const [picked, setPicked] = useState<Array<VideoRecord>>([])
   const [pickerOpen, setPickerOpen] = useState(false)
+  /**
+   * Which clip the player is on, so the row can mark it (#512).
+   *
+   * Lifted here rather than read out of the player, because the player is the
+   * only thing that knows -- it moves at `ended`, at a skip, and when the run
+   * shrinks under it -- and the row is its sibling, not its child. Null while
+   * the run is empty, which is the state where no tile should be lit.
+   */
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null)
 
   /**
    * Append, skipping anything already in the run.
@@ -63,6 +73,13 @@ export function useView(clips: Array<VideoRecord>) {
   return {
     clips,
     picked,
+    /* The shape of the run, which is the shape of whatever went into it first.
+       Null while the run is empty, and null too if that clip's poster never
+       decoded -- an unknown shape must not become a constraint nothing can
+       satisfy. */
+    runRatio: picked.length > 0 ? aspectRatio(picked[0]) : null,
+    playingIndex: picked.length > 0 ? playingIndex : null,
+    setPlayingIndex,
     pickerOpen,
     setPickerOpen,
     addClips,

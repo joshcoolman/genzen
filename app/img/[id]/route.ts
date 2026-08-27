@@ -15,6 +15,11 @@ import { parseRange } from '#/lib/http-range'
  * `?v=thumb` serves `thumbnail_path`, falling back to the original when one was
  * never generated. The grid must not pull full-size objects (#215).
  *
+ * `?v=end` serves a clip's final frame (#512). It does **not** fall back: the
+ * caller asked for the ending specifically, and answering with the mp4 -- or
+ * with the first frame -- would draw a wrong frame rather than nothing. A clip
+ * without one 404s, and the surface that asked shows its poster alone.
+ *
  * Cached `private`: the response is per-user, so a shared cache must never hold
  * it, but the browser should. Objects are immutable once written -- a new image
  * is a new row and a new URL -- so the max-age is long and there is nothing to
@@ -36,20 +41,29 @@ export async function GET(
       Array<{
         storage_path: string | null
         thumbnail_path: string | null
+        end_frame_path: string | null
         mime_type: string | null
       }>
     >`
-      select storage_path, thumbnail_path, mime_type
+      select storage_path, thumbnail_path, end_frame_path, mime_type
       from user_images
       where id = ${id} and user_id = ${userId}
     `,
   )
   if (!row?.storage_path) return new Response('Not found', { status: 404 })
 
+  const variant = new URL(request.url).searchParams.get('v')
+  if (variant === 'end' && !row.end_frame_path) {
+    return new Response('Not found', { status: 404 })
+  }
   const wantsThumb =
-    new URL(request.url).searchParams.get('v') === 'thumb' &&
-    !!row.thumbnail_path
-  const key = wantsThumb ? row.thumbnail_path! : row.storage_path
+    (variant === 'thumb' && !!row.thumbnail_path) || variant === 'end'
+  const key =
+    variant === 'end'
+      ? row.end_frame_path!
+      : wantsThumb
+        ? row.thumbnail_path!
+        : row.storage_path
 
   let blob
   try {
@@ -61,7 +75,7 @@ export async function GET(
     return new Response('Not found', { status: 404 })
   }
 
-  // Thumbnails are WebP whatever the original was.
+  // Both stored frames are WebP whatever the original was.
   const contentType = wantsThumb
     ? 'image/webp'
     : blob.type || row.mime_type || 'application/octet-stream'

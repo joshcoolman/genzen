@@ -143,13 +143,24 @@ source images; `use-view.ts` owns everything after the first paint.
   `thumbnail_path` like any image thumbnail, and `width`/`height` come off that
   frame, which is the whole video rectangle. So `/img/[id]?v=thumb` serves a
   ~15KB WebP for a clip exactly as it does for a still.
+  **The last frame is stored too, as `end_frame_path`** (#512), by a second
+  ffmpeg pass in the same function and to the same size and quality. It is
+  served by `/img/[id]?v=end`, which unlike `?v=thumb` does **not** fall back to
+  the original — a caller asking for the ending would rather get a 404 than the
+  mp4 or the opening frame. Allowed to fail on its own: a clip whose ending will
+  not decode keeps its poster, its dimensions and everything that reads them.
   **`duration_seconds` is still what was requested, not what arrived.** Reading
   the real figure needs `ffprobe`, a second native binary for one number, and
   the requested one is what the cost estimate was priced on -- so it was not
   worth it. `models.ts` notes MiniMax billing on 1.2x the request, so the field
   and the file can disagree.
-  **Every clip surface is still a `<video>`** -- the switchover is #500, kept
-  separate so the poster existed before anything was deleted for it. That takes
+  **Every clip surface is still a `<video>`, with one deliberate exception** --
+  the switchover is #500, kept separate so the poster existed before anything was
+  deleted for it. The exception is the ending half of a Sequence tile (#512),
+  which is an `<img>` on `?v=end` because there is no media-fragment trick that
+  seeks a `<video>` to its own last frame. Its opening half is still a `<video>`
+  like everything else, which is what keeps that tile working for a clip with no
+  poster at all. That takes
   `firstFrameSrc` from `#/components` (`#t=0.001`, which makes the element
   seek), not `preload="metadata"` on its own, and it works only because
   `/img/[id]` answers range requests. Every clip surface goes through the same

@@ -18,7 +18,7 @@ import { sql } from './db.server'
 export function userImageColumns() {
   return sql`
     id, user_id, title, description,
-    storage_path, thumbnail_path, file_name,
+    storage_path, thumbnail_path, end_frame_path, file_name,
     file_size::float8 as file_size,
     mime_type, file_hash, width, height,
     source, origin, generation_metadata, request_id, status, generation_error,

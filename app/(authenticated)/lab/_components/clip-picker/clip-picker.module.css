@@ -111,3 +111,27 @@
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
+
+/* Under the title, not beside the grid: it is a statement about what the dialog
+   is showing, and a filter that has to be found is a filter people stop
+   trusting. */
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
+.filterToggle {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.filterToggle:hover {
+  text-decoration: underline;
+}

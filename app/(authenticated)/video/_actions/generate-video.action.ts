@@ -177,6 +177,14 @@ export interface VideoRecord {
   generation_error: string | null
   created_at: string
   generation_metadata: Record<string, unknown> | null
+  /** The clip's rectangle, off frame one (#499). Null on a clip whose poster
+   *  never decoded, which is the only reason its aspect ratio is unknown. */
+  width: number | null
+  height: number | null
+  /** Whether the row points at a stored final frame, not the path itself (#512).
+   *  Storage keys are the server's business -- the browser asks `/img/[id]?v=end`
+   *  -- but a surface that draws the ending has to know there is one to draw. */
+  has_end_frame: boolean
 }
 
 /**
@@ -190,7 +198,8 @@ export async function listVideos(): Promise<Array<VideoRecord>> {
   const rows = await sql<Array<VideoRecord>>`
     select id, title, description, status, generation_error,
            to_json(created_at)#>>'{}' as created_at,
-           generation_metadata
+           generation_metadata, width, height,
+           end_frame_path is not null as has_end_frame
     from user_images
     where user_id = ${userId}
       and source = 'ai_video'

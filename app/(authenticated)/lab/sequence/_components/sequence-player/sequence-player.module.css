@@ -72,6 +72,15 @@
   cursor: default;
 }
 
+/* No label. Skip is pressed repeatedly while hunting a join, so it wants to be
+   a small target that does not push the rest of the bar around -- and a pair of
+   arrows either side of Play is the one transport convention that needs no
+   word. The name is on `aria-label` and `title`, not dropped. */
+.transportIcon {
+  composes: transport;
+  padding: var(--space-8);
+}
+
 .position {
   color: var(--text-muted);
   font-size: var(--text-3xs);

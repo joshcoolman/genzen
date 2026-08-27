@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import ffmpegPath from 'ffmpeg-static'
 import sharp from 'sharp'
@@ -20,16 +20,79 @@ const THUMBNAIL_QUALITY = 80
 // do anything useful with, and the ingest must not hang on it.
 const TIMEOUT_MS = 30_000
 
+// How far back from the end to start decoding when hunting the final frame.
+// Seeking to the exact end lands past the last frame and decodes nothing, so
+// ffmpeg is pointed a second before it and every frame from there is written
+// over the same file -- what survives is the last one. A second is enough for
+// any frame rate and cheap to decode; on a clip shorter than that the seek
+// simply clamps to the start and the whole clip is walked.
+const END_SEEK_SECONDS = 1
+
 export interface VideoPoster {
   thumbnailPath: string
+  /**
+   * The clip's last frame, or null when only that half failed (#512).
+   *
+   * Its own field rather than a second return: a clip whose final frame will
+   * not decode still has a usable poster, and failing the whole extraction
+   * would cost the tile, the dimensions and the fallback all at once.
+   */
+  endFramePath: string | null
   // Always known when a poster exists: sharp read them off the decoded frame,
   // and a frame that could not be decoded returns null for the whole poster.
   width: number
   height: number
 }
 
+/** The one encode both frames go through, so a poster and an end frame are the
+ *  same size and quality and can never drift apart. */
+function toThumbnail(image: sharp.Sharp): Promise<Buffer> {
+  return image
+    .resize(THUMBNAIL_WIDTH, null, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: THUMBNAIL_QUALITY })
+    .toBuffer()
+}
+
 /**
- * Decode frame one of a clip and store it as a WebP thumbnail (#499).
+ * The last frame ffmpeg can decode out of `file`, as PNG bytes, or null.
+ *
+ * Writes to a file with `-update 1` rather than piping: from a seek point
+ * onwards ffmpeg emits *every* frame, and down a pipe those arrive as a dozen
+ * PNGs glued together, which sharp reads as the first one. Overwriting a single
+ * file leaves exactly the frame the clip ends on.
+ *
+ * Null on any failure -- a clip with no readable ending still has a poster.
+ */
+async function decodeEndFrame(file: string): Promise<Buffer | null> {
+  const out = join(dirname(file), `${randomUUID()}.png`)
+  try {
+    await execFileAsync(
+      ffmpegPath!,
+      [
+        '-loglevel',
+        'error',
+        // Before `-i`, which is what makes it a seek rather than a filter.
+        '-sseof',
+        `-${END_SEEK_SECONDS}`,
+        '-i',
+        file,
+        '-update',
+        '1',
+        '-y',
+        out,
+      ],
+      { timeout: TIMEOUT_MS },
+    )
+    const frame = await readFile(out)
+    return frame.length ? frame : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Decode a clip's first and last frames and store each as a WebP thumbnail
+ * (#499, and the end frame in #512).
  *
  * ffmpeg is an npm dependency (`ffmpeg-static`), not a system package, so this
  * behaves the same on a laptop and on Railway and adds no prerequisite to
@@ -44,9 +107,17 @@ export interface VideoPoster {
  * worth one: `generation_metadata.duration_seconds` is what was requested, and
  * that is the number the estimate was priced on.
  *
- * Returns null on any failure. A clip whose poster cannot be made is still a
- * clip: the row keeps a NULL `thumbnail_path` and the tile falls back to the
- * `<video>` element it used before this existed.
+ * **The end frame is a second ffmpeg pass and is allowed to fail alone.**
+ * Seeking to the exact end of a container decodes nothing, so `-sseof` starts a
+ * second before it and `-update 1` overwrites one file per decoded frame,
+ * leaving the last. That is a file rather than a pipe because the pipe form
+ * would hand back every frame from the seek point concatenated. Its failure
+ * returns `endFramePath: null` and nothing else changes -- a clip that cannot
+ * show what it ends on is still a clip that plays.
+ *
+ * Returns null on any failure of the *first* frame. A clip whose poster cannot
+ * be made is still a clip: the row keeps a NULL `thumbnail_path` and the tile
+ * falls back to the `<video>` element it used before this existed.
  *
  * ffmpeg wants a seekable file -- an mp4's moov atom may sit at the end -- so
  * the bytes go to a temp file rather than down a pipe.
@@ -93,23 +164,30 @@ export async function extractVideoPoster(
     const image = sharp(frame)
     const { width, height } = await image.metadata()
 
-    const thumbBuffer = await image
-      .resize(THUMBNAIL_WIDTH, null, {
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: THUMBNAIL_QUALITY })
-      .toBuffer()
-
+    const storage = createImageStorage()
     const filename = storagePath.split('/').pop() ?? storagePath
-    const thumbnailPath = `${userId}/thumbs/${filename.replace(/\.[^.]+$/, '.webp')}`
+    const stem = filename.replace(/\.[^.]+$/, '')
 
-    await createImageStorage().upload(thumbnailPath, thumbBuffer, {
+    const thumbnailPath = `${userId}/thumbs/${stem}.webp`
+    await storage.upload(thumbnailPath, await toThumbnail(image), {
       contentType: 'image/webp',
       upsert: true,
     })
 
-    return { thumbnailPath, width, height }
+    // `-end` beside the poster, so both frames of a clip sit next to each other
+    // under the same prefix and one `thumbs/` sweep still finds everything a
+    // clip owns.
+    const endFrame = await decodeEndFrame(file)
+    let endFramePath: string | null = null
+    if (endFrame) {
+      endFramePath = `${userId}/thumbs/${stem}-end.webp`
+      await storage.upload(endFramePath, await toThumbnail(sharp(endFrame)), {
+        contentType: 'image/webp',
+        upsert: true,
+      })
+    }
+
+    return { thumbnailPath, endFramePath, width, height }
   } catch {
     return null
   } finally {

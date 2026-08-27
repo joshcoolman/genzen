@@ -163,8 +163,8 @@ export async function processImageResult(
  * a still, and the FAL URL is kept in metadata as the degradation path when a
  * later ingest fails.
  *
- * Frame one becomes `thumbnail_path`, and `width`/`height` come off that frame
- * (#499). Inline rather than fire-and-forget like the image thumbnail: the
+ * Frame one becomes `thumbnail_path`, the final frame `end_frame_path` (#512),
+ * and `width`/`height` come off frame one (#499). Inline rather than fire-and-forget like the image thumbnail: the
  * bytes are already in hand, it is a few hundred milliseconds against a
  * generation that took 30-300 seconds, and it lands everything in one write. A
  * clip whose poster fails keeps NULL columns and the `<video
@@ -223,6 +223,7 @@ export async function processVideoResult(
       set status = 'completed',
           storage_path = ${storagePath},
           thumbnail_path = ${poster?.thumbnailPath ?? null},
+          end_frame_path = ${poster?.endFramePath ?? null},
           width = ${poster?.width ?? null},
           height = ${poster?.height ?? null},
           file_name = ${fileName},

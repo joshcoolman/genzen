@@ -1,7 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react'
+import {
+  Pause,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from 'lucide-react'
 import styles from './sequence-player.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 
@@ -54,8 +62,29 @@ function blank(el: HTMLVideoElement) {
  * the top is the loop this page exists for, and having to reach the end (or
  * pause, then find a different control) to get back to clip 1 put a wait in the
  * middle of it.
+ *
+ * **Skip lands on a clip and plays it, rather than nudging a position** (#512).
+ * Working out an order means seeing one join, moving a tile, seeing it again --
+ * and watching the run from the top to reach the third cut is most of a minute
+ * spent on the two cuts already judged. A skip is a jump plus a play because
+ * there is no reason to press two buttons for one intention.
+ *
+ * Skipping costs the gapless join: the idle element is holding `index + 1`, so
+ * a jump anywhere else takes a fresh source and blanks for a beat while it
+ * loads. That is the right trade -- a skip is a deliberate move *between* cuts,
+ * not one of the cuts being judged, and the alternative is preloading clips
+ * nobody asked for.
  */
-export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
+export function SequencePlayer({
+  clips,
+  onIndexChange,
+}: {
+  clips: Array<VideoRecord>
+  /** Which clip the stage is on, so the row can mark it (#512). Reported
+   *  whether or not it is playing: the tile the highlight is on is the clip
+   *  that is loaded, and pausing does not move it. */
+  onIndexChange?: (index: number) => void
+}) {
   const a = useRef<HTMLVideoElement>(null)
   const b = useRef<HTMLVideoElement>(null)
   const els = [a, b]
@@ -140,43 +169,50 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
   )
 
   /**
-   * Back to clip 1 and play, from wherever the run had got to.
+   * Land on a clip and play it, from wherever the run had got to.
    *
    * **Done here rather than by setting state and letting the effect do it.**
-   * That was the first version and it did nothing at all when the run was
-   * already on clip 1: `setIndex(0)` and `setActive(0)` are no-ops then, React
-   * bails out of the render, the effect never re-runs -- and the pause it had
-   * already done was the only thing that happened. Pressing Start over stopped
-   * the video.
+   * That was the first version of Start over and it did nothing at all when the
+   * run was already on clip 1: `setIndex(0)` and `setActive(0)` are no-ops
+   * then, React bails out of the render, the effect never re-runs -- and the
+   * pause it had already done was the only thing that happened. Pressing Start
+   * over stopped the video. Every jump goes through here for that reason, since
+   * a skip that lands where you already are is the same trap.
    *
    * So the element is driven directly and the state follows. Element `a` always
-   * takes clip 1, whichever of the two happened to be playing. When it already
-   * holds that clip the seek is a `currentTime` of 0 and costs nothing; when it
-   * was holding the preloaded next clip it takes a new source, and `play()`
-   * waits for the data on its own -- no `currentTime` first, since a fresh
-   * source starts at zero anyway and seeking before metadata lands is ignored.
+   * takes the target, whichever of the two happened to be playing. When it
+   * already holds that clip the seek is a `currentTime` of 0 and costs nothing;
+   * otherwise it takes a new source, and `play()` waits for the data on its own
+   * -- no `currentTime` first, since a fresh source starts at zero anyway and
+   * seeking before metadata lands is ignored.
    */
-  const restart = useCallback(() => {
-    const first = a.current
-    if (clips.length === 0 || !first) return
+  const jumpTo = useCallback(
+    (target: number) => {
+      const first = a.current
+      if (clips.length === 0 || !first) return
+      const next = Math.max(0, Math.min(target, clips.length - 1))
 
-    // Both, not just the visible one: the other is mid-clip with its own buffer
-    // and would otherwise keep playing underneath.
-    b.current?.pause()
-    first.pause()
+      // Both, not just the visible one: the other is mid-clip with its own
+      // buffer and would otherwise keep playing underneath.
+      b.current?.pause()
+      first.pause()
 
-    const src = srcFor(clips[0])
-    if (first.src.endsWith(src)) first.currentTime = 0
-    else first.src = src
+      const src = srcFor(clips[next])
+      if (first.src.endsWith(src)) first.currentTime = 0
+      else first.src = src
 
-    setAtEnd(false)
-    setActive(0)
-    setIndex(0)
-    setIsPlaying(true)
-    // Swallowed: reassigning `src` can abort an in-flight play with an
-    // AbortError that means nothing here.
-    void first.play().catch(() => {})
-  }, [clips])
+      setAtEnd(false)
+      setActive(0)
+      setIndex(next)
+      setIsPlaying(true)
+      // Swallowed: reassigning `src` can abort an in-flight play with an
+      // AbortError that means nothing here.
+      void first.play().catch(() => {})
+    },
+    [clips],
+  )
+
+  const restart = useCallback(() => jumpTo(0), [jumpTo])
 
   const toggle = useCallback(() => {
     if (clips.length === 0) return
@@ -204,6 +240,13 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
     setActive(0)
     setIndex(0)
   }, [clips.length, index])
+
+  /* An effect rather than a call inside each handler: `index` moves from the
+     `ended` handler, from a jump and from a run that shrinks underneath it, and
+     three call sites is three chances for one of them to stop reporting. */
+  useEffect(() => {
+    onIndexChange?.(index)
+  }, [index, onIndexChange])
 
   const empty = clips.length === 0
 
@@ -237,6 +280,29 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
         >
           {isPlaying ? <Pause size={14} /> : <Play size={14} />}
           {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        {/* Clamped rather than wrapping, and disabled at each end. A skip is
+            aimed at a specific join; wrapping from the last clip to the first
+            would answer a different question than the one being asked. */}
+        <button
+          type="button"
+          className={styles.transportIcon}
+          onClick={() => jumpTo(index - 1)}
+          disabled={empty || index === 0}
+          aria-label="Previous clip"
+          title="Previous clip"
+        >
+          <SkipBack size={14} />
+        </button>
+        <button
+          type="button"
+          className={styles.transportIcon}
+          onClick={() => jumpTo(index + 1)}
+          disabled={empty || index >= clips.length - 1}
+          aria-label="Next clip"
+          title="Next clip"
+        >
+          <SkipForward size={14} />
         </button>
         {/* Always live, playing or not: the point is getting back to clip 1
             without first arriving somewhere it is offered. */}

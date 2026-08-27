@@ -46,6 +46,8 @@ export type UserImageRow = {
   description: string | null
   storage_path: string | null
   thumbnail_path: string | null
+  /** The clip's last frame, stored like `thumbnail_path` (#512). Null for stills. */
+  end_frame_path: string | null
   file_name: string | null
   /** bigint in the database; selected as `file_size::float8`. */
   file_size: number | null
