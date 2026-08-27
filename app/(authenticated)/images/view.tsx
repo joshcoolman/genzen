@@ -7,6 +7,7 @@ import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { ScopeRow } from './_components/scope-row/scope-row'
+import { VisibilityStrip } from './_components/visibility-strip/visibility-strip'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -31,6 +32,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     setZipSelectionOpen,
     selection,
     selectMode,
+    visibility,
+    hideSelected,
+    focusSelected,
     isBatchDeleting,
     deleteSelected,
     viewer,
@@ -40,6 +44,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     animate,
     groups,
     workingByGroup,
+    visibleGroupMembers,
     activeGroup,
     activeGroupId,
     openGroup,
@@ -113,6 +118,14 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           showInfo={prefs.showInfo}
           thumbZoom={prefs.thumbZoom}
           onDelete={gallery.deleteImage}
+          onHide={(img) => void visibility.hide([img.id])}
+          /* Only while hidden rows are on screen: that is the one state in
+             which an Unhide has a card to sit on. */
+          onUnhide={
+            visibility.showHidden
+              ? (img) => void visibility.unhide([img.id])
+              : undefined
+          }
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onAnimate={animate}
@@ -122,7 +135,10 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onLoad={(img) => void loadIntoPanel(img)}
           workingByGroup={workingByGroup}
           expandedGroupIds={groups.expandedIds}
-          groupMembers={groups.members}
+          /* Same rule as the swatches on a collapsed card (#504): the
+             expanded strip is pictures, so a hidden one does not belong in it,
+             and filtering here is what keeps it in step with Show hidden. */
+          groupMembers={visibleGroupMembers}
           onToggleGroupMembers={groups.toggleExpanded}
           onOpenGroup={openGroup}
           onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
@@ -153,6 +169,16 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 
+        {/* Under the grid, because it explains what is missing from it and the
+            eye arrives here after running out of pictures (#504). */}
+        <VisibilityStrip
+          hiddenCount={visibility.hiddenCount}
+          showHidden={visibility.showHidden}
+          onToggleHidden={visibility.setShowHidden}
+          focusCount={visibility.focusIds?.size ?? null}
+          onClearFocus={visibility.clearFocus}
+        />
+
         <SelectionActions
           count={selection.count}
           busy={isBatchDeleting}
@@ -163,6 +189,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDownloadZip={() => setZipSelectionOpen(true)}
           onClear={selection.clearSelection}
           onDelete={() => void deleteSelected()}
+          onHide={() => void hideSelected()}
+          onFocus={focusSelected}
           onAddToGroup={() => startAddToGroup(selectedIds)}
           onRemoveFromGroup={
             activeGroupId ? () => void removeFromGroup(selectedIds) : undefined

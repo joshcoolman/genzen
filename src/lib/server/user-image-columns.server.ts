@@ -24,6 +24,7 @@ export function userImageColumns() {
     source, origin, generation_metadata, request_id, status, generation_error,
     idempotency_key, color_palette, sort_order, group_id,
     to_json(deleted_at)#>>'{}' as deleted_at,
+    to_json(hidden_at)#>>'{}' as hidden_at,
     to_json(created_at)#>>'{}' as created_at,
     to_json(updated_at)#>>'{}' as updated_at
   `

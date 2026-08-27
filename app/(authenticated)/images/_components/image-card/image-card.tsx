@@ -4,16 +4,20 @@ import {
   CheckCircle2,
   Clapperboard,
   Download,
+  Eye,
+  EyeOff,
   FolderMinus,
   FolderPlus,
   ImageIcon,
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
+import { useState } from 'react'
 import { CardCaption } from '../card-caption/card-caption'
 import styles from './image-card.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { refUsageNote } from '#/features/ai-images/ref-usage'
+import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
 import {
   DropdownMenu,
@@ -30,6 +34,11 @@ interface ImageCardProps {
   objectFit?: 'contain' | 'cover'
   showInfo?: boolean
   onDelete?: (img: SavedAiImage) => void
+  /** Take it out of the grid without destroying it (#504). When set, this is
+   *  what the corner icon does, and Trash moves behind Cmd. */
+  onHide?: (img: SavedAiImage) => void
+  /** Put a hidden one back. Set only while hidden rows are being shown. */
+  onUnhide?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
   /** Take this still to /video as the first frame (#305). */
   onAnimate?: (img: SavedAiImage) => void
@@ -73,6 +82,8 @@ export function ImageCard({
   objectFit,
   showInfo = true,
   onDelete,
+  onHide,
+  onUnhide,
   onDownload,
   onAnimate,
   onOpen,
@@ -138,7 +149,17 @@ export function ImageCard({
     </DropdownMenu>
   )
 
-  const deleteButton = onDelete ? (
+  // The corner icon (#504). Hide by default, Trash under Cmd -- see
+  // `CornerAction`. Without `onHide` it is the plain Trash it always was.
+  const cornerAction = onUnhide ? (
+    <ExpandableIconButton
+      icon={<Eye className={styles.actionIcon} />}
+      label="Unhide"
+      onClick={() => onUnhide(img)}
+    />
+  ) : onHide && onDelete ? (
+    <CornerAction img={img} onHide={onHide} onDelete={onDelete} />
+  ) : onDelete ? (
     <ExpandableIconButton
       icon={<Trash2 className={styles.actionIcon} />}
       label="Delete"
@@ -185,7 +206,7 @@ export function ImageCard({
         selectionActive && !selected ? styles.selectableTile : undefined
       }
       overlayActionsLeft={selectionActive ? undefined : moreButton}
-      overlayActions={selectionActive ? undefined : deleteButton}
+      overlayActions={selectionActive ? undefined : cornerAction}
       imageOverlay={
         <>
           {/* The image used to name its Cmd-click ("Add") while the key was
@@ -285,5 +306,67 @@ export function ImageCard({
         />
       )}
     </Thumbnail>
+  )
+}
+
+/**
+ * One icon in the card's corner, two verbs (#504).
+ *
+ * Trashing was the path of least resistance for tidying a group, because it
+ * was the only one-click thing there. That ease is worth keeping and worth
+ * pointing at the safe action instead: the corner hides, and Trash stays in
+ * exactly the same place behind Cmd.
+ *
+ * **A second icon was the thing to avoid.** A row of them in a card corner is
+ * more to mis-click, and the mis-click that matters is the destructive one.
+ * Under this shape the accidental press is recoverable in one click and the
+ * destructive press takes a modifier.
+ *
+ * The modifier is not the only way to Trash: the selection drawer keeps a
+ * plain Trash button, which is the deliberate bulk case and the fallback for
+ * anyone who does not know the modifier exists. Both are listed at
+ * `/account/shortcuts` (#289), which is where the grid's other power moves are
+ * explained -- the card stays quiet.
+ *
+ * `useModifierHeld` is tracked only while this button is hovered, per its own
+ * warning: a grid draws dozens of these, and a permanent key listener each is
+ * a cost that stays invisible until the grid is long.
+ */
+function CornerAction({
+  img,
+  onHide,
+  onDelete,
+}: {
+  img: SavedAiImage
+  onHide: (img: SavedAiImage) => void
+  onDelete: (img: SavedAiImage) => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const { meta, seed } = useModifierHeld(hovered)
+
+  return (
+    <ExpandableIconButton
+      icon={
+        meta ? (
+          <Trash2 className={styles.actionIcon} />
+        ) : (
+          <EyeOff className={styles.actionIcon} />
+        )
+      }
+      label={meta ? 'Delete' : 'Hide'}
+      variant={meta ? 'destructive' : 'default'}
+      onMouseEnter={(e) => {
+        setHovered(true)
+        // A key already down fired its keydown before the pointer arrived, so
+        // the listeners alone would report no modifier until it is released
+        // and pressed again.
+        seed(e)
+      }}
+      onMouseLeave={() => setHovered(false)}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey) onDelete(img)
+        else onHide(img)
+      }}
+    />
   )
 }
