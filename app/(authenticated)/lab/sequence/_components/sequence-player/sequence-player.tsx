@@ -27,6 +27,12 @@ const srcFor = (clip: VideoRecord) => `/img/${clip.id}`
  * of whichever clip happens to be showing and reset itself at every join. There
  * is deliberately no scrubber of our own either: one that spans clips needs a
  * global timeline, which is the line this page does not cross (#497).
+ *
+ * **Start over is its own button, available whenever there is a run** -- not a
+ * state the Play button falls into at the end. Rearranging and re-watching from
+ * the top is the loop this page exists for, and having to reach the end (or
+ * pause, then find a different control) to get back to clip 1 put a wait in the
+ * middle of it.
  */
 export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
   const a = useRef<HTMLVideoElement>(null)
@@ -112,16 +118,24 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
     [active, index],
   )
 
-  /** Back to the first clip, and play. Reaching the end never loops on its own. */
+  /**
+   * Back to the first clip, and play. Reaching the end never loops on its own.
+   *
+   * Nothing plays in here: the effect above assigns the sources first and then
+   * honours `playWhenReady`, because assigning `src` and calling `play()` in the
+   * same tick plays whatever was loaded before it.
+   */
   const restart = useCallback(() => {
+    const current = els[active].current
+    // The element that is about to stop being active keeps its buffer and would
+    // otherwise carry on playing underneath the new one.
+    current?.pause()
     setAtEnd(false)
     setIsPlaying(true)
     playWhenReady.current = true
     setActive(0)
     setIndex(0)
-    // Nothing plays here: the effect above assigns the sources first, then
-    // honours `playWhenReady`.
-  }, [])
+  }, [active])
 
   const toggle = useCallback(() => {
     if (clips.length === 0) return
@@ -178,16 +192,22 @@ export function SequencePlayer({ clips }: { clips: Array<VideoRecord> }) {
           className={styles.transport}
           onClick={toggle}
           disabled={empty}
-          aria-label={atEnd ? 'Play again' : isPlaying ? 'Pause' : 'Play'}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          {atEnd ? (
-            <RotateCcw size={14} />
-          ) : isPlaying ? (
-            <Pause size={14} />
-          ) : (
-            <Play size={14} />
-          )}
-          {atEnd ? 'Play again' : isPlaying ? 'Pause' : 'Play'}
+          {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+          {isPlaying ? 'Pause' : 'Play'}
+        </button>
+        {/* Always live, playing or not: the point is getting back to clip 1
+            without first arriving somewhere it is offered. */}
+        <button
+          type="button"
+          className={styles.transport}
+          onClick={restart}
+          disabled={empty}
+          aria-label="Start over"
+        >
+          <RotateCcw size={14} />
+          Start over
         </button>
         {/* Which clip of how many, and nothing about time. The count is the one
             fact a run has that a single clip does not. */}

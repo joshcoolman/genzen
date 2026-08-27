@@ -62,32 +62,45 @@ export function ClipPicker({
   onConfirm: (clips: Array<VideoRecord>) => void
   max?: number
 }) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  /**
+   * **An ordered list, not a set: the order you click in is the answer** (#497).
+   *
+   * It was a `Set`, and confirming mapped it back through `clips.filter`, which
+   * quietly returned library order however you had clicked. That is invisible
+   * with one clip and wrong with several -- picking four in the order you want
+   * them to play handed back four in the order they happened to be listed.
+   *
+   * Unpicking closes the gap and repicking lands at the end, which is the
+   * natural consequence rather than a rule to remember: the numbers on the
+   * tiles say so as it happens.
+   */
+  const [selectedIds, setSelectedIds] = useState<Array<string>>([])
 
   // One clip means the click *is* the answer: a footer button to confirm a
   // choice that can only be one thing is a second click for nothing.
   const autoConfirm = max === 1
 
   useEffect(() => {
-    if (!open) setSelectedIds(new Set())
+    if (!open) setSelectedIds([])
   }, [open])
 
-  const confirm = (ids: Set<string>) => {
-    onConfirm(clips.filter((c) => ids.has(c.id)))
-    setSelectedIds(new Set())
+  const confirm = (ids: Array<string>) => {
+    const byId = new Map(clips.map((c) => [c.id, c]))
+    onConfirm(
+      ids.map((id) => byId.get(id)).filter((c): c is VideoRecord => !!c),
+    )
+    setSelectedIds([])
     onOpenChange(false)
   }
 
   const toggle = (id: string) => {
     if (autoConfirm) {
-      confirm(new Set([id]))
+      confirm([id])
       return
     }
     setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else if (next.size < max) next.add(id)
-      return next
+      if (prev.includes(id)) return prev.filter((existing) => existing !== id)
+      return prev.length < max ? [...prev, id] : prev
     })
   }
 
@@ -108,9 +121,9 @@ export function ClipPicker({
                    with a single slot the picker is how you *change* clips, and
                    greying out the current one makes the dialog look broken when
                    you open it to look around and decide to keep what you had. */
+                const order = selectedIds.indexOf(clip.id)
                 const selected =
-                  selectedIds.has(clip.id) ||
-                  (autoConfirm && pickedIds.has(clip.id))
+                  order !== -1 || (autoConfirm && pickedIds.has(clip.id))
                 // Only where a second copy would be meaningless.
                 const alreadyIn = !autoConfirm && pickedIds.has(clip.id)
 
@@ -143,9 +156,14 @@ export function ClipPicker({
                       fit="contain"
                       pad={0}
                     />
-                    {selectedIds.has(clip.id) && (
+                    {/* The position in the run being built, not a tick: with
+                        several clips the useful fact is *where* this one lands,
+                        and a tick says only "yes". A tick still, where there is
+                        only ever one -- "1" over a lone choice is a number that
+                        can never be anything else. */}
+                    {order !== -1 && (
                       <span className={styles.check}>
-                        <Check />
+                        {autoConfirm ? <Check /> : order + 1}
                       </span>
                     )}
                     {/* The model and the duration: at five hundred clips a
@@ -162,15 +180,16 @@ export function ClipPicker({
         <DialogFooter className={styles.footer}>
           <div className={styles.footerInner}>
             <span className={styles.count}>
-              {selectedIds.size}/{max} selected
+              {selectedIds.length}/{max} selected
             </span>
             {!autoConfirm && (
               <Button
                 variant="primary"
                 onClick={() => confirm(selectedIds)}
-                disabled={selectedIds.size === 0}
+                disabled={selectedIds.length === 0}
               >
-                Add {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}Selected
+                Add {selectedIds.length > 0 ? `${selectedIds.length} ` : ''}
+                Selected
               </Button>
             )}
           </div>
