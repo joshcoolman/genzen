@@ -37,6 +37,19 @@ export function ScreenshotProbe() {
 
   const capture = useCallback(async (target: Target) => {
     setBusy(true)
+    // The dialog has to be off screen first. It portals into `document.body`,
+    // so a re-capture taken while it is open walks straight into its own
+    // backdrop and modal and draws those instead of the page -- `viewport`
+    // came back blank, while `content` survived only because `<main>` sits
+    // behind the overlay at its own geometry, untouched.
+    //
+    // Closing and reopening rather than filtering the portal out: the portal
+    // is Base UI's to place, and a selector guessing at it is a silent failure
+    // the day that changes. A capture that photographs the wrong thing does
+    // not throw, it just looks wrong, which is the failure this whole probe
+    // exists to catch.
+    setShot(null)
+    await painted()
     try {
       setShot(await grab(target))
     } catch (error) {
@@ -110,6 +123,17 @@ export function ScreenshotProbe() {
       </Dialog>
     </>
   )
+}
+
+/**
+ * Resolves once the browser has actually painted a frame. One rAF fires before
+ * the coming paint, so the dialog would still be on screen for it; the second
+ * is after. `setTimeout(0)` is not equivalent -- it can run before the frame.
+ */
+function painted() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  })
 }
 
 type Target = 'viewport' | 'content'
