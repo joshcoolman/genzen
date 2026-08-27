@@ -1,0 +1,106 @@
+/* Scrolls rather than wraps: a run is a line, and a second row of it would read
+   as two runs. */
+.row {
+  /* Paired with `TILE` in the component, which sizes the `MediaBox` -- the same
+     split `clip-picker` makes, since a `MediaBox` is sized in px rather than by
+     its container. */
+  --tile: 108px;
+
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+  overflow-x: auto;
+}
+
+.tile {
+  position: relative;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  cursor: grab;
+}
+
+.tile:active {
+  cursor: grabbing;
+}
+
+/* The tile being carried, not the gap it will land in -- the browser draws the
+   drag image, so this is only what is left behind. */
+.tileDragging {
+  opacity: 0.4;
+}
+
+/* Where it would land. A lit edge rather than a moving gap: shuffling the row
+   under the pointer makes the drop target move away from the pointer. */
+.tileOver {
+  border-color: var(--accent);
+}
+
+.ordinal {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  z-index: 1;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
+
+.remove {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklab, var(--surface-sunken) 70%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.tile:hover .remove {
+  opacity: 1;
+}
+
+.remove:hover {
+  color: var(--danger);
+}
+
+/* The same footprint as a tile, so the row keeps one rhythm whether it holds
+   clips or only this. */
+.add {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  width: var(--tile);
+  min-height: var(--tile);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  cursor: pointer;
+}
+
+.add:hover {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+  color: var(--text);
+}
+
+.addLabel {
+  padding-inline: var(--space-4);
+}

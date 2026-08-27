@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { ClipPicker } from '../clip-picker/clip-picker'
-import { clipFacts } from '../clip-facts'
+import { ClipPicker } from '../../../_components/clip-picker/clip-picker'
+import { clipFacts } from '../../../_components/clip-facts'
 import styles from './clip-input.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
 import { MediaBox } from '#/components'

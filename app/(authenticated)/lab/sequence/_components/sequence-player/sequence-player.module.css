@@ -1,0 +1,78 @@
+.player {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Both elements occupy the same cell, so the swap at a join is a change of
+   opacity and nothing moves. `grid` rather than absolute positioning: the stage
+   then takes its height from the videos themselves at whatever aspect they
+   are. */
+.stage {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.video,
+.videoActive {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The idle element is hidden but still decoding -- `visibility` and `display`
+   would both let a browser stop preparing frames, which is the whole reason
+   there are two of these. */
+.video {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.videoActive {
+  opacity: 1;
+}
+
+.placeholder {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.transport {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.transport:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--accent) 50%, transparent);
+}
+
+.transport:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.position {
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+}
