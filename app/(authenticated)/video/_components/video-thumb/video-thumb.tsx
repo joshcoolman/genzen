@@ -10,7 +10,7 @@ import {
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { firstFrameSrc } from '#/components'
-import { clipDurationSeconds, formatCost } from '#/features/video/models'
+import { formatCost } from '#/features/video/models'
 
 function costOf(video: VideoRecord): string | null {
   const cents = (video.generation_metadata ?? {}).provider_cost_cents
@@ -18,8 +18,8 @@ function costOf(video: VideoRecord): string | null {
 }
 
 function durationOf(video: VideoRecord): string | null {
-  const seconds = clipDurationSeconds(video)
-  return seconds != null ? `${seconds}s` : null
+  const seconds = (video.generation_metadata ?? {}).duration_seconds
+  return typeof seconds === 'number' ? `${seconds}s` : null
 }
 
 /**

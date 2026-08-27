@@ -5,16 +5,10 @@ packages: []
 # fails at runtime rather than at install. Only packages actually in the
 # lockfile belong here -- `@google/genai` and `protobufjs` had not been for
 # some time (#228).
-# `ffmpeg-static` fetches its binary in a postinstall, and the
-# `@ffprobe-installer` platform packages ship theirs mode 644 and chmod it in
-# one -- so without these entries install, build and deploy all go green and
-# the first video generation fails on a binary that is missing or not
-# executable (#499). Both Mac architectures and Railway's linux-x64 are listed;
-# the others in that family are unused and would be noise.
+# `ffmpeg-static` fetches its binary in a postinstall -- without the entry,
+# install, build and deploy all go green and the first video generation fails
+# on a missing binary (#499).
 allowBuilds:
-  '@ffprobe-installer/darwin-arm64': true
-  '@ffprobe-installer/darwin-x64': true
-  '@ffprobe-installer/linux-x64': true
   esbuild: true
   ffmpeg-static: true
   sharp: true

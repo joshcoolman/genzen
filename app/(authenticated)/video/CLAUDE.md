@@ -140,10 +140,14 @@ source images; `use-view.ts` owns everything after the first paint.
   object.
 - **A clip has a real poster frame, and the tiles do not use it yet.** Since
   #499 ingest runs ffmpeg over the bytes it just stored: frame one becomes
-  `thumbnail_path` like any image thumbnail, and `width`, `height` and
-  `generation_metadata.measured_duration_seconds` are read off the file in the
-  same pass. So `/img/[id]?v=thumb` serves a ~15KB WebP for a clip exactly as it
-  does for a still.
+  `thumbnail_path` like any image thumbnail, and `width`/`height` come off that
+  frame, which is the whole video rectangle. So `/img/[id]?v=thumb` serves a
+  ~15KB WebP for a clip exactly as it does for a still.
+  **`duration_seconds` is still what was requested, not what arrived.** Reading
+  the real figure needs `ffprobe`, a second native binary for one number, and
+  the requested one is what the cost estimate was priced on -- so it was not
+  worth it. `models.ts` notes MiniMax billing on 1.2x the request, so the field
+  and the file can disagree.
   **Every clip surface is still a `<video>`** -- the switchover is #500, kept
   separate so the poster existed before anything was deleted for it. That takes
   `firstFrameSrc` from `#/components` (`#t=0.001`, which makes the element

@@ -22,14 +22,14 @@ const nextConfig: NextConfig = {
   logging: {
     serverFunctions: false,
   },
-  // ffmpeg and ffprobe reach the server as npm packages that wrap a native
-  // binary, and their entry points resolve to the binary itself. Left to
-  // bundle, Turbopack tries to parse an executable as source and the build
-  // fails on "invalid utf-8 sequence of 1 bytes from index 0" (#499). External
-  // means `require` at runtime, which is what a binary needs -- and the build
-  // does not set `output: 'standalone'`, so `node_modules` ships whole and the
-  // binaries are there.
-  serverExternalPackages: ['ffmpeg-static', '@ffprobe-installer/ffprobe'],
+  // ffmpeg reaches the server as an npm package wrapping a native binary.
+  // Turbopack will otherwise try to parse an executable as source and fail on
+  // "invalid utf-8 sequence of 1 bytes from index 0" (#499) -- in dev as well
+  // as in the build, and a stale dev server keeps reporting it after the fix.
+  // External means `require` at runtime, which is what a binary needs, and the
+  // build does not set `output: 'standalone'`, so `node_modules` ships whole
+  // and the binary is there.
+  serverExternalPackages: ['ffmpeg-static'],
   experimental: {
     serverActions: {
       // Uploads and reference images reach the server through a direct Server

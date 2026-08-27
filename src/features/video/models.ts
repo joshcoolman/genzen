@@ -267,33 +267,6 @@ export function formatCost(cents: number): string {
 }
 
 /**
- * How long a clip actually runs, in seconds.
- *
- * Two figures can be on the row and they are not the same claim.
- * `duration_seconds` is written at submit time from the request params -- what
- * was asked for, and what `estimateCostCents` priced. `measured_duration_seconds`
- * is read off the file by ffprobe at ingest (#499) -- what arrived. They
- * disagree in practice: MiniMax bills on 1.2x the requested duration, per the
- * note in this file's catalog.
- *
- * The measured figure wins where there is one. Every clip made before #499 has
- * only the requested figure, and no backfill has been run, so the fallback is
- * the common case rather than a guard against a missing key.
- *
- * Takes the metadata bag rather than a row: `VideoRecord` is declared by a
- * route action and this module is headless, so it may not name that type.
- */
-export function clipDurationSeconds(clip: {
-  generation_metadata?: Record<string, unknown> | null
-}): number | null {
-  const meta = clip.generation_metadata ?? {}
-  const measured = meta.measured_duration_seconds
-  if (typeof measured === 'number') return Math.round(measured)
-  const requested = meta.duration_seconds
-  return typeof requested === 'number' ? requested : null
-}
-
-/**
  * Every endpoint id a row of this model can carry.
  *
  * A row's `generation_metadata.model` is the *endpoint* it was submitted to,

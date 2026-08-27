@@ -163,12 +163,12 @@ export async function processImageResult(
  * a still, and the FAL URL is kept in metadata as the degradation path when a
  * later ingest fails.
  *
- * Frame one becomes `thumbnail_path` and the file's own dimensions and duration
- * are read in the same pass (#499). Inline rather than fire-and-forget like the
- * image thumbnail: the bytes are already in hand, it is a few hundred
- * milliseconds against a generation that took 30-300 seconds, and it lands
- * everything in one write. A clip whose poster fails keeps NULL columns and the
- * `<video preload="metadata">` tile it had before.
+ * Frame one becomes `thumbnail_path`, and `width`/`height` come off that frame
+ * (#499). Inline rather than fire-and-forget like the image thumbnail: the
+ * bytes are already in hand, it is a few hundred milliseconds against a
+ * generation that took 30-300 seconds, and it lands everything in one write. A
+ * clip whose poster fails keeps NULL columns and the `<video
+ * preload="metadata">` tile it had before.
  */
 export async function processVideoResult(
   recordId: string,
@@ -239,12 +239,6 @@ export async function processVideoResult(
               // playable link beats a dead record. Not the source of truth --
               // `storage_path` is, and `/img/[id]` is the only URL the UI uses.
               fal_video_url: videoUrl,
-              // Beside `duration_seconds`, never over it: that one is what was
-              // asked for at submit time and what the estimate was priced on.
-              // This is what arrived.
-              ...(poster?.durationSeconds != null && {
-                measured_duration_seconds: poster.durationSeconds,
-              }),
               timings: falResultData.timings,
               completed_at: new Date().toISOString(),
               ...(providerCostCents != null && {

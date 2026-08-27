@@ -64,7 +64,7 @@ afterAll(async () => {
 })
 
 describe('extractVideoPoster', () => {
-  it('stores frame one as a WebP thumbnail and reads the file’s own facts', async () => {
+  it('stores frame one as a WebP thumbnail and reads the clip’s dimensions off it', async () => {
     uploads.length = 0
 
     const poster = await extractVideoPoster(
@@ -77,9 +77,9 @@ describe('extractVideoPoster', () => {
     // Beside the clip in the same `thumbs/` folder an image thumbnail uses, so
     // `/img/[id]?v=thumb` needs no video-specific branch.
     expect(poster!.thumbnailPath).toBe('user-1/thumbs/ai_123_abc.webp')
+    // The poster is the whole video rectangle, which is why no probe is needed.
     expect(poster!.width).toBe(1280)
     expect(poster!.height).toBe(720)
-    expect(poster!.durationSeconds).toBeCloseTo(3, 1)
 
     expect(uploads).toHaveLength(1)
     expect(uploads[0].contentType).toBe('image/webp')
