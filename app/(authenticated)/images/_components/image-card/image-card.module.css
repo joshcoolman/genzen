@@ -103,3 +103,12 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* Trashing one picture is reversible -- it sits in Trash until that is emptied
+   -- so this is not red at rest. Red is Delete Forever's, the one verb that
+   cannot be undone. Warms on hover, matching the group card's own item. */
+.destructive:hover,
+.destructive[data-highlighted] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}

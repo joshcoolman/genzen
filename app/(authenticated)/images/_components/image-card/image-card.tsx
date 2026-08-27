@@ -141,6 +141,36 @@ export function ImageCard({
             Remove from group
           </DropdownMenuItem>
         )}
+
+        {/* **Where you would actually look for it.** #504 put Trash behind Cmd
+            on the corner icon and left the selection drawer and
+            `/account/shortcuts` as the ways to find it otherwise -- but the
+            `...` menu is the first place anyone opens, and it listed every
+            verb except the one they wanted.
+
+            This does not reopen what #504 closed. Its objection was a *second
+            icon* in the card corner, where a row of them is more to mis-click
+            and the mis-click that matters is the destructive one. A menu item
+            is not an icon: you have to open the menu and pick, so the intent
+            is explicit, and the corner still carries one icon pointed at the
+            safe verb.
+
+            No confirm, unlike a group's. This trashes one recoverable picture,
+            and neither of the two paths that already do it stops to ask --
+            adding one here would make the discoverable route the annoying one.
+
+            "Move to trash", matching the group card in the same grid. Last,
+            after the verbs that keep the picture, and not red at rest -- red
+            is Delete Forever's. */}
+        {onDelete && (
+          <DropdownMenuItem
+            className={styles.destructive}
+            onClick={() => onDelete(img)}
+          >
+            <Trash2 />
+            Move to trash
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
