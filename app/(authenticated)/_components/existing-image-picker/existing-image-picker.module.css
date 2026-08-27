@@ -69,6 +69,17 @@
 
 /* The chosen filter, on the brand: this one *is* the current state of the grid
    below it, not a neutral toggle. */
+.groupTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.groupChevron {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
 .filterSelected,
 .filterSelected:hover {
   background: var(--accent);
