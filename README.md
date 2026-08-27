@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-26 — Sequence, a lab page: pick clips, drag them into order, watch the run back to back to see whether it actually cuts together (#497)
+- 2026-08-26 — Continue a video from its own last frame: one press seeds the next generation instead of five manual steps through the frame extractor (#494)
 - 2026-08-26 — Paste is the upload on /images: no Upload button in the toolbar, and a pasted image lands in the library _and_ on the front of the reference strip (#491)
 - 2026-08-26 — The library picker uploads: pick files from inside the dialog and they land selected, instead of closing it for the toolbar's Upload and coming back (#489)
 - 2026-08-26 — Select mode reads off the border, not the dimming: unpicked images stay lit with a grey frame, so only the unselectable group cards dim (#488)
 - 2026-08-25 — GPT Image 2 is back in the lineup, rendering at `low` quality: 17-35s instead of the 142s that got it cut, and about a tenth of a cent an image (#485)
-- 2026-08-25 — A reference sheet is a ~1MB JPEG instead of a 9MB PNG, uploads are really capped at 15MB, and a failed upload says why (#482)
-- 2026-08-25 — Download a zip of exactly the images you selected, named for the group they came from (#480)
 
 **Up next**
 
