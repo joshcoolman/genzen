@@ -1,27 +1,10 @@
-.trigger {
-  position: fixed;
-  bottom: var(--space-4);
-  left: var(--space-4);
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-}
+/* The trigger takes the rail's own item class from its parent, so there is no
+   size, colour or hover state here -- a second set would be the rail's styling
+   drifting into two places. */
 
-.trigger:hover:not(:disabled) {
-  color: var(--text);
-  border-color: var(--text-muted);
-}
-
-.trigger:disabled {
-  opacity: 0.5;
-  cursor: progress;
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .body {

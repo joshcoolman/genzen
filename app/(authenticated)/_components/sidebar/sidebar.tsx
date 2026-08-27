@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { ScreenshotProbe } from '../screenshot-probe/screenshot-probe'
 import styles from './sidebar.module.css'
 import { logout } from '#/features/auth/logout.action'
 import {
@@ -65,6 +66,11 @@ export function Sidebar({ className }: { className?: string }) {
               </div>
             )
           })}
+          {/* Spike: can the app draw a picture of itself worth sending to a
+              model? In the rail because the question is about whichever route
+              you are standing on, and the way to answer it is to walk around
+              the app pressing this. Saves nothing; deletes in one commit. */}
+          <ScreenshotProbe className={styles.item} />
           <div className={styles.divider} />
           {[accountItem].map((item) => (
             <Tooltip key={item.id}>
