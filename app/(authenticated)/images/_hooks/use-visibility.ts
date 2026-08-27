@@ -9,13 +9,11 @@ import { toast } from '#/components'
 /**
  * What the grid is allowed to draw (#504).
  *
- * **Two states, not three.** Hidden images are hidden; Show puts them all
- * back. There is no peek -- a mode that revealed hidden rows while still
- * calling them hidden, which then had to be turned off again, was the first
- * shape and it was unusable: the strip said "4 hidden" over four visible
- * pictures, and the way out of the state was a second verb nobody had asked
- * for. If unhiding one image at a time is ever wanted, it needs a surface that
- * lists them, not a toggle over the grid.
+ * **A hidden image is never drawn in the grid.** The way to look at one is the
+ * bar's tray, which lists them as thumbnails away from the wall -- not a
+ * toggle that puts hidden rows back among the visible ones while still calling
+ * them hidden. That was the first shape: the strip read "4 hidden" over four
+ * visible pictures and needed a second verb to undo itself.
  *
  * **Hide and focus are one mechanism from opposite ends.** "Hide these eight"
  * and "show only these two" both produce a filtered view, so there is one
@@ -46,9 +44,12 @@ export interface VisibilityState {
   focusOn: (ids: Array<string>) => void
   clearFocus: () => void
   hide: (ids: Array<string>) => Promise<void>
-  /** Everything hidden, back at once. The only way back on purpose: it is the
-   *  undo for a hide you regret, and there is nothing to understand. */
+  /** Everything hidden, back at once -- the bar's Show. */
   showAll: () => Promise<void>
+  /** Some of them, from the expanded tray. */
+  unhide: (ids: Array<string>) => Promise<void>
+  /** The hidden rows themselves, newest first, for the tray to draw. */
+  hiddenImages: Array<SavedAiImage>
   busy: boolean
 }
 
@@ -73,9 +74,19 @@ export function useVisibility(gallery: GalleryState): VisibilityState {
   const [focusIds, setFocusIds] = useState<ReadonlySet<string> | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const hiddenIds = useMemo(
-    () => gallery.images.filter((img) => img.hidden_at).map((img) => img.id),
+  // Newest hidden first: the tray is opened to undo something, and the thing
+  // you want to undo is almost always the last thing you did.
+  const hiddenImages = useMemo(
+    () =>
+      gallery.images
+        .filter((img) => img.hidden_at)
+        .sort((a, b) => (a.hidden_at! < b.hidden_at! ? 1 : -1)),
     [gallery.images],
+  )
+
+  const hiddenIds = useMemo(
+    () => hiddenImages.map((img) => img.id),
+    [hiddenImages],
   )
 
   const withheldIds = useMemo(() => new Set(hiddenIds), [hiddenIds])
@@ -120,6 +131,8 @@ export function useVisibility(gallery: GalleryState): VisibilityState {
 
   const showAll = useCallback(() => write(hiddenIds, false), [write, hiddenIds])
 
+  const unhide = useCallback((ids: Array<string>) => write(ids, false), [write])
+
   const focusOn = useCallback((ids: Array<string>) => {
     setFocusIds(ids.length > 0 ? new Set(ids) : null)
   }, [])
@@ -135,6 +148,8 @@ export function useVisibility(gallery: GalleryState): VisibilityState {
     clearFocus,
     hide,
     showAll,
+    unhide,
+    hiddenImages,
     busy,
   }
 }

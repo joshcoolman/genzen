@@ -1,0 +1,141 @@
+/* Above the wall, and toned enough to register. Under the grid it was a quiet
+   rule you reached after running out of pictures -- which is when you have
+   stopped looking, and forgetting the hidden set is the one failure this bar
+   exists to prevent. */
+
+.wrap {
+  margin-bottom: var(--space-16);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  text-align: left;
+}
+
+.barButton {
+  cursor: pointer;
+}
+
+.barButton:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+/* Open, the bar is the head of the tray rather than a thing of its own. */
+.barOpen {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.focus {
+  border-color: var(--accent-soft);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.count {
+  flex: 1;
+}
+
+.chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  transition: transform var(--duration-normal) var(--ease-in-out);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.action {
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.action:hover {
+  color: var(--accent);
+}
+
+/* The holding area. Deliberately not the grid's shape -- small, in a row that
+   wraps, so it reads as somewhere pictures are being kept rather than as more
+   of the wall. */
+.tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  cursor: pointer;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Held back, not on show: the tray is a list of things that are not in the
+     grid, and full-strength thumbnails read as a second gallery. */
+  opacity: 0.55;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.thumb:hover img {
+  opacity: 1;
+}
+
+.thumbEmpty {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.thumbHint {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 2px 0;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-2xs);
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
+}
+
+.thumb:hover .thumbHint {
+  opacity: 1;
+}

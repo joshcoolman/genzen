@@ -51,13 +51,17 @@ list once when the seed comes back full, so the grid is never short.
   are filtered client-side**, not in the reads that build them -- the client
   holds every row, so the filter costs no round trip; a group's `count` is
   left alone, being a fact about the group rather than a description of the
-  screen. **The strip under the grid is the feature, not the hiding**: hidden
-  state you cannot see is a slower kind of lost, so it says a number and
-  renders nothing when there is nothing to say. **Show unhides; it does not
-  peek** -- a mode that revealed hidden rows while still calling them hidden,
-  needing a second verb to put it back, was the first shape and was unusable.
-  Two states. Unhiding one image at a time would need a surface that lists
-  them, not a toggle over the grid
+  screen. **The bar above the grid is the feature, not the hiding**: hidden
+  state you cannot see is a slower kind of lost. It was a quiet rule *under*
+  the grid for one build, which is the one place it cannot work -- you reach
+  it after running out of pictures, which is when you have stopped looking.
+  Toned, at the top, and absent entirely when there is nothing to say.
+  **Clicking it opens a tray of the hidden pictures**; a thumbnail there is
+  one click from coming back, and `Show` on the bar brings all of them.
+  **Hidden rows are never drawn in the grid** -- the first shape toggled them
+  back in among the visible ones while still calling them hidden, which read
+  as broken: "4 hidden" over four visible pictures. The tray is a holding
+  area, plainly somewhere else, so the wall stays true
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption

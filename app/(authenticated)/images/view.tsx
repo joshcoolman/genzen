@@ -7,7 +7,7 @@ import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { ScopeRow } from './_components/scope-row/scope-row'
-import { VisibilityStrip } from './_components/visibility-strip/visibility-strip'
+import { HiddenBar } from './_components/hidden-bar/hidden-bar'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -99,6 +99,18 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
         />
 
+        {/* Above the wall, not under it (#504): a statement about pictures
+            that are missing is no use in the place you reach after running out
+            of pictures. */}
+        <HiddenBar
+          hidden={visibility.hiddenImages}
+          imageUrls={gallery.imageUrls}
+          onShowAll={() => void visibility.showAll()}
+          onUnhide={(id) => void visibility.unhide([id])}
+          focusCount={visibility.focusIds?.size ?? null}
+          onClearFocus={visibility.clearFocus}
+        />
+
         {/* Top level only -- inside a group the group is already the scope
             (#444), and the heading takes this row's place. */}
         {activeGroup ? (
@@ -160,15 +172,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
              only, which is why it is `addMany` and not `toggle`. */
           onSweepSelect={selection.addMany}
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
-        />
-
-        {/* Under the grid, because it explains what is missing from it and the
-            eye arrives here after running out of pictures (#504). */}
-        <VisibilityStrip
-          hiddenCount={visibility.hiddenCount}
-          onShowAll={() => void visibility.showAll()}
-          focusCount={visibility.focusIds?.size ?? null}
-          onClearFocus={visibility.clearFocus}
         />
 
         <SelectionActions
