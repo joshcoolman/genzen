@@ -24,8 +24,8 @@ between views; a canvas image _is_ a library image.
 ## Where it fits
 
 One of the single-purpose apps in this workspace: narrow surface, one job done
-well, durable state so nothing is lost when the tab closes. Its sibling
-`~/repos/bootsy` is the reference implementation for the stack.
+well, durable state so nothing is lost when the tab closes. The house standard
+it follows is `~/repos/project-standard`.
 
 ## The surface
 

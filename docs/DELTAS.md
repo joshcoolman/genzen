@@ -58,8 +58,7 @@ text you typed; your intent cannot be re-derived from an enhanced prompt.
 
 The standard says `src/features/` holds domain code shared beyond one route. It
 does not say how much sharing is enough, and it does not say whether a feature
-may hold components. genzen's answers, taken from
-`~/repos/bootsy/src/features/CLAUDE.md`:
+may hold components. genzen's answers:
 
 **A folder in `features/` means two or more routes need it. One consumer means
 it belongs to that route.**
@@ -74,8 +73,8 @@ the wrong test for **placing** one. genzen originally had one feature per nav
 item — nine features, nine screens — which left four of them with exactly one
 consumer each, and hollowed out `app/` into five-line files that forward to a
 component somewhere else. The route folder stopped being readable as the route.
-bootsy tried the same thing and collapsed `features/activity/` and
-`features/trash/` back into `app/` for this reason.
+A sibling app, since retired, tried the same thing and collapsed its
+`features/activity/` and `features/trash/` back into `app/` for this reason.
 
 A folder that needs a paragraph defending its existence usually does not have
 one.

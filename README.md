@@ -50,7 +50,7 @@ app boots and everything else works without a key. Every generation's cost lands
 in the Activity log.
 
 Ports: MinIO is on 9010/9011 rather than its default 9000/9001, so this stack
-can run alongside `~/repos/bootsy`.
+can run alongside another local one holding MinIO's defaults.
 
 If a shell-exported `FAL_KEY` shadows the one in `.env.local`, `local:up` warns
 about it — that's the usual reason generation 401s.
