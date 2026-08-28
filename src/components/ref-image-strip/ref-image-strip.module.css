@@ -21,7 +21,13 @@
   width: var(--tile);
 }
 
+/* `display: block` is the alignment fix, not tidiness. The removable frame is
+   a <button>, so it defaults to inline-block, sits on a text baseline, and the
+   line box adds descender space underneath it -- which the add tile beside it
+   never had, being a flex container. The result was a thumbnail row with more
+   air below it than above and a `+` that did not line up with it. */
 .frame {
+  display: block;
   position: relative;
   width: var(--tile);
   height: var(--tile);
