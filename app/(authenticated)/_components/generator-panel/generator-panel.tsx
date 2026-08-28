@@ -148,11 +148,13 @@ export function GeneratorPanel({
           naming the obvious, which it was -- but the strip has no edges of its
           own, so an empty one was a lone dashed square floating between the
           prompt and the controls with nothing saying where the group started
-          or stopped. The border draws the group; the label sits on it and
-          gives Clear somewhere to live that is not the end of a row of
-          thumbnails. Titles are shown for the same reason: a wall of small
-          squares is not a set you can name in a prompt. */}
-      <div className={styles.refs}>
+          or stopped. The border draws the group; the heading sits above it,
+          styled like the dock's own "Generate" rather than as an eyebrow, so
+          the panel has one kind of label rather than two. Clear rides with the
+          heading, which is somewhere better than the end of a row of
+          thumbnails. Titles are shown for the same reason the box is drawn: a
+          wall of small squares is not a set you can name in a prompt. */}
+      <div className={styles.refsGroup}>
         <div className={styles.refsHead}>
           <span className={styles.refsLabel}>Ref images</span>
           {generator.refImages.length > 0 && !generator.loading && (
@@ -165,16 +167,18 @@ export function GeneratorPanel({
             </button>
           )}
         </div>
-        <RefImageStrip
-          images={generator.refImages}
-          onAdd={() => {
-            void userImages.refresh()
-            setPickerOpen(true)
-          }}
-          onRemove={generator.removeRefImage}
-          disabled={generator.loading || generator.maxRefImages === 0}
-          showLabels
-        />
+        <div className={styles.refs}>
+          <RefImageStrip
+            images={generator.refImages}
+            onAdd={() => {
+              void userImages.refresh()
+              setPickerOpen(true)
+            }}
+            onRemove={generator.removeRefImage}
+            disabled={generator.loading || generator.maxRefImages === 0}
+            showLabels
+          />
+        </div>
       </div>
       <ExistingImagePicker
         open={pickerOpen}

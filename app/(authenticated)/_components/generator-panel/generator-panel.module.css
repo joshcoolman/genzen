@@ -50,17 +50,13 @@
   min-width: 0;
 }
 
-/* The reference set, drawn as a group. The strip inside has no edges of its
-   own -- an empty one is a single dashed square -- so without the border there
-   was nothing saying where the set began or ended, and Clear had nowhere to sit
-   but the far end of a row of thumbnails. */
-.refs {
+/* Heading above, box below -- the heading is not part of the thing it names,
+   the same way the dock's "Generate" sits above the panel rather than inside
+   it. */
+.refsGroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding: var(--space-8);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
 }
 
 .refsHead {
@@ -69,13 +65,23 @@
   justify-content: space-between;
 }
 
-/* The same eyebrow the model table's column heads wear, so the two labelled
-   groups in this column read as one convention. */
+/* The dock's title, not an eyebrow. An uppercase tracked-out label would be a
+   second kind of heading in a column that already has one, and this is the
+   only group in the panel that needs naming -- which makes matching "Generate"
+   cheaper than establishing a convention for a set of one. */
 .refsLabel {
-  font-size: var(--text-3xs);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+/* The reference set. The strip inside has no edges of its own -- an empty one
+   is a single dashed square -- so without the border there is nothing saying
+   where the set begins or ends. */
+.refs {
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .refsClear {
