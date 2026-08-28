@@ -64,8 +64,25 @@ into order, press play.
   `duration_seconds` is already on the row — and deliberately not taken.
 - **A correct order is visible before you press play.** In a Continue chain each
   clip opens on the frame the one before it ended on, so the tiles rhyme; a tile
-  that does not resemble its left neighbour's ending is misplaced. That is why
-  they are first frames.
+  that does not resemble its left neighbour's ending is misplaced.
+- **Each tile is two frames: what the clip opens on and what it ends on**
+  (#512). One frame per clip asked you to hold the previous ending in your head,
+  which is the one picture that was never on screen. With both, clip N's ending
+  sits directly beside clip N+1's beginning and the cut is a thing you look at
+  rather than remember. The gap between tiles is wider than the seam inside one
+  on purpose — one is a cut, the other is a clip's own middle skipped, and a row
+  where those read the same is a strip of frames with no joins in it.
+- **The picker narrows to the run's shape, and only Sequence asks it to.** Clips
+  of different aspect ratios cannot cut together at all, so the first clip picked
+  sets the shape and the dialog then offers what matches — with the count it hid
+  and the way back on screen, because a run whose shape you are still choosing is
+  a real state. `matchRatio` is a prop the caller passes; Frames picks one clip
+  out of the library and has no run to match.
+- **Skip lands on a clip and plays it.** Judging the third join by watching from
+  the top is most of a minute spent on two joins already settled. It costs the
+  gapless swap — the idle element is holding `index + 1`, so a jump anywhere else
+  loads a fresh source and blanks for a beat. That is the right trade: a skip is
+  a move _between_ cuts, never one of the cuts being judged.
 - **The clip picker moved to `lab/_components/`** when this page wanted it whole.
   Two lab pages share it; a second copy under another page's `_components/` is
   the same dialog drifting into two.
@@ -234,6 +251,17 @@ item.
   which is jsonb and already an open namespace. Deliberately more awkward than a
   real schema: outgrowing it is what earns promotion out, and the migration is
   the ceremony of graduating.
+
+  **`end_frame_path` (#512) is not an exception to that, and it is worth saying
+  why, because it looks like one.** The column was wanted by Sequence and added
+  anyway — but nothing lab-shaped is in it. It holds a fact about a clip, written
+  at ingest by `fal-completion.server.ts` beside the poster and served by
+  `/img/[id]?v=end`; delete this whole folder and the column, the extraction and
+  the route all still make sense. The rule is about a lab page storing its own
+  state, not about a lab page being the first thing to want something the app
+  can give every clip. If the answer to "who writes this, and does it survive
+  deleting `lab/`?" is the app and yes, it is not a lab migration.
+
 - **The rail collapses, and `layout.tsx` is a shell around a client
   component.** The collapsed state lives above both columns — the aside narrows
   and the main widens together — so `LabShell` owns it and the layout renders

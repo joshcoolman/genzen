@@ -22,10 +22,14 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
       question="Watch a run of clips back to back. Does the order actually cut together?"
     >
       <div className={styles.stack}>
-        <SequencePlayer clips={view.picked} />
+        <SequencePlayer
+          clips={view.picked}
+          onIndexChange={view.setPlayingIndex}
+        />
 
         <ClipRow
           clips={view.picked}
+          playingIndex={view.playingIndex}
           onAdd={() => view.setPickerOpen(true)}
           onRemove={view.removeClip}
           onMove={view.move}
@@ -56,6 +60,11 @@ export function View({ clips }: { clips: Array<VideoRecord> }) {
         pickedIds={new Set(view.picked.map((c) => c.id))}
         onConfirm={view.addClips}
         max={view.clips.length || 1}
+        /* The first clip picked sets the run's shape and every later one has to
+           match it (#512). Read off the run rather than chosen: you pick a
+           shape by picking a clip, which is one decision instead of two, and an
+           empty run constrains nothing. */
+        matchRatio={view.runRatio}
       />
     </LabPage>
   )

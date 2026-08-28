@@ -8,7 +8,11 @@
 
   display: flex;
   align-items: stretch;
-  gap: var(--space-8);
+  /* Wider than the seam inside a tile (#512). The two gaps have to be tellable
+     apart: this one is a cut between clips, that one is one clip's own middle
+     skipped over. Same-sized gaps turn the row into an undifferentiated strip
+     of frames and the cut stops being visible at all. */
+  gap: var(--space-16);
   padding-block: var(--space-8);
   overflow-x: auto;
 }
@@ -24,6 +28,43 @@
 
 .tile:active {
   cursor: grabbing;
+}
+
+/* Where the player is. A filled edge rather than a glow: the row is scanned
+   sideways while a run plays, and a tint on a tile that is mostly picture does
+   not survive whatever the picture happens to be. */
+.tilePlaying {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.frames {
+  display: flex;
+  align-items: stretch;
+}
+
+/* The clip's own middle, skipped. Deliberately quiet -- it separates two frames
+   of the same clip, and must not compete with the gap between tiles, which is
+   the cut. */
+.frames > * + * {
+  border-left: 1px solid var(--border);
+}
+
+/* Matches the `MediaBox` beside it exactly: same box, same letterboxing, same
+   mat. A pixel of difference here reads as the two frames being different
+   sizes, which would be a fact about the clip that is not true. */
+.endFrame {
+  flex: none;
+  width: var(--tile);
+  height: var(--tile);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--image-backing);
+  object-fit: contain;
+}
+
+.endMissing {
+  composes: endFrame;
 }
 
 /* The tile being carried, not the gap it will land in -- the browser draws the

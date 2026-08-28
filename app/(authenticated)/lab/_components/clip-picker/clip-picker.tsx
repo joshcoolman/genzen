@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
-import { clipFacts } from '../clip-facts'
+import { aspectLabel, aspectRatio, clipFacts, sameAspect } from '../clip-facts'
 import styles from './clip-picker.module.css'
 import type { VideoRecord } from '../../../video/_actions/generate-video.action'
 import {
@@ -46,6 +46,19 @@ const TILE = 132
  * **`max` defaults to 1 and the whole thing is written for more.** Selection is
  * a set and the caller takes an array, so picking several clips — to stitch, to
  * compare — is raising a number rather than rewriting this.
+ *
+ * **`matchRatio` narrows the grid to one shape, and only Sequence passes it**
+ * (#512). Clips of different shapes cannot cut together — a portrait clip after
+ * a landscape one has to be cropped or letterboxed mid-run — so once a run has
+ * a shape, the clips that can join it are the ones that share it. Passed by the
+ * caller rather than inferred here: the constraint is a fact about a *run*, and
+ * Frames, which picks one clip to pull a frame out of, has no run and no
+ * constraint.
+ *
+ * It filters rather than forbids, and the count of what it hid is on screen
+ * with the way back beside it. A hidden clip you cannot see the absence of is
+ * the dialog lying about what you own — and the shape a run should be is
+ * occasionally the thing you are still deciding.
  */
 export function ClipPicker({
   open,
@@ -54,6 +67,7 @@ export function ClipPicker({
   pickedIds,
   onConfirm,
   max = 1,
+  matchRatio = null,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -61,6 +75,8 @@ export function ClipPicker({
   pickedIds: Set<string>
   onConfirm: (clips: Array<VideoRecord>) => void
   max?: number
+  /** The shape the picked clips must share, or null for no constraint (#512). */
+  matchRatio?: number | null
 }) {
   /**
    * **An ordered list, not a set: the order you click in is the answer** (#497).
@@ -75,13 +91,32 @@ export function ClipPicker({
    * tiles say so as it happens.
    */
   const [selectedIds, setSelectedIds] = useState<Array<string>>([])
+  /** An escape hatch, not a preference: it resets with the dialog, below. */
+  const [showAllRatios, setShowAllRatios] = useState(false)
+
+  /* A clip with no recorded shape is hidden by the filter rather than let
+     through. Letting it through would put the one clip nobody can vouch for
+     into the run the filter exists to keep consistent -- and "Show all" is
+     right there, saying how many it is holding back. */
+  const shown = useMemo(() => {
+    if (matchRatio == null || showAllRatios) return clips
+    return clips.filter((clip) => sameAspect(aspectRatio(clip), matchRatio))
+  }, [clips, matchRatio, showAllRatios])
+
+  const hiddenCount = clips.length - shown.length
 
   // One clip means the click *is* the answer: a footer button to confirm a
   // choice that can only be one thing is a second click for nothing.
   const autoConfirm = max === 1
 
   useEffect(() => {
-    if (!open) setSelectedIds([])
+    if (!open) {
+      setSelectedIds([])
+      // Reopening starts constrained again. The override answers "let me look
+      // at everything this once"; a dialog that stayed unfiltered would quietly
+      // drop the constraint for the rest of the session.
+      setShowAllRatios(false)
+    }
   }, [open])
 
   const confirm = (ids: Array<string>) => {
@@ -109,14 +144,38 @@ export function ClipPicker({
       <DialogContent size="wide" className={styles.popup}>
         <DialogHeader>
           <DialogTitle>Clips</DialogTitle>
+          {matchRatio != null && (
+            <div className={styles.filter}>
+              <span>
+                {showAllRatios
+                  ? `Every shape · the run is ${aspectLabel(matchRatio)}`
+                  : `${aspectLabel(matchRatio)}, to match the run`}
+              </span>
+              {(hiddenCount > 0 || showAllRatios) && (
+                <button
+                  type="button"
+                  className={styles.filterToggle}
+                  onClick={() => setShowAllRatios((v) => !v)}
+                >
+                  {showAllRatios
+                    ? 'Match the run'
+                    : `Show all (${hiddenCount} hidden)`}
+                </button>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <div className={styles.grid}>
-          {clips.length === 0 ? (
-            <div className={styles.state}>No clips yet</div>
+          {shown.length === 0 ? (
+            <div className={styles.state}>
+              {clips.length === 0
+                ? 'No clips yet'
+                : `No clips are ${aspectLabel(matchRatio)}`}
+            </div>
           ) : (
             <div className={styles.tiles}>
-              {clips.map((clip) => {
+              {shown.map((clip) => {
                 /* The one already loaded reads as chosen and stays clickable:
                    with a single slot the picker is how you *change* clips, and
                    greying out the current one makes the dialog look broken when

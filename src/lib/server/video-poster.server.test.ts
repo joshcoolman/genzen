@@ -81,12 +81,43 @@ describe('extractVideoPoster', () => {
     expect(poster!.width).toBe(1280)
     expect(poster!.height).toBe(720)
 
-    expect(uploads).toHaveLength(1)
+    // Two now: the poster and the end frame (#512). The poster is first,
+    // because a clip that ends up with only one stored frame must have the one
+    // every surface already reads.
+    expect(uploads).toHaveLength(2)
+    expect(uploads[0].path).toBe('user-1/thumbs/ai_123_abc.webp')
     expect(uploads[0].contentType).toBe('image/webp')
 
     const meta = await sharp(uploads[0].body).metadata()
     expect(meta.format).toBe('webp')
     expect(meta.width).toBe(400)
+  }, 60_000)
+
+  it('stores the final frame too, and it is not the first one (#512)', async () => {
+    uploads.length = 0
+
+    const poster = await extractVideoPoster(
+      'user-1',
+      'user-1/ai_123_abc.mp4',
+      clip,
+    )
+
+    expect(poster!.endFramePath).toBe('user-1/thumbs/ai_123_abc-end.webp')
+    expect(uploads.map((u) => u.path)).toEqual([
+      'user-1/thumbs/ai_123_abc.webp',
+      'user-1/thumbs/ai_123_abc-end.webp',
+    ])
+
+    // Same encode as the poster: a mismatch here is a row of tiles that do not
+    // sit together, which is exactly what the page is for.
+    const end = await sharp(uploads[1].body).metadata()
+    expect(end.format).toBe('webp')
+    expect(end.width).toBe(400)
+
+    // The whole point. `testsrc` counts up on screen, so the last frame of a
+    // 3-second clip cannot be byte-identical to the first -- and if the seek
+    // silently landed back at zero, this is what catches it.
+    expect(uploads[1].body.equals(uploads[0].body)).toBe(false)
   }, 60_000)
 
   it('returns null for bytes that are not a video, uploading nothing', async () => {
