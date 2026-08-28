@@ -94,7 +94,12 @@ export function RefImageStrip({
           >
             <Plus className={styles.addIcon} />
           </button>
-          {showLabels && <p className={styles.addSpacer}>&nbsp;</p>}
+          {/* Only beside something that actually has a label. On an empty
+              strip there is nothing to line up with, and the reserved line
+              was pure height in a box whose whole job is to be small. */}
+          {showLabels && images.length > 0 && (
+            <p className={styles.addSpacer}>&nbsp;</p>
+          )}
         </div>
       )}
       <span className={styles.count}>

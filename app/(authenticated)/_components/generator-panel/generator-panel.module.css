@@ -31,34 +31,70 @@
   gap: var(--space-8);
 }
 
-/* `min-width: 0` is load-bearing, not tidiness: a flex item's floor is its
-   content width, so without it a wide label pushes its neighbours off the end
-   of the panel rather than sharing the row. */
-.fill {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Count and shape share a row; Generate takes the next one whole, so its label
-   never has to compete for width.
-
-   The stepper keeps its natural width and the ratio takes the remainder.
-   Splitting the row evenly stretched `− 1 +` into a wide box of mostly empty
-   space, which read as a text field rather than a stepper. */
+/* Shape, count, go. All three on one row, because the first two size to their
+   content -- neither wants to stretch, and splitting the row evenly used to
+   pull `− 1 +` into a wide box of mostly empty space that read as a text
+   field. Generate takes whatever is left, which in a 20rem dock is enough for
+   the verb and a number and not a noun. */
 .controls {
   display: flex;
   align-items: center;
   gap: var(--space-8);
 }
 
+/* `min-width: 0` is load-bearing, not tidiness: a flex item's floor is its
+   content width, so without it the label pushes its neighbours off the end of
+   the panel rather than being the thing that gives. */
 .generate {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
-/* A column of one since the heading went, so the gap is dormant -- kept on the
-   rhythm rather than a literal so it is right if a second row ever returns. */
-.refs {
+/* Heading above, box below -- the heading is not part of the thing it names,
+   the same way the dock's "Generate" sits above the panel rather than inside
+   it. */
+.refsGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--panel-rhythm);
+  gap: var(--space-6);
+}
+
+.refsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The dock's title, not an eyebrow. An uppercase tracked-out label would be a
+   second kind of heading in a column that already has one, and this is the
+   only group in the panel that needs naming -- which makes matching "Generate"
+   cheaper than establishing a convention for a set of one. */
+.refsLabel {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+}
+
+/* The reference set. The strip inside has no edges of its own -- an empty one
+   is a single dashed square -- so without the border there is nothing saying
+   where the set begins or ends. */
+.refs {
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.refsClear {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.refsClear:hover {
+  color: var(--text);
 }

@@ -1,13 +1,19 @@
-/* Minus / value / plus, sized to sit in a row of 36px form controls. */
+/* Minus / value / plus, sized to sit in a row of 36px form controls.
+
+   A pill, not a box, and the two steps are circles filled with a sunken wash
+   rather than bare glyphs. The square version read as a text field with two
+   icons parked in it -- the affordance was doing nothing to say the number is
+   adjusted rather than typed. The round targets on a rounded track say it
+   without a label. */
 
 .root {
   display: flex;
   align-items: center;
   gap: var(--space-4);
   height: 2.25rem;
-  padding-inline: var(--space-8);
+  padding: var(--space-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: var(--field);
   box-shadow: var(--shadow-raised);
 }
@@ -17,16 +23,21 @@
   cursor: not-allowed;
 }
 
+/* 1.75rem inside 0.25rem of padding is exactly the 2.25rem track, so the
+   circles touch the pill's inner edge and the shape reads as one control. */
 .step {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border: none;
-  border-radius: 0.25rem;
-  background: transparent;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
   color: var(--text-muted);
+  transition:
+    background-color var(--duration-normal) var(--ease-in-out),
+    color var(--duration-normal) var(--ease-in-out);
 }
 
 .step:hover {
