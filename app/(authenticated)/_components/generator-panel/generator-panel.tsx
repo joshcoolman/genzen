@@ -152,8 +152,10 @@ export function GeneratorPanel({
           styled like the dock's own "Generate" rather than as an eyebrow, so
           the panel has one kind of label rather than two. Clear rides with the
           heading, which is somewhere better than the end of a row of
-          thumbnails. Titles are shown for the same reason the box is drawn: a
-          wall of small squares is not a set you can name in a prompt. */}
+          thumbnails. No per-thumbnail titles: they are the source image's name,
+          which is a model name as often as anything descriptive, so the line
+          under each square cost height to say nothing. The ordinal badge is
+          what identifies an image the prompt refers to. */}
       <div className={styles.refsGroup}>
         <div className={styles.refsHead}>
           <span className={styles.refsLabel}>Ref images</span>
@@ -176,7 +178,6 @@ export function GeneratorPanel({
             }}
             onRemove={generator.removeRefImage}
             disabled={generator.loading || generator.maxRefImages === 0}
-            showLabels
           />
         </div>
       </div>
