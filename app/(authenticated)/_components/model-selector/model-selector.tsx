@@ -244,7 +244,11 @@ function ModelTable({
                 ? `${model.description} — uses ${model.capacity} of your ${stagedImageCount} images`
                 : model.description
             }
-            className={cx(styles.item, truncates && styles.itemTruncates)}
+            className={cx(
+              styles.item,
+              isSelected && styles.itemOn,
+              truncates && styles.itemTruncates,
+            )}
           >
             {isSelected ? (
               <CheckCircle2

@@ -144,12 +144,27 @@ export function GeneratorPanel({
           strip refusing an image was how staged work got deleted by ticking a
           smaller model. It still disables with no model selected at all --
           there is nothing to attach images to. */}
-      {/* No "Reference images" heading. The strip is a row of thumbnails and a
-          + box directly under the prompt, which is where an image would be
-          expected in a generate panel; the label was naming the obvious and
-          spending a line of a 20rem column to do it. The picker it opens says
-          what it is. */}
+      {/* The heading is back, and so is a box around the set. It was dropped as
+          naming the obvious, which it was -- but the strip has no edges of its
+          own, so an empty one was a lone dashed square floating between the
+          prompt and the controls with nothing saying where the group started
+          or stopped. The border draws the group; the label sits on it and
+          gives Clear somewhere to live that is not the end of a row of
+          thumbnails. Titles are shown for the same reason: a wall of small
+          squares is not a set you can name in a prompt. */}
       <div className={styles.refs}>
+        <div className={styles.refsHead}>
+          <span className={styles.refsLabel}>Ref images</span>
+          {generator.refImages.length > 0 && !generator.loading && (
+            <button
+              type="button"
+              onClick={() => generator.replaceRefImages([])}
+              className={styles.refsClear}
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <RefImageStrip
           images={generator.refImages}
           onAdd={() => {
@@ -157,8 +172,8 @@ export function GeneratorPanel({
             setPickerOpen(true)
           }}
           onRemove={generator.removeRefImage}
-          onClear={() => generator.replaceRefImages([])}
           disabled={generator.loading || generator.maxRefImages === 0}
+          showLabels
         />
       </div>
       <ExistingImagePicker
@@ -179,14 +194,27 @@ export function GeneratorPanel({
         }
       />
 
-      {/* How many and what shape, then the button. The aspect ratio moved down
-          from the dead source row (#297) -- it describes the request, so it
-          belongs with the count rather than above the prompt. Two rows rather
-          than three-in-one: in a 20rem dock a full-width Generate and a full
-          Generate label do not both fit beside these. The label carries the
-          count; the price is in the CostNote below it (#416), which is where
-          Video puts it too. */}
+      {/* Shape, count, go -- one row, left to right in the order you decide
+          them. The aspect ratio moved down from the dead source row (#297)
+          because it describes the request rather than the prompt.
+
+          This was two rows until the shape and the count both turned out to
+          size to their content: neither needs to stretch, so Generate takes
+          the remainder of a 20rem dock instead of a row of its own. What that
+          costs is the button's full label -- "Generate 6 images" does not fit
+          in what is left, so the button carries the bare count and drops the
+          noun. The number is the part that must not disappear: it is the
+          product of prompts, models and gens, so it is routinely larger than
+          anything on screen suggests, and above CONFIRM_ABOVE the dialog
+          spells the whole multiplication out. */}
       <div className={styles.controls}>
+        <AspectRatioSelect
+          orientation={generator.orientation}
+          aspectRatio={generator.aspectRatio}
+          onOrientationChange={generator.setOrientation}
+          onAspectRatioChange={generator.setAspectRatio}
+          disabled={generator.loading}
+        />
         <NumberStepper
           value={modelSelector.gensPerModel}
           min={1}
@@ -194,30 +222,20 @@ export function GeneratorPanel({
           onAdjust={modelSelector.adjustGens}
           disabled={generator.loading}
         />
-        <AspectRatioSelect
-          orientation={generator.orientation}
-          aspectRatio={generator.aspectRatio}
-          onOrientationChange={generator.setOrientation}
-          onAspectRatioChange={generator.setAspectRatio}
-          disabled={generator.loading}
-          className={styles.fill}
-        />
+        <ActionButton
+          onClick={() => void handleGenerateClick()}
+          loading={generator.loading}
+          /* Spinner only. There is no room beside it for a word at this width,
+             and the panel is disabled while a run is in flight anyway. */
+          loadingText=""
+          disabled={!generator.canGenerate}
+          className={styles.generate}
+        >
+          {generator.totalImages > 1
+            ? `Generate ${generator.totalImages}`
+            : 'Generate'}
+        </ActionButton>
       </div>
-      <ActionButton
-        onClick={() => void handleGenerateClick()}
-        loading={generator.loading}
-        loadingText={
-          generator.totalImages > 1
-            ? `Generating ${generator.totalImages} images...`
-            : 'Generating...'
-        }
-        disabled={!generator.canGenerate}
-        className={styles.generate}
-      >
-        {generator.totalImages > 1
-          ? `Generate ${generator.totalImages} images`
-          : 'Generate'}
-      </ActionButton>
 
       {/* Images had no cost figure at all until #416 -- on the one route where
           a stepper, a prompt list and multi-select models all multiply, so the

@@ -31,34 +31,64 @@
   gap: var(--space-8);
 }
 
-/* `min-width: 0` is load-bearing, not tidiness: a flex item's floor is its
-   content width, so without it a wide label pushes its neighbours off the end
-   of the panel rather than sharing the row. */
-.fill {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Count and shape share a row; Generate takes the next one whole, so its label
-   never has to compete for width.
-
-   The stepper keeps its natural width and the ratio takes the remainder.
-   Splitting the row evenly stretched `− 1 +` into a wide box of mostly empty
-   space, which read as a text field rather than a stepper. */
+/* Shape, count, go. All three on one row, because the first two size to their
+   content -- neither wants to stretch, and splitting the row evenly used to
+   pull `− 1 +` into a wide box of mostly empty space that read as a text
+   field. Generate takes whatever is left, which in a 20rem dock is enough for
+   the verb and a number and not a noun. */
 .controls {
   display: flex;
   align-items: center;
   gap: var(--space-8);
 }
 
+/* `min-width: 0` is load-bearing, not tidiness: a flex item's floor is its
+   content width, so without it the label pushes its neighbours off the end of
+   the panel rather than being the thing that gives. */
 .generate {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
-/* A column of one since the heading went, so the gap is dormant -- kept on the
-   rhythm rather than a literal so it is right if a second row ever returns. */
+/* The reference set, drawn as a group. The strip inside has no edges of its
+   own -- an empty one is a single dashed square -- so without the border there
+   was nothing saying where the set began or ended, and Clear had nowhere to sit
+   but the far end of a row of thumbnails. */
 .refs {
   display: flex;
   flex-direction: column;
-  gap: var(--panel-rhythm);
+  gap: var(--space-6);
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.refsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* The same eyebrow the model table's column heads wear, so the two labelled
+   groups in this column read as one convention. */
+.refsLabel {
+  font-size: var(--text-3xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: color-mix(in oklab, var(--text-muted) 60%, transparent);
+}
+
+.refsClear {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.refsClear:hover {
+  color: var(--text);
 }
