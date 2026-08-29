@@ -2,12 +2,12 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { OUTPAINT_MODEL_IDS } from './outpaint-models'
-import { buildOutpaintPrompt } from './outpaint-prompt'
 import type { PickedImage } from '../_components/image-input/image-input'
 import {
   estimateImageCostCents,
   getModelName,
 } from '#/features/ai-images/models'
+import { buildOutpaintPrompt } from '#/features/ai-images/outpaint'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
 import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'

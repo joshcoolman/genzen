@@ -6,6 +6,7 @@ import { GeneratorDock } from './_components/generator-dock/generator-dock'
 import { GroupHeading } from './_components/group-heading/group-heading'
 import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
+import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { ScopeRow } from './_components/scope-row/scope-row'
 import { HiddenBar } from './_components/hidden-bar/hidden-bar'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
@@ -41,7 +42,11 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     addReference,
     usePromptText,
     loadIntoPanel,
-    animate,
+    outpaintTarget,
+    startOutpaint,
+    cancelOutpaint,
+    outpainting,
+    runOutpaint,
     groups,
     workingByGroup,
     visibleGroupMembers,
@@ -134,7 +139,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onHide={(img) => void visibility.hide([img.id])}
           onRetry={gallery.retryImage}
           onDownload={download.start}
-          onAnimate={animate}
+          onOutpaint={startOutpaint}
           onOpen={viewer.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
@@ -220,6 +225,19 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onDelete={viewer.deleteAndAdvance}
         />
       )}
+
+      {/* One picture, one or more shapes (#430). Opened from a card's `...`;
+          it owns nothing but its own selection, so closing it is enough to
+          undo it. */}
+      <OutpaintDialog
+        image={outpaintTarget}
+        imageUrl={
+          outpaintTarget ? gallery.imageUrls[outpaintTarget.id] : undefined
+        }
+        busy={outpainting}
+        onGenerate={(ratios) => void runOutpaint(ratios)}
+        onCancel={cancelOutpaint}
+      />
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,
           or confirm the two that change what exists. */}

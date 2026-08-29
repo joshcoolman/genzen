@@ -2,12 +2,12 @@
 
 import {
   CheckCircle2,
-  Clapperboard,
   Download,
   EyeOff,
   FolderMinus,
   FolderPlus,
   ImageIcon,
+  Maximize2,
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
@@ -37,8 +37,8 @@ interface ImageCardProps {
    *  what the corner icon does, and Trash moves behind Cmd. */
   onHide?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  /** Take this still to /video as the first frame (#305). */
-  onAnimate?: (img: SavedAiImage) => void
+  /** Reframe it to other shapes (#430). Opens the ratio dialog. */
+  onOutpaint?: (img: SavedAiImage) => void
   /** The card click: opens the lightbox over everything. */
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
@@ -81,7 +81,7 @@ export function ImageCard({
   onDelete,
   onHide,
   onDownload,
-  onAnimate,
+  onOutpaint,
   onOpen,
   onAddReference,
   onUsePrompt,
@@ -104,24 +104,32 @@ export function ImageCard({
         }
       />
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-        {onDownload && (
-          <DropdownMenuItem onClick={() => onDownload(img)}>
-            <Download />
-            Download
-          </DropdownMenuItem>
-        )}
-        {onAnimate && img.status === 'completed' && (
-          <DropdownMenuItem onClick={() => onAnimate(img)}>
-            <Clapperboard />
-            Animate
-          </DropdownMenuItem>
-        )}
+        {/* The order is the one they get reached in, not the one they were
+            added in: file it, reshape it, take a copy, throw it away. Animate
+            was above these and is gone -- /video takes a first frame of its
+            own, and the handoff was a verb nobody used.
 
-        {/* Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
+            Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
         {onAddToGroup && (
           <DropdownMenuItem onClick={() => onAddToGroup(img)}>
             <FolderPlus />
             Add to group
+          </DropdownMenuItem>
+        )}
+
+        {/* Only once there is a picture to widen -- a pending or failed row
+            has no pixels to extend. */}
+        {onOutpaint && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onOutpaint(img)}>
+            <Maximize2 />
+            Outpaint
+          </DropdownMenuItem>
+        )}
+
+        {onDownload && (
+          <DropdownMenuItem onClick={() => onDownload(img)}>
+            <Download />
+            Download
           </DropdownMenuItem>
         )}
 

@@ -16,6 +16,12 @@ import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
+import { generateImage } from '#/features/ai-images/server/generate-image.action'
+import {
+  buildOutpaintPrompt,
+  outpaintModelId,
+} from '#/features/ai-images/outpaint'
+import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -862,14 +868,86 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
-  /** Take a still to /video as its first frame (#305). A navigation rather
-   *  than a panel: video is its own route, and the image travels as an id in
-   *  the URL so the target needs no shared state. */
-  const animate = useCallback(
-    (img: SavedAiImage) => {
-      router.push(`/video?image=${img.id}`)
+  /**
+   * Outpaint (#430): reframe one picture into one or more other shapes.
+   *
+   * **A side errand, not a change of context.** Nothing here touches the
+   * panel, the reference set or the model selection -- the whole gesture is
+   * "this picture, these shapes, go", and the results arrive in the grid like
+   * any other generation. That is the difference from Load, which exists to
+   * put you back in the middle of a past setup.
+   *
+   * Submitted one after another rather than together, as the lab and Video do:
+   * each call reserves a row before it reaches FAL, and firing them at once
+   * interleaves the reservations against a queue that answers in its own
+   * order. Optimistic cards go up first so a press with four shapes shows four
+   * tiles immediately, and each is swapped for its real row or dropped on the
+   * spot -- the same contract `useGenerator` has with `onSubmitOutcome`.
+   */
+  const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
+    null,
+  )
+  const [outpainting, setOutpainting] = useState(false)
+
+  const runOutpaint = useCallback(
+    async (ratios: Array<string>) => {
+      const source = outpaintTarget
+      if (!source || ratios.length === 0) return
+      const model = outpaintModelId()
+
+      setOutpainting(true)
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const placeholders = ratios.map((ratio) => ({
+        ratio,
+        placeholderId: `outpaint-${source.id}-${ratio}-${Date.now()}`,
+      }))
+      for (const p of placeholders) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: p.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: `Outpaint to ${p.ratio}`,
+              sourceImageId: source.id,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      for (const p of placeholders) {
+        try {
+          const created = await generateImage({
+            prompt: buildOutpaintPrompt(p.ratio),
+            model,
+            origin: 'images',
+            aspectRatio: p.ratio,
+            sourceImageId: source.id,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(p.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(p.placeholderId)
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : `Outpaint to ${p.ratio} failed`,
+          )
+        }
+      }
+
+      setOutpainting(false)
+      setOutpaintTarget(null)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
     },
-    [router],
+    [outpaintTarget, gallery, groups, prefs, activeGroupId],
   )
 
   return {
@@ -915,7 +993,11 @@ export function useView(initial: Array<SavedAiImage>) {
     addReference,
     usePromptText,
     loadIntoPanel,
-    animate,
+    outpaintTarget,
+    startOutpaint: setOutpaintTarget,
+    cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),
+    outpainting,
+    runOutpaint,
     error,
     setError,
   }

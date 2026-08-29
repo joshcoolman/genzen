@@ -1,0 +1,115 @@
+/* Wide enough for three shapes to a row, so Landscape and Portrait each read
+   as two short rows rather than one long scroll. */
+.content {
+  max-width: 34rem;
+}
+
+.body {
+  display: flex;
+  gap: var(--space-16);
+  align-items: flex-start;
+}
+
+/* The source, cropped square. Its true shape is what the grid below is about,
+   so drawing it at that shape here would put two answers on the screen. */
+.source {
+  flex: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--slot-empty);
+  background-size: cover;
+  background-position: center;
+}
+
+.groups {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.groupLabel {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  /* Or `Current` on the one dashed tile makes its whole column wider than the
+     other two, and the Portrait row stops lining up with Landscape. */
+  min-width: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.tile:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+
+/* Taken reads off the border, as the grid's selected cards do -- a filled tile
+   competes with the icon inside it, which is the thing being chosen. */
+.tileOn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The shape it already is. Not clickable and not hidden: absent, it would read
+   as unsupported. */
+.tileCurrent {
+  border-style: dashed;
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.tileLabel {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.tileNote {
+  flex: none;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.tileCheck {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+}
+
+/* Under the estimate, quiet: which model does this is a fact worth being able
+   to find, not a decision on offer. */
+.model {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
