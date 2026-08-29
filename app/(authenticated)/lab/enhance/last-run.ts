@@ -48,6 +48,16 @@ export interface EnhanceRun {
    *  the prompt — it is half of what produced these cards, and a grid you
    *  cannot attribute is not evidence. */
   steering: string
+  /**
+   * The clip spec this ran at, on a multi-shot run only.
+   *
+   * Kept for the same reason as the prompt and the steering: they are part of
+   * what produced these cards, and a script read back without the length it
+   * was timed to cannot be checked against anything. Absent on an image run
+   * and on runs written before #522.
+   */
+  duration?: number
+  aspectRatio?: string
   cards: Array<EnhanceCard>
 }
 
@@ -76,7 +86,8 @@ export function readLastRun(): EnhanceRun | null {
     if (!parsed || typeof parsed !== 'object') return null
     // Runs written before steering existed carry no such field; an absent
     // steer and an empty one are the same thing.
-    const { prompt, steering, cards } = parsed as EnhanceRun
+    const { prompt, steering, duration, aspectRatio, cards } =
+      parsed as EnhanceRun
     if (typeof prompt !== 'string' || !Array.isArray(cards)) return null
     // Cast back to "might be anything": the declared type is what a writer
     // promised, and this is a string an older version of the app may have left.
@@ -96,6 +107,8 @@ export function readLastRun(): EnhanceRun | null {
     return {
       prompt,
       steering: typeof steering === 'string' ? steering : '',
+      ...(typeof duration === 'number' ? { duration } : {}),
+      ...(typeof aspectRatio === 'string' ? { aspectRatio } : {}),
       cards: valid,
     }
   } catch {

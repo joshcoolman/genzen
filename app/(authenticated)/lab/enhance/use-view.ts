@@ -10,7 +10,11 @@ import {
   slugFor,
 } from '#/features/ai-images/models'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.action'
-import { MULTI_SHOT_PROMPTS, multiShotPrompt } from '#/lib/prompts/multi-shot'
+import {
+  MULTI_SHOT_PROMPTS,
+  multiShotOptions,
+  multiShotPrompt,
+} from '#/lib/prompts/multi-shot'
 
 /** What steers a model with no guide of its own. Named on the card rather than
  *  once at the top of the page, so every card points at the file that actually
@@ -47,6 +51,15 @@ export function useView() {
   const [prompt, setPrompt] = useState('')
   const [target, setTarget] = useState<string>(IMAGE_TARGET)
   const [steering, setSteering] = useState('')
+  // The clip's length and shape. Only meaningful for a multi-shot target, and
+  // seeded from the first writer's own video model rather than a literal --
+  // a number here that its model refuses is a script that cannot be generated.
+  const [duration, setDuration] = useState(
+    () => multiShotOptions(MULTI_SHOT_PROMPTS[0].id)?.defaultDuration ?? 10,
+  )
+  const [aspectRatio, setAspectRatio] = useState(
+    () => multiShotOptions(MULTI_SHOT_PROMPTS[0].id)?.aspectRatios[0] ?? '16:9',
+  )
   const [run, setRun] = useState<EnhanceRun | null>(null)
   const [isRunning, setIsRunning] = useState(false)
 
@@ -81,6 +94,11 @@ export function useView() {
       setRun(stored)
       setPrompt(stored.prompt)
       setSteering(stored.steering)
+      // Restored for the same reason as the prompt: the point of coming back
+      // is pressing Enhance again after editing the `.md`, and a run at a
+      // different length is not the same run.
+      if (stored.duration) setDuration(stored.duration)
+      if (stored.aspectRatio) setAspectRatio(stored.aspectRatio)
     }
     setHydrated(true)
   }, [])
@@ -99,6 +117,23 @@ export function useView() {
   )
 
   const multiShot = multiShotPrompt(target)
+
+  // Off the writer's video model, so switching to a writer for a different
+  // model re-offers that model's lengths and shapes. Null for the image
+  // target, where the controls are not part of the question.
+  const shotOptions = useMemo(() => multiShotOptions(target), [target])
+
+  // Same coercion the video route does, for the same reason: a value carried
+  // across a target switch can be one the new model refuses.
+  useEffect(() => {
+    if (!shotOptions) return
+    if (!shotOptions.durations.includes(duration)) {
+      setDuration(shotOptions.defaultDuration)
+    }
+    if (!shotOptions.aspectRatios.includes(aspectRatio)) {
+      setAspectRatio(shotOptions.aspectRatios[0])
+    }
+  }, [shotOptions, duration, aspectRatio])
 
   const enhance = useCallback(async () => {
     const input = prompt.trim()
@@ -131,7 +166,12 @@ export function useView() {
           output: '',
           error: null,
         }))
-    setRun({ prompt: input, steering: steer, cards })
+    setRun({
+      prompt: input,
+      steering: steer,
+      cards,
+      ...(multiShot ? { duration, aspectRatio } : {}),
+    })
 
     const settle = (modelId: string, patch: Partial<EnhanceCard>) =>
       setRun((current) =>
@@ -155,7 +195,7 @@ export function useView() {
           const { enhancedPrompt } = await enhancePrompt({
             prompt: input,
             ...(multiShot
-              ? { multiShotId: multiShot.id }
+              ? { multiShotId: multiShot.id, duration, aspectRatio }
               : { modelSlug: slugFor(card.modelId) }),
             ...(steer ? { steering: steer } : {}),
           })
@@ -170,7 +210,7 @@ export function useView() {
     )
 
     setIsRunning(false)
-  }, [prompt, steering, selectedModels, multiShot])
+  }, [prompt, steering, selectedModels, multiShot, duration, aspectRatio])
 
   const clear = useCallback(() => setRun(null), [])
 
@@ -184,6 +224,11 @@ export function useView() {
     modelSelector,
     target,
     setTarget,
+    duration,
+    setDuration,
+    aspectRatio,
+    setAspectRatio,
+    shotOptions,
     isMultiShot: multiShot != null,
     canRun:
       prompt.trim().length > 0 &&

@@ -2,6 +2,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DESCRIBE_MODES } from './describe'
+import { MULTI_SHOT_PROMPTS, multiShotOptions } from './multi-shot'
+import { videoModelBySlug } from '#/features/video/models'
 
 const ROOT = new URL('../../../', import.meta.url).pathname
 const PROMPTS = join(ROOT, 'src/lib/prompts')
@@ -75,5 +77,57 @@ describe('describe registry', () => {
       expect(system.length, mode.id).toBeGreaterThan(100)
       expect(readFileSync(join(ROOT, mode.file), 'utf8')).toBe(system)
     }
+  })
+})
+
+describe('multi-shot registry', () => {
+  it('loads real prose for every writer, and names a file that exists', async () => {
+    for (const writer of MULTI_SHOT_PROMPTS) {
+      const { default: system } = await writer.system()
+      expect(system.length, writer.id).toBeGreaterThan(100)
+      expect(readFileSync(join(ROOT, writer.file), 'utf8')).toBe(system)
+    }
+  })
+
+  it('points every writer at a video model that exists', () => {
+    // The controls derive from this record. A slug that resolves to nothing
+    // would leave the lab with no durations to offer and no way to say why.
+    for (const writer of MULTI_SHOT_PROMPTS) {
+      expect(videoModelBySlug(writer.videoModelSlug), writer.id).toBeDefined()
+    }
+  })
+
+  it("offers only lengths and shapes the writer's own model accepts", () => {
+    // The whole reason the options come off the lineup (#522): a script timed
+    // to 20s for a model whose ceiling is 15 reads fine and fails at FAL, long
+    // after the words looked right.
+    for (const writer of MULTI_SHOT_PROMPTS) {
+      const options = multiShotOptions(writer.id)!
+      const model = videoModelBySlug(writer.videoModelSlug)!
+      expect(options.durations, writer.id).toEqual(model.durations)
+      expect(options.durations, writer.id).toContain(options.defaultDuration)
+      // Text-to-video ratios, so `auto` -- which needs an image to match -- is
+      // never offered.
+      expect(options.aspectRatios, writer.id).not.toContain('auto')
+      expect(options.aspectRatios.length, writer.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('documents a split for every duration its model offers', () => {
+    // The instruction hands the model a fixed split per length because the
+    // arithmetic is where it fails. A duration the control can select but the
+    // table does not list sends it back to working it out as it goes.
+    const md = readFileSync(
+      join(ROOT, 'src/lib/prompts/multi-shot/minimax-h3.md'),
+      'utf8',
+    )
+    for (const seconds of multiShotOptions('minimax-h3')!.durations) {
+      expect(md, `${seconds}s split`).toContain(`- ${seconds}s -- `)
+    }
+  })
+
+  it('has no writer id colliding with the image target', () => {
+    // `IMAGE_TARGET` shares the target dropdown with these ids.
+    expect(MULTI_SHOT_PROMPTS.map((p) => p.id)).not.toContain('image')
   })
 })
