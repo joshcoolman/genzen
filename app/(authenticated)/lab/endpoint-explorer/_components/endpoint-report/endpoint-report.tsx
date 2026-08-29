@@ -18,6 +18,10 @@ function describeField(field: ParsedField): string {
   switch (field.kind) {
     case 'media':
       return `${field.mediaKind}${field.multiple ? `s${field.maxItems ? ` (up to ${field.maxItems})` : ''}` : ''}`
+    case 'group':
+      return field.multiple
+        ? `repeats: ${field.fields?.length ?? 0} fields`
+        : `${field.fields?.length ?? 0} fields`
     case 'enum':
       return `one of ${field.enumValues?.length ?? 0}`
     case 'number': {
@@ -34,6 +38,43 @@ function describeField(field: ParsedField): string {
     case 'text':
       return 'text'
   }
+}
+
+/**
+ * One field, and a group's members under it.
+ *
+ * Nested rather than flattened with a dotted name: `elements` repeating four
+ * fields is one control to build, and a flat list of `elements.voice_id` would
+ * read as four. The indent is the only thing saying "these come as a set".
+ */
+function FieldRow({ field }: { field: ParsedField }) {
+  return (
+    <li className={cx(styles.field, !field.kind && styles.fieldBad)}>
+      <span className={styles.row}>
+        <span className={styles.mark} aria-hidden="true">
+          {field.kind ? <Check size={14} /> : <X size={14} />}
+        </span>
+        <code className={styles.fieldName}>{field.name}</code>
+        <span className={styles.fieldKind}>
+          {describeField(field)}
+          {/* Muted, after the description, rather than a mark on the name. A
+              red asterisk beside a green tick reads as two verdicts about the
+              same field when only one of them is a verdict at all. */}
+          {field.required && <span className={styles.req}>required</span>}
+        </span>
+        {field.reason && (
+          <span className={styles.fieldReason}>{field.reason}</span>
+        )}
+      </span>
+      {field.fields && (
+        <ul className={styles.nested}>
+          {field.fields.map((inner) => (
+            <FieldRow key={inner.name} field={inner} />
+          ))}
+        </ul>
+      )}
+    </li>
+  )
 }
 
 export function EndpointReport({
@@ -120,25 +161,7 @@ export function EndpointReport({
 
       <ul className={styles.fields}>
         {report.fields.map((field) => (
-          <li
-            key={field.name}
-            className={cx(styles.field, !field.kind && styles.fieldBad)}
-          >
-            <span className={styles.mark} aria-hidden="true">
-              {field.kind ? <Check size={14} /> : <X size={14} />}
-            </span>
-            <code className={styles.fieldName}>{field.name}</code>
-            <span className={styles.fieldKind}>
-              {describeField(field)}
-              {/* Muted, after the description, rather than a mark on the name.
-                  A red asterisk beside a green tick reads as two verdicts about
-                  the same field when only one of them is a verdict at all. */}
-              {field.required && <span className={styles.req}>required</span>}
-            </span>
-            {field.reason && (
-              <span className={styles.fieldReason}>{field.reason}</span>
-            )}
-          </li>
+          <FieldRow key={field.name} field={field} />
         ))}
       </ul>
 

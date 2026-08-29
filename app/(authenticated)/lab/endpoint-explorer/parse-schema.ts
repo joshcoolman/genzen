@@ -16,6 +16,12 @@
  * `mirelo-ai/sfx-v1.5/video-to-video` carries neither and wraps every optional
  * in `anyOf [T, null]`. So both are treated as hints with a fallback, and the
  * `anyOf` unwrap is the first thing that happens to any property.
+ *
+ * **The media hint has two spellings.** `_fal_ui_field: "image"` at the top
+ * level, `ui: { field: "image" }` inside a nested schema -- Kling v3's element
+ * fields carry only the second. `uiFieldOf` reads both; a reader that knew one
+ * classified those by name alone and would miss any media param not ending in
+ * `_url`.
  */
 
 /** What kind of control a field would need. Five, and the list is the point:
@@ -27,6 +33,17 @@ export type FieldKind =
   | 'number'
   | 'boolean'
   | 'media'
+  /**
+   * A set of fields treated as one thing -- Kling v3's `multi_prompt` (a shot
+   * list of prompt + duration) and its `elements` (a character as a frontal
+   * image, reference angles and a voice). With `multiple`, the group repeats.
+   *
+   * A sixth kind rather than a special case of `media` or `text`, because it is
+   * the one that is not a control at all: it is a small form, and drawing it
+   * means a repeater. Reported here so the shape is visible; the control that
+   * renders it comes with the rest of them.
+   */
+  | 'group'
 
 /** What a media slot holds, and what an output is. The three we can display. */
 export type MediaKind = 'image' | 'video' | 'audio'
@@ -37,8 +54,19 @@ export interface ParsedField {
   /** Null when the field could not be classified -- `reason` says why. */
   kind: FieldKind | null
   mediaKind?: MediaKind
-  /** A media field that takes several files -- `image_urls`, not `image_url`. */
+  /**
+   * The field repeats: several files for a `media`, several rows for a `group`.
+   * `image_urls` rather than `image_url`; a shot list rather than one shot.
+   */
   multiple?: boolean
+  /**
+   * A `media` slot FAL wants as a `{ url }` object rather than a bare string --
+   * cassetteai's `video_url` is a `$ref` to its `Video` schema. Same control,
+   * different thing to send, so the difference is recorded rather than lost.
+   */
+  asObject?: boolean
+  /** A `group`'s own fields, parsed exactly as the top-level ones are. */
+  fields?: Array<ParsedField>
   /** How many, where the schema caps it. Only meaningful with `multiple`. */
   maxItems?: number
   required: boolean
@@ -237,14 +265,116 @@ function mediaKindFrom(name: string, uiField?: string): MediaKind | null {
   return null
 }
 
+/**
+ * The media hint, in either spelling FAL uses.
+ *
+ * `_fal_ui_field: "image"` at the top level, `ui: { field: "image" }` inside a
+ * nested schema. Same fact, two shapes, and Kling v3's element fields carry
+ * only the second -- so a reader that knew one spelling classified them by
+ * name alone and would have missed any media param not ending in `_url`.
+ */
+function uiFieldOf(schema: Obj): string | undefined {
+  const flat = str(schema._fal_ui_field)
+  if (flat) return flat
+  return isObj(schema.ui) ? str(schema.ui.field) : undefined
+}
+
 /** Is this string field a file the user picks, rather than text they type? */
 function looksLikeMedia(name: string, schema: Obj): boolean {
-  if (str(schema._fal_ui_field)) return true
+  if (uiFieldOf(schema)) return true
   if (str(schema.format) === 'uri') return true
   return /_url$/.test(name) || /_urls$/.test(name)
 }
 
-function parseField(name: string, raw: Obj, required: boolean): ParsedField {
+/** Does this schema describe a file -- a `url` to fetch the thing by? */
+function isFileSchema(schema: Obj): boolean {
+  return isObj(schema.properties) && 'url' in schema.properties
+}
+
+/**
+ * Every field of an object schema, in the order FAL publishes.
+ *
+ * Shared by the top-level input and by a group's members, deliberately: a shot
+ * inside `multi_prompt` carries `x-fal-order-properties` exactly as the request
+ * does, and a second walk that read it differently would lay the inner form out
+ * by accident while the outer one was authored.
+ */
+function fieldsOf(doc: Obj, schema: Obj, depth = 0): Array<ParsedField> {
+  const properties = isObj(schema.properties) ? schema.properties : {}
+  const required = new Set(
+    (Array.isArray(schema.required) ? schema.required : []).filter(
+      (v): v is string => typeof v === 'string',
+    ),
+  )
+
+  // FAL's authored order where it is published, the document's own key order
+  // otherwise -- which is at least stable, and never alphabetical.
+  const declaredOrder = (
+    Array.isArray(schema['x-fal-order-properties'])
+      ? (schema['x-fal-order-properties'] as Array<unknown>)
+      : []
+  ).filter((v): v is string => typeof v === 'string')
+
+  const names = [
+    ...declaredOrder.filter((n) => n in properties),
+    ...Object.keys(properties).filter((n) => !declaredOrder.includes(n)),
+  ]
+
+  return names.map((name) => {
+    const raw = properties[name]
+    return parseField(
+      doc,
+      name,
+      isObj(raw) ? raw : {},
+      required.has(name),
+      depth,
+    )
+  })
+}
+
+/**
+ * An object schema read as a set of fields.
+ *
+ * Returns null rather than a refusal when there is nothing to read, so the
+ * caller keeps its own wording for what it was actually looking at -- "a list
+ * of values" and "a nested object" are different sentences about the same
+ * failure to find fields.
+ *
+ * **A group is only as supported as its members.** One field inside it we
+ * cannot draw means a form with a hole in it, which is the same objection as an
+ * unsupported optional at the top level.
+ */
+function asGroup(
+  doc: Obj,
+  base: ParsedField,
+  target: Obj,
+  depth: number,
+  multiple: boolean,
+): ParsedField | null {
+  if (depth >= 1) return { ...base, reason: 'nested too deep to draw' }
+  if (!isObj(target.properties)) return null
+
+  const fields = fieldsOf(doc, target, depth + 1)
+  if (fields.length === 0) return null
+
+  const broken = fields.find((f) => f.kind === null)
+  if (broken) {
+    return { ...base, reason: `${broken.name}: ${broken.reason}` }
+  }
+
+  return { ...base, kind: 'group', multiple, fields }
+}
+
+function parseField(
+  doc: Obj,
+  name: string,
+  raw: Obj,
+  required: boolean,
+  /** Groups may hold fields; they may not hold groups. One level is what the
+   *  real schemas use, and a cap is also the loop guard for a `$ref` that
+   *  eventually points back at itself. */
+  depth = 0,
+): ParsedField {
   const { schema, ambiguous } = unwrapNullable(raw)
 
   const base: ParsedField = {
@@ -299,7 +429,7 @@ function parseField(name: string, raw: Obj, required: boolean): ParsedField {
 
   if (type === 'string') {
     if (looksLikeMedia(name, schema)) {
-      const mediaKind = mediaKindFrom(name, str(schema._fal_ui_field))
+      const mediaKind = mediaKindFrom(name, uiFieldOf(schema))
       if (!mediaKind) {
         return { ...base, reason: 'a file input we cannot tell the type of' }
       }
@@ -318,9 +448,12 @@ function parseField(name: string, raw: Obj, required: boolean): ParsedField {
     // the app already has. `image_urls` is how every multi-image editor on FAL
     // spells it (Seedream, Nano Banana, Recraft), so refusing arrays outright
     // failed the commonest shape there is.
-    const items = isObj(schema.items) ? schema.items : {}
+    const rawItems = isObj(schema.items) ? schema.items : {}
+    const itemRef = refOf(rawItems)
+    const items = itemRef ? (resolveRef(doc, itemRef) ?? rawItems) : rawItems
+
     if (str(items.type) === 'string' && looksLikeMedia(name, items)) {
-      const mediaKind = mediaKindFrom(name, str(items._fal_ui_field))
+      const mediaKind = mediaKindFrom(name, uiFieldOf(items))
       if (mediaKind) {
         return {
           ...base,
@@ -331,9 +464,44 @@ function parseField(name: string, raw: Obj, required: boolean): ParsedField {
         }
       }
     }
+
+    // A list of File objects is still a media slot, not a group.
+    if (isFileSchema(items)) {
+      const mediaKind = mediaKindFrom(name, uiFieldOf(items))
+      if (mediaKind) {
+        return {
+          ...base,
+          kind: 'media',
+          mediaKind,
+          multiple: true,
+          asObject: true,
+          maxItems: num(schema.maxItems),
+        }
+      }
+    }
+
+    const group = asGroup(doc, base, items, depth, true)
+    if (group) return group
     return { ...base, reason: 'a list of values -- no control for it yet' }
   }
-  if (type === 'object' || refOf(raw)) {
+
+  const selfRef = refOf(raw) ?? refOf(schema)
+  if (type === 'object' || selfRef) {
+    const target = selfRef ? (resolveRef(doc, selfRef) ?? schema) : schema
+
+    // `{ url, file_name, ... }` is a file, whatever it is called -- cassetteai
+    // asks for its video that way rather than as a bare string. Same control as
+    // any other media slot; only what gets sent differs.
+    if (isFileSchema(target)) {
+      const mediaKind = mediaKindFrom(name, uiFieldOf(target))
+      if (mediaKind) {
+        return { ...base, kind: 'media', mediaKind, asObject: true }
+      }
+      return { ...base, reason: 'a file input we cannot tell the type of' }
+    }
+
+    const group = asGroup(doc, base, target, depth, false)
+    if (group) return group
     return { ...base, reason: 'a nested object -- no control for it yet' }
   }
 
@@ -417,30 +585,7 @@ export function parseEndpointSchema(
 
   if (!input) reasons.push('no request schema in the document')
 
-  const properties = input && isObj(input.properties) ? input.properties : {}
-  const requiredList =
-    input && Array.isArray(input.required) ? input.required : []
-  const required = new Set(
-    requiredList.filter((v): v is string => typeof v === 'string'),
-  )
-
-  // FAL's authored order where it is published, the document's own key order
-  // otherwise -- which is at least stable, and never alphabetical.
-  const declaredOrder =
-    input && Array.isArray(input['x-fal-order-properties'])
-      ? (input['x-fal-order-properties'] as Array<unknown>).filter(
-          (v): v is string => typeof v === 'string',
-        )
-      : []
-  const names = [
-    ...declaredOrder.filter((n) => n in properties),
-    ...Object.keys(properties).filter((n) => !declaredOrder.includes(n)),
-  ]
-
-  const fields = names.map((name) => {
-    const raw = properties[name]
-    return parseField(name, isObj(raw) ? raw : {}, required.has(name))
-  })
+  const fields = input ? fieldsOf(doc, input) : []
 
   for (const field of fields) {
     if (field.kind === null) {

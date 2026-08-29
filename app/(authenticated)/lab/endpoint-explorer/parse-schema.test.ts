@@ -249,6 +249,120 @@ describe('parseEndpointSchema', () => {
     expect(parsed.supported).toBe(true)
   })
 
+  it('reads an array of objects as one repeating group', () => {
+    const parsed = parseEndpointSchema(
+      'fal-ai/kling-video/v3/pro/image-to-video',
+      doc({
+        properties: {
+          multi_prompt: {
+            anyOf: [
+              {
+                type: 'array',
+                items: { $ref: '#/components/schemas/Shot' },
+              },
+              { type: 'null' },
+            ],
+          },
+        },
+        output: VIDEO_OUT,
+        schemas: {
+          File: FILE,
+          Shot: {
+            type: 'object',
+            required: ['prompt'],
+            'x-fal-order-properties': ['prompt', 'duration'],
+            properties: {
+              duration: { type: 'string', enum: ['5', '10'] },
+              prompt: { type: 'string' },
+            },
+          },
+        },
+      }),
+    )
+
+    expect(parsed.supported).toBe(true)
+    const [field] = parsed.fields
+    expect(field.kind).toBe('group')
+    expect(field.multiple).toBe(true)
+    // The group's own `x-fal-order-properties` is honoured, not just the
+    // request's -- a shot is authored the same way the request is.
+    expect(field.fields?.map((f) => f.name)).toEqual(['prompt', 'duration'])
+    expect(field.fields?.map((f) => f.kind)).toEqual(['textarea', 'enum'])
+    expect(field.fields?.[0].required).toBe(true)
+  })
+
+  it('fails a group whose own member cannot be drawn', () => {
+    const parsed = parseEndpointSchema(
+      'acme/thing',
+      doc({
+        properties: {
+          rows: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Row' },
+          },
+        },
+        output: VIDEO_OUT,
+        schemas: {
+          File: FILE,
+          Row: {
+            type: 'object',
+            properties: {
+              weights: { type: 'array', items: { type: 'number' } },
+            },
+          },
+        },
+      }),
+    )
+
+    // A form with a hole in it is the same objection as an unsupported
+    // optional at the top level.
+    expect(parsed.supported).toBe(false)
+    expect(parsed.fields[0].kind).toBeNull()
+    expect(parsed.fields[0].reason).toContain('weights')
+  })
+
+  it('reads a $ref to a File object as a media slot, not a nested object', () => {
+    const parsed = parseEndpointSchema(
+      'cassetteai/video-sound-effects-generator',
+      doc({
+        properties: { video_url: { $ref: '#/components/schemas/Video' } },
+        required: ['video_url'],
+        output: VIDEO_OUT,
+        schemas: { File: FILE, Video: FILE },
+      }),
+    )
+
+    const [field] = parsed.fields
+    expect(field.kind).toBe('media')
+    expect(field.mediaKind).toBe('video')
+    // Same control, different thing to send: FAL wants `{ url }` here rather
+    // than a bare string.
+    expect(field.asObject).toBe(true)
+    expect(parsed.supported).toBe(true)
+  })
+
+  it('reads the media hint in either spelling FAL uses', () => {
+    const parsed = parseEndpointSchema(
+      'acme/thing',
+      doc({
+        properties: {
+          // Nested schemas carry `ui: { field }`; top-level ones carry
+          // `_fal_ui_field`. A reader that knew one spelling classified Kling's
+          // element fields by name alone.
+          poster: { type: 'string', ui: { field: 'image' } },
+          clip: { type: 'string', _fal_ui_field: 'video' },
+        },
+        output: VIDEO_OUT,
+        schemas: { File: FILE },
+      }),
+    )
+
+    expect(parsed.fields.map((f) => [f.kind, f.mediaKind])).toEqual([
+      ['media', 'image'],
+      ['media', 'video'],
+    ])
+  })
+
   it('refuses an output it could not display', () => {
     const parsed = parseEndpointSchema(
       'recraft/v4/pro/create-style',

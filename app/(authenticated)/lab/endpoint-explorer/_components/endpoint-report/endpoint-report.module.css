@@ -107,6 +107,11 @@
 /* A fixed first column so the marks line up into a readable stripe -- scanning
    for the red ones is the whole way this list gets used. */
 .field {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
   display: grid;
   grid-template-columns: 1.25rem minmax(0, 14rem) minmax(0, auto) minmax(0, 1fr);
   align-items: baseline;
@@ -121,8 +126,21 @@
   align-items: center;
 }
 
-.fieldBad .mark {
+.fieldBad > .row > .mark {
   color: var(--danger);
+}
+
+/* A group's members, indented under it. The rule is the thing that says "these
+   arrive as a set" -- a flat list would read as four unrelated fields. */
+.nested {
+  list-style: none;
+  margin: 0.25rem 0 0.375rem;
+  padding: 0 0 0 1.75rem;
+  border-left: 1px solid var(--border);
+  margin-left: 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .fieldName {
@@ -163,7 +181,7 @@
 }
 
 @media (max-width: 40rem) {
-  .field {
+  .row {
     grid-template-columns: 1.25rem minmax(0, 1fr);
   }
 

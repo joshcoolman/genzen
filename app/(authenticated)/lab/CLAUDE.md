@@ -217,14 +217,32 @@ tail with no end decides whether the real thing is worth building.
   offering half of what a model does.
 - **Failures are saved like successes.** The list is the record of what has been
   looked at; dropping the refusals makes the same URL worth pasting twice.
-- **Three findings the first run produced, kept because they were not guessable:**
-  the output media hides behind a `$ref` that is _not_ always called `File`
-  (`Image` for FLUX, `Video-Output` for mirelo, and matching the name reported
-  both as returning nothing displayable); `image_urls` -- an array of strings --
-  is how every multi-image editor on FAL spells its reference slot, so refusing
-  arrays outright failed the commonest shape there is; and FLUX's `image_size`
-  is genuinely `anyOf [object, enum]`, which stays refused because a control
-  that is both does not exist.
+- **Six control kinds, and the sixth is not a control.** text, textarea, enum,
+  number, boolean, media -- and `group`, a set of fields that may repeat. Kling
+  v3 Pro needs it twice: `multi_prompt` is a shot list (prompt + duration per
+  shot) and `elements` is a character (frontal image, reference angles, a clip,
+  a voice) referred to from the prompt as `@Element1`. Both are _optional_, so
+  the generous parser would have passed that endpoint and silently never offered
+  either -- and they are the entire reason to reach for it. Drawing a group
+  means a repeater, which arrives with the controls.
+- **A group is only as supported as its members**, for the same reason an
+  unsupported optional fails the endpoint: a form with a hole in it.
+- **Findings from real schemas, kept because none was guessable:** the output
+  media hides behind a `$ref` that is _not_ always called `File` (`Image` for
+  FLUX, `Video-Output` for mirelo, and matching the name reported both as
+  returning nothing displayable); `image_urls` -- an array of strings -- is how
+  every multi-image editor on FAL spells its reference slot, so refusing arrays
+  outright failed the commonest shape there is; a media param may be a `$ref` to
+  a `{ url, ... }` object rather than a string (cassetteai's `video_url`) --
+  same control, different thing to send, which `asObject` records; the media
+  hint has **two spellings**, `_fal_ui_field` at the top level and
+  `ui: { field }` inside a nested schema, and a reader that knew one classified
+  Kling's element fields by name alone; and FLUX's `image_size` is genuinely
+  `anyOf [object, enum]`, which stays refused because a control that is both
+  does not exist.
+- **`x-fal` on a media param carries real limits** -- max file size, min
+  dimensions, duration and FPS ranges. Read by nobody yet; it is the validation
+  layer, not something needed to draw a control.
 - **It parses and reports; it does not generate and does not draw the
   controls.** Those wait on what this says.
 
