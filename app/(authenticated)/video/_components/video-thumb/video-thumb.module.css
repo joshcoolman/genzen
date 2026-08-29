@@ -21,6 +21,20 @@
   object-fit: contain;
 }
 
+/* At rest only. The stage is a fixed 16:9 -- see the note on that below -- so
+   anything wider letterboxes, and a 21:9 card at rest was a third black bars
+   above and below a poster. Filling the box crops instead, which is the right
+   trade for a card you are scanning: the two frames underneath are edge-to-edge
+   and shape-true, so nothing about the clip's real shape is lost by this one
+   picture being cropped.
+
+   `object-fit` covers the poster as well as the video, which is what makes a
+   single class enough. It swaps to `contain` the moment the clip plays: while
+   you are watching, no part of the frame may be cut off. */
+.playerCover {
+  object-fit: cover;
+}
+
 /* The only thing on an unplayed card. Centred and larger than the badge on the
    last frame, because those are two different weights of invitation: this one
    is the card's main verb, that one is a way out of it.

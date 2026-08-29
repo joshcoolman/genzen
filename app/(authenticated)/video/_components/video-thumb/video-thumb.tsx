@@ -13,6 +13,7 @@ import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { aspectLabel, aspectRatio } from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 function durationOf(video: VideoRecord): string | null {
   const seconds = (video.generation_metadata ?? {}).duration_seconds
@@ -160,7 +161,12 @@ export function VideoThumb({
           <>
             <video
               ref={player}
-              className={styles.player}
+              /* **`cover` at rest, `contain` once it plays.** The stage is a
+                 fixed 16:9 and a 21:9 clip is letterboxed in it, which at rest
+                 is a card that is a third black bars -- so the poster fills the
+                 box and takes the crop. The moment it plays, the whole frame
+                 matters and nothing may be cut off it, so it swaps back. */
+              className={cx(styles.player, !isPlaying && styles.playerCover)}
               src={`/img/${video.id}`}
               /* The real poster (#499), which is why there is no
                  `firstFrameSrc` here any more: the `#t=0.001` seek existed to

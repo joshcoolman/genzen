@@ -134,7 +134,7 @@ source images; `use-view.ts` owns everything after the first paint.
   cannot know another one started, so left to themselves six of them play at
   once. A card is engaged only while it holds the id; taking it away rewinds
   that card to its first frame and drops it back to a poster and a play button.
-  Pausing with the native controls does *not* release it -- only another card's
+  Pausing with the native controls does _not_ release it -- only another card's
   Play does, or the controls would vanish under a pointer that was using them.
 
   The rewind is guarded on the card having actually played. Touching
@@ -160,11 +160,19 @@ source images; `use-view.ts` owns everything after the first paint.
   is half the card and the height follows the shape, so a 21:9 pair is short and
   a portrait pair is tall, which is what the clip is.
 
-  **`.player` is still a hardcoded `16 / 9`** and is now the only letterboxed
-  thing on the card. Giving it the clip's shape too would finish the idea; it
-  would also make card heights vary with what was generated, and `VideoList` is
-  a grid whose rows size to their tallest card. Left as it is deliberately, not
-  by oversight.
+  **`.player` is still a hardcoded `16 / 9`.** Giving it the clip's shape too
+  would finish the idea; it would also make card heights vary with what was
+  generated, and `VideoList` is a grid whose rows size to their tallest card.
+  Left as it is deliberately, not by oversight.
+
+  **So it is `cover` at rest and `contain` once it plays.** A 21:9 clip in a
+  16:9 stage was a third black bars above and below its poster; filling the box
+  crops instead, which is the right trade for a card being scanned — the two
+  frames underneath are edge-to-edge and shape-true, so nothing about the real
+  shape is lost by this one picture being cropped. It swaps back the moment the
+  clip plays: while you are watching, no part of the frame may be cut off.
+  `object-fit` applies to the poster as well as the video, which is why one
+  class is enough.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the
