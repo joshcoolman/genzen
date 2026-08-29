@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
+  CheckCircle2,
   Download,
   Loader2,
   Play,
@@ -17,6 +18,7 @@ import {
   namedRatio,
 } from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 /**
  * How far the stage may go, as ratios.
@@ -105,6 +107,19 @@ function durationOf(video: VideoRecord): string | null {
  * card across a wall of clips is a real cost for a picture the row can already
  * serve as an `<img>` from `thumbnail_path` (#499).
  *
+ * **The select tick is top-left of the player, and always on** (#517). That is
+ * the one corner this card does not already use -- the model badge holds
+ * top-right, Continue holds the last frame's bottom-left, Play holds the
+ * centre, and the native controls own the bottom edge. It does not break the
+ * no-overlay-actions rule: that rule is about chrome appearing on hover over a
+ * scrubber, and this is a fixed marker in a free corner, the same always-on
+ * reasoning the Continue badge already carries.
+ *
+ * **The tick is the only way to select.** The card does not become one big
+ * toggle in select mode the way a still does: half of it is a player and the
+ * other half is Continue, so a full-card click target would take Play and the
+ * last frame away exactly when they still work.
+ *
  * **Shape first, then duration, and no cost** -- at the left edge, at full
  * strength rather than the muted grey the verbs use. Shape is the fact that
  * decides whether two clips can cut together (#512) and it was the one thing
@@ -119,6 +134,9 @@ export function VideoThumb({
   onDelete,
   onContinue,
   isContinuing,
+  selected,
+  selectionActive,
+  onSelect,
 }: {
   video: VideoRecord
   /** Whether this is the one card holding the page's playback. */
@@ -128,6 +146,12 @@ export function VideoThumb({
   /** Absent while there is nothing to continue from -- see `isDone`. */
   onContinue: (video: VideoRecord) => void
   isContinuing: boolean
+  /** Picked for a bulk action (#517). */
+  selected: boolean
+  /** Whether anything on the page is picked -- the unpicked cards say so with
+   *  a greyed border, exactly as the gallery's do. */
+  selectionActive: boolean
+  onSelect: (id: string, shiftKey: boolean) => void
 }) {
   const duration = durationOf(video)
   /* Snapped to the shape it reads as, not the exact rectangle FAL returned.
@@ -188,7 +212,13 @@ export function VideoThumb({
   }, [isPlaying])
 
   return (
-    <article className={styles.item}>
+    <article
+      className={cx(
+        styles.item,
+        selected && styles.selectedItem,
+        selectionActive && !selected && styles.selectableItem,
+      )}
+    >
       <div className={styles.stage}>
         {isDone ? (
           <>
@@ -248,6 +278,21 @@ export function VideoThumb({
             label you track across a generation moving on you. Lifted clear of
             the native controls, which own the bottom edge. */}
         <span className={styles.badge}>{video.title}</span>
+
+        {/* On every card always, not only once something is picked: it is the
+            only thing saying a clip can be picked at all, and a toolbar toggle
+            would ask you to declare an intention before touching the clip you
+            are already looking at (#325's rule, unchanged). Grey until taken;
+            the border says "selected" too, but only against its neighbours. */}
+        <button
+          type="button"
+          className={cx(styles.selectTick, selected && styles.selectTickOn)}
+          aria-pressed={selected}
+          aria-label={selected ? 'Deselect clip' : 'Select clip'}
+          onClick={(e) => onSelect(video.id, e.shiftKey)}
+        >
+          <CheckCircle2 className={styles.selectTickIcon} />
+        </button>
       </div>
 
       {/* Flush under the player, no gap and no edges: the player, the frame it

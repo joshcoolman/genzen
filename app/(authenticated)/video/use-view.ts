@@ -14,7 +14,10 @@ import {
   videoModelBySlug,
   videoModelsByPrice,
 } from '#/features/video/models'
-import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
+import {
+  deleteGalleryImage,
+  trashGalleryImages,
+} from '#/features/ai-images/server/gallery.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
@@ -23,6 +26,7 @@ import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { usePersistedState } from '#/lib/use-persisted-state'
+import { useSelection } from '#/lib/use-selection'
 import { toast } from '#/components'
 
 /** Which model the picker is on. One slug; see `readSlug`. */
@@ -223,6 +227,74 @@ export function useView(initialVideos: Array<VideoRecord>) {
     },
     [refresh],
   )
+
+  /**
+   * Picking several clips at once, to bin them in one go (#517).
+   *
+   * `useSelection` and `SelectionDrawer` unchanged from Images -- the whole
+   * point of both is that a route supplies the verbs and nothing else. The
+   * verbs here are one, deliberately: a wall of takes is a thing you prune,
+   * and everything else grouping would add is a separate piece of work.
+   *
+   * **Select mode is a selection, not a switch** (#325, unchanged): being in
+   * the mode is having something picked, so Deselect all and Escape are the
+   * way out because emptying the selection is the only thing leaving could
+   * mean. The tick is on every card always, which is what makes picking up
+   * again after a delete one click rather than a mode to re-enter.
+   *
+   * The item list is the clip list in render order, so shift-click selects the
+   * range you can see between two cards.
+   */
+  const selection = useSelection({ items: videos.map((video) => video.id) })
+  const selectMode = selection.count > 0
+
+  useEffect(() => {
+    if (!selectMode) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') selection.clearSelection()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectMode, selection])
+
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false)
+
+  /**
+   * Bin the selection.
+   *
+   * `trashGalleryImages` is the gallery's own bulk trash, taken as-is: it
+   * dispatches on `status`, never on `source`, so the three outcomes it already
+   * decides between are the three this route wants -- a generating clip is
+   * cancelled at FAL first, a generating or failed row goes outright, and a
+   * finished one soft-deletes into Trash, which lists clips (#384). Same
+   * reasoning `deleteVideo` gives for borrowing the single-row version.
+   *
+   * One call for the set (#329), not a loop: React serialises server actions,
+   * so eight clips would be eight round trips with the wall frozen until the
+   * last.
+   *
+   * The cards leave on the click and a failure re-reads, which is the trade
+   * `deleteVideo` already makes.
+   */
+  const deleteSelected = useCallback(async () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+
+    const picked = new Set(ids)
+    setIsBatchDeleting(true)
+    setVideos((current) => current.filter((video) => !picked.has(video.id)))
+    // Which also leaves the mode -- the ticks are still on every card, so
+    // picking up again is one click.
+    selection.clearSelection()
+    try {
+      await trashGalleryImages(ids)
+    } catch {
+      toast.error('Could not delete those clips')
+      await refresh()
+    } finally {
+      setIsBatchDeleting(false)
+    }
+  }, [selection, refresh])
 
   const openPicker = useCallback(
     (target: 'first' | 'last') => {
@@ -498,6 +570,12 @@ export function useView(initialVideos: Array<VideoRecord>) {
     clearSources,
     clearEndSources,
     videos,
+    selectedIds: selection.selectedIds,
+    toggleSelected: selection.toggle,
+    clearSelection: selection.clearSelection,
+    selectedCount: selection.count,
+    isBatchDeleting,
+    deleteSelected,
     playingId,
     setPlayingId,
     deleteVideo,

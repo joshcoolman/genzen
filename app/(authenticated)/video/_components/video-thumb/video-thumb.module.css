@@ -284,3 +284,67 @@
 .destructive:hover {
   color: var(--danger);
 }
+
+/* Select mode (#517), borrowed wholesale from the gallery card so a clip and a
+   still say "picked" the same way: accent border when taken, a hair of grey
+   when selectable and not taken, nothing at all when nothing is picked.
+
+   Border colour only -- never width, and never a transform. The card is a
+   player with two frames flush under it, and a card that changed size on
+   selection would move every clip in the row. */
+.selectedItem {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* A step up from the resting border, not an announcement -- the gallery's own
+   value, arrived at there after full `--text-muted` turned the grid into a
+   page of outlined boxes competing with the pictures. */
+.selectableItem {
+  border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border));
+}
+
+/* Top-left of the player: the one corner this card does not already use. The
+   model badge holds top-right, Play holds the centre, the native controls own
+   the bottom edge, and Continue holds the last frame's bottom-left.
+
+   Same scrim and size as the gallery's tick, so the control is recognisably
+   the same one on both routes. Above the badge's stacking, since the badge is
+   `pointer-events: none` and this must stay clickable while a clip plays. */
+.selectTick {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 3;
+}
+
+.selectTick:hover {
+  color: var(--text);
+}
+
+.selectTick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.selectTickIcon {
+  width: 100%;
+  height: 100%;
+}
+
+/* No transition, matching the gallery's: selecting is a discrete answer to a
+   click, and easing it makes the wall feel like it is deciding. */
+.selectTickOn {
+  color: var(--accent);
+}
