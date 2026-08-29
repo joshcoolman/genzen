@@ -2,7 +2,7 @@
 
 import {
   AlertTriangle,
-  CornerDownRight,
+  ArrowUpRight,
   Download,
   Loader2,
   Trash2,
@@ -38,26 +38,30 @@ function durationOf(video: VideoRecord): string | null {
  * `--text-sm` and no badge at all, so a clip and a still read as different
  * kinds of record when they are the same row in the same table.
  *
- * **No overlay actions.** A still hides Download and `...` until hover because
- * the picture is the thing and the chrome is in the way; a clip already has
- * native controls sitting over its bottom edge, and a second set of buttons
- * above them is two rows of controls arguing. So the verbs live in the caption
- * as text, where they cannot collide with the scrubber.
+ * **No overlay actions on the player.** A still hides Download and `...` until
+ * hover because the picture is the thing and the chrome is in the way; a clip
+ * already has native controls sitting over its bottom edge, and a second set of
+ * buttons above them is two rows of controls arguing. So the file verbs live in
+ * the caption as text, where they cannot collide with the scrubber.
  *
- * **Continue sits above the rule, on its own** (#494). It is the one verb here
- * that starts new work rather than acting on this row -- Download and Delete
- * are about the clip in front of you, Continue is about the next one -- so it
- * reads as a separate act instead of the third item in a row of file
- * operations.
+ * That rule is about the *player*, and the frames below it are not one. They
+ * have no controls to argue with, which is why Continue can live on one.
  *
- * **Both ends of the clip sit beside Continue**, small, under the player. The
+ * **The last frame is Continue** -- the picture is the control, not a text link
+ * beside it. Continue takes the frame at the end of this clip and puts it in
+ * the form; pointing at that frame and clicking is the same sentence as the
+ * verb was, minus the verb. It was `CornerDownRight` plus the word in the
+ * caption (#494), which was a line of `--text-3xs` text against a target that
+ * is now half a card.
+ *
+ * It stays the one act on this card that starts new work rather than acting on
+ * this row, which is exactly why it is not down among Download and Delete.
+ *
+ * **The player and both frames are one block**, flush, half the card each. The
  * player is kept -- watching the clip is most of what this card is for, and a
- * pair of stills cannot replace it -- so these are additional rather than a
- * substitute, and they are the two frames the player is worst at showing: the
- * one it opens on and the one it stops at, which is the frame the next clip
- * has to start from. That is why they are next to Continue and not somewhere
- * else on the card: Continue lifts the last frame, and the last frame is now
- * in front of you when you decide to.
+ * pair of stills cannot replace it -- and the frames are the two it is worst at
+ * showing: the one it opens on and the one it stops at, which is the frame the
+ * next clip has to start from.
  *
  * They deliberately do *not* use `ClipFrames`, which the lab's run and picker
  * share. That draws frame one as a `<video>` because a lab tile has no player
@@ -138,15 +142,43 @@ export function VideoThumb({
             alt="First frame"
             title="First frame"
           />
-          {/* Held rather than collapsed when a clip predates the backfill: one
-              frame across half the card reads as the clip having one end. */}
-          <img
-            className={styles.end}
-            style={endShape}
-            src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
-            alt={video.has_end_frame ? 'Last frame' : ''}
-            title="Last frame"
-          />
+          {/* The last frame *is* Continue. The verb was a text link in the
+              caption; what it actually does is take this picture and put it in
+              the form, so the picture is the control -- and at half a card it
+              is a far bigger target than a line of `--text-3xs` text.
+
+              Held rather than collapsed when a clip predates the backfill: one
+              frame across half the card reads as the clip having one end. It
+              is still the button, because the frame can still be read out of
+              the clip -- `has_end_frame` says a stored one is missing, not
+              that there is nothing at the end. */}
+          <button
+            type="button"
+            className={styles.continue}
+            onClick={() => onContinue(video)}
+            disabled={isContinuing}
+            aria-label="Continue from this clip's last frame"
+            title="Continue from the last frame"
+          >
+            <img
+              className={styles.end}
+              style={endShape}
+              src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
+              alt=""
+            />
+            {/* Always on the picture, not on hover: it is the only thing saying
+                this frame does something, and a card you have to touch to
+                discover is one nobody discovers. Lower-left, which is the one
+                corner nothing else on this card uses -- the model badge holds
+                top-right of the player. */}
+            <span className={styles.continueBadge}>
+              {isContinuing ? (
+                <Loader2 className={styles.spinner} size={12} />
+              ) : (
+                <ArrowUpRight size={12} />
+              )}
+            </span>
+          </button>
         </div>
       ) : null}
 
@@ -154,21 +186,6 @@ export function VideoThumb({
         <p className={styles.prompt}>{video.description}</p>
         {/* Finished clips only: there is no last frame of a clip that does not
             exist yet, and a failed one has no frames at all. */}
-        {isDone ? (
-          <button
-            type="button"
-            className={styles.continue}
-            onClick={() => onContinue(video)}
-            disabled={isContinuing}
-          >
-            {isContinuing ? (
-              <Loader2 className={styles.spinner} size={12} />
-            ) : (
-              <CornerDownRight size={12} />
-            )}
-            {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
-          </button>
-        ) : null}
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
           {duration ? <span className={styles.fact}>{duration}</span> : null}

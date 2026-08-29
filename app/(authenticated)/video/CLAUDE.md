@@ -96,10 +96,15 @@ source images; `use-view.ts` owns everything after the first paint.
   meant retyping most of a prompt to change a clause. Any end frame is still
   dropped, because unlike a prompt there is no part of it to edit.
 
-  It sits on its own line under the player, at the far end of the two frames --
-  Continue lifts the last one, so the frame is in front of you when you decide
-  to. Below that, a rule, then the clip's facts on the left and the file verbs
-  on the right: Download and Delete act on the clip in front of you, Continue
+  **The last frame is the control.** Continue was `CornerDownRight` plus the
+  word, in the caption; what it does is take that picture and put it in the
+  form, so the picture is the button -- half a card of target instead of a line
+  of `--text-3xs` text. A filled circular `ArrowUpRight` sits bottom-left of the
+  frame, always on rather than on hover, because it is the only thing saying the
+  frame does anything. This does not breach the card's no-overlay-actions rule:
+  that rule is about the player's bottom edge and its native controls, and a
+  frame has none. Below the block, a rule, then the clip's facts on the left and
+  the file verbs on the right: Download and Delete act on the clip in front of you, Continue
   starts the next one, and a row mixing the two read as three file operations.
   The mechanism is `src/features/video/frame-capture.ts`, shared with
   `lab/frames` -- and it lands _near_ the end of the clip rather than provably
