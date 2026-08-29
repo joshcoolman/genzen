@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -55,6 +55,10 @@ function durationOf(video: VideoRecord): string | null {
  * stay, sticky rather than on hover: chrome that follows the pointer flickers
  * across a grid, and a scrubber has to stay put while it is being used.
  *
+ * **Which card that is belongs to the page, not to this component** -- see
+ * `isPlaying`. Playing one clip rewinds and un-engages whatever was playing
+ * before, so a page of clips cannot end up as six of them talking at once.
+ *
  * The real win is not visual. `poster` plus `preload="none"` means a card
  * fetches an image the row already has and no video at all until asked.
  *
@@ -89,11 +93,16 @@ function durationOf(video: VideoRecord): string | null {
  */
 export function VideoThumb({
   video,
+  isPlaying,
+  onPlay,
   onDelete,
   onContinue,
   isContinuing,
 }: {
   video: VideoRecord
+  /** Whether this is the one card holding the page's playback. */
+  isPlaying: boolean
+  onPlay: (id: string) => void
   onDelete: (id: string) => void
   /** Absent while there is nothing to continue from -- see `isDone`. */
   onContinue: (video: VideoRecord) => void
@@ -109,15 +118,40 @@ export function VideoThumb({
   const isDone = video.status === 'completed'
 
   /**
-   * Whether this card has been played yet, which is the only thing that puts
-   * native controls on it.
+   * **One clip plays at a time, and the page owns which.** `isPlaying` is the
+   * only thing that puts native controls on this card, so a card that loses it
+   * goes back to a poster and a play button -- there is no way to end up with
+   * six scrubbers on screen, because there is no way to have two cards
+   * engaged.
    *
-   * **Sticky, not tied to hover.** Controls that come and go with the pointer
-   * flicker their way across a grid of cards as you move over it, and the
-   * scrubber is the one thing you want to stay put once you are using it.
+   * Sticky within the card, not tied to hover: controls that come and go with
+   * the pointer flicker their way across a grid, and a scrubber has to stay
+   * put while it is being used. Pausing with the native controls keeps the
+   * card engaged -- only another card's Play takes it away.
    */
-  const [engaged, setEngaged] = useState(false)
   const player = useRef<HTMLVideoElement>(null)
+
+  /**
+   * Rewind on the way out, so a card that lost playback is at its first frame
+   * next time rather than halfway through.
+   *
+   * Guarded on having actually been playing, rather than run whenever
+   * `isPlaying` is false. Touching `currentTime` on a `preload="none"` element
+   * that has never loaded would ask the browser to fetch the clip, which is
+   * the one thing the poster is there to avoid.
+   */
+  const wasPlaying = useRef(false)
+
+  useEffect(() => {
+    if (wasPlaying.current && !isPlaying) {
+      const el = player.current
+      if (el) {
+        el.pause()
+        el.currentTime = 0
+      }
+    }
+    wasPlaying.current = isPlaying
+  }, [isPlaying])
 
   return (
     <article className={styles.item}>
@@ -138,15 +172,15 @@ export function VideoThumb({
                  header and a seek each on load; now it pulls an image the row
                  already has and no video at all. */
               preload="none"
-              controls={engaged}
+              controls={isPlaying}
               playsInline
             />
-            {!engaged ? (
+            {!isPlaying ? (
               <button
                 type="button"
                 className={styles.play}
                 onClick={() => {
-                  setEngaged(true)
+                  onPlay(video.id)
                   void player.current?.play()
                 }}
                 aria-label="Play this clip"

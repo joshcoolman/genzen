@@ -130,6 +130,17 @@ source images; `use-view.ts` owns everything after the first paint.
   surface -- the `#t=0.001` seek existed to make a `<video>` paint frame one
   when nothing else could, which is #500's job everywhere else.
 
+  **One clip plays at a time, and `use-view` owns which** (`playingId`). A card
+  cannot know another one started, so left to themselves six of them play at
+  once. A card is engaged only while it holds the id; taking it away rewinds
+  that card to its first frame and drops it back to a poster and a play button.
+  Pausing with the native controls does *not* release it -- only another card's
+  Play does, or the controls would vanish under a pointer that was using them.
+
+  The rewind is guarded on the card having actually played. Touching
+  `currentTime` on a `preload="none"` element that never loaded asks the
+  browser to fetch the clip, which is the thing the poster exists to avoid.
+
 - **The player and the clip's two ends are one block.** Half the card each,
   flush under the player, no gap between them and none at the edges. The player
   stays -- it is most of what the card is for -- and the frames are the two it

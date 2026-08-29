@@ -291,6 +291,16 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * something that was. So it lands in Images, and the library is re-read
    * because the picker's list is what the strip resolves against.
    */
+  /**
+   * The one clip the page is playing, if any.
+   *
+   * **Here rather than in the card**, which is the whole point: a card cannot
+   * know that another one started, so six of them could be playing at once.
+   * The page holds it, a card is engaged only while it holds the id, and
+   * starting a clip is what takes it away from whatever had it.
+   */
+  const [playingId, setPlayingId] = useState<string | null>(null)
+
   const [isContinuing, setIsContinuing] = useState<string | null>(null)
 
   const continueFrom = useCallback(
@@ -488,6 +498,8 @@ export function useView(initialVideos: Array<VideoRecord>) {
     clearSources,
     clearEndSources,
     videos,
+    playingId,
+    setPlayingId,
     deleteVideo,
     continueFrom,
     isContinuing,
