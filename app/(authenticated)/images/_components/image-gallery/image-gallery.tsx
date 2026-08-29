@@ -51,7 +51,7 @@ interface ImageGalleryProps {
   onHide: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  onAnimate?: (img: SavedAiImage) => void
+  onOutpaint?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click: the power moves (#284 follow-up). Plain sets the source,
    *  Shift pushes a reference, and on the prompt it loads the text. */
@@ -98,7 +98,7 @@ export function ImageGallery({
   onHide,
   onRetry,
   onDownload,
-  onAnimate,
+  onOutpaint,
   keyFor,
   onOpen,
   onAddReference,
@@ -250,7 +250,7 @@ export function ImageGallery({
                 showInfo={showInfo}
                 onDelete={onDelete}
                 onDownload={onDownload}
-                onAnimate={onAnimate}
+                onOutpaint={onOutpaint}
                 onOpen={onOpen}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}

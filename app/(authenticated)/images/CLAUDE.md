@@ -62,6 +62,22 @@ list once when the seed comes back full, so the grid is never short.
   back in among the visible ones while still calling them hidden, which read
   as broken: "4 hidden" over four visible pictures. The tray is a holding
   area, plainly somewhere else, so the wall stays true
+- **Outpaint is a card action, and the model is not a choice** (#430). The
+  `...` menu opens a dialog of every aspect ratio; tick as many as you need and
+  Generate submits one edit per shape against Grok Imagine 2.0. The lab page of
+  the same name exists to answer "which model can outpaint" and stays for that;
+  once the answer is settled a picker asks it again before every press, so the
+  model is `OUTPAINT_MODEL_SLUG` in `src/features/ai-images/outpaint.ts` -- one
+  line to change, no UI. **The shape the picture already is stays in the grid,
+  greyed and labelled `Current`**: absent, it reads as an option the app does
+  not support. It is measured from the thumbnail (`matchRatio`), not read from
+  `generation_metadata.aspect_ratio`, because an upload has none and a
+  generation's records what was asked for rather than what came back.
+  **Nothing is loaded into the panel** -- the results land in the grid as
+  ordinary pending cards, filed into the open group like any other generation.
+  `Animate` was removed from the same menu; `/video` still accepts `?image=<id>`
+  but nothing links to it
+
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption

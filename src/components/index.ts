@@ -1,12 +1,15 @@
 export { ActionButton } from './action-button/action-button'
 export { AspectRatioSelect } from './aspect-ratio-select/aspect-ratio-select'
 export {
+  ALL_RATIOS,
   LANDSCAPE_RATIOS,
   PORTRAIT_RATIOS,
   FLIP_MAP,
   getRatioOptions,
   flipOrientation,
+  matchRatio,
 } from './aspect-ratio-select/aspect-ratio-constants'
+export { RatioIcon } from './aspect-ratio-select/ratio-icon'
 export { Badge, type BadgeProps } from './badge/badge'
 export {
   Button,

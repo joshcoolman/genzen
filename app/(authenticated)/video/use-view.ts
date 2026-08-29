@@ -156,9 +156,12 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // spends three sentences failing to pin down.
   const [endSources, setEndSources] = useState<Array<SourceImage>>([])
 
-  // `?image=<id>` is how Animate hands a card over. It resolves once the
-  // library has loaded, because the strip needs a URL and a title, not just an
-  // id.
+  // `?image=<id>` pre-loads the first frame from a library row. It was how
+  // Images' `Animate` menu item handed a card over; that item is gone, so
+  // nothing in the app links here today and the parameter is kept as the
+  // route's front door for a still -- it costs one effect and it is what any
+  // future handoff would use. It resolves once the library has loaded, because
+  // the strip needs a URL and a title, not just an id.
   const handoffId = searchParams.get('image')
   useEffect(() => {
     if (!handoffId || sources.length > 0 || userImages.isLoading) return
