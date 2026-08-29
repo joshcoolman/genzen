@@ -97,44 +97,38 @@
    (#494). Left edge, quiet, and the same type as its neighbours -- it is a
    convenience, not a call to action, and a filled button here would outweigh
    the picture above it. */
-/* Both ends of the clip and the verb that uses one of them, on the line under
-   the player. Continue is pushed to the far end rather than sitting against
-   the frames: it starts new work, and the frames are facts about this row. */
-.ends {
-  --clip-end-height: 5.5rem;
+/* The clip's two ends, flush under the player: half the card each, no gap
+   between them and none at the edges. The player, the frame it opens on and
+   the frame it stops at are one picture of the clip -- a gap anywhere in there
+   makes them three things that happen to be stacked, and the card stops
+   reading as one bigger thumbnail.
 
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  margin-block-start: var(--space-8);
+   A grid rather than flex, because 50/50 has to hold exactly: two flex items
+   at `flex: 1` disagree by a pixel when their intrinsic widths differ, and the
+   seam down the middle of the card is the one place that shows. */
+.ends {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
-/* **Sized by height, shaped by the clip.** `aspect-ratio` comes from the row's
-   own width and height, set inline, so the frame is edge-to-edge: nothing to
-   letterbox and nothing to crop, and the thumb's outline is one more place the
-   clip's shape is legible -- which is the fact the caption below now leads
-   with.
+/* **Shaped by the clip**, from the row's own width and height set inline, so
+   each frame is edge-to-edge: nothing letterboxed, nothing cropped, and the
+   pair's outline is one more place the clip's shape is legible -- the fact the
+   caption below now leads with.
 
-   Height rather than width is the fixed dimension, and that is what keeps a
-   portrait clip from wrecking the card: fix the width and a 9:16 frame is
-   nearly twice as tall as a 16:9 one, and the caption grows or shrinks
-   depending on what was generated. Fixed height, the width follows the shape,
-   and every card's caption is the same height.
-
-   The one knob is `--clip-end-height` on the row. At 5.5rem a 16:9 pair is
-   about half the caption's width, which is where this was set from. */
+   No fixed height. The column is half the card and the height follows the
+   shape, so a 21:9 pair is short and a portrait pair is tall, which is the
+   same thing the clip itself is. */
 .end {
-  flex: none;
-  height: var(--clip-end-height);
-  width: auto;
-  border-radius: var(--radius-sm);
+  display: block;
+  width: 100%;
   background: var(--image-backing);
   object-fit: cover;
 }
 
 .continue {
-  margin-inline-start: auto;
   display: inline-flex;
+  margin-block-start: var(--space-4);
   align-items: center;
   gap: var(--space-4);
   padding: 0;

@@ -112,20 +112,30 @@ source images; `use-view.ts` owns everything after the first paint.
   was per-item noise beside a Download button. `clipFacts` and the shape
   helpers are `src/features/video/clip-facts.ts` -- they moved out of
   `lab/_components/` when this card became their second consumer.
-- **Both ends of a clip sit under the player, small.** The player stays: it is
-  most of what the card is for. These are the two frames it is worst at
-  showing -- the one it opens on, and the one the next clip has to start from.
+- **The player and the clip's two ends are one block.** Half the card each,
+  flush under the player, no gap between them and none at the edges. The player
+  stays -- it is most of what the card is for -- and the frames are the two it
+  is worst at showing: the one it opens on, and the one the next clip has to
+  start from. Any gap in there and they read as three things that happen to be
+  stacked rather than one bigger thumbnail.
+
   They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
   lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile
-  has no player above it.
+  has no player above it. A grid, not flex: 50/50 has to hold exactly, and two
+  flex items disagree by a pixel when their intrinsic widths differ -- the seam
+  down the middle of the card is the one place that shows.
 
   **They take the clip's own aspect ratio, set inline from `width`/`height`**,
-  so they are edge-to-edge -- nothing letterboxed, nothing cropped -- and the
-  outline is one more place the shape is legible. **Height is the fixed
-  dimension, not width**: fix the width and a 9:16 frame is nearly twice as tall
-  as a 16:9 one, so the caption's height would depend on what was generated.
-  `--clip-end-height` on `.ends` is the only knob; 5.5rem puts a 16:9 pair at
-  about half the caption's width.
+  so they are edge-to-edge: nothing letterboxed, nothing cropped, and the pair's
+  outline is one more place the shape is legible. No fixed height -- the column
+  is half the card and the height follows the shape, so a 21:9 pair is short and
+  a portrait pair is tall, which is what the clip is.
+
+  **`.player` is still a hardcoded `16 / 9`** and is now the only letterboxed
+  thing on the card. Giving it the clip's shape too would finish the idea; it
+  would also make card heights vary with what was generated, and `VideoList` is
+  a grid whose rows size to their tallest card. Left as it is deliberately, not
+  by oversight.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

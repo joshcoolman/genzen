@@ -124,42 +124,50 @@ export function VideoThumb({
         <span className={styles.badge}>{video.title}</span>
       </div>
 
+      {/* Flush under the player, no gap and no edges: the player, the frame it
+          opens on and the frame it ends on are one picture of the clip, and a
+          gap anywhere in there makes them three things that happen to be
+          stacked. Finished clips only -- there are no frames of a clip that
+          does not exist yet, and a failed one has none at all. */}
+      {isDone ? (
+        <div className={styles.ends}>
+          <img
+            className={styles.end}
+            style={endShape}
+            src={imageUrl(video.id, 'thumb')}
+            alt="First frame"
+            title="First frame"
+          />
+          {/* Held rather than collapsed when a clip predates the backfill: one
+              frame across half the card reads as the clip having one end. */}
+          <img
+            className={styles.end}
+            style={endShape}
+            src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
+            alt={video.has_end_frame ? 'Last frame' : ''}
+            title="Last frame"
+          />
+        </div>
+      ) : null}
+
       <div className={styles.caption}>
         <p className={styles.prompt}>{video.description}</p>
         {/* Finished clips only: there is no last frame of a clip that does not
             exist yet, and a failed one has no frames at all. */}
         {isDone ? (
-          <div className={styles.ends}>
-            <img
-              className={styles.end}
-              style={endShape}
-              src={imageUrl(video.id, 'thumb')}
-              alt="First frame"
-              title="First frame"
-            />
-            {/* Held rather than collapsed when a clip predates the backfill: a
-                lone frame under a card reads as the clip having one end. */}
-            <img
-              className={styles.end}
-              style={endShape}
-              src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
-              alt={video.has_end_frame ? 'Last frame' : ''}
-              title="Last frame"
-            />
-            <button
-              type="button"
-              className={styles.continue}
-              onClick={() => onContinue(video)}
-              disabled={isContinuing}
-            >
-              {isContinuing ? (
-                <Loader2 className={styles.spinner} size={12} />
-              ) : (
-                <CornerDownRight size={12} />
-              )}
-              {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
-            </button>
-          </div>
+          <button
+            type="button"
+            className={styles.continue}
+            onClick={() => onContinue(video)}
+            disabled={isContinuing}
+          >
+            {isContinuing ? (
+              <Loader2 className={styles.spinner} size={12} />
+            ) : (
+              <CornerDownRight size={12} />
+            )}
+            {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
+          </button>
         ) : null}
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
