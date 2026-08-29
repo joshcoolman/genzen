@@ -1,10 +1,10 @@
 'use client'
 
+import { GroupHeading } from '../_components/group-heading/group-heading'
+import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
-import { GroupHeading } from './_components/group-heading/group-heading'
-import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { ScopeRow } from './_components/scope-row/scope-row'
@@ -120,7 +120,11 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         {/* Top level only -- inside a group the group is already the scope
             (#444), and the heading takes this row's place. */}
         {activeGroup ? (
-          <GroupHeading name={activeGroup.name} onBack={leaveGroup} />
+          <GroupHeading
+            name={activeGroup.name}
+            backLabel="Images"
+            onBack={leaveGroup}
+          />
         ) : (
           <ScopeRow
             value={prefs.originFilter}

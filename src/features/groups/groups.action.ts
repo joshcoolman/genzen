@@ -5,9 +5,19 @@ import { first, sql } from '#/lib/server/db.server'
 import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
 
 /**
- * Groups (#319). Images-only, so they live with the route rather than in
- * `src/features/` -- one consumer means it belongs to that consumer
- * (`docs/DELTAS.md`).
+ * Groups (#319), for both surfaces that have them (#517).
+ *
+ * **This lived in `app/(authenticated)/images/_actions/` until #517**, on the
+ * rule that one consumer means the code belongs to that consumer. Video became
+ * the second, which is exactly the condition `docs/DELTAS.md` names for
+ * promotion -- the same one that moved `frame-capture.ts` out of the lab.
+ *
+ * Almost nothing had to change to make that true. A clip is a `user_images`
+ * row like any other, so it already carried `group_id`, and not one of the
+ * writes below ever filtered on `source`. What was missing was the separation:
+ * `kind` (#517) keeps the two namespaces disjoint, so a clip cannot join an
+ * image group and a still cannot join a video one. See the migration for why a
+ * shared pool was refused.
  *
  * Every write carries `user_id` from `resolveAuth()`. A group id arriving from
  * the browser is never trusted on its own: the `where` always names the user
@@ -20,6 +30,32 @@ import { clearCanvasMembership } from '#/lib/server/canvas-membership.server'
  * screen moving until the last landed. The rows are already in hand here, so
  * the write says what happened and the client patches both lists from it.
  */
+
+/**
+ * Which surface a group belongs to.
+ *
+ * Named for the surface rather than for the media (`'video'`, not `'clip'`),
+ * because that is what decides where the group is rendered -- and the group is
+ * the thing being described, not its members.
+ */
+export type GroupKind = 'image' | 'video'
+
+/**
+ * Whether a `user_images` row may join a group of this kind.
+ *
+ * `ai_video` is the one source that is a clip, so the video half names it and
+ * the image half is everything else. Deliberately not the gallery's own
+ * `source in ('upload', 'ai_generated')`: a source added later would be in
+ * neither list, and a row that can join no group at all is a worse failure
+ * than one that lands with the pictures.
+ */
+const VIDEO_SOURCE = 'ai_video'
+
+function memberOf(kind: GroupKind) {
+  return kind === 'video'
+    ? sql`source = ${VIDEO_SOURCE}`
+    : sql`source <> ${VIDEO_SOURCE}`
+}
 
 export interface ImageGroupSummary {
   id: string
@@ -99,11 +135,24 @@ const ORDER_KEY = sql`coalesce(sort_order, extract(epoch from created_at))`
  * `only` narrows it to the groups a write touched. Same statement either way,
  * so the summary a write returns is the one the full read would have given --
  * a second query shaped "close enough" is how the two drift apart.
+ *
+ * **The scope is one or the other, never both** (#517). A full read is "this
+ * user's groups, of this kind"; a write names the exact rows it touched, which
+ * are already the kind their group is, so filtering those by kind as well
+ * could only add a way for a write to return nothing. A union rather than two
+ * nullable parameters, so passing both is not a state that exists.
  */
+type GroupScope = { kind: GroupKind } | { only: Array<string> }
+
 async function readGroups(
   userId: string,
-  only: Array<string> | null,
+  scope: GroupScope,
 ): Promise<Array<ImageGroupSummary>> {
+  const scoped =
+    'only' in scope
+      ? sql`and g.id = any(${scope.only})`
+      : sql`and g.kind = ${scope.kind}`
+
   const rows = await sql`
     select g.id,
            g.name,
@@ -126,7 +175,7 @@ async function readGroups(
       ) ui
     ) m on true
     where g.user_id = ${userId}
-      ${only ? sql`and g.id = any(${only})` : sql``}
+      ${scoped}
     order by sort_order desc
   `
 
@@ -170,9 +219,11 @@ export async function listGroupMemberIds(
   return rows.map((r) => r.id)
 }
 
-export async function listImageGroups(): Promise<Array<ImageGroupSummary>> {
+export async function listImageGroups(
+  kind: GroupKind,
+): Promise<Array<ImageGroupSummary>> {
   const { userId } = await resolveAuth()
-  return readGroups(userId, null)
+  return readGroups(userId, { kind })
 }
 
 /**
@@ -205,6 +256,7 @@ async function currentGroupIds(
 export async function createImageGroup(
   name: string,
   imageIds: Array<string>,
+  kind: GroupKind,
 ): Promise<GroupWrite> {
   const { userId } = await resolveAuth()
 
@@ -219,7 +271,8 @@ export async function createImageGroup(
     // sql-scope-exempt: an insert scopes by what it writes, and user_id comes
     // from resolveAuth(). There is no filter to add.
     await sql<Array<{ id: string }>>`
-      insert into image_groups (user_id, name) values (${userId}, ${trimmed})
+      insert into image_groups (user_id, name, kind)
+      values (${userId}, ${trimmed}, ${kind})
       returning id
     `,
   )
@@ -227,9 +280,14 @@ export async function createImageGroup(
 
   let moved: Array<string> = []
   if (imageIds.length > 0) {
+    // Members must match the group's kind (#517). Enforced by filtering the
+    // update rather than by refusing the call, so a request naming a clip and
+    // a still files the half that belongs and leaves the other where it was --
+    // nothing errors, and nothing lands in a group that cannot draw it.
     const rows = await sql<Array<{ id: string }>>`
       update user_images set group_id = ${group.id}
       where user_id = ${userId} and id = any(${imageIds}) and deleted_at is null
+        and ${memberOf(kind)}
       returning id
     `
     moved = rows.map((r) => r.id)
@@ -246,7 +304,7 @@ export async function createImageGroup(
   }
 
   return {
-    groups: await readGroups(userId, [group.id, ...from]),
+    groups: await readGroups(userId, { only: [group.id, ...from] }),
     gone: [],
     moved: { ids: moved, groupId: group.id },
     trashed: [],
@@ -263,23 +321,29 @@ export async function addImagesToGroup(
 
   // The group is confirmed to be this user's before anything moves -- otherwise
   // a guessed id would file the caller's own images under a stranger's group.
+  // Its kind comes back with it: the caller does not send one, because the
+  // group already knows what it holds and a kind from the browser would be a
+  // second opinion to disagree with.
   const group = first(
-    await sql<Array<{ id: string }>>`
-      select id from image_groups where id = ${groupId} and user_id = ${userId}
+    await sql<Array<{ id: string; kind: GroupKind }>>`
+      select id, kind from image_groups
+      where id = ${groupId} and user_id = ${userId}
     `,
   )
   if (!group) throw new Error('That group no longer exists')
 
   const from = await currentGroupIds(userId, imageIds)
 
+  // Same kind filter `createImageGroup` applies, for the same reason.
   const rows = await sql<Array<{ id: string }>>`
     update user_images set group_id = ${groupId}
     where user_id = ${userId} and id = any(${imageIds}) and deleted_at is null
+      and ${memberOf(group.kind)}
     returning id
   `
 
   return {
-    groups: await readGroups(userId, [groupId, ...from]),
+    groups: await readGroups(userId, { only: [groupId, ...from] }),
     gone: [],
     moved: { ids: rows.map((r) => r.id), groupId },
     trashed: [],
@@ -326,7 +390,7 @@ export async function moveGroupContents(
   `
 
   return {
-    groups: await readGroups(userId, [targetGroupId]),
+    groups: await readGroups(userId, { only: [targetGroupId] }),
     gone: [sourceGroupId],
     moved: { ids: rows.map((r) => r.id), groupId: targetGroupId },
     trashed: [],
@@ -349,7 +413,7 @@ export async function removeImagesFromGroup(
   `
 
   return {
-    groups: from.length > 0 ? await readGroups(userId, from) : [],
+    groups: from.length > 0 ? await readGroups(userId, { only: from }) : [],
     gone: [],
     moved: { ids: rows.map((r) => r.id), groupId: null },
     trashed: [],
@@ -371,7 +435,10 @@ export async function renameImageGroup(
     where id = ${groupId} and user_id = ${userId}
   `
 
-  return { ...EMPTY_WRITE, groups: await readGroups(userId, [groupId]) }
+  return {
+    ...EMPTY_WRITE,
+    groups: await readGroups(userId, { only: [groupId] }),
+  }
 }
 
 /**
@@ -463,5 +530,8 @@ export async function setGroupCover(
       )
   `
 
-  return { ...EMPTY_WRITE, groups: await readGroups(userId, [groupId]) }
+  return {
+    ...EMPTY_WRITE,
+    groups: await readGroups(userId, { only: [groupId] }),
+  }
 }

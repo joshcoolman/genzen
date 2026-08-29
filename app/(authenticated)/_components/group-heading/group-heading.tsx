@@ -33,12 +33,21 @@ import styles from './group-heading.module.css'
  * Only inside a group. Top level has no heading and needs none; the sidebar
  * already says which route this is, and "Images" over a grid of images says
  * nothing.
+ *
+ * **App-shared since #517**, when Video grew groups. Nothing on it was ever
+ * about pictures -- a name, and the way back out -- so the only route-specific
+ * thing it held was the back button's label, which is now derived from
+ * `backLabel`.
  */
 export function GroupHeading({
   name,
+  backLabel,
   onBack,
 }: {
   name: string
+  /** Where back goes, for the screen reader: "Images", "Video". The visible
+   *  control is a chevron -- the name beside it is what you are leaving. */
+  backLabel: string
   onBack: () => void
 }) {
   return (
@@ -46,7 +55,7 @@ export function GroupHeading({
       <button
         type="button"
         className={styles.back}
-        aria-label="Back to Images"
+        aria-label={`Back to ${backLabel}`}
         onClick={onBack}
       >
         <ChevronLeft className={styles.backIcon} />

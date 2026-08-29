@@ -38,6 +38,11 @@ export interface GenerateVideoInput {
    *  switch cannot fail a submit. */
   resolution?: string
   modelSlug?: string
+  /** File the clip into a group at birth (#517), the way a generation made
+   *  inside an image group is. This is the half that makes a group a place to
+   *  work rather than a folder. Verified server-side against both the caller's
+   *  user id and the group's kind -- see `createPendingGeneration`. */
+  groupId?: string | null
 }
 
 /**
@@ -56,6 +61,7 @@ export async function generateVideo({
   aspectRatio,
   resolution,
   modelSlug,
+  groupId,
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
 
@@ -132,6 +138,7 @@ export async function generateVideo({
     userId,
     origin: 'images',
     source: 'ai_video',
+    groupId,
     generationType: hasFirstFrame ? 'image_to_video' : 'text_to_video',
     falModelId: endpoint.id,
     prompt: trimmed,
@@ -206,6 +213,10 @@ export interface VideoRecord {
   status: string
   generation_error: string | null
   created_at: string
+  /** The one group this clip sits in, or null for top level (#517). Filtered
+   *  client-side exactly as the gallery does it -- the route holds every row
+   *  already, so a group view is a filter rather than a second query. */
+  group_id: string | null
   generation_metadata: Record<string, unknown> | null
   /** The clip's rectangle, off frame one (#499). Null on a clip whose poster
    *  never decoded, which is the only reason its aspect ratio is unknown. */
@@ -228,7 +239,7 @@ export async function listVideos(): Promise<Array<VideoRecord>> {
   const rows = await sql<Array<VideoRecord>>`
     select id, title, description, status, generation_error,
            to_json(created_at)#>>'{}' as created_at,
-           generation_metadata, width, height,
+           generation_metadata, width, height, group_id,
            end_frame_path is not null as has_end_frame
     from user_images
     where user_id = ${userId}
