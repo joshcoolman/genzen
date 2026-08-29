@@ -160,19 +160,23 @@ source images; `use-view.ts` owns everything after the first paint.
   is half the card and the height follows the shape, so a 21:9 pair is short and
   a portrait pair is tall, which is what the clip is.
 
-  **`.player` is still a hardcoded `16 / 9`.** Giving it the clip's shape too
-  would finish the idea; it would also make card heights vary with what was
-  generated, and `VideoList` is a grid whose rows size to their tallest card.
-  Left as it is deliberately, not by oversight.
+  **The stage takes the clip's own shape, clamped to between 21:9 and 4:3.**
+  Set inline from `width`/`height`, the same way the two frames are. Within the
+  clamp there is nothing to letterbox and nothing to crop: the poster and the
+  playing clip are the same picture in the same box, so pressing Play changes
+  the controls and nothing else. Outside it — a portrait clip, an ultrawide
+  one — the stage lands on the nearest bound and `object-fit: contain` centres
+  the clip in it, which is the standard box a vertical clip wants anyway.
 
-  **So it is `cover` at rest and `contain` once it plays.** A 21:9 clip in a
-  16:9 stage was a third black bars above and below its poster; filling the box
-  crops instead, which is the right trade for a card being scanned — the two
-  frames underneath are edge-to-edge and shape-true, so nothing about the real
-  shape is lost by this one picture being cropped. It swaps back the moment the
-  clip plays: while you are watching, no part of the frame may be cut off.
-  `object-fit` applies to the poster as well as the video, which is why one
-  class is enough.
+  **The clamp is there because `VideoList` is a grid and grid rows are as tall
+  as their tallest card.** Unbounded, a portrait clip is a card three times the
+  height of the 21:9 one beside it and every short card in that row sits over
+  dead space. Clamped, the raggedness is the range real horizontal shapes
+  occupy — 21:9 to 4:3, about 100px of stage at a 20rem column.
+
+  This replaced a `cover`-at-rest / `contain`-while-playing swap, which existed
+  only to hide the letterboxing a fixed 16:9 stage forced on a 21:9 clip. A
+  stage that fits has nothing to hide, so the swap went with it.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

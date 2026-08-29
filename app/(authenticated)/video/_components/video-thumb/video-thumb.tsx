@@ -13,7 +13,23 @@ import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { aspectLabel, aspectRatio } from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
-import { cx } from '#/lib/utils'
+
+/**
+ * How far the stage may go, as ratios.
+ *
+ * The stage takes the clip's own shape, so nothing is cropped or barred -- but
+ * `VideoList` is a grid, and grid rows are as tall as their tallest card. Left
+ * unbounded a portrait clip is a card three times the height of the 21:9 one
+ * beside it, and every short card in that row sits over dead space.
+ *
+ * Clamping keeps the raggedness to the range real horizontal shapes occupy:
+ * 21:9 through 4:3 is about 100px of stage at a 20rem column. Anything outside
+ * it -- a portrait clip, an ultrawide one -- lands on the nearest bound and is
+ * centred inside it by `object-fit: contain`, which is the standard box a
+ * vertical clip wants anyway.
+ */
+const WIDEST = 21 / 9
+const TALLEST = 4 / 3
 
 function durationOf(video: VideoRecord): string | null {
   const seconds = (video.generation_metadata ?? {}).duration_seconds
@@ -112,6 +128,13 @@ export function VideoThumb({
   const duration = durationOf(video)
   const ratio = aspectRatio(video)
   const shape = aspectLabel(ratio)
+  /* 16:9 when the row does not know its shape -- a poster that never decoded
+     (#499), or a clip that has not been made yet. */
+  const stageShape = {
+    aspectRatio: String(
+      ratio ? Math.min(Math.max(ratio, TALLEST), WIDEST) : 16 / 9,
+    ),
+  }
   /* The clip's own shape, so the frames below are edge-to-edge. 16:9 only when
      the row does not know -- a poster that never decoded (#499) -- where a
      guess is better than a frame with no box at all. */
@@ -161,12 +184,14 @@ export function VideoThumb({
           <>
             <video
               ref={player}
-              /* **`cover` at rest, `contain` once it plays.** The stage is a
-                 fixed 16:9 and a 21:9 clip is letterboxed in it, which at rest
-                 is a card that is a third black bars -- so the poster fills the
-                 box and takes the crop. The moment it plays, the whole frame
-                 matters and nothing may be cut off it, so it swaps back. */
-              className={cx(styles.player, !isPlaying && styles.playerCover)}
+              className={styles.player}
+              /* **The stage is the clip's own shape**, clamped -- see `WIDEST`.
+                 Within the clamp there is nothing to letterbox and nothing to
+                 crop, so the poster and the playing clip are the same picture
+                 in the same box and pressing Play changes nothing but the
+                 controls. Outside it, `contain` centres the clip in the nearest
+                 allowed box, which is what a portrait clip wants. */
+              style={stageShape}
               src={`/img/${video.id}`}
               /* The real poster (#499), which is why there is no
                  `firstFrameSrc` here any more: the `#t=0.001` seek existed to
