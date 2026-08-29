@@ -182,14 +182,18 @@ source images; `use-view.ts` owns everything after the first paint.
   dead space. Clamped, the raggedness is the range real horizontal shapes
   occupy — 21:9 to 4:3, about 100px of stage at a 20rem column.
 
-  **`cover` at rest, `contain` while playing.** Snapping to the named shape
-  means the stage can be up to the 5% tolerance off the picture's true
-  rectangle, which `contain` renders as thin edges down the sides. Filling the
-  box absorbs it — at most 5% cropped, the same 5% the app already treats as no
-  difference — and the two frames below already do this, so at rest the whole
-  block is edge-to-edge. While it plays, `contain`: nothing is cut off a frame
-  you are watching, at the price of those thin edges being visible for as long
-  as it runs.
+  **`cover`, in both states.** Snapping to the named shape means the stage can
+  be up to the 5% tolerance off the picture's true rectangle, and `contain`
+  draws that difference as thin edges down the sides — at rest and while
+  playing alike. Filling the box absorbs it, at the cost of the same 5%
+  cropped, which is what the app already treats as no difference. The two
+  frames fill their halves the same way, so a card never shows an edge in any
+  state.
+
+  The exception it also swallows: a clip outside the clamp — portrait, or
+  ultrawide — is now cropped to the nearest allowed box rather than centred in
+  it. That is a real crop, not a 5% one, and it is the thing to revisit if
+  portrait clips start mattering. There are six in the library today.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

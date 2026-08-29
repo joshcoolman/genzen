@@ -14,28 +14,24 @@
 }
 
 /* `aspect-ratio` is a fallback: the component sets the clip's own shape inline,
-   clamped, so within that range there is nothing to letterbox and nothing to
-   crop. `contain` is what centres the clips outside it -- a portrait one in the
-   standard box it lands on. */
+   clamped and snapped to the shape it reads as.
+
+   **`cover`, in both states.** Snapping means the box can be up to the 5%
+   tolerance off the picture's true rectangle, and `contain` draws that
+   difference as thin edges down the sides -- at rest and while playing alike.
+   Filling the box absorbs it, at the cost of the same 5% cropped, which is what
+   the app already treats as no difference at all. The two frames below fill
+   their halves the same way, so a card never shows an edge in any state.
+
+   The exception it also swallows: a clip outside the clamp -- portrait, or
+   ultrawide -- is cropped to the nearest allowed box rather than centred in it.
+   That is a real crop, not a 5% one, and it is the thing to watch if portrait
+   clips start mattering. */
 .player {
   display: block;
   width: 100%;
   background: var(--image-backing);
   aspect-ratio: 16 / 9;
-  object-fit: contain;
-}
-
-/* At rest only. The stage is sized from the shape the clip *reads* as
-   (`namedRatio`), not the rectangle FAL returned, so it can be up to the 5%
-   tolerance off the picture's true shape -- and `contain` renders that as thin
-   edges down the sides. Filling the box absorbs it instead: at most 5% of the
-   picture cropped, which is the same 5% the app already treats as no
-   difference at all.
-
-   The two frames below already do this, so at rest the whole block is
-   edge-to-edge. `object-fit` covers the poster as well as the video, which is
-   what makes one class enough. */
-.playerCover {
   object-fit: cover;
 }
 
