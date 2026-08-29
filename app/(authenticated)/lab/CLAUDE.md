@@ -143,7 +143,14 @@ a "no" now has somewhere to go.
 ## Outpaint is the one that spends money
 
 Widen a picture to a shape it does not have, without typing the prompt that
-asks for it (#430). Everything else here costs fractions of a cent at Claude;
+asks for it (#430).
+
+**It has shipped, and this page is now the model bench for it.** Outpaint is a
+card action on /images -- a card's `...`, a dialog of ratios, no model picker,
+Grok Imagine 2.0. What is left here is the question that surface deliberately
+does not ask: which model should be doing it. The prompt assembly moved to
+`src/features/ai-images/outpaint.ts`, which both import, so this page can be
+deleted without taking anything with it. Everything else here costs fractions of a cent at Claude;
 one press of this against four models is real FAL spend, and the page exists to
 be pressed repeatedly while the instruction is tuned. So the estimate is under
 Generate as it is on Images and Video, and each result card carries what FAL
