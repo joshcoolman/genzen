@@ -1,5 +1,7 @@
 'use server'
 
+import type { DescribeMode } from '#/lib/prompts/describe'
+import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
@@ -8,7 +10,7 @@ import { createImageStorage } from '#/lib/image-storage'
 interface CaptionImageInput {
   imageBase64?: string
   imageId?: string
-  mode?: 'anchor' | 'reconstruct'
+  mode?: DescribeMode
 }
 
 export async function captionImage(data: CaptionImageInput) {
@@ -33,6 +35,6 @@ export async function captionImage(data: CaptionImageInput) {
     image = Buffer.from(await blob.arrayBuffer()).toString('base64')
   }
 
-  const result = await describeImage(image, data.mode ?? 'anchor')
+  const result = await describeImage(image, data.mode ?? DEFAULT_DESCRIBE_MODE)
   return { caption: result }
 }

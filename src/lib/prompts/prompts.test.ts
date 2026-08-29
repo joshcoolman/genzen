@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { DESCRIBE_MODES } from './describe'
 
 const ROOT = new URL('../../../', import.meta.url).pathname
 const PROMPTS = join(ROOT, 'src/lib/prompts')
@@ -17,9 +18,25 @@ const PROMPTS = join(ROOT, 'src/lib/prompts')
  */
 describe('model instructions live in .md files (#322)', () => {
   it('has nothing but markdown in src/lib/prompts', () => {
-    const stray = readdirSync(PROMPTS).filter(
-      (f) => !f.endsWith('.md') && f !== 'prompts.test.ts',
-    )
+    // Subfolders are allowed and carry an `index.ts` registry -- a family of
+    // prompts one feature switches between (`describe/`) is a folder, so
+    // adding one is a file drop. The registry is wiring: labels, the user turn
+    // that carries the image, the import. The steering is still only in .md.
+    const stray: Array<string> = []
+    const walk = (dir: string, prefix: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry)
+        if (statSync(full).isDirectory()) {
+          walk(full, `${prefix}${entry}/`)
+          continue
+        }
+        if (entry.endsWith('.md')) continue
+        if (entry === 'prompts.test.ts') continue
+        if (prefix && entry === 'index.ts') continue
+        stray.push(prefix + entry)
+      }
+    }
+    walk(PROMPTS, '')
     expect(stray).toEqual([])
   })
 
@@ -48,5 +65,15 @@ describe('model instructions live in .md files (#322)', () => {
     walk(join(ROOT, 'src'))
     walk(join(ROOT, 'app'))
     expect(offenders).toEqual([])
+  })
+})
+
+describe('describe registry', () => {
+  it('loads real prose for every mode, and names a file that exists', async () => {
+    for (const mode of DESCRIBE_MODES) {
+      const { default: system } = await mode.system()
+      expect(system.length, mode.id).toBeGreaterThan(100)
+      expect(readFileSync(join(ROOT, mode.file), 'utf8')).toBe(system)
+    }
   })
 })

@@ -219,10 +219,15 @@ item.
   and the same page reads it. `panel-handoff` sits in `src/lib/` for the
   opposite reason — two routes hold opposite ends of it.
 
-- **Describe exposes both modes, and one of them has never been visible.**
-  `reconstruct` writes a prompt to regenerate the picture, `anchor` writes a
-  short factual description to steer an image-to-image run. The dialog this
-  replaced hard-coded `reconstruct`, so half the feature was unreachable.
+- **Describe's prompt list comes from `src/lib/prompts/describe/`.** Every mode
+  is a `.md` in that folder plus an entry in its `index.ts`; the menu, the
+  instruction-file link, the mode type and the run labels all derive from that
+  array, so adding a prompt is a file drop and one entry — nothing in this page
+  changes. `reconstruct` writes a prompt to regenerate the picture, `anchor`
+  writes a short factual description to steer an image-to-image run; the dialog
+  this page replaced hard-coded `reconstruct`, so half the feature was
+  unreachable. **The picker is a menu, not `SingleSelect`** — the list is meant
+  to grow and a row of segmented pills stops fitting at three or four.
 - **Variations does not generate. It hands the run over** (#433). The dialog it
   replaced fired the prompts immediately; here the prompts are the output and
   nothing is spent. "Load in Images" fills the generator panel — the whole set

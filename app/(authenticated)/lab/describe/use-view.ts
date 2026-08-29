@@ -2,24 +2,11 @@
 
 import { useCallback, useState } from 'react'
 import type { PickedImage } from '../_components/image-input/image-input'
+import type { DescribeMode } from '#/lib/prompts/describe'
 import { captionImage } from '#/features/ai-images/server/caption-image.action'
+import { DESCRIBE_MODES } from '#/lib/prompts/describe'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useAuth } from '#/lib/auth'
-
-/**
- * Describe has two modes and the app only ever used one.
- *
- * `reconstruct` writes a prompt meant to regenerate the picture; `anchor` writes
- * a short factual description meant to steer an image-to-image run. They are
- * different jobs with different instruction files, and the dialog this replaces
- * hard-coded `reconstruct` — so half the feature has never been visible.
- */
-export type DescribeMode = 'reconstruct' | 'anchor'
-
-export const MODE_FILES: Record<DescribeMode, string> = {
-  reconstruct: 'src/lib/prompts/describe-reconstruct.md',
-  anchor: 'src/lib/prompts/describe-anchor.md',
-}
 
 export interface DescribeRun {
   mode: DescribeMode
@@ -32,7 +19,7 @@ export function useView() {
   const userImages = useUserImages(user.id)
 
   const [picked, setPicked] = useState<Array<PickedImage>>([])
-  const [mode, setMode] = useState<DescribeMode>('reconstruct')
+  const [mode, setMode] = useState<DescribeMode>(DESCRIBE_MODES[0].id)
   const [runs, setRuns] = useState<Array<DescribeRun>>([])
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)

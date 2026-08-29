@@ -1,22 +1,14 @@
 import { generateText } from 'ai'
-import anchorPrompt from '#/lib/prompts/describe-anchor.md'
-import reconstructPrompt from '#/lib/prompts/describe-reconstruct.md'
+import type { DescribeMode } from '#/lib/prompts/describe'
+import { describeMode } from '#/lib/prompts/describe'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
-
-// **Not a `.md`, deliberately.** These are the one-line turn that carries the
-// image, not instructions that steer the output -- a file containing "Describe
-// this image." would be a file nobody would ever open to change the result.
-// The steering lives in `describe-anchor.md` and `describe-reconstruct.md`,
-// which is what #322 is actually protecting.
-const USER_TEXT: Record<string, string> = {
-  anchor: 'Describe this image.',
-  reconstruct: 'Write an image generation prompt for this image.',
-}
 
 export async function describeImage(
   image: string,
-  mode: 'anchor' | 'reconstruct',
+  mode: DescribeMode,
 ): Promise<string> {
+  const { system, userText } = describeMode(mode)
+
   // Guarding here rather than at each caller, and **every caller now surfaces
   // it**. This comment used to say `generate-image-internal` caught the throw
   // and fell back to a placeholder prompt, calling that the right behaviour;
@@ -56,13 +48,13 @@ export async function describeImage(
 
   const { text } = await generateText({
     model: ai.fast,
-    system: mode === 'anchor' ? anchorPrompt : reconstructPrompt,
+    system: (await system()).default,
     messages: [
       {
         role: 'user',
         content: [
           { type: 'image', image: `data:${mime};base64,${base64}` },
-          { type: 'text', text: USER_TEXT[mode] },
+          { type: 'text', text: userText },
         ],
       },
     ],
