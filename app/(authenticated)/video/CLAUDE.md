@@ -117,6 +117,19 @@ source images; `use-view.ts` owns everything after the first paint.
   was per-item noise beside a Download button. `clipFacts` and the shape
   helpers are `src/features/video/clip-facts.ts` -- they moved out of
   `lab/_components/` when this card became their second consumer.
+- **The player shows a poster and one play button until it is played.** A grid
+  of cards was five sets of scrubbers, timecodes and overflow menus competing
+  with five pictures, and the pictures are what the page is for. Pressing Play
+  hands the card to the native controls, which then stay: sticky rather than
+  on hover, because chrome that follows the pointer flickers across a grid and
+  a scrubber has to stay put while it is in use.
+
+  The real win is not visual. `poster` (the row's own `thumbnail_path`, #499)
+  plus `preload="none"` means a card fetches an image it already has and no
+  video at all until asked. That also retires `firstFrameSrc` on this
+  surface -- the `#t=0.001` seek existed to make a `<video>` paint frame one
+  when nothing else could, which is #500's job everywhere else.
+
 - **The player and the clip's two ends are one block.** Half the card each,
   flush under the player, no gap between them and none at the edges. The player
   stays -- it is most of what the card is for -- and the frames are the two it

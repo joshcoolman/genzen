@@ -1,15 +1,16 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
   Download,
   Loader2,
+  Play,
   Trash2,
 } from 'lucide-react'
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
-import { firstFrameSrc } from '#/components'
 import { aspectLabel, aspectRatio } from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
 
@@ -46,6 +47,16 @@ function durationOf(video: VideoRecord): string | null {
  *
  * That rule is about the *player*, and the frames below it are not one. They
  * have no controls to argue with, which is why Continue can live on one.
+ *
+ * **The player has no controls until it is played.** A poster, one play button,
+ * and nothing else -- a grid of cards was five sets of scrubbers, timecodes and
+ * overflow menus competing with five pictures, and the pictures are what the
+ * page is for. Pressing Play hands the card to the native controls and they
+ * stay, sticky rather than on hover: chrome that follows the pointer flickers
+ * across a grid, and a scrubber has to stay put while it is being used.
+ *
+ * The real win is not visual. `poster` plus `preload="none"` means a card
+ * fetches an image the row already has and no video at all until asked.
  *
  * **The last frame is Continue** -- the picture is the control, not a text link
  * beside it. Continue takes the frame at the end of this clip and puts it in
@@ -97,17 +108,53 @@ export function VideoThumb({
   const endShape = { aspectRatio: ratio ? String(ratio) : '16 / 9' }
   const isDone = video.status === 'completed'
 
+  /**
+   * Whether this card has been played yet, which is the only thing that puts
+   * native controls on it.
+   *
+   * **Sticky, not tied to hover.** Controls that come and go with the pointer
+   * flicker their way across a grid of cards as you move over it, and the
+   * scrubber is the one thing you want to stay put once you are using it.
+   */
+  const [engaged, setEngaged] = useState(false)
+  const player = useRef<HTMLVideoElement>(null)
+
   return (
     <article className={styles.item}>
       <div className={styles.stage}>
         {isDone ? (
-          <video
-            className={styles.player}
-            src={firstFrameSrc(`/img/${video.id}`)}
-            controls
-            preload="metadata"
-            playsInline
-          />
+          <>
+            <video
+              ref={player}
+              className={styles.player}
+              src={`/img/${video.id}`}
+              /* The real poster (#499), which is why there is no
+                 `firstFrameSrc` here any more: the `#t=0.001` seek existed to
+                 make a `<video>` paint frame one when nothing else could, and
+                 `poster` does it from an image. Part of #500, on this surface
+                 only. */
+              poster={imageUrl(video.id, 'thumb')}
+              /* Nothing is fetched until Play. A wall of clips used to pull a
+                 header and a seek each on load; now it pulls an image the row
+                 already has and no video at all. */
+              preload="none"
+              controls={engaged}
+              playsInline
+            />
+            {!engaged ? (
+              <button
+                type="button"
+                className={styles.play}
+                onClick={() => {
+                  setEngaged(true)
+                  void player.current?.play()
+                }}
+                aria-label="Play this clip"
+              >
+                <Play size={20} />
+              </button>
+            ) : null}
+          </>
         ) : video.status === 'failed' ? (
           <div className={styles.state}>
             <AlertTriangle size={16} />
