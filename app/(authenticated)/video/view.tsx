@@ -1,5 +1,6 @@
 'use client'
 
+import { Trash2 } from 'lucide-react'
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../_components/model-selector/model-selector'
 import { VideoForm } from './_components/video-form/video-form'
@@ -8,7 +9,13 @@ import { useView } from './use-view'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { frameCapacityFor } from '#/features/video/models'
-import { PageHeader, RefImageStrip, Stack } from '#/components'
+import {
+  Button,
+  PageHeader,
+  RefImageStrip,
+  SelectionDrawer,
+  Stack,
+} from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
@@ -31,6 +38,12 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     clearSources,
     clearEndSources,
     videos,
+    selectedIds,
+    toggleSelected,
+    clearSelection,
+    selectedCount,
+    isBatchDeleting,
+    deleteSelected,
     playingId,
     setPlayingId,
     deleteVideo,
@@ -88,6 +101,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             playingId={playingId}
             onPlay={setPlayingId}
             continuingId={isContinuing}
+            selectedIds={selectedIds}
+            onSelect={toggleSelected}
           />
         </div>
 
@@ -188,6 +203,22 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
           />
         </div>
       </div>
+
+      {/* One verb (#517). Images' drawer carries seven because a still is a
+          thing you file, sheet and share; a clip is a take you either keep or
+          prune, and the rest of what grouping would add is its own piece of
+          work. Not `danger` and not "Delete": this moves rows to Trash, where
+          they sit until it is emptied -- red belongs to Delete Forever. */}
+      <SelectionDrawer count={selectedCount} onClear={clearSelection}>
+        <Button
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={() => void deleteSelected()}
+        >
+          <Trash2 size={14} />
+          {isBatchDeleting ? 'Trashing...' : `Trash ${selectedCount}`}
+        </Button>
+      </SelectionDrawer>
     </Stack>
   )
 }

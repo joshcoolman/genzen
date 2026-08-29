@@ -81,7 +81,10 @@ source images; `use-view.ts` owns everything after the first paint.
   kinds of record when they are the same row in the same table. **No overlay
   actions**: native controls already own the bottom edge, and a second set of
   buttons above them is two rows of controls arguing, so the verbs are text in
-  the caption. `video-list/` is now the grid and nothing else.
+  the caption. The rule is about _verbs on the player_, not about anything
+  drawn on it -- the model badge and the select tick are both fixed markers in
+  free corners, always on rather than following the pointer.
+  `video-list/` is now the grid and nothing else.
 - **Continue carries on from a clip's last frame** (#494). One press reads the
   frame at the end of a finished clip, saves it as an ordinary upload, and sets
   it as the first frame -- replacing five manual steps that all worked
@@ -296,6 +299,29 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
+- **Several clips at once, and one verb: Trash** (#517). A wall of takes is a
+  thing you prune, so the drawer that Images fills with seven verbs carries one
+  here. `useSelection` and `SelectionDrawer` are borrowed unchanged -- both
+  exist so a route supplies the verbs and nothing else -- and the write is
+  `trashGalleryImages(ids)`, the gallery's bulk trash, which dispatches on
+  `status` and never on `source`, so it was already right for clips. One call
+  for the set (#329): React serialises server actions, so a loop would freeze
+  the wall for one round trip per clip.
+
+  **Select mode is a selection, not a switch** (#325, unchanged). Being in the
+  mode is having something picked; Escape and Deselect all are the way out
+  because emptying the selection is the only thing leaving could mean, and the
+  tick sits on every card always so picking up again after a delete is one
+  click rather than a mode to re-enter.
+
+  **The tick is top-left of the player, and it is the only way to select.** That
+  corner is the one this card does not already use -- badge top-right, Play
+  centre, native controls along the bottom, Continue at the last frame's
+  bottom-left. The card deliberately does _not_ become one big toggle in select
+  mode the way a still does: half of it is a player and the other half is
+  Continue, so a full-card target would take both away exactly when they still
+  work.
+
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
 'ai_generated')`. **Activity did not pick them up for free** -- this file said

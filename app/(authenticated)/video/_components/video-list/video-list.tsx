@@ -20,6 +20,8 @@ export function VideoList({
   playingId,
   onPlay,
   continuingId,
+  selectedIds,
+  onSelect,
 }: {
   videos: Array<VideoRecord>
   onDelete: (id: string) => void
@@ -30,6 +32,11 @@ export function VideoList({
   onPlay: (id: string) => void
   /** The clip whose last frame is being read, if any -- one at a time. */
   continuingId: string | null
+  /** The clips picked for a bulk action (#517). Passed as the set rather than
+   *  a per-card boolean so the list can also tell each card whether *anything*
+   *  is picked, which is what greys the unpicked borders. */
+  selectedIds: Set<string>
+  onSelect: (id: string, shiftKey: boolean) => void
 }) {
   if (videos.length === 0) {
     return (
@@ -50,6 +57,9 @@ export function VideoList({
           onDelete={onDelete}
           onContinue={onContinue}
           isContinuing={continuingId === video.id}
+          selected={selectedIds.has(video.id)}
+          selectionActive={selectedIds.size > 0}
+          onSelect={onSelect}
         />
       ))}
     </div>
