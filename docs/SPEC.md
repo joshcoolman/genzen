@@ -32,8 +32,8 @@ source for reference images and canvas placements.
 image. Three models, each with its own endpoints and costs.
 
 **Lab** — where a single step of the work is put on its own page and judged
-before it earns a place in the panel: Enhance, Describe, Variations, Frames,
-Outpaint. Each states the question it is asking and shows the instruction file
+before it earns a place in the panel: Enhance, Describe, Variations, Frames.
+Each states the question it is asking and shows the instruction file
 it sends, so what the model was told is on screen with what it returned.
 
 **Explore** — browsing what is already there, not working on it.
