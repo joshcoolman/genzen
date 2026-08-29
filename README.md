@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-29 — Endpoint Explorer in the lab: paste a FAL model URL and it reads that endpoint's published schema and says whether we could build controls for it — every input with its type and range, the output kind, and a named reason for anything we cannot draw. Nothing is generated and nothing is charged; checked endpoints are kept so a URL is pasted once (#523)
 - 2026-08-29 — Video picks one model at a time, and each model gets its whole capability: MiniMax H3 Max joins the lineup as a text-only model tuned for prompt adherence (the target the multi-shot writer was missing) with a 480p/768p resolution control that moves the price, and the settings are that model's rather than an intersection across several
 - 2026-08-28 — Enhance writes multi-shot video prompts: pick "Multi-shot · MiniMax H3" as the target and a few words come back as a timestamped shot-by-shot script, with the duration read out of what you typed (#520)
 - 2026-08-28 — Describe's prompts are a folder with a registry, picked from a menu, so adding one is a file drop and an entry (#519)
 - 2026-08-28 — Generate panel polish: the stepper is a pill, reference images sit in a labelled box, each model is its own block with selection shown by its border alone, and aspect, count and Generate share one row (#518)
 - 2026-08-27 — Sequence shows both ends of every clip: each tile is the frame it opens on beside the frame it ends on, the picker offers only clips that match the run's aspect ratio, and skip jumps straight to a clip and plays it (#512)
-- 2026-08-27 — Move to trash is in an image's ••• menu now, not only behind Cmd on the corner icon — the menu is where people look, and the shortcuts page says so (#510)
 
 **Up next**
 

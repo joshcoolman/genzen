@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Six pages
+Where a feature is worked on before it is part of the app (#424). Seven pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames and Sequence are the other kind: things
 the app has never been able to do at all**, built here first so they can be used
@@ -181,6 +181,84 @@ generation per selected image. That bar's verbs are all free and reversible
 today, so the first one that spends money carries its count and cost on the
 item.
 
+## Endpoint Explorer is the one that does not send anything anywhere
+
+Paste a FAL model URL; it fetches that endpoint's published OpenAPI document and
+says whether we could build controls for it (#523). No key, no queue, no spend --
+which is the point, because the question only gets answered by pointing it at
+dozens of endpoints.
+
+Its question: **does one parser hold across real FAL schemas?** MiniMax's are
+pristine and publish their own UI hints -- `x-fal-order-properties` for field
+order, `_fal_ui_field` marking a media slot, both evidently what FAL's own form
+is drawn from. Mirelo's publish neither and wrap every optional in
+`anyOf [T, null]`. Whether that is a spectrum five control kinds cover or a long
+tail with no end decides whether the real thing is worth building.
+
+- **Checking and keeping are separate acts.** Checking is free and most checks
+  are a glance, so a page that saved every one would be a wall of reports nobody
+  asked to keep. Save puts an endpoint in the rail; the rail is the short list
+  worth coming back to, and a refusal can be saved too -- re-checking one after
+  the parser learns something is most of why the list exists.
+- **The rail is single-select, and that is not a placeholder.** One endpoint's
+  controls at a time is the shape the real thing wants -- the same call Video
+  made in #417, for the same reason: these models disagree about almost
+  everything, so anything showing two at once has to intersect them and the
+  differences are what you came for. Today the content area holds the report;
+  later it holds the controls and what they generated.
+- **Required is muted text after the field's description, not a mark on its
+  name.** A red asterisk beside a green tick reads as two verdicts about one
+  field when only one of them is a verdict at all.
+- **The report is the compatibility check.** It is not a throwaway view of one:
+  whatever gets built on top, a pasted URL has to be accepted or refused, and
+  this is that decision rendered as a page instead of hidden behind a green dot.
+- **An unsupported field fails the endpoint even when it is optional.** Ignoring
+  it and sending the default reads as generous and is how a form silently stops
+  offering half of what a model does.
+- **Failures are saved like successes.** The list is the record of what has been
+  looked at; dropping the refusals makes the same URL worth pasting twice.
+- **Six control kinds, and the sixth is not a control.** text, textarea, enum,
+  number, boolean, media -- and `group`, a set of fields that may repeat. Kling
+  v3 Pro needs it twice: `multi_prompt` is a shot list (prompt + duration per
+  shot) and `elements` is a character (frontal image, reference angles, a clip,
+  a voice) referred to from the prompt as `@Element1`. Both are _optional_, so
+  the generous parser would have passed that endpoint and silently never offered
+  either -- and they are the entire reason to reach for it. Drawing a group
+  means a repeater, which arrives with the controls.
+- **A group is only as supported as its members**, for the same reason an
+  unsupported optional fails the endpoint: a form with a hole in it.
+- **Except when the schema declares a default.** An optional field we cannot
+  draw is skipped if FAL says what the model does without it -- omitting it then
+  accepts a stated value rather than silently switching something off. That is
+  the whole rule, and it draws the line where the shapes actually differ:
+  `image_size` is optional and defaults to `landscape_4_3` on FLUX and
+  `{2048, 2048}` on Seedream, a size nobody was going to type; Kling's
+  `multi_prompt` and `elements` and Recraft's `image_weights` declare nothing,
+  and leaving those out is a silent no to the capability that was the reason to
+  pick the model. So it still blocks the endpoints the strict rule was for, and
+  stops blocking three it should never have caught.
+  **A skipped field is still printed, with the default it will get** -- a dash
+  rather than a cross, since the endpoint works without it. Hiding it would
+  recreate the silence the strict rule existed to avoid.
+- **Findings from real schemas, kept because none was guessable:** the output
+  media hides behind a `$ref` that is _not_ always called `File` (`Image` for
+  FLUX, `Video-Output` for mirelo, and matching the name reported both as
+  returning nothing displayable); `image_urls` -- an array of strings -- is how
+  every multi-image editor on FAL spells its reference slot, so refusing arrays
+  outright failed the commonest shape there is; a media param may be a `$ref` to
+  a `{ url, ... }` object rather than a string (cassetteai's `video_url`) --
+  same control, different thing to send, which `asObject` records; the media
+  hint has **two spellings**, `_fal_ui_field` at the top level and
+  `ui: { field }` inside a nested schema, and a reader that knew one classified
+  Kling's element fields by name alone; and FLUX's `image_size` is genuinely
+  `anyOf [object, enum]`, which stays refused because a control that is both
+  does not exist.
+- **`x-fal` on a media param carries real limits** -- max file size, min
+  dimensions, duration and FPS ranges. Read by nobody yet; it is the validation
+  layer, not something needed to draw a control.
+- **It parses and reports; it does not generate and does not draw the
+  controls.** Those wait on what this says.
+
 ## Quirks
 
 - **Every page names the file that steers it.** `LabPage` takes an
@@ -276,6 +354,15 @@ item.
   state, not about a lab page being the first thing to want something the app
   can give every clip. If the answer to "who writes this, and does it survive
   deleting `lab/`?" is the app and yes, it is not a lab migration.
+
+  **`fal_endpoints` (#523) is the second exception, and it passes the same test
+  for a different reason.** Endpoint Explorer keeps the FAL endpoints you have
+  pasted in; re-pasting a URL you already checked is what makes a validator
+  useless on its second day, so collecting them is the feature rather than one
+  page's scratch state. It is also the table the real Endpoint Explorer needs
+  whatever surface ends up owning it — this page is merely first to want it.
+  `generation_metadata` was not an option: an endpoint is not an image and has
+  no row to hang off.
 
 - **The rail collapses, and `layout.tsx` is a shell around a client
   component.** The collapsed state lives above both columns — the aside narrows
