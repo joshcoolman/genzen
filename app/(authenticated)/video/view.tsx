@@ -31,6 +31,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     clearSources,
     clearEndSources,
     videos,
+    playingId,
+    setPlayingId,
     deleteVideo,
     continueFrom,
     isContinuing,
@@ -83,6 +85,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             videos={videos}
             onDelete={(id) => void deleteVideo(id)}
             onContinue={(video) => void continueFrom(video)}
+            playingId={playingId}
+            onPlay={setPlayingId}
             continuingId={isContinuing}
           />
         </div>

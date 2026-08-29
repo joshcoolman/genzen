@@ -89,17 +89,113 @@ source images; `use-view.ts` owns everything after the first paint.
   it). Enough friction that a four-clip sequence did not get made.
 
   **It sets up the next generation and stops.** No auto-run: the point is a
-  frame in the slot, not a submitted job. The prompt is cleared rather than
-  carried over, because the frame is the continuity and the words are about
-  what happens next. Any end frame is dropped for the same reason -- it
-  described where the _last_ clip was going.
+  frame in the slot, not a submitted job. **It carries the clip's prompt over**,
+  and used to clear it. Clearing was argued from the sentence -- the frame is
+  the continuity, the words are about what happens next -- and was wrong about
+  the work: continuing is usually the same shot carried on, so an empty box
+  meant retyping most of a prompt to change a clause. Any end frame is still
+  dropped, because unlike a prompt there is no part of it to edit.
 
-  It sits above a rule in the caption, alone on the left, with the facts and
-  the file verbs pushed right below it: Download and Delete act on the clip in
-  front of you, Continue starts the next one, and a row mixing the two read as
-  three file operations. The mechanism is `src/features/video/frame-capture.ts`,
-  shared with `lab/frames` -- and it lands _near_ the end of the clip rather
-  than provably on the last sample, so a seam may be a frame or two loose.
+  **The last frame is the control.** Continue was `CornerDownRight` plus the
+  word, in the caption; what it does is take that picture and put it in the
+  form, so the picture is the button -- half a card of target instead of a line
+  of `--text-3xs` text. A filled circular `ArrowUpRight` sits bottom-left of the
+  frame, always on rather than on hover, because it is the only thing saying the
+  frame does anything. This does not breach the card's no-overlay-actions rule:
+  that rule is about the player's bottom edge and its native controls, and a
+  frame has none. Below the block, a rule, then the clip's facts on the left and
+  the file verbs on the right: Download and Delete act on the clip in front of you, Continue
+  starts the next one, and a row mixing the two read as three file operations.
+  The mechanism is `src/features/video/frame-capture.ts`, shared with
+  `lab/frames` -- and it lands _near_ the end of the clip rather than provably
+  on the last sample, so a seam may be a frame or two loose.
+
+- **A card says the clip's shape, then its duration, and not its cost.** Shape
+  is what decides whether two clips can cut together (#512) and no surface
+  showed it; cost came off because every generation is already a row in the
+  Activity log, which is where a spend question gets asked, and on a card it
+  was per-item noise beside a Download button. `clipFacts` and the shape
+  helpers are `src/features/video/clip-facts.ts` -- they moved out of
+  `lab/_components/` when this card became their second consumer.
+- **The player shows a poster and one play button until it is played.** A grid
+  of cards was five sets of scrubbers, timecodes and overflow menus competing
+  with five pictures, and the pictures are what the page is for. Pressing Play
+  hands the card to the native controls, which then stay: sticky rather than
+  on hover, because chrome that follows the pointer flickers across a grid and
+  a scrubber has to stay put while it is in use.
+
+  The real win is not visual. `poster` (the row's own `thumbnail_path`, #499)
+  plus `preload="none"` means a card fetches an image it already has and no
+  video at all until asked. That also retires `firstFrameSrc` on this
+  surface -- the `#t=0.001` seek existed to make a `<video>` paint frame one
+  when nothing else could, which is #500's job everywhere else.
+
+  **One clip plays at a time, and `use-view` owns which** (`playingId`). A card
+  cannot know another one started, so left to themselves six of them play at
+  once. A card is engaged only while it holds the id; taking it away rewinds
+  that card to its first frame and drops it back to a poster and a play button.
+  Pausing with the native controls does _not_ release it -- only another card's
+  Play does, or the controls would vanish under a pointer that was using them.
+
+  The rewind is guarded on the card having actually played. Touching
+  `currentTime` on a `preload="none"` element that never loaded asks the
+  browser to fetch the clip, which is the thing the poster exists to avoid.
+
+- **The player and the clip's two ends are one block.** Half the card each,
+  flush under the player, no gap between them and none at the edges. The player
+  stays -- it is most of what the card is for -- and the frames are the two it
+  is worst at showing: the one it opens on, and the one the next clip has to
+  start from. Any gap in there and they read as three things that happen to be
+  stacked rather than one bigger thumbnail.
+
+  They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
+  lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile
+  has no player above it. A grid, not flex: 50/50 has to hold exactly, and two
+  flex items disagree by a pixel when their intrinsic widths differ -- the seam
+  down the middle of the card is the one place that shows.
+
+  **The strip owns the height, not the frames** — one `aspect-ratio` on the
+  container, twice one frame's, with both cells at `height: 100%`. Sized
+  separately the two derive a height from a fractional column width and round
+  differently: the last frame rode a pixel high, and a hairline of card showed
+  under the first while the clip played. One height computed once cannot
+  disagree with itself, and `overflow: hidden` clips what is left of a
+  fractional column.
+
+  **The stage takes the clip's own shape, clamped to between 21:9 and 4:3.**
+  Set inline from `width`/`height`, the same way the two frames are. Within the
+  clamp there is nothing to letterbox and nothing to crop: the poster and the
+  playing clip are the same picture in the same box, so pressing Play changes
+  the controls and nothing else. Outside it — a portrait clip, an ultrawide
+  one — the stage lands on the nearest bound and `object-fit: contain` centres
+  the clip in it, which is the standard box a vertical clip wants anyway.
+
+  **The shape is the one the caption names, not the exact rectangle FAL
+  returned** (`namedRatio`). One 21:9 request comes back as both 1504x672
+  (2.238) and 1568x672 (2.333); `sameAspect` calls them one shape, the caption
+  says `21:9` on both, and a stage sized from the raw ratio then stood two such
+  cards ~14px apart in height. Three parts of the app agreeing and a fourth
+  disagreeing was the bug — the crop it costs is under the 5% the app already
+  treats as no difference.
+
+  **The clamp is there because `VideoList` is a grid and grid rows are as tall
+  as their tallest card.** Unbounded, a portrait clip is a card three times the
+  height of the 21:9 one beside it and every short card in that row sits over
+  dead space. Clamped, the raggedness is the range real horizontal shapes
+  occupy — 21:9 to 4:3, about 100px of stage at a 20rem column.
+
+  **`cover`, in both states.** Snapping to the named shape means the stage can
+  be up to the 5% tolerance off the picture's true rectangle, and `contain`
+  draws that difference as thin edges down the sides — at rest and while
+  playing alike. Filling the box absorbs it, at the cost of the same 5%
+  cropped, which is what the app already treats as no difference. The two
+  frames fill their halves the same way, so a card never shows an edge in any
+  state.
+
+  The exception it also swallows: a clip outside the clamp — portrait, or
+  ultrawide — is now cropped to the nearest allowed box rather than centred in
+  it. That is a real crop, not a 5% one, and it is the thing to revisit if
+  portrait clips start mattering. There are six in the library today.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

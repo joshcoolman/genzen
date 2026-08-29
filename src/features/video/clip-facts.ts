@@ -1,4 +1,15 @@
-import type { VideoRecord } from '../../video/_actions/generate-video.action'
+/**
+ * What these need off a clip, structurally rather than by naming the route's
+ * `VideoRecord`. A feature module cannot import from `app/` -- the dependency
+ * runs the other way -- and the four fields are the whole contract.
+ */
+export interface ClipShape {
+  title: string
+  generation_metadata: Record<string, unknown> | null
+  /** The clip's rectangle, off frame one (#499). */
+  width: number | null
+  height: number | null
+}
 
 /**
  * A clip's shape as a number, or null when nothing recorded it.
@@ -9,7 +20,9 @@ import type { VideoRecord } from '../../video/_actions/generate-video.action'
  * plausible default -- a wrong ratio silently lets a portrait clip into a
  * landscape run, which is the thing knowing the ratio was for.
  */
-export function aspectRatio(clip: VideoRecord): number | null {
+export function aspectRatio(
+  clip: Pick<ClipShape, 'width' | 'height'>,
+): number | null {
   if (!clip.width || !clip.height) return null
   return clip.width / clip.height
 }
@@ -54,6 +67,27 @@ const NAMED: Array<[string, number]> = [
   ['3:2', 3 / 2],
 ]
 
+/**
+ * A ratio snapped to the named shape it counts as, or left alone when it counts
+ * as none.
+ *
+ * **For laying out, where the exact number is a liability.** The lineup returns
+ * 1504x672 (2.238) and 1568x672 (2.333) for the same request; both are 21:9 by
+ * `sameAspect`, both say "21:9" in a caption, and a stage sized from the raw
+ * ratio then made one card ~14px shorter than the one beside it. Three parts of
+ * the app calling them the same shape and a fourth disagreeing is the
+ * contradiction, not the pixels.
+ *
+ * The cost is under the tolerance by definition -- at most 5% of the picture
+ * cropped or matted, which is the same 5% the app already treats as no
+ * difference at all.
+ */
+export function namedRatio(ratio: number | null): number | null {
+  if (ratio == null) return null
+  const named = NAMED.find(([, value]) => sameAspect(ratio, value))
+  return named ? named[1] : ratio
+}
+
 /** A ratio as a person would say it, falling back to a decimal for the ones
  *  nothing in the lineup produces. */
 export function aspectLabel(ratio: number | null): string | null {
@@ -74,7 +108,7 @@ export function aspectLabel(ratio: number | null): string | null {
  * (#512), so it is a fact about whether two of these belong in one run, not
  * decoration. Omitted rather than guessed when the row does not know it.
  */
-export function clipFacts(clip: VideoRecord): string {
+export function clipFacts(clip: ClipShape): string {
   const seconds = (clip.generation_metadata ?? {}).duration_seconds
   const ratio = aspectLabel(aspectRatio(clip))
   return [clip.title, typeof seconds === 'number' ? `${seconds}s` : null, ratio]

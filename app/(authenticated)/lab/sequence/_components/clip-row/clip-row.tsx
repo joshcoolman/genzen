@@ -3,9 +3,9 @@
 import { Fragment, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { ClipFrames } from '../../../_components/clip-frames/clip-frames'
-import { clipFacts } from '../../../_components/clip-facts'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
+import { clipFacts } from '#/features/video/clip-facts'
 import { cx } from '#/lib/utils'
 
 /** The edge of one frame. Paired with `--tile` in the stylesheet, which is what

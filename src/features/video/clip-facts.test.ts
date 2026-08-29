@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { aspectLabel, sameAspect } from './clip-facts'
+import { aspectLabel, namedRatio, sameAspect } from './clip-facts'
 
 /**
  * The tolerance is the whole feature: it decides which clips the Sequence
@@ -37,5 +37,23 @@ describe('aspectLabel', () => {
     expect(aspectLabel(720 / 1280)).toBe('9:16')
     expect(aspectLabel(768 / 1152)).toBe('2:3')
     expect(aspectLabel(null)).toBeNull()
+  })
+})
+
+describe('namedRatio', () => {
+  // The two shapes the lineup actually returns for one 21:9 request. They are
+  // the same shape everywhere else in the app, so they have to lay out the
+  // same too -- sized from the raw ratio they differed by ~14px of card.
+  it('snaps every clip that reads 21:9 to the same number', () => {
+    expect(namedRatio(1504 / 672)).toBe(namedRatio(1568 / 672))
+    expect(namedRatio(1504 / 672)).toBe(21 / 9)
+  })
+
+  it('leaves a ratio no name covers alone', () => {
+    expect(namedRatio(3.5)).toBe(3.5)
+  })
+
+  it('has nothing to say about an unknown shape', () => {
+    expect(namedRatio(null)).toBeNull()
   })
 })
