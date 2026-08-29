@@ -130,3 +130,41 @@
 .steering[open] .steeringSummary {
   color: var(--text);
 }
+
+/* The target picker, sized like the run controls below it rather than like the
+   textarea it sits above: it is a control, not an input. */
+.targetTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--field);
+  color: var(--text);
+  font-size: var(--text-2xs);
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.targetTrigger:hover {
+  background: var(--field-hover);
+}
+
+.targetIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--text-muted);
+}
+
+.targetCheck {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-right: var(--space-6);
+}
+
+/* Held in the layout rather than removed, so the labels do not shift sideways
+   as the selection moves. */
+.targetCheckHidden {
+  visibility: hidden;
+}

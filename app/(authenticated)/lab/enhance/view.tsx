@@ -1,11 +1,20 @@
 'use client'
 
+import { Check, ChevronDown } from 'lucide-react'
 import { ModelSelector } from '../../_components/model-selector/model-selector'
 import { LabPage } from '../_components/lab-page/lab-page'
 import { RunCard } from '../_components/run-card/run-card'
-import { useView } from './use-view'
+import { ENHANCE_TARGETS, useView } from './use-view'
 import styles from './view.module.css'
-import { ActionButton, Button, Textarea } from '#/components'
+import {
+  ActionButton,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Textarea,
+} from '#/components'
 import { cx } from '#/lib/utils'
 
 export function View() {
@@ -70,6 +79,36 @@ export function View() {
         </div>
 
         <aside className={styles.inputs}>
+          {/* What the idea is being written *for*, above the box you write it
+              in: it changes what a good answer even looks like, so choosing it
+              after typing reads as an afterthought. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={v.isRunning}
+              render={
+                <button type="button" className={styles.targetTrigger}>
+                  <span>
+                    {ENHANCE_TARGETS.find((t) => t.id === v.target)?.label}
+                  </span>
+                  <ChevronDown className={styles.targetIcon} />
+                </button>
+              }
+            />
+            <DropdownMenuContent align="start">
+              {ENHANCE_TARGETS.map((t) => (
+                <DropdownMenuItem key={t.id} onClick={() => v.setTarget(t.id)}>
+                  <Check
+                    className={cx(
+                      styles.targetCheck,
+                      t.id !== v.target && styles.targetCheckHidden,
+                    )}
+                  />
+                  {t.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Textarea
             value={v.prompt}
             onChange={(e) => v.setPrompt(e.target.value)}
@@ -101,7 +140,9 @@ export function View() {
               loadingText="Enhancing"
               disabled={!v.canRun}
             >
-              {v.modelCount > 1 ? `Enhance ${v.modelCount} ways` : 'Enhance'}
+              {!v.isMultiShot && v.modelCount > 1
+                ? `Enhance ${v.modelCount} ways`
+                : 'Enhance'}
             </ActionButton>
             {v.run && (
               <Button variant="ghost" onClick={v.clear}>
@@ -110,18 +151,24 @@ export function View() {
             )}
           </div>
 
-          {/* Text only, so no cost note: a press is Claude cents however many
+          {/* Hidden for a multi-shot run, not disabled: the instruction names
+              the video model it writes for, so an image selection is not a
+              choice that has been taken away -- it is not part of the question.
+
+              Text only, so no cost note: a press is Claude cents however many
               models are ticked, and the one page that spends real money says so
               under its own button (#441). */}
-          <ModelSelector
-            mode="multi"
-            selectedIds={v.modelSelector.selectedIds}
-            visibleModels={v.modelSelector.models}
-            onToggleSelected={v.modelSelector.toggleSelected}
-            onToggleAll={v.modelSelector.toggleAll}
-            onSelectOnly={(id) => v.modelSelector.selectOnly([id])}
-            persistKey="genzen:lab:enhance:model-panel:expanded"
-          />
+          {!v.isMultiShot && (
+            <ModelSelector
+              mode="multi"
+              selectedIds={v.modelSelector.selectedIds}
+              visibleModels={v.modelSelector.models}
+              onToggleSelected={v.modelSelector.toggleSelected}
+              onToggleAll={v.modelSelector.toggleAll}
+              onSelectOnly={(id) => v.modelSelector.selectOnly([id])}
+              persistKey="genzen:lab:enhance:model-panel:expanded"
+            />
+          )}
         </aside>
       </div>
     </LabPage>
