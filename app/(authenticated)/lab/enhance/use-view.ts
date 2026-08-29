@@ -10,11 +10,26 @@ import {
   slugFor,
 } from '#/features/ai-images/models'
 import { enhancePrompt } from '#/features/ai-images/server/enhance-prompt.action'
+import { MULTI_SHOT_PROMPTS, multiShotPrompt } from '#/lib/prompts/multi-shot'
 
 /** What steers a model with no guide of its own. Named on the card rather than
  *  once at the top of the page, so every card points at the file that actually
  *  produced it. */
 const SHARED_INSTRUCTION = 'src/lib/prompts/enhance-prompt.md'
+
+/**
+ * What the run is written for. `image` is the original page: the same idea
+ * across the image lineup, one card each. Anything else is a multi-shot writer
+ * from `src/lib/prompts/multi-shot/`, which answers with a shot-by-shot video
+ * prompt -- one card, because the instruction already names the video model it
+ * is written for and the image selection has nothing to say about it.
+ */
+export const IMAGE_TARGET = 'image'
+
+export const ENHANCE_TARGETS = [
+  { id: IMAGE_TARGET, label: 'Image models' },
+  ...MULTI_SHOT_PROMPTS.map((p) => ({ id: p.id, label: p.label })),
+]
 
 /**
  * Enhance, comparing models side by side (#465).
@@ -30,6 +45,7 @@ const SHARED_INSTRUCTION = 'src/lib/prompts/enhance-prompt.md'
  */
 export function useView() {
   const [prompt, setPrompt] = useState('')
+  const [target, setTarget] = useState<string>(IMAGE_TARGET)
   const [steering, setSteering] = useState('')
   const [run, setRun] = useState<EnhanceRun | null>(null)
   const [isRunning, setIsRunning] = useState(false)
@@ -82,10 +98,13 @@ export function useView() {
     [modelSelector.models, modelSelector.selectedIds],
   )
 
+  const multiShot = multiShotPrompt(target)
+
   const enhance = useCallback(async () => {
     const input = prompt.trim()
     const steer = steering.trim()
-    if (!input || selectedModels.length === 0) return
+    if (!input) return
+    if (!multiShot && selectedModels.length === 0) return
 
     setIsRunning(true)
 
@@ -93,14 +112,25 @@ export function useView() {
     // of the answer from the first frame and each one fills in where it stands.
     // Results that arrived in completion order would reorder the comparison
     // under the eye reading it.
-    const cards: Array<EnhanceCard> = selectedModels.map((m) => ({
-      modelId: m.id,
-      modelName: getModelName(m.id),
-      guideFile: promptGuidePathFor(m.id) ?? SHARED_INSTRUCTION,
-      status: 'pending',
-      output: '',
-      error: null,
-    }))
+    const cards: Array<EnhanceCard> = multiShot
+      ? [
+          {
+            modelId: multiShot.id,
+            modelName: multiShot.label,
+            guideFile: multiShot.file,
+            status: 'pending',
+            output: '',
+            error: null,
+          },
+        ]
+      : selectedModels.map((m) => ({
+          modelId: m.id,
+          modelName: getModelName(m.id),
+          guideFile: promptGuidePathFor(m.id) ?? SHARED_INSTRUCTION,
+          status: 'pending',
+          output: '',
+          error: null,
+        }))
     setRun({ prompt: input, steering: steer, cards })
 
     const settle = (modelId: string, patch: Partial<EnhanceCard>) =>
@@ -124,7 +154,9 @@ export function useView() {
         try {
           const { enhancedPrompt } = await enhancePrompt({
             prompt: input,
-            modelSlug: slugFor(card.modelId),
+            ...(multiShot
+              ? { multiShotId: multiShot.id }
+              : { modelSlug: slugFor(card.modelId) }),
             ...(steer ? { steering: steer } : {}),
           })
           settle(card.modelId, { status: 'done', output: enhancedPrompt })
@@ -138,7 +170,7 @@ export function useView() {
     )
 
     setIsRunning(false)
-  }, [prompt, steering, selectedModels])
+  }, [prompt, steering, selectedModels, multiShot])
 
   const clear = useCallback(() => setRun(null), [])
 
@@ -150,7 +182,13 @@ export function useView() {
     run,
     isRunning,
     modelSelector,
-    canRun: prompt.trim().length > 0 && selectedModels.length > 0 && !isRunning,
+    target,
+    setTarget,
+    isMultiShot: multiShot != null,
+    canRun:
+      prompt.trim().length > 0 &&
+      (multiShot != null || selectedModels.length > 0) &&
+      !isRunning,
     modelCount: selectedModels.length,
     enhance,
     clear,

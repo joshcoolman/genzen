@@ -2,6 +2,7 @@
 
 import { generateText } from 'ai'
 import enhancePromptSkill from '#/lib/prompts/enhance-prompt.md'
+import { multiShotPrompt } from '#/lib/prompts/multi-shot'
 import steeringFrame from '#/lib/prompts/steering-frame.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 import { promptGuideFor } from '#/lib/server/prompt-guides.server'
@@ -35,6 +36,13 @@ interface EnhancePromptInput {
    * the format; this module only decides where the three pieces sit.
    */
   steering?: string
+  /**
+   * A multi-shot writer from `src/lib/prompts/multi-shot/` (its `id`). When
+   * set it replaces the instruction outright and `modelSlug` is ignored: these
+   * write a shot-by-shot video prompt, so an image model's guide has nothing
+   * to say about the result.
+   */
+  multiShotId?: string
 }
 
 export async function enhancePrompt(data: EnhancePromptInput) {
@@ -46,15 +54,26 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     throw new Error('Prompt is empty — nothing to enhance.')
   }
 
-  const guide = promptGuideFor(data.modelSlug)
-  const instruction = guide ?? enhancePromptSkill.trim()
+  const multiShot = data.multiShotId
+    ? multiShotPrompt(data.multiShotId)
+    : undefined
+  if (data.multiShotId && !multiShot) {
+    throw new Error(`Unknown multi-shot prompt: ${data.multiShotId}`)
+  }
+
+  const guide = multiShot ? null : promptGuideFor(data.modelSlug)
+  const instruction = multiShot
+    ? (await multiShot.system()).default.trim()
+    : (guide ?? enhancePromptSkill.trim())
   const steering = data.steering?.trim()
 
   const response = await generateText({
     model: ai.reasoning,
     // Steered runs are longer by construction, and a truncated prompt reads as
-    // a bad instruction rather than a hit ceiling.
-    maxOutputTokens: steering ? 1000 : 600,
+    // a bad instruction rather than a hit ceiling. A multi-shot script is
+    // several hundred words before any steer -- three or four shot blocks plus
+    // a soundscape -- so it gets its own ceiling rather than the image one.
+    maxOutputTokens: multiShot ? 2000 : steering ? 1000 : 600,
     system: steering
       ? `${instruction}\n\n${steeringFrame.trim()}\n\n${steering}`
       : instruction,

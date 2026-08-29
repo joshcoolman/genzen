@@ -228,6 +228,16 @@ item.
   this page replaced hard-coded `reconstruct`, so half the feature was
   unreachable. **The picker is a menu, not `SingleSelect`** — the list is meant
   to grow and a row of segmented pills stops fitting at three or four.
+- **Enhance has a target, and one of them is not an image model.** The picker
+  above the idea box chooses between the image lineup -- the original page, one
+  card per model -- and a multi-shot writer from `src/lib/prompts/multi-shot/`,
+  which turns three words into a shot-by-shot video prompt and answers with one
+  card. **Duration is read out of the request** -- "maybe 20 seconds" is part of
+  what you type -- and falls back to 10s; a writer for another video model's
+  dialect is a new file plus an entry in that folder's `index.ts`.
+  The model selector is hidden rather than disabled for a multi-shot run: the
+  instruction names the video model it writes for, so an image selection is not
+  a choice taken away, it is not part of the question.
 - **Variations does not generate. It hands the run over** (#433). The dialog it
   replaced fired the prompts immediately; here the prompts are the output and
   nothing is spent. "Load in Images" fills the generator panel — the whole set
