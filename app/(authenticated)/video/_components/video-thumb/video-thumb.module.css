@@ -101,23 +101,35 @@
    the player. Continue is pushed to the far end rather than sitting against
    the frames: it starts new work, and the frames are facts about this row. */
 .ends {
+  --clip-end-height: 5.5rem;
+
   display: flex;
   align-items: center;
   gap: var(--space-8);
   margin-block-start: var(--space-8);
 }
 
-/* Small on purpose -- the player above is where the clip is watched, and these
-   answer "what does it open on, what does it end on" at a glance. 16:9 because
-   the lineup is, and `contain` so a portrait clip is letterboxed here rather
-   than cropped to a band of background. */
+/* **Sized by height, shaped by the clip.** `aspect-ratio` comes from the row's
+   own width and height, set inline, so the frame is edge-to-edge: nothing to
+   letterbox and nothing to crop, and the thumb's outline is one more place the
+   clip's shape is legible -- which is the fact the caption below now leads
+   with.
+
+   Height rather than width is the fixed dimension, and that is what keeps a
+   portrait clip from wrecking the card: fix the width and a 9:16 frame is
+   nearly twice as tall as a 16:9 one, and the caption grows or shrinks
+   depending on what was generated. Fixed height, the width follows the shape,
+   and every card's caption is the same height.
+
+   The one knob is `--clip-end-height` on the row. At 5.5rem a 16:9 pair is
+   about half the caption's width, which is where this was set from. */
 .end {
   flex: none;
-  width: 4rem;
-  aspect-ratio: 16 / 9;
+  height: var(--clip-end-height);
+  width: auto;
   border-radius: var(--radius-sm);
   background: var(--image-backing);
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .continue {

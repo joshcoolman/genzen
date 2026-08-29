@@ -104,6 +104,7 @@ source images; `use-view.ts` owns everything after the first paint.
   The mechanism is `src/features/video/frame-capture.ts`, shared with
   `lab/frames` -- and it lands _near_ the end of the clip rather than provably
   on the last sample, so a seam may be a frame or two loose.
+
 - **A card says the clip's shape, then its duration, and not its cost.** Shape
   is what decides whether two clips can cut together (#512) and no surface
   showed it; cost came off because every generation is already a row in the
@@ -117,6 +118,14 @@ source images; `use-view.ts` owns everything after the first paint.
   They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
   lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile
   has no player above it.
+
+  **They take the clip's own aspect ratio, set inline from `width`/`height`**,
+  so they are edge-to-edge -- nothing letterboxed, nothing cropped -- and the
+  outline is one more place the shape is legible. **Height is the fixed
+  dimension, not width**: fix the width and a 9:16 frame is nearly twice as tall
+  as a 16:9 one, so the caption's height would depend on what was generated.
+  `--clip-end-height` on `.ends` is the only knob; 5.5rem puts a 16:9 pair at
+  about half the caption's width.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

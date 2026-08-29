@@ -85,7 +85,12 @@ export function VideoThumb({
   isContinuing: boolean
 }) {
   const duration = durationOf(video)
-  const shape = aspectLabel(aspectRatio(video))
+  const ratio = aspectRatio(video)
+  const shape = aspectLabel(ratio)
+  /* The clip's own shape, so the frames below are edge-to-edge. 16:9 only when
+     the row does not know -- a poster that never decoded (#499) -- where a
+     guess is better than a frame with no box at all. */
+  const endShape = { aspectRatio: ratio ? String(ratio) : '16 / 9' }
   const isDone = video.status === 'completed'
 
   return (
@@ -127,6 +132,7 @@ export function VideoThumb({
           <div className={styles.ends}>
             <img
               className={styles.end}
+              style={endShape}
               src={imageUrl(video.id, 'thumb')}
               alt="First frame"
               title="First frame"
@@ -135,6 +141,7 @@ export function VideoThumb({
                 lone frame under a card reads as the clip having one end. */}
             <img
               className={styles.end}
+              style={endShape}
               src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
               alt={video.has_end_frame ? 'Last frame' : ''}
               title="Last frame"
