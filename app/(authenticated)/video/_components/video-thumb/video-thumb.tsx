@@ -17,6 +17,7 @@ import {
   namedRatio,
 } from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 /**
  * How far the stage may go, as ratios.
@@ -192,7 +193,12 @@ export function VideoThumb({
           <>
             <video
               ref={player}
-              className={styles.player}
+              /* `cover` until it plays, because the stage is the shape the clip
+                 reads as rather than its exact rectangle: within the tolerance
+                 that leaves thin edges, and cropping them costs less than 5% of
+                 the picture. While it plays, `contain` -- nothing is cut off a
+                 frame you are watching. */
+              className={cx(styles.player, !isPlaying && styles.playerCover)}
               /* **The stage is the clip's own shape**, clamped -- see `WIDEST`.
                  Within the clamp there is nothing to letterbox and nothing to
                  crop, so the poster and the playing clip are the same picture

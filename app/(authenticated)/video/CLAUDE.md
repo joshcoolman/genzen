@@ -182,9 +182,14 @@ source images; `use-view.ts` owns everything after the first paint.
   dead space. Clamped, the raggedness is the range real horizontal shapes
   occupy — 21:9 to 4:3, about 100px of stage at a 20rem column.
 
-  This replaced a `cover`-at-rest / `contain`-while-playing swap, which existed
-  only to hide the letterboxing a fixed 16:9 stage forced on a 21:9 clip. A
-  stage that fits has nothing to hide, so the swap went with it.
+  **`cover` at rest, `contain` while playing.** Snapping to the named shape
+  means the stage can be up to the 5% tolerance off the picture's true
+  rectangle, which `contain` renders as thin edges down the sides. Filling the
+  box absorbs it — at most 5% cropped, the same 5% the app already treats as no
+  difference — and the two frames below already do this, so at rest the whole
+  block is edge-to-edge. While it plays, `contain`: nothing is cut off a frame
+  you are watching, at the price of those thin edges being visible for as long
+  as it runs.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

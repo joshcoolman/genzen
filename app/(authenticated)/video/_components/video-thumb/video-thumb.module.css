@@ -25,6 +25,20 @@
   object-fit: contain;
 }
 
+/* At rest only. The stage is sized from the shape the clip *reads* as
+   (`namedRatio`), not the rectangle FAL returned, so it can be up to the 5%
+   tolerance off the picture's true shape -- and `contain` renders that as thin
+   edges down the sides. Filling the box absorbs it instead: at most 5% of the
+   picture cropped, which is the same 5% the app already treats as no
+   difference at all.
+
+   The two frames below already do this, so at rest the whole block is
+   edge-to-edge. `object-fit` covers the poster as well as the video, which is
+   what makes one class enough. */
+.playerCover {
+  object-fit: cover;
+}
+
 /* The only thing on an unplayed card. Centred and larger than the badge on the
    last frame, because those are two different weights of invitation: this one
    is the card's main verb, that one is a way out of it.
