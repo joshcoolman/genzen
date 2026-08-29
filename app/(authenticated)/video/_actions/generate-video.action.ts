@@ -6,6 +6,9 @@ import {
   aspectRatiosFor,
   endpointFor,
   estimateCostCents,
+  resolutionFor,
+  resolutionsFor,
+  takesFirstFrame,
   videoModelBySlug,
 } from '#/features/video/models'
 import { resolveAuth } from '#/lib/server/auth.server'
@@ -30,6 +33,10 @@ export interface GenerateVideoInput {
   prompt: string
   duration: number
   aspectRatio: string
+  /** Only honoured where the model offers tiers; otherwise its fixed one is
+   *  sent. Coerced rather than refused, so a value carried across a model
+   *  switch cannot fail a submit. */
+  resolution?: string
   modelSlug?: string
 }
 
@@ -47,6 +54,7 @@ export async function generateVideo({
   prompt,
   duration,
   aspectRatio,
+  resolution,
   modelSlug,
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
@@ -60,9 +68,31 @@ export async function generateVideo({
     throw new Error(`Unsupported duration: ${duration}`)
   }
 
-  const hasFirstFrame = !!imageId
-  const hasLastFrame = !!endImageId
+  // **A model that takes no frame ignores the ones it was given.** h3-max is
+  // text-to-video only. The form already withholds them, so reaching here with
+  // one means a caller that does not know the lineup -- and dropping the frame
+  // is the same answer the endpoint would give, arrived at before a row is
+  // reserved and before the bytes are uploaded for nothing.
+  const modelTakesFrames = takesFirstFrame(model)
+  const firstFrameId = modelTakesFrames ? imageId : undefined
+  const endFrameId = modelTakesFrames ? endImageId : undefined
+
+  const hasFirstFrame = !!firstFrameId
+  const hasLastFrame = !!endFrameId
   const endpoint = endpointFor(model, hasFirstFrame, hasLastFrame)
+
+  // The tier actually rendered: the requested one where the model offers it,
+  // its fixed `resolution` otherwise. Resolved once, because the estimate and
+  // the submit have to name the same thing -- a price quoted at 480P against a
+  // clip rendered at 768P is the bug this shape prevents.
+  const sentResolution = resolutionFor(model, resolution)
+  if (
+    resolution &&
+    resolutionsFor(model).length > 0 &&
+    sentResolution !== resolution
+  ) {
+    throw new Error(`Unsupported resolution: ${resolution}`)
+  }
 
   // Checked against the endpoint, not the model: `auto` is valid only where
   // there is an image to match, and an endpoint with an empty list has no
@@ -73,14 +103,14 @@ export async function generateVideo({
     throw new Error(`Unsupported aspect ratio: ${aspectRatio}`)
   }
 
-  if (endImageId && !hasFirstFrame) {
+  if (endFrameId && !hasFirstFrame) {
     throw new Error('An end frame needs a first frame')
   }
 
   // Both frames are checked in one statement: two round trips to prove the
   // same thing, and a partial check would let an unreadable end frame fail
   // after the row was reserved.
-  const wanted = [imageId, endImageId].filter((id): id is string => !!id)
+  const wanted = [firstFrameId, endFrameId].filter((id): id is string => !!id)
   if (wanted.length > 0) {
     const found = await sql<Array<{ id: string }>>`
       select id from user_images
@@ -92,11 +122,11 @@ export async function generateVideo({
     }
   }
 
-  if (endImageId && !endpoint.acceptsEndImage) {
+  if (endFrameId && !endpoint.acceptsEndImage) {
     throw new Error(`${model.label} takes no end frame`)
   }
 
-  const estimatedCostCents = estimateCostCents(model, duration)
+  const estimatedCostCents = estimateCostCents(model, duration, sentResolution)
 
   const { recordId } = await createPendingGeneration({
     userId,
@@ -115,10 +145,10 @@ export async function generateVideo({
       // Read back by `processVideoResult` for the row's title, so a
       // `.server.ts` module never has to import the route-owned catalog.
       model_label: model.label,
-      ...(imageId ? { source_image_id: imageId } : {}),
-      ...(endImageId ? { end_image_id: endImageId } : {}),
+      ...(firstFrameId ? { source_image_id: firstFrameId } : {}),
+      ...(endFrameId ? { end_image_id: endFrameId } : {}),
       duration_seconds: duration,
-      resolution: model.resolution,
+      resolution: sentResolution,
       estimated_cost_cents: estimatedCostCents,
     },
   })
@@ -152,7 +182,7 @@ export async function generateVideo({
         ...(endpoint.aspectRatios.length > 0
           ? { aspect_ratio: aspectRatio }
           : {}),
-        resolution: model.resolution,
+        resolution: sentResolution,
         ...(model.supportsAudio ? { generate_audio: true } : {}),
       },
     })

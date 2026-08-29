@@ -12,15 +12,14 @@ import { PageHeader, RefImageStrip, Stack } from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
-    models,
     pickerModels,
-    modelSlugs,
-    toggleModel,
-    selectOnlyModel,
-    toggleAllModels,
+    modelSlug,
+    selectModel,
     durationOptions,
     modelTakesEndFrame,
+    modelTakesFirstFrame,
     aspectOptions,
+    resolutionOptions,
     hasFirstFrame,
     userImages,
     sources,
@@ -45,6 +44,8 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     setDuration,
     aspectRatio,
     setAspectRatio,
+    resolution,
+    setResolution,
     estimatedCost,
     needsConfirm,
     promptCount,
@@ -89,7 +90,6 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         <div className={styles.controls}>
           <VideoForm
             durationOptions={durationOptions}
-            modelCount={models.length}
             promptCount={promptCount}
             needsConfirm={needsConfirm}
             prompts={prompts}
@@ -103,6 +103,9 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             aspectRatio={aspectRatio}
             aspectOptions={aspectOptions}
             onAspectRatioChange={setAspectRatio}
+            resolution={resolution}
+            resolutionOptions={resolutionOptions}
+            onResolutionChange={setResolution}
             estimatedCost={estimatedCost}
             isSubmitting={isSubmitting}
             canSubmit={canSubmit}
@@ -115,44 +118,54 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                cannot both be unlabelled. */
             framesSlot={
               <>
-                <div className={styles.frame}>
-                  <p className={styles.frameLabel}>First frame (optional)</p>
-                  <RefImageStrip
-                    images={sources}
-                    max={1}
-                    onAdd={() => openPicker('first')}
-                    onRemove={clearSources}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                {/* Optional, and it stays visible when empty rather than
-                    hiding behind a disclosure -- an empty slot is the only
-                    thing that says the capability exists. */}
-                {modelTakesEndFrame && hasFirstFrame && (
+                {/* Absent for a text-to-video-only model, not disabled: a slot
+                    that cannot be sent anywhere is worse than no slot. What is
+                    already staged is kept, so switching back restores it --
+                    the frame is simply not sent meanwhile. */}
+                {modelTakesFirstFrame && (
                   <div className={styles.frame}>
-                    <p className={styles.frameLabel}>Last frame (optional)</p>
+                    <p className={styles.frameLabel}>First frame (optional)</p>
                     <RefImageStrip
-                      images={endSources}
+                      images={sources}
                       max={1}
-                      onAdd={() => openPicker('last')}
-                      onRemove={clearEndSources}
+                      onAdd={() => openPicker('first')}
+                      onRemove={clearSources}
                       disabled={isSubmitting}
                     />
                   </div>
                 )}
+
+                {/* Optional, and it stays visible when empty rather than
+                    hiding behind a disclosure -- an empty slot is the only
+                    thing that says the capability exists. */}
+                {modelTakesFirstFrame &&
+                  modelTakesEndFrame &&
+                  hasFirstFrame && (
+                    <div className={styles.frame}>
+                      <p className={styles.frameLabel}>Last frame (optional)</p>
+                      <RefImageStrip
+                        images={endSources}
+                        max={1}
+                        onAdd={() => openPicker('last')}
+                        onRemove={clearEndSources}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  )}
               </>
             }
-            /* Last, as it is in the generator panel, and multi-select since
-               #417: one prompt through several models is the only way to learn
-               how they differ. **One clip per model, never more** -- there is
-               no count stepper here and there will not be one. Its two
+            /* Last, as it is in the generator panel, and single-select: the
+               controls above it are this model's, not an intersection of
+               several models' (see the lineup's header comment). Its two
                right-hand columns are the same two numbers read differently --
-               dollars per second, and frames rather than references. */
+               dollars per second, and frames rather than references. `price`
+               is the model's headline rate; where it has resolution tiers the
+               Resolution control moves the real figure, and `CostNote` is
+               where that lands. */
             modelSlot={
               <ModelSelector
-                mode="multi"
-                selectedIds={modelSlugs}
+                mode="single"
+                selectedIds={[modelSlug]}
                 visibleModels={pickerModels.map((m) => ({
                   id: m.slug,
                   name: m.label,
@@ -161,9 +174,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
                   price: m.pricePerSecondCents / 100,
                   capacity: frameCapacityFor(m),
                 }))}
-                onToggleSelected={toggleModel}
-                onToggleAll={toggleAllModels}
-                onSelectOnly={selectOnlyModel}
+                onToggleSelected={selectModel}
                 stagedImageCount={sources.length + endSources.length}
                 priceLabel="$/s"
                 capacityLabel="Frames"

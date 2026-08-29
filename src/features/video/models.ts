@@ -17,7 +17,19 @@
  *   - `generate_audio` is Flux 3 and LTX only.
  *
  * So each endpoint carries what it takes, and `generate-video.action.ts` builds
- * its input from that rather than from a fixed list of params. Same idea as the
+ * its input from that rather than from a fixed list of params.
+ *
+ * **One model at a time, and it gets its whole capability.** Multi-select
+ * (#417) forced every control down to what all the ticked models agreed on --
+ * an intersection of durations, of aspect ratios, and it would have been an
+ * intersection of resolutions too. That is tolerable on the image side, where
+ * the models mostly agree; here they disagree about almost everything, so the
+ * common denominator kept shrinking as the lineup grew and the differences
+ * between these models -- which are the reason to have more than one -- became
+ * the exact thing the form could not express. Single-select is what lets a
+ * model offer what only it can: h3-max's resolution tiers, Flux 3's
+ * first+last endpoint, an audio toggle for the two that generate it. Do not
+ * reintroduce a `shared*` intersection helper. Same idea as the
  * image side's `buildFalInput`, minus the schema fetch: this lineup is three
  * entries and every field below was read off FAL's OpenAPI spec by hand.
  *
@@ -41,6 +53,20 @@ export interface VideoEndpoint {
   aspectRatios: Array<string>
 }
 
+/**
+ * A resolution a model offers, and what it costs there.
+ *
+ * Only for a model that lets you choose. The other three carry a fixed
+ * `resolution` string and a single `pricePerSecondCents`, because a control
+ * with one option would say a choice exists and had been taken away -- the
+ * same rule `aspectRatios: []` follows.
+ */
+export interface VideoResolution {
+  /** Sent verbatim as `resolution`. FAL's casing, not ours: `480P`, not `480p`. */
+  id: string
+  pricePerSecondCents: number
+}
+
 export interface VideoModel {
   /** Stable identity. Never sent to FAL. */
   slug: string
@@ -49,8 +75,13 @@ export interface VideoModel {
   endpoints: {
     /** No first frame: the model invents the whole shot from the prompt. */
     textToVideo: VideoEndpoint
-    /** A first frame is set. */
-    withImage: VideoEndpoint
+    /**
+     * A first frame is set. **Optional**: a text-to-video-only model has no
+     * such endpoint, and a staged frame is ignored for it rather than
+     * refused. The route is multi-select, so throwing would fail the whole
+     * submit -- including the models that could have used the frame.
+     */
+    withImage?: VideoEndpoint
     /**
      * Both frames, where that is its own endpoint. Absent means the end frame
      * rides on `withImage` -- which is the common case, and Flux 3 the
@@ -58,9 +89,23 @@ export interface VideoModel {
      */
     withFirstAndLastImage?: VideoEndpoint
   }
-  /** Cents per second of output, at the resolution below. */
+  /**
+   * Cents per second of output, at the resolution below -- and where
+   * `resolutions` is set, at whichever of them `resolution` names. Kept as the
+   * model's headline price so `videoModelsByPrice` has one number to sort on.
+   */
   pricePerSecondCents: number
+  /** The default resolution, and the one a model with no choice always uses. */
   resolution: string
+  /**
+   * Every resolution this model offers, where it offers more than one.
+   * **Empty/absent means there is no control**, exactly as with `aspectRatios`
+   * -- not that the model renders at one size by physics, but that we do not
+   * expose the choice. Present only on h3-max today; LTX and Flux 3 both have
+   * higher tiers that would belong here the day their per-tier prices are
+   * confirmed.
+   */
+  resolutions?: Array<VideoResolution>
   durations: Array<number>
   defaultDuration: number
   /** Sends `generate_audio`. H3 has no such param. */
@@ -181,6 +226,48 @@ export const VIDEO_MODELS: Array<VideoModel> = [
     defaultDuration: 8,
     supportsAudio: true,
   },
+  {
+    slug: 'minimax-h3-max',
+    label: 'MiniMax H3 Max',
+    description: 'Text only, follows a long prompt closely',
+    endpoints: {
+      // **The only entry with no `withImage`.** A post-trained H3 tuned for
+      // prompt adherence, and fal ships it text-to-video only. That is the
+      // reason it is here: the multi-shot writer in
+      // `src/lib/prompts/multi-shot/` produces a shot-by-shot script whose
+      // whole value is whether the model honours the order, and adherence is
+      // the axis this variant was tuned on. A staged first frame is ignored
+      // for this model, not refused -- see `endpointFor`.
+      textToVideo: {
+        id: 'minimax/h3-max/text-to-video',
+        aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'],
+      },
+    },
+    // **Rate-card numbers, not invoice numbers, and that distinction has
+    // already bitten this exact model family once** -- see H3 above, where
+    // fal's card said $0.05/s and the bill came in on 1.2x the requested
+    // duration. If h3-max bills the same way these are 6 and 9.6. First
+    // invoice settles it; until then the estimate may read low.
+    //
+    // These are also the *regular* rates. fal ran a 50%-off promotion ($0.025
+    // and $0.04) that ends 2026-09-01, so encoding the promotional price would
+    // have been wrong within the week.
+    pricePerSecondCents: 5,
+    resolution: '480P',
+    resolutions: [
+      { id: '480P', pricePerSecondCents: 5 },
+      { id: '768P', pricePerSecondCents: 8 },
+    ],
+    // fal's schema types `duration` as a plain integer with no enum, so this
+    // is H3's accepted range rather than a list fal stated. Same family, and
+    // the intersection in `sharedDurations` is only as good as the narrowest
+    // honest list -- inventing a wider one here would queue submits that bounce
+    // at fal.
+    durations: [5, 6, 8, 10, 12, 15],
+    defaultDuration: 6,
+    // No `generate_audio` param, same as H3.
+    supportsAudio: false,
+  },
 ]
 
 export const DEFAULT_VIDEO_MODEL = VIDEO_MODELS[0]
@@ -196,8 +283,8 @@ export function videoModelBySlug(slug: string): VideoModel | undefined {
  * `model-selector/unified-models.ts`, #341): the array's own order is the order
  * models were added, which says nothing, and price is the one axis worth
  * reading down a column. It matters more here than it does there -- the spread
- * is $0.08 to $0.17 per *second*, so the bottom of the list is twice the top
- * for the same clip.
+ * is $0.05 to $0.17 per *second*, so the bottom of the list is three times the
+ * top for the same clip.
  *
  * Display only. `DEFAULT_VIDEO_MODEL` is still the array's first entry, exactly
  * as the image side keeps its default independent of the sorted view: what you
@@ -225,7 +312,26 @@ export function endpointFor(
   if (hasLastFrame && model.endpoints.withFirstAndLastImage) {
     return model.endpoints.withFirstAndLastImage
   }
-  return model.endpoints.withImage
+  // **A model with no image endpoint falls back to text-to-video rather than
+  // failing.** h3-max takes no frame at all. Frames are staged before a model
+  // is picked as often as after, so refusing here would turn an ordinary
+  // switch into an error the person has to undo by clearing work they may
+  // still want for the next model. The form hides the slots for such a model
+  // (`takesFirstFrame`), which is where the person is told -- this is the
+  // backstop, not the message.
+  return model.endpoints.withImage ?? model.endpoints.textToVideo
+}
+
+/**
+ * Whether a staged first frame reaches this model at all.
+ *
+ * False only for a text-to-video-only entry, whose clip is generated from the
+ * prompt alone however many frames are staged. Drives the form's note and the
+ * row's `generationType`, so a clip is never recorded as `image_to_video` when
+ * no image was sent.
+ */
+export function takesFirstFrame(model: VideoModel): boolean {
+  return !!model.endpoints.withImage
 }
 
 /**
@@ -236,7 +342,7 @@ export function endpointFor(
 export function supportsEndImage(model: VideoModel): boolean {
   return (
     !!model.endpoints.withFirstAndLastImage ||
-    !!model.endpoints.withImage.acceptsEndImage
+    !!model.endpoints.withImage?.acceptsEndImage
   )
 }
 
@@ -257,9 +363,53 @@ export function aspectRatiosFor(
   return endpointFor(model, hasFirstFrame, hasLastFrame).aspectRatios
 }
 
+/**
+ * Every resolution this model lets you choose between.
+ *
+ * Empty is the "no control" case, same convention as `aspectRatios`: the form
+ * renders nothing and the submit sends the model's fixed `resolution`.
+ */
+export function resolutionsFor(model: VideoModel): Array<VideoResolution> {
+  return model.resolutions ?? []
+}
+
+/**
+ * Cents per second for this model at this resolution.
+ *
+ * Falls back to the headline price for a model with no tiers, and for a
+ * resolution it does not offer -- which is what a multi-select produces the
+ * moment one ticked model has a control and another does not.
+ */
+export function pricePerSecondFor(
+  model: VideoModel,
+  resolution?: string,
+): number {
+  const tier = resolutionsFor(model).find((r) => r.id === resolution)
+  return tier?.pricePerSecondCents ?? model.pricePerSecondCents
+}
+
+/**
+ * The resolution actually sent for this model: the chosen one where the model
+ * offers it, its own fixed one otherwise.
+ *
+ * One place, because the estimate and the submit have to agree -- a price
+ * quoted at 480P against a clip rendered at 768P is the bug this prevents.
+ */
+export function resolutionFor(model: VideoModel, chosen?: string): string {
+  const offered = resolutionsFor(model)
+  if (chosen && offered.some((r) => r.id === chosen)) return chosen
+  return model.resolution
+}
+
 /** What a clip of this length will cost, in cents. */
-export function estimateCostCents(model: VideoModel, duration: number): number {
-  return Math.round(model.pricePerSecondCents * duration)
+export function estimateCostCents(
+  model: VideoModel,
+  duration: number,
+  resolution?: string,
+): number {
+  return Math.round(
+    pricePerSecondFor(model, resolutionFor(model, resolution)) * duration,
+  )
 }
 
 export function formatCost(cents: number): string {
@@ -275,7 +425,8 @@ export function formatCost(cents: number): string {
  */
 export function videoEndpointIds(model: VideoModel): Array<string> {
   const { textToVideo, withImage, withFirstAndLastImage } = model.endpoints
-  const ids = [textToVideo.id, withImage.id]
+  const ids = [textToVideo.id]
+  if (withImage) ids.push(withImage.id)
   if (withFirstAndLastImage) ids.push(withFirstAndLastImage.id)
   return ids
 }
@@ -324,73 +475,4 @@ export function expandVideoFilterId(id: string): Array<string> | null {
   if (!id.startsWith(VIDEO_FILTER_PREFIX)) return null
   const model = videoModelBySlug(id.slice(VIDEO_FILTER_PREFIX.length))
   return model ? videoEndpointIds(model) : []
-}
-
-/**
- * Durations every one of these models accepts.
- *
- * A real intersection, because a duration one model rejects is a request that
- * fails at FAL rather than here (#417). LTX starts at 6 and steps to 20, H3
- * runs 5-15, Flux 3 tops out at 20 -- so ticking all three narrows the control
- * rather than offering a number that will bounce for one of them.
- *
- * Never empty for the current lineup, but a caller must still cope: adding a
- * model whose durations do not overlap the others would empty it, and a
- * silently empty control is worse than a visible clash.
- */
-export function sharedDurations(models: Array<VideoModel>): Array<number> {
-  // `.at(0)` rather than a destructure: destructuring types the element as
-  // always present, so the empty-list guard below reads as dead code and lint
-  // fails it. `.at` is honest about an empty array.
-  const first = models.at(0)
-  if (!first) return []
-  const rest = models.slice(1)
-  return first.durations.filter((d) =>
-    rest.every((m) => m.durations.includes(d)),
-  )
-}
-
-/**
- * Aspect ratios every one of these models offers, **ignoring the ones that
- * offer none**.
- *
- * The exclusion is the whole subtlety. H3's image endpoint has no
- * `aspect_ratio` param at all, and an empty list means "there is no control"
- * rather than "no ratio works" -- so intersecting it literally would strip the
- * control from LTX and Flux 3 as well, silently handing FAL its default for two
- * models that were perfectly capable of honouring a choice. The submit already
- * omits the param per endpoint, so a model with no options simply does not
- * receive one.
- */
-export function sharedAspectRatios(
-  models: Array<VideoModel>,
-  hasFirstFrame: boolean,
-  hasLastFrame = false,
-): Array<string> {
-  const lists = models
-    .map((m) => aspectRatiosFor(m, hasFirstFrame, hasLastFrame))
-    .filter((list) => list.length > 0)
-  const first = lists.at(0)
-  if (!first) return []
-  const rest = lists.slice(1)
-  return first.filter((ratio) => rest.every((list) => list.includes(ratio)))
-}
-
-/**
- * What this submit costs, in cents: every selected model, once each.
- *
- * **One clip per model, never more** (#417). The image panel's count stepper is
- * deliberately absent here -- video is slow and finicky enough that nobody
- * wants four takes of one request from one model, and the useful axis is across
- * models rather than within one.
- */
-export function estimateMultiCostCents(
-  models: Array<VideoModel>,
-  duration: number,
-  clipsPerModel: number,
-): number {
-  return models.reduce(
-    (total, m) => total + estimateCostCents(m, duration) * clipsPerModel,
-    0,
-  )
 }
