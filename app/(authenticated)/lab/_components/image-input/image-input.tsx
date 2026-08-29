@@ -36,10 +36,11 @@ export function ImageInput({
   isLoading: boolean
   picked: Array<PickedImage>
   /**
-   * How many images this experiment takes. One by default -- Describe and
-   * Variations each ask a question about a single picture. Outpaint passes
-   * more (#441): the ratio and the models are the settings, the images are the
-   * input, and there was never a reason for only one.
+   * How many images this experiment takes. One by default -- Describe asks a
+   * question about a single picture. Variations passes more (#436), and the
+   * rule Outpaint established before it shipped out of the lab (#441, #528)
+   * still holds: where the settings are the settings and the images are the
+   * input, there was never a reason for only one.
    */
   max?: number
   onPick: (picked: Array<PickedImage>) => void

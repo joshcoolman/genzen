@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Seven pages
+Where a feature is worked on before it is part of the app (#424). Six pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames and Sequence are the other kind: things
 the app has never been able to do at all**, built here first so they can be used
@@ -139,54 +139,6 @@ a "no" now has somewhere to go.
   need a way to ask for "frames", which needs a marker the library query knows
   about, which is the schema this folder may not grow. The frames themselves
   survive in Images; only the run is lost, same as every other page here.
-
-## Outpaint is the one that spends money
-
-Widen a picture to a shape it does not have, without typing the prompt that
-asks for it (#430).
-
-**It has shipped, and this page is now the model bench for it.** Outpaint is a
-card action on /images -- a card's `...`, a dialog of ratios, no model picker,
-Grok Imagine 2.0. What is left here is the question that surface deliberately
-does not ask: which model should be doing it. The prompt assembly moved to
-`src/features/ai-images/outpaint.ts`, which both import, so this page can be
-deleted without taking anything with it. Everything else here costs fractions of a cent at Claude;
-one press of this against four models is real FAL spend, and the page exists to
-be pressed repeatedly while the instruction is tuned. So the estimate is under
-Generate as it is on Images and Video, and each result card carries what FAL
-charged — the one page built for experimenting cannot be the one place you
-cannot see what experimenting costs.
-
-- **It asks plainly, composites nothing, and that turned out to be enough.**
-  The picture goes to the model with `outpaint.md` and the target ratio, and
-  that is all — no canvas, no empty bars drawn for the model to fill, no crop.
-  That was the open question the page existed to settle, and Josh settled it by
-  use on 2026-08-19: portrait sources to 5:4 and to 1:1 both came back right.
-  **So the compositing alternative is not needed and should not be built
-  speculatively** (#317 proved the browser could do it; nothing has asked it
-  to).
-  Worth knowing for whoever edits the instruction: any ratio change has two
-  valid answers, pad or crop, and the `.md` commits to padding and forbids the
-  other outright. It is written entirely in the language of growth, with no
-  clause for a target that is smaller in some dimension — that gap was looked
-  for and did not show up in results, so it stays as it is.
-- **Multi-select models, because there are two questions in one press.** Is the
-  instruction good, and can this model outpaint at all? A smeared result answers
-  neither alone; four models answer both at once. Same reason Video's selector
-  is multi (#417).
-- **Rows are written with `origin: 'images'`,** which is a small lie. The column
-  is constrained to `upload | images | canvas` and widening it is a migration,
-  which a lab page does not get.
-- **Results settle through the app's own poll.** They are `user_images` rows, so
-  `useGenerationPoll` plus a re-read of the library is the whole mechanism —
-  and the pictures survive in Images while the run itself does not, exactly as
-  Frames' do.
-
-Promotion, when the instruction settles, is two surfaces at different arities:
-`...` on a thumbnail for one image, and a verb on the selection bar for one
-generation per selected image. That bar's verbs are all free and reversible
-today, so the first one that spends money carries its count and cost on the
-item.
 
 ## Endpoint Explorer is the one that does not send anything anywhere
 
@@ -410,7 +362,9 @@ throws. **Whether the output is any good is Josh's call.** That is the whole
 reason these pages exist: the judgement is the work, and it needs the eye of the
 person who knows what they were after.
 
-Two things follow, both learned by getting them wrong on Outpaint (#441):
+Two things follow, both learned by getting them wrong on Outpaint (#441) --
+a page that has since shipped into the app and been deleted (#528), which does
+not date the lessons:
 
 - **Do not spend real money proving a page works.** A render and a wired control
   cost nothing to check. If a live generation is genuinely needed, it is one

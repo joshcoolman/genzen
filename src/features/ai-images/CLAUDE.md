@@ -34,12 +34,15 @@ anything one route renders lives with that route.
 - **`useGenerator` takes a required `origin`** (`images | canvas`), written to
   every row it creates, so a new host cannot be an unmarked generation source
   (#207).
-- **`outpaint.ts` holds the one knob and the prompt assembly.** Outpainting is
-  a card action on /images and a bench page in the lab; both import
-  `OUTPAINT_MODEL_SLUG` and `buildOutpaintPrompt` from here. The model is a
-  constant rather than a control because the lab already answered which one to
-  use -- changing it is one line and no UI. The prose is
-  `src/lib/prompts/outpaint.md` (#322); only the assembly is code.
+- **`outpaint.ts` holds the one knob, the prompt assembly, and what the lab
+  proved.** Outpainting is a card action on /images; the lab page that vetted it
+  is gone (#528). The model is a constant rather than a control because that
+  question is answered -- changing it is one line and no UI. Read the file's
+  header before swapping the model or editing the prose: it records that asking
+  plainly is enough (so compositing is not to be built speculatively), that the
+  instruction pads and never crops, and that a denoise-from-image endpoint
+  cannot do this at all. The prose is `src/lib/prompts/outpaint.md` (#322); only
+  the assembly is code.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.
