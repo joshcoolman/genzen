@@ -1,4 +1,15 @@
-import type { VideoRecord } from '../../video/_actions/generate-video.action'
+/**
+ * What these need off a clip, structurally rather than by naming the route's
+ * `VideoRecord`. A feature module cannot import from `app/` -- the dependency
+ * runs the other way -- and the four fields are the whole contract.
+ */
+export interface ClipShape {
+  title: string
+  generation_metadata: Record<string, unknown> | null
+  /** The clip's rectangle, off frame one (#499). */
+  width: number | null
+  height: number | null
+}
 
 /**
  * A clip's shape as a number, or null when nothing recorded it.
@@ -9,7 +20,9 @@ import type { VideoRecord } from '../../video/_actions/generate-video.action'
  * plausible default -- a wrong ratio silently lets a portrait clip into a
  * landscape run, which is the thing knowing the ratio was for.
  */
-export function aspectRatio(clip: VideoRecord): number | null {
+export function aspectRatio(
+  clip: Pick<ClipShape, 'width' | 'height'>,
+): number | null {
   if (!clip.width || !clip.height) return null
   return clip.width / clip.height
 }
@@ -74,7 +87,7 @@ export function aspectLabel(ratio: number | null): string | null {
  * (#512), so it is a fact about whether two of these belong in one run, not
  * decoration. Omitted rather than guessed when the row does not know it.
  */
-export function clipFacts(clip: VideoRecord): string {
+export function clipFacts(clip: ClipShape): string {
   const seconds = (clip.generation_metadata ?? {}).duration_seconds
   const ratio = aspectLabel(aspectRatio(clip))
   return [clip.title, typeof seconds === 'number' ? `${seconds}s` : null, ratio]

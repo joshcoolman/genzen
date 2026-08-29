@@ -89,17 +89,34 @@ source images; `use-view.ts` owns everything after the first paint.
   it). Enough friction that a four-clip sequence did not get made.
 
   **It sets up the next generation and stops.** No auto-run: the point is a
-  frame in the slot, not a submitted job. The prompt is cleared rather than
-  carried over, because the frame is the continuity and the words are about
-  what happens next. Any end frame is dropped for the same reason -- it
-  described where the _last_ clip was going.
+  frame in the slot, not a submitted job. **It carries the clip's prompt over**,
+  and used to clear it. Clearing was argued from the sentence -- the frame is
+  the continuity, the words are about what happens next -- and was wrong about
+  the work: continuing is usually the same shot carried on, so an empty box
+  meant retyping most of a prompt to change a clause. Any end frame is still
+  dropped, because unlike a prompt there is no part of it to edit.
 
-  It sits above a rule in the caption, alone on the left, with the facts and
-  the file verbs pushed right below it: Download and Delete act on the clip in
-  front of you, Continue starts the next one, and a row mixing the two read as
-  three file operations. The mechanism is `src/features/video/frame-capture.ts`,
-  shared with `lab/frames` -- and it lands _near_ the end of the clip rather
-  than provably on the last sample, so a seam may be a frame or two loose.
+  It sits on its own line under the player, at the far end of the two frames --
+  Continue lifts the last one, so the frame is in front of you when you decide
+  to. Below that, a rule, then the clip's facts on the left and the file verbs
+  on the right: Download and Delete act on the clip in front of you, Continue
+  starts the next one, and a row mixing the two read as three file operations.
+  The mechanism is `src/features/video/frame-capture.ts`, shared with
+  `lab/frames` -- and it lands _near_ the end of the clip rather than provably
+  on the last sample, so a seam may be a frame or two loose.
+- **A card says the clip's shape, then its duration, and not its cost.** Shape
+  is what decides whether two clips can cut together (#512) and no surface
+  showed it; cost came off because every generation is already a row in the
+  Activity log, which is where a spend question gets asked, and on a card it
+  was per-item noise beside a Download button. `clipFacts` and the shape
+  helpers are `src/features/video/clip-facts.ts` -- they moved out of
+  `lab/_components/` when this card became their second consumer.
+- **Both ends of a clip sit under the player, small.** The player stays: it is
+  most of what the card is for. These are the two frames it is worst at
+  showing -- the one it opens on, and the one the next clip has to start from.
+  They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
+  lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile
+  has no player above it.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the

@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { aspectRatio } from '../_components/clip-facts'
 import type { VideoRecord } from '../../video/_actions/generate-video.action'
+import { aspectRatio } from '#/features/video/clip-facts'
 
 /**
  * A run of clips, in the order they should be watched.

@@ -10,12 +10,8 @@ import {
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
 import { firstFrameSrc } from '#/components'
-import { formatCost } from '#/features/video/models'
-
-function costOf(video: VideoRecord): string | null {
-  const cents = (video.generation_metadata ?? {}).provider_cost_cents
-  return typeof cents === 'number' ? formatCost(cents) : null
-}
+import { aspectLabel, aspectRatio } from '#/features/video/clip-facts'
+import { imageUrl } from '#/lib/image-url'
 
 function durationOf(video: VideoRecord): string | null {
   const seconds = (video.generation_metadata ?? {}).duration_seconds
@@ -52,8 +48,29 @@ function durationOf(video: VideoRecord): string | null {
  * that starts new work rather than acting on this row -- Download and Delete
  * are about the clip in front of you, Continue is about the next one -- so it
  * reads as a separate act instead of the third item in a row of file
- * operations. The facts moved to the right of that row at the same time, which
- * is what leaves the left edge to it.
+ * operations.
+ *
+ * **Both ends of the clip sit beside Continue**, small, under the player. The
+ * player is kept -- watching the clip is most of what this card is for, and a
+ * pair of stills cannot replace it -- so these are additional rather than a
+ * substitute, and they are the two frames the player is worst at showing: the
+ * one it opens on and the one it stops at, which is the frame the next clip
+ * has to start from. That is why they are next to Continue and not somewhere
+ * else on the card: Continue lifts the last frame, and the last frame is now
+ * in front of you when you decide to.
+ *
+ * They deliberately do *not* use `ClipFrames`, which the lab's run and picker
+ * share. That draws frame one as a `<video>` because a lab tile has no player
+ * of its own; here there is one directly above, and a second media element per
+ * card across a wall of clips is a real cost for a picture the row can already
+ * serve as an `<img>` from `thumbnail_path` (#499).
+ *
+ * **Shape first, then duration, and no cost** -- at the left edge, at full
+ * strength rather than the muted grey the verbs use. Shape is the fact that
+ * decides whether two clips can cut together (#512) and it was the one thing
+ * about a clip no surface showed. Cost came off: it is on every row of the
+ * Activity log, which is where a spend question gets asked, and on a card it
+ * was priced-per-item noise next to a Download button.
  */
 export function VideoThumb({
   video,
@@ -67,8 +84,8 @@ export function VideoThumb({
   onContinue: (video: VideoRecord) => void
   isContinuing: boolean
 }) {
-  const cost = costOf(video)
   const duration = durationOf(video)
+  const shape = aspectLabel(aspectRatio(video))
   const isDone = video.status === 'completed'
 
   return (
@@ -107,24 +124,40 @@ export function VideoThumb({
         {/* Finished clips only: there is no last frame of a clip that does not
             exist yet, and a failed one has no frames at all. */}
         {isDone ? (
-          <button
-            type="button"
-            className={styles.continue}
-            onClick={() => onContinue(video)}
-            disabled={isContinuing}
-          >
-            {isContinuing ? (
-              <Loader2 className={styles.spinner} size={12} />
-            ) : (
-              <CornerDownRight size={12} />
-            )}
-            {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
-          </button>
+          <div className={styles.ends}>
+            <img
+              className={styles.end}
+              src={imageUrl(video.id, 'thumb')}
+              alt="First frame"
+              title="First frame"
+            />
+            {/* Held rather than collapsed when a clip predates the backfill: a
+                lone frame under a card reads as the clip having one end. */}
+            <img
+              className={styles.end}
+              src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
+              alt={video.has_end_frame ? 'Last frame' : ''}
+              title="Last frame"
+            />
+            <button
+              type="button"
+              className={styles.continue}
+              onClick={() => onContinue(video)}
+              disabled={isContinuing}
+            >
+              {isContinuing ? (
+                <Loader2 className={styles.spinner} size={12} />
+              ) : (
+                <CornerDownRight size={12} />
+              )}
+              {isContinuing ? 'Reading last frame\u2026' : 'Continue'}
+            </button>
+          </div>
         ) : null}
         <div className={styles.facts}>
+          {shape ? <span className={styles.fact}>{shape}</span> : null}
+          {duration ? <span className={styles.fact}>{duration}</span> : null}
           <span className={styles.spacer} />
-          {duration ? <span>{duration}</span> : null}
-          {cost ? <span>{cost}</span> : null}
           {isDone ? (
             <a
               className={styles.action}

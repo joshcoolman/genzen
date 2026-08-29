@@ -2,10 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
-import { aspectLabel, aspectRatio, clipFacts, sameAspect } from '../clip-facts'
 import { ClipFrames } from '../clip-frames/clip-frames'
 import styles from './clip-picker.module.css'
 import type { VideoRecord } from '../../../video/_actions/generate-video.action'
+import {
+  aspectLabel,
+  aspectRatio,
+  clipFacts,
+  sameAspect,
+} from '#/features/video/clip-facts'
 import {
   Button,
   Dialog,
