@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Six pages
+Where a feature is worked on before it is part of the app (#424). Seven pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames and Sequence are the other kind: things
 the app has never been able to do at all**, built here first so they can be used
@@ -181,6 +181,39 @@ generation per selected image. That bar's verbs are all free and reversible
 today, so the first one that spends money carries its count and cost on the
 item.
 
+## Endpoint Explorer is the one that does not send anything anywhere
+
+Paste a FAL model URL; it fetches that endpoint's published OpenAPI document and
+says whether we could build controls for it (#523). No key, no queue, no spend --
+which is the point, because the question only gets answered by pointing it at
+dozens of endpoints.
+
+Its question: **does one parser hold across real FAL schemas?** MiniMax's are
+pristine and publish their own UI hints -- `x-fal-order-properties` for field
+order, `_fal_ui_field` marking a media slot, both evidently what FAL's own form
+is drawn from. Mirelo's publish neither and wrap every optional in
+`anyOf [T, null]`. Whether that is a spectrum five control kinds cover or a long
+tail with no end decides whether the real thing is worth building.
+
+- **The report is the compatibility check.** It is not a throwaway view of one:
+  whatever gets built on top, a pasted URL has to be accepted or refused, and
+  this is that decision rendered as a page instead of hidden behind a green dot.
+- **An unsupported field fails the endpoint even when it is optional.** Ignoring
+  it and sending the default reads as generous and is how a form silently stops
+  offering half of what a model does.
+- **Failures are saved like successes.** The list is the record of what has been
+  looked at; dropping the refusals makes the same URL worth pasting twice.
+- **Three findings the first run produced, kept because they were not guessable:**
+  the output media hides behind a `$ref` that is _not_ always called `File`
+  (`Image` for FLUX, `Video-Output` for mirelo, and matching the name reported
+  both as returning nothing displayable); `image_urls` -- an array of strings --
+  is how every multi-image editor on FAL spells its reference slot, so refusing
+  arrays outright failed the commonest shape there is; and FLUX's `image_size`
+  is genuinely `anyOf [object, enum]`, which stays refused because a control
+  that is both does not exist.
+- **It parses and reports; it does not generate and does not draw the
+  controls.** Those wait on what this says.
+
 ## Quirks
 
 - **Every page names the file that steers it.** `LabPage` takes an
@@ -276,6 +309,15 @@ item.
   state, not about a lab page being the first thing to want something the app
   can give every clip. If the answer to "who writes this, and does it survive
   deleting `lab/`?" is the app and yes, it is not a lab migration.
+
+  **`fal_endpoints` (#523) is the second exception, and it passes the same test
+  for a different reason.** Endpoint Explorer keeps the FAL endpoints you have
+  pasted in; re-pasting a URL you already checked is what makes a validator
+  useless on its second day, so collecting them is the feature rather than one
+  page's scratch state. It is also the table the real Endpoint Explorer needs
+  whatever surface ends up owning it — this page is merely first to want it.
+  `generation_metadata` was not an option: an endpoint is not an image and has
+  no row to hang off.
 
 - **The rail collapses, and `layout.tsx` is a shell around a client
   component.** The collapsed state lives above both columns — the aside narrows

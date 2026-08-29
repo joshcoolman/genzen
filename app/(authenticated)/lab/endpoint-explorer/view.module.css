@@ -1,0 +1,32 @@
+.paste {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 40rem) {
+  .paste {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

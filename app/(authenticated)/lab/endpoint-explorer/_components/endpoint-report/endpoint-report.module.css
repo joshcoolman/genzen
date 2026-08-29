@@ -1,0 +1,169 @@
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  padding: 1rem 1.125rem 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* A refusal is not an error state -- it is one of the two answers the page
+   exists to give. So it reads as a different verdict, not as a broken card. */
+.cardUnsupported {
+  border-style: dashed;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.endpointId {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.badgeOk {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.badgeBad {
+  color: var(--text-muted);
+}
+
+.external {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+.external:hover {
+  color: var(--text);
+  background: var(--accent);
+}
+
+.summary {
+  display: flex;
+  gap: 1.75rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.summary div {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.summary dt {
+  color: var(--text-muted);
+}
+
+.summary dd {
+  margin: 0;
+  color: var(--text);
+}
+
+.fields {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* A fixed first column so the marks line up into a readable stripe -- scanning
+   for the red ones is the whole way this list gets used. */
+.field {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 14rem) minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  padding: 0.1875rem 0;
+}
+
+.mark {
+  color: var(--success);
+  display: flex;
+  align-items: center;
+}
+
+.fieldBad .mark {
+  color: var(--danger);
+}
+
+.fieldName {
+  font-family: var(--font-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.req {
+  color: var(--danger);
+  margin-left: 0.125rem;
+}
+
+.fieldKind {
+  color: var(--text-muted);
+}
+
+.fieldReason {
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 40rem) {
+  .field {
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+  }
+
+  .fieldKind,
+  .fieldReason {
+    grid-column: 2;
+  }
+}
