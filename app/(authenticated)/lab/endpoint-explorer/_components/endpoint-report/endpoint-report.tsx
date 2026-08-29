@@ -1,4 +1,4 @@
-import { Check, ExternalLink, X } from 'lucide-react'
+import { Check, ExternalLink, Minus, X } from 'lucide-react'
 import styles from './endpoint-report.module.css'
 import type { ParsedEndpoint, ParsedField } from '../../parse-schema'
 import { ActionButton, Badge, IconButton } from '#/components'
@@ -13,7 +13,9 @@ import { cx } from '#/lib/utils'
  * how the real controls get designed without guessing.
  */
 function describeField(field: ParsedField): string {
-  if (!field.kind) return '--'
+  // A skipped field says "defaults to ..." in the next cell; a dash beside that
+  // is a placeholder for a control nobody is waiting for.
+  if (!field.kind) return field.skipped ? '' : '--'
 
   switch (field.kind) {
     case 'media':
@@ -48,11 +50,28 @@ function describeField(field: ParsedField): string {
  * read as four. The indent is the only thing saying "these come as a set".
  */
 function FieldRow({ field }: { field: ParsedField }) {
+  const blocking = !field.kind && !field.skipped
+
   return (
-    <li className={cx(styles.field, !field.kind && styles.fieldBad)}>
+    <li
+      className={cx(
+        styles.field,
+        blocking && styles.fieldBad,
+        field.skipped && styles.fieldSkipped,
+      )}
+    >
       <span className={styles.row}>
+        {/* A dash for a skipped field, not a cross. It is not a failure -- the
+            endpoint works without it and the model has a stated default. A red
+            cross beside a green Supported badge would read as a contradiction. */}
         <span className={styles.mark} aria-hidden="true">
-          {field.kind ? <Check size={14} /> : <X size={14} />}
+          {field.kind ? (
+            <Check size={14} />
+          ) : field.skipped ? (
+            <Minus size={14} />
+          ) : (
+            <X size={14} />
+          )}
         </span>
         <code className={styles.fieldName}>{field.name}</code>
         <span className={styles.fieldKind}>
@@ -62,8 +81,16 @@ function FieldRow({ field }: { field: ParsedField }) {
               same field when only one of them is a verdict at all. */}
           {field.required && <span className={styles.req}>required</span>}
         </span>
-        {field.reason && (
-          <span className={styles.fieldReason}>{field.reason}</span>
+        {field.skipped ? (
+          // Still printed, with what it will get. Hiding it would be the
+          // silence the strict rule existed to avoid.
+          <span className={styles.fieldSkip}>
+            not drawable &mdash; defaults to {formatDefault(field.defaultValue)}
+          </span>
+        ) : (
+          field.reason && (
+            <span className={styles.fieldReason}>{field.reason}</span>
+          )
         )}
       </span>
       {field.fields && (
@@ -75,6 +102,21 @@ function FieldRow({ field }: { field: ParsedField }) {
       )}
     </li>
   )
+}
+
+/** A default as one short line. Objects are the interesting case: Seedream's
+ *  `image_size` defaults to `{ width: 2048, height: 2048 }`. */
+function formatDefault(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(value)
+      .map(([k, v]) => `${k} ${String(v)}`)
+      .join(' \u00d7 ')
+  }
+  return JSON.stringify(value)
 }
 
 export function EndpointReport({

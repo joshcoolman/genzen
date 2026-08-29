@@ -71,7 +71,17 @@ export interface ParsedField {
   maxItems?: number
   required: boolean
   description?: string
-  defaultValue?: string | number | boolean
+  /**
+   * The schema's declared default. Any JSON, not just a scalar: Seedream's
+   * `image_size` defaults to `{ width: 2048, height: 2048 }`.
+   */
+  defaultValue?: unknown
+  /**
+   * Cannot be drawn, and does not need to be: optional, with a default the
+   * schema states. Omitting it sends that value, so the endpoint is offered
+   * anyway -- see `skippable` in the note on `parseEndpointSchema`.
+   */
+  skipped?: boolean
   enumValues?: Array<string>
   min?: number
   max?: number
@@ -385,14 +395,7 @@ function parseField(
     description: str(schema.description),
   }
 
-  const rawDefault = schema.default
-  if (
-    typeof rawDefault === 'string' ||
-    typeof rawDefault === 'number' ||
-    typeof rawDefault === 'boolean'
-  ) {
-    base.defaultValue = rawDefault
-  }
+  if ('default' in schema) base.defaultValue = schema.default
 
   if (ambiguous) {
     const branches = (schema.anyOf ?? schema.oneOf) as Array<unknown>
@@ -554,12 +557,35 @@ function parseOutput(
 }
 
 /**
+ * Is this undrawable field one we can leave out?
+ *
+ * **Optional, and the schema declares a default.** That default is FAL saying
+ * what the model does when the field is absent, so omitting it accepts a stated
+ * value rather than silently switching something off.
+ *
+ * The distinction earns its keep on the shapes that exist. `image_size` is
+ * optional and defaults to `landscape_4_3` on FLUX and `{2048, 2048}` on
+ * Seedream -- a size nobody was going to type anyway. Kling's `multi_prompt`
+ * and `elements`, and Recraft's `image_weights`, declare no default at all:
+ * leaving those out is a silent no to the capability that was the reason to
+ * pick the model. So the rule blocks exactly the endpoints the strict version
+ * was for, and stops blocking the three it should never have caught.
+ *
+ * A skipped field is still printed, with the default it will get. Hiding it
+ * would recreate the silence this is meant to avoid -- the point is that you
+ * can always see what the form is not offering you.
+ */
+function skippable(field: ParsedField): boolean {
+  return !field.required && field.defaultValue !== undefined
+}
+
+/**
  * The whole verdict for one endpoint.
  *
- * **A field we cannot draw fails the endpoint even when it is optional.** The
- * softer rule -- ignore unsupported optionals and send their defaults -- reads
- * as generous and is how a form silently stops offering half of what a model
- * does. The report is meant to say what is missing, so it says it.
+ * **A field we cannot draw fails the endpoint even when it is optional**,
+ * unless `skippable` says otherwise. The blanket-generous rule -- ignore every
+ * unsupported optional -- is how a form silently stops offering half of what a
+ * model does. The report is meant to say what is missing, so it says it.
  */
 export function parseEndpointSchema(
   endpointId: string,
@@ -588,9 +614,12 @@ export function parseEndpointSchema(
   const fields = input ? fieldsOf(doc, input) : []
 
   for (const field of fields) {
-    if (field.kind === null) {
-      reasons.push(`${field.name}: ${field.reason}`)
+    if (field.kind !== null) continue
+    if (skippable(field)) {
+      field.skipped = true
+      continue
     }
+    reasons.push(`${field.name}: ${field.reason}`)
   }
 
   const out = parseOutput(doc, output)

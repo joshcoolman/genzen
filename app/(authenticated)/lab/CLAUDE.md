@@ -227,6 +227,19 @@ tail with no end decides whether the real thing is worth building.
   means a repeater, which arrives with the controls.
 - **A group is only as supported as its members**, for the same reason an
   unsupported optional fails the endpoint: a form with a hole in it.
+- **Except when the schema declares a default.** An optional field we cannot
+  draw is skipped if FAL says what the model does without it -- omitting it then
+  accepts a stated value rather than silently switching something off. That is
+  the whole rule, and it draws the line where the shapes actually differ:
+  `image_size` is optional and defaults to `landscape_4_3` on FLUX and
+  `{2048, 2048}` on Seedream, a size nobody was going to type; Kling's
+  `multi_prompt` and `elements` and Recraft's `image_weights` declare nothing,
+  and leaving those out is a silent no to the capability that was the reason to
+  pick the model. So it still blocks the endpoints the strict rule was for, and
+  stops blocking three it should never have caught.
+  **A skipped field is still printed, with the default it will get** -- a dash
+  rather than a cross, since the endpoint works without it. Hiding it would
+  recreate the silence the strict rule existed to avoid.
 - **Findings from real schemas, kept because none was guessable:** the output
   media hides behind a `$ref` that is _not_ always called `File` (`Image` for
   FLUX, `Video-Output` for mirelo, and matching the name reported both as

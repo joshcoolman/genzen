@@ -363,6 +363,63 @@ describe('parseEndpointSchema', () => {
     ])
   })
 
+  it('skips an undrawable optional that declares a default', () => {
+    const parsed = parseEndpointSchema(
+      'fal-ai/bytedance/seedream/v4.5/edit',
+      doc({
+        properties: {
+          prompt: { type: 'string' },
+          image_size: {
+            anyOf: [
+              { $ref: '#/components/schemas/ImageSize' },
+              { type: 'string', enum: ['square_hd', 'landscape_4_3'] },
+            ],
+            default: { width: 2048, height: 2048 },
+          },
+        },
+        required: ['prompt'],
+        output: {
+          images: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Image' },
+          },
+        },
+        schemas: { Image: FILE, ImageSize: { type: 'object' } },
+      }),
+    )
+
+    // Omitting it sends the value FAL states, so the endpoint is offered.
+    expect(parsed.supported).toBe(true)
+    expect(parsed.reasons).toHaveLength(0)
+
+    const size = parsed.fields[1]
+    expect(size.kind).toBeNull()
+    expect(size.skipped).toBe(true)
+    // Still carries its default, because the report prints what you are stuck
+    // with rather than hiding the field.
+    expect(size.defaultValue).toEqual({ width: 2048, height: 2048 })
+  })
+
+  it('does not skip an undrawable optional with no default', () => {
+    const parsed = parseEndpointSchema(
+      'acme/thing',
+      doc({
+        properties: {
+          // Kling's `multi_prompt` and `elements` are exactly this shape:
+          // optional, no default. Leaving one out is a silent no to the
+          // capability that was the reason to pick the model.
+          elements: { type: 'array', items: { type: 'number' } },
+        },
+        output: VIDEO_OUT,
+        schemas: { File: FILE },
+      }),
+    )
+
+    expect(parsed.supported).toBe(false)
+    expect(parsed.fields[0].skipped).toBeUndefined()
+    expect(parsed.reasons[0]).toContain('elements')
+  })
+
   it('refuses an output it could not display', () => {
     const parsed = parseEndpointSchema(
       'recraft/v4/pro/create-style',
