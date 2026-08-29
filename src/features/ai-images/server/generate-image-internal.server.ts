@@ -4,6 +4,7 @@ import { buildFalInput } from './fal-params.server'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
+import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
 import { describeImage } from '#/lib/server/describe-image.server'
 import { endpointFor } from '#/features/ai-images/models'
 import { assertFalKey } from '#/lib/server/fal-key.server'
@@ -262,7 +263,7 @@ export async function generateImageInternal(
         // loudly; this was the one that swallowed.
         effectivePrompt = await describeImage(
           buffer.toString('base64'),
-          'anchor',
+          DEFAULT_DESCRIBE_MODE,
         )
       }
 
