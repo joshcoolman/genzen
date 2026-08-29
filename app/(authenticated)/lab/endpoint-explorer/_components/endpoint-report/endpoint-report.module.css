@@ -132,8 +132,13 @@
 }
 
 .req {
-  color: var(--danger);
-  margin-left: 0.125rem;
+  margin-left: 0.5rem;
+  opacity: 0.65;
+}
+
+.req::before {
+  content: '\00b7';
+  margin-right: 0.5rem;
 }
 
 .fieldKind {

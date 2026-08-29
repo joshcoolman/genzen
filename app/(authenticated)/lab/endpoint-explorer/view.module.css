@@ -1,3 +1,18 @@
+/* Mobile first: one column, the rail under the report. A 20rem list beside a
+   phone-width report leaves neither half usable. */
+
+.split {
+  display: grid;
+  gap: var(--space-24);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-inline-size: 0;
+}
+
 .paste {
   display: flex;
   gap: 0.5rem;
@@ -6,22 +21,32 @@
 
 .input {
   flex: 1;
-  min-width: 0;
+  min-inline-size: 0;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
 }
 
 .note {
-  margin: 0.5rem 0 0;
+  margin: 0.5rem 0 1.5rem;
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+@media (min-width: 64rem) {
+  /* 20rem is the Images dock's width and Enhance's rail, matched deliberately:
+     the same job on three routes should not be three different widths. */
+  .split {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    align-items: start;
+    gap: var(--space-32);
+  }
+
+  /* Sticky, because switching endpoints is the move the page is for and a long
+     report should not mean scrolling back up to make it. */
+  .split > :last-child {
+    position: sticky;
+    top: var(--space-24);
+  }
 }
 
 @media (max-width: 40rem) {

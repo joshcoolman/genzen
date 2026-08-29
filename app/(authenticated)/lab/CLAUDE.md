@@ -195,6 +195,20 @@ is drawn from. Mirelo's publish neither and wrap every optional in
 `anyOf [T, null]`. Whether that is a spectrum five control kinds cover or a long
 tail with no end decides whether the real thing is worth building.
 
+- **Checking and keeping are separate acts.** Checking is free and most checks
+  are a glance, so a page that saved every one would be a wall of reports nobody
+  asked to keep. Save puts an endpoint in the rail; the rail is the short list
+  worth coming back to, and a refusal can be saved too -- re-checking one after
+  the parser learns something is most of why the list exists.
+- **The rail is single-select, and that is not a placeholder.** One endpoint's
+  controls at a time is the shape the real thing wants -- the same call Video
+  made in #417, for the same reason: these models disagree about almost
+  everything, so anything showing two at once has to intersect them and the
+  differences are what you came for. Today the content area holds the report;
+  later it holds the controls and what they generated.
+- **Required is muted text after the field's description, not a mark on its
+  name.** A red asterisk beside a green tick reads as two verdicts about one
+  field when only one of them is a verdict at all.
 - **The report is the compatibility check.** It is not a throwaway view of one:
   whatever gets built on top, a pasted URL has to be accepted or refused, and
   this is that decision rendered as a page instead of hidden behind a green dot.

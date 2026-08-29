@@ -1,17 +1,16 @@
 import { Check, ExternalLink, X } from 'lucide-react'
 import styles from './endpoint-report.module.css'
-import type { ParsedField } from '../../parse-schema'
-import type { SavedEndpoint } from '../../_actions/endpoints.action'
-import { Badge, IconButton } from '#/components'
+import type { ParsedEndpoint, ParsedField } from '../../parse-schema'
+import { ActionButton, Badge, IconButton } from '#/components'
 import { cx } from '#/lib/utils'
 
 /**
  * What a field's control would be, in one line.
  *
- * The ranges and enum sizes are the point, not decoration -- "enum" says a
- * dropdown exists, "enum(21)" says Topaz offers twenty-one upscaling models and
- * a row of pills is the wrong shape for it. Reading that off the report is how
- * the real controls get designed without guessing.
+ * The ranges and enum sizes are the point, not decoration -- "one of 2" says a
+ * dropdown exists, "one of 21" says Topaz offers twenty-one upscaling models
+ * and a row of pills is the wrong shape for it. Reading that off the report is
+ * how the real controls get designed without guessing.
  */
 function describeField(field: ParsedField): string {
   if (!field.kind) return '--'
@@ -38,18 +37,26 @@ function describeField(field: ParsedField): string {
 }
 
 export function EndpointReport({
-  endpoint,
+  report,
+  sourceUrl,
+  saved,
+  saving,
+  onSave,
   onRemove,
 }: {
-  endpoint: SavedEndpoint
+  report: ParsedEndpoint
+  sourceUrl: string
+  /** In the rail already. Swaps Save for Remove -- the two are never both on. */
+  saved: boolean
+  saving: boolean
+  onSave: () => void
   onRemove: () => void
 }) {
-  const { report } = endpoint
   const drawable = report.fields.filter((f) => f.kind).length
 
   return (
     <article
-      className={cx(styles.card, !endpoint.supported && styles.cardUnsupported)}
+      className={cx(styles.card, !report.supported && styles.cardUnsupported)}
     >
       <header className={styles.head}>
         <div className={styles.identity}>
@@ -58,15 +65,15 @@ export function EndpointReport({
         </div>
         <div className={styles.actions}>
           <Badge
-            className={endpoint.supported ? styles.badgeOk : styles.badgeBad}
+            className={report.supported ? styles.badgeOk : styles.badgeBad}
           >
-            {endpoint.supported ? 'Supported' : 'Not supported'}
+            {report.supported ? 'Supported' : 'Not supported'}
           </Badge>
           {/* An anchor, not a button that calls `window.open`: the way back to
               the model page is a link, and a link is middle-clickable. */}
           <a
             className={styles.external}
-            href={endpoint.sourceUrl}
+            href={sourceUrl}
             target="_blank"
             rel="noreferrer"
             aria-label="Open on fal.ai"
@@ -74,9 +81,23 @@ export function EndpointReport({
           >
             <ExternalLink size={15} />
           </a>
-          <IconButton aria-label="Remove endpoint" onClick={onRemove}>
-            <X size={15} />
-          </IconButton>
+          {saved ? (
+            <IconButton aria-label="Remove endpoint" onClick={onRemove}>
+              <X size={15} />
+            </IconButton>
+          ) : (
+            // Save is offered for a refusal too. "We cannot draw this yet" is
+            // worth coming back to -- re-checking it once the parser has
+            // learned something is most of why the rail exists.
+            <ActionButton
+              variant="outline"
+              loading={saving}
+              loadingText="Saving"
+              onClick={onSave}
+            >
+              Save
+            </ActionButton>
+          )}
         </div>
       </header>
 
@@ -106,15 +127,14 @@ export function EndpointReport({
             <span className={styles.mark} aria-hidden="true">
               {field.kind ? <Check size={14} /> : <X size={14} />}
             </span>
-            <code className={styles.fieldName}>
-              {field.name}
-              {/* Required is on the name because that is the thing you have to
-                  supply -- an unsupported optional is a smaller problem than an
-                  unsupported required one, and the report should let you see
-                  which you are looking at. */}
-              {field.required && <span className={styles.req}>*</span>}
-            </code>
-            <span className={styles.fieldKind}>{describeField(field)}</span>
+            <code className={styles.fieldName}>{field.name}</code>
+            <span className={styles.fieldKind}>
+              {describeField(field)}
+              {/* Muted, after the description, rather than a mark on the name.
+                  A red asterisk beside a green tick reads as two verdicts about
+                  the same field when only one of them is a verdict at all. */}
+              {field.required && <span className={styles.req}>required</span>}
+            </span>
             {field.reason && (
               <span className={styles.fieldReason}>{field.reason}</span>
             )}
@@ -122,7 +142,7 @@ export function EndpointReport({
         ))}
       </ul>
 
-      {!endpoint.supported && (
+      {!report.supported && (
         <ul className={styles.reasons}>
           {report.reasons.map((reason) => (
             <li key={reason}>{reason}</li>

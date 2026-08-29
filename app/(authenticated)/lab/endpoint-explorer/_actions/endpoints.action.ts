@@ -55,24 +55,25 @@ export async function listEndpoints(): Promise<Array<SavedEndpoint>> {
   return rows.map(toSaved)
 }
 
-export type AddEndpointResult =
-  | { ok: true; endpoint: SavedEndpoint }
+export type CheckEndpointResult =
+  | { ok: true; sourceUrl: string; report: ParsedEndpoint }
   | { ok: false; error: string }
 
 /**
- * Read a pasted FAL model URL and keep the verdict (#523).
+ * Read a pasted FAL model URL and report on it (#523).
  *
- * **Nothing here generates.** It fetches the endpoint's public OpenAPI
- * document -- no key, no queue, no spend -- decides whether we could build
- * controls for it, and stores the report. An unsupported endpoint is saved
- * exactly like a supported one: the list is the record of what has been looked
- * at, and dropping the failures would make the same URL worth pasting twice.
- *
- * Re-adding overwrites, which is how an endpoint is re-checked once the parser
- * has learned something.
+ * **Nothing here generates, and nothing here is stored.** It fetches the
+ * endpoint's public OpenAPI document -- no key, no queue, no spend -- and says
+ * whether we could build controls for it. Checking is free and most checks are
+ * a glance, so keeping every one of them would turn the page into a wall of
+ * reports nobody asked to keep; `saveEndpoint` is the deliberate act.
  */
-export async function addEndpoint(input: string): Promise<AddEndpointResult> {
-  const { userId } = await resolveAuth()
+export async function checkEndpoint(
+  input: string,
+): Promise<CheckEndpointResult> {
+  // Authenticated, though nothing is written: this reaches a third party on the
+  // server's behalf, and an unauthenticated caller has no business doing that.
+  await resolveAuth()
 
   const endpointId = endpointIdFromUrl(input)
   if (!endpointId) {
@@ -107,7 +108,30 @@ export async function addEndpoint(input: string): Promise<AddEndpointResult> {
     return { ok: false, error: 'Could not reach fal.ai to read the schema.' }
   }
 
-  const report = parseEndpointSchema(endpointId, doc)
+  return {
+    ok: true,
+    sourceUrl: input.trim(),
+    report: parseEndpointSchema(endpointId, doc),
+  }
+}
+
+/**
+ * Keep a checked endpoint.
+ *
+ * **An unsupported endpoint saves exactly like a supported one.** The rail is
+ * the list of endpoints worth coming back to, and "we cannot draw this yet" is
+ * a thing worth coming back to -- re-checking it after the parser learns
+ * something is most of why the list exists.
+ *
+ * Re-saving overwrites, so pasting a URL already in the rail is how one is
+ * re-checked rather than a way to get two of it.
+ */
+export async function saveEndpoint(
+  sourceUrl: string,
+  report: ParsedEndpoint,
+): Promise<SavedEndpoint> {
+  const { userId } = await resolveAuth()
+  const endpointId = report.endpointId
   const label = endpointId.split('/').slice(-2).join('/')
 
   // `jsonb(...)`, not `JSON.stringify(...)::jsonb`. The driver already
@@ -120,7 +144,7 @@ export async function addEndpoint(input: string): Promise<AddEndpointResult> {
     insert into fal_endpoints
       (user_id, endpoint_id, source_url, label, schema, output_kind, supported)
     values (
-      ${userId}, ${endpointId}, ${input.trim()}, ${label},
+      ${userId}, ${endpointId}, ${sourceUrl}, ${label},
       ${jsonb(report)}, ${report.outputKind}, ${report.supported}
     )
     on conflict (user_id, endpoint_id) do update set
@@ -133,7 +157,7 @@ export async function addEndpoint(input: string): Promise<AddEndpointResult> {
               to_json(created_at)#>>'{}' as created_at
   `
 
-  return { ok: true, endpoint: toSaved(rows[0]) }
+  return toSaved(rows[0])
 }
 
 export async function removeEndpoint(id: string): Promise<void> {
