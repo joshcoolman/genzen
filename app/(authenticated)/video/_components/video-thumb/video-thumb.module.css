@@ -93,6 +93,35 @@
   line-clamp: 3;
 }
 
+/* The clip's two ends, flush under the player: half the card each, no gap
+   between them and none at the edges. The player, the frame it opens on and
+   the frame it stops at are one picture of the clip -- a gap anywhere in there
+   makes them three things that happen to be stacked, and the card stops
+   reading as one bigger thumbnail.
+
+   A grid rather than flex, because 50/50 has to hold exactly: two flex items
+   at `flex: 1` disagree by a pixel when their intrinsic widths differ, and the
+   seam down the middle of the card is the one place that shows. */
+.ends {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+/* **Shaped by the clip**, from the row's own width and height set inline, so
+   each frame is edge-to-edge: nothing letterboxed, nothing cropped, and the
+   pair's outline is one more place the clip's shape is legible -- the fact the
+   caption below now leads with.
+
+   No fixed height. The column is half the card and the height follows the
+   shape, so a 21:9 pair is short and a portrait pair is tall, which is the
+   same thing the clip itself is. */
+.end {
+  display: block;
+  width: 100%;
+  background: var(--image-backing);
+  object-fit: cover;
+}
+
 /* The last frame, as a button. It carries no chrome of its own -- no border,
    no padding, no background -- because the picture is the control and anything
    drawn around it would be a second edge inside a block whose whole point is
