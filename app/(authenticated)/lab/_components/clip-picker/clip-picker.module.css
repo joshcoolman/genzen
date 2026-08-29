@@ -12,11 +12,12 @@
   padding-right: var(--space-4);
 }
 
-/* `auto-fill` at a fixed column rather than `minmax(x, 1fr)`: MediaBox is sized
-   in px, so a stretching column would leave the picture behind. */
+/* `auto-fill` at a fixed column rather than `minmax(x, 1fr)`: the frames are
+   sized in px, so a stretching column would leave the picture behind. */
 .tiles {
-  /* Paired with `TILE` in the component, for the same reason the strip's is. */
-  --tile: 132px;
+  /* Twice `TILE` in the component: a tile is a clip's first frame and its last
+     one side by side (`ClipFrames`), so the column is a pair wide. */
+  --tile: 264px;
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--tile));
   justify-content: start;

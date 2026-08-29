@@ -1,21 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Plus, X } from 'lucide-react'
+import { ClipFrames } from '../../../_components/clip-frames/clip-frames'
 import { clipFacts } from '../../../_components/clip-facts'
 import styles from './clip-row.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
-import { MediaBox } from '#/components'
-import { imageUrl } from '#/lib/image-url'
 import { cx } from '#/lib/utils'
 
 /** The edge of one frame. Paired with `--tile` in the stylesheet, which is what
- *  the add button matches: `MediaBox` is sized in px, not by its container. */
+ *  the add button and the open slot match: a `MediaBox` is sized in px, not by
+ *  its container. */
 const TILE = 108
 
 /**
- * The run, as a row of clips you can drag into order -- each one showing the
- * frame it starts on and the frame it ends on.
+ * The run, as clips you can drag into order -- each one showing the frame it
+ * starts on and the frame it ends on (`ClipFrames`).
  *
  * **It looks like a timeline and deliberately is not one.** No time ruler, no
  * proportional widths, no playhead running across it. Every tile is the same
@@ -24,31 +24,39 @@ const TILE = 108
  * are wanted -- `duration_seconds` is already on the row -- and would be a
  * different page's answer.
  *
- * **Two frames per tile, because the cut is between them** (#512). A row of
- * first frames asked you to remember what the clip before ended on, which is
- * the one frame that was never on screen. With both, the ending of clip N sits
- * directly beside the beginning of clip N+1 -- the gap between two tiles *is*
- * the cut being judged, and no arrangement of a single frame per clip can put
- * those two pictures next to each other.
+ * **It wraps, and it used to scroll.** The original said a run is a line and a
+ * second row of it would read as two runs. That is true of the picture and
+ * false of the tool: past three clips the rest of the run was off-screen, so
+ * arranging it meant scrolling to find the tile, scrolling to find where it
+ * goes, and never seeing both at once -- which is the entire job. A run that is
+ * all visible in three lines beats a line you cannot see.
  *
- * That is also why the pair is drawn as one tile rather than as loose frames:
- * the two halves belong to a clip, the space between tiles belongs to a cut,
- * and the eye has to be able to tell which gap it is looking at.
+ * **Dropping happens in the gaps, not on the tiles.** A tile-targeted drop
+ * cannot say which side of the target you meant, and the old one resolved that
+ * by splicing at the target's pre-removal index: dragging rightwards landed
+ * *after* the target and dragging leftwards landed *before* it, from the same
+ * gesture, with no way to reach the end of the run at all. The insertion point
+ * is a real position between two clips, and it means the same thing whichever
+ * direction you approached from.
  *
- * In a chain made by Continue (#494) each clip starts on the frame the one
- * before it ended on, so a correctly ordered run is visible before you press
- * play: across a seam, the two frames match.
+ * **The run opens a slot where the clip will land**, rather than lighting an
+ * edge. This was refused once, and the reason was sound: shuffling tiles under
+ * the pointer moves the drop target away from the pointer, and the row
+ * oscillates as the two chase each other. Two things fix that, and both are
+ * load-bearing:
  *
- * **Frame one is a `<video>`, the ending an `<img>`.** Not an oversight. A clip
- * whose poster never decoded still paints frame one through `MediaBox`'s seeked
- * media fragment, so that half can never be blank; `/img/[id]?v=end`
- * deliberately has no fallback, so the ending half is either the real last
- * frame or nothing. Both render the same picture at the same size, and the
- * asymmetry buys a row that degrades in the one direction that keeps working.
+ * - **The width is conserved.** The lifted tile leaves the flow as the slot
+ *   opens, so a clip is *moved* rather than inserted and the run's total width
+ *   never changes. Inserting a slot reflows everything to its right -- across a
+ *   wrap, onto different lines -- while you are trying to aim at it.
+ * - **The slot moves on `dragenter`, not on `dragover`.** `dragover` fires
+ *   continuously, so the slot would reopen from wherever the tiles had just
+ *   shuffled to, which is the oscillation. Entering a tile is a discrete event
+ *   and gives the hysteresis for free: the slot holds until the pointer is
+ *   genuinely over a different clip.
  *
- * Native HTML drag and drop, not pointer maths: a row of a dozen tiles that
- * only ever reorders is exactly what it is for, and the browser draws the drag
- * image itself.
+ * Native HTML drag and drop, not pointer maths: tiles that only ever reorder
+ * are exactly what it is for, and the browser draws the drag image itself.
  */
 export function ClipRow({
   clips,
@@ -65,81 +73,104 @@ export function ClipRow({
   onMove: (from: number, to: number) => void
 }) {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  /** The slot the clip would land in: 0 is before the first tile, `length` is
+   *  after the last. A position between clips, not a tile. */
+  const [overGap, setOverGap] = useState<number | null>(null)
 
-  const drop = (to: number) => {
-    if (draggingIndex !== null) onMove(draggingIndex, to)
+  const dragging = draggingIndex !== null
+
+  const reset = () => {
     setDraggingIndex(null)
-    setOverIndex(null)
+    setOverGap(null)
   }
 
+  const drop = () => {
+    if (draggingIndex !== null && overGap !== null) {
+      // The gap is measured before the clip is lifted out, so every slot to its
+      // right shifts down one once it is gone.
+      onMove(draggingIndex, overGap > draggingIndex ? overGap - 1 : overGap)
+    }
+    reset()
+  }
+
+  /* The open slot, the same footprint as a tile so the run's rhythm is
+     unbroken: two frames wide, plus the seam between them and the tile's own
+     border. */
+  const slot = <div className={styles.slot} aria-hidden />
+
   return (
-    <div className={styles.row}>
+    <div
+      className={styles.row}
+      onDragOver={(e) => {
+        // Without this the drop is refused and every drag snaps back. On the
+        // row rather than only the tiles so the gaps themselves accept it.
+        e.preventDefault()
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        drop()
+      }}
+    >
       {clips.map((clip, index) => (
-        <div
-          key={clip.id}
-          className={cx(
-            styles.tile,
-            draggingIndex === index && styles.tileDragging,
-            overIndex === index && draggingIndex !== index && styles.tileOver,
-            playingIndex === index && styles.tilePlaying,
-          )}
-          draggable
-          onDragStart={() => setDraggingIndex(index)}
-          onDragEnd={() => {
-            setDraggingIndex(null)
-            setOverIndex(null)
-          }}
-          onDragOver={(e) => {
-            // Without this the drop is refused and every drag snaps back.
-            e.preventDefault()
-            setOverIndex(index)
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            drop(index)
-          }}
-          title={clipFacts(clip)}
-        >
-          {/* The position, not the clip's name: what you are checking while
-              rearranging is where in the run this sits. */}
-          <span className={styles.ordinal}>{index + 1}</span>
-          <div className={styles.frames}>
-            <MediaBox
-              kind="video"
-              src={`/img/${clip.id}`}
-              size={TILE}
-              alt={clipFacts(clip)}
-            />
-            {clip.has_end_frame ? (
-              <img
-                className={styles.endFrame}
-                src={imageUrl(clip.id, 'end')}
-                alt=""
-                draggable={false}
-              />
-            ) : (
-              /* A clip from before #512 that the backfill could not decode.
-                 The slot is held rather than collapsed: a row of tiles at two
-                 different widths reads as two kinds of clip, which is a
-                 distinction that does not exist. */
-              <div className={styles.endMissing} aria-hidden />
+        <Fragment key={clip.id}>
+          {dragging && overGap === index && slot}
+          <div
+            className={cx(
+              styles.tile,
+              draggingIndex === index && styles.tileLifted,
+              playingIndex === index && styles.tilePlaying,
             )}
-          </div>
-          <button
-            type="button"
-            className={styles.remove}
-            onClick={() => onRemove(clip.id)}
-            aria-label="Remove from the run"
+            draggable
+            onDragStart={() => {
+              /* Deferred a frame, and that is the whole reason the tile can be
+                 taken out of the flow at all. The browser's drag image is a
+                 snapshot of the element taken as `dragstart` is dispatched, so
+                 hiding it in this handler means dragging an invisible clip. */
+              requestAnimationFrame(() => {
+                setDraggingIndex(index)
+                // Where it already is, so the run opens its slot in place
+                // rather than jumping to wherever the pointer first crosses a
+                // tile.
+                setOverGap(index)
+              })
+            }}
+            onDragEnd={reset}
+            onDragEnter={(e) => {
+              const box = e.currentTarget.getBoundingClientRect()
+              const past = e.clientX > box.left + box.width / 2
+              setOverGap(past ? index + 1 : index)
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            title={clipFacts(clip)}
           >
-            <X size={12} />
-          </button>
-        </div>
+            {/* The position, not the clip's name: what you are checking while
+                rearranging is where in the run this sits. */}
+            <span className={styles.ordinal}>{index + 1}</span>
+            <ClipFrames clip={clip} size={TILE} alt={clipFacts(clip)} />
+            <button
+              type="button"
+              className={styles.remove}
+              onClick={() => onRemove(clip.id)}
+              aria-label="Remove from the run"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </Fragment>
       ))}
 
+      {dragging && overGap === clips.length && slot}
+
       {/* Always last, so adding a clip appends to the end of the run and the
-          control does not move as the row grows. */}
-      <button type="button" className={styles.add} onClick={onAdd}>
+          control does not move as the run grows. Dragging over it means the
+          end of the run, which is the one slot no tile can express. */}
+      <button
+        type="button"
+        className={styles.add}
+        onClick={onAdd}
+        onDragEnter={() => setOverGap(clips.length)}
+        onDragOver={(e) => e.preventDefault()}
+      >
         <Plus size={16} />
         <span className={styles.addLabel}>Add clips</span>
       </button>

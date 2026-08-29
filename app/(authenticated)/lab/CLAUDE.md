@@ -83,9 +83,11 @@ into order, press play.
   gapless swap — the idle element is holding `index + 1`, so a jump anywhere else
   loads a fresh source and blanks for a beat. That is the right trade: a skip is
   a move _between_ cuts, never one of the cuts being judged.
-- **The clip picker moved to `lab/_components/`** when this page wanted it whole.
-  Two lab pages share it; a second copy under another page's `_components/` is
-  the same dialog drifting into two.
+- **`lab/_components/` is what a second page wanted whole.** The clip picker
+  went there when Sequence wanted the dialog Frames had; `clip-frames/` — a
+  clip's first and last frame side by side — went there when the picker wanted
+  what the run drew. The bar is two pages, and a copy under one page's
+  `_components/` is the same thing drifting into two.
 
 ## Frames is not one of them
 
