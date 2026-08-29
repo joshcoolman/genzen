@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-29 — Sequence's run is arrangeable: it wraps instead of scrolling off-screen past three clips, dragging opens a slot the shape of a clip where it will land, and a drop means the same thing whichever direction you came from (it used to land after the target going right and before it going left, with no way to reach the end of the run). The clip picker shows each clip's first *and* last frame, since what a clip cuts into is decided by the frame it ends on (#529)
 - 2026-08-29 — Outpaint moved out of the lab and onto a card's `...` menu: pick as many aspect ratios as you need in one dialog and Generate reframes the picture into each, using Grok Imagine 2.0 with no model picker. The shape it already is sits in the grid greyed and labelled `Current`. `Animate` came off the same menu, and the lab page it replaces is deleted — what it proved is written up in `src/features/ai-images/outpaint.ts` (#527, #528)
 - 2026-08-29 — Endpoint Explorer in the lab: paste a FAL model URL and it reads that endpoint's published schema and says whether we could build controls for it — every input with its type and range, the output kind, and a named reason for anything we cannot draw. Nothing is generated and nothing is charged; Save keeps one in a rail so a URL is pasted once. Eleven of thirteen real endpoints pass, including Kling v3 Pro's shot list and character elements (#523). Drawing the controls and running them is #525
 - 2026-08-29 — Video picks one model at a time, and each model gets its whole capability: MiniMax H3 Max joins the lineup as a text-only model tuned for prompt adherence (the target the multi-shot writer was missing) with a 480p/768p resolution control that moves the price, and the settings are that model's rather than an intersection across several
 - 2026-08-28 — Enhance writes multi-shot video prompts: pick "Multi-shot · MiniMax H3" as the target and a few words come back as a timestamped shot-by-shot script, with the duration read out of what you typed (#520)
 - 2026-08-28 — Describe's prompts are a folder with a registry, picked from a menu, so adding one is a file drop and an entry (#519)
-- 2026-08-28 — Generate panel polish: the stepper is a pill, reference images sit in a labelled box, each model is its own block with selection shown by its border alone, and aspect, count and Generate share one row (#518)
 
 **Up next**
 
