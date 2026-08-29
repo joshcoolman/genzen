@@ -25,6 +25,40 @@
   object-fit: contain;
 }
 
+/* The only thing on an unplayed card. Centred and larger than the badge on the
+   last frame, because those are two different weights of invitation: this one
+   is the card's main verb, that one is a way out of it.
+
+   Same fill as the frame's badge, for the same reason -- it sits on a picture
+   that could be any colour, and a bare glyph disappears against half of them. */
+.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--surface-sunken) 75%, transparent);
+  color: var(--text);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.play:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.play:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .state {
   display: flex;
   align-items: center;
