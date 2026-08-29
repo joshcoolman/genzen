@@ -43,38 +43,29 @@
   box-shadow: 0 0 0 1px var(--accent);
 }
 
-/* The tile being carried, not the gap it will land in -- the browser draws the
-   drag image, so this is only what is left behind. */
-.tileDragging {
-  opacity: 0.4;
+/* The clip being carried, out of the flow entirely so the slot below takes its
+   place without the run getting wider -- a clip is moved, not inserted. Safe
+   only because the component defers this by a frame; see there. */
+.tileLifted {
+  display: none;
 }
 
-/* The insertion point, drawn in the gap it will land in rather than on a tile.
-   A bar rather than a lit border or a shuffled gap: a border says "this tile"
-   when the answer is a position between two of them, and opening a real gap
-   under the pointer moves the drop target away from the pointer.
+/* Where the clip will land. The same footprint as a tile -- two frames wide,
+   plus the seam between them and the tile's own border -- so opening it moves
+   the run by exactly one clip and never resizes it.
 
-   Half the column gap out, so it sits in the middle of the space between two
-   tiles and belongs to neither. It overhangs the tile at the ends of a wrapped
-   line, which is correct -- that is still where the clip lands. */
-.gapBefore::before,
-.gapAfter::after {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 2px;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  content: '';
-}
-
-.gapBefore::before {
-  left: calc(-1 * var(--space-8) - 1px);
-}
-
-.gapAfter::after {
-  right: calc(-1 * var(--space-8) - 1px);
+   An open slot rather than a lit edge or a bar: what is being judged is a
+   picture, and a gap the shape of a clip shows the arrangement you are about
+   to get. See the component for why the two failure modes this usually has --
+   the run shuffling out from under the pointer, and the slot oscillating --
+   do not happen here. */
+.slot {
+  flex: none;
+  width: calc(var(--tile) * 2 + 3px);
+  min-height: calc(var(--tile) + 2px);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
 }
 
 .ordinal {
