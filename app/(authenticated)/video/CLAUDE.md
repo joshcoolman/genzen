@@ -1,8 +1,8 @@
 # Video
 
-An image you already made, plus a note, comes back moving (#305). Three FAL
-models -- LTX-2.5 Fast, MiniMax H3, Flux 3 -- and since #417 you can tick
-several, for one clip each.
+An image you already made, plus a note, comes back moving (#305). Four FAL
+models -- LTX-2.5 Fast, MiniMax H3, MiniMax H3 Max, Flux 3 -- **one at a time**,
+one clip per prompt.
 
 Built to `docs/reference/route-shape.md`. `page.tsx` reads the clip list and the
 source images; `use-view.ts` owns everything after the first paint.
@@ -22,30 +22,41 @@ source images; `use-view.ts` owns everything after the first paint.
   endpoint carries `firstFrameParam`, `acceptsEndImage` and its own
   `aspectRatios`, and the submit builds its input from that rather than from a
   fixed list. Same idea as the image side's `buildFalInput`, minus the schema
-  fetch -- three entries, each field read off FAL's OpenAPI spec by hand and
+  fetch -- four entries, each field read off FAL's OpenAPI spec by hand and
   pinned in `models.test.ts`.
 - **An empty `aspectRatios` means there is no control, not that no ratio
   works.** H3's image endpoint follows the frame it is given, so the form
   renders no Aspect row and the submit sends no `aspect_ratio`. A control with
   no options would say the choice exists and had been taken away.
-- **The picker is `ModelSelector` in `mode="multi"`, the generator panel's
+- **The picker is `ModelSelector` in `mode="single"`, the generator panel's
   own.** Its two right-hand columns are the same two numbers read differently
   -- dollars per _second_, and _frames_ rather than references -- which is all
   the component needed to be shared: two optional label props, not a fork.
 
-  It was single-select until #417, and that was a money decision rather than a
-  simplification -- a clip is 20-100x the price of a still, so "tick four models
-  and fire" was a $20 click **when nothing on screen said so**. Three things
-  make the count safe to raise, and removing any one puts the objection back:
-  the estimate under Generate (#416), **one clip per model** (there is no count
-  stepper here and there will not be one -- the useful axis is across models,
-  not four takes from one), and a confirm above `CONFIRM_ABOVE_CENTS`.
+  **It was multi-select between #417 and now, and going back was not a
+  simplification.** Multi-select bought a cross-model comparison and paid for
+  it by intersecting every control down to what all the ticked models agreed
+  on. On video the models disagree about nearly everything, so the common
+  denominator shrank as the lineup grew, and the differences between the models
+  -- the entire reason to carry more than one -- became the one thing the form
+  could not express. h3-max is where it broke: it has resolution tiers no other
+  model has and takes no frame at all, and neither fact is representable in an
+  intersection. Comparing serially costs a second submit. That is cheaper than
+  a form that cannot reach what a model can do.
 
-  **Prompts still multiply, and they are the axis that bites.** Two prompts and
-  three models is six clips, none of them duplicates. That is why the confirm
+  So a control may now exist for one model and not the others, and the form is
+  expected to change shape when the model changes. The frame slots vanish for a
+  text-to-video-only model; a Resolution row appears for one with tiers.
+  **Do not reintroduce a `shared*` intersection helper** -- the lineup's header
+  comment says the same thing, because this is the rule most likely to be
+  re-derived backwards.
+
+  **Prompts are still the axis that multiplies**, which is why the confirm
   triggers on **price rather than count**, unlike `GeneratorPanel`'s
   five-images rule: two Flux 3 clips at 20s is $6.80 and eight LTX clips at 6s
-  is $4.32, so a count says little about the size of the click.
+  is $4.32, so a count says little about the size of the click. The estimate
+  under Generate (#416) and the confirm above `CONFIRM_ABOVE_CENTS` are what
+  keep a click that costs real money from being silent.
 
 - **The control column is ordered like `GeneratorPanel`, and that is the
   point.** Prompts, then the frame slots, then the settings, then a full-width
@@ -97,37 +108,48 @@ source images; `use-view.ts` owns everything after the first paint.
   exists. One picker serves both slots; `pickerTarget` says where the pick
   lands, because a second dialog would be the same component mounted twice to
   answer the same question.
-- **Several prompts, several models, one first frame, one clip each.** The
-  submit loops sequentially rather than `Promise.all` -- each call reserves a
-  row before it contacts FAL, and firing them together interleaves the
-  reservations against a queue that answers in its own order. **Prompt-major**,
-  so the first clip of every prompt arrives before the second of any: a submit
-  abandoned half way has covered the prompts rather than one prompt thoroughly.
+- **Several prompts, one model, one first frame, one clip each.** The submit
+  loops sequentially rather than `Promise.all` -- each call reserves a row
+  before it contacts FAL, and firing them together interleaves the reservations
+  against a queue that answers in its own order.
 - **The prompt is the only required input.** Every frame slot is optional, and
   the frames decide which endpoint runs -- `textToVideo` with none,
   `withImage` with a first, `withFirstAndLastImage` with both where the model
-  has one, all resolved by `endpointFor(model, hasFirst, hasLast)`. Different
+  has one -- all resolved by `endpointFor(model, hasFirst, hasLast)`, which
+  also answers `textToVideo` for a model with no image endpoint. Different
   acts, not a switch: with a first frame you are animating something you made,
   with both the model solves the move between two stills, and with neither it
   invents the whole shot and the prompt has to carry it.
-- **Settings are intersected across the ticked models** (#417).
-  `sharedDurations` is a plain intersection -- a duration one model rejects
-  fails at FAL rather than in the form -- so LTX plus H3 offers 6/8/10/12 and
-  neither H3's 5 nor LTX's 20. `sharedAspectRatios` is **not** a plain
-  intersection: a model exposing no `aspect_ratio` param is _excluded_ from it
-  rather than emptying it, because an empty list means "there is no control"
-  and intersecting it literally would strip the control from the models that do
-  have one and hand FAL its default. The end-frame slot needs **every** model to
-  accept one, not any: the submit refuses an end frame an endpoint does not
-  declare, and a partial submit is the worst outcome -- half a comparison is not
-  a comparison.
+- **Settings are the selected model's, whole.** No intersection: `use-view`
+  reads `model.durations`, `aspectRatiosFor(model, ...)` and
+  `resolutionsFor(model)` directly, and coerces the current value when the
+  model or the mode changes, so a control never shows a selection the request
+  would refuse. An **empty list means there is no control** -- for aspect
+  ratios and resolutions alike -- and the submit sends nothing, or the model's
+  fixed `resolution`.
+- **h3-max takes no frame, and a staged one is dropped rather than refused.**
+  It is the only entry with no `withImage` endpoint, so `endpointFor` falls
+  back to `textToVideo` and `takesFirstFrame` is false. The form hides both
+  frame slots for it -- that is where the person is told -- but what is already
+  staged is **kept**, not cleared, so switching back restores the pick. The
+  action drops the frame before it reserves a row or uploads bytes, and records
+  the clip as `text_to_video`, because a caller that does not know the lineup
+  must not be able to mislabel a row.
+- **Resolution is a control for one model only, and that is the point.**
+  h3-max renders at 480P or 768P at different prices, so the tier lives on the
+  record (`resolutions`) and `resolutionFor` resolves what is actually sent --
+  once, because the estimate and the submit have to name the same thing. A
+  price quoted at 480P against a clip rendered at 768P is the bug that shape
+  prevents. The other three carry a fixed `resolution` and no list. LTX and
+  Flux 3 both have higher tiers that belong here the day their per-tier prices
+  are confirmed.
 - **Aspect options are per endpoint, and that is not a nicety.** `auto` exists
   only where there is an image to match -- FAL's own enums differ, and the
   text-to-video endpoints reject it. With a first frame, 16:9 and 9:16 mean
   "recrop my picture", which crops and re-imagines; without one they are just
   the output shape. `use-view` coerces the value when the endpoint or the
-  selection changes -- and the duration too, since ticking H3 (5-15) alongside
-  LTX leaves 18s selected against a model that will not take it.
+  selection changes -- and the duration too, since switching from LTX (6-20) to
+  H3 (5-15) leaves 18s selected against a model that will not take it.
 - **The clip is ingested into our bucket, never left on FAL.** FAL's URL is
   public, unauthenticated and not ours to keep alive -- and generation is
   non-deterministic, so a URL that 404s cannot be re-created by re-running the

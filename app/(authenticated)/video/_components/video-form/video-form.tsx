@@ -46,7 +46,6 @@ const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`
  */
 export function VideoForm({
   durationOptions,
-  modelCount,
   promptCount,
   needsConfirm,
   framesSlot,
@@ -62,14 +61,16 @@ export function VideoForm({
   aspectRatio,
   aspectOptions,
   onAspectRatioChange,
+  resolution,
+  resolutionOptions,
+  onResolutionChange,
   estimatedCost,
   isSubmitting,
   canSubmit,
   onSubmit,
 }: {
-  /** Intersected across every ticked model (#417) -- see `sharedDurations`. */
+  /** This model's, since the picker is single-select. */
   durationOptions: Array<number>
-  modelCount: number
   promptCount: number
   /** The estimate crossed the threshold; ask before submitting. */
   needsConfirm: boolean
@@ -92,6 +93,11 @@ export function VideoForm({
    *  works -- H3's image endpoint follows the frame it is given (#385). */
   aspectOptions: Array<string>
   onAspectRatioChange: (value: string) => void
+  /** The chosen tier. Meaningless where `resolutionOptions` is empty. */
+  resolution: string
+  /** Empty for a model that renders at one size -- see `resolutionsFor`. */
+  resolutionOptions: Array<{ id: string; pricePerSecondCents: number }>
+  onResolutionChange: (value: string) => void
   estimatedCost: number
   isSubmitting: boolean
   canSubmit: boolean
@@ -111,7 +117,7 @@ export function VideoForm({
     if (needsConfirm) {
       const ok = await confirm({
         title: `Generate ${pendingCount} clips?`,
-        message: `${plural(promptCount, 'prompt')} x ${plural(modelCount, 'model')}, one clip each, about ${formatCents(estimatedCost)}. Cancel to change the models or the duration.`,
+        message: `${plural(promptCount, 'prompt')}, one clip each, about ${formatCents(estimatedCost)}. Cancel to change the model, the duration or the resolution.`,
         confirmLabel: `Generate ${pendingCount}`,
         destructive: false,
       })
@@ -168,6 +174,25 @@ export function VideoForm({
               options={aspectOptions.map((ratio) => ({
                 value: ratio,
                 label: ratio === 'auto' ? 'Match image' : ratio,
+              }))}
+            />
+          </div>
+        )}
+
+        {/* Same rule, and the first control that exists for one model and not
+            the others -- which single-select is what makes possible. It moves
+            the price, so the CostNote below tracks it. */}
+        {resolutionOptions.length > 0 && (
+          <div className={styles.control}>
+            <span className={styles.label}>Resolution</span>
+            <SingleSelect
+              value={resolution}
+              onChange={(value) =>
+                onResolutionChange(value ?? resolutionOptions[0].id)
+              }
+              options={resolutionOptions.map((r) => ({
+                value: r.id,
+                label: r.id.toLowerCase(),
               }))}
             />
           </div>

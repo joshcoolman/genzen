@@ -6,12 +6,12 @@ import {
   aspectRatiosFor,
   endpointFor,
   estimateCostCents,
-  estimateMultiCostCents,
   expandVideoFilterId,
   frameCapacityFor,
-  sharedAspectRatios,
-  sharedDurations,
+  resolutionFor,
+  resolutionsFor,
   supportsEndImage,
+  takesFirstFrame,
   videoEndpointIds,
   videoFilterOptions,
   videoModelBySlug,
@@ -22,6 +22,7 @@ import {
 const LTX = videoModelBySlug('ltx-2.5-fast')!
 const H3 = videoModelBySlug('minimax-h3')!
 const FLUX = videoModelBySlug('flux-3')!
+const H3_MAX = videoModelBySlug('minimax-h3-max')!
 
 /**
  * The lineup is three hand-verified records and the submit builds its whole
@@ -99,7 +100,9 @@ describe('entries', () => {
     // silently drops the frame and generates from the prompt alone.
     for (const model of VIDEO_MODELS) {
       const { withImage, withFirstAndLastImage } = model.endpoints
-      expect(withImage.firstFrameParam, model.slug).toBeTruthy()
+      // Absent entirely on a text-to-video-only model, which is a different
+      // thing from present-and-unsendable.
+      if (withImage) expect(withImage.firstFrameParam, model.slug).toBeTruthy()
       if (withFirstAndLastImage) {
         expect(withFirstAndLastImage.firstFrameParam, model.slug).toBeTruthy()
       }
@@ -123,7 +126,7 @@ describe('entries', () => {
       if (!supportsEndImage(model)) continue
       const reachable =
         model.endpoints.withFirstAndLastImage?.acceptsEndImage ||
-        model.endpoints.withImage.acceptsEndImage
+        model.endpoints.withImage?.acceptsEndImage
       expect(reachable, model.slug).toBe(true)
     }
     expect(frameCapacityFor(FLUX)).toBe(2)
@@ -131,8 +134,8 @@ describe('entries', () => {
 
   it('lists cheapest first for the picker, without moving the default', () => {
     // The same rule the image lineup follows. It matters more here: the spread
-    // is $0.08 to $0.17 per *second*, so the bottom of the list is twice the
-    // top for the same clip.
+    // is $0.05 to $0.17 per *second*, so the bottom of the list is three times
+    // the top for the same clip.
     const prices = videoModelsByPrice().map((m) => m.pricePerSecondCents)
     expect(prices).toEqual([...prices].sort((a, b) => a - b))
     // Display only -- what you start on is a judgement about quality, and the
@@ -196,67 +199,78 @@ describe('endpoint identity', () => {
 })
 
 /**
- * Multi-model selection (#417). These matter because getting an intersection
- * wrong fails at FAL rather than here: a duration one model rejects is a
- * queued request that errors after you have already paid attention to it.
+ * One model at a time, and it gets its whole capability.
+ *
+ * Multi-select (#417) intersected every control down to what all the ticked
+ * models agreed on. These pin what replaced it: a model may now carry a
+ * control none of the others has, and a model may refuse frames entirely --
+ * both of which an intersection made unrepresentable.
  */
-describe('multi-model settings', () => {
-  it('offers only durations every selected model takes', () => {
-    const shared = sharedDurations([LTX, H3, FLUX])
-    for (const d of shared) {
-      expect(LTX.durations).toContain(d)
-      expect(H3.durations).toContain(d)
-      expect(FLUX.durations).toContain(d)
+describe('per-model capability', () => {
+  it('lets a text-to-video-only model say so', () => {
+    // The one model in the lineup with no image endpoint. The form hides both
+    // frame slots for it; the action drops a frame it is handed anyway.
+    expect(takesFirstFrame(H3_MAX)).toBe(false)
+    expect(H3_MAX.endpoints.withImage).toBeUndefined()
+    for (const model of VIDEO_MODELS) {
+      if (model === H3_MAX) continue
+      expect(takesFirstFrame(model), model.slug).toBe(true)
     }
-    // LTX starts at 6, so H3's 5 must not survive; H3 tops out at 15, so LTX's
-    // 18 and 20 must not either.
-    expect(shared).not.toContain(5)
-    expect(shared).not.toContain(18)
-    expect(shared).not.toContain(20)
   })
 
-  it('leaves one model alone', () => {
-    expect(sharedDurations([LTX])).toEqual(LTX.durations)
+  it('falls back to text-to-video rather than failing on a staged frame', () => {
+    // Refusing would turn an ordinary model switch into an error the person
+    // has to undo by clearing work they may still want.
+    expect(endpointFor(H3_MAX, true, true)).toBe(H3_MAX.endpoints.textToVideo)
+    expect(supportsEndImage(H3_MAX)).toBe(false)
+    expect(frameCapacityFor(H3_MAX)).toBe(1)
   })
 
-  it('excludes a model with no aspect control instead of emptying the list', () => {
-    // H3's image endpoint has no `aspect_ratio` param at all, which means
-    // "there is no control" -- not "no ratio works". Intersecting it literally
-    // would strip the control from LTX as well and hand FAL its default for a
-    // model perfectly able to honour a choice.
-    const shared = sharedAspectRatios([LTX, H3], true)
-    expect(aspectRatiosFor(H3, true)).toEqual([])
-    expect(shared.length).toBeGreaterThan(0)
-    expect(shared).toEqual(aspectRatiosFor(LTX, true))
+  it('offers a resolution control only where the model has tiers', () => {
+    expect(resolutionsFor(H3_MAX).map((r) => r.id)).toEqual(['480P', '768P'])
+    // Empty is "no control", not "no resolution" -- the others still send
+    // their fixed one.
+    for (const model of VIDEO_MODELS) {
+      if (model === H3_MAX) continue
+      expect(resolutionsFor(model), model.slug).toEqual([])
+      expect(model.resolution, model.slug).toBeTruthy()
+    }
   })
 
-  it('intersects the models that do have aspect options', () => {
-    const shared = sharedAspectRatios([LTX, FLUX], true)
-    // LTX offers auto/16:9/9:16; Flux 3 offers those and more. The narrower
-    // list wins, and nothing outside it is offered.
-    expect(shared).toEqual(['auto', '16:9', '9:16'])
+  it('names a tier the model actually offers, or its own', () => {
+    // The estimate and the submit both go through this, so a price quoted at
+    // 480P against a clip rendered at 768P is the bug it prevents.
+    expect(resolutionFor(H3_MAX, '768P')).toBe('768P')
+    expect(resolutionFor(H3_MAX, '2160p')).toBe(H3_MAX.resolution)
+    expect(resolutionFor(LTX, '768P')).toBe(LTX.resolution)
+    expect(resolutionFor(H3, undefined)).toBe(H3.resolution)
   })
 
-  it('is empty when no model is selected', () => {
-    expect(sharedDurations([])).toEqual([])
-    expect(sharedAspectRatios([], true)).toEqual([])
+  it('prices a clip at the tier it will actually render', () => {
+    // 480P is 5c/s and 768P is 8c/s, so the same 6s clip is 30c or 48c -- the
+    // whole reason the control exists.
+    expect(estimateCostCents(H3_MAX, 6, '480P')).toBe(30)
+    expect(estimateCostCents(H3_MAX, 6, '768P')).toBe(48)
+    // A tier this model does not offer prices at its default, never at
+    // another model's rate.
+    expect(estimateCostCents(H3_MAX, 6, '1080p')).toBe(30)
+    expect(estimateCostCents(LTX, 6, '768P')).toBe(LTX.pricePerSecondCents * 6)
   })
 
-  it('sums the cost across models rather than scaling one', () => {
-    // The models are priced differently, so a single figure times a count
-    // would be wrong the moment two models disagree. LTX is 9c/s and Flux 3
-    // is 17c/s, so 6s of both is 54 + 102.
-    expect(estimateMultiCostCents([LTX, FLUX], 6, 1)).toBe(
-      estimateCostCents(LTX, 6) + estimateCostCents(FLUX, 6),
-    )
-  })
-
-  it('multiplies by prompts, one clip per model each', () => {
-    const one = estimateMultiCostCents([LTX, FLUX], 6, 1)
-    expect(estimateMultiCostCents([LTX, FLUX], 6, 3)).toBe(one * 3)
-  })
-
-  it('costs nothing with no model selected', () => {
-    expect(estimateMultiCostCents([], 6, 4)).toBe(0)
+  it('keeps the default resolution inside the offered tiers', () => {
+    for (const model of VIDEO_MODELS) {
+      const tiers = resolutionsFor(model)
+      if (tiers.length === 0) continue
+      expect(
+        tiers.map((r) => r.id),
+        model.slug,
+      ).toContain(model.resolution)
+      // The headline price must be the default tier's, or the picker sorts on
+      // a number the form never charges.
+      const tier = tiers.find((r) => r.id === model.resolution)!
+      expect(tier.pricePerSecondCents, model.slug).toBe(
+        model.pricePerSecondCents,
+      )
+    }
   })
 })
