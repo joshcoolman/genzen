@@ -11,7 +11,11 @@ import {
 } from 'lucide-react'
 import styles from './video-thumb.module.css'
 import type { VideoRecord } from '../../_actions/generate-video.action'
-import { aspectLabel, aspectRatio } from '#/features/video/clip-facts'
+import {
+  aspectLabel,
+  aspectRatio,
+  namedRatio,
+} from '#/features/video/clip-facts'
 import { imageUrl } from '#/lib/image-url'
 
 /**
@@ -126,7 +130,11 @@ export function VideoThumb({
   isContinuing: boolean
 }) {
   const duration = durationOf(video)
-  const ratio = aspectRatio(video)
+  /* Snapped to the shape it reads as, not the exact rectangle FAL returned.
+     One 21:9 request comes back as both 1504x672 and 1568x672; sized from the
+     raw ratio, two cards captioned `21:9` sat at different heights beside each
+     other while every other part of the app called them one shape. */
+  const ratio = namedRatio(aspectRatio(video))
   const shape = aspectLabel(ratio)
   /* 16:9 when the row does not know its shape -- a poster that never decoded
      (#499), or a clip that has not been made yet. */

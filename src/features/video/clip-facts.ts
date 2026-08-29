@@ -67,6 +67,27 @@ const NAMED: Array<[string, number]> = [
   ['3:2', 3 / 2],
 ]
 
+/**
+ * A ratio snapped to the named shape it counts as, or left alone when it counts
+ * as none.
+ *
+ * **For laying out, where the exact number is a liability.** The lineup returns
+ * 1504x672 (2.238) and 1568x672 (2.333) for the same request; both are 21:9 by
+ * `sameAspect`, both say "21:9" in a caption, and a stage sized from the raw
+ * ratio then made one card ~14px shorter than the one beside it. Three parts of
+ * the app calling them the same shape and a fourth disagreeing is the
+ * contradiction, not the pixels.
+ *
+ * The cost is under the tolerance by definition -- at most 5% of the picture
+ * cropped or matted, which is the same 5% the app already treats as no
+ * difference at all.
+ */
+export function namedRatio(ratio: number | null): number | null {
+  if (ratio == null) return null
+  const named = NAMED.find(([, value]) => sameAspect(ratio, value))
+  return named ? named[1] : ratio
+}
+
 /** A ratio as a person would say it, falling back to a decimal for the ones
  *  nothing in the lineup produces. */
 export function aspectLabel(ratio: number | null): string | null {

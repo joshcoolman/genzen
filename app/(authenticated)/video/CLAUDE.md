@@ -168,6 +168,14 @@ source images; `use-view.ts` owns everything after the first paint.
   one — the stage lands on the nearest bound and `object-fit: contain` centres
   the clip in it, which is the standard box a vertical clip wants anyway.
 
+  **The shape is the one the caption names, not the exact rectangle FAL
+  returned** (`namedRatio`). One 21:9 request comes back as both 1504x672
+  (2.238) and 1568x672 (2.333); `sameAspect` calls them one shape, the caption
+  says `21:9` on both, and a stage sized from the raw ratio then stood two such
+  cards ~14px apart in height. Three parts of the app agreeing and a fourth
+  disagreeing was the bug — the crop it costs is under the 5% the app already
+  treats as no difference.
+
   **The clamp is there because `VideoList` is a grid and grid rows are as tall
   as their tallest card.** Unbounded, a portrait clip is a card three times the
   height of the 21:9 one beside it and every short card in that row sits over
