@@ -154,11 +154,13 @@ source images; `use-view.ts` owns everything after the first paint.
   flex items disagree by a pixel when their intrinsic widths differ -- the seam
   down the middle of the card is the one place that shows.
 
-  **They take the clip's own aspect ratio, set inline from `width`/`height`**,
-  so they are edge-to-edge: nothing letterboxed, nothing cropped, and the pair's
-  outline is one more place the shape is legible. No fixed height -- the column
-  is half the card and the height follows the shape, so a 21:9 pair is short and
-  a portrait pair is tall, which is what the clip is.
+  **The strip owns the height, not the frames** — one `aspect-ratio` on the
+  container, twice one frame's, with both cells at `height: 100%`. Sized
+  separately the two derive a height from a fractional column width and round
+  differently: the last frame rode a pixel high, and a hairline of card showed
+  under the first while the clip played. One height computed once cannot
+  disagree with itself, and `overflow: hidden` clips what is left of a
+  fractional column.
 
   **The stage takes the clip's own shape, clamped to between 21:9 and 4:3.**
   Set inline from `width`/`height`, the same way the two frames are. Within the

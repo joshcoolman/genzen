@@ -138,15 +138,17 @@ export function VideoThumb({
   const shape = aspectLabel(ratio)
   /* 16:9 when the row does not know its shape -- a poster that never decoded
      (#499), or a clip that has not been made yet. */
-  const stageShape = {
-    aspectRatio: String(
-      ratio ? Math.min(Math.max(ratio, TALLEST), WIDEST) : 16 / 9,
-    ),
-  }
-  /* The clip's own shape, so the frames below are edge-to-edge. 16:9 only when
-     the row does not know -- a poster that never decoded (#499) -- where a
-     guess is better than a frame with no box at all. */
-  const endShape = { aspectRatio: ratio ? String(ratio) : '16 / 9' }
+  const stage = ratio ? Math.min(Math.max(ratio, TALLEST), WIDEST) : 16 / 9
+  const stageShape = { aspectRatio: String(stage) }
+  /**
+   * The two frames as one box, twice as wide as one of them.
+   *
+   * **On the strip, not on each frame.** Sized separately they each derive a
+   * height from a fractional column width, and the two roundings disagree by a
+   * pixel: the last frame rode a pixel high, and a hairline of card showed
+   * under the first. One height, computed once, cannot disagree with itself.
+   */
+  const stripShape = { aspectRatio: String(stage * 2) }
   const isDone = video.status === 'completed'
 
   /**
@@ -254,10 +256,9 @@ export function VideoThumb({
           stacked. Finished clips only -- there are no frames of a clip that
           does not exist yet, and a failed one has none at all. */}
       {isDone ? (
-        <div className={styles.ends}>
+        <div className={styles.ends} style={stripShape}>
           <img
             className={styles.end}
-            style={endShape}
             src={imageUrl(video.id, 'thumb')}
             alt="First frame"
             title="First frame"
@@ -282,7 +283,6 @@ export function VideoThumb({
           >
             <img
               className={styles.end}
-              style={endShape}
               src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
               alt=""
             />
