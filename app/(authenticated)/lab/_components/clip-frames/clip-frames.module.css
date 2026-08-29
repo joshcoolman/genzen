@@ -1,0 +1,23 @@
+.frames {
+  display: flex;
+  align-items: stretch;
+}
+
+/* The clip's own middle, skipped. Deliberately quiet -- it separates two frames
+   of the same clip, and must not compete with the space around the pair, which
+   is where one clip ends and the next begins. */
+.frames > * + * {
+  border-left: 1px solid var(--border);
+}
+
+/* Matches the `MediaBox` beside it exactly: same box, same letterboxing, same
+   mat -- which is why width, height and padding are set at the call site from
+   the same numbers that size the box. A pixel of difference here reads as the
+   two frames being different sizes, which would be a fact about the clip that
+   is not true. */
+.end {
+  flex: none;
+  border-radius: var(--radius-md);
+  background: var(--image-backing);
+  object-fit: contain;
+}

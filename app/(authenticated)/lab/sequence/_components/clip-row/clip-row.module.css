@@ -1,20 +1,25 @@
-/* Scrolls rather than wraps: a run is a line, and a second row of it would read
-   as two runs. */
+/* Wraps rather than scrolls. A run reads best as one line, but past three clips
+   a line puts the rest of the run off-screen, and arranging something you
+   cannot see beside where it goes is the job this page exists for. */
 .row {
-  /* Paired with `TILE` in the component, which sizes the `MediaBox` -- the same
+  /* Paired with `TILE` in the component, which sizes the frames -- the same
      split `clip-picker` makes, since a `MediaBox` is sized in px rather than by
      its container. */
   --tile: 108px;
 
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   /* Wider than the seam inside a tile (#512). The two gaps have to be tellable
      apart: this one is a cut between clips, that one is one clip's own middle
-     skipped over. Same-sized gaps turn the row into an undifferentiated strip
+     skipped over. Same-sized gaps turn the run into an undifferentiated strip
      of frames and the cut stops being visible at all. */
-  gap: var(--space-16);
+  column-gap: var(--space-16);
+  /* Wider still, so a wrap reads as the run continuing rather than as another
+     cut. The line break is already a weaker join than a gap; matching the two
+     would make it look like a stronger one. */
+  row-gap: var(--space-24);
   padding-block: var(--space-8);
-  overflow-x: auto;
 }
 
 .tile {
@@ -30,41 +35,12 @@
   cursor: grabbing;
 }
 
-/* Where the player is. A filled edge rather than a glow: the row is scanned
-   sideways while a run plays, and a tint on a tile that is mostly picture does
-   not survive whatever the picture happens to be. */
+/* Where the player is. A filled edge rather than a glow: the run is scanned
+   while it plays, and a tint on a tile that is mostly picture does not survive
+   whatever the picture happens to be. */
 .tilePlaying {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
-}
-
-.frames {
-  display: flex;
-  align-items: stretch;
-}
-
-/* The clip's own middle, skipped. Deliberately quiet -- it separates two frames
-   of the same clip, and must not compete with the gap between tiles, which is
-   the cut. */
-.frames > * + * {
-  border-left: 1px solid var(--border);
-}
-
-/* Matches the `MediaBox` beside it exactly: same box, same letterboxing, same
-   mat. A pixel of difference here reads as the two frames being different
-   sizes, which would be a fact about the clip that is not true. */
-.endFrame {
-  flex: none;
-  width: var(--tile);
-  height: var(--tile);
-  padding: 10px;
-  border-radius: var(--radius-md);
-  background: var(--image-backing);
-  object-fit: contain;
-}
-
-.endMissing {
-  composes: endFrame;
 }
 
 /* The tile being carried, not the gap it will land in -- the browser draws the
@@ -73,10 +49,32 @@
   opacity: 0.4;
 }
 
-/* Where it would land. A lit edge rather than a moving gap: shuffling the row
-   under the pointer makes the drop target move away from the pointer. */
-.tileOver {
-  border-color: var(--accent);
+/* The insertion point, drawn in the gap it will land in rather than on a tile.
+   A bar rather than a lit border or a shuffled gap: a border says "this tile"
+   when the answer is a position between two of them, and opening a real gap
+   under the pointer moves the drop target away from the pointer.
+
+   Half the column gap out, so it sits in the middle of the space between two
+   tiles and belongs to neither. It overhangs the tile at the ends of a wrapped
+   line, which is correct -- that is still where the clip lands. */
+.gapBefore::before,
+.gapAfter::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 2px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  content: '';
+}
+
+.gapBefore::before {
+  left: calc(-1 * var(--space-8) - 1px);
+}
+
+.gapAfter::after {
+  right: calc(-1 * var(--space-8) - 1px);
 }
 
 .ordinal {
@@ -118,7 +116,7 @@
   color: var(--danger);
 }
 
-/* The same footprint as a tile, so the row keeps one rhythm whether it holds
+/* The same footprint as a tile, so the run keeps one rhythm whether it holds
    clips or only this. */
 .add {
   display: flex;
