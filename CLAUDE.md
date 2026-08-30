@@ -149,10 +149,25 @@ done for days. Split it or retitle it — never leave a card promising what has
 already shipped.
 
 **Which column: four labels — `focus`, `now`, `next`, `later`** — and an issue
-carrying none lands in Unsorted. `focus` is what is actively being worked out,
-one or two issues. `now` and `next` are queued work. Unsorted is blue sky:
-open-ended questions, major features not started, revisions needing discussion.
-A small concrete chore does not belong there.
+carrying none lands in Unsorted. They are five different questions, not five
+degrees of urgency:
+
+- **`focus`** — what this session is working on. One or two cards. It answers
+  "what are we doing", and an empty Focus column is the signal to promote from
+  Now.
+- **`now`** — queued for Focus, and the place for small things that should be
+  cleared before anything bigger starts. The shape: a bug noticed mid-session
+  that has been on the radar, does not affect much, but will bite later if it
+  is left. Not a session's worth of work — the thing you do so it stops being
+  in the way.
+- **`next`** — just outside the current session. An accurate read on what to
+  expect, which is the whole job: if Next is wrong, the board stops being worth
+  looking at.
+- **`later`** — the dumping ground. Real, understood, not soon. Nothing here is
+  waiting on a decision.
+- **Unsorted** — the backlog. Big, vague, captured rather than planned; go/no-go
+  questions and major features nobody has committed to. A small concrete chore
+  does not belong here — that is a `later` at worst.
 
 **Where in the column: an integer key in the issue body**, written as
 `<!-- upnext: 150 -->` at the very end. GitHub strips it from rendered HTML, so
