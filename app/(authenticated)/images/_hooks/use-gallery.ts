@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SavedAiImage } from '#/features/ai-images/types'
 import { toast } from '#/components'
 import { retryGeneration } from '#/features/ai-images/server/retry-generation.action'
-import { updateImageOrder } from '#/features/ai-images/server/update-image-order.action'
 import { GALLERY_SEED_LIMIT } from '#/features/ai-images/gallery-seed'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { imageUrl } from '#/lib/image-url'
@@ -74,7 +73,6 @@ export interface GalleryState {
   ) => void
   removeOptimisticCard: (optimisticId: string) => void
   setImageUrl: (id: string, url: string) => void
-  reorderImages: (draggedId: string, newSortOrder: number) => Promise<void>
   retryImage: (img: SavedAiImage) => Promise<void>
   refresh: (options?: RefreshOptions) => Promise<void>
 }
@@ -294,23 +292,6 @@ export function useGallery({
     }
   }
 
-  async function reorderImages(draggedId: string, newSortOrder: number) {
-    const prev = savedImages
-    setSavedImages((current) =>
-      sortByOrder(
-        current.map((img) =>
-          img.id === draggedId ? { ...img, sort_order: newSortOrder } : img,
-        ),
-      ),
-    )
-
-    try {
-      await updateImageOrder({ imageId: draggedId, sortOrder: newSortOrder })
-    } catch {
-      setSavedImages(prev)
-    }
-  }
-
   return {
     images: savedImages,
     imageUrls,
@@ -324,7 +305,6 @@ export function useGallery({
     replaceOptimisticCard,
     removeOptimisticCard,
     setImageUrl,
-    reorderImages,
     retryImage,
     refresh: loadSavedImages,
   }

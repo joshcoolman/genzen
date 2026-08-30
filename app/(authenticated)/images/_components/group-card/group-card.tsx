@@ -18,6 +18,7 @@ import {
   Thumbnail,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 /** Five, filling the caption's width. A group with fewer members still draws
  *  five cells -- the empty ones ghost, which keeps the row the same shape on
@@ -53,6 +54,13 @@ interface GroupCardProps {
   /** Something in the grid is selected (#325). A group cannot join a selection,
    *  so it steps out of the way rather than offering its own verbs. */
   selectionActive?: boolean
+  /** A drag is in flight somewhere in the grid (#438). The card is inert to
+   *  clicks during a selection and live to drops at the same time -- which is
+   *  not a contradiction but does have to be deliberate, so the dimming that
+   *  says "not for you" lifts for as long as there is something to catch. */
+  dragActive?: boolean
+  /** The pointer is over this card right now. */
+  dropActive?: boolean
 }
 
 /**
@@ -87,6 +95,8 @@ export function GroupCard({
   expanded = false,
   members,
   selectionActive,
+  dragActive = false,
+  dropActive = false,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
   // the rows the grid is currently rendering, and a group's members are
@@ -231,7 +241,13 @@ export function GroupCard({
          image card is. A group can never be part of the selection, and opening
          one navigates *and* drops the selection on the way in -- so a stray
          click here used to throw away the picking that was in progress. */
-      dimmed={selectionActive}
+      dimmed={selectionActive && !dragActive}
+      className={cx(dragActive && styles.droppable, dropActive && styles.over)}
+      /* The drag's drop targets are found by hit-testing (#438), so the card
+         has to name itself in the DOM. Always present: measuring happens once
+         at drag start, and a target that only appears mid-drag would never be
+         measured. */
+      dataAttrs={{ 'data-drop-group-id': group.id }}
       /* `...` and nothing else. The trash that sat in the opposite corner went
          in #431: it was the same icon in the same place an image card carries
          one, in a grid that mixes the two, so the click that bins a whole
@@ -251,7 +267,18 @@ export function GroupCard({
       fallback={<div className={styles.empty} />}
       /* The slot an image card fills with the model name. Same corner, same
          register: it says what kind of thing the picture is standing for. */
-      imageOverlay={<span className={styles.kind}>Image group</span>}
+      imageOverlay={
+        <>
+          <span className={styles.kind}>Image group</span>
+          {/* Confirmation before you let go, and it names the destination
+              rather than saying "Add to group" -- with four cards on screen
+              the question is *which* one, and the generic phrasing answers
+              the one you were not asking. */}
+          {dropActive && (
+            <span className={styles.dropHint}>Add to {group.name}</span>
+          )}
+        </>
+      }
       onClick={selectionActive ? undefined : () => onOpen(group)}
     >
       {showInfo && (

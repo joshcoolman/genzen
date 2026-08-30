@@ -234,6 +234,12 @@ export function ImageCard({
       className={
         selectionActive && !selected ? styles.selectableTile : undefined
       }
+      /* Where the grid's drag finds the card it lifted (#438). On every image
+         card, not only in select mode: dragging one thumbnail onto a group is
+         the single-image half of the gesture. A group card carries
+         `data-drop-group-id` instead -- groups do not nest, so one is a
+         destination and never a passenger. */
+      dataAttrs={{ 'data-drag-image-id': img.id }}
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : cornerAction}
       imageOverlay={

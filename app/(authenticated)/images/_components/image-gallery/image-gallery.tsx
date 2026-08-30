@@ -1,3 +1,4 @@
+import { useDragToGroup } from '../../_hooks/use-drag-to-group'
 import { useSweepSelect } from '../../_hooks/use-sweep-select'
 import { GroupCard } from '../group-card/group-card'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
@@ -83,6 +84,13 @@ interface ImageGalleryProps {
   /** Shift-drag across the grid (#440): every card the rectangle touches
    *  joins. Additive only -- see `useSweepSelect`. */
   onSweepSelect?: (ids: Array<string>) => void
+  /** Every picked id, in grid order -- what comes along when the drag starts
+   *  on a card that is part of the selection (#438). */
+  selectedIds?: Array<string>
+  /** Drag a thumbnail onto a group card to file it there (#438). The same
+   *  write the picker dialog makes; absent inside a group, where there are no
+   *  group cards to drop onto. */
+  onDropOnGroup?: (groupId: string, ids: Array<string>) => void
   /** A click on the grid's own background -- the gaps between cards. Clearing
    *  the selection is what it means (#439); absent when there is none. */
   onBackgroundClick?: () => void
@@ -120,6 +128,8 @@ export function ImageGallery({
   isSelected,
   onSelect,
   onSweepSelect,
+  selectedIds,
+  onDropOnGroup,
   onBackgroundClick,
 }: ImageGalleryProps) {
   /* Shift-drag to sweep (#440). Only once select mode is on, which is what
@@ -131,6 +141,18 @@ export function ImageGallery({
     enabled: Boolean(selectionActive && onSweepSelect),
     onSweep: onSweepSelect ?? (() => {}),
   })
+  /* Drag a card onto a group card to file it (#438). Shift tells this apart
+     from the sweep above -- one press, two gestures, and the modifier decides
+     which. Enabled wherever there is a write to call: inside a group the grid
+     holds no group cards, so the hook arms and finds nothing to drop onto. */
+  const drag = useDragToGroup({
+    enabled: Boolean(onDropOnGroup),
+    selectionActive: Boolean(selectionActive),
+    isSelected: isSelected ?? (() => false),
+    selectedIds: selectedIds ?? [],
+    onDrop: onDropOnGroup ?? (() => {}),
+  })
+
   /* The gaps between cards are empty space too, and they belong to the grid
      rather than to the frame around it (#439). Identity again, never a bubbled
      click: everything in this grid is something you can click on purpose. */
@@ -149,9 +171,15 @@ export function ImageGallery({
         </EmptyState>
       ) : (
         <div
-          className={cx(styles.grid, sweep.sweeping && styles.sweeping)}
+          className={cx(
+            styles.grid,
+            (sweep.sweeping || drag.dragging) && styles.sweeping,
+          )}
           onClick={clearOnBackground}
-          onPointerDown={sweep.onPointerDown}
+          onPointerDown={(e) => {
+            sweep.onPointerDown(e)
+            drag.onPointerDown(e)
+          }}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
             // without touching layout, so the grid would keep its old
@@ -205,6 +233,8 @@ export function ImageGallery({
                   onDissolve={onDissolveGroup ?? (() => {})}
                   onTrash={onTrashGroup}
                   selectionActive={selectionActive}
+                  dragActive={drag.dragging}
+                  dropActive={drag.drag?.overGroupId === group.id}
                 />
               )
             }
@@ -270,6 +300,37 @@ export function ImageGallery({
       {/* Outside the grid on purpose: the grid carries `zoom`, and a rectangle
           drawn inside it would be scaled along with the cards. Fixed, in
           client coordinates, over everything and taking nothing. */}
+      {/* What is in the air, under the pointer and taking nothing -- a target
+          that moved with the cursor would be the only thing the hit test ever
+          found. Fixed and outside the grid for the same reason the marquee is:
+          the grid carries `zoom`. */}
+      {drag.drag && (
+        <div
+          className={styles.dragPreview}
+          style={{ left: drag.drag.x, top: drag.drag.y }}
+        >
+          {/* Three at most, fanned. Beyond that the count says it -- a stack
+              of nine thumbnails is a picture of a stack rather than of what is
+              moving. */}
+          {drag.drag.ids.slice(0, 3).map((id, i) => (
+            <span
+              key={id}
+              className={styles.dragThumb}
+              style={{
+                backgroundImage: imageUrls[id]
+                  ? `url(${imageUrls[id]})`
+                  : undefined,
+                transform: `translate(${i * 6}px, ${i * 6}px)`,
+                zIndex: 3 - i,
+              }}
+            />
+          ))}
+          {drag.drag.ids.length > 1 && (
+            <span className={styles.dragCount}>{drag.drag.ids.length}</span>
+          )}
+        </div>
+      )}
+
       {sweep.rect && (
         <div
           className={styles.marquee}

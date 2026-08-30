@@ -420,7 +420,7 @@ source images; `use-view.ts` owns everything after the first paint.
   be no exception. Picking and watching are different things to be doing, and
   the wall is one or the other: in select mode every card is a poster and a
   tick, with nothing under the picture that a click would rather have gone to.
-  It briefly covered every card *except* the playing one, whose scrubber was in
+  It briefly covered every card _except_ the playing one, whose scrubber was in
   use -- a rule that had to be stated, and that read on the wall as one tile
   behaving unlike its neighbours. The card rewinds itself on the way out, the
   same as when another card takes playback.
