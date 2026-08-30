@@ -301,12 +301,23 @@
   z-index: 3;
 }
 
-/* **Sized so the `...` circle matches the select tick** (#537). The tick is a
+/* The corner action (#537), in the slot #536 emptied of the model label. Same
+   offsets as `.actions`, mirrored -- the gallery card's arrangement exactly:
+   menu one side, the safe one-click verb the other, the tick below. */
+.cornerAction {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  z-index: 3;
+}
+
+/* **Sized so the `...` circle, the corner action and the select tick all
+   match** (#536, #537). The tick is a
    flat `1.25rem`; `ExpandableIconButton`'s pill is its icon plus `--space-4`
    of padding on each side, so a `0.75rem` glyph lands the circle on the same
-   20px. They are the only two always-on markers on the picture and they sit in
-   opposite corners of it -- at two diameters they read as two systems rather
-   than as one pair.
+   20px. They are the always-on markers on the picture and they sit in three of
+   its corners -- at two diameters they read as two systems rather than as one
+   set. Shared by the menu's glyph and the corner action's.
 
    The icon, not the padding: the padding is the primitive's, shared with every
    other overlay button in the app. */

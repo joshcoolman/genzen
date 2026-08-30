@@ -3,18 +3,29 @@
 import { ChevronDown, EyeOff, ScanSearch } from 'lucide-react'
 import { useState } from 'react'
 import styles from './hidden-bar.module.css'
-import type { SavedAiImage } from '#/features/ai-images/types'
+import { imageUrl } from '#/lib/image-url'
 import { cx } from '#/lib/utils'
 
+/** All the bar needs of a row: something to draw and something to name it in a
+ *  tooltip. A still and a clip both satisfy it -- a clip has had a real poster
+ *  at `?v=thumb` since #499, so nothing here is picture-specific (#537). */
+interface HiddenRow {
+  id: string
+  title: string
+}
+
 interface HiddenBarProps {
-  hidden: Array<SavedAiImage>
-  imageUrls: Record<string, string>
+  hidden: Array<HiddenRow>
   /** Clear every hidden row at once and dismiss the bar. */
   onShowAll: () => void
-  /** One picture back, from the tray. */
+  /** One back, from the tray. */
   onUnhide: (id: string) => void
   focusCount: number | null
   onClearFocus: () => void
+  /** What the things are called on this surface -- "image" or "clip". The bar
+   *  counts them out loud, and "3 hidden images" over a wall of video is the
+   *  kind of wrong that makes a shared component read as a port. */
+  noun?: { one: string; many: string }
 }
 
 /**
@@ -39,11 +50,11 @@ interface HiddenBarProps {
  */
 export function HiddenBar({
   hidden,
-  imageUrls,
   onShowAll,
   onUnhide,
   focusCount,
   onClearFocus,
+  noun = { one: 'image', many: 'images' },
 }: HiddenBarProps) {
   const [open, setOpen] = useState(false)
   const [overIcon, setOverIcon] = useState(false)
@@ -57,7 +68,7 @@ export function HiddenBar({
       <div className={cx(styles.bar, styles.focus)}>
         <ScanSearch className={styles.icon} />
         <span className={styles.count}>
-          Showing {focusCount} {focusCount === 1 ? 'image' : 'images'}
+          Showing {focusCount} {focusCount === 1 ? noun.one : noun.many}
         </span>
         <button type="button" className={styles.action} onClick={onClearFocus}>
           Show all
@@ -88,7 +99,7 @@ export function HiddenBar({
           className={cx(styles.iconButton, overIcon && styles.iconButtonOn)}
           role="button"
           tabIndex={0}
-          aria-label="Show all hidden images"
+          aria-label={`Show all hidden ${noun.many}`}
           onMouseEnter={() => setOverIcon(true)}
           onMouseLeave={() => setOverIcon(false)}
           onFocus={() => setOverIcon(true)}
@@ -127,15 +138,15 @@ export function HiddenBar({
               title={`Show ${img.title}`}
               onClick={() => onUnhide(img.id)}
             >
-              {imageUrls[img.id] && (
-                /* A plain `img`: these are small thumbs of a URL the gallery
-                   already resolved, and `Thumbnail` carries a whole overlay
-                   and badge system the tray has no use for. `contain` on a
-                   dark square, as the grid does -- a square crop of a portrait
-                   picture is its middle band, and two portraits from one
-                   prompt crop to the same stripe. */
-                <img src={imageUrls[img.id]} alt={img.title} />
-              )}
+              {/* A plain `img`, and the URL is built here rather than passed
+                  in a map: `imageUrl` is the one place a URL is constructed
+                  and a row id is all it needs, so the bar no longer asks the
+                  caller for something it can derive. `Thumbnail` carries a
+                  whole overlay and badge system the tray has no use for.
+                  `contain` on a dark square, as the grid does -- a square crop
+                  of a portrait picture is its middle band, and two portraits
+                  from one prompt crop to the same stripe. */}
+              <img src={imageUrl(img.id, 'thumb')} alt={img.title} />
             </button>
           ))}
         </div>

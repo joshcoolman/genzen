@@ -1,10 +1,17 @@
 'use client'
 
-import { FolderMinus, FolderPlus, Trash2 } from 'lucide-react'
+import {
+  EyeOff,
+  FolderMinus,
+  FolderPlus,
+  ScanSearch,
+  Trash2,
+} from 'lucide-react'
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../_components/model-selector/model-selector'
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
+import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
@@ -42,6 +49,9 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     clearSources,
     clearEndSources,
     cells,
+    visibility,
+    hideSelected,
+    focusSelected,
     groups,
     expandedGroupIds,
     groupMembers,
@@ -130,10 +140,30 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
       <div className={styles.columns}>
         <div className={styles.clips}>
+          {/* Above the wall, not under it (#504, #537): a statement about
+              clips that are missing is no use in the place you reach after
+              running out of clips. */}
+          <HiddenBar
+            hidden={visibility.hiddenImages.map((video) => ({
+              id: video.id,
+              // A clip's `title` is its model, which is the wrong word in a
+              // tooltip that says "Show <this>". The prompt is what names the
+              // take, and a clip made before prompts were stored falls back to
+              // the word for the thing.
+              title: video.description ?? 'clip',
+            }))}
+            onShowAll={() => void visibility.showAll()}
+            onUnhide={(id: string) => void visibility.unhide([id])}
+            focusCount={visibility.focusIds?.size ?? null}
+            onClearFocus={visibility.clearFocus}
+            noun={{ one: 'clip', many: 'clips' }}
+          />
+
           <VideoList
             cells={cells}
             isInGroup={!!activeGroupId}
             onDelete={(id) => void deleteVideo(id)}
+            onHide={(id) => void visibility.hide([id])}
             onContinue={(video) => void continueFrom(video)}
             playingId={playingId}
             onPlay={setPlayingId}
@@ -253,10 +283,13 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
         </div>
       </div>
 
-      {/* Three verbs, against Images' seven (#517). A still is a thing you
-          file, sheet, zip and share; a clip is a take you group or prune.
+      {/* Five verbs, against Images' seven. A still is a thing you file,
+          sheet, zip and share; a clip is a take you group, hide or prune.
           There is no reference sheet -- a sheet of clips is not a thing -- and
-          no zip in this pass. */}
+          no zip in this pass (#517). Hide and Focus arrived in #537: a wall of
+          takes of one shot is mostly near-misses you want out of the way while
+          you judge the two that worked, and trashing one to tidy up is a real
+          loss. */}
       <SelectionDrawer count={selectedCount} onClear={clearSelection}>
         <Button
           variant="secondary"
@@ -280,6 +313,28 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             Remove from group
           </Button>
         )}
+        {/* Hide and Focus are a pair and stay one (#537): Focus shows only
+            the selection, Hide removes only it, and neither destroys
+            anything. They sit before Trash, which is the only verb here that
+            does. */}
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isBatchDeleting || visibility.busy}
+          onClick={() => void hideSelected()}
+        >
+          <EyeOff size={14} />
+          Hide
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={focusSelected}
+        >
+          <ScanSearch size={14} />
+          Focus
+        </Button>
         {/* Not `danger` and not "Delete": this moves rows to Trash, where they
             sit until it is emptied -- red belongs to Delete Forever. */}
         <Button

@@ -70,6 +70,7 @@ earned; see `docs/DELTAS.md`.
 | groups      | Named sets of library rows, one namespace per surface                | `src/features/groups/CLAUDE.md`      |
 | theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`       |
 | user-images | User image uploads, library, and asset management                    | `src/features/user-images/CLAUDE.md` |
+| visibility  | Hiding rows from a wall, and focusing on a few, without trashing     | `src/features/visibility/CLAUDE.md`  |
 | video       | The video lineup: three models, their endpoints, and what each takes | `src/features/video/CLAUDE.md`       |
 
 **Route-owned surfaces** — these had a `features/` folder until #181 and now

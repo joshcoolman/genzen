@@ -94,6 +94,28 @@ export const shortcutGroups: Array<ShortcutGroup> = [
     ],
   },
   {
+    where: 'On Video',
+    blurb:
+      'The clip card carries the gallery card’s corner gestures, and they mean the same things. What it does not carry is the whole-card click target — half the card is a player.',
+    items: [
+      {
+        keys: 'Click a clip’s corner icon',
+        what: 'Hide it',
+        note: 'It leaves the wall and stays in its group, still yours. The bar above says how many are hidden; Show puts all of them back.',
+      },
+      {
+        keys: '⌘-hover a clip’s corner icon',
+        what: 'It becomes Trash',
+        note: 'The destructive one takes a modifier, exactly as it does in the gallery. You never have to know it: the clip’s ••• menu has Delete, and the selection drawer keeps a plain Trash.',
+      },
+      {
+        keys: 'Click a clip’s tick',
+        what: 'Start selecting',
+        note: 'The tick is the only way in — the whole card is not a target, because half of it is a player and Continue owns the other corner.',
+      },
+    ],
+  },
+  {
     where: 'In the model picker',
     items: [
       { keys: 'Click the header tick', what: 'Select or clear every model' },

@@ -94,11 +94,13 @@ source images; `use-view.ts` owns everything after the first paint.
   all, so a clip and a still read as different
   kinds of record when they are the same row in the same table. **The player and
   both frames are one thumbnail, and the chrome sits on its corners** (#534) --
-  `...` top-left and the select tick bottom-left, the gallery card's own
-  corners. **The model is not up there** (#536): it is a fact in the caption,
-  because at #535's density a label nearly half the card's width, over a
-  half-width end frame, was the loudest thing on a card whose job is to show the
-  clip. Both markers that remain are **always
+  `...` top-left, the corner action top-right and the select tick bottom-left,
+  the gallery card's own corners. **The model is not up there** (#536): it is a
+  fact in the caption, because at #535's density a label nearly half the card's
+  width, over a half-width end frame, was the loudest thing on a card whose job
+  is to show the clip -- which is the corner #537 then filled with Hide, making
+  that a port rather than a decision. All three are 20px, which is #536's rule
+  about a matched set. Every marker is **always
   on**, where a still hides its `...` until hover: a clip card is a player, a
   pair of end frames and a caption, so it already reads as an object with
   controls rather than as a bare picture -- and the menu is the only route to
@@ -348,9 +350,10 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
-- **Several clips at once, and three verbs: Add to group, Remove from group,
-  Trash** (#517). Images' drawer carries seven -- a still is a thing you file,
-  sheet, zip and share; a clip is a take you group or prune. There is no
+- **Several clips at once, and five verbs: Add to group, Remove from group,
+  Hide, Focus, Trash** (#517, #537). Images' drawer carries seven -- a still is
+  a thing you file, sheet, zip and share; a clip is a take you group, hide or
+  prune. There is no
   reference sheet, because a sheet of clips is not a thing, and no zip yet.
   `useSelection` and `SelectionDrawer` are borrowed unchanged -- both exist so
   a route supplies the verbs and nothing else -- and the trash is
@@ -358,6 +361,24 @@ source images; `use-view.ts` owns everything after the first paint.
   `source`, so it was already right for clips. One call for the set (#329):
   React serialises server actions, so a loop would freeze the wall for one
   round trip per clip.
+- **Hide takes a clip off the wall without destroying it** (#537), and it is
+  `src/features/visibility/` -- promoted out of `images/_hooks/` in the same
+  change, on the two-consumer rule that moved groups here in #517. The same
+  shape as grouping was: `setImagesHidden` never filtered on `source`, so the
+  write was already right for a clip and only the surface was missing. It
+  matters more here than on a wall of stills -- a wall of takes of one shot is
+  mostly near-misses you want out of the way while you judge the two that
+  worked, and a clip is expensive enough that binning one to tidy up is a real
+  loss. **The corner icon hides; Cmd makes it Trash**, carried over from the
+  gallery card unchanged: trashing was the path of least resistance for tidying
+  a wall because it was the only one-click thing on it, so the ease points at
+  the safe verb and the destructive one keeps the same spot behind a modifier.
+  A second icon was the thing to avoid -- the mis-click that matters is the
+  destructive one. The `...` menu keeps a plain Delete, and both are at
+  `/account/shortcuts`. **`HiddenBar` sits above the wall**, app-shared since
+  #537; a hidden clip is out of a group card's swatch strip too, filtered
+  client-side exactly as #504 does it, and the group's `count` is left alone
+  because it is a fact about the group rather than a description of the screen.
 - **Groups are `src/features/groups/`, and this route is why they are there.**
   They were `images/_actions/` until #517; a clip has always been a
   `user_images` row, so it already carried `group_id` and no write had ever
