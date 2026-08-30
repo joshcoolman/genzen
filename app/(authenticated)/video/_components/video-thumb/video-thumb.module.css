@@ -340,6 +340,20 @@
   border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border));
 }
 
+/* The whole picture as a select target, in select mode only (#538). Under the
+   two markers above it -- they are `z-index: 3` -- so the tick and the `...`
+   keep their own clicks; everything else on the picture is this. Sized to the
+   unit, so it covers the player and both frames and stops at the caption. */
+.selectOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
 /* **Bottom-left, which is the gallery card's own corner** (#534). It was
    top-left while the chrome was positioned against the player, where the
    bottom edge belonged to native controls; against the unit that corner is the

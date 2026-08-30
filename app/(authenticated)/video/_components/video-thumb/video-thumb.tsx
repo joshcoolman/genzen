@@ -371,6 +371,25 @@ export function VideoThumb({
             is one nobody discovers. See the stylesheet for the rest. */}
         <div className={styles.actions}>{menu}</div>
 
+        {/* **In select mode the whole picture is the target**, as a still's
+            whole tile is (#538). Only in select mode: with nothing picked,
+            Play and Continue own their halves and a card-wide target would
+            take both away.
+
+            **Except the clip that is playing**, which keeps its scrubber -- it
+            is exactly one card, its controls are in use, and its tick still
+            works. `tabIndex={-1}` because the tick already carries this card's
+            keyboard route in; two stops for one act is one too many. */}
+        {selectionActive && !isPlaying ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            className={styles.selectOverlay}
+            aria-label={selected ? 'Deselect clip' : 'Select clip'}
+            onClick={(e) => onSelect(video.id, e.shiftKey)}
+          />
+        ) : null}
+
         {/* The one always-on marker left on the picture. The model label used
             to hold the opposite corner and came off in #536 -- see the
             stylesheet. */}

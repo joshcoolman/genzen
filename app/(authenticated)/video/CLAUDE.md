@@ -409,7 +409,15 @@ source images; `use-view.ts` owns everything after the first paint.
   tick sits on every card always so picking up again after a delete is one
   click rather than a mode to re-enter.
 
-  **The tick is the only way to select** -- the card deliberately does _not_
+  **In select mode the whole picture is the target** (#538), as a still's whole
+  tile is. Only in select mode: with nothing picked, Play owns the player and
+  Continue owns its corner, and a card-wide target would take both away. The
+  exception is **the clip that is playing**, which keeps its scrubber -- it is
+  exactly one card, its controls are in use, and its tick still works. The
+  overlay sits under the tick and the `...` (`z-index: 2` against their 3), so
+  those keep their own clicks.
+
+  **The tick is the way in** -- the card deliberately does _not_
   become one big toggle in select mode the way a still does, because a click
   anywhere on it would have to take Play away. It sits bottom-left of the unit,
   the gallery card's own corner (#534); it was top-left while the chrome was
