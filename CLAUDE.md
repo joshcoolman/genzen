@@ -134,32 +134,54 @@ a one-line fix to something already merged.
 Two durable surfaces, no continuation file: the README `## Status` block (last
 shipped / up next) and open GitHub issues. Read both at session start.
 
-**Issues are ranked by four labels — `now`, `focus`, `next`, `later`** — which
-the upnext app renders as group headers, **oldest-touched first within a group**,
-and an issue carrying none of them lands in Unsorted. Reordering is a label
-toggle, not a priority number.
+**The upnext board at `localhost:3210/kanban/genzen` is the shared surface.**
+Josh works from it, points at cards by number, and says how much runway one
+gets — "finish the focus tickets" is a work session, "do 459 quickly" is a
+cherry-pick. **A card leaves the board when its issue closes**, so closing is
+part of finishing, not a follow-up. A half-shipped ticket is the one thing that
+can lie to the board: #545 merged its first half and stayed open, reading as
+done for days. Split it or retitle it — never leave a card promising what has
+already shipped.
 
-Two things worth knowing, both of which have cost a sort:
+**Which column: four labels — `focus`, `now`, `next`, `later`** — and an issue
+carrying none lands in Unsorted. `focus` is what is actively being worked out,
+one or two issues. `now` and `next` are queued work. Unsorted is blue sky:
+open-ended questions, major features not started, revisions needing discussion.
+A small concrete chore does not belong there.
 
+**Where in the column: an integer key in the issue body**, written as
+`<!-- upnext: 150 -->` at the very end. GitHub strips it from rendered HTML, so
+it is invisible while travelling with the issue — no second store, and three
+machines read the same numbers. The sort is bucket, then **keyed above
+unkeyed**, then key ascending, then `updatedAt` ascending. Keys are sparse
+(step 100) so inserting between two cards is one write.
+
+Three things worth knowing, all of which have cost a sort:
+
+- **A label toggle does not set position.** This file said until 2026-08-30 that
+  the order was oldest-touched and that a remove-then-add forced a position.
+  Both are wrong — an unkeyed card sinks below every keyed one no matter how
+  recently it was touched. To place a card, write its key, or drag it on the
+  board and hit Commit, which is upnext's own tested path. `updatedAt` only
+  breaks ties in the unkeyed tail.
 - **All four labels exist.** This said until 2026-08-29 that `now` was a bucket
   with no label here; it is a real label and issues carry it. The warning behind
   that line is still the one that matters: `gh` fails outright on a label it
   cannot resolve, so a `--remove-label` naming one that does not exist removes
   nothing and reports success on the add, leaving an issue in two groups. Check
   `gh label list` rather than trusting this paragraph — it has been wrong once.
-- **The direction is ascending, not most-recent-first.** A label edit touches
-  `updatedAt`, so filing an issue _appends it to the bottom_ of its group and the
-  **top of a group is the next thing to do**. Re-applying a label an issue already
-  carries is a no-op and will not move it; forcing a position takes a remove and
-  then an add. After changing any issue's
-  labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
-  open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
-  many tabs heard it, so `0` means nothing was listening rather than nothing
-  happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
-  on a schedule forever, including on a tab left open all weekend.
+- **Nudge after any change.** After editing an issue's labels, title, body or
+  state, run `curl -s -X POST localhost:3210/api/nudge` so any open upnext tab
+  repaints immediately — it answers `{"nudged":n}`, and `n` is how many tabs
+  heard it, so `0` means nothing was listening rather than nothing happened. A
+  push, not a poll, on purpose: polling re-spawns `gh` for every issue on a
+  schedule forever, including on a tab left open all weekend.
 
 **Write an issue so it makes sense cold.** The title says what is wrong or what
-to build, in words you would say out loud -- never the name of a pattern. The
+to build, in words you would say out loud -- never the name of a pattern. It
+also carries its own scope, because the board is read by title and nothing
+else: "Paste should not attach reference images" names no surface, and the card
+cannot be judged without opening it. The
 first line states the problem plainly, with no conclusion and no invented term
 ahead of its definition. Reasoning and evidence still belong there, further
 down. And an issue born from a conversation ends with **"Where this came from"**,
