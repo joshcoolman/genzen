@@ -641,6 +641,27 @@ export function useView(initialVideos: Array<VideoRecord>) {
    */
   const [playingId, setPlayingId] = useState<string | null>(null)
 
+  /**
+   * **Entering select mode stops whatever was playing** (#538).
+   *
+   * Picking and watching are different things to be doing, and the wall should
+   * be one or the other: in select mode every card is a poster and a tick, so
+   * the whole picture can be the select target with nothing underneath it that
+   * a click would rather have gone to.
+   *
+   * This is what removes the exception the overlay used to carry. It covered
+   * every card *except* the playing one, whose scrubber was in use -- a rule
+   * that had to be stated, and read on the card as one tile behaving unlike
+   * its neighbours. Nothing is playing here now, so there is no exception.
+   *
+   * The card rewinds itself on the way out: losing `isPlaying` pauses it and
+   * returns it to its first frame, which is the same thing that happens when
+   * another card takes playback.
+   */
+  useEffect(() => {
+    if (selectMode) setPlayingId(null)
+  }, [selectMode])
+
   const [isContinuing, setIsContinuing] = useState<string | null>(null)
 
   const continueFrom = useCallback(

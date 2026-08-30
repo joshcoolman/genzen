@@ -371,6 +371,28 @@ export function VideoThumb({
             is one nobody discovers. See the stylesheet for the rest. */}
         <div className={styles.actions}>{menu}</div>
 
+        {/* **In select mode the whole picture is the target**, as a still's
+            whole tile is (#538). Only in select mode: with nothing picked,
+            Play and Continue own their halves and a card-wide target would
+            take both away.
+
+            **No exception for a playing clip**, because there cannot be one:
+            entering select mode stops playback (`use-view`), so every card
+            here is a poster and a tick. It carried that exception briefly and
+            it read on the wall as one tile behaving unlike its neighbours.
+
+            `tabIndex={-1}` because the tick already carries this card's
+            keyboard route in; two stops for one act is one too many. */}
+        {selectionActive ? (
+          <button
+            type="button"
+            tabIndex={-1}
+            className={styles.selectOverlay}
+            aria-label={selected ? 'Deselect clip' : 'Select clip'}
+            onClick={(e) => onSelect(video.id, e.shiftKey)}
+          />
+        ) : null}
+
         {/* The one always-on marker left on the picture. The model label used
             to hold the opposite corner and came off in #536 -- see the
             stylesheet. */}
@@ -386,9 +408,11 @@ export function VideoThumb({
       </div>
 
       <div className={styles.caption}>
-        {/* Continue to the right of the prompt (#534). It is the one act here
+        {/* Continue in the caption's top-right (#534, #537). The one act here
             that starts new work rather than acting on this row, which is why
-            it is on this line and not in the menu. */}
+            it is not in the menu -- and icon-only, because at three cards
+            across the word was the only text competing with the prompt for
+            its line. */}
         <div className={styles.promptRow}>
           <p className={styles.prompt}>{video.description}</p>
           {isDone ? (
@@ -405,7 +429,6 @@ export function VideoThumb({
               ) : (
                 <ArrowUpRight size={12} />
               )}
-              Continue
             </button>
           ) : null}
         </div>
