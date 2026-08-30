@@ -88,14 +88,17 @@ source images; `use-view.ts` owns everything after the first paint.
   `<video>`: a clip has a duration, native controls, and no poster frame
   anywhere in the app, so bending the primitive every still renders through
   around a media element would serve one route at everything's expense. What it
-  _does_ borrow is the type scale -- the model badge is `--text-3xs` in the
-  picture's corner and the prompt is `--text-3xs` at 1.5 clamped to three
-  lines, both matching the image card exactly. Hand-written, they had drifted
-  to `--text-sm` and no badge at all, so a clip and a still read as different
+  _does_ borrow is the type scale -- the prompt is `--text-3xs` at 1.5 clamped
+  to three lines, matching the image card exactly, and the model reads at that
+  size too. Hand-written, they had drifted to `--text-sm` and no model label at
+  all, so a clip and a still read as different
   kinds of record when they are the same row in the same table. **The player and
   both frames are one thumbnail, and the chrome sits on its corners** (#534) --
-  `...` top-left, the select tick bottom-left, the model badge bottom-right,
-  which is the gallery card's own arrangement exactly. **All three are always
+  `...` top-left and the select tick bottom-left, the gallery card's own
+  corners. **The model is not up there** (#536): it is a fact in the caption,
+  because at #535's density a label nearly half the card's width, over a
+  half-width end frame, was the loudest thing on a card whose job is to show the
+  clip. Both markers that remain are **always
   on**, where a still hides its `...` until hover: a clip card is a player, a
   pair of end frames and a caption, so it already reads as an object with
   controls rather than as a bare picture -- and the menu is the only route to

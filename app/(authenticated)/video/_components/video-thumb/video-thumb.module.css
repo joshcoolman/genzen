@@ -105,33 +105,6 @@
   }
 }
 
-/* `Thumbnail`'s `.modelBadge`, matched deliberately -- same size, same padding,
-   same radius, same scrim -- so a clip and a still label themselves the same
-   way. Not composed from it: that class belongs to a primitive this component
-   does not render, and importing across module boundaries to share five
-   declarations is how a primitive acquires a second owner.
-
-   **Bottom-right, which is the gallery card's own corner** (#534). It sat at
-   the top until then, as the one honest departure -- native controls owned the
-   bottom edge of the player and a badge there would have been under the
-   scrubber. Against the unit rather than the player, that corner is the
-   outside edge of the last frame, and nothing is ever drawn there. */
-.badge {
-  position: absolute;
-  right: var(--space-8);
-  bottom: var(--space-8);
-  max-width: calc(100% - var(--space-8) * 2);
-  overflow: hidden;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--scrim);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
 /* `card-caption.module.css`'s block: the same padding, the same gap. */
 .caption {
   display: flex;
@@ -248,10 +221,28 @@
   line-height: 1.5;
 }
 
-/* Full strength. These are what the clip *is*, and nothing muted sits beside
-   them in this row now. */
+/* Full strength. These are what the clip *is*. */
 .fact {
   color: var(--text);
+}
+
+/* **The model, at the right edge of the facts row rather than on the picture**
+   (#536). It was `Thumbnail`'s badge in a corner of the unit, matched to the
+   gallery card's -- which is right for a still and wrong here once the wall got
+   dense (#535): at a 12rem card the label is nearly half its width, sitting
+   over a half-width end frame, and it became the loudest thing on a card whose
+   whole job is to show the clip.
+   
+   So it reads as what it is: one more fact, in the row of facts, same size as
+   the shape and the duration. A step quieter than those, because they are what
+   the clip *is* and this is what made it -- and pushed to the right edge, so
+   the two kinds of fact are told apart by position without a separator. */
+.model {
+  margin-inline-start: auto;
+  overflow: hidden;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* `...`, top-left -- the gallery card's corner, but **always on, where a

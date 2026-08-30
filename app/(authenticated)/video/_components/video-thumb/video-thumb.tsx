@@ -63,11 +63,10 @@ function durationOf(video: VideoRecord): string | null {
  * here reads it; #500 is the switchover, and it has to keep this path for the
  * clips made before it that were never backfilled.
  *
- * **What it does borrow is the type scale**, deliberately: the model badge is
- * `--text-3xs` in the picture's bottom-right corner exactly as `Thumbnail`
- * draws it, and the prompt below is `--text-3xs` at 1.5 clamped to three lines
- * exactly as `CardCaption` does. Written by hand here, those two drifted to
- * `--text-sm` and no badge at all, so a clip and a still read as different
+ * **What it does borrow is the type scale**, deliberately: the prompt is
+ * `--text-3xs` at 1.5 clamped to three lines exactly as `CardCaption` does,
+ * and the model reads at that size too. Written by hand here, those drifted to
+ * `--text-sm` and no model label at all, so a clip and a still read as different
  * kinds of record when they are the same row in the same table.
  *
  * **The player and both frames are one thumbnail, and the chrome sits on its
@@ -100,10 +99,11 @@ function durationOf(video: VideoRecord): string | null {
  * whole unit's uniformity, which was not on the table when #530 chose the
  * frame.
  *
- * **The corners are the gallery card's, exactly**: `...` top-left on hover,
- * the select tick bottom-left always on, the model badge bottom-right. A clip
- * and a still are the same row in the same table, and a marker that moved
- * between the two surfaces is the one label you have to re-find per route.
+ * **Two markers on the picture, both always on**: `...` top-left and the
+ * select tick bottom-left, which are the gallery card's own corners. The model
+ * held the third until #536 and is now a fact in the caption -- at the density
+ * #535 set, a label nearly half the card's width, sitting over a half-width end
+ * frame, was the loudest thing on a card whose job is to show the clip.
  *
  * **The player has no controls until it is played.** A poster, one play button,
  * and nothing else -- a grid of cards was five sets of scrubbers, timecodes and
@@ -134,14 +134,6 @@ function durationOf(video: VideoRecord): string | null {
  * of its own; here there is one directly above, and a second media element per
  * card across a wall of clips is a real cost for a picture the row can already
  * serve as an `<img>` from `thumbnail_path` (#499).
- *
- * **The select tick is top-left of the player, and always on** (#517). That is
- * the one corner this card does not already use -- the model badge holds
- * top-right, Continue holds the last frame's bottom-left, Play holds the
- * centre, and the native controls own the bottom edge. It does not break the
- * no-overlay-actions rule: that rule is about chrome appearing on hover over a
- * scrubber, and this is a fixed marker in a free corner, the same always-on
- * reasoning the Continue badge already carries.
  *
  * **The tick is the only way to select.** The card does not become one big
  * toggle in select mode the way a still does: half of it is a player and the
@@ -379,9 +371,9 @@ export function VideoThumb({
             is one nobody discovers. See the stylesheet for the rest. */}
         <div className={styles.actions}>{menu}</div>
 
-        {/* The gallery card's two always-on markers, in the gallery card's own
-            corners. Bottom-left and bottom-right of the *unit*, which on a
-            finished clip means the outer corners of the two frames. */}
+        {/* The one always-on marker left on the picture. The model label used
+            to hold the opposite corner and came off in #536 -- see the
+            stylesheet. */}
         <button
           type="button"
           className={cx(styles.selectTick, selected && styles.selectTickOn)}
@@ -391,8 +383,6 @@ export function VideoThumb({
         >
           <CheckCircle2 className={styles.selectTickIcon} />
         </button>
-
-        <span className={styles.badge}>{video.title}</span>
       </div>
 
       <div className={styles.caption}>
@@ -420,11 +410,12 @@ export function VideoThumb({
           ) : null}
         </div>
 
-        {/* Only the two facts a clip *is*. Nothing in this row is clickable
-            any more, which is why it can be muted throughout. */}
+        {/* What the clip is, and what made it -- one row, nothing clickable.
+            Shape and duration left, the model pushed to the right edge. */}
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
           {duration ? <span className={styles.fact}>{duration}</span> : null}
+          <span className={styles.model}>{video.title}</span>
         </div>
       </div>
     </article>
