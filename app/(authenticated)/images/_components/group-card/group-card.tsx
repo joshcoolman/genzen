@@ -33,6 +33,11 @@ interface GroupCardProps {
    *  queued, uploads still sending. Client-derived and passed in, so saying so
    *  costs no round trip and the strip below is never asked to be a spinner. */
   working?: number
+  /** How many of its images are hidden (#546). The bar above the wall reports
+   *  only what is hidden where you are standing, so without this a picture
+   *  hidden inside a group is invisible from out here with nothing saying so.
+   *  Same line as the count, same register as `working`. */
+  hidden?: number
   onOpen: (group: ImageGroupSummary) => void
   onRename: (group: ImageGroupSummary) => void
   /** Move every picture into another group and drop this one (#350). Absent
@@ -86,6 +91,7 @@ export function GroupCard({
   group,
   showInfo = true,
   working = 0,
+  hidden = 0,
   onOpen,
   onRename,
   onMove,
@@ -298,6 +304,9 @@ export function GroupCard({
               {working > 0 && (
                 <span className={styles.working}>, {working} working</span>
               )}
+              {/* After working, and in the same quiet grey: it is a fact about
+                  the group that is true until you change it, not news. */}
+              {hidden > 0 && <span>, {hidden} hidden</span>}
             </span>
           </div>
           {/* The row is the toggle (#352). A button rather than the card's own

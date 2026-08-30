@@ -59,6 +59,13 @@ list once when the seed comes back full, so the grid is never short.
   the grid for one build, which is the one place it cannot work -- you reach
   it after running out of pictures, which is when you have stopped looking.
   Toned, at the top, and absent entirely when there is nothing to say.
+  **It reports what is hidden where you are standing** (#546) -- the open
+  group, or top level, under the origin scope you are in -- because `Show`
+  sits under that sentence and has to act on the things it counted. Unscoped
+  it said "4 hidden" over a wall missing nothing, and Show from inside a group
+  unhid the whole library. The group card carries the other half: it says
+  ", 3 hidden" beside its count, so a picture hidden in a group is not
+  invisible from out here.
   **Clicking it opens a tray of the hidden pictures**; a thumbnail there is
   one click from coming back, and `Show` on the bar brings all of them.
   **Hidden rows are never drawn in the grid** -- the first shape toggled them

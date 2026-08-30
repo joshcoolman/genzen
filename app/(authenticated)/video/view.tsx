@@ -57,6 +57,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     groupMembers,
     toggleGroupMembers,
     workingByGroup,
+    hiddenByGroup,
     activeGroup,
     activeGroupId,
     groupFlow,
@@ -182,6 +183,7 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
             groupMembers={groupMembers}
             onToggleGroupMembers={toggleGroupMembers}
             workingByGroup={workingByGroup}
+            hiddenByGroup={hiddenByGroup}
           />
         </div>
 

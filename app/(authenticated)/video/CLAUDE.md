@@ -379,6 +379,9 @@ source images; `use-view.ts` owns everything after the first paint.
   #537; a hidden clip is out of a group card's swatch strip too, filtered
   client-side exactly as #504 does it, and the group's `count` is left alone
   because it is a fact about the group rather than a description of the screen.
+  **The bar counts what is hidden where you are standing** (#546) -- this group
+  or top level -- and the group card says ", 2 hidden" beside its count, so a
+  clip hidden inside a group is still visible as a fact from outside it.
 - **Groups are `src/features/groups/`, and this route is why they are there.**
   They were `images/_actions/` until #517; a clip has always been a
   `user_images` row, so it already carried `group_id` and no write had ever

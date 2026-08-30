@@ -278,8 +278,22 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * two that worked, and a clip is expensive enough that binning one to tidy
    * up is a real loss.
    */
+  /**
+   * Where you are standing, without visibility in it (#546).
+   *
+   * The wall is this and then `visibility.visible`; the bar is this and then
+   * the opposite. Kept apart because the bar is asked about hidden rows, and a
+   * predicate that already excluded them would answer no to every one.
+   */
+  const inScope = useCallback(
+    (video: VideoRecord) =>
+      activeGroupId ? video.group_id === activeGroupId : !video.group_id,
+    [activeGroupId],
+  )
+
   const visibility = useVisibility({
     rows: videos,
+    inScope,
     patch: (ids, hiddenAt) => {
       const picked = new Set(ids)
       setVideos((current) =>
@@ -299,14 +313,12 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * rather than in SQL, the way the gallery does it: the route already holds
    * every row, so a group view is one filter instead of a second query.
    */
-  const shownVideos = useMemo(() => {
+  const shownVideos = useMemo(
     // Visibility first, so top level and every group inherit it and neither
     // can forget -- the rule Images wrote in #504.
-    const shown = videos.filter(visibility.visible)
-    return activeGroupId
-      ? shown.filter((video) => video.group_id === activeGroupId)
-      : shown.filter((video) => !video.group_id)
-  }, [videos, visibility.visible, activeGroupId])
+    () => videos.filter((video) => visibility.visible(video) && inScope(video)),
+    [videos, visibility.visible, inScope],
+  )
 
   /**
    * The wall's cells: loose clips and group cards in one order.
@@ -365,6 +377,22 @@ export function useView(initialVideos: Array<VideoRecord>) {
     const counts: Record<string, number> = {}
     for (const video of videos) {
       if (!video.group_id || video.status !== 'pending') continue
+      counts[video.group_id] = (counts[video.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [videos])
+
+  /**
+   * How many of each group's clips are hidden -- the other half of #546.
+   *
+   * The bar counts only what is hidden where you are standing, so without this
+   * a clip hidden inside a group is invisible from out here with nothing
+   * saying so. Same arithmetic as `workingByGroup`, on rows already in hand.
+   */
+  const hiddenByGroup = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const video of videos) {
+      if (!video.group_id || !video.hidden_at) continue
       counts[video.group_id] = (counts[video.group_id] ?? 0) + 1
     }
     return counts
@@ -932,6 +960,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     groupMembers: groups.members,
     toggleGroupMembers: groups.toggleExpanded,
     workingByGroup,
+    hiddenByGroup,
     activeGroup,
     activeGroupId,
     groupFlow,

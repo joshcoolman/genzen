@@ -63,6 +63,8 @@ interface ImageGalleryProps {
   /** Per-group count of work in flight (#350) -- generations queued, uploads
    *  still sending. Client-derived, so it costs nothing to keep current. */
   workingByGroup?: Record<string, number>
+  /** How many of each group's images are hidden (#546). */
+  hiddenByGroup?: Record<string, number>
   /** Which groups have their strip expanded to every member (#352), and the
    *  ids to draw once the read lands. */
   expandedGroupIds?: Set<string>
@@ -118,6 +120,7 @@ export function ImageGallery({
   onUsePrompt,
   onLoad,
   workingByGroup,
+  hiddenByGroup,
   expandedGroupIds,
   groupMembers,
   onToggleGroupMembers,
@@ -229,6 +232,7 @@ export function ImageGallery({
                   group={group}
                   showInfo={showInfo}
                   working={workingByGroup?.[group.id] ?? 0}
+                  hidden={hiddenByGroup?.[group.id] ?? 0}
                   expanded={expanded}
                   members={expanded ? groupMembers?.[group.id] : undefined}
                   /* Only when there is something the strip is not already

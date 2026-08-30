@@ -60,6 +60,7 @@ export function VideoGroupCard({
   onTrash,
   onToggleMembers,
   working,
+  hidden,
 }: {
   group: ImageGroupSummary
   /** Whether the strip is showing every member rather than the first five. */
@@ -76,6 +77,10 @@ export function VideoGroupCard({
   /** Clips of this group still generating. One line of text, so it can change
    *  every few seconds without moving a pixel of the row below (#350). */
   working: number
+  /** How many of its clips are hidden (#546). The bar above the wall reports
+   *  only what is hidden where you are standing, so without this a clip hidden
+   *  inside a group is invisible from out here with nothing saying so. */
+  hidden: number
 }) {
   // Built here rather than read from a URL map: a group's members are exactly
   // the rows the top-level wall filters out. `imageUrl` stays the only place a
@@ -192,6 +197,9 @@ export function VideoGroupCard({
             {working > 0 && (
               <span className={styles.working}>, {working} working</span>
             )}
+            {/* After working, in the same grey: a fact about the group that
+                stays true until you change it, not news. */}
+            {hidden > 0 && <span>, {hidden} hidden</span>}
           </span>
         </div>
         {/* The row is the toggle (#352): looking at what is in there and going
