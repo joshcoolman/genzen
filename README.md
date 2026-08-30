@@ -158,6 +158,28 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Up next**
 
-The open issues labelled [`focus`](https://github.com/joshcoolman/genzen/labels/focus),
-then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
-the ranking; a list here would be a second copy of it that drifts.
+**Asset management**, taken as one arc rather than four separate passes — the
+library has grown past the point where generating is the hard part, and these
+interlock:
+
+1. [#546](https://github.com/joshcoolman/genzen/issues/546) — the hidden bar
+   counts everything hidden anywhere, not what is hidden where you are. A bug in
+   what just shipped, and it decides what scope "hidden" means, which the rest
+   inherits. [#449](https://github.com/joshcoolman/genzen/issues/449) (hide on
+   Canvas) should ride along rather than get its own pass.
+2. [#545](https://github.com/joshcoolman/genzen/issues/545) — `H` to hide in the
+   image viewer, and a viewer over the hidden set. The keybinding half is
+   independent and can go any time; the hidden-viewer half is meaningless until
+   #546 says which set it opens over.
+3. [#543](https://github.com/joshcoolman/genzen/issues/543) +
+   [#544](https://github.com/joshcoolman/genzen/issues/544) — locking and
+   labels, designed together. Build them apart and you get two marking systems
+   on one card whose corners are already spoken for; deciding once whether
+   "locked" is a reserved label is cheap now and a migration later.
+   [#513](https://github.com/joshcoolman/genzen/issues/513) is annotation, which
+   is the same instinct — read it before designing labels.
+
+Everything else: the open issues labelled
+[`focus`](https://github.com/joshcoolman/genzen/labels/focus), then
+[`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are the
+ranking; a full list here would be a second copy of it that drifts.

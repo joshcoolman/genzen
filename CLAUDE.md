@@ -134,17 +134,19 @@ a one-line fix to something already merged.
 Two durable surfaces, no continuation file: the README `## Status` block (last
 shipped / up next) and open GitHub issues. Read both at session start.
 
-**Issues are ranked by three labels — `focus`, `next`, `later`** — which the
-upnext app renders as group headers, **oldest-touched first within a group**, and
-an issue carrying none of them lands in Unsorted. Reordering is a label toggle,
-not a priority number.
+**Issues are ranked by four labels — `now`, `focus`, `next`, `later`** — which
+the upnext app renders as group headers, **oldest-touched first within a group**,
+and an issue carrying none of them lands in Unsorted. Reordering is a label
+toggle, not a priority number.
 
-Two things this said wrongly until 2026-08-18, both of which cost a sort:
+Two things worth knowing, both of which have cost a sort:
 
-- **`now` is an upnext bucket that has no label in this repo**, and `focus` —
-  which every ranked issue here actually uses — was not named at all. `gh` fails
-  outright on a label it cannot resolve, so a `--remove-label` naming `now`
-  removes nothing and reports success on the add, leaving an issue in two groups.
+- **All four labels exist.** This said until 2026-08-29 that `now` was a bucket
+  with no label here; it is a real label and issues carry it. The warning behind
+  that line is still the one that matters: `gh` fails outright on a label it
+  cannot resolve, so a `--remove-label` naming one that does not exist removes
+  nothing and reports success on the add, leaving an issue in two groups. Check
+  `gh label list` rather than trusting this paragraph — it has been wrong once.
 - **The direction is ascending, not most-recent-first.** A label edit touches
   `updatedAt`, so filing an issue _appends it to the bottom_ of its group and the
   **top of a group is the next thing to do**. Re-applying a label an issue already
