@@ -42,6 +42,7 @@ export function VideoList({
   groupMembers,
   onToggleGroupMembers,
   workingByGroup,
+  hiddenByGroup,
 }: {
   cells: Array<VideoCell>
   /** Inside a group the empty state says something different -- the wall is
@@ -71,6 +72,8 @@ export function VideoList({
   groupMembers: Record<string, Array<string>>
   onToggleGroupMembers: (groupId: string) => void
   workingByGroup: Record<string, number>
+  /** How many of each group's clips are hidden (#546). */
+  hiddenByGroup: Record<string, number>
 }) {
   if (cells.length === 0) {
     return isInGroup ? (
@@ -105,6 +108,7 @@ export function VideoList({
                 : undefined
             }
             working={workingByGroup[cell.group.id] ?? 0}
+            hidden={hiddenByGroup[cell.group.id] ?? 0}
           />
         ) : (
           <VideoThumb

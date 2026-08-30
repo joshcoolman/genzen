@@ -49,19 +49,30 @@ export interface VisibilityState<T extends HideableRow> {
   /** True when this row should be drawn. */
   visible: (row: T) => boolean
   /** The ids being withheld, for surfaces that render images by id rather than
-   *  by row -- a group card's swatches, the expanded member strip. */
+   *  by row -- a group card's swatches, the expanded member strip.
+   *
+   *  **Library-wide, and deliberately not scoped** (#546). These are cards for
+   *  groups you are *not* standing in, so scoping this would put a hidden
+   *  image back into a group card's strip the moment you stepped out of that
+   *  group. */
   withheldIds: ReadonlySet<string>
+  /** How many rows are hidden *here* -- scoped, like the tray and Show. A
+   *  group card reports its own hidden members separately (#546); that count
+   *  is arithmetic over rows the route already holds, not this hook's job. */
   hiddenCount: number
   /** The spotlight, or null when there is none. */
   focusIds: ReadonlySet<string> | null
   focusOn: (ids: Array<string>) => void
   clearFocus: () => void
   hide: (ids: Array<string>) => Promise<void>
-  /** Everything hidden, back at once -- the bar's Show. */
+  /** Everything hidden *here*, back at once -- the bar's Show. Scoped for the
+   *  same reason the count is: the bar says "4 hidden" and Show is the button
+   *  under that sentence, so it has to act on those four (#546). */
   showAll: () => Promise<void>
   /** Some of them, from the expanded tray. */
   unhide: (ids: Array<string>) => Promise<void>
-  /** The hidden rows themselves, newest first, for the tray to draw. */
+  /** The hidden rows themselves, newest first, for the tray to draw. Scoped:
+   *  what is hidden *where you are standing*. */
   hiddenImages: Array<T>
   busy: boolean
 }
@@ -91,27 +102,63 @@ export function isVisible(
  * rows already has a way to set a field on some of them. Naming that as two
  * lines of contract is what let the hook stop knowing about `use-gallery`.
  */
+/**
+ * The hidden rows, newest first -- **scoped to where you are standing** (#546).
+ *
+ * Extracted so it can be tested, because getting it wrong is silent in both
+ * directions and one of them takes an action. The bar said "4 hidden" over a
+ * grid that was missing nothing, because it counted the whole library while
+ * the wall was showing one group; and `Show` acted on that same list, so
+ * pressing it from inside a group unhid twelve images across three groups you
+ * were not looking at.
+ *
+ * The rule is one sentence: **the bar reports what would come back if you
+ * pressed Show**, so it counts exactly the rows the current view would draw.
+ * That is why the scope is the wall's whole scope and not just the group --
+ * under `Uploads`, a hidden generation coming back would land nowhere you can
+ * see, so it is not part of this number either.
+ */
+export function hiddenInScope<T extends HideableRow>(
+  rows: Array<T>,
+  inScope: (row: T) => boolean,
+): Array<T> {
+  return rows
+    .filter((row) => row.hidden_at && inScope(row))
+    .sort((a, b) => (a.hidden_at! < b.hidden_at! ? 1 : -1))
+}
+
 interface UseVisibilityOptions<T extends HideableRow> {
   rows: Array<T>
   /** Set `hidden_at` on these rows, in place. */
   patch: (ids: Array<string>, hiddenAt: string | null) => void
+  /**
+   * Which rows belong to the place the wall is currently showing -- the open
+   * group, the origin scope, both. Visibility itself must **not** be part of
+   * it: this is asked of hidden rows, and a predicate that already excluded
+   * them would answer no to every one.
+   *
+   * Omitted means the whole set is the scope, which is what a surface with one
+   * undivided wall wants.
+   */
+  inScope?: (row: T) => boolean
 }
 
 export function useVisibility<T extends HideableRow>({
   rows,
   patch,
+  inScope,
 }: UseVisibilityOptions<T>): VisibilityState<T> {
   const [focusIds, setFocusIds] = useState<ReadonlySet<string> | null>(null)
   const [busy, setBusy] = useState(false)
 
   // Newest hidden first: the tray is opened to undo something, and the thing
   // you want to undo is almost always the last thing you did.
+  //
+  // Scoped (#546) -- everything the bar shows and everything Show acts on is
+  // about where you are standing.
   const hiddenImages = useMemo(
-    () =>
-      rows
-        .filter((row) => row.hidden_at)
-        .sort((a, b) => (a.hidden_at! < b.hidden_at! ? 1 : -1)),
-    [rows],
+    () => hiddenInScope(rows, inScope ?? (() => true)),
+    [rows, inScope],
   )
 
   const hiddenIds = useMemo(
@@ -119,7 +166,15 @@ export function useVisibility<T extends HideableRow>({
     [hiddenImages],
   )
 
-  const withheldIds = useMemo(() => new Set(hiddenIds), [hiddenIds])
+  /* The one library-wide list, and the one thing that must stay that way: it
+     feeds group cards for groups you are *not* inside, which would otherwise
+     start drawing hidden members the moment you stepped out. */
+  const allHiddenIds = useMemo(
+    () => rows.filter((row) => row.hidden_at).map((row) => row.id),
+    [rows],
+  )
+
+  const withheldIds = useMemo(() => new Set(allHiddenIds), [allHiddenIds])
 
   const visible = useCallback((row: T) => isVisible(row, focusIds), [focusIds])
 

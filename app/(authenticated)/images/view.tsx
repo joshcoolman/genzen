@@ -50,6 +50,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     runOutpaint,
     groups,
     workingByGroup,
+    hiddenByGroup,
     visibleGroupMembers,
     activeGroup,
     activeGroupId,
@@ -167,6 +168,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onUsePrompt={usePromptText}
           onLoad={(img) => void loadIntoPanel(img)}
           workingByGroup={workingByGroup}
+          hiddenByGroup={hiddenByGroup}
           expandedGroupIds={groups.expandedIds}
           /* Same rule as the swatches on a collapsed card (#504): the
              expanded strip is pictures, so a hidden one does not belong in it,

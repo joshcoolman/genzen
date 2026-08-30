@@ -37,6 +37,21 @@ only the surface was missing.
   confirmation. It was a quiet rule _under_ the grid for one build, which is the
   one place it cannot work -- you reach it after running out of things to look
   at, which is when you have stopped looking.
+- **The bar is scoped; `withheldIds` is not** (#546). The hook takes an
+  `inScope` predicate saying where the wall is standing, and the tray, the
+  count and `Show` are all about that place -- **the bar reports what would come
+  back if you pressed Show**, which is the sentence that settles every scoping
+  question, origin scope included. `withheldIds` stays library-wide, because it
+  feeds group cards for groups you are _not_ in and scoping it would put a
+  hidden picture back on a card the moment you stepped out. `inScope` must not
+  know about hiding: it is asked of hidden rows, so a predicate that already
+  filtered them would answer no to every one. It was unscoped until #546, which
+  made the count wrong ("4 hidden" over a wall missing nothing) and `Show`
+  wrong in a way that took an action -- pressing it inside a group unhid the
+  library.
+- **A group card says how many of its own are hidden**, counted by the route,
+  not here. Otherwise the scoped bar makes hiding inside a group invisible from
+  outside it, which is #504's failure at one level down.
 - **A hidden row is never drawn among the visible ones.** The first shape
   toggled them back in while still calling them hidden, which read as broken:
   "4 hidden" over four visible pictures. The bar's tray is a holding area,

@@ -123,15 +123,69 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const gallery = useGallery({ userId: user.id, initial })
 
+  const prefs = usePrefs()
+
+  // Group, then order. There is no origin scope any more (#348): a group is a
+  // scope you made on purpose, and it turned out to be the only one worth
+  // having -- `use-prefs` had predicted its own deletion in a comment.
+  //
+  // At top level a grouped image is *absent*, not shown twice: the group card
+  // stands in for its members. If members also appeared loose, the wall would
+  // be exactly as tall as before.
+  /**
+   * **Uploads ignores grouping entirely: every upload, grouped or not** (#444).
+   *
+   * The other scopes are a filter over what is loose, because at top level a
+   * group card stands in for its members and that collapse is the whole payoff
+   * -- a wall of thirty becomes three cards and eight loose pictures. Uploads
+   * is not that kind of question. An upload is something you put there
+   * deliberately, and "show me my uploads" means all of them; where each one
+   * happens to sit is somebody else's concern. So this scope shows no group
+   * cards either -- there is nothing left for them to stand in for.
+   *
+   * This is the rule that replaces keeping a group called Uploads by hand,
+   * which decayed every time you uploaded again.
+   */
+  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
+
+  /**
+   * **Where you are standing, as a predicate, with visibility left out of it**
+   * (#546).
+   *
+   * The wall is this and then `visibility.visible`; the hidden bar is this and
+   * then the opposite. Splitting the scope out of the filter is what lets the
+   * bar count what is hidden *here* -- it is asked of hidden rows, so it must
+   * not know about hiding, or it would answer no to every one of them.
+   *
+   * Origin is part of it, because the bar's promise is "this is what comes
+   * back if you press Show". Under `Uploads`, a hidden generation coming back
+   * would land somewhere you are not looking, so it is not this bar's business
+   * either.
+   */
+  const inScope = useCallback(
+    (img: SavedAiImage) => {
+      if (activeGroupId) return img.group_id === activeGroupId
+      if (uploadsIgnoreGroups) return img.origin === 'upload'
+      if (img.group_id) return false
+      if (prefs.originFilter === 'all') return true
+      return img.origin === prefs.originFilter
+    },
+    [activeGroupId, uploadsIgnoreGroups, prefs.originFilter],
+  )
+
   // What the grid is allowed to draw (#504): hidden rows, and the focus
   // spotlight. Sits above the scope filter below rather than inside it,
   // because it applies inside a group and at top level alike.
+  //
+  // It is handed `inScope` and every row, not the scoped rows: the wall wants
+  // both filters, the bar wants the scope without the hiding, and the group
+  // cards want neither (#546).
   const visibility = useVisibility({
     rows: gallery.images,
     patch: (ids, hiddenAt) => gallery.patchImages(ids, { hidden_at: hiddenAt }),
+    inScope,
   })
   const userImages = useUserImages(user.id)
-  const prefs = usePrefs()
   const dock = useDock()
   const download = useDownload()
   // Selection-based, not group-based (#476): a sheet is made of whatever is
@@ -261,6 +315,27 @@ export function useView(initial: Array<SavedAiImage>) {
   }, [gallery.images])
 
   /**
+   * How many of each group's images are hidden -- the other half of #546.
+   *
+   * Once the bar counts only what is hidden *here*, an image hidden inside a
+   * group is invisible from top level with nothing anywhere saying so, which
+   * is the "hidden state you cannot see is a slower kind of lost" failure #504
+   * built the bar to prevent, reintroduced one level down. The group card says
+   * it instead, in the line that already reports what the group is doing.
+   *
+   * Arithmetic on rows in hand, exactly like `workingByGroup` above: no read,
+   * and it tracks a hide on the frame the card leaves.
+   */
+  const hiddenByGroup = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const img of gallery.images) {
+      if (!img.group_id || !img.hidden_at) continue
+      counts[img.group_id] = (counts[img.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [gallery.images])
+
+  /**
    * Refresh the summaries when a group *finishes*, not when each image lands.
    *
    * One read per burst rather than one per settle. That is the moment the
@@ -277,32 +352,6 @@ export function useView(initial: Array<SavedAiImage>) {
     if (drained) void groups.refresh()
   }, [workingByGroup, groups.refresh])
 
-  /**
-   * Uploads ignores grouping entirely: every upload, grouped or not.
-   */
-  // Group, then order. There is no origin scope any more (#348): a group is a
-  // scope you made on purpose, and it turned out to be the only one worth
-  // having -- `use-prefs` had predicted its own deletion in a comment.
-  //
-  // At top level a grouped image is *absent*, not shown twice: the group card
-  // stands in for its members. If members also appeared loose, the wall would
-  // be exactly as tall as before.
-  /**
-   * **Uploads ignores grouping entirely: every upload, grouped or not** (#444).
-   *
-   * The other scopes are a filter over what is loose, because at top level a
-   * group card stands in for its members and that collapse is the whole payoff
-   * -- a wall of thirty becomes three cards and eight loose pictures. Uploads
-   * is not that kind of question. An upload is something you put there
-   * deliberately, and "show me my uploads" means all of them; where each one
-   * happens to sit is somebody else's concern. So this scope shows no group
-   * cards either -- there is nothing left for them to stand in for.
-   *
-   * This is the rule that replaces keeping a group called Uploads by hand,
-   * which decayed every time you uploaded again.
-   */
-  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
-
   // Group first, then scope, then order. The filter is client-side on purpose:
   // the gallery already holds every row, so switching scopes is instant and
   // costs no round trip -- and `origin` is immutable, so a filtered-out row
@@ -315,16 +364,17 @@ export function useView(initial: Array<SavedAiImage>) {
     // Visibility first (#504), so every branch below inherits it and none can
     // forget: a hidden image is hidden inside a group, at top level, and under
     // every scope. A per-branch filter would be four places to keep in step.
-    const shown = gallery.images.filter(visibility.visible)
+    const shown = gallery.images.filter(
+      (img) => visibility.visible(img) && inScope(img),
+    )
     if (activeGroupId) {
-      const members = shown.filter((img) => img.group_id === activeGroupId)
-      if (!manualOrder) return members
+      if (!manualOrder) return shown
       /* Ascending, nulls last, then oldest first among the nulls -- which is
          the whole of "a new image lands at the end" (#505). Nothing writes a
          position when a row joins a group, on any of the three paths that put
          one there; an unpositioned row simply sorts after every positioned
          one, and the next drag gives it a number along with everything else. */
-      return [...members].sort((a, b) => {
+      return [...shown].sort((a, b) => {
         const ap = a.group_position ?? Infinity
         const bp = b.group_position ?? Infinity
         if (ap !== bp) return ap - bp
@@ -333,20 +383,8 @@ export function useView(initial: Array<SavedAiImage>) {
         )
       })
     }
-    if (uploadsIgnoreGroups) {
-      return shown.filter((img) => img.origin === 'upload')
-    }
-    const loose = shown.filter((img) => !img.group_id)
-    if (prefs.originFilter === 'all') return loose
-    return loose.filter((img) => img.origin === prefs.originFilter)
-  }, [
-    gallery.images,
-    visibility.visible,
-    activeGroupId,
-    uploadsIgnoreGroups,
-    prefs.originFilter,
-    manualOrder,
-  ])
+    return shown
+  }, [gallery.images, visibility.visible, inScope, activeGroupId, manualOrder])
 
   /* The arrangement is the order, so the toolbar's newest/oldest toggle does
      not apply to it (#505) -- and the toolbar hides that control inside an
@@ -1028,6 +1066,7 @@ export function useView(initial: Array<SavedAiImage>) {
     gallery,
     groups,
     workingByGroup,
+    hiddenByGroup,
     visibleGroupMembers,
     activeGroup,
     manualOrder,
