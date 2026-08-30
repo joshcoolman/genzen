@@ -207,6 +207,21 @@ Three things worth knowing, all of which have cost a sort:
   push, not a poll, on purpose: polling re-spawns `gh` for every issue on a
   schedule forever, including on a tab left open all weekend.
 
+**How Josh works, and what it asks of you.** He files ideas constantly and
+does not spend time sorting them. He is looking at the board, reading titles,
+and assuming that is where things stand.
+
+- **Titles are the product.** A card is read at a glance, in a column, next to
+  eleven others. Tight and specific beats complete. If a title needs opening to
+  be judged, it is wrong.
+- **Capture without ceremony.** An idea gets an issue, not a conversation about
+  whether it deserves one. Vague, pie-in-the-sky or nothing-to-do-yet goes to
+  Unsorted; work you have both agreed matters goes to Now or Next.
+- **Verbosity is the failure mode.** Not just in issues -- in replies. Lead with
+  the answer, cut the recap, and do not narrate what you are about to do.
+- **Push back anyway.** Terse does not mean compliant. Say what would go wrong,
+  in a sentence, then get on with it.
+
 **Write an issue so it makes sense cold.** The title says what is wrong or what
 to build, in words you would say out loud -- never the name of a pattern. It
 also carries its own scope, because the board is read by title and nothing
