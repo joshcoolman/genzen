@@ -22,7 +22,7 @@ export function userImageColumns() {
     file_size::float8 as file_size,
     mime_type, file_hash, width, height,
     source, origin, generation_metadata, request_id, status, generation_error,
-    idempotency_key, color_palette, sort_order, group_id,
+    idempotency_key, color_palette, sort_order, group_id, group_position,
     to_json(deleted_at)#>>'{}' as deleted_at,
     to_json(hidden_at)#>>'{}' as hidden_at,
     to_json(created_at)#>>'{}' as created_at,

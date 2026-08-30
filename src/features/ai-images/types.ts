@@ -9,6 +9,10 @@ export interface SavedAiImage {
   thumbnail_path?: string | null
   created_at: string
   sort_order?: number | null
+  /** Hand-set position within its group, ascending, nulls last (#505). Null on
+   *  everything in a group nobody has arranged, and on anything added since the
+   *  last drag -- which is exactly what "a new image goes to the end" is. */
+  group_position?: number | null
   status: 'pending' | 'completed' | 'failed'
   /** On a canvas right now. Derived per read from `canvas_images` (#216), not a
    *  column -- the stored boolean this replaces drifted from the rows that are

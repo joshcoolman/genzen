@@ -77,3 +77,14 @@
   line-height: var(--space-20);
   text-align: center;
 }
+
+/* The insertion point past the last card (#505), which no card can anchor. A
+   real grid cell rather than an absolutely-positioned guess, so it lands
+   exactly where the next card would. */
+.dropEnd {
+  justify-self: start;
+  width: 3px;
+  min-height: 4rem;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}

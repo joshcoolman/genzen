@@ -65,6 +65,10 @@ interface ToolbarProps {
    *  below (#431). */
   onTrashGroup?: () => void
   onNewGroup: () => void
+  /** The open group renders in its hand-set order (#505), so the newest/oldest
+   *  direction has nothing to order and the control below is not drawn. The
+   *  order in effect is said in the row under the heading instead. */
+  manualOrder?: boolean
 }
 
 export function Toolbar({
@@ -75,6 +79,7 @@ export function Toolbar({
   onDownloadGroup,
   onTrashGroup,
   onNewGroup,
+  manualOrder,
 }: ToolbarProps) {
   return (
     <div className={styles.toolbar}>
@@ -147,23 +152,25 @@ export function Toolbar({
         <div className={styles.tools}>
           {/* Says what the click will do, not which way it is sorted now --
               the arrow already shows that. */}
-          <Labelled
-            label={prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'}
-          >
-            <button
-              onClick={prefs.toggleSort}
-              className={cx(styles.viewToggle, styles.viewToggleBoxed)}
-              aria-label={
-                prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
-              }
+          {!manualOrder && (
+            <Labelled
+              label={prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'}
             >
-              {prefs.sortAsc ? (
-                <ArrowUp className={styles.icon} />
-              ) : (
-                <ArrowDown className={styles.icon} />
-              )}
-            </button>
-          </Labelled>
+              <button
+                onClick={prefs.toggleSort}
+                className={cx(styles.viewToggle, styles.viewToggleBoxed)}
+                aria-label={
+                  prefs.sortAsc ? 'Sort newest first' : 'Sort oldest first'
+                }
+              >
+                {prefs.sortAsc ? (
+                  <ArrowUp className={styles.icon} />
+                ) : (
+                  <ArrowDown className={styles.icon} />
+                )}
+              </button>
+            </Labelled>
+          )}
 
           {/* Thumbnail size (#403). A flyout of the four stops, and the
               collapsed button shows only the icon -- what it is set to is

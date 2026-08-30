@@ -65,6 +65,7 @@ export type UserImageRow = {
   idempotency_key: string | null
   color_palette: Json | null
   sort_order: number | null
+  group_position: number | null
   /** The one group this image sits in, or null for top level (#319). */
   group_id: string | null
   /** timestamptz; selected as an ISO string. */

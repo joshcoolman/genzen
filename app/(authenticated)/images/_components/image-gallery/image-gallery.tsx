@@ -1,3 +1,4 @@
+import { useDragReorder } from '../../_hooks/use-drag-reorder'
 import { useDragToGroup } from '../../_hooks/use-drag-to-group'
 import { useSweepSelect } from '../../_hooks/use-sweep-select'
 import { GroupCard } from '../group-card/group-card'
@@ -91,6 +92,10 @@ interface ImageGalleryProps {
    *  write the picker dialog makes; absent inside a group, where there are no
    *  group cards to drop onto. */
   onDropOnGroup?: (groupId: string, ids: Array<string>) => void
+  /** Drag a card to a new place inside the open group (#505). The whole
+   *  ordered list; absent at top level, where the only order is the
+   *  library's. */
+  onReorder?: (orderedIds: Array<string>) => void
   /** A click on the grid's own background -- the gaps between cards. Clearing
    *  the selection is what it means (#439); absent when there is none. */
   onBackgroundClick?: () => void
@@ -130,6 +135,7 @@ export function ImageGallery({
   onSweepSelect,
   selectedIds,
   onDropOnGroup,
+  onReorder,
   onBackgroundClick,
 }: ImageGalleryProps) {
   /* Shift-drag to sweep (#440). Only once select mode is on, which is what
@@ -153,6 +159,16 @@ export function ImageGallery({
     onDrop: onDropOnGroup ?? (() => {}),
   })
 
+  /* And inside a group, the same press rearranges instead (#505). The two are
+     mutually exclusive by construction: `onDropOnGroup` is passed only at top
+     level and `onReorder` only inside a group, so exactly one of them is ever
+     armed. */
+  const reorder = useDragReorder({
+    enabled: Boolean(onReorder),
+    ids: cells.flatMap((c) => (c.kind === 'image' ? [c.image.id] : [])),
+    onReorder: onReorder ?? (() => {}),
+  })
+
   /* The gaps between cards are empty space too, and they belong to the grid
      rather than to the frame around it (#439). Identity again, never a bubbled
      click: everything in this grid is something you can click on purpose. */
@@ -173,12 +189,14 @@ export function ImageGallery({
         <div
           className={cx(
             styles.grid,
-            (sweep.sweeping || drag.dragging) && styles.sweeping,
+            (sweep.sweeping || drag.dragging || reorder.dragging) &&
+              styles.sweeping,
           )}
           onClick={clearOnBackground}
           onPointerDown={(e) => {
             sweep.onPointerDown(e)
             drag.onPointerDown(e)
+            reorder.onPointerDown(e)
           }}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
@@ -274,6 +292,12 @@ export function ImageGallery({
               <ImageCard
                 key={keyFor?.(img.id) ?? img.id}
                 img={img}
+                /* Where the card would land, drawn as a rule down the gap
+                   before it (#505). A gap rather than a highlighted card: a
+                   card says "swap with me", and a long move made of swaps is
+                   not the gesture. */
+                dropBefore={reorder.drag?.beforeId === img.id}
+                lifted={reorder.drag?.id === img.id}
                 imageUrl={imageUrls[img.id]}
                 onHide={onHide}
                 objectFit="contain"
@@ -294,6 +318,13 @@ export function ImageGallery({
               />
             )
           })}
+
+          {/* The one insertion point no card can anchor: past the last one.
+              A cell of its own in the grid's flow, so it lands where the next
+              card would rather than being positioned against a guess. */}
+          {reorder.drag?.index !== null && reorder.drag?.beforeId === null && (
+            <div className={styles.dropEnd} aria-hidden="true" />
+          )}
         </div>
       )}
 
@@ -328,6 +359,24 @@ export function ImageGallery({
           {drag.drag.ids.length > 1 && (
             <span className={styles.dragCount}>{drag.drag.ids.length}</span>
           )}
+        </div>
+      )}
+
+      {/* The lifted card under the pointer, the same stack the group drag
+          draws -- one gesture family, one picture of it. */}
+      {reorder.drag && (
+        <div
+          className={styles.dragPreview}
+          style={{ left: reorder.drag.x, top: reorder.drag.y }}
+        >
+          <span
+            className={styles.dragThumb}
+            style={{
+              backgroundImage: imageUrls[reorder.drag.id]
+                ? `url(${imageUrls[reorder.drag.id]})`
+                : undefined,
+            }}
+          />
         </div>
       )}
 

@@ -45,6 +45,21 @@ the ten writes had ever filtered on `source`.
 - **`listImageGroupNames` in `user-images` is a different read on purpose** --
   names only, for `ExistingImagePicker`, and image groups only, since no clip
   is ever in one.
+- **The hand-set order is images-only, and it is two facts (#505).**
+  `user_images.group_position` (ascending, **nulls last**) is the arrangement;
+  `image_groups.manual_order` is whether it is in effect. Kept apart so
+  switching back to chronological is not destructive -- the positions survive,
+  and the toggle is free in both directions. Nulls last is load-bearing rather
+  than incidental: it means nothing has to write a position when a row joins a
+  group, on any of the three paths that put one there, and a new arrival simply
+  sorts to the end. `reorderGroupImages` takes the whole ordered list and
+  numbers it with `unnest ... with ordinality`, scoped to that group's members,
+  so an id from elsewhere writes nothing. Deliberately **not** `sort_order`:
+  that is the library's order and drives where the group card sits at top level
+  (#324), so an arrangement written into it would shuffle the card every time
+  the inside of the group changed. Video has no arrangement -- nothing renders
+  a reorder gesture there -- but the columns and the writes are kind-agnostic
+  like everything else here
 - **Headless, like every feature.** The cards are the routes': `GroupCard` on
   Images, `VideoGroupCard` on Video. They are siblings rather than one
   component with a switch (#446) -- the dropdowns differ, and copying is
