@@ -60,6 +60,11 @@ export interface GalleryState {
    *  Membership is a column on the image, so filing pictures into a group is
    *  a field change on rows this hook already holds, not a re-read. */
   patchImages: (ids: Array<string>, patch: Partial<SavedAiImage>) => void
+  /** The hand-set order inside a group (#505). A per-id value rather than one
+   *  patch for all, which is what `patchImages` cannot do -- and the whole
+   *  point of writing it locally is that the grid holds the new order in the
+   *  same tick as the drop, without waiting for the write. */
+  setGroupPositions: (orderedIds: Array<string>) => void
   /** Drop rows the server has already removed. The caller did the write --
    *  unlike `deleteImages`, which is the write. */
   forgetImages: (ids: Array<string>) => void
@@ -229,6 +234,18 @@ export function useGallery({
     )
   }
 
+  function setGroupPositions(orderedIds: Array<string>) {
+    // One-based, matching what `reorderGroupImages` writes with `ordinality`,
+    // so the optimistic value and the stored one are the same number rather
+    // than merely the same order.
+    const at = new Map(orderedIds.map((id, i) => [id, i + 1]))
+    setSavedImages((prev) =>
+      prev.map((i) =>
+        at.has(i.id) ? { ...i, group_position: at.get(i.id)! } : i,
+      ),
+    )
+  }
+
   async function deleteImage(img: SavedAiImage) {
     forgetImages(new Set([img.id]))
 
@@ -300,6 +317,7 @@ export function useGallery({
     deleteImage,
     deleteImages,
     patchImages,
+    setGroupPositions,
     forgetImages: (ids: Array<string>) => forgetImages(new Set(ids)),
     addOptimisticCard,
     replaceOptimisticCard,

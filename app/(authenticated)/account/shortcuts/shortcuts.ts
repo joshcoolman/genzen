@@ -70,6 +70,11 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         what: 'File it there',
         note: 'Drag one thumbnail, or drag any card that is part of a selection and the whole selection comes with it. Dragging an unselected card moves only that card. Escape, or letting go anywhere that is not a group, files nothing.',
       },
+      {
+        keys: 'Drag a card inside a group',
+        what: 'Move it to that place in the group',
+        note: 'A line shows where it will land. The first drag puts the group into its own order; a row under the name lets you switch between that and the date order, and switching does not throw the arrangement away. One card at a time, even with a selection up.',
+      },
       { keys: 'Escape', what: 'Clear the selection' },
       {
         keys: 'Click a group’s swatch row',
@@ -150,6 +155,11 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         keys: 'Drag a card onto a group',
         what: 'File it there',
         note: 'Drag one thumbnail, or drag any card that is part of a selection and the whole selection comes with it. Dragging an unselected card moves only that card. Escape, or letting go anywhere that is not a group, files nothing.',
+      },
+      {
+        keys: 'Drag a card inside a group',
+        what: 'Move it to that place in the group',
+        note: 'A line shows where it will land. The first drag puts the group into its own order; a row under the name lets you switch between that and the date order, and switching does not throw the arrangement away. One card at a time, even with a selection up.',
       },
       { keys: 'Escape', what: 'Clear the selection' },
       {

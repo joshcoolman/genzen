@@ -105,6 +105,10 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const groups = useGroups('image')
   const activeGroup = groups.groups.find((g) => g.id === activeGroupId) ?? null
+  /** The open group renders in its hand-set order (#505). Only ever true
+   *  inside a group -- at top level there is one order and it is the
+   *  library's. */
+  const manualOrder = Boolean(activeGroup?.manual_order)
 
   // A group that no longer exists -- dissolved on another tab, or a stale link
   // -- must not leave the grid showing nothing with a name in the toolbar.
@@ -310,7 +314,21 @@ export function useView(initial: Array<SavedAiImage>) {
     // every scope. A per-branch filter would be four places to keep in step.
     const shown = gallery.images.filter(visibility.visible)
     if (activeGroupId) {
-      return shown.filter((img) => img.group_id === activeGroupId)
+      const members = shown.filter((img) => img.group_id === activeGroupId)
+      if (!manualOrder) return members
+      /* Ascending, nulls last, then oldest first among the nulls -- which is
+         the whole of "a new image lands at the end" (#505). Nothing writes a
+         position when a row joins a group, on any of the three paths that put
+         one there; an unpositioned row simply sorts after every positioned
+         one, and the next drag gives it a number along with everything else. */
+      return [...members].sort((a, b) => {
+        const ap = a.group_position ?? Infinity
+        const bp = b.group_position ?? Infinity
+        if (ap !== bp) return ap - bp
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+      })
     }
     if (uploadsIgnoreGroups) {
       return shown.filter((img) => img.origin === 'upload')
@@ -324,9 +342,13 @@ export function useView(initial: Array<SavedAiImage>) {
     activeGroupId,
     uploadsIgnoreGroups,
     prefs.originFilter,
+    manualOrder,
   ])
 
-  const images = prefs.sortAsc ? [...scoped].reverse() : scoped
+  /* The arrangement is the order, so the toolbar's newest/oldest toggle does
+     not apply to it (#505) -- and the toolbar hides that control inside an
+     arranged group rather than leaving it there doing nothing. */
+  const images = prefs.sortAsc && !manualOrder ? [...scoped].reverse() : scoped
 
   /**
    * The grid's cells: loose images and group cards in one order (#324).
@@ -343,6 +365,12 @@ export function useView(initial: Array<SavedAiImage>) {
    * each need their own reversal to stay interleaved.
    */
   const cells: Array<GalleryCell> = useMemo(() => {
+    /* An arranged group is already in its order, and there are no group cards
+       inside a group to interleave with it -- so the sort below has nothing to
+       decide and would only undo the arrangement. */
+    if (manualOrder) {
+      return scoped.map((image) => ({ kind: 'image' as const, image }))
+    }
     const imageCells = scoped.map((image) => ({
       cell: { kind: 'image' as const, image },
       sortOrder:
@@ -389,6 +417,7 @@ export function useView(initial: Array<SavedAiImage>) {
     activeGroupId,
     uploadsIgnoreGroups,
     prefs.sortAsc,
+    manualOrder,
   ])
 
   // The expanded group strip (#352), minus anything hidden (#504).
@@ -628,6 +657,43 @@ export function useView(initial: Array<SavedAiImage>) {
       applyGroupWrite(await groups.addTo(groupId, imageIds))
     },
     [groups, gallery, selection, closeGroupFlow, applyGroupWrite],
+  )
+
+  /**
+   * The drop at the end of a reorder drag (#505).
+   *
+   * Optimistic in the half that matters: the grid holds the new order in the
+   * same tick, because the client already knows the sequence it just built --
+   * there is nothing to ask the server for. The write persists it and returns
+   * the group summary, which is where `manual_order` flipping to true arrives.
+   *
+   * The whole ordered list every time, not the one image that moved: every
+   * member needs a number for the arrangement to be total, since an unnumbered
+   * row sorts after every numbered one. It is one statement either way.
+   */
+  const reorderGroupImages = useCallback(
+    async (orderedIds: Array<string>) => {
+      if (!activeGroupId) return
+      gallery.setGroupPositions(orderedIds)
+      applyGroupWrite(await groups.reorder(activeGroupId, orderedIds))
+    },
+    [activeGroupId, gallery, groups, applyGroupWrite],
+  )
+
+  /**
+   * Newest first, or the arrangement (#505).
+   *
+   * Free in both directions: turning the arrangement off keeps every position,
+   * so this is a way of looking at the group rather than a way of throwing
+   * work away. That is why the control can stay a plain toggle with no confirm
+   * on it.
+   */
+  const setGroupOrderMode = useCallback(
+    async (manual: boolean) => {
+      if (!activeGroupId) return
+      applyGroupWrite(await groups.setOrderMode(activeGroupId, manual))
+    },
+    [activeGroupId, groups, applyGroupWrite],
   )
 
   /**
@@ -961,6 +1027,14 @@ export function useView(initial: Array<SavedAiImage>) {
     workingByGroup,
     visibleGroupMembers,
     activeGroup,
+    manualOrder,
+    reorderGroupImages,
+    setGroupOrderMode,
+    /* Whether an arrangement *exists*, which is a different question from
+       whether it is in effect (#505). Derived from the rows in hand rather
+       than stored, and only meaningful inside a group -- which is the only
+       place the control that reads it renders. */
+    hasManualOrder: scoped.some((img) => img.group_position != null),
     activeGroupId,
     openGroup,
     leaveGroup,

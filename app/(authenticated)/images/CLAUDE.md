@@ -271,6 +271,44 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   it: dead since drag-to-reorder was unwired, and leaving a corpse beside a live
   drag gesture is two answers to what a plain drag means. Manual ordering (#505)
   is a group-scoped resequence and will build what it needs
+- **Inside a group, the same drag rearranges (#505).** The two gestures never
+  run at once and do not need to be told apart: `use-drag-to-group` is armed
+  only at top level, where there are group cards to drop onto, and
+  `_hooks/use-drag-reorder.ts` only inside a group, where there is an order to
+  make. Same five-pixel threshold, same excluded controls, same Escape, same
+  swallowed click. **The insertion point is a gap, not a card** -- hit-testing
+  which card you are over and swapping makes a long move a run of swaps; the
+  gap is picked by which half of a card the pointer is in, and drawn as a rule
+  down that card's leading edge (inside the tile, because `Thumbnail` is
+  `overflow: hidden` and a line in the gutter is clipped away). **One card at a
+  time**, even with a selection up: moving several into one place raises
+  questions -- contiguous or not, in what order, what happens to the gap they
+  leave -- that the asked-for gesture does not need answered. The index
+  arithmetic is `moveTo` in `src/lib/reorder.ts`, extracted and tested because
+  it is wrong in exactly one direction when it is wrong: a gap past the card's
+  own place shifts by one when the card is removed, and every leftward drag
+  works either way.
+
+  **Two facts, kept apart** -- whether an arrangement _exists_ (any member with
+  a `group_position`, derived, never stored) and whether it is _in effect_
+  (`image_groups.manual_order`). Collapsing them would make the way back
+  destructive. So `OrderRow` -- `By date | Manual`, in `ScopeRow`'s slot and
+  `ScopeRow`'s register, since inside a group there is no origin scope --
+  appears only once an arrangement exists, and switching to By date keeps every
+  position. **The first drag is what turns it on**; there is no mode to declare
+  first, which is #284's rule about touching the picture you are looking at.
+  While Manual is in effect the toolbar's newest/oldest control is not drawn,
+  because a direction has nothing to order.
+
+  **`group_position`, not `sort_order`.** That column is the _library's_ order,
+  and a group card sorts among the top-level thumbnails on its newest member's
+  `sort_order` (#324) -- writing an arrangement into it would move the group
+  card around the top-level grid every time you rearranged the inside of the
+  group. **Nulls sort last, and that is the whole of "a new image goes to the
+  end"**: none of the three paths that put a row into a group writes a position,
+  a never-arranged group is all nulls and therefore chronological as before, and
+  the next drag numbers everything including the new arrivals
+
 - **A click opens the viewer, and #308's in-place preview is gone.** For three
   days the click turned the grid area, and only the grid area, into one large
   image -- toolbar still there, no scrim, hidden click zones in the outer
