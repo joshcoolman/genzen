@@ -376,11 +376,14 @@ export function VideoThumb({
             Play and Continue own their halves and a card-wide target would
             take both away.
 
-            **Except the clip that is playing**, which keeps its scrubber -- it
-            is exactly one card, its controls are in use, and its tick still
-            works. `tabIndex={-1}` because the tick already carries this card's
+            **No exception for a playing clip**, because there cannot be one:
+            entering select mode stops playback (`use-view`), so every card
+            here is a poster and a tick. It carried that exception briefly and
+            it read on the wall as one tile behaving unlike its neighbours.
+
+            `tabIndex={-1}` because the tick already carries this card's
             keyboard route in; two stops for one act is one too many. */}
-        {selectionActive && !isPlaying ? (
+        {selectionActive ? (
           <button
             type="button"
             tabIndex={-1}

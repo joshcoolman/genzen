@@ -412,10 +412,18 @@ source images; `use-view.ts` owns everything after the first paint.
   **In select mode the whole picture is the target** (#538), as a still's whole
   tile is. Only in select mode: with nothing picked, Play owns the player and
   Continue owns its corner, and a card-wide target would take both away. The
-  exception is **the clip that is playing**, which keeps its scrubber -- it is
-  exactly one card, its controls are in use, and its tick still works. The
   overlay sits under the tick and the `...` (`z-index: 2` against their 3), so
-  those keep their own clicks.
+  those keep their own clicks, and stops at the caption so the prompt stays
+  selectable text.
+
+  **Entering select mode stops whatever was playing**, which is what lets there
+  be no exception. Picking and watching are different things to be doing, and
+  the wall is one or the other: in select mode every card is a poster and a
+  tick, with nothing under the picture that a click would rather have gone to.
+  It briefly covered every card *except* the playing one, whose scrubber was in
+  use -- a rule that had to be stated, and that read on the wall as one tile
+  behaving unlike its neighbours. The card rewinds itself on the way out, the
+  same as when another card takes playback.
 
   **The tick is the way in** -- the card deliberately does _not_
   become one big toggle in select mode the way a still does, because a click
