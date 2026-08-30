@@ -78,13 +78,23 @@ source images; `use-view.ts` owns everything after the first paint.
   picture's corner and the prompt is `--text-3xs` at 1.5 clamped to three
   lines, both matching the image card exactly. Hand-written, they had drifted
   to `--text-sm` and no badge at all, so a clip and a still read as different
-  kinds of record when they are the same row in the same table. **No overlay
-  actions**: native controls already own the bottom edge, and a second set of
-  buttons above them is two rows of controls arguing, so the verbs are text in
-  the caption. The rule is about _verbs on the player_, not about anything
-  drawn on it -- the model badge and the select tick are both fixed markers in
-  free corners, always on rather than following the pointer.
+  kinds of record when they are the same row in the same table. **The player and
+  both frames are one thumbnail, and the chrome sits on its corners** (#534) --
+  `...` top-left on hover, the select tick bottom-left always on, the model
+  badge bottom-right, which is the gallery card's own arrangement exactly.
   `video-list/` is now the grid and nothing else.
+
+  **This replaced the no-overlay-actions rule**, which said the file verbs had
+  to be text in the caption because native controls own the player's bottom
+  edge. Two things retired it, both consequences of earlier changes: treating
+  the block as one unit puts the player's bottom edge in the _middle_ of it, so
+  the bottom corners belong to the two frames, which never have controls; and
+  since #530 a card has controls only while it is playing, where before every
+  card carried a scrubber permanently. It holds in the one case worth checking
+  -- a pending or failed clip has no frames block, so the corners land on the
+  player, but such a clip never plays. The frames exist exactly when the clip
+  is playable; the controls exist only while it plays.
+
 - **Continue carries on from a clip's last frame** (#494). One press reads the
   frame at the end of a finished clip, saves it as an ordinary upload, and sets
   it as the first frame -- replacing five manual steps that all worked
@@ -99,16 +109,18 @@ source images; `use-view.ts` owns everything after the first paint.
   meant retyping most of a prompt to change a clause. Any end frame is still
   dropped, because unlike a prompt there is no part of it to edit.
 
-  **The last frame is the control.** Continue was `CornerDownRight` plus the
-  word, in the caption; what it does is take that picture and put it in the
-  form, so the picture is the button -- half a card of target instead of a line
-  of `--text-3xs` text. A filled circular `ArrowUpRight` sits bottom-left of the
-  frame, always on rather than on hover, because it is the only thing saying the
-  frame does anything. This does not breach the card's no-overlay-actions rule:
-  that rule is about the player's bottom edge and its native controls, and a
-  frame has none. Below the block, a rule, then the clip's facts on the left and
-  the file verbs on the right: Download and Delete act on the clip in front of you, Continue
-  starts the next one, and a row mixing the two read as three file operations.
+  **Continue sits beside the prompt** (#534), and it is still the one act on
+  this card that starts new work rather than acting on this row -- which is why
+  it is on the prompt's line and not in the `...` menu with Download and
+  Delete. It has moved twice: a caption text link (#494), then the last frame
+  itself (#534's predecessor #530), then back to the caption.
+
+  **That last move is not drift, and the reason matters.** A picture with a
+  button embedded in its right half is exactly why nothing else could go on
+  that block -- so Continue is now buying the whole unit's uniformity, which
+  was not on the table when #530 chose the frame. The frames are plain
+  pictures; the corners are free. Below them a rule, then only the two facts a
+  clip _is_ -- shape and duration. Nothing in that row is clickable any more.
   The mechanism is `src/features/video/frame-capture.ts`, shared with
   `lab/frames` -- and it lands _near_ the end of the clip rather than provably
   on the last sample, so a seam may be a frame or two loose.
@@ -360,13 +372,11 @@ source images; `use-view.ts` owns everything after the first paint.
   tick sits on every card always so picking up again after a delete is one
   click rather than a mode to re-enter.
 
-  **The tick is top-left of the player, and it is the only way to select.** That
-  corner is the one this card does not already use -- badge top-right, Play
-  centre, native controls along the bottom, Continue at the last frame's
-  bottom-left. The card deliberately does _not_ become one big toggle in select
-  mode the way a still does: half of it is a player and the other half is
-  Continue, so a full-card target would take both away exactly when they still
-  work.
+  **The tick is the only way to select** -- the card deliberately does _not_
+  become one big toggle in select mode the way a still does, because a click
+  anywhere on it would have to take Play away. It sits bottom-left of the unit,
+  the gallery card's own corner (#534); it was top-left while the chrome was
+  positioned against the player rather than against the whole block.
 
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
