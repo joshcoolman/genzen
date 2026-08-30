@@ -45,6 +45,9 @@ interface GeneratorPanelProps {
   modelSelector: ReturnType<typeof useModelSelector>
   userImages: UserImagesData
   modelDisplay?: 'panel' | 'dropdown'
+  /** The group the surrounding route is standing in, which an upload from the
+   *  picker lands in (#549). Canvas has none and passes nothing. */
+  uploadGroupId?: string | null
 }
 
 /**
@@ -63,6 +66,7 @@ export function GeneratorPanel({
   modelSelector,
   userImages,
   modelDisplay = 'panel',
+  uploadGroupId = null,
 }: GeneratorPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const { confirm, dialogProps } = useConfirm()
@@ -192,6 +196,7 @@ export function GeneratorPanel({
            often a file on disk, and getting it in used to mean leaving this
            dialog for the Images toolbar and coming back. */
         onRefresh={userImages.refresh}
+        uploadGroupId={uploadGroupId}
         onConfirm={(selected) =>
           generator.addRefImages(
             selected.map((s) => ({ id: s.id, url: s.url, title: s.title })),
