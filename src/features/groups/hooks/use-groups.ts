@@ -10,7 +10,9 @@ import {
   moveGroupContents,
   removeImagesFromGroup,
   renameImageGroup,
+  reorderGroupImages,
   setGroupCover,
+  setGroupOrderMode,
   trashImageGroup,
 } from '../groups.action'
 import type { GroupKind, GroupWrite, ImageGroupSummary } from '../groups.action'
@@ -205,6 +207,30 @@ export function useGroups(kind: GroupKind) {
     [write],
   )
 
+  /** The drag inside a group (#505). The whole ordered list, because every
+   *  member needs a number for the arrangement to be total. Puts the group into
+   *  manual order as a side effect -- the first drag is the statement, and there
+   *  is no mode to turn on first. */
+  const reorder = useCallback(
+    (groupId: string, orderedIds: Array<string>) =>
+      write(
+        () => reorderGroupImages(groupId, orderedIds),
+        'Could not save the order',
+      ),
+    [write],
+  )
+
+  /** Newest first or the arrangement. Non-destructive both ways: the positions
+   *  survive being switched off, so the toggle is free to press. */
+  const setOrderMode = useCallback(
+    (groupId: string, manual: boolean) =>
+      write(
+        () => setGroupOrderMode(groupId, manual),
+        'Could not change the order',
+      ),
+    [write],
+  )
+
   const setCover = useCallback(
     (groupId: string, imageId: string) =>
       write(
@@ -229,6 +255,8 @@ export function useGroups(kind: GroupKind) {
     dissolve,
     trash,
     setCover,
+    reorder,
+    setOrderMode,
   }
 }
 

@@ -79,8 +79,14 @@ export interface ImageGroupSummary {
    *  cause. */
   count: number
   /** The newest member's `sort_order`, which is what the grid sorts on. An
-   *  empty group falls back to its own creation time so it still has a place. */
+   *  empty group falls back to its own creation time so it still has a place.
+   *  Unaffected by `manual_order` below: where the card sits at top level is
+   *  about recency, and rearranging the inside of a group is not news. */
   sort_order: number
+  /** Whether this group renders in its hand-set order (#505). Set by the first
+   *  drag, and turning it off keeps every position -- so whether an arrangement
+   *  *exists* is a separate question, answered by the members themselves. */
+  manual_order: boolean
 }
 
 /**
@@ -157,6 +163,7 @@ async function readGroups(
     select g.id,
            g.name,
            g.cover_image_id,
+           g.manual_order,
            coalesce(m.ids, '{}') as preview_image_ids,
            coalesce(m.n, 0) as count,
            coalesce(m.newest, extract(epoch from g.created_at))::float8 as sort_order
@@ -208,15 +215,99 @@ export async function listGroupMemberIds(
 ): Promise<Array<string>> {
   const { userId } = await resolveAuth()
 
+  // An arranged group's expansion follows the arrangement (#505). Read as a
+  // flag first rather than folded into the order-by with a `case`: two orders
+  // written plainly beat one written twice inside conditionals, and this is
+  // already a second round trip by design.
+  const manual = first(
+    await sql<Array<{ manual_order: boolean }>>`
+      select manual_order from image_groups
+      where id = ${groupId} and user_id = ${userId}
+    `,
+  )
+
+  const ordered = manual?.manual_order
+    ? sql`order by group_position asc nulls last, ${ORDER_KEY} desc`
+    : sql`order by ${ORDER_KEY} desc`
+
   const rows = await sql<Array<{ id: string }>>`
     select id from user_images
     where user_id = ${userId}
       and group_id = ${groupId}
       and deleted_at is null
       and storage_path is not null
-    order by ${ORDER_KEY} desc
+    ${ordered}
   `
   return rows.map((r) => r.id)
+}
+
+/**
+ * The hand-set order (#505): every id in the order they are to render in.
+ *
+ * The whole group in one write, not a moved-image-and-a-target. Every member
+ * needs a number for the arrangement to be total: an unnumbered row sorts after
+ * every numbered one -- which is the rule that makes a new image land at the end
+ * -- so a partial write would strand an untouched card there. Re-sequencing the
+ * lot is one statement either way, and the client already holds the list it
+ * wants, so sending it is cheaper than asking the server to work out where one
+ * image went.
+ *
+ * `unnest` with ordinality gives each id its index without a statement each.
+ * Scoped to members of this group, so an id from elsewhere -- or from another
+ * user -- writes nothing rather than erroring.
+ *
+ * Sets `manual_order` in the same write. The first drag is what puts a group
+ * into its own order; there is no mode to turn on first.
+ */
+export async function reorderGroupImages(
+  groupId: string,
+  orderedIds: Array<string>,
+): Promise<GroupWrite> {
+  const { userId } = await resolveAuth()
+
+  await sql`
+    update user_images ui
+    set group_position = p.ord
+    from unnest(${orderedIds}::uuid[]) with ordinality as p(id, ord)
+    where ui.id = p.id
+      and ui.user_id = ${userId}
+      and ui.group_id = ${groupId}
+  `
+
+  await sql`
+    update image_groups set manual_order = true
+    where id = ${groupId} and user_id = ${userId}
+  `
+
+  return {
+    ...EMPTY_WRITE,
+    groups: await readGroups(userId, { only: [groupId] }),
+  }
+}
+
+/**
+ * Which of the two orders is in effect.
+ *
+ * Deliberately does not touch `group_position`: turning the arrangement off is
+ * a way of looking at the group, not a way of throwing the arrangement away.
+ * That is the whole reason "does an arrangement exist" and "is it in effect"
+ * are separate facts -- see the migration.
+ */
+export async function setGroupOrderMode(
+  groupId: string,
+  manual: boolean,
+): Promise<GroupWrite> {
+  const { userId } = await resolveAuth()
+
+  await sql`
+    update image_groups set manual_order = ${manual}
+    where id = ${groupId} and user_id = ${userId}
+  `
+
+  return {
+    ...EMPTY_WRITE,
+    groups: await readGroups(userId, { only: [groupId] }),
+  }
 }
 
 export async function listImageGroups(

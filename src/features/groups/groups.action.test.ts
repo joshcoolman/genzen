@@ -3,7 +3,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   addImagesToGroup,
   createImageGroup,
+  listGroupMemberIds,
   listImageGroups,
+  reorderGroupImages,
+  setGroupOrderMode,
 } from './groups.action'
 import { sql } from '#/lib/server/db.server'
 
@@ -42,6 +45,14 @@ async function makeClip(): Promise<string> {
     returning id
   `
   return row.id
+}
+
+async function positionOf(imageId: string): Promise<number | null> {
+  const [row] = await sql<Array<{ group_position: number | null }>>`
+    select group_position from user_images
+    where id = ${imageId} and user_id = ${userId}
+  `
+  return row.group_position
 }
 
 async function groupIdOf(imageId: string): Promise<string | null> {
@@ -108,5 +119,59 @@ describe('group kinds', () => {
 
     expect(write.moved?.ids).toEqual([clip])
     expect(await groupIdOf(still)).toBeNull()
+  })
+})
+
+/**
+ * The two claims the arrangement rests on (#505): a reorder writes consecutive
+ * positions for the group's own members and nothing else's, and turning the
+ * order off keeps them -- which is the only reason the toggle can be offered
+ * without a confirm.
+ */
+describe('manual order', () => {
+  it('numbers the group and leaves an outsider alone', async () => {
+    const [a, b, c] = [await makeImage(), await makeImage(), await makeImage()]
+    const created = await createImageGroup('Sequence', [a, b, c], 'image')
+    const groupId = created.groups[0].id
+
+    // A loose image named in the request. It is not a member, so it takes no
+    // position -- a forged id writes nothing rather than erroring.
+    const outsider = await makeImage()
+
+    const write = await reorderGroupImages(groupId, [c, a, outsider, b])
+
+    expect(write.groups[0].manual_order).toBe(true)
+    expect(await positionOf(c)).toBe(1)
+    expect(await positionOf(a)).toBe(2)
+    // Four, not three: the ordinal comes from the list that was sent, and the
+    // outsider consumed a number without taking one. Gaps are harmless -- the
+    // column is only ever read as an order.
+    expect(await positionOf(b)).toBe(4)
+    expect(await positionOf(outsider)).toBeNull()
+
+    // And the read follows it: the arranged order, not the chronological one.
+    expect(await listGroupMemberIds(groupId)).toEqual([c, a, b])
+  })
+
+  it('keeps every position when the order is switched off', async () => {
+    const [a, b] = [await makeImage(), await makeImage()]
+    const created = await createImageGroup('Kept', [a, b], 'image')
+    const groupId = created.groups[0].id
+
+    // Deliberately the reverse of chronological, which is newest first --
+    // so the two orders disagree and the read has something to prove.
+    await reorderGroupImages(groupId, [a, b])
+    const off = await setGroupOrderMode(groupId, false)
+
+    expect(off.groups[0].manual_order).toBe(false)
+    expect(await positionOf(a)).toBe(1)
+    expect(await positionOf(b)).toBe(2)
+    // Chronological again while it is off...
+    expect(await listGroupMemberIds(groupId)).toEqual([b, a])
+
+    // ...and the arrangement is still there to come back to.
+    const on = await setGroupOrderMode(groupId, true)
+    expect(on.groups[0].manual_order).toBe(true)
+    expect(await listGroupMemberIds(groupId)).toEqual([a, b])
   })
 })

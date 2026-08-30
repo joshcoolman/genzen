@@ -62,6 +62,12 @@ interface ImageCardProps {
   /** Select mode. The whole card is the target, and nothing else responds. */
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  /** A reorder drag would drop before this card (#505) -- drawn as a rule down
+   *  the gap on its leading edge. */
+  dropBefore?: boolean
+  /** This is the card being dragged. Faded, so the grid shows where it came
+   *  from while the preview shows where it is going. */
+  lifted?: boolean
 }
 
 /**
@@ -92,6 +98,8 @@ export function ImageCard({
   selected,
   selectionActive,
   onSelect,
+  dropBefore,
+  lifted,
 }: ImageCardProps) {
   const moreButton = (
     <DropdownMenu>
@@ -231,9 +239,11 @@ export function ImageCard({
          50% instead, which put it in the same state as a group card -- and a
          group genuinely cannot be selected, so the grid was telling you the
          one thing about images that is not true of them. */
-      className={
-        selectionActive && !selected ? styles.selectableTile : undefined
-      }
+      className={cx(
+        selectionActive && !selected && styles.selectableTile,
+        dropBefore && styles.dropBefore,
+        lifted && styles.lifted,
+      )}
       /* Where the grid's drag finds the card it lifted (#438). On every image
          card, not only in select mode: dragging one thumbnail onto a group is
          the single-image half of the gesture. A group card carries

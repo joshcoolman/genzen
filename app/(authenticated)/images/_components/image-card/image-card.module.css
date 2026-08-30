@@ -112,3 +112,28 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
+
+/* Where a reorder drag would drop (#505): a rule down this card's leading
+   edge. Inside the tile rather than out in the grid's gutter, because
+   `Thumbnail`'s root is `overflow: hidden` and a negatively-offset line is
+   simply clipped away. Nothing about the card moves for it -- it paints over
+   the picture's edge, so the row keeps its rhythm while the pointer is aiming
+   between two of them. */
+.dropBefore::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 4;
+  width: 3px;
+  background: var(--accent);
+}
+
+/* The card that is in the air. Still in place, so the grid shows where it came
+   from while the preview under the pointer shows where it is going -- pulling
+   it out and closing the gap makes every other card move under a pointer that
+   is trying to aim between two of them. */
+.lifted {
+  opacity: 0.35;
+}

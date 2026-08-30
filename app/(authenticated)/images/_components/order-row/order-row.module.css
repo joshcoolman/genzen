@@ -1,0 +1,43 @@
+/* Deliberately identical to `scope-row.module.css`: this occupies the same
+   slot, answers the same kind of question, and a second look for it would read
+   as a different kind of thing arriving. Copied rather than shared -- the two
+   are the same by coincidence of register, and a shared stylesheet would make
+   a change to one a change to both. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-12);
+  padding-block-end: var(--space-8);
+  border-block-end: var(--border-width) solid var(--border);
+}
+
+/* The scope row needs no word in front of it -- "Generations | All | Uploads"
+   says what it is. "By date | Manual" does not, so it gets one, quieter than
+   the choices it introduces. */
+.label {
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-wide);
+  opacity: 0.7;
+}
+
+.item {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: var(--text-3xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.item:hover {
+  color: var(--text);
+}
+
+.itemOn {
+  color: var(--text);
+}
