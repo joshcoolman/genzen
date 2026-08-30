@@ -254,6 +254,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}
+        uploadGroupId={activeGroupId}
       />
 
       {viewer.isOpen && (

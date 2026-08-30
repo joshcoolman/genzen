@@ -23,6 +23,8 @@ interface GeneratorDockProps {
     isLoading: boolean
     refresh: () => Promise<void>
   }
+  /** The open group, which an upload from the picker lands in (#549). */
+  uploadGroupId?: string | null
 }
 
 /**
@@ -41,12 +43,14 @@ export function GeneratorDock({
   generator,
   modelSelector,
   userImages,
+  uploadGroupId,
 }: GeneratorDockProps) {
   const panel = (
     <GeneratorPanel
       generator={generator}
       modelSelector={modelSelector}
       userImages={userImages}
+      uploadGroupId={uploadGroupId}
       modelDisplay={isMobile ? 'dropdown' : undefined}
     />
   )
