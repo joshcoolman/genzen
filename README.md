@@ -158,24 +158,17 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Up next**
 
-**Asset management**, taken as one arc rather than four separate passes — the
-library has grown past the point where generating is the hard part, and these
-interlock:
+The board at `localhost:3210/kanban/genzen` is the ranking — **Focus** (what is
+being worked on), **Now** (queued, plus small things to clear first) and
+**Next** (an honest read on what follows). Those three are the live picture;
+Later and Unsorted are the parking lots.
 
-1. [#545](https://github.com/joshcoolman/genzen/issues/545) — the half that is
-   left: a viewer over the hidden set, for the second pass. #546 settled what
-   it opens over — what is hidden where you are standing, the same set the bar
-   counts. What is undecided is where the way in lives, the tray being a row of
-   single-verb thumbnails today.
-2. [#543](https://github.com/joshcoolman/genzen/issues/543) +
-   [#544](https://github.com/joshcoolman/genzen/issues/544) — locking and
-   labels, designed together. Build them apart and you get two marking systems
-   on one card whose corners are already spoken for; deciding once whether
-   "locked" is a reserved label is cheap now and a migration later.
-   [#513](https://github.com/joshcoolman/genzen/issues/513) is annotation, which
-   is the same instinct — read it before designing labels.
+The current arc is **asset management** — the library has grown past the point
+where generating is the hard part. What that means and how the pieces interlock
+lives in the issues themselves, not here: a second copy of the ranking drifts,
+and this one did.
 
-Everything else: the open issues labelled
-[`focus`](https://github.com/joshcoolman/genzen/labels/focus), then
-[`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are the
-ranking; a full list here would be a second copy of it that drifts.
+Labels are the ranking:
+[`focus`](https://github.com/joshcoolman/genzen/labels/focus),
+[`now`](https://github.com/joshcoolman/genzen/labels/now),
+[`next`](https://github.com/joshcoolman/genzen/labels/next).
