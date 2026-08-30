@@ -254,23 +254,22 @@
   color: var(--text);
 }
 
-/* `...`, top-left, hover-revealed -- the gallery card's own corner and its own
-   behaviour. The one piece of chrome here that is not always on: it is a menu,
-   and a menu that never hides is chrome over every picture on the wall. Kept
-   on focus so the keyboard can reach it, and while it is open. */
+/* `...`, top-left -- the gallery card's corner, but **always on, where a
+   still's is hover-revealed**. The divergence is deliberate. A still hides its
+   chrome because the picture is the thing and the grid is dense with them; a
+   clip card is a player, a pair of end frames and a caption, so it already
+   reads as an object with controls rather than as a bare picture, and one more
+   fixed marker in a corner costs it nothing. It also joins the two markers
+   already always on here -- the select tick and the model badge -- so the
+   card has no chrome that appears only if you happen to point at it.
+
+   Which is the real reason: a menu you have to hover to discover is one nobody
+   discovers, and this is now the only route to Download and Delete. */
 .actions {
   position: absolute;
   top: var(--space-6);
   left: var(--space-6);
   z-index: 3;
-  opacity: 0;
-  transition: opacity var(--duration-normal) var(--ease-in-out);
-}
-
-.unit:hover .actions,
-.actions:focus-within,
-.actions:has([data-popup-open]) {
-  opacity: 1;
 }
 
 .menuIcon {
