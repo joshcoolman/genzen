@@ -131,7 +131,22 @@ source images; `use-view.ts` owns everything after the first paint.
   meant retyping most of a prompt to change a clause. Any end frame is still
   dropped, because unlike a prompt there is no part of it to edit.
 
-  **Continue sits beside the prompt** (#534), and it is still the one act on
+- **The card is built to be scanned, because a wall of takes is near-identical
+  cards** (#537). Three things do it, and all three are about the numbers being
+  in one place: the prompt **reserves all three of its clamped lines** whether
+  or not it needs them, the facts row is pinned to the card's **bottom edge**
+  with `margin-block-start: auto` (the grid stretches cards to their row's
+  height, so without it a short card left a band of empty surface under its
+  numbers), and Continue is **top-aligned** rather than sitting on the prompt's
+  last line, which moved whenever a sentence ran long. Cards get taller than
+  their content needs; that is the trade, and it is the right one here.
+
+  **The two always-on markers on the picture are the same 20px.** The tick sets
+  it flat; the `...` gets there through `ExpandableIconButton`'s pill, which is
+  its icon plus `--space-4` a side, so `.menuIcon` is `0.75rem`. They sit in
+  opposite corners of one picture, and at two diameters they read as two
+  systems rather than one pair.
+  **Continue sits in the caption's top-right** (#534, #537), and it is still the one act on
   this card that starts new work rather than acting on this row -- which is why
   it is on the prompt's line and not in the `...` menu with Download and
   Delete. It has moved twice: a caption text link (#494), then the last frame

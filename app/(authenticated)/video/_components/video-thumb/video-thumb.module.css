@@ -105,9 +105,14 @@
   }
 }
 
-/* `card-caption.module.css`'s block: the same padding, the same gap. */
+/* `card-caption.module.css`'s block: the same padding, the same gap.
+
+   **It grows to fill the card** so `.facts` can sit on the bottom edge. The
+   grid stretches cards to their row's height, so without this a short card
+   ended with its facts row floating above a band of empty surface. */
 .caption {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-8) var(--space-12) var(--space-12);
@@ -117,9 +122,18 @@
    clamped to three lines. It read at `--text-sm` here, which made the same
    sentence look like a different kind of text depending on which route you
    were on. Three lines is enough to recognise a prompt; Activity shows it
-   whole. */
+   whole.
+
+   **It reserves all three lines whether or not it needs them** (#537). A wall
+   of takes of the same shot is a page of near-identical cards, so the only
+   thing that makes it scannable is that the numbers are always in the same
+   place -- and a prompt that ran to two lines pushed its card's facts row down
+   while its neighbour's stayed up. Reserved, every card is read at one height.
+   `4.5em` is the clamp: three lines at the 1.5 this sets, in the element's own
+   size, so the two cannot drift apart. */
 .prompt {
   display: -webkit-box;
+  min-height: 4.5em;
   overflow: hidden;
   margin: 0;
   font-size: var(--text-3xs);
@@ -166,12 +180,15 @@
   object-fit: cover;
 }
 
-/* The prompt, and Continue at the end of its line (#534). Baseline-aligned so
-   the verb sits on the prompt's last line rather than floating beside a block
-   of it. */
+/* The prompt, and Continue beside it (#534).
+
+   **Top-aligned since #537**, where it sat on the prompt's last line before.
+   The last line is wherever the prompt happens to end, so the verb moved down
+   a row whenever a sentence ran long -- which is the same scanning problem the
+   reserved height below fixes, in the one control on this card. */
 .promptRow {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-8);
 }
@@ -181,25 +198,41 @@
    itself until #534; moving it out is what makes that block a picture rather
    than a control, and the unit's corners usable.
 
-   It does not shrink: a wrapping prompt must not squeeze the verb beside it to
-   nothing. */
+   **The word came off in #537 -- a circle and the arrow, in the caption's
+   top-right corner.** At three cards across, `Continue` was the only text on
+   the card competing with the prompt for the same line, and repeated down a
+   wall of near-identical takes it read as part of the caption rather than as a
+   control. The glyph carries it: `ArrowUpRight` is the same arrow it wore as a
+   badge on the last frame, so it is recognisably the same verb that moved. The
+   accessible name and the tooltip still say the whole thing.
+
+   It does not shrink: a wrapping prompt must not squeeze it to nothing. */
 .continue {
-  display: inline-flex;
+  display: flex;
   flex: none;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   border: none;
-  background: none;
-  color: color-mix(in oklab, var(--text) 35%, transparent);
-  font-size: var(--text-3xs);
-  line-height: 1.5;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: color var(--duration-normal) var(--ease-in-out);
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background var(--duration-normal) var(--ease-in-out);
 }
 
 .continue:hover:not(:disabled) {
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.continue:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .continue:disabled {
@@ -208,13 +241,18 @@
 
 /* Only the two facts a clip *is* -- Download and Delete left this row for the
    menu in #534. Left-aligned, under a rule; there is nothing here to click, so
-   there is no destructive verb to keep in a fixed position any more. */
+   there is no destructive verb to keep in a fixed position any more.
+
+   **On the card's bottom edge** (#537) -- `auto` rather than a fixed margin,
+   so a card stretched to its row's height keeps its numbers at the bottom
+   instead of leaving a band of empty surface beneath them. Every card in a row
+   reads its facts off one line. */
 .facts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
-  margin-block-start: var(--space-4);
+  margin-block-start: auto;
   padding-block-start: var(--space-4);
   border-block-start: 1px solid var(--border);
   font-size: var(--text-3xs);
@@ -263,9 +301,18 @@
   z-index: 3;
 }
 
+/* **Sized so the `...` circle matches the select tick** (#537). The tick is a
+   flat `1.25rem`; `ExpandableIconButton`'s pill is its icon plus `--space-4`
+   of padding on each side, so a `0.75rem` glyph lands the circle on the same
+   20px. They are the only two always-on markers on the picture and they sit in
+   opposite corners of it -- at two diameters they read as two systems rather
+   than as one pair.
+
+   The icon, not the padding: the padding is the primitive's, shared with every
+   other overlay button in the app. */
 .menuIcon {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .destructive:hover,

@@ -386,9 +386,11 @@ export function VideoThumb({
       </div>
 
       <div className={styles.caption}>
-        {/* Continue to the right of the prompt (#534). It is the one act here
+        {/* Continue in the caption's top-right (#534, #537). The one act here
             that starts new work rather than acting on this row, which is why
-            it is on this line and not in the menu. */}
+            it is not in the menu -- and icon-only, because at three cards
+            across the word was the only text competing with the prompt for
+            its line. */}
         <div className={styles.promptRow}>
           <p className={styles.prompt}>{video.description}</p>
           {isDone ? (
@@ -405,7 +407,6 @@ export function VideoThumb({
               ) : (
                 <ArrowUpRight size={12} />
               )}
-              Continue
             </button>
           ) : null}
         </div>
