@@ -222,6 +222,11 @@ export interface VideoRecord {
    *  never decoded, which is the only reason its aspect ratio is unknown. */
   width: number | null
   height: number | null
+  /** Taken out of the wall without being destroyed (#537). The same column a
+   *  still uses -- `setImagesHidden` never filtered on `source`, so the write
+   *  was correct for a clip the day it shipped and only the surface was
+   *  missing. Null means visible. */
+  hidden_at: string | null
   /** Whether the row points at a stored final frame, not the path itself (#512).
    *  Storage keys are the server's business -- the browser asks `/img/[id]?v=end`
    *  -- but a surface that draws the ending has to know there is one to draw. */
@@ -240,6 +245,7 @@ export async function listVideos(): Promise<Array<VideoRecord>> {
     select id, title, description, status, generation_error,
            to_json(created_at)#>>'{}' as created_at,
            generation_metadata, width, height, group_id,
+           to_json(hidden_at)#>>'{}' as hidden_at,
            end_frame_path is not null as has_end_frame
     from user_images
     where user_id = ${userId}

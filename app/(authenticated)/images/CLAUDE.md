@@ -40,7 +40,10 @@ list once when the seed comes back full, so the grid is never short.
   row of them in a card corner is more to mis-click, and the mis-click that
   matters is the destructive one. The drawer's plain Trash stays the fallback
   and the deliberate bulk case; both are at `/account/shortcuts`.
-  **Hide and focus are one predicate** (`isVisible` in `_hooks/use-visibility.ts`),
+  **Hide and focus are one predicate** (`isVisible` in
+  `src/features/visibility/`, promoted out of `_hooks/` in #537 when Video
+  became the second consumer -- `HiddenBar` went to
+  `app/(authenticated)/_components/` in the same change),
   because "hide these eight" and "show only these two" are the same filtered
   view from opposite ends. Only hiding persists: `hidden_at` is a column,
   independent of `deleted_at` -- trashing does not clear it, so a restore puts

@@ -9,7 +9,6 @@ import { useReferenceSheet } from './_hooks/use-reference-sheet'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
-import { useVisibility } from './_hooks/use-visibility'
 import { useImageViewer } from './_hooks/use-image-viewer'
 import type {
   GroupWrite,
@@ -17,6 +16,7 @@ import type {
 } from '#/features/groups/hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { useGroups } from '#/features/groups/hooks/use-groups'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
@@ -126,7 +126,10 @@ export function useView(initial: Array<SavedAiImage>) {
   // What the grid is allowed to draw (#504): hidden rows, and the focus
   // spotlight. Sits above the scope filter below rather than inside it,
   // because it applies inside a group and at top level alike.
-  const visibility = useVisibility(gallery)
+  const visibility = useVisibility({
+    rows: gallery.images,
+    patch: (ids, hiddenAt) => gallery.patchImages(ids, { hidden_at: hiddenAt }),
+  })
   const userImages = useUserImages(user.id)
   const prefs = usePrefs()
   const dock = useDock()

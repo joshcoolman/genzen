@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
   Download,
+  EyeOff,
   Loader2,
   MoreHorizontal,
   Play,
@@ -26,6 +27,7 @@ import {
   ExpandableIconButton,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { useModifierHeld } from '#/lib/use-modifier-held'
 import { cx } from '#/lib/utils'
 
 /**
@@ -99,11 +101,14 @@ function durationOf(video: VideoRecord): string | null {
  * whole unit's uniformity, which was not on the table when #530 chose the
  * frame.
  *
- * **Two markers on the picture, both always on**: `...` top-left and the
- * select tick bottom-left, which are the gallery card's own corners. The model
- * held the third until #536 and is now a fact in the caption -- at the density
- * #535 set, a label nearly half the card's width, sitting over a half-width end
- * frame, was the loudest thing on a card whose job is to show the clip.
+ * **Three markers on the picture, all always on**: `...` top-left, the corner
+ * action top-right and the select tick bottom-left -- which is exactly the
+ * gallery card's arrangement, and it is a port rather than a decision because
+ * #536 emptied that corner. The model held it until then and is now a fact in
+ * the caption: at the density #535 set, a label nearly half the card's width,
+ * sitting over a half-width end frame, was the loudest thing on a card whose
+ * job is to show the clip. All three are 20px, which is #536's rule about a
+ * matched set rather than a coincidence.
  *
  * **The player has no controls until it is played.** A poster, one play button,
  * and nothing else -- a grid of cards was five sets of scrubbers, timecodes and
@@ -152,6 +157,7 @@ export function VideoThumb({
   isPlaying,
   onPlay,
   onDelete,
+  onHide,
   onContinue,
   isContinuing,
   selected,
@@ -163,6 +169,9 @@ export function VideoThumb({
   isPlaying: boolean
   onPlay: (id: string) => void
   onDelete: (id: string) => void
+  /** Take it off the wall without destroying it (#537). What the corner icon
+   *  does; Trash moves behind Cmd on the same button. */
+  onHide: (id: string) => void
   /** Absent while there is nothing to continue from -- see `isDone`. */
   onContinue: (video: VideoRecord) => void
   isContinuing: boolean
@@ -371,6 +380,16 @@ export function VideoThumb({
             is one nobody discovers. See the stylesheet for the rest. */}
         <div className={styles.actions}>{menu}</div>
 
+        {/* Top-right, the corner #536 emptied (#537). Hide by default, Trash
+            under Cmd -- see `CornerAction`. Carried over from the gallery card
+            unchanged, because the reasoning is unchanged: trashing was the
+            path of least resistance for tidying a wall because it was the only
+            one-click thing on it, and a clip is expensive enough that the ease
+            belongs to the safe verb. */}
+        <div className={styles.cornerAction}>
+          <CornerAction id={video.id} onHide={onHide} onDelete={onDelete} />
+        </div>
+
         {/* **In select mode the whole picture is the target**, as a still's
             whole tile is (#538). Only in select mode: with nothing picked,
             Play and Continue own their halves and a card-wide target would
@@ -442,5 +461,62 @@ export function VideoThumb({
         </div>
       </div>
     </article>
+  )
+}
+
+/**
+ * One icon in the picture's top-right corner, two verbs (#504, #537).
+ *
+ * The gallery card's `CornerAction`, carried over rather than shared: the two
+ * are ~30 lines each over different row types, and a shared one would have to
+ * decide for both surfaces -- which is how `image-detail` got imposed on a
+ * plain viewer. What is worth keeping identical is the *behaviour*, and it is
+ * written down in both places.
+ *
+ * **A second icon was the thing to avoid.** A row of them in a card corner is
+ * more to mis-click, and the mis-click that matters is the destructive one.
+ * Under this shape the accidental press is recoverable in one click and the
+ * destructive press takes a modifier. The `...` menu keeps a plain Delete for
+ * anyone who does not know the modifier exists, and both are listed at
+ * `/account/shortcuts` (#289).
+ *
+ * `useModifierHeld` is tracked only while this button is hovered, per its own
+ * warning: a wall draws dozens of these, and a permanent key listener each is
+ * a cost that stays invisible until the wall is long. `seed(e)` on mouse-enter
+ * covers the key already being down before the pointer arrived.
+ */
+function CornerAction({
+  id,
+  onHide,
+  onDelete,
+}: {
+  id: string
+  onHide: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  const [hovered, setHovered] = useState(false)
+  const { meta, seed } = useModifierHeld(hovered)
+
+  return (
+    <ExpandableIconButton
+      icon={
+        meta ? (
+          <Trash2 className={styles.menuIcon} />
+        ) : (
+          <EyeOff className={styles.menuIcon} />
+        )
+      }
+      label={meta ? 'Delete' : 'Hide'}
+      variant={meta ? 'destructive' : 'default'}
+      onMouseEnter={(e) => {
+        setHovered(true)
+        seed(e)
+      }}
+      onMouseLeave={() => setHovered(false)}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey) onDelete(id)
+        else onHide(id)
+      }}
+    />
   )
 }

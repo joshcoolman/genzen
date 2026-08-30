@@ -27,6 +27,7 @@ export function VideoList({
   cells,
   isInGroup,
   onDelete,
+  onHide,
   onContinue,
   playingId,
   onPlay,
@@ -47,6 +48,9 @@ export function VideoList({
    *  not empty, this group is. */
   isInGroup: boolean
   onDelete: (id: string) => void
+  /** Take a clip off the wall without destroying it (#537). Straight through
+   *  to the card's corner icon. */
+  onHide: (id: string) => void
   onContinue: (video: VideoRecord) => void
   /** The one clip holding playback, if any. Lifted here so that starting a
    *  second clip stops the first (#530). */
@@ -109,6 +113,7 @@ export function VideoList({
             isPlaying={playingId === cell.video.id}
             onPlay={onPlay}
             onDelete={onDelete}
+            onHide={onHide}
             onContinue={onContinue}
             isContinuing={continuingId === cell.video.id}
             selected={selectedIds.has(cell.video.id)}

@@ -2,6 +2,7 @@
 
 import { GroupHeading } from '../_components/group-heading/group-heading'
 import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
+import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
@@ -9,7 +10,6 @@ import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { OrderRow } from './_components/order-row/order-row'
 import { ScopeRow } from './_components/scope-row/scope-row'
-import { HiddenBar } from './_components/hidden-bar/hidden-bar'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -116,9 +116,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             of pictures. */}
         <HiddenBar
           hidden={visibility.hiddenImages}
-          imageUrls={gallery.imageUrls}
           onShowAll={() => void visibility.showAll()}
-          onUnhide={(id) => void visibility.unhide([id])}
+          onUnhide={(id: string) => void visibility.unhide([id])}
           focusCount={visibility.focusIds?.size ?? null}
           onClearFocus={visibility.clearFocus}
         />

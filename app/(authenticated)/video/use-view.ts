@@ -32,6 +32,7 @@ import { imageUrl } from '#/lib/image-url'
 import { usePersistedState } from '#/lib/use-persisted-state'
 import { useSelection } from '#/lib/use-selection'
 import { useGroups } from '#/features/groups/hooks/use-groups'
+import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { toast } from '#/components'
 
 /** Which model the picker is on. One slug; see `readSlug`. */
@@ -265,6 +266,31 @@ export function useView(initialVideos: Array<VideoRecord>) {
   )
 
   /**
+   * Hide, and its twin focus (#537).
+   *
+   * The same hook Images uses, promoted here in this change -- a clip is a
+   * `user_images` row and `hidden_at` is a column on it, so the whole job was
+   * a surface one. Same shape as grouping before #517: the mechanism was
+   * already generic and only this route did not offer it.
+   *
+   * It matters more here than it did on the wall of stills. A wall of takes of
+   * one shot is mostly near-misses you want out of the way while you judge the
+   * two that worked, and a clip is expensive enough that binning one to tidy
+   * up is a real loss.
+   */
+  const visibility = useVisibility({
+    rows: videos,
+    patch: (ids, hiddenAt) => {
+      const picked = new Set(ids)
+      setVideos((current) =>
+        current.map((video) =>
+          picked.has(video.id) ? { ...video, hidden_at: hiddenAt } : video,
+        ),
+      )
+    },
+  })
+
+  /**
    * The clips this view is showing.
    *
    * At top level a grouped clip is *absent*, not shown twice -- the group card
@@ -273,13 +299,14 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * rather than in SQL, the way the gallery does it: the route already holds
    * every row, so a group view is one filter instead of a second query.
    */
-  const shownVideos = useMemo(
-    () =>
-      activeGroupId
-        ? videos.filter((video) => video.group_id === activeGroupId)
-        : videos.filter((video) => !video.group_id),
-    [videos, activeGroupId],
-  )
+  const shownVideos = useMemo(() => {
+    // Visibility first, so top level and every group inherit it and neither
+    // can forget -- the rule Images wrote in #504.
+    const shown = videos.filter(visibility.visible)
+    return activeGroupId
+      ? shown.filter((video) => video.group_id === activeGroupId)
+      : shown.filter((video) => !video.group_id)
+  }, [videos, visibility.visible, activeGroupId])
 
   /**
    * The wall's cells: loose clips and group cards in one order.
@@ -304,14 +331,28 @@ export function useView(initialVideos: Array<VideoRecord>) {
       ? []
       : groups.groups.map((group) => ({
           key: group.id,
-          cell: { kind: 'group' as const, group },
+          // A hidden clip does not appear in the group card's strip either
+          // (#537), exactly as #504 handles it for a still. Filtered here
+          // rather than in the read that builds it: the route holds every row,
+          // so this costs no round trip and tracks Show the moment it is
+          // pressed. `count` is left alone -- it is a fact about the group,
+          // not a description of what is on screen.
+          cell: {
+            kind: 'group' as const,
+            group: {
+              ...group,
+              preview_image_ids: group.preview_image_ids.filter(
+                (id) => !visibility.withheldIds.has(id),
+              ),
+            },
+          },
           sortOrder: group.sort_order,
         }))
 
     return [...groupCells, ...clipCells]
       .sort((a, b) => b.sortOrder - a.sortOrder)
       .map(({ key, cell }) => ({ key, ...cell }))
-  }, [shownVideos, groups.groups, activeGroupId])
+  }, [shownVideos, groups.groups, activeGroupId, visibility.withheldIds])
 
   /**
    * What each group has in flight, counted off rows this hook already holds.
@@ -461,6 +502,24 @@ export function useView(initialVideos: Array<VideoRecord>) {
       setIsBatchDeleting(false)
     }
   }, [selection, refresh])
+
+  /** The drawer's Hide: the picked clips leave the wall, nothing is destroyed,
+   *  and the bar above says how many are being held. */
+  const hideSelected = useCallback(async () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+    selection.clearSelection()
+    await visibility.hide(ids)
+  }, [selection, visibility])
+
+  /** The drawer's Focus: show only these. Dies with the page -- a spotlight
+   *  left on yesterday is indistinguishable from a broken wall. */
+  const focusSelected = useCallback(() => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+    visibility.focusOn(ids)
+    selection.clearSelection()
+  }, [selection, visibility])
 
   /**
    * "Add to group", from the selection drawer.
@@ -864,6 +923,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
     clearEndSources,
     videos: shownVideos,
     cells,
+    visibility,
+    hideSelected,
+    focusSelected,
     groups: groups.groups,
     groupsLoading: groups.loading,
     expandedGroupIds: groups.expandedIds,
