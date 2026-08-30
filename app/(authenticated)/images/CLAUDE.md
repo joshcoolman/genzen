@@ -339,7 +339,15 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   me this bigger and let me move through the set" is the whole job, and
   anything proposed for it should have to answer why it is not a card action or
   a route. Delete and Backspace send to Trash, which is the one thing this has
-  that Explore's does not.
+  that Explore's does not. **`H` hides and moves on** (#545) -- the card's own
+  pairing (#504) reaching the surface where the judging actually happens, since
+  until then the only verb in here was the destructive one. Both are also
+  buttons on the picture's lower-left: key-only would have left the destructive
+  verb as the only _visible_ one, which is the inversion #504 removed from the
+  card. `actAndAdvance` in `use-image-viewer.ts` serves both -- the cursor moves
+  _before_ the act, because either one shrinks the list under it. A bare letter
+  is safe because the viewer holds no text field. Listed at
+  `/account/shortcuts`, in the same commit as the binding.
 
   Explore's `image-detail/` is the three-column one (image, prompt, filmstrip)
   and is **not shared, not imported, and not to be renamed toward "lightbox"**.

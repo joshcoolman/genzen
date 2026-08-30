@@ -21,6 +21,8 @@ export interface ImageViewerState {
   next: () => void
   prev: () => void
   deleteAndAdvance: () => void
+  /** Hide the current image and move on -- Delete's safe twin (#545). */
+  hideAndAdvance: () => void
 }
 
 /**
@@ -40,6 +42,7 @@ export interface ImageViewerState {
 export function useImageViewer(
   images: Array<SavedAiImage>,
   deleteImage?: (img: SavedAiImage) => Promise<void>,
+  hideImage?: (img: SavedAiImage) => void,
 ): ImageViewerState {
   const [index, setIndex] = useState<number | null>(null)
 
@@ -75,18 +78,45 @@ export function useImageViewer(
     setIndex((i) => (i !== null ? (i - 1 + items.length) % items.length : null))
   }
 
-  function deleteAndAdvance() {
-    if (index === null || !deleteImage) return
+  /**
+   * Act on the image under the cursor and carry on through the set.
+   *
+   * Both verbs take the row out of the list this hook is cycling -- a delete
+   * removes it, a hide makes the grid stop showing it and this list is the
+   * grid's -- so the cursor has to move *before* the act rather than after.
+   * Acting on the last image would otherwise leave the index one past the end.
+   *
+   * Staying put rather than stepping forward is the point: the next picture
+   * slides into the place the last one was, which is what makes a pass through
+   * a group of near-identical shots a run of single keystrokes.
+   */
+  function actAndAdvance(act: (img: SavedAiImage) => void) {
+    if (index === null) return
     const item = items[index]
     const img = images.find((i) => i.id === item.id)
     if (!img) return
-    // The list shrinks under us, so the cursor has to move before the delete
-    // rather than after: deleting the last image would otherwise leave the
-    // index one past the end.
     const newLength = items.length - 1
     if (newLength === 0) close()
     else if (index >= newLength) setIndex(newLength - 1)
-    void deleteImage(img)
+    act(img)
+  }
+
+  function deleteAndAdvance() {
+    if (!deleteImage) return
+    actAndAdvance((img) => void deleteImage(img))
+  }
+
+  /**
+   * The safe verb, and the one this pass usually wants (#545).
+   *
+   * Sorting through near-identical takes is reducing what the grid shows, not
+   * deciding anything is worthless -- and until this, the only verb in here
+   * was the destructive one. That is the exact situation #504 fixed on the
+   * card, arriving at the surface where the judging actually happens.
+   */
+  function hideAndAdvance() {
+    if (!hideImage) return
+    actAndAdvance((img) => hideImage(img))
   }
 
   return {
@@ -99,5 +129,6 @@ export function useImageViewer(
     next,
     prev,
     deleteAndAdvance,
+    hideAndAdvance,
   }
 }
