@@ -79,11 +79,20 @@ export async function createPendingGeneration({
   // first, and an id that does not resolve files the image at top level rather
   // than failing the generation: a wrong group is worth losing, a picture is
   // not.
+  //
+  // **The kind is checked too, and derived from `source` rather than asked for**
+  // (#517). A clip belongs in a video group and a still in an image one, and
+  // this function already knows which it is making -- a caller passing its own
+  // kind would be a second opinion to disagree with. Same forgiving outcome: a
+  // group of the wrong kind resolves to nothing and the row lands at top level,
+  // where it is visible and one click from being filed properly.
+  const wantedKind = source === 'ai_video' ? 'video' : 'image'
   const owned = groupId
     ? first(
         await sql<Array<{ id: string }>>`
           select id from image_groups
           where id = ${groupId} and user_id = ${userId}
+            and kind = ${wantedKind}
         `,
       )
     : null

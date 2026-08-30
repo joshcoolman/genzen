@@ -299,14 +299,60 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
-- **Several clips at once, and one verb: Trash** (#517). A wall of takes is a
-  thing you prune, so the drawer that Images fills with seven verbs carries one
-  here. `useSelection` and `SelectionDrawer` are borrowed unchanged -- both
-  exist so a route supplies the verbs and nothing else -- and the write is
-  `trashGalleryImages(ids)`, the gallery's bulk trash, which dispatches on
-  `status` and never on `source`, so it was already right for clips. One call
-  for the set (#329): React serialises server actions, so a loop would freeze
-  the wall for one round trip per clip.
+- **Several clips at once, and three verbs: Add to group, Remove from group,
+  Trash** (#517). Images' drawer carries seven -- a still is a thing you file,
+  sheet, zip and share; a clip is a take you group or prune. There is no
+  reference sheet, because a sheet of clips is not a thing, and no zip yet.
+  `useSelection` and `SelectionDrawer` are borrowed unchanged -- both exist so
+  a route supplies the verbs and nothing else -- and the trash is
+  `trashGalleryImages(ids)`, which dispatches on `status` and never on
+  `source`, so it was already right for clips. One call for the set (#329):
+  React serialises server actions, so a loop would freeze the wall for one
+  round trip per clip.
+- **Groups are `src/features/groups/`, and this route is why they are there.**
+  They were `images/_actions/` until #517; a clip has always been a
+  `user_images` row, so it already carried `group_id` and no write had ever
+  filtered on `source`. `kind` (`'image'` / `'video'`) keeps the namespaces
+  disjoint -- read that feature's CLAUDE.md rather than re-deriving why a
+  shared pool was refused. `useGroups('video')` is the whole of this route's
+  side of it.
+- **A clip generated while a group is open is filed into it**, the way a
+  generation is on Images. That is the half that makes a group a place to work
+  rather than a folder. `generateVideo` takes a `groupId` and
+  `createPendingGeneration` verifies it against both the user and the kind --
+  which it derives from `source`, so this route passes no kind at all.
+- **`?group=<id>`, not a route segment**, and the same `view.tsx` with one
+  filter. The clips are filtered client-side off `group_id`, exactly as the
+  gallery does it: the route already holds every row, so a group view is a
+  filter rather than a second query. At top level a grouped clip is _absent_ --
+  the group card stands in for it, which is the collapse that makes grouping
+  worth having.
+- **The group's name replaces the route's `PageHeader`**, rather than sitting
+  under it. Two titles is two `h1`s, and the second is the answer to "where am
+  I" that the first one no longer gives. Images does the same thing with its
+  scope row.
+- **`VideoGroupCard` is a sibling of `GroupCard`, not a generalisation** (#446's
+  precedent): the dropdowns differ, and copying sixty lines is cheaper than a
+  prop that turns half of one off. What matters about it:
+
+  **It looks like a group, not like a clip.** A clip card is a player -- play
+  button, native controls, two end frames flush underneath, verbs in the
+  caption. This is stills, and the only thing to press is the card. That is
+  what says "this is eleven things, not one".
+
+  **And it still reads as video**: the cover is 16:9, edge to edge, cropped.
+  Wider than the image group card's tile on purpose -- a square cover in this
+  wall would read as an image group that had wandered onto the wrong route.
+  Cropping is deliberate in both the cover and the swatches; every clip card
+  beside it already states its own shape, and this card is not where that fact
+  lives.
+
+  **The swatches are square and capped, which is the one departure forced by
+  this wall.** `VideoList` is `minmax(20rem, 1fr)`, so on a wide screen a card
+  is 600px and five `1fr` cells become 110px boxes -- a strip outweighing the
+  cover above it, reading as a second and worse grid of pictures. They stop
+  growing at `--clip-swatch` and the row is left-aligned. The strip is a count
+  you can see, not five pictures to study.
 
   **Select mode is a selection, not a switch** (#325, unchanged). Being in the
   mode is having something picked; Escape and Deselect all are the way out

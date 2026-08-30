@@ -1,0 +1,203 @@
+/* A group of clips in the clip wall (#517). The shell is `video-thumb`'s --
+   same border, radius and surface -- so the two sit in one grid as the same
+   kind of object; the cover and the caption are what differ.
+
+   The card's own anatomy is `group-card.module.css`'s, deliberately: cover,
+   then name and count, then five square swatches. What is not borrowed is the
+   cover's shape. */
+.item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* The whole cover is the way in, matching the image group card where the tile
+   is the target and the caption's strip is not. No chrome of its own -- the
+   picture is the control. */
+.stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.stage:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* **16:9, edge to edge, cropped.** The shape people mean when they say video,
+   and wider than the image group card's tile -- which is the point. A square
+   cover in this wall would read as an image group that had wandered onto the
+   wrong route, and the card's job is to say "a group of clips".
+
+   `cover` rather than `contain`: the frame is standing in for a set, not being
+   judged on its own, and a contained 21:9 frame in a 16:9 box would draw bars
+   on the one tile whose job is to look like video. Every clip card beside this
+   one states its own shape in the caption; this card is not where that fact
+   lives. */
+.cover,
+.coverEmpty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--image-backing);
+  object-fit: cover;
+}
+
+/* `video-thumb`'s `.badge`, matched exactly -- same corner, same size, same
+   scrim. That corner answers "what is this", and here the answer is that it
+   stands for several. */
+.badge {
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  max-width: calc(100% - var(--space-8) * 2);
+  overflow: hidden;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Top-left, the corner a clip card gives its select tick. The two cards share
+   no verb, so they can share the corner: a group is never part of a selection,
+   so there is nothing here to collide with. */
+.menu {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 2;
+}
+
+.menuIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* `video-thumb.module.css`'s caption block, same padding, so a group and a
+   clip line up in the same row. The gap is the group card's larger one -- this
+   caption holds two blocks rather than a prompt and a rule. */
+.caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12) var(--space-12);
+}
+
+/* Name left, count right, on the line where a clip card starts its prompt. */
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+/* At the prompt's size, but one line and no clamp -- a name is short by
+   construction. Full strength rather than the prompt's grey: this is a title. */
+.name {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-3xs);
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.total {
+  flex: none;
+  color: var(--text-muted);
+  font-size: var(--text-3xs);
+  white-space: nowrap;
+}
+
+/* ", 2 working" -- the whole report that something in this group is in flight.
+   Text only, so it appears and goes without moving the swatch row. */
+.working {
+  color: var(--text-muted);
+  animation: working-pulse 2s ease-in-out infinite;
+}
+
+@keyframes working-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Five across, and **capped** rather than sized by the column. This is the one
+   place the clip wall forced a departure from the image group card: its grid is
+   `minmax(20rem, 1fr)`, so on a wide screen a card is 600px and five `1fr`
+   cells become 110px boxes -- a strip that outweighs the cover it sits under and
+   reads as a second, worse grid of pictures.
+   
+   The strip is a count you can see, not five pictures to study, so the cells
+   stop growing at `--clip-swatch` and the row is left-aligned under the name.
+   On a narrow card they shrink below the cap as `1fr` cells always did. */
+.swatches {
+  --clip-swatch: 3.25rem;
+
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, var(--clip-swatch)));
+  gap: var(--space-4);
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* The only hover the row has, and only when it is a button: a control that
+   does nothing on hover reads as decoration. */
+button.swatches:hover .swatch,
+button.swatches:hover .swatchEmpty {
+  opacity: 0.82;
+}
+
+button.swatches:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* **Square, which is the image group card's row unchanged.** These are a count
+   you can see rather than five pictures to study -- the cover is the one you
+   look at -- and a uniform grid is what makes the volume legible. Five 21:9
+   frames letterboxed into these cells would spend most of the row on bars, so
+   they crop, exactly as the cover does. */
+.swatch,
+.swatchEmpty {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+  transition: opacity var(--duration-fast) var(--ease-in-out);
+}
+
+/* A slot with no member ghosts rather than collapsing, so the row keeps its
+   shape on every card and a half-full one reads as room for more. */
+.swatchEmpty {
+  background-color: var(--slot-empty);
+}
+
+.destructive:hover,
+.destructive[data-highlighted] {
+  background: var(--danger-soft);
+  color: var(--danger);
+}

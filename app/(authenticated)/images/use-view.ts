@@ -11,10 +11,13 @@ import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
 import { useVisibility } from './_hooks/use-visibility'
 import { useImageViewer } from './_hooks/use-image-viewer'
-import { useGroups } from './_hooks/use-groups'
-import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
+import type {
+  GroupWrite,
+  ImageGroupSummary,
+} from '#/features/groups/hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { useGroups } from '#/features/groups/hooks/use-groups'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
 import { generateImage } from '#/features/ai-images/server/generate-image.action'
 import {
@@ -100,7 +103,7 @@ export function useView(initial: Array<SavedAiImage>) {
   const searchParams = useSearchParams()
   const activeGroupId = searchParams.get('group')
 
-  const groups = useGroups()
+  const groups = useGroups('image')
   const activeGroup = groups.groups.find((g) => g.id === activeGroupId) ?? null
 
   // A group that no longer exists -- dissolved on another tab, or a stale link

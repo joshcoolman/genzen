@@ -8,7 +8,7 @@ import {
   Unlink,
 } from 'lucide-react'
 import styles from './group-card.module.css'
-import type { ImageGroupSummary } from '../../_hooks/use-groups'
+import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import {
   DropdownMenu,
   DropdownMenuContent,

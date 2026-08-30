@@ -2,7 +2,7 @@
 
 import { Plus } from 'lucide-react'
 import styles from './group-picker-dialog.module.css'
-import type { ImageGroupSummary } from '../../_hooks/use-groups'
+import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import {
   Button,
   Dialog,
@@ -42,6 +42,12 @@ interface GroupPickerDialogProps {
  *
  * Never opened with an empty list -- the caller sends you straight to the name
  * dialog instead, because "pick from nothing, or make one" is not a choice.
+ *
+ * **App-shared since #517**, when Video grew groups: the rows are a cover, a
+ * name and a count, and a clip's cover is an `<img>` from `thumbnail_path`
+ * exactly as a picture's is, so there was nothing on it to make route-specific.
+ * `description` is the one thing that says which noun is being filed, and it
+ * is already a prop.
  */
 export function GroupPickerDialog({
   open,

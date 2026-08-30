@@ -447,8 +447,12 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   membership is a column rather than a join table for that reason: two groups
   would make an image vanish from top level twice. **There is no origin
   filtering inside a group** -- the group is already the scope. Groups do not
-  nest. `_actions/groups.action.ts` owns the writes, and **every one of them
-  returns what it changed** (#331): the affected group summaries, the images
+  nest. **The writes live in `src/features/groups/`, not here** -- they were
+  this route's `_actions/` until Video became a second consumer (#517), and
+  `kind` now keeps the two namespaces disjoint, so nothing on this route can
+  see or join a group of clips. `GroupHeading` and `GroupPickerDialog` moved to
+  `app/(authenticated)/_components/` in the same change; `GroupCard` did not,
+  because Video draws its own. Every write **returns what it changed** (#331): the affected group summaries, the images
   whose `group_id` moved, and the ids a group trash soft-deleted. That is still
   server truth rather than client arithmetic -- a write moves a cover, a count,
   a preview strip and a grid position at once -- but it costs one round trip

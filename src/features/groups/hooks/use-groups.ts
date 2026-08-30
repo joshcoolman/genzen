@@ -12,8 +12,8 @@ import {
   renameImageGroup,
   setGroupCover,
   trashImageGroup,
-} from '../_actions/groups.action'
-import type { GroupWrite, ImageGroupSummary } from '../_actions/groups.action'
+} from '../groups.action'
+import type { GroupKind, GroupWrite, ImageGroupSummary } from '../groups.action'
 import { toast } from '#/components'
 
 /**
@@ -32,8 +32,14 @@ import { toast } from '#/components'
  *
  * The gallery's own half is the caller's job -- membership lives on the image
  * row, so each write returns to `use-view`, which owns both lists.
+ *
+ * **`kind` scopes the whole hook** (#517). It reaches the two calls that need
+ * to know which namespace this is -- the list read and a create -- and nothing
+ * else: every other write names a group id, and a group already knows what it
+ * holds. Passing a kind to those would be a second opinion for the server to
+ * disagree with.
  */
-export function useGroups() {
+export function useGroups(kind: GroupKind) {
   const [groups, setGroups] = useState<Array<ImageGroupSummary>>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,13 +59,13 @@ export function useGroups() {
 
   const refresh = useCallback(async () => {
     try {
-      setGroups(await listImageGroups())
+      setGroups(await listImageGroups(kind))
     } catch (err) {
       console.error('[groups] could not load', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [kind])
 
   useEffect(() => {
     void refresh()
@@ -144,10 +150,10 @@ export function useGroups() {
   const create = useCallback(
     (name: string, imageIds: Array<string>) =>
       write(
-        () => createImageGroup(name, imageIds),
+        () => createImageGroup(name, imageIds, kind),
         'Could not create the group',
       ),
-    [write],
+    [write, kind],
   )
 
   const addTo = useCallback(
@@ -227,4 +233,4 @@ export function useGroups() {
 }
 
 export type GroupsState = ReturnType<typeof useGroups>
-export type { GroupWrite, ImageGroupSummary }
+export type { GroupKind, GroupWrite, ImageGroupSummary }
