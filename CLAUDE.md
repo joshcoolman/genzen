@@ -216,7 +216,8 @@ and assuming that is where things stand.
   be judged, it is wrong.
 - **Capture without ceremony.** An idea gets an issue, not a conversation about
   whether it deserves one. Vague, pie-in-the-sky or nothing-to-do-yet goes to
-  Unsorted; work you have both agreed matters goes to Now or Next.
+  Unsorted; work you have both agreed matters goes to Now or Next. **"Backlog"
+  in his words means Unsorted**, never the `later` label.
 - **Verbosity is the failure mode.** Not just in issues -- in replies. Lead with
   the answer, cut the recap, and do not narrate what you are about to do.
 - **Push back anyway.** Terse does not mean compliant. Say what would go wrong,
