@@ -131,12 +131,17 @@ a one-line fix to something already merged.
 
 ## Orientation and capture
 
-Two durable surfaces, no continuation file: the README `## Status` block (last
-shipped / up next) and open GitHub issues. Read both at session start.
+No continuation file. Read the README `## Status` block and the open issues at
+session start.
 
-**The upnext board at `localhost:3210/kanban/genzen` is the shared surface.**
-Josh works from it, points at cards by number, and says how much runway one
-gets — "finish the focus tickets" is a work session, "do 459 quickly" is a
+**The upnext board at `localhost:3210/kanban/genzen` is the surface Josh
+actually works from**, and he is the only developer. He reads the board,
+discusses what to do next from it, and rarely opens this repo's README at all
+— so `## Status` is orientation for a cold session, not something he consults,
+while the board is what he is looking at while talking to you. Keep both true;
+know which one is load-bearing for whom.
+
+He points at cards by number, and says how much runway one gets — "finish the focus tickets" is a work session, "do 459 quickly" is a
 cherry-pick. **A card leaves the board when its issue closes**, so closing is
 part of finishing, not a follow-up. A half-shipped ticket is the one thing that
 can lie to the board: #545 merged its first half and stayed open, reading as
