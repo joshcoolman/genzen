@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Download,
   Loader2,
+  MoreHorizontal,
   Play,
   Trash2,
 } from 'lucide-react'
@@ -17,6 +18,13 @@ import {
   aspectRatio,
   namedRatio,
 } from '#/features/video/clip-facts'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  ExpandableIconButton,
+} from '#/components'
 import { imageUrl } from '#/lib/image-url'
 import { cx } from '#/lib/utils'
 
@@ -55,21 +63,47 @@ function durationOf(video: VideoRecord): string | null {
  * here reads it; #500 is the switchover, and it has to keep this path for the
  * clips made before it that were never backfilled.
  *
- * **What it does borrow is the type scale**, deliberately: the model badge is
- * `--text-3xs` in the picture's bottom-right corner exactly as `Thumbnail`
- * draws it, and the prompt below is `--text-3xs` at 1.5 clamped to three lines
- * exactly as `CardCaption` does. Written by hand here, those two drifted to
- * `--text-sm` and no badge at all, so a clip and a still read as different
+ * **What it does borrow is the type scale**, deliberately: the prompt is
+ * `--text-3xs` at 1.5 clamped to three lines exactly as `CardCaption` does,
+ * and the model reads at that size too. Written by hand here, those drifted to
+ * `--text-sm` and no model label at all, so a clip and a still read as different
  * kinds of record when they are the same row in the same table.
  *
- * **No overlay actions on the player.** A still hides Download and `...` until
- * hover because the picture is the thing and the chrome is in the way; a clip
- * already has native controls sitting over its bottom edge, and a second set of
- * buttons above them is two rows of controls arguing. So the file verbs live in
- * the caption as text, where they cannot collide with the scrubber.
+ * **The player and both frames are one thumbnail, and the chrome sits on its
+ * corners** (#534). This replaces the no-overlay-actions rule, which said the
+ * file verbs had to be text in the caption because native controls own the
+ * player's bottom edge and a second row of buttons above them is two sets of
+ * controls arguing.
  *
- * That rule is about the *player*, and the frames below it are not one. They
- * have no controls to argue with, which is why Continue can live on one.
+ * Two things retired it, and both are consequences of changes already made:
+ *
+ * - **The unit's bottom corners are corners of the *frames*, not the player.**
+ *   Treating the block as one thumbnail puts the player's bottom edge in the
+ *   *middle* of the unit, so native controls appear where no chrome is and the
+ *   collision the rule protected against cannot happen.
+ * - **A card has controls only while it is playing** (#530), and only one card
+ *   can be playing. Before that, every card carried a scrubber permanently.
+ *
+ * It holds in the one case worth checking: a pending or failed clip has no
+ * frames block, so the corners land on the player -- but such a clip never
+ * plays, so there are still no controls there. The frames exist exactly when
+ * the clip is playable; the controls exist only while it plays. The two never
+ * overlap.
+ *
+ * **Which is what Continue paid for.** It was the last frame itself (#530),
+ * having been a caption text link before that (#494) -- and a picture with a
+ * button embedded in its right half is exactly why nothing else could go
+ * there. Moving it to the caption, beside the prompt, is what makes the block
+ * a picture rather than a control, and the corners free. Read as a straight
+ * reversal it looks like drift; it is not, because Continue is now buying the
+ * whole unit's uniformity, which was not on the table when #530 chose the
+ * frame.
+ *
+ * **Two markers on the picture, both always on**: `...` top-left and the
+ * select tick bottom-left, which are the gallery card's own corners. The model
+ * held the third until #536 and is now a fact in the caption -- at the density
+ * #535 set, a label nearly half the card's width, sitting over a half-width end
+ * frame, was the loudest thing on a card whose job is to show the clip.
  *
  * **The player has no controls until it is played.** A poster, one play button,
  * and nothing else -- a grid of cards was five sets of scrubbers, timecodes and
@@ -85,15 +119,9 @@ function durationOf(video: VideoRecord): string | null {
  * The real win is not visual. `poster` plus `preload="none"` means a card
  * fetches an image the row already has and no video at all until asked.
  *
- * **The last frame is Continue** -- the picture is the control, not a text link
- * beside it. Continue takes the frame at the end of this clip and puts it in
- * the form; pointing at that frame and clicking is the same sentence as the
- * verb was, minus the verb. It was `CornerDownRight` plus the word in the
- * caption (#494), which was a line of `--text-3xs` text against a target that
- * is now half a card.
- *
- * It stays the one act on this card that starts new work rather than acting on
- * this row, which is exactly why it is not down among Download and Delete.
+ * **Continue sits beside the prompt, and it is still the one act that starts
+ * new work** rather than acting on this row -- which is why it is on the
+ * prompt's line and not in the `...` menu with Download and Delete.
  *
  * **The player and both frames are one block**, flush, half the card each. The
  * player is kept -- watching the clip is most of what this card is for, and a
@@ -107,25 +135,17 @@ function durationOf(video: VideoRecord): string | null {
  * card across a wall of clips is a real cost for a picture the row can already
  * serve as an `<img>` from `thumbnail_path` (#499).
  *
- * **The select tick is top-left of the player, and always on** (#517). That is
- * the one corner this card does not already use -- the model badge holds
- * top-right, Continue holds the last frame's bottom-left, Play holds the
- * centre, and the native controls own the bottom edge. It does not break the
- * no-overlay-actions rule: that rule is about chrome appearing on hover over a
- * scrubber, and this is a fixed marker in a free corner, the same always-on
- * reasoning the Continue badge already carries.
- *
  * **The tick is the only way to select.** The card does not become one big
  * toggle in select mode the way a still does: half of it is a player and the
  * other half is Continue, so a full-card click target would take Play and the
  * last frame away exactly when they still work.
  *
- * **Shape first, then duration, and no cost** -- at the left edge, at full
- * strength rather than the muted grey the verbs use. Shape is the fact that
- * decides whether two clips can cut together (#512) and it was the one thing
- * about a clip no surface showed. Cost came off: it is on every row of the
- * Activity log, which is where a spend question gets asked, and on a card it
- * was priced-per-item noise next to a Download button.
+ * **Shape first, then duration, and no cost.** Shape is the fact that decides
+ * whether two clips can cut together (#512) and it was the one thing about a
+ * clip no surface showed. Cost came off: it is on every row of the Activity
+ * log, which is where a spend question gets asked, and on a card it was
+ * priced-per-item noise. The row is now only those two facts -- Download and
+ * Delete left it for the menu -- so there is nothing here you might click.
  */
 export function VideoThumb({
   video,
@@ -211,6 +231,45 @@ export function VideoThumb({
     wasPlaying.current = isPlaying
   }, [isPlaying])
 
+  const menu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <ExpandableIconButton
+            icon={<MoreHorizontal className={styles.menuIcon} />}
+            label="Clip actions"
+          />
+        }
+      />
+      <DropdownMenuContent align="start">
+        {/* Finished clips only -- there is no file to fetch for one that does
+            not exist yet. */}
+        {isDone && (
+          <DropdownMenuItem
+            render={
+              <a href={`/img/${video.id}`} download={`${video.id}.mp4`}>
+                <Download />
+                Download
+              </a>
+            }
+          />
+        )}
+        {/* On every clip, not just finished ones: clearing a failure is the
+            commonest reason to want it, and on a generating clip it is the
+            only way to say stop. Last, and warming to danger on hover -- it
+            moves the row to Trash rather than destroying it, so it is not red
+            at rest. */}
+        <DropdownMenuItem
+          className={styles.destructive}
+          onClick={() => onDelete(video.id)}
+        >
+          <Trash2 />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   return (
     <article
       className={cx(
@@ -219,71 +278,102 @@ export function VideoThumb({
         selectionActive && !selected && styles.selectableItem,
       )}
     >
-      <div className={styles.stage}>
+      {/* **One thumbnail**: the player, the frame it opens on and the frame it
+          stops at. The chrome below is positioned against this, not against
+          the player -- which is what puts the player's controls in the middle
+          of the unit and the chrome at its edges. */}
+      <div className={styles.unit}>
+        <div className={styles.stage}>
+          {isDone ? (
+            <>
+              <video
+                ref={player}
+                className={styles.player}
+                /* **The stage is the clip's own shape**, clamped -- see
+                   `WIDEST`. Within the clamp there is nothing to letterbox and
+                   nothing to crop, so the poster and the playing clip are the
+                   same picture in the same box and pressing Play changes
+                   nothing but the controls. */
+                style={stageShape}
+                src={`/img/${video.id}`}
+                /* The real poster (#499), which is why there is no
+                   `firstFrameSrc` here any more. Part of #500, on this surface
+                   only. */
+                poster={imageUrl(video.id, 'thumb')}
+                /* Nothing is fetched until Play. A wall of clips used to pull
+                   a header and a seek each on load; now it pulls an image the
+                   row already has and no video at all. */
+                preload="none"
+                controls={isPlaying}
+                playsInline
+              />
+              {!isPlaying ? (
+                <button
+                  type="button"
+                  className={styles.play}
+                  onClick={() => {
+                    onPlay(video.id)
+                    void player.current?.play()
+                  }}
+                  aria-label="Play this clip"
+                >
+                  <Play size={20} />
+                </button>
+              ) : null}
+            </>
+          ) : video.status === 'failed' ? (
+            <div className={styles.state}>
+              <AlertTriangle size={16} />
+              <span>{video.generation_error ?? 'Generation failed'}</span>
+            </div>
+          ) : (
+            <div className={styles.state}>
+              <Loader2 className={styles.spinner} size={16} />
+              <span>Generating…</span>
+            </div>
+          )}
+        </div>
+
+        {/* Flush under the player, no gap and no edges: the three are one
+            picture of the clip, and a gap anywhere in there makes them three
+            things that happen to be stacked. Finished clips only -- there are
+            no frames of a clip that does not exist yet, and a failed one has
+            none at all.
+
+            Plain pictures now. The last frame was Continue until #534; a
+            button embedded in this block is what kept the unit's corners
+            unusable. */}
         {isDone ? (
-          <>
-            <video
-              ref={player}
-              className={styles.player}
-              /* **The stage is the clip's own shape**, clamped -- see `WIDEST`.
-                 Within the clamp there is nothing to letterbox and nothing to
-                 crop, so the poster and the playing clip are the same picture
-                 in the same box and pressing Play changes nothing but the
-                 controls. Outside it, `contain` centres the clip in the nearest
-                 allowed box, which is what a portrait clip wants. */
-              style={stageShape}
-              src={`/img/${video.id}`}
-              /* The real poster (#499), which is why there is no
-                 `firstFrameSrc` here any more: the `#t=0.001` seek existed to
-                 make a `<video>` paint frame one when nothing else could, and
-                 `poster` does it from an image. Part of #500, on this surface
-                 only. */
-              poster={imageUrl(video.id, 'thumb')}
-              /* Nothing is fetched until Play. A wall of clips used to pull a
-                 header and a seek each on load; now it pulls an image the row
-                 already has and no video at all. */
-              preload="none"
-              controls={isPlaying}
-              playsInline
+          <div className={styles.ends} style={stripShape}>
+            <img
+              className={styles.end}
+              src={imageUrl(video.id, 'thumb')}
+              alt="First frame"
+              title="First frame"
             />
-            {!isPlaying ? (
-              <button
-                type="button"
-                className={styles.play}
-                onClick={() => {
-                  onPlay(video.id)
-                  void player.current?.play()
-                }}
-                aria-label="Play this clip"
-              >
-                <Play size={20} />
-              </button>
-            ) : null}
-          </>
-        ) : video.status === 'failed' ? (
-          <div className={styles.state}>
-            <AlertTriangle size={16} />
-            <span>{video.generation_error ?? 'Generation failed'}</span>
+            {/* Held rather than collapsed when a clip predates the backfill:
+                one frame across half the card would read as the clip having
+                one end. Continue still works on such a clip -- `has_end_frame`
+                says a *stored* frame is missing, not that there is nothing at
+                the end. */}
+            <img
+              className={styles.end}
+              src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
+              alt="Last frame"
+              title="Last frame"
+            />
           </div>
-        ) : (
-          <div className={styles.state}>
-            <Loader2 className={styles.spinner} size={16} />
-            <span>Generating…</span>
-          </div>
-        )}
+        ) : null}
 
-        {/* The model, on the picture, same corner and same size as a still's
-            (#367). It names what made this clip, so it belongs to the clip --
-            and a badge that moved between the two surfaces would be the one
-            label you track across a generation moving on you. Lifted clear of
-            the native controls, which own the bottom edge. */}
-        <span className={styles.badge}>{video.title}</span>
+        {/* Top-left, where the gallery card puts its own -- but always on,
+            where a still's is hover-revealed. This is the only route to
+            Download and Delete now, and a menu you have to hover to discover
+            is one nobody discovers. See the stylesheet for the rest. */}
+        <div className={styles.actions}>{menu}</div>
 
-        {/* On every card always, not only once something is picked: it is the
-            only thing saying a clip can be picked at all, and a toolbar toggle
-            would ask you to declare an intention before touching the clip you
-            are already looking at (#325's rule, unchanged). Grey until taken;
-            the border says "selected" too, but only against its neighbours. */}
+        {/* The one always-on marker left on the picture. The model label used
+            to hold the opposite corner and came off in #536 -- see the
+            stylesheet. */}
         <button
           type="button"
           className={cx(styles.selectTick, selected && styles.selectTickOn)}
@@ -295,88 +385,37 @@ export function VideoThumb({
         </button>
       </div>
 
-      {/* Flush under the player, no gap and no edges: the player, the frame it
-          opens on and the frame it ends on are one picture of the clip, and a
-          gap anywhere in there makes them three things that happen to be
-          stacked. Finished clips only -- there are no frames of a clip that
-          does not exist yet, and a failed one has none at all. */}
-      {isDone ? (
-        <div className={styles.ends} style={stripShape}>
-          <img
-            className={styles.end}
-            src={imageUrl(video.id, 'thumb')}
-            alt="First frame"
-            title="First frame"
-          />
-          {/* The last frame *is* Continue. The verb was a text link in the
-              caption; what it actually does is take this picture and put it in
-              the form, so the picture is the control -- and at half a card it
-              is a far bigger target than a line of `--text-3xs` text.
-
-              Held rather than collapsed when a clip predates the backfill: one
-              frame across half the card reads as the clip having one end. It
-              is still the button, because the frame can still be read out of
-              the clip -- `has_end_frame` says a stored one is missing, not
-              that there is nothing at the end. */}
-          <button
-            type="button"
-            className={styles.continue}
-            onClick={() => onContinue(video)}
-            disabled={isContinuing}
-            aria-label="Continue from this clip's last frame"
-            title="Continue from the last frame"
-          >
-            <img
-              className={styles.end}
-              src={video.has_end_frame ? imageUrl(video.id, 'end') : undefined}
-              alt=""
-            />
-            {/* Always on the picture, not on hover: it is the only thing saying
-                this frame does something, and a card you have to touch to
-                discover is one nobody discovers. Lower-left, which is the one
-                corner nothing else on this card uses -- the model badge holds
-                top-right of the player. */}
-            <span className={styles.continueBadge}>
+      <div className={styles.caption}>
+        {/* Continue to the right of the prompt (#534). It is the one act here
+            that starts new work rather than acting on this row, which is why
+            it is on this line and not in the menu. */}
+        <div className={styles.promptRow}>
+          <p className={styles.prompt}>{video.description}</p>
+          {isDone ? (
+            <button
+              type="button"
+              className={styles.continue}
+              onClick={() => onContinue(video)}
+              disabled={isContinuing}
+              aria-label="Continue from this clip's last frame"
+              title="Continue from the last frame"
+            >
               {isContinuing ? (
                 <Loader2 className={styles.spinner} size={12} />
               ) : (
                 <ArrowUpRight size={12} />
               )}
-            </span>
-          </button>
+              Continue
+            </button>
+          ) : null}
         </div>
-      ) : null}
 
-      <div className={styles.caption}>
-        <p className={styles.prompt}>{video.description}</p>
-        {/* Finished clips only: there is no last frame of a clip that does not
-            exist yet, and a failed one has no frames at all. */}
+        {/* What the clip is, and what made it -- one row, nothing clickable.
+            Shape and duration left, the model pushed to the right edge. */}
         <div className={styles.facts}>
           {shape ? <span className={styles.fact}>{shape}</span> : null}
           {duration ? <span className={styles.fact}>{duration}</span> : null}
-          <span className={styles.spacer} />
-          {isDone ? (
-            <a
-              className={styles.action}
-              href={`/img/${video.id}`}
-              download={`${video.id}.mp4`}
-            >
-              <Download size={12} />
-              Download
-            </a>
-          ) : null}
-          {/* On every clip, not just finished ones: clearing a failure is the
-              commonest reason to want it, and on a generating clip it is the
-              only way to say stop. */}
-          <button
-            type="button"
-            className={styles.destructive}
-            onClick={() => onDelete(video.id)}
-            aria-label="Delete clip"
-          >
-            <Trash2 size={12} />
-            Delete
-          </button>
+          <span className={styles.model}>{video.title}</span>
         </div>
       </div>
     </article>
