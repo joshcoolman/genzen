@@ -1,6 +1,17 @@
-/* The wall. A card's own layout is `video-thumb`'s. */
+/* The wall. A card's own layout is `video-thumb`'s.
+
+   **12rem, down from 20rem** (#535). 20rem was set when a card was a player and
+   a caption; it is now a player, two end frames and a caption, so the same
+   column width buys a much taller card -- at a typical window that was one clip
+   per row, filling the content column with a single take. A wall you prune
+   wants several on screen at once.
+
+   The number is not a guess: at the width this route actually renders, 12rem
+   is the largest minimum that still fits three across, which is the density
+   Josh read as correct at 75% browser zoom. Cards still stretch past it on a
+   wider screen -- `1fr` -- so this is a floor, not a fixed size. */
 .list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: var(--space-16);
 }
