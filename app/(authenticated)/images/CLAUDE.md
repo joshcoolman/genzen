@@ -244,6 +244,33 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   it is cleared by the next press as well as by the click it waits for: a sweep
   that ends where no click follows otherwise leaves it armed to eat an
   unrelated click later
+- **Drag a thumbnail onto a group card to file it there (#438).** The picker
+  dialog stays -- it is how you reach a group scrolled out of view and how you
+  create one on the way -- so this is the shortcut for the case where the
+  destination is already on screen. Drag one card and it moves alone; drag a
+  card that is **part of the selection** and the whole selection comes with it;
+  drag an **unselected** card while a selection is up and it still moves alone,
+  because dragging a thing you are pointing at should move that thing rather
+  than depend on state you are not looking at. `_hooks/use-drag-to-group.ts`,
+  pointer events rather than HTML5 DnD -- native DnD's drag image is one
+  element, which is wrong for "five pictures are coming with this", and the
+  canvas already works in pointer events. Four things there are decisions.
+  **A group card is inert to clicks during a selection and live to drops at the
+  same time** (#325 dimmed it so a stray click could not throw away the picking
+  in progress); the dimming lifts for the length of a drag, so what is
+  droppable is visible exactly while there is something to drop. **A group card
+  is never draggable** -- groups do not nest, so it is a destination only.
+  **A press on a control does nothing**: `...`, the corner icon, the caption's
+  copy button and the select tick are all excluded, and a press that never
+  crosses five pixels reaches the card as an ordinary click. **Shift is what
+  tells this apart from the sweep** -- one press, two gestures, decided by the
+  modifier rather than by what it lands on. Scope falls out for free: inside a
+  group the grid holds no group cards, so the gesture is top level only with no
+  special case. The write is `addToGroup`, the same one the dialog calls -- there
+  is no server work in this at all. `reorderImages`/`updateImageOrder` went with
+  it: dead since drag-to-reorder was unwired, and leaving a corpse beside a live
+  drag gesture is two answers to what a plain drag means. Manual ordering (#505)
+  is a group-scoped resequence and will build what it needs
 - **A click opens the viewer, and #308's in-place preview is gone.** For three
   days the click turned the grid area, and only the grid area, into one large
   image -- toolbar still there, no scrim, hidden click zones in the outer

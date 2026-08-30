@@ -60,6 +60,16 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         what: 'Start selecting',
         note: 'Being in select mode is having something picked. Escape or Deselect all is the way out.',
       },
+      {
+        keys: 'Shift-drag across the grid',
+        what: 'Add everything the rectangle touches',
+        note: 'Only once something is picked. It only ever adds, and clipping a corner is enough — precision is the thing it exists to avoid.',
+      },
+      {
+        keys: 'Drag a card onto a group',
+        what: 'File it there',
+        note: 'Drag one thumbnail, or drag any card that is part of a selection and the whole selection comes with it. Dragging an unselected card moves only that card. Escape, or letting go anywhere that is not a group, files nothing.',
+      },
       { keys: 'Escape', what: 'Clear the selection' },
       {
         keys: 'Click a group’s swatch row',
@@ -131,6 +141,16 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       { keys: '⌘2', what: 'Fit the selection edge to edge' },
       { keys: '⌘⇧0', what: 'Fit everything' },
       { keys: '⌘A', what: 'Select all' },
+      {
+        keys: 'Shift-drag across the grid',
+        what: 'Add everything the rectangle touches',
+        note: 'Only once something is picked. It only ever adds, and clipping a corner is enough — precision is the thing it exists to avoid.',
+      },
+      {
+        keys: 'Drag a card onto a group',
+        what: 'File it there',
+        note: 'Drag one thumbnail, or drag any card that is part of a selection and the whole selection comes with it. Dragging an unselected card moves only that card. Escape, or letting go anywhere that is not a group, files nothing.',
+      },
       { keys: 'Escape', what: 'Clear the selection' },
       {
         keys: 'Backspace or Delete',

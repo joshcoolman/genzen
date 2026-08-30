@@ -33,3 +33,47 @@
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+
+/* What is being dragged, following the pointer (#438). Fixed and inert: it
+   sits over the grid, and anything under the cursor that took the pointer
+   would be the only drop target ever found. Offset a little down and right of
+   the cursor so the card it is about to land on stays visible. */
+.dragPreview {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  width: 4.5rem;
+  height: 4.5rem;
+  translate: var(--space-12) var(--space-12);
+}
+
+/* One picture in the stack. Positioned rather than laid out, so the fan is a
+   transform per card and the group has no size of its own to fight. */
+.dragThumb {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-sunken);
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-raised);
+}
+
+/* How many are coming, on the corner of the stack. Only past one -- a single
+   thumbnail says it already. */
+.dragCount {
+  position: absolute;
+  top: calc(var(--space-6) * -1);
+  right: calc(var(--space-6) * -1);
+  z-index: 4;
+  min-width: var(--space-20);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: var(--text-3xs);
+  font-weight: 600;
+  line-height: var(--space-20);
+  text-align: center;
+}

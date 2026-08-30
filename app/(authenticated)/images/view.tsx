@@ -187,6 +187,16 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           /* Shift-drag sweeps a region into the selection (#440). Additive
              only, which is why it is `addMany` and not `toggle`. */
           onSweepSelect={selection.addMany}
+          selectedIds={selectedIds}
+          /* Drag onto a group card to file it there (#438) -- the same write
+             the picker dialog makes, which is why the dialog stays: it is how
+             you reach a group scrolled out of view, and how you create one on
+             the way. Only at top level, where group cards are in the grid. */
+          onDropOnGroup={
+            activeGroupId
+              ? undefined
+              : (groupId, ids) => void addToGroup(groupId, ids)
+          }
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 
