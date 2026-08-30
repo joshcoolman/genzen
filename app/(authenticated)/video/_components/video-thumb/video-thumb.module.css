@@ -7,8 +7,21 @@
   background: var(--surface);
 }
 
-/* The badge is positioned against this rather than the card, so it sits on the
-   picture the way a still's does instead of floating over the caption. */
+/* **The whole thumbnail: the player and both frames** (#534). Every piece of
+   overlay chrome is positioned against this rather than against the player,
+   which is the change that makes the corners usable: the player's bottom edge
+   -- where native controls live -- is now the *middle* of this box, and the
+   bottom corners belong to the two frames, which have no controls ever.
+
+   On a pending or failed clip there is no frames block and this is just the
+   player, so the bottom corners land on it. Safe anyway: such a clip never
+   plays, so it has no controls either. */
+.unit {
+  position: relative;
+}
+
+/* Only the player. It keeps `position: relative` for the play button, which is
+   the player's control and centres on the player rather than on the unit. */
 .stage {
   position: relative;
 }
@@ -98,13 +111,15 @@
    does not render, and importing across module boundaries to share five
    declarations is how a primitive acquires a second owner.
 
-   Top rather than bottom, which is the one honest departure: the native video
-   controls own the bottom edge, and a badge there would sit under the
-   scrubber. */
+   **Bottom-right, which is the gallery card's own corner** (#534). It sat at
+   the top until then, as the one honest departure -- native controls owned the
+   bottom edge of the player and a badge there would have been under the
+   scrubber. Against the unit rather than the player, that corner is the
+   outside edge of the last frame, and nothing is ever drawn there. */
 .badge {
   position: absolute;
-  top: var(--space-8);
   right: var(--space-8);
+  bottom: var(--space-8);
   max-width: calc(100% - var(--space-8) * 2);
   overflow: hidden;
   padding: var(--space-2) var(--space-4);
@@ -178,110 +193,94 @@
   object-fit: cover;
 }
 
-/* The last frame, as a button. It carries no chrome of its own -- no border,
-   no padding, no background -- because the picture is the control and anything
-   drawn around it would be a second edge inside a block whose whole point is
-   that it has none. */
+/* The prompt, and Continue at the end of its line (#534). Baseline-aligned so
+   the verb sits on the prompt's last line rather than floating beside a block
+   of it. */
+.promptRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+/* **The one act on this card that starts new work**, which is why it is here
+   and not in the `...` menu with Download and Delete. It was the last frame
+   itself until #534; moving it out is what makes that block a picture rather
+   than a control, and the unit's corners usable.
+
+   It does not shrink: a wrapping prompt must not squeeze the verb beside it to
+   nothing. */
 .continue {
-  position: relative;
-  display: block;
-  height: 100%;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-4);
   padding: 0;
   border: none;
   background: none;
+  color: color-mix(in oklab, var(--text) 35%, transparent);
+  font-size: var(--text-3xs);
+  line-height: 1.5;
   cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.continue:hover:not(:disabled) {
+  color: var(--accent);
 }
 
 .continue:disabled {
   cursor: default;
 }
 
-/* What says the frame does something. Bottom-left, the one corner nothing else
-   on this card uses -- the model badge holds the player's top-right.
-
-   Circular and filled rather than a bare glyph: it sits on a picture that
-   could be any colour, and a plain icon disappears against half of them. */
-.continueBadge {
-  position: absolute;
-  bottom: var(--space-8);
-  left: var(--space-8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--radius-full);
-  background: color-mix(in oklab, var(--surface-sunken) 75%, transparent);
-  color: var(--text);
-}
-
-/* Hover lights the badge rather than the picture. Tinting the frame would
-   change the one thing you are looking at it to judge. */
-.continue:hover:not(:disabled) .continueBadge {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
-.continue:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-/* Facts left, verbs right, split by the spacer, under a rule. #494 had pushed
-   the whole row right to leave the left edge to Continue; Continue is the last
-   frame itself now, so the left edge is free for the two things a clip is --
-   its shape and how long it runs. Delete stays last, which is what keeps it
-   in the same place on every card whether or not a Download sits beside it: a
-   destructive verb never lands under a finger repeating a Download click. Same
-   reasoning Trash's rows already carry. */
+/* Only the two facts a clip *is* -- Download and Delete left this row for the
+   menu in #534. Left-aligned, under a rule; there is nothing here to click, so
+   there is no destructive verb to keep in a fixed position any more. */
 .facts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-8);
   margin-block-start: var(--space-4);
   padding-block-start: var(--space-4);
   border-block-start: 1px solid var(--border);
-  color: color-mix(in oklab, var(--text) 35%, transparent);
   font-size: var(--text-3xs);
   line-height: 1.5;
 }
 
-.spacer {
-  flex: 1;
-}
-
-/* Full strength, unlike the verbs beside them. These are what the clip *is*;
-   Download and Delete are things you might do to it, and the row used to say
-   both in the same grey. */
+/* Full strength. These are what the clip *is*, and nothing muted sits beside
+   them in this row now. */
 .fact {
   color: var(--text);
 }
 
-/* Quiet until wanted, matching the caption's own `Details` link: one of these
-   per card across a wall of clips, so it sits below the picture until you stop
-   on one. */
-.action,
-.destructive {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color var(--duration-normal) var(--ease-in-out);
+/* `...`, top-left, hover-revealed -- the gallery card's own corner and its own
+   behaviour. The one piece of chrome here that is not always on: it is a menu,
+   and a menu that never hides is chrome over every picture on the wall. Kept
+   on focus so the keyboard can reach it, and while it is open. */
+.actions {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-in-out);
 }
 
-.action:hover {
-  color: var(--text);
+.unit:hover .actions,
+.actions:focus-within,
+.actions:has([data-popup-open]) {
+  opacity: 1;
 }
 
-.destructive:hover {
+.menuIcon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.destructive:hover,
+.destructive[data-highlighted] {
+  background: var(--danger-soft);
   color: var(--danger);
 }
 
@@ -304,16 +303,17 @@
   border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border));
 }
 
-/* Top-left of the player: the one corner this card does not already use. The
-   model badge holds top-right, Play holds the centre, the native controls own
-   the bottom edge, and Continue holds the last frame's bottom-left.
+/* **Bottom-left, which is the gallery card's own corner** (#534). It was
+   top-left while the chrome was positioned against the player, where the
+   bottom edge belonged to native controls; against the unit that corner is the
+   outside edge of the first frame, and nothing is drawn there.
 
    Same scrim and size as the gallery's tick, so the control is recognisably
-   the same one on both routes. Above the badge's stacking, since the badge is
-   `pointer-events: none` and this must stay clickable while a clip plays. */
+   the same one on both routes. Always on, unlike the menu above it: it is the
+   only thing saying a clip can be picked at all. */
 .selectTick {
   position: absolute;
-  top: var(--space-8);
+  bottom: var(--space-8);
   left: var(--space-8);
   display: grid;
   place-items: center;
