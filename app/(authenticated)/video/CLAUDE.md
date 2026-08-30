@@ -22,6 +22,7 @@ source images; `use-view.ts` owns everything after the first paint.
   dropdown that preceded it. If Video ever wants variable size, promote that
   mechanism (`zoom` on the grid element, three lines) rather than adding the
   control Images removed.
+
 - **The lineup is `src/features/video/models.ts`, not this folder** -- promoted
   in #398, when Activity became its second consumer and needed to name and
   filter clips. Durations, aspect ratios, resolution, price and the request's
