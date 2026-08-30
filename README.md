@@ -149,12 +149,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 **Last shipped**
 
+- 2026-08-29 — The hidden bar reports what is hidden where you are standing, not everywhere. It counted the whole library while the wall showed one group, and `Show` acted on that list — so pressing it inside a group unhid the library. The rule that settles it: the bar says what would come back if you pressed Show. A group card now says ", 3 hidden" beside its count, so hiding inside a group is not invisible from outside it (#546)
 - 2026-08-29 — Hide works on Video the way it does on Images: a corner icon on the clip card that hides in one click and becomes Trash under Cmd, Hide and Focus in the selection drawer, and a bar above the wall listing what is held. The mechanism moved to `src/features/visibility/` on the two-consumer rule; the write never filtered on `source`, so this was a surface job (#537)
 - 2026-08-29 — Images in a group can be arranged by hand: drag a card and it stays where you put it. `group_position` is nulls-last, so a new image lands at the end with nothing written on any insert path, and `By date | Manual` is non-destructive in both directions — switching away keeps the arrangement (#505)
 - 2026-08-29 — Drag a thumbnail onto a group card to file it there. Drag a card that is part of a selection and the whole selection comes; drag an unselected one and it moves alone. The picker dialog stays, for a group scrolled out of view (#438)
 - 2026-08-29 — The clip card is built to be scanned: the prompt reserves its three lines and the facts sit on the card's bottom edge, so every card in a row reads its numbers off one line. Continue is a circle and an arrow, the tick and the `...` are one size, and in select mode the whole picture selects — which stops playback, so picking and watching are never the same screen (#536)
 - 2026-08-29 — The clip card is one thumbnail: the player and both end frames are a single picture, so the chrome sits on its corners the way the gallery card's does. Continue moved beside the prompt and the model became a fact in the caption, which is what freed the picture. Three clips across instead of one (#534, #535, #536)
-- 2026-08-29 — Clips go in groups, the same feature Images has: grouping moved to `src/features/groups/` and a `kind` column keeps the two namespaces disjoint, so a clip cannot join an image group (#517)
 
 **Up next**
 
@@ -162,16 +162,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 library has grown past the point where generating is the hard part, and these
 interlock:
 
-1. [#546](https://github.com/joshcoolman/genzen/issues/546) — the hidden bar
-   counts everything hidden anywhere, not what is hidden where you are. A bug in
-   what just shipped, and it decides what scope "hidden" means, which the rest
-   inherits. [#449](https://github.com/joshcoolman/genzen/issues/449) (hide on
-   Canvas) should ride along rather than get its own pass.
-2. [#545](https://github.com/joshcoolman/genzen/issues/545) — `H` to hide in the
+1. [#545](https://github.com/joshcoolman/genzen/issues/545) — `H` to hide in the
    image viewer, and a viewer over the hidden set. The keybinding half is
-   independent and can go any time; the hidden-viewer half is meaningless until
-   #546 says which set it opens over.
-3. [#543](https://github.com/joshcoolman/genzen/issues/543) +
+   independent and can go any time; the hidden-viewer half now has its answer
+   from #546 — it opens over what is hidden where you are standing, the same
+   set the bar counts.
+2. [#543](https://github.com/joshcoolman/genzen/issues/543) +
    [#544](https://github.com/joshcoolman/genzen/issues/544) — locking and
    labels, designed together. Build them apart and you get two marking systems
    on one card whose corners are already spoken for; deciding once whether
