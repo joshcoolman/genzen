@@ -135,6 +135,11 @@ export const shortcutGroups: Array<ShortcutGroup> = [
       { keys: 'Click either chevron', what: 'Step, same as the arrow keys' },
       { keys: 'Click outside the image', what: 'Close it' },
       { keys: 'Delete or Backspace', what: 'Send this one to Trash' },
+      {
+        keys: 'H',
+        what: 'Hide this one and move on',
+        note: 'The same pair as the card’s corner: Delete destroys, H clears it away. The next picture takes its place, so a pass through a group of near-identical shots is a run of single keystrokes. It is in the bar above the grid when you come back out.',
+      },
       { keys: 'Escape', what: 'Close it' },
     ],
   },

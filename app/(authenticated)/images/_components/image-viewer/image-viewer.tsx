@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, EyeOff, Trash2, X } from 'lucide-react'
 import styles from './image-viewer.module.css'
 import type { ViewerItem } from '../../_hooks/use-image-viewer'
 import { cx } from '#/lib/utils'
@@ -15,6 +15,8 @@ interface ImageViewerProps {
   onNext: () => void
   onPrev: () => void
   onDelete?: () => void
+  /** Hide the current image and move on (#545). */
+  onHide?: () => void
 }
 
 /**
@@ -41,6 +43,7 @@ export function ImageViewer({
   onNext,
   onPrev,
   onDelete,
+  onHide,
 }: ImageViewerProps) {
   // The index really can outrun the list: the gallery's 5s poll can drop a row
   // while this is open, and TS is not checking indexed access here.
@@ -86,6 +89,11 @@ export function ImageViewer({
   useHotkey('ArrowLeft', onPrev)
   useHotkey('Delete', () => onDelete?.())
   useHotkey('Backspace', () => onDelete?.())
+  /* **Delete destroys, H clears away** (#545) -- the card's own arrangement
+     (#504) at the surface where the judging happens. A bare letter is safe
+     here because the viewer holds no text field; nothing in it can be typed
+     into. */
+  useHotkey('H', () => onHide?.())
 
   if (!item) return null
 
@@ -120,21 +128,42 @@ export function ImageViewer({
           )}
 
           {/* On the image, far from the X. The two shared a corner at first,
-              which put "delete this" one small slip from "close this". */}
-          {onDelete && url && (
-            <button
-              type="button"
-              className={styles.delete}
-              onClick={(e) => {
-                // Or the backdrop handler closes on the way out, and the point
-                // of deleting from here is to keep going through the set.
-                e.stopPropagation()
-                onDelete()
-              }}
-              aria-label="Delete"
+              which put "delete this" one small slip from "close this".
+
+              Hide sits beside Trash rather than being key-only, because the
+              destructive verb was the only *visible* one in here -- which is
+              the inversion #504 removed from the card. Leftmost, the way it is
+              leftmost in reading order on the card's corner. */}
+          {(onHide || onDelete) && url && (
+            <div
+              className={styles.actions}
+              // Or the backdrop handler closes on the way out, and the point of
+              // acting from here is to keep going through the set.
+              onClick={(e) => e.stopPropagation()}
             >
-              <Trash2 className={styles.controlIcon} />
-            </button>
+              {onHide && (
+                <button
+                  type="button"
+                  className={cx(styles.action, styles.hide)}
+                  onClick={onHide}
+                  aria-label="Hide"
+                  title="Hide (H)"
+                >
+                  <EyeOff className={styles.controlIcon} />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  className={cx(styles.action, styles.delete)}
+                  onClick={onDelete}
+                  aria-label="Delete"
+                  title="Delete"
+                >
+                  <Trash2 className={styles.controlIcon} />
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

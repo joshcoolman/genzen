@@ -480,7 +480,14 @@ export function useView(initial: Array<SavedAiImage>) {
     [images],
   )
 
-  const viewer = useImageViewer(viewerImages, gallery.deleteImage)
+  /* Delete and its safe twin, both stepping on through the set (#545). The
+     hide is `visibility.hide` unchanged -- the row leaves the grid, so it
+     leaves this list, which is the same shrink a delete causes. */
+  const viewer = useImageViewer(
+    viewerImages,
+    gallery.deleteImage,
+    (img) => void visibility.hide([img.id]),
+  )
 
   // Cmd-Ctrl-+/- zooms the grid, the way Cmd-+/- zooms the page (#403). The
   // extra Control is what keeps the browser's own zoom reachable -- this

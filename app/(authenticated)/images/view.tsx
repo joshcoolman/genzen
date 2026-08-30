@@ -265,6 +265,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNext={viewer.next}
           onPrev={viewer.prev}
           onDelete={viewer.deleteAndAdvance}
+          onHide={viewer.hideAndAdvance}
         />
       )}
 
