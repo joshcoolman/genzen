@@ -9,6 +9,19 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **The wall is `minmax(12rem, 1fr)`, down from 20rem** (#535). 20rem was set
+  when a card was a player and a caption; a card is now a player, two end
+  frames and a caption, so the same column bought a much taller card -- at a
+  typical window, one clip per row filling the content column with a single
+  take. 12rem is the largest minimum that still fits three across at the width
+  this route renders at, which is the density that reads right. Cards still
+  stretch past it on a wider screen; it is a floor, not a fixed size.
+
+  **There is no size control, and that is Images' own lesson.** Its thumb zoom
+  is a keyboard-only multiplier with nothing on screen -- #284 deleted the size
+  dropdown that preceded it. If Video ever wants variable size, promote that
+  mechanism (`zoom` on the grid element, three lines) rather than adding the
+  control Images removed.
 - **The lineup is `src/features/video/models.ts`, not this folder** -- promoted
   in #398, when Activity became its second consumer and needed to name and
   filter clips. Durations, aspect ratios, resolution, price and the request's
