@@ -132,7 +132,10 @@ a one-line fix to something already merged.
 ## Orientation and capture
 
 No continuation file. Read the README `## Status` block and the open issues at
-session start.
+session start. `## Status` is one Focus line naming the live card, a pointer at
+the board, and at most six one-line bullets of what shipped. It never lists
+what is queued -- the labels are the ranking, and a hand-written copy of them
+drifted inside a single session before it was cut.
 
 **The upnext board at `localhost:3210/kanban/genzen` is the surface Josh
 actually works from**, and he is the only developer. He reads the board,

@@ -147,28 +147,22 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
+**Focus** — [#550](https://github.com/joshcoolman/genzen/issues/550): paste in
+Images should land files in the library without attaching them as reference
+images, plus an Upload button where the intent is managing the library rather
+than generating.
+
+Updated when Focus changes. Everything else is the board at
+`localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
+first, **Next** is an honest read on what follows, Later and Unsorted are
+parking lots. The labels are the ranking; a list here would be a second copy
+that drifts, and one did.
+
 **Last shipped**
 
-- 2026-08-30 — Uploading from the library picker while standing in a group lands the files in that group. Paste already did this (#350); the picker was the one way into the library that put rows at top level, so uploads made from inside a group read as missing. Nothing was ever lost — `saveFileToLibrary` writes the row as soon as files are picked, and cancelling only clears local selection (#549)
-- 2026-08-29 — `H` in the image viewer hides the picture you are looking at and moves on, the way Delete already trashes it and moves on. Delete destroys, H clears away — the card's own pairing, at the surface where the judging happens. Both are buttons on the picture as well as keys, so the destructive verb is not the only visible one (#545, first half)
-- 2026-08-29 — The hidden bar reports what is hidden where you are standing, not everywhere. It counted the whole library while the wall showed one group, and `Show` acted on that list — so pressing it inside a group unhid the library. The rule that settles it: the bar says what would come back if you pressed Show. A group card now says ", 3 hidden" beside its count, so hiding inside a group is not invisible from outside it (#546)
-- 2026-08-29 — Hide works on Video the way it does on Images: a corner icon on the clip card that hides in one click and becomes Trash under Cmd, Hide and Focus in the selection drawer, and a bar above the wall listing what is held. The mechanism moved to `src/features/visibility/` on the two-consumer rule; the write never filtered on `source`, so this was a surface job (#537)
-- 2026-08-29 — Images in a group can be arranged by hand: drag a card and it stays where you put it. `group_position` is nulls-last, so a new image lands at the end with nothing written on any insert path, and `By date | Manual` is non-destructive in both directions — switching away keeps the arrangement (#505)
-- 2026-08-29 — Drag a thumbnail onto a group card to file it there. Drag a card that is part of a selection and the whole selection comes; drag an unselected one and it moves alone. The picker dialog stays, for a group scrolled out of view (#438)
-
-**Up next**
-
-The board at `localhost:3210/kanban/genzen` is the ranking — **Focus** (what is
-being worked on), **Now** (queued, plus small things to clear first) and
-**Next** (an honest read on what follows). Those three are the live picture;
-Later and Unsorted are the parking lots.
-
-The current arc is **asset management** — the library has grown past the point
-where generating is the hard part. What that means and how the pieces interlock
-lives in the issues themselves, not here: a second copy of the ranking drifts,
-and this one did.
-
-Labels are the ranking:
-[`focus`](https://github.com/joshcoolman/genzen/labels/focus),
-[`now`](https://github.com/joshcoolman/genzen/labels/now),
-[`next`](https://github.com/joshcoolman/genzen/labels/next).
+- 2026-08-30 — Uploading from the library picker inside a group lands the files in that group, as paste already did (#549)
+- 2026-08-29 — `H` in the image viewer hides the picture you are looking at and moves on, the way Delete trashes and moves on (#545, first half)
+- 2026-08-29 — The hidden bar counts what is hidden where you are standing, so `Show` inside a group no longer unhides the library (#546)
+- 2026-08-29 — Hide works on Video as it does on Images; the mechanism moved to `src/features/visibility/` on the two-consumer rule (#537)
+- 2026-08-29 — Images in a group can be arranged by hand, non-destructively in both directions (#505)
+- 2026-08-29 — Drag a thumbnail onto a group card to file it there; a dragged selection moves together (#438)
