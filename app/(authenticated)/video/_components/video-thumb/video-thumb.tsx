@@ -373,10 +373,10 @@ export function VideoThumb({
           </div>
         ) : null}
 
-        {/* Hover-revealed, like a still's. The one piece of chrome that is not
-            always on: it is a menu, and a menu that never hides is chrome over
-            every picture on the wall. Top-left, where the gallery card puts
-            its own. */}
+        {/* Top-left, where the gallery card puts its own -- but always on,
+            where a still's is hover-revealed. This is the only route to
+            Download and Delete now, and a menu you have to hover to discover
+            is one nobody discovers. See the stylesheet for the rest. */}
         <div className={styles.actions}>{menu}</div>
 
         {/* The gallery card's two always-on markers, in the gallery card's own

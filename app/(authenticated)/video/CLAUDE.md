@@ -80,8 +80,13 @@ source images; `use-view.ts` owns everything after the first paint.
   to `--text-sm` and no badge at all, so a clip and a still read as different
   kinds of record when they are the same row in the same table. **The player and
   both frames are one thumbnail, and the chrome sits on its corners** (#534) --
-  `...` top-left on hover, the select tick bottom-left always on, the model
-  badge bottom-right, which is the gallery card's own arrangement exactly.
+  `...` top-left, the select tick bottom-left, the model badge bottom-right,
+  which is the gallery card's own arrangement exactly. **All three are always
+  on**, where a still hides its `...` until hover: a clip card is a player, a
+  pair of end frames and a caption, so it already reads as an object with
+  controls rather than as a bare picture -- and the menu is the only route to
+  Download and Delete, so one you have to hover to discover is one nobody
+  discovers.
   `video-list/` is now the grid and nothing else.
 
   **This replaced the no-overlay-actions rule**, which said the file verbs had
