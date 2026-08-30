@@ -141,6 +141,13 @@ discusses what to do next from it, and rarely opens this repo's README at all
 while the board is what he is looking at while talking to you. Keep both true;
 know which one is load-bearing for whom.
 
+**A session often opens with nothing but a number.** "549" means the card he is
+looking at, so read that issue first and orient from the board rather than
+asking what he means. Two things are worth saying back before starting: if the
+card is blocked by or duplicates another, and if something in Now should be
+cleared first -- offer it, do not just start. "The focus items" or "those three
+in focus" resolves by column, not by guesswork.
+
 He points at cards by number, and says how much runway one gets — "finish the focus tickets" is a work session, "do 459 quickly" is a
 cherry-pick. **A card leaves the board when its issue closes**, so closing is
 part of finishing, not a follow-up. A half-shipped ticket is the one thing that
