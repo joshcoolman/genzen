@@ -1,6 +1,6 @@
 'use server'
 
-import { fal } from '@fal-ai/client'
+import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import {
   DEFAULT_VIDEO_MODEL,
@@ -21,8 +21,6 @@ import {
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
 import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateVideoInput {
   /** Optional. Without one the model invents the whole shot from the prompt --

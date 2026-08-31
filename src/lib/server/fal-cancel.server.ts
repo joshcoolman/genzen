@@ -1,6 +1,4 @@
-import { fal } from '@fal-ai/client'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
+import { fal } from './fal-client.server'
 
 /**
  * Ask FAL to stop a job whose row we are about to throw away (#369).

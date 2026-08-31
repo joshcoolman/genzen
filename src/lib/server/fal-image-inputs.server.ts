@@ -83,12 +83,12 @@ const UPLOAD_CONCURRENCY = 3
 
 /** `Promise.all` over `map`, with at most `limit` running, preserving order.
  *  Order matters here: models read the image list positionally. */
-async function mapWithLimit<T, R>(
+async function mapWithLimit<T, TResult>(
   items: Array<T>,
   limit: number,
-  run: (item: T) => Promise<R>,
-): Promise<Array<R>> {
-  const results = new Array<R>(items.length)
+  run: (item: T) => Promise<TResult>,
+): Promise<Array<TResult>> {
+  const results = new Array<TResult>(items.length)
   let next = 0
   const workers = Array.from(
     { length: Math.min(limit, items.length) },

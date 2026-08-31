@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
-import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import type { GenerationOrigin } from '#/lib/types/db'
+import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
@@ -21,8 +21,6 @@ import {
   markGenerationFailed,
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateImageInput {
   /** The string sent to the provider. Retry replays this one. */
