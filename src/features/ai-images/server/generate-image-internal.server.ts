@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import type { GenerationOrigin } from '#/lib/types/db'
+import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
@@ -240,18 +241,6 @@ export async function generateImageInternal(
     } else if (sourceBuffer) {
       const buffer = sourceBuffer
 
-      // Detect mime type from magic bytes
-      let mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' =
-        'image/jpeg'
-      const bytes = new Uint8Array(buffer.subarray(0, 4))
-      if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-        mimeType = 'image/png'
-      } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-        mimeType = 'image/gif'
-      } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-        mimeType = 'image/webp'
-      }
-
       // If no user prompt, ask Haiku for a plain factual description of the image
       if (!effectivePrompt) {
         promptDerivedFromSource = true
@@ -267,8 +256,13 @@ export async function generateImageInternal(
         )
       }
 
-      imageUrl = await fal.storage.upload(
-        new Blob([buffer], { type: mimeType }),
+      // Through the shared helper, so this path gets the transient-transport
+      // retry every other upload has (#556).
+      imageUrl = await uploadBufferToFal(
+        buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength,
+        ),
       )
 
       // Use image-mode endpoint if specified
@@ -316,9 +310,9 @@ export async function generateImageInternal(
 
     // Submit to FAL async queue (returns immediately)
 
-    const { request_id } = await (fal.queue.submit as any)(falModelId, {
-      input: falInput,
-    })
+    const { request_id } = await withNetworkRetry('queue.submit', () =>
+      (fal.queue.submit as any)(falModelId, { input: falInput }),
+    )
 
     const estimatedCostCents = await computeFalCostCents(falModelId, {
       aspectRatio,

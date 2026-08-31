@@ -1,6 +1,7 @@
 'use server'
 
 import { fal } from '@fal-ai/client'
+import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import {
   DEFAULT_VIDEO_MODEL,
   aspectRatiosFor,
@@ -176,23 +177,25 @@ export async function generateVideo({
     // frame `start_image_url`, H3's image endpoint has no `aspect_ratio`, and
     // only two of the three take `generate_audio`. Sending a param an endpoint
     // does not declare is how a submit fails at FAL rather than here.
-    const { request_id } = await fal.queue.submit(endpoint.id, {
-      input: {
-        prompt: trimmed,
-        ...(uploadedUrl && endpoint.firstFrameParam
-          ? { [endpoint.firstFrameParam]: uploadedUrl }
-          : {}),
-        ...(uploadedEndUrl && endpoint.acceptsEndImage
-          ? { end_image_url: uploadedEndUrl }
-          : {}),
-        duration,
-        ...(endpoint.aspectRatios.length > 0
-          ? { aspect_ratio: aspectRatio }
-          : {}),
-        resolution: sentResolution,
-        ...(model.supportsAudio ? { generate_audio: true } : {}),
-      },
-    })
+    const { request_id } = await withNetworkRetry('queue.submit', () =>
+      fal.queue.submit(endpoint.id, {
+        input: {
+          prompt: trimmed,
+          ...(uploadedUrl && endpoint.firstFrameParam
+            ? { [endpoint.firstFrameParam]: uploadedUrl }
+            : {}),
+          ...(uploadedEndUrl && endpoint.acceptsEndImage
+            ? { end_image_url: uploadedEndUrl }
+            : {}),
+          duration,
+          ...(endpoint.aspectRatios.length > 0
+            ? { aspect_ratio: aspectRatio }
+            : {}),
+          resolution: sentResolution,
+          ...(model.supportsAudio ? { generate_audio: true } : {}),
+        },
+      }),
+    )
 
     await markGenerationSubmitted(recordId, request_id)
   } catch (err) {
