@@ -160,9 +160,9 @@ that drifts, and one did.
 
 **Last shipped**
 
+- 2026-08-30 — Shots: tick staged references and camera angles, and get every pair as its own generation. A vision model writes the scene once per picture and the shot per angle, concatenated in code so light and colour cannot drift between frames (#553)
 - 2026-08-30 — Uploading from the library picker inside a group lands the files in that group, as paste already did (#549)
 - 2026-08-29 — `H` in the image viewer hides the picture you are looking at and moves on, the way Delete trashes and moves on (#545, first half)
 - 2026-08-29 — The hidden bar counts what is hidden where you are standing, so `Show` inside a group no longer unhides the library (#546)
 - 2026-08-29 — Hide works on Video as it does on Images; the mechanism moved to `src/features/visibility/` on the two-consumer rule (#537)
 - 2026-08-29 — Images in a group can be arranged by hand, non-destructively in both directions (#505)
-- 2026-08-29 — Drag a thumbnail onto a group card to file it there; a dragged selection moves together (#438)
