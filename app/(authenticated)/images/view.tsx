@@ -297,8 +297,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         open={shotsOpen}
         images={generator.refImages}
         busy={shooting}
-        onGenerate={(imageIds, shotIds, modelId, instructions, mode) =>
-          void runShots(imageIds, shotIds, modelId, instructions, mode)
+        onGenerate={(imageIds, shotIds, modelId, instructions) =>
+          void runShots(imageIds, shotIds, modelId, instructions)
         }
         onCancel={closeShots}
       />

@@ -50,14 +50,12 @@ anything one route renders lives with that route.
   denoise-with-strength cannot take an instruction -- so offering it would spend
   money reproducing the reference. The sixteen angles and the constant block
   are `src/lib/prompts/shots/`, loaded lazily so a client reading the registry
-  for its labels does not bundle the prose; only the assembly is code. **Two
-  prompt paths, deliberately both alive**, in
-  `server/write-shot-prompt.action.ts`: `writeShotScene` + `writeShot` is the
-  two-pass default (scene once per picture, shot per angle, concatenated by the
-  caller), and `writeWholePrompt` is the one-pass baseline it is being compared
-  against. Until the pictures decide, deleting either throws away the
-  comparison; once they do, delete the loser **and** the dialog's mode row
-  together.
+  for its labels does not bundle the prose; only the assembly is code. The prompt itself is
+  written by two vision passes in `server/write-shot-prompt.action.ts` --
+  `writeShotScene` once per picture, `writeShot` once per angle, concatenated by
+  the caller so the scene text cannot vary between shots. Its header records the
+  two alternatives that were tried and deleted, and why a per-angle scene is the
+  one thing not to reintroduce.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.

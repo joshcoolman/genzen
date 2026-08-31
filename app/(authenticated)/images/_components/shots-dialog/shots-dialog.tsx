@@ -4,11 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
 import styles from './shots-dialog.module.css'
 import type { RefImage } from '#/features/ai-images/hooks/use-generator'
-import type { ShotMode } from '#/features/ai-images/shots'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 import {
-  DEFAULT_SHOT_MODE,
-  SHOT_MODES,
   defaultShotModelId,
   shotModelOptions,
 } from '#/features/ai-images/shots'
@@ -39,7 +36,6 @@ interface ShotsDialogProps {
     shotIds: Array<string>,
     modelId: string,
     instructions: string,
-    mode: ShotMode,
   ) => void
   onCancel: () => void
 }
@@ -66,11 +62,11 @@ interface ShotsDialogProps {
  * asked for. Empty on every open, for the same reason: this is the moment the
  * environment occurs to you, looking at the picture and the angles together.
  *
- * **The mode row is a comparison, not a setting, and is expected to go.** Both
- * options put a vision model in front of FAL; what is on trial is whether the
- * scene is established once per picture and reused, or rewritten for every
- * angle. When the pictures answer, the winner becomes the only path and the row
- * is deleted.
+ * **There are no prompt controls, and there were two.** A vision model writes
+ * the scene once per picture and the shot per angle; that is simply what Shots
+ * does now. The bare-angle path and the one-call-per-angle path were both
+ * offered here, judged on pictures, and deleted -- a control that outlives its
+ * own question is what Outpaint's model picker was.
  *
  * **An instruction that replaces the world is applied once, in the scene.**
  * "She is in an empty warehouse" against an office reference has to come out
@@ -95,7 +91,6 @@ export function ShotsDialog({
   const [pickedImages, setPickedImages] = useState<Array<string>>([])
   const [pickedShots, setPickedShots] = useState<Array<string>>([])
   const [instructions, setInstructions] = useState('')
-  const [mode, setMode] = useState<ShotMode>(DEFAULT_SHOT_MODE)
   const [modelId, setModelId] = useState(() => defaultShotModelId())
 
   // Opening is the fresh question. The strip cannot change while this is over
@@ -231,22 +226,6 @@ export function ShotsDialog({
           />
         </div>
 
-        <div className={styles.section}>
-          <div className={styles.head}>
-            <span className={styles.label}>Prompt</span>
-          </div>
-          <SingleSelect
-            options={[...SHOT_MODES]}
-            value={mode}
-            onChange={(next) => next && setMode(next)}
-          />
-          <span className={styles.modeNote}>
-            {mode === 'scene-shot'
-              ? 'The scene is written once per picture and reused by every angle, so the light and colour cannot drift between shots.'
-              : 'Every angle is written from scratch, scene included. The baseline this is being compared against.'}
-          </span>
-        </div>
-
         <SingleSelect
           options={models}
           value={modelId}
@@ -275,7 +254,7 @@ export function ShotsDialog({
             loadingText="Sending"
             disabled={total === 0}
             onClick={() =>
-              onGenerate(pickedImages, pickedShots, modelId, instructions, mode)
+              onGenerate(pickedImages, pickedShots, modelId, instructions)
             }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}

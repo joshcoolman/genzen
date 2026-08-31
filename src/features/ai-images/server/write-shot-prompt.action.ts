@@ -8,7 +8,6 @@ import { createImageStorage } from '#/lib/image-storage'
 import { findShot } from '#/lib/prompts/shots'
 import sceneInstruction from '#/lib/prompts/shots/scene.md'
 import shotInstruction from '#/lib/prompts/shots/shot.md'
-import wholePromptInstruction from '#/lib/prompts/shots/enhance.md'
 
 /**
  * The two vision passes behind Shots (#553).
@@ -30,13 +29,14 @@ import wholePromptInstruction from '#/lib/prompts/shots/enhance.md'
  * every shot by construction rather than by request, which is the same reason
  * prose lives in `.md` and assembly lives in TypeScript (#322).
  *
- * `writeWholePrompt` is the one-pass version that shipped first: one call per
- * angle, writing scene and shot together. It is kept only as the comparison
- * behind the dialog's mode control. **Delete it and the control together once
- * the pictures have answered** -- a control that outlives its own question is
- * what Outpaint's model picker was, and it was removed for it.
+ * There were two other ways to write these, both deleted rather than kept as
+ * options, because each had been answered: the bare angle description sent to
+ * FAL with no writer at all (random and poor), and a single vision call per
+ * angle writing scene and shot together (consistent renders, drifting light).
+ * The second is what this file's split replaced, and its symptom is the reason
+ * to be careful about ever reintroducing a per-angle scene.
  *
- * All three throw rather than falling back to something cheaper. #365 is the
+ * Both throw rather than falling back to something cheaper. #365 is the
  * precedent: with no `ANTHROPIC_API_KEY` a silent fallback generated at full
  * price against a placeholder prompt, forever.
  */
@@ -127,32 +127,4 @@ export async function writeShot(data: {
       .join('\n\n'),
   )
   return { prompt: `${data.scene.trim()}\n\n${written}` }
-}
-
-/** The one-pass baseline: scene and shot written together, per angle. */
-export async function writeWholePrompt(data: {
-  imageId: string
-  shotId: string
-  instructions?: string
-}) {
-  const { userId } = await resolveAuth()
-  const shot = findShot(data.shotId)
-  if (!shot) throw new Error(`Unknown shot "${data.shotId}"`)
-  requireAiRole('fast')
-
-  const base64 = await loadImage(data.imageId, userId)
-  const nudge = (data.instructions ?? '').trim()
-  const { default: description } = await shot.system()
-
-  const prompt = await write(
-    wholePromptInstruction,
-    base64,
-    [
-      `Camera position: ${description.trim()}`,
-      nudge && `User instructions: ${nudge}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n'),
-  )
-  return { prompt }
 }

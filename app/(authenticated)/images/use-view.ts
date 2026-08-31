@@ -16,7 +16,6 @@ import type {
 } from '#/features/groups/hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import type { ShotMode } from '#/features/ai-images/shots'
 import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { useGroups } from '#/features/groups/hooks/use-groups'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
@@ -28,7 +27,6 @@ import {
 import {
   writeShot,
   writeShotScene,
-  writeWholePrompt,
 } from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
 import { getModelName } from '#/features/ai-images/models'
@@ -1045,7 +1043,6 @@ export function useView(initial: Array<SavedAiImage>) {
       shotIds: Array<string>,
       model: string,
       instructions: string,
-      mode: ShotMode,
     ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
@@ -1081,42 +1078,33 @@ export function useView(initial: Array<SavedAiImage>) {
       // submits rather than lazily inside the loop so a bad key or an
       // unreadable object fails once, loudly, instead of sixteen times.
       const scenes = new Map<string, string>()
-      if (mode === 'scene-shot') {
-        for (const imageId of imageIds) {
-          try {
-            const { scene } = await writeShotScene({ imageId, instructions })
-            scenes.set(imageId, scene)
-          } catch (err) {
-            for (const p of pairs.filter((x) => x.imageId === imageId)) {
-              gallery.removeOptimisticCard(p.placeholderId)
-            }
-            toast.error(
-              err instanceof Error
-                ? err.message
-                : 'Could not write the scene for one of the pictures',
-            )
+      for (const imageId of imageIds) {
+        try {
+          const { scene } = await writeShotScene({ imageId, instructions })
+          scenes.set(imageId, scene)
+        } catch (err) {
+          for (const p of pairs.filter((x) => x.imageId === imageId)) {
+            gallery.removeOptimisticCard(p.placeholderId)
           }
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : 'Could not write the scene for one of the pictures',
+          )
         }
       }
 
       for (const pair of pairs) {
         const label = findShot(pair.shotId)?.label ?? pair.shotId
         const scene = scenes.get(pair.imageId)
-        if (mode === 'scene-shot' && !scene) continue
+        if (!scene) continue
         try {
-          const { prompt } =
-            mode === 'scene-shot'
-              ? await writeShot({
-                  imageId: pair.imageId,
-                  shotId: pair.shotId,
-                  scene: scene as string,
-                  instructions,
-                })
-              : await writeWholePrompt({
-                  imageId: pair.imageId,
-                  shotId: pair.shotId,
-                  instructions,
-                })
+          const { prompt } = await writeShot({
+            imageId: pair.imageId,
+            shotId: pair.shotId,
+            scene,
+            instructions,
+          })
           const created = await generateImage({
             prompt,
             model,

@@ -57,26 +57,3 @@ export function defaultShotModelId(): string {
   }
   return pickerId(model)
 }
-
-/**
- * How a shot's prompt gets written. Two, because one of them is on trial.
- *
- * `scene-shot` establishes the scene once per picture and directs each angle on
- * top of it, concatenated in code. `per-shot` writes the whole prompt fresh for
- * every angle, which is what shipped first and what the set drifted under.
- *
- * **This control is meant to die.** It exists to answer one question with
- * pictures; when it is answered the winner becomes the only path and the
- * control goes, the way Outpaint's model picker did once its lab page settled
- * which model. There was a third mode -- the angle description sent to FAL with
- * no writer at all -- and it is already gone: judged on results as random and
- * poor, which is what a settled question looks like.
- */
-export const SHOT_MODES = [
-  { value: 'scene-shot', label: 'Scene + shot' },
-  { value: 'per-shot', label: 'Per shot' },
-] as const
-
-export type ShotMode = (typeof SHOT_MODES)[number]['value']
-
-export const DEFAULT_SHOT_MODE: ShotMode = 'scene-shot'
