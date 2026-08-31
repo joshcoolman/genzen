@@ -1,0 +1,1 @@
+Low Oblique Full View - Camera low but not on the ground, angled obliquely across the subject rather than square to it. The full form stays in frame while the perspective stretches it upward. Converging verticals, dominant near-ground.

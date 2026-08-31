@@ -24,6 +24,8 @@ import {
   buildOutpaintPrompt,
   outpaintModelId,
 } from '#/features/ai-images/outpaint'
+import { buildShotPrompt } from '#/features/ai-images/shots'
+import { findShot } from '#/lib/prompts/shots'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -1001,6 +1003,88 @@ export function useView(initial: Array<SavedAiImage>) {
    * tiles immediately, and each is swapped for its real row or dropped on the
    * spot -- the same contract `useGenerator` has with `onSubmitOutcome`.
    */
+  /**
+   * Shots (#553): every staged reference, from every angle picked, one
+   * generation each.
+   *
+   * **Each submit carries exactly one picture.** `sourceImageId` and nothing
+   * else -- no `referenceImageIds` -- because two references in one request is
+   * the combine the generator panel already does, and this is the opposite
+   * errand: the same treatment applied to each subject separately. Two
+   * characters and two angles is four rows, not one.
+   *
+   * The loop is `runOutpaint`'s, for the reasons written there: optimistic
+   * cards first so the press shows its full count immediately, then submitted
+   * one after another rather than together, because each call reserves a row
+   * before it reaches FAL.
+   *
+   * **A failure drops its own card and keeps going.** Sixteen angles across
+   * three references is forty-eight submits, and stopping the run on the first
+   * refusal would throw away the forty-seven that would have worked.
+   */
+  const [shotsOpen, setShotsOpen] = useState(false)
+  const [shooting, setShooting] = useState(false)
+
+  const runShots = useCallback(
+    async (imageIds: Array<string>, shotIds: Array<string>, model: string) => {
+      if (imageIds.length === 0 || shotIds.length === 0) return
+
+      setShooting(true)
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        shotIds.map((shotId) => ({
+          imageId,
+          shotId,
+          placeholderId: `shot-${imageId}-${shotId}-${stamp}`,
+        })),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: findShot(pair.shotId)?.label ?? pair.shotId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      for (const pair of pairs) {
+        const label = findShot(pair.shotId)?.label ?? pair.shotId
+        try {
+          const created = await generateImage({
+            prompt: await buildShotPrompt(pair.shotId),
+            model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
+      setShooting(false)
+      setShotsOpen(false)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [gallery, groups, prefs, activeGroupId],
+  )
+
   const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
     null,
   )
@@ -1124,6 +1208,11 @@ export function useView(initial: Array<SavedAiImage>) {
     cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),
     outpainting,
     runOutpaint,
+    shotsOpen,
+    openShots: useCallback(() => setShotsOpen(true), []),
+    closeShots: useCallback(() => setShotsOpen(false), []),
+    shooting,
+    runShots,
     error,
     setError,
   }

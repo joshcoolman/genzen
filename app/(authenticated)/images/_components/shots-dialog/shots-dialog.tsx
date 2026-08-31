@@ -1,0 +1,224 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { Check } from 'lucide-react'
+import styles from './shots-dialog.module.css'
+import type { RefImage } from '#/features/ai-images/hooks/use-generator'
+import { estimateImageCostCents } from '#/features/ai-images/models'
+import {
+  defaultShotModelId,
+  shotModelOptions,
+} from '#/features/ai-images/shots'
+import { SHOTS } from '#/lib/prompts/shots'
+import {
+  ActionButton,
+  Button,
+  CostNote,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  SingleSelect,
+} from '#/components'
+import { cx } from '#/lib/utils'
+
+interface ShotsDialogProps {
+  open: boolean
+  /** The reference strip's contents. Every one of them is a candidate subject;
+   *  which ones get shot is the top half of this dialog. */
+  images: Array<RefImage>
+  busy: boolean
+  onGenerate: (
+    imageIds: Array<string>,
+    shotIds: Array<string>,
+    modelId: string,
+  ) => void
+  onCancel: () => void
+}
+
+/**
+ * Tick pictures, tick camera angles, press Generate (#553).
+ *
+ * **Every pair is its own generation, and the images are never combined.** Two
+ * characters and two angles is four submits, each carrying exactly one
+ * reference. That is the whole reason this is not the generator panel's own
+ * multi-image path, which sends the set together and asks for one picture back.
+ *
+ * **A model picker, where Outpaint deliberately has none.** Outpaint's question
+ * was answered before it left the lab, so its model is a constant. This one is
+ * the open question -- which model keeps a subject itself while the camera
+ * moves -- so the control is the experiment, not a preference.
+ *
+ * **The images start selected and the angles start empty.** Staging a
+ * reference is already a decision; picking angles is the one being made here.
+ *
+ * **The three rear shots are labelled, not hidden or reordered.** They are
+ * right when the reference shows the subject's back and invented when it does
+ * not, and only the person looking at the picture knows which. A note on the
+ * tile is the whole intervention; anything stronger decides for them.
+ */
+export function ShotsDialog({
+  open,
+  images,
+  busy,
+  onGenerate,
+  onCancel,
+}: ShotsDialogProps) {
+  const models = useMemo(() => shotModelOptions(), [])
+  const [pickedImages, setPickedImages] = useState<Array<string>>([])
+  const [pickedShots, setPickedShots] = useState<Array<string>>([])
+  const [modelId, setModelId] = useState(() => defaultShotModelId())
+
+  // Opening is the fresh question. The strip cannot change while this is over
+  // it, so reacting to `images` too costs nothing and keeps the default honest
+  // for whatever is staged at the next open. The model survives -- comparing
+  // two subjects through the same model is the point of having the control.
+  useEffect(() => {
+    if (!open) return
+    setPickedImages(images.map((i) => i.id))
+    setPickedShots([])
+  }, [open, images])
+
+  const total = pickedImages.length * pickedShots.length
+
+  const estimate = useMemo(
+    () => estimateImageCostCents([modelId], Math.max(total, 1), true),
+    [modelId, total],
+  )
+
+  function toggle(
+    set: (fn: (current: Array<string>) => Array<string>) => void,
+    id: string,
+  ) {
+    set((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    )
+  }
+
+  const allShots = pickedShots.length === SHOTS.length
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onCancel()
+      }}
+    >
+      <DialogContent className={styles.content}>
+        <DialogHeader>
+          <DialogTitle>Shots</DialogTitle>
+          <DialogDescription>
+            The same subject from somewhere else the camera could have been.
+            Every picture gets every angle you pick, one generation each.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Only worth a row when there is a choice in it. One reference is
+            still shown -- a dialog about "these pictures" has to say which. */}
+        <div className={styles.section}>
+          <div className={styles.head}>
+            <span className={styles.label}>Pictures</span>
+            <span className={styles.count}>
+              {pickedImages.length} of {images.length}
+            </span>
+          </div>
+          <div className={styles.strip}>
+            {images.map((image) => {
+              const isOn = pickedImages.includes(image.id)
+              return (
+                <button
+                  key={image.id}
+                  type="button"
+                  className={cx(styles.thumb, isOn && styles.thumbOn)}
+                  style={{ backgroundImage: `url(${image.url})` }}
+                  aria-pressed={isOn}
+                  aria-label={image.title}
+                  title={image.title}
+                  disabled={busy}
+                  onClick={() => toggle(setPickedImages, image.id)}
+                >
+                  {isOn && <Check className={styles.thumbCheck} />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.head}>
+            <span className={styles.label}>Angles</span>
+            <span className={styles.count}>
+              {pickedShots.length} of {SHOTS.length}
+            </span>
+            <button
+              type="button"
+              className={styles.all}
+              disabled={busy}
+              onClick={() =>
+                setPickedShots(allShots ? [] : SHOTS.map((s) => s.id))
+              }
+            >
+              {allShots ? 'Clear' : 'Select all'}
+            </button>
+          </div>
+          <div className={styles.grid}>
+            {SHOTS.map((shot) => {
+              const isOn = pickedShots.includes(shot.id)
+              return (
+                <button
+                  key={shot.id}
+                  type="button"
+                  className={cx(styles.tile, isOn && styles.tileOn)}
+                  aria-pressed={isOn}
+                  disabled={busy}
+                  onClick={() => toggle(setPickedShots, shot.id)}
+                >
+                  <span className={styles.tileLabel}>{shot.label}</span>
+                  {'needsBack' in shot && (
+                    <span className={styles.tileNote}>needs back</span>
+                  )}
+                  {isOn && <Check className={styles.tileCheck} />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <SingleSelect
+          options={models}
+          value={modelId}
+          /* Null is what SingleSelect reports when the chosen pill is pressed
+             again. There is no "no model" here -- a shot has to be rendered by
+             something -- so that press is a no-op rather than a cleared
+             state. */
+          onChange={(next) => next && setModelId(next)}
+        />
+
+        {/* Reads for what a press will actually cost, so it is zero until both
+            halves are picked -- the same rule Generate follows. Sixteen angles
+            across three references is forty-eight generations, and this line is
+            the only thing that says so before the press. */}
+        <CostNote
+          cents={total === 0 ? 0 : estimate.cents}
+          unpriced={estimate.unpriced}
+        />
+
+        <DialogFooter>
+          <Button variant="secondary" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <ActionButton
+            loading={busy}
+            loadingText="Sending"
+            disabled={total === 0}
+            onClick={() => onGenerate(pickedImages, pickedShots, modelId)}
+          >
+            {total > 1 ? `Generate ${total} images` : 'Generate'}
+          </ActionButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

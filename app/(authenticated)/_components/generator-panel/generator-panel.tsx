@@ -48,6 +48,10 @@ interface GeneratorPanelProps {
   /** The group the surrounding route is standing in, which an upload from the
    *  picker lands in (#549). Canvas has none and passes nothing. */
   uploadGroupId?: string | null
+  /** Opens the Shots dialog for the staged set (#553). Optional because the
+   *  route owns the submits, not the panel: Images passes it, Canvas does not,
+   *  and the button is absent rather than dead where nobody handles it. */
+  onShots?: () => void
 }
 
 /**
@@ -67,6 +71,7 @@ export function GeneratorPanel({
   userImages,
   modelDisplay = 'panel',
   uploadGroupId = null,
+  onShots,
 }: GeneratorPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const { confirm, dialogProps } = useConfirm()
@@ -163,6 +168,19 @@ export function GeneratorPanel({
       <div className={styles.refsGroup}>
         <div className={styles.refsHead}>
           <span className={styles.refsLabel}>Ref images</span>
+          {/* Shots (#553): the staged set is already the answer to "which
+              pictures", so the way in is here rather than a card's `...` menu.
+              It needs at least one reference and has nothing to say during a
+              run, on the same condition Clear uses. */}
+          {onShots && generator.refImages.length > 0 && !generator.loading && (
+            <button
+              type="button"
+              onClick={onShots}
+              className={styles.refsClear}
+            >
+              Shots
+            </button>
+          )}
           {generator.refImages.length > 0 && !generator.loading && (
             <button
               type="button"

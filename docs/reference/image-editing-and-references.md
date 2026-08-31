@@ -1,6 +1,6 @@
 # Editing and reference-image prompting
 
-The craft of the *non*-text-to-image paths — edit, variation, outpaint, and
+The craft of the _non_-text-to-image paths — edit, variation, outpaint, and
 multi-reference composition. genzen ships all of these (every model with a
 `withImages` endpoint, `ref-images.ts`, `maxRefs`, `outpaint.ts`, the
 `image-variation*.md` prompts) but the prose that drives them is written mostly
@@ -16,8 +16,8 @@ Nano Banana edit, and z-image image-to-image, not just FLUX.
 
 ## The one rule text-to-image does not teach: name what stays
 
-A generation prompt says what the picture *is*. An edit prompt says what
-*changes* — and an edit model, left to guess, will happily change things you
+A generation prompt says what the picture _is_. An edit prompt says what
+_changes_ — and an edit model, left to guess, will happily change things you
 never mentioned. The single highest-leverage habit is to state the preservation
 explicitly, in the same breath as the change:
 
@@ -25,7 +25,7 @@ explicitly, in the same breath as the change:
     Good:  Change the background to a beach at sunset, keeping the subject's
            pose, clothing, expression and the lighting direction exactly as they are
 
-The "bad" version is not wrong, it is *underspecified*: it invites the model to
+The "bad" version is not wrong, it is _underspecified_: it invites the model to
 re-render the person too. Every edit instruction should carry both halves —
 the change, and the envelope around it that must hold. This is the editing
 equivalent of the no-negation rule: you are not forbidding drift, you are
@@ -33,8 +33,8 @@ positively pinning the parts that stay.
 
 Style is the most commonly-dropped envelope. A realistic photo asked to "make
 it nighttime" often comes back stylised, because "nighttime" pulled in a whole
-aesthetic. Pin it: *"…while maintaining the photorealistic style and the
-existing colour grading."*
+aesthetic. Pin it: _"…while maintaining the photorealistic style and the
+existing colour grading."_
 
 ## Sequential small edits beat one large edit
 
@@ -55,17 +55,17 @@ edits over one prompt nobody can debug.
 
 ## Reference images: give each one a role
 
-Once more than one image is in play, the model needs to know what each is *for*.
+Once more than one image is in play, the model needs to know what each is _for_.
 Vagueness ("the person and the background together") produces blends; explicit
 roles produce composition. Two ways to make the roles legible, both fine:
 
-- **Natural language** — *"The person from image 1, wearing the outfit from
-  image 2, in the café from image 3."*
+- **Natural language** — _"The person from image 1, wearing the outfit from
+  image 2, in the café from image 3."_
 - **Explicit indexing** — number the images and refer to them by number. Use
   this when precision matters or when the same kind of thing appears in two
   references (two faces, two garments).
 
-State the *relationship*, not just the inventory. "The person and the beach"
+State the _relationship_, not just the inventory. "The person and the beach"
 leaves the arrangement to chance; "the person in the foreground, the beach
 visible behind them at a distance" does not.
 
@@ -87,21 +87,21 @@ a prompt job. Feed the character as a reference and describe only what is new:
     same clothing and hairstyle, different environment
 
 If identity drifts across a series, the fixes in order of effort: emphasise the
-identifying features by name, add the phrase *"maintaining exact likeness,"* and
+identifying features by name, add the phrase _"maintaining exact likeness,"_ and
 supply more than one angle of the subject as separate references. Reducing the
-number of *other* references also helps — every extra reference is another pull
+number of _other_ references also helps — every extra reference is another pull
 on the model's attention.
 
 ### Lighting is the seam that gives away a composite
 
 When elements come from different references, mismatched light is what reads as
-fake. Say the light once, for the whole frame: *"…lighting direction consistent
-across all elements, main source from the upper left."*
+fake. Say the light once, for the whole frame: _"…lighting direction consistent
+across all elements, main source from the upper left."_
 
 ## Outpaint framing
 
-Outpaint is an edit whose change is *"extend the canvas"* and whose preservation
-envelope is *the entire original frame*. The prompt describes what fills the new
+Outpaint is an edit whose change is _"extend the canvas"_ and whose preservation
+envelope is _the entire original frame_. The prompt describes what fills the new
 margin, in continuity with what exists — not a fresh scene. Keep it about
 continuation: the surface, the light, the horizon line carry outward; the
 subject does not move. Anything that would alter the original pixels is the
@@ -109,14 +109,14 @@ wrong instruction for this path.
 
 ## Troubleshooting quick table
 
-| Symptom | First thing to try |
-| --- | --- |
-| An element you didn't mention changed | Name it in the preservation envelope |
-| A reference isn't transferring | Be explicit about which element from which image; reduce reference count |
-| Composite looks pasted-together | Pin lighting direction across all elements |
-| Identity drifts across a series | "maintaining exact likeness" + more angles of the subject |
-| One big edit keeps missing | Split into sequential edits, one change each |
-| Realistic photo came back stylised | Pin the style in the same prompt as the change |
+| Symptom                               | First thing to try                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| An element you didn't mention changed | Name it in the preservation envelope                                     |
+| A reference isn't transferring        | Be explicit about which element from which image; reduce reference count |
+| Composite looks pasted-together       | Pin lighting direction across all elements                               |
+| Identity drifts across a series       | "maintaining exact likeness" + more angles of the subject                |
+| One big edit keeps missing            | Split into sequential edits, one change each                             |
+| Realistic photo came back stylised    | Pin the style in the same prompt as the change                           |
 
 ## How this maps to genzen / opportunities
 
@@ -143,7 +143,7 @@ wrong instruction for this path.
   per-reference labels in the UI (identity / pose / style / background), this is
   the taxonomy to use, and the prompt can then name them by role automatically.
 - **Multi-reference is capped per model, and the cap is craft-relevant.**
-  Character consistency wants *more* angles; genzen's `maxRefs` is the ceiling
+  Character consistency wants _more_ angles; genzen's `maxRefs` is the ceiling
   on that. When a model is chosen for a consistency job, the picker could hint
   that a higher-`maxRefs` model (Nano Banana, Seedream, FLUX.2 pro) will hold
   identity better than a low-cap one.
@@ -151,5 +151,5 @@ wrong instruction for this path.
   [`outpaint.md`](../../src/lib/prompts/outpaint.md) exists; this doc's outpaint
   section is the checklist to audit it against — continuation not reinvention,
   original frame preserved.
-</content>
-</invoke>
+  </content>
+  </invoke>

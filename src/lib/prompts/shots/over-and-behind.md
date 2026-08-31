@@ -1,0 +1,1 @@
+Over-and-Behind - Camera set back and above one shoulder or upper edge, the subject occupying the near third of frame and facing away into the scene. The subject becomes foreground mass and the environment beyond becomes the content.

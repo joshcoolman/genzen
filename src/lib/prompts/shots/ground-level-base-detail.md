@@ -1,0 +1,1 @@
+Ground-Level Base Detail - Camera on the ground with the subject's lowest element dominating the immediate foreground in sharp detail, the rest of the form tapering upward to a small far end. Severe foreshortening along the vertical axis.

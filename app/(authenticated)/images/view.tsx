@@ -10,6 +10,7 @@ import { ImageViewer } from './_components/image-viewer/image-viewer'
 import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
 import { OrderRow } from './_components/order-row/order-row'
 import { ScopeRow } from './_components/scope-row/scope-row'
+import { ShotsDialog } from './_components/shots-dialog/shots-dialog'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -48,6 +49,11 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     cancelOutpaint,
     outpainting,
     runOutpaint,
+    shotsOpen,
+    openShots,
+    closeShots,
+    shooting,
+    runShots,
     groups,
     workingByGroup,
     hiddenByGroup,
@@ -255,6 +261,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         modelSelector={modelSelector}
         userImages={userImages}
         uploadGroupId={activeGroupId}
+        onShots={openShots}
       />
 
       {viewer.isOpen && (
@@ -281,6 +288,19 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         busy={outpainting}
         onGenerate={(ratios) => void runOutpaint(ratios)}
         onCancel={cancelOutpaint}
+      />
+
+      {/* One camera move applied to each staged reference on its own (#553).
+          Opened from the panel's Ref images header, because the strip is
+          already the answer to "which pictures". */}
+      <ShotsDialog
+        open={shotsOpen}
+        images={generator.refImages}
+        busy={shooting}
+        onGenerate={(imageIds, shotIds, modelId) =>
+          void runShots(imageIds, shotIds, modelId)
+        }
+        onCancel={closeShots}
       />
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,
