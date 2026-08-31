@@ -140,8 +140,9 @@ export async function retryGeneration(data: RetryGenerationInput) {
       safetyLevel: 'permissive',
     })
 
-    const { request_id } = await withNetworkRetry('queue.submit', () =>
-      (fal.queue.submit as any)(falModelId, { input: falInput }),
+    const { request_id } = await withNetworkRetry<{ request_id: string }>(
+      'queue.submit',
+      () => (fal.queue.submit as any)(falModelId, { input: falInput }),
     )
     const estimatedCostCents = await computeFalCostCents(falModelId, {
       aspectRatio: plan.aspectRatio,

@@ -310,8 +310,9 @@ export async function generateImageInternal(
 
     // Submit to FAL async queue (returns immediately)
 
-    const { request_id } = await withNetworkRetry('queue.submit', () =>
-      (fal.queue.submit as any)(falModelId, { input: falInput }),
+    const { request_id } = await withNetworkRetry<{ request_id: string }>(
+      'queue.submit',
+      () => (fal.queue.submit as any)(falModelId, { input: falInput }),
     )
 
     const estimatedCostCents = await computeFalCostCents(falModelId, {
