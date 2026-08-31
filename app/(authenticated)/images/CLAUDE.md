@@ -101,11 +101,19 @@ list once when the seed comes back full, so the grid is never short.
   loaded into the panel. The angles are `src/lib/prompts/shots/`.
   **Instructions are typed in the dialog, never inherited from the panel** --
   the panel's prompt is whatever was last generated with, and folding it in
-  silently would make "sixteen angles of this picture" also a restyle. A typed
-  instruction outranks the constant block's freeze, which is the only reason it
-  does anything (the block locks the environment, so an appended nudge would
-  otherwise be two contradictory orders); the camera position outranks the
-  instruction
+  silently would make "sixteen angles of this picture" also a restyle.
+  **`Enhance` picks between two prompts, and the point is that nobody knows
+  which is better yet.** Off, the angle description goes straight to FAL --
+  short, and what the sixteen were proven with. On, `write-shot-prompt.action`
+  shows the picture to a vision model, which writes the prompt from what it
+  actually sees. The short path led with a constant block until #553's second
+  pass: it told FAL to inventory the reference and to "describe" the camera
+  position, neither of which an image model can do, so two-thirds of every
+  prompt was addressed to a reader that was not there. That prose was not
+  wrong, only misdirected -- it is now the vision model's instruction
+  (`src/lib/prompts/shots/enhance.md`). An enhanced run with no
+  `ANTHROPIC_API_KEY` fails rather than falling back to the short prompt; a
+  comparison whose halves collapse into one answers nothing
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

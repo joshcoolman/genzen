@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   SingleSelect,
+  Switch,
   Textarea,
 } from '#/components'
 import { cx } from '#/lib/utils'
@@ -36,6 +37,7 @@ interface ShotsDialogProps {
     shotIds: Array<string>,
     modelId: string,
     instructions: string,
+    enhance: boolean,
   ) => void
   onCancel: () => void
 }
@@ -62,6 +64,13 @@ interface ShotsDialogProps {
  * asked for. Empty on every open, for the same reason: this is the moment the
  * environment occurs to you, looking at the picture and the angles together.
  *
+ * **`Enhance` is a comparison, not a setting.** Off, the angle goes straight to
+ * FAL -- the short path, and the one the sixteen were proven with. On, a vision
+ * model looks at the picture first and writes the prompt, so the image model is
+ * given an inventory of what it is holding constant instead of an instruction
+ * to hold something unnamed. Nobody knows which is better yet, which is exactly
+ * why it is a checkbox in front of you rather than a decision already taken.
+ *
  * **The three rear shots are labelled, not hidden or reordered.** They are
  * right when the reference shows the subject's back and invented when it does
  * not, and only the person looking at the picture knows which. A note on the
@@ -78,6 +87,7 @@ export function ShotsDialog({
   const [pickedImages, setPickedImages] = useState<Array<string>>([])
   const [pickedShots, setPickedShots] = useState<Array<string>>([])
   const [instructions, setInstructions] = useState('')
+  const [enhance, setEnhance] = useState(false)
   const [modelId, setModelId] = useState(() => defaultShotModelId())
 
   // Opening is the fresh question. The strip cannot change while this is over
@@ -213,6 +223,21 @@ export function ShotsDialog({
           />
         </div>
 
+        <label className={styles.enhance}>
+          <Switch
+            checked={enhance}
+            onCheckedChange={setEnhance}
+            disabled={busy}
+          />
+          <span className={styles.enhanceLabel}>
+            Enhance
+            <span className={styles.enhanceNote}>
+              Write each prompt from the picture first. Slower, and one Claude
+              call per image per angle.
+            </span>
+          </span>
+        </label>
+
         <SingleSelect
           options={models}
           value={modelId}
@@ -241,7 +266,13 @@ export function ShotsDialog({
             loadingText="Sending"
             disabled={total === 0}
             onClick={() =>
-              onGenerate(pickedImages, pickedShots, modelId, instructions)
+              onGenerate(
+                pickedImages,
+                pickedShots,
+                modelId,
+                instructions,
+                enhance,
+              )
             }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}

@@ -25,6 +25,7 @@ import {
   outpaintModelId,
 } from '#/features/ai-images/outpaint'
 import { buildShotPrompt } from '#/features/ai-images/shots'
+import { writeShotPrompt } from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
@@ -1020,7 +1021,15 @@ export function useView(initial: Array<SavedAiImage>) {
    *
    * **A failure drops its own card and keeps going.** Sixteen angles across
    * three references is forty-eight submits, and stopping the run on the first
-   * refusal would throw away the forty-seven that would have worked.
+   * refusal would throw away the forty-seven that would have worked. That
+   * covers the enhanced path's extra failure too: a prompt the writer could not
+   * produce loses its own tile and nothing else.
+   *
+   * **`enhance` puts a vision model in front of each submit.** Off is the angle
+   * straight to FAL; on, `writeShotPrompt` looks at the picture and writes the
+   * prompt first. It is not a fallback pair -- an enhanced run that cannot
+   * reach Claude fails rather than quietly sending the short prompt, because a
+   * comparison whose two halves silently collapse into one answers nothing.
    */
   const [shotsOpen, setShotsOpen] = useState(false)
   const [shooting, setShooting] = useState(false)
@@ -1031,6 +1040,7 @@ export function useView(initial: Array<SavedAiImage>) {
       shotIds: Array<string>,
       model: string,
       instructions: string,
+      enhance: boolean,
     ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
@@ -1065,8 +1075,17 @@ export function useView(initial: Array<SavedAiImage>) {
       for (const pair of pairs) {
         const label = findShot(pair.shotId)?.label ?? pair.shotId
         try {
+          const prompt = enhance
+            ? (
+                await writeShotPrompt({
+                  imageId: pair.imageId,
+                  shotId: pair.shotId,
+                  instructions,
+                })
+              ).prompt
+            : await buildShotPrompt(pair.shotId, instructions)
           const created = await generateImage({
-            prompt: await buildShotPrompt(pair.shotId, instructions),
+            prompt,
             model,
             origin: 'images',
             sourceImageId: pair.imageId,

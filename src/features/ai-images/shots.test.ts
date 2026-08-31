@@ -2,35 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { buildShotPrompt } from './shots'
 
 /**
- * The order of these three blocks is the precedence rule (#553), and nothing
- * about a wrong order looks wrong -- it comes back as a picture that quietly
- * ignored what was typed, or moved the camera to satisfy it.
+ * The short path is now the angle and nothing else (#553). What it must not
+ * grow back is a block addressed to a reader that is not there -- the constant
+ * block told FAL to inventory the reference and to "describe" the camera
+ * position, neither of which an image model can do, and it was two-thirds of
+ * every prompt sent.
  */
 describe('buildShotPrompt', () => {
-  it('is the freeze then the angle, and nothing else, with no instructions', async () => {
+  it('is the angle alone when nothing is typed', async () => {
     const prompt = await buildShotPrompt('worms-eye-hero')
-    expect(prompt).toContain('Inventory everything visible')
     expect(prompt).toContain("Worm's-Eye Hero")
-    // The no-nudge path has to stay byte-identical to the sixteen prompts that
-    // were proven by hand, so the ranking block must not appear.
-    expect(prompt).not.toContain('Additional instructions')
+    expect(prompt).not.toMatch(/inventory|describe/i)
   })
 
-  it('ranks a typed instruction above the freeze and below the camera', async () => {
+  it('appends a typed instruction after the angle', async () => {
     const prompt = await buildShotPrompt(
       'true-overhead',
       '  inside a clean cement warehouse  ',
     )
-    expect(prompt).toContain('Additional instructions')
     expect(prompt.indexOf('True Overhead')).toBeLessThan(
-      prompt.indexOf('Additional instructions'),
+      prompt.indexOf('inside a clean cement warehouse'),
     )
-    // Trimmed and last: everything before it exists to rank it.
+    // Trimmed and last.
     expect(prompt.endsWith('inside a clean cement warehouse')).toBe(true)
   })
 
   it('treats whitespace as no instruction', async () => {
     const prompt = await buildShotPrompt('dutch-angle', '   \n  ')
-    expect(prompt).not.toContain('Additional instructions')
+    expect(prompt.trim()).toBe(prompt)
+    expect(prompt.endsWith('Widest lens in the set.')).toBe(false)
   })
 })

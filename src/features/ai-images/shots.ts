@@ -60,25 +60,24 @@ export function defaultShotModelId(): string {
 }
 
 /**
- * The constant block, then the shot, then whatever the user typed.
+ * The short path: the angle description, plus whatever the user typed.
  *
- * Order is the precedence, and it is the whole design. The block inventories
- * the reference and freezes it; the shot says where the camera goes; the
- * override block re-ranks the two against an instruction and hands the
- * instruction over last.
+ * **This is the whole prompt now, and it used to be a third of it.** A constant
+ * block led it -- "inventory everything visible in the reference image... all
+ * of it must remain 100% unchanged" -- carried over from the procedure these
+ * sixteen were written for. Read as an instruction to FAL it is inert: nobody
+ * is inventorying, and an image model cannot act on "describe only the final
+ * camera position". Most of what was being sent was addressed to a reader that
+ * was not there. Its prose was not wrong, only misdirected, and it now steers
+ * the vision model on the `Enhance` path (`enhance.md`), where something really
+ * does look at the picture and write.
  *
- * **A nudge has to outrank the freeze, or it does nothing.** The constant block
- * locks the environment, the lighting and the colour grade -- so "inside a
- * clean cement warehouse" appended to it is two contradictory orders, and the
- * model picks one. `overrides.md` is what makes that a ranking instead of a
- * collision: the instruction beats the freeze, silence leaves the freeze
- * standing, and the camera position beats the instruction. It is loaded only
- * when there is something to rank, so the no-nudge path is byte-identical to
- * the sixteen prompts that were proven by hand (#553).
+ * What is left is what the run actually proved: the angle, and the picture it
+ * is applied to. A typed instruction is appended plainly, with no ranking
+ * clause, because there is no longer a freeze for it to argue with.
  *
- * Every file is `.md` and every load is lazy (#322): the dialog imports this
- * module for its model list, and static imports would ship all sixteen shot
- * descriptions to the browser.
+ * Lazy `.md` loads (#322): the dialog imports this module for its model list,
+ * and static imports would ship all sixteen descriptions to the browser.
  */
 export async function buildShotPrompt(
   shotId: string,
@@ -87,15 +86,6 @@ export async function buildShotPrompt(
   const shot = findShot(shotId)
   if (!shot) throw new Error(`Unknown shot "${shotId}"`)
   const nudge = instructions.trim()
-  const [{ default: constant }, { default: description }] = await Promise.all([
-    import('#/lib/prompts/shots/constant.md'),
-    shot.system(),
-  ])
-  const parts = [constant.trim(), description.trim()]
-  if (nudge) {
-    const { default: overrides } =
-      await import('#/lib/prompts/shots/overrides.md')
-    parts.push(overrides.trim(), nudge)
-  }
-  return parts.join('\n\n')
+  const { default: description } = await shot.system()
+  return [description.trim(), nudge].filter(Boolean).join('\n\n')
 }
