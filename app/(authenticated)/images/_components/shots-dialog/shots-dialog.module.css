@@ -1,8 +1,12 @@
-/* Wide enough for three angles to a row. Sixteen tiles one to a row is a
-   scroll long enough that the selection at the top is off screen by the time
-   you reach the bottom of it. */
+/* Wide enough for four angles to a row. Sixteen tiles one to a row is a scroll
+   long enough that the selection at the top is off screen by the time you
+   reach the bottom of it. */
 .content {
   max-width: 36rem;
+  /* Darker than a dialog's usual --surface-raised, because this one is mostly
+     photographs: at 13% the tiles sat on a ground close to their own midtones
+     and went flat. --bg is the existing step down, not a new colour. */
+  background: var(--bg);
 }
 
 .section {
@@ -97,37 +101,57 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-8);
 }
 
 .tile {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-8);
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0;
   min-width: 0;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-sm);
+  border: none;
   background: none;
   font: inherit;
-  font-size: var(--text-sm);
-  color: var(--text);
+  color: var(--text-muted);
   cursor: pointer;
-  transition:
-    background var(--duration-fast) var(--ease-in-out),
-    border-color var(--duration-fast) var(--ease-in-out);
+  text-align: left;
+  transition: color var(--duration-fast) var(--ease-in-out);
+}
+
+/* The whole tile toggles, picture included -- the picture is the biggest part
+   of the target and aiming at the caption instead would be a worse click. */
+.tileImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  /* Never dimmed. The pictures are the labels -- an unpicked one you cannot
+     read is a control that hides its own content, and the ring plus the check
+     already say which are taken. */
+  border: var(--border-width) solid transparent;
+  transition: border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.tile:hover:not(:disabled) .tileImage {
+  border-color: var(--border);
 }
 
 .tile:hover:not(:disabled) {
   background: var(--surface-raised);
 }
 
-/* Taken reads off the border, as the outpaint grid and the gallery's selected
-   cards do -- a filled tile competes with the label inside it. */
 .tileOn {
-  border-color: var(--accent);
   color: var(--accent);
+}
+
+.tileOn .tileImage,
+.tile:hover:not(:disabled).tileOn .tileImage {
+  border-color: var(--accent);
 }
 
 .tile:disabled {
@@ -135,26 +159,32 @@
 }
 
 .tileLabel {
-  flex: 1;
   min-width: 0;
-  text-align: left;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  line-height: 1.3;
 }
 
 /* The three that need the reference to show the subject's back. Quiet on
    purpose: it is a caution about this picture, not a disabled control. */
 .tileNote {
-  flex: none;
-  white-space: nowrap;
   font-size: var(--text-xs);
   color: var(--text-muted);
+  opacity: 0.8;
 }
 
+/* Over the picture rather than in the caption row: the caption is two lines on
+   half the tiles, and a check that moves with the text reads as part of it. */
 .tileCheck {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex: none;
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 1rem;
+  height: 1rem;
+  padding: 0.0625rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
 }
 
 /* The switch and what it costs, on one line each. The note is not a tooltip:
