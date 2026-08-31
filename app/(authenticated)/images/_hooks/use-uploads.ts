@@ -35,24 +35,30 @@ function skeletonCard(
 }
 
 /**
- * Getting an image into the gallery. **Paste is the only way in** (#491).
+ * Getting images into the gallery.
  *
- * There was a file picker in the toolbar, and an "Upload to group" flow beside
- * it that asked where the batch was headed before opening the OS dialog. Both
- * are gone: the library picker inside the generator panel took over choosing
- * files from disk (#489), which left the toolbar offering a second route to the
- * same thing, one click further from where the images are used.
+ * **A paste uploads, and stops there** (#550). It used to also push the file to
+ * the front of the reference strip, on the reading that a screenshot pasted
+ * into this route is almost always about to be generated from. That was fair
+ * while paste was the only way in and it was always one screenshot; #489 gave
+ * references their own deliberate route, and the inference stopped carrying a
+ * workflow that had no alternative.
  *
- * So the paste is the upload, and what it does is deliberately the whole
- * gesture: the file lands in the library *and* goes to the front of the
- * reference strip, because a screenshot pasted into this route is almost always
- * about to be generated from. `onDone` is where the second half happens.
+ * The cost was never symmetric, which is the part that settled it. An unwanted
+ * reference is not clutter you click away -- unnoticed, it is a real generation
+ * with real spend in the activity log. All a paste tells us is that you want
+ * the images in the system.
  *
- * Three steps -- optimistic card, upload, swap for the real row. A paste is one
- * image the user is holding in mind, so it gets a blob preview immediately.
+ * **Every image on the clipboard, not the first** (#550). Five files copied in
+ * Finder arriving as one upload was the old behaviour's other half: it took the
+ * first and dropped the rest silently, which only looked reasonable while the
+ * gesture meant "this one picture I am about to generate from".
  *
- * The swap is by the upload's own return value. It used to match on title
- * against a realtime INSERT (#174), which two files of the same name broke.
+ * Three steps per file -- optimistic card, upload, swap for the real row --
+ * with a blob preview immediately, because the images are ones you are holding
+ * in mind. The swap is by the upload's own return value; it used to match on
+ * title against a realtime INSERT (#174), which two files of the same name
+ * broke.
  */
 export function useUploads(
   userId: string | undefined,
@@ -62,13 +68,10 @@ export function useUploads(
   activeGroupId: string | null,
   {
     onStart,
-    onDone,
   }: {
     /** Before the optimistic card appears, so the grid is showing the bucket
      *  the card is about to land in. */
     onStart: () => void
-    /** The row, once it exists. */
-    onDone: (image: { id: string; title: string }) => void
   },
 ) {
   const ingest = useCallback(
@@ -117,29 +120,39 @@ export function useUploads(
   )
 
   // Held in a ref so the listener binds once per gallery, not once per render:
-  // neither callback is stable, and re-attaching a document handler on every
+  // the callback is not stable, and re-attaching a document handler on every
   // keystroke elsewhere on the page is work for nothing.
-  const handlers = useRef({ onStart, onDone })
-  handlers.current = { onStart, onDone }
+  const handlers = useRef({ onStart })
+  handlers.current = { onStart }
+
+  /** The same ingest the paste uses, for the Upload button (#550). Sequential
+   *  rather than parallel: a batch of large files all in flight at once is the
+   *  upload ceiling's worst case, and nothing here is waiting on the last one. */
+  const uploadFiles = useCallback(
+    async (files: Array<File>) => {
+      const images = files.filter((f) => f.type.startsWith('image/'))
+      if (images.length === 0) return
+      handlers.current.onStart()
+      for (const file of images) await ingest(file, activeGroupId)
+    },
+    [ingest, activeGroupId],
+  )
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items
       if (!items) return
-      for (const item of Array.from(items)) {
-        if (!item.type.startsWith('image/')) continue
-        const file = item.getAsFile()
-        if (!file) continue
-        e.preventDefault()
-        handlers.current.onStart()
-        void ingest(file, activeGroupId).then((created) => {
-          if (created)
-            handlers.current.onDone({ id: created.id, title: created.title })
-        })
-        return
-      }
+      const files = Array.from(items)
+        .filter((item) => item.type.startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => file !== null)
+      if (files.length === 0) return
+      e.preventDefault()
+      void uploadFiles(files)
     }
     document.addEventListener('paste', handlePaste)
     return () => document.removeEventListener('paste', handlePaste)
-  }, [ingest, activeGroupId])
+  }, [uploadFiles])
+
+  return { uploadFiles }
 }

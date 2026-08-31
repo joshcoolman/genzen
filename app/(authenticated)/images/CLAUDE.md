@@ -136,13 +136,11 @@ list once when the seed comes back full, so the grid is never short.
   is still the info toggle's job
 - **There is no source image; there is one set (#297).** The panel holds an
   ordered set of zero to N **Reference images**. Index 0 is the only asymmetry
-  left: the aspect ratio is derived from it, and it is submitted first. **Two
-  ways in, both inside the panel or under your fingers**: the library picker
-  (which uploads from disk since #489) and a paste on this route, which uploads
-  the image and pushes it onto the front of the set in one gesture (#491). The
-  toolbar's Upload button and its "Upload to group" flow are gone -- they were a
-  second route to the same act, further from where the image gets used, and
-  upload-and-immediately-use cost two gestures because of it
+  left: the aspect ratio is derived from it, and it is submitted first. **One
+  way in, and it is always deliberate**: the library picker inside the panel,
+  which uploads from disk since #489. A paste on this route used to push the
+  image onto the front of the set as well as uploading it (#491); it stopped in
+  #550, because an unnoticed reference is a generation you paid for
 - **Nothing caps the set (#341).** Stage as many images as you like against any
   selection; each model takes what its endpoint holds, `buildFalInput` drops the
   rest, and `images_used`/`images_requested` on the row make the card say "1 of
@@ -454,15 +452,24 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   id can change underneath it. The one remount left in that burst is
   `PendingImageCard` giving way to `ImageCard`, which is a real change of
   component and not a key problem
-- **Paste is the only way a file enters this route, and it does both halves**
-  (#491). `_hooks/use-uploads.ts` uploads the image into the library -- into the
-  open group, if you are standing in one -- and then hands it to `pushReference`
-  in `use-view.ts`, the same function Cmd-click on a card uses, so it lands at
-  the front of the reference set with the panel open. A screenshot pasted here
-  is almost always about to be generated from; making that two gestures was the
-  friction. It gets a blob preview immediately, being one image the user is
-  holding in mind. Choosing a file from disk belongs to the library picker
-  inside the panel (#489)
+- **A paste uploads, and stops there** (#550). `_hooks/use-uploads.ts` puts
+  every image on the clipboard into the library -- into the open group, if you
+  are standing in one -- with a blob preview immediately. It used to also hand
+  the file to `pushReference`, so a paste made it the reference image in one
+  gesture (#491). That read was fair while paste was the only way in and it was
+  always one screenshot: #489 gave references their own deliberate route, and
+  five files copied in Finder arriving as five references is not what anyone
+  meant by that paste. **The cost was never symmetric**, which is what settled
+  it -- an unwanted reference is not clutter you click away, it is a real
+  generation with real spend once it goes unnoticed. All a paste tells us is
+  that you want the images in the system
+- **The toolbar's Upload button is back, scoped** (#550). It appears while
+  scoped to Uploads, or inside a group -- both states about managing the library
+  rather than feeding a generation -- and nowhere else. #491's objection was "a
+  second route to the same thing, further from the work", which is true of an
+  always-present picker competing with the panel's library picker (#489) and not
+  true of a control that shows up when you have said you are filing. It shares
+  `uploadFiles` with the paste, so the destination rule is the same one
 - **Where an upload lands depends on where you are (#348, #350).** At top level
   a pasted image lands loose; inside a group it lands in the open group, with no
   dialog -- a group is a focus session, and asking which group you meant while
@@ -607,8 +614,9 @@ group` opens a dialog because a flyout of names commits you to picking one at
   burst** -- when a group's in-flight count reaches zero -- because that is the
   only moment the strip has something new to show. It counts pending rows and
   nothing else. A parallel count of uploads-in-flight, keyed by destination, went
-  with the toolbar's Upload (#491): a paste only ever targets the group you are
-  already looking at, where the card itself is on screen
+  with the toolbar's Upload (#491) and did not come back with it (#550): both a
+  paste and the button only ever target the group you are already looking at,
+  where the card itself is on screen
 - **Clicking the swatch strip grows it through the whole group (#352).** The
   strip keeps its five columns and its first row; the card just gets taller,
   five across, for as many rows as the group needs, at one even gap in both
