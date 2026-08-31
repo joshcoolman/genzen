@@ -1,5 +1,6 @@
 import 'server-only'
 import { first, sql } from './db.server'
+import { describeThrown } from './fal-error.server'
 import { uploadBufferToFal } from './fal-image-upload.server'
 import { createImageStorage } from '#/lib/image-storage'
 
@@ -123,7 +124,7 @@ export class ReferenceImageUnreadableError extends Error {
  *  claiming seven library images were unreadable, while every object sat in the
  *  bucket and downloaded fine on the next attempt. */
 function causeOf(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = describeThrown(error)
   return message.length > 120 ? `${message.slice(0, 120)}...` : message
 }
 
