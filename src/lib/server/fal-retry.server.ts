@@ -25,19 +25,26 @@ const TRANSIENT_CODES = new Set([
   'ECONNRESET',
   'ECONNREFUSED',
   'EPIPE',
+  'EPROTO',
   'ETIMEDOUT',
-  'ERR_HTTP2_GOAWAY_SESSION',
-  'ERR_HTTP2_INVALID_SESSION',
-  'ERR_HTTP2_STREAM_CANCEL',
-  'ERR_HTTP2_STREAM_ERROR',
   'UND_ERR_CONNECT_TIMEOUT',
   'UND_ERR_HEADERS_TIMEOUT',
   'UND_ERR_BODY_TIMEOUT',
   'UND_ERR_SOCKET',
 ])
 
+/**
+ * Whole families, because listing individual codes is how the first pass missed
+ * the second failure. `ERR_HTTP2_*` covers the destroyed session and every
+ * other way a multiplexed stream dies; `ERR_SSL_*` / `ERR_TLS_*` cover a
+ * corrupted TLS record, which arrived as "ssl3_read_bytes:tls alert bad record
+ * mac" the day after the HTTP/2 one and was not retried because this listed
+ * codes rather than kinds.
+ */
+const TRANSIENT_CODE_PREFIXES = ['ERR_HTTP2_', 'ERR_SSL_', 'ERR_TLS_']
+
 const TRANSIENT_MESSAGES =
-  /session has been destroyed|socket hang up|other side closed|terminated/i
+  /session has been destroyed|socket hang up|other side closed|terminated|bad record mac|decryption failed|tls alert|tlsv1 alert|ssl3_read_bytes|EPROTO/i
 
 export function isTransientNetworkError(error: unknown, depth = 4): boolean {
   let current: unknown = error
@@ -47,8 +54,10 @@ export function isTransientNetworkError(error: unknown, depth = 4): boolean {
       message?: unknown
       cause?: unknown
     }
-    if (typeof record.code === 'string' && TRANSIENT_CODES.has(record.code)) {
-      return true
+    if (typeof record.code === 'string') {
+      const code = record.code
+      if (TRANSIENT_CODES.has(code)) return true
+      if (TRANSIENT_CODE_PREFIXES.some((p) => code.startsWith(p))) return true
     }
     if (
       typeof record.message === 'string' &&

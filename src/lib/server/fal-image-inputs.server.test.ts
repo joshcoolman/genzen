@@ -172,3 +172,55 @@ describe('an unreadable reference fails before FAL is paid (#364)', () => {
     expect(await uploadLibraryImagesToFal([], 'user-1')).toEqual([])
   })
 })
+
+/**
+ * #556. Eleven references opened eleven concurrent uploads to FAL, and both
+ * transport failures seen so far are what concurrency on one shared connection
+ * produces. The cap is the part that stops provoking them.
+ */
+describe('reference uploads are capped, and stay in order', () => {
+  it('never runs more than three uploads at once', async () => {
+    const ids = Array.from({ length: 11 }, () => freshId())
+    mockSql.mockResolvedValue(
+      ids.map((id) => ({ id, storage_path: `p/${id}` })),
+    )
+
+    let inFlight = 0
+    let peak = 0
+    mockUpload.mockImplementation(async () => {
+      inFlight++
+      peak = Math.max(peak, inFlight)
+      await new Promise((r) => setTimeout(r, 1))
+      inFlight--
+      return 'https://fal.test/x'
+    })
+
+    await uploadLibraryImagesToFal(ids, 'user-1')
+    expect(peak).toBeLessThanOrEqual(3)
+    expect(mockUpload).toHaveBeenCalledTimes(11)
+  })
+
+  it('answers in the caller’s order, not completion order', async () => {
+    const ids = Array.from({ length: 6 }, () => freshId())
+    mockSql.mockResolvedValue(
+      ids.map((id) => ({ id, storage_path: `p/${id}` })),
+    )
+    // Later items finish first, which is exactly what an unordered gather
+    // would scramble: the prompt labels these "[Image 1, Image 2, ...]".
+    let n = 0
+    mockUpload.mockImplementation(async () => {
+      const mine = n++
+      await new Promise((r) => setTimeout(r, (6 - mine) * 2))
+      return `https://fal.test/${mine}`
+    })
+
+    expect(await uploadLibraryImagesToFal(ids, 'user-1')).toEqual([
+      'https://fal.test/0',
+      'https://fal.test/1',
+      'https://fal.test/2',
+      'https://fal.test/3',
+      'https://fal.test/4',
+      'https://fal.test/5',
+    ])
+  })
+})
