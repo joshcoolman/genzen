@@ -102,18 +102,24 @@ list once when the seed comes back full, so the grid is never short.
   **Instructions are typed in the dialog, never inherited from the panel** --
   the panel's prompt is whatever was last generated with, and folding it in
   silently would make "sixteen angles of this picture" also a restyle.
-  **`Enhance` picks between two prompts, and the point is that nobody knows
-  which is better yet.** Off, the angle description goes straight to FAL --
-  short, and what the sixteen were proven with. On, `write-shot-prompt.action`
-  shows the picture to a vision model, which writes the prompt from what it
-  actually sees. The short path led with a constant block until #553's second
-  pass: it told FAL to inventory the reference and to "describe" the camera
-  position, neither of which an image model can do, so two-thirds of every
-  prompt was addressed to a reader that was not there. That prose was not
-  wrong, only misdirected -- it is now the vision model's instruction
-  (`src/lib/prompts/shots/enhance.md`). An enhanced run with no
-  `ANTHROPIC_API_KEY` fails rather than falling back to the short prompt; a
-  comparison whose halves collapse into one answers nothing
+  **Every prompt is written by a vision model now; what is on trial is how
+  many passes.** `Scene + shot` (the default) writes the scene once per picture
+  -- subject, place, light, grade -- and directs each angle on top of it, **the
+  two concatenated in code**. `Per shot` writes the whole prompt fresh for every
+  angle. The one-pass version drifted in exactly the way that predicts: sixteen
+  independent descriptions of one photograph do not use the same words, so
+  sixteen slightly different looks get rendered. Assembling in code rather than
+  asking a second model to carry the scene forward is the point -- a model told
+  to reproduce a paragraph verbatim paraphrases it, and the paraphrase is the
+  drift returning. **An instruction that changes the world -- a different
+  environment, a different outfit, longer hair -- is applied in the scene pass
+  only**, so it comes out identical in all sixteen frames; the shot pass is told
+  it as established fact and takes only framing from what was typed. A third
+  mode sent the bare angle to FAL with no writer: judged random and poor, and
+  deleted. **Shots now requires `ANTHROPIC_API_KEY`** and fails loudly without
+  it rather than falling back (#365). The mode row is a comparison, not a
+  setting: when the pictures answer, the winner becomes the only path and the
+  control goes, the way Outpaint's did
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
 import styles from './shots-dialog.module.css'
 import type { RefImage } from '#/features/ai-images/hooks/use-generator'
+import type { ShotMode } from '#/features/ai-images/shots'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 import {
+  DEFAULT_SHOT_MODE,
+  SHOT_MODES,
   defaultShotModelId,
   shotModelOptions,
 } from '#/features/ai-images/shots'
@@ -21,7 +24,6 @@ import {
   DialogHeader,
   DialogTitle,
   SingleSelect,
-  Switch,
   Textarea,
 } from '#/components'
 import { cx } from '#/lib/utils'
@@ -37,7 +39,7 @@ interface ShotsDialogProps {
     shotIds: Array<string>,
     modelId: string,
     instructions: string,
-    enhance: boolean,
+    mode: ShotMode,
   ) => void
   onCancel: () => void
 }
@@ -64,12 +66,18 @@ interface ShotsDialogProps {
  * asked for. Empty on every open, for the same reason: this is the moment the
  * environment occurs to you, looking at the picture and the angles together.
  *
- * **`Enhance` is a comparison, not a setting.** Off, the angle goes straight to
- * FAL -- the short path, and the one the sixteen were proven with. On, a vision
- * model looks at the picture first and writes the prompt, so the image model is
- * given an inventory of what it is holding constant instead of an instruction
- * to hold something unnamed. Nobody knows which is better yet, which is exactly
- * why it is a checkbox in front of you rather than a decision already taken.
+ * **The mode row is a comparison, not a setting, and is expected to go.** Both
+ * options put a vision model in front of FAL; what is on trial is whether the
+ * scene is established once per picture and reused, or rewritten for every
+ * angle. When the pictures answer, the winner becomes the only path and the row
+ * is deleted.
+ *
+ * **An instruction that replaces the world is applied once, in the scene.**
+ * "She is in an empty warehouse" against an office reference has to come out
+ * the same warehouse in all sixteen frames, and the only way it can is by being
+ * written once and reused verbatim. That is the scene pass's job; the shot pass
+ * is told the warehouse as established fact and takes only framing from what
+ * was typed.
  *
  * **The three rear shots are labelled, not hidden or reordered.** They are
  * right when the reference shows the subject's back and invented when it does
@@ -87,7 +95,7 @@ export function ShotsDialog({
   const [pickedImages, setPickedImages] = useState<Array<string>>([])
   const [pickedShots, setPickedShots] = useState<Array<string>>([])
   const [instructions, setInstructions] = useState('')
-  const [enhance, setEnhance] = useState(false)
+  const [mode, setMode] = useState<ShotMode>(DEFAULT_SHOT_MODE)
   const [modelId, setModelId] = useState(() => defaultShotModelId())
 
   // Opening is the fresh question. The strip cannot change while this is over
@@ -223,20 +231,21 @@ export function ShotsDialog({
           />
         </div>
 
-        <label className={styles.enhance}>
-          <Switch
-            checked={enhance}
-            onCheckedChange={setEnhance}
-            disabled={busy}
+        <div className={styles.section}>
+          <div className={styles.head}>
+            <span className={styles.label}>Prompt</span>
+          </div>
+          <SingleSelect
+            options={[...SHOT_MODES]}
+            value={mode}
+            onChange={(next) => next && setMode(next)}
           />
-          <span className={styles.enhanceLabel}>
-            Enhance
-            <span className={styles.enhanceNote}>
-              Write each prompt from the picture first. Slower, and one Claude
-              call per image per angle.
-            </span>
+          <span className={styles.modeNote}>
+            {mode === 'scene-shot'
+              ? 'The scene is written once per picture and reused by every angle, so the light and colour cannot drift between shots.'
+              : 'Every angle is written from scratch, scene included. The baseline this is being compared against.'}
           </span>
-        </label>
+        </div>
 
         <SingleSelect
           options={models}
@@ -266,13 +275,7 @@ export function ShotsDialog({
             loadingText="Sending"
             disabled={total === 0}
             onClick={() =>
-              onGenerate(
-                pickedImages,
-                pickedShots,
-                modelId,
-                instructions,
-                enhance,
-              )
+              onGenerate(pickedImages, pickedShots, modelId, instructions, mode)
             }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}

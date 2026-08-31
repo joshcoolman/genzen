@@ -1,4 +1,3 @@
-import { findShot } from '#/lib/prompts/shots'
 import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 
 /**
@@ -60,32 +59,24 @@ export function defaultShotModelId(): string {
 }
 
 /**
- * The short path: the angle description, plus whatever the user typed.
+ * How a shot's prompt gets written. Two, because one of them is on trial.
  *
- * **This is the whole prompt now, and it used to be a third of it.** A constant
- * block led it -- "inventory everything visible in the reference image... all
- * of it must remain 100% unchanged" -- carried over from the procedure these
- * sixteen were written for. Read as an instruction to FAL it is inert: nobody
- * is inventorying, and an image model cannot act on "describe only the final
- * camera position". Most of what was being sent was addressed to a reader that
- * was not there. Its prose was not wrong, only misdirected, and it now steers
- * the vision model on the `Enhance` path (`enhance.md`), where something really
- * does look at the picture and write.
+ * `scene-shot` establishes the scene once per picture and directs each angle on
+ * top of it, concatenated in code. `per-shot` writes the whole prompt fresh for
+ * every angle, which is what shipped first and what the set drifted under.
  *
- * What is left is what the run actually proved: the angle, and the picture it
- * is applied to. A typed instruction is appended plainly, with no ranking
- * clause, because there is no longer a freeze for it to argue with.
- *
- * Lazy `.md` loads (#322): the dialog imports this module for its model list,
- * and static imports would ship all sixteen descriptions to the browser.
+ * **This control is meant to die.** It exists to answer one question with
+ * pictures; when it is answered the winner becomes the only path and the
+ * control goes, the way Outpaint's model picker did once its lab page settled
+ * which model. There was a third mode -- the angle description sent to FAL with
+ * no writer at all -- and it is already gone: judged on results as random and
+ * poor, which is what a settled question looks like.
  */
-export async function buildShotPrompt(
-  shotId: string,
-  instructions = '',
-): Promise<string> {
-  const shot = findShot(shotId)
-  if (!shot) throw new Error(`Unknown shot "${shotId}"`)
-  const nudge = instructions.trim()
-  const { default: description } = await shot.system()
-  return [description.trim(), nudge].filter(Boolean).join('\n\n')
-}
+export const SHOT_MODES = [
+  { value: 'scene-shot', label: 'Scene + shot' },
+  { value: 'per-shot', label: 'Per shot' },
+] as const
+
+export type ShotMode = (typeof SHOT_MODES)[number]['value']
+
+export const DEFAULT_SHOT_MODE: ShotMode = 'scene-shot'

@@ -16,6 +16,7 @@ import type {
 } from '#/features/groups/hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import type { ShotMode } from '#/features/ai-images/shots'
 import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { useGroups } from '#/features/groups/hooks/use-groups'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
@@ -24,8 +25,11 @@ import {
   buildOutpaintPrompt,
   outpaintModelId,
 } from '#/features/ai-images/outpaint'
-import { buildShotPrompt } from '#/features/ai-images/shots'
-import { writeShotPrompt } from '#/features/ai-images/server/write-shot-prompt.action'
+import {
+  writeShot,
+  writeShotScene,
+  writeWholePrompt,
+} from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
@@ -1025,11 +1029,12 @@ export function useView(initial: Array<SavedAiImage>) {
    * covers the enhanced path's extra failure too: a prompt the writer could not
    * produce loses its own tile and nothing else.
    *
-   * **`enhance` puts a vision model in front of each submit.** Off is the angle
-   * straight to FAL; on, `writeShotPrompt` looks at the picture and writes the
-   * prompt first. It is not a fallback pair -- an enhanced run that cannot
-   * reach Claude fails rather than quietly sending the short prompt, because a
-   * comparison whose two halves silently collapse into one answers nothing.
+   * **The scene is written once per picture, before any submit.** That is the
+   * whole of `scene-shot`: sixteen angles sharing one paragraph of scene, so
+   * the light and colour cannot differ between them. A picture whose scene
+   * cannot be written loses all of its tiles at once and the run continues with
+   * the others -- there is nothing to submit for it, and pretending otherwise
+   * would spend money on the drift this mode exists to remove.
    */
   const [shotsOpen, setShotsOpen] = useState(false)
   const [shooting, setShooting] = useState(false)
@@ -1040,7 +1045,7 @@ export function useView(initial: Array<SavedAiImage>) {
       shotIds: Array<string>,
       model: string,
       instructions: string,
-      enhance: boolean,
+      mode: ShotMode,
     ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
@@ -1072,18 +1077,46 @@ export function useView(initial: Array<SavedAiImage>) {
         )
       }
 
+      // One scene per picture, reused by every angle of it. Written before the
+      // submits rather than lazily inside the loop so a bad key or an
+      // unreadable object fails once, loudly, instead of sixteen times.
+      const scenes = new Map<string, string>()
+      if (mode === 'scene-shot') {
+        for (const imageId of imageIds) {
+          try {
+            const { scene } = await writeShotScene({ imageId, instructions })
+            scenes.set(imageId, scene)
+          } catch (err) {
+            for (const p of pairs.filter((x) => x.imageId === imageId)) {
+              gallery.removeOptimisticCard(p.placeholderId)
+            }
+            toast.error(
+              err instanceof Error
+                ? err.message
+                : 'Could not write the scene for one of the pictures',
+            )
+          }
+        }
+      }
+
       for (const pair of pairs) {
         const label = findShot(pair.shotId)?.label ?? pair.shotId
+        const scene = scenes.get(pair.imageId)
+        if (mode === 'scene-shot' && !scene) continue
         try {
-          const prompt = enhance
-            ? (
-                await writeShotPrompt({
+          const { prompt } =
+            mode === 'scene-shot'
+              ? await writeShot({
+                  imageId: pair.imageId,
+                  shotId: pair.shotId,
+                  scene: scene as string,
+                  instructions,
+                })
+              : await writeWholePrompt({
                   imageId: pair.imageId,
                   shotId: pair.shotId,
                   instructions,
                 })
-              ).prompt
-            : await buildShotPrompt(pair.shotId, instructions)
           const created = await generateImage({
             prompt,
             model,
