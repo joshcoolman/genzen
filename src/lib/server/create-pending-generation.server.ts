@@ -1,5 +1,6 @@
 import { first, jsonb, sql } from './db.server'
 import { addCanvasMembers, requireCanvas } from './canvas-membership.server'
+import { describeThrown } from './fal-error.server'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { modelTitleFor } from '#/features/ai-images/models'
 
@@ -193,7 +194,11 @@ export function describeGenerationError(
 ): string {
   const parts: Array<string> = []
 
-  if (err instanceof Error && err.message.trim()) parts.push(err.message.trim())
+  // The cause chain, not just the message: Node's fetch reports every network
+  // failure as the bare string "fetch failed" and hides the reason on `cause`
+  // (#556).
+  if (err instanceof Error && err.message.trim())
+    parts.push(describeThrown(err).trim())
 
   const body = (err as { body?: unknown } | null)?.body
   if (body && typeof body === 'object') {

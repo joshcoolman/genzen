@@ -1,4 +1,5 @@
 import { fal } from '@fal-ai/client'
+import { withNetworkRetry } from './fal-retry.server'
 
 fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
@@ -27,7 +28,11 @@ export function detectImageMimeType(bytes: Uint8Array): ImageMediaType {
 /** Upload raw bytes to FAL storage with auto-detected MIME. Returns FAL URL. */
 export async function uploadBufferToFal(buffer: ArrayBuffer): Promise<string> {
   const mimeType = detectImageMimeType(new Uint8Array(buffer))
-  return fal.storage.upload(new Blob([buffer], { type: mimeType }))
+  // Every image the app sends FAL goes through here, so this is the one place
+  // a dead pooled connection has to be survived (#556).
+  return withNetworkRetry('storage.upload', () =>
+    fal.storage.upload(new Blob([buffer], { type: mimeType })),
+  )
 }
 
 /** Fetch image from URL, detect MIME, upload to FAL storage. Returns FAL URL. */
