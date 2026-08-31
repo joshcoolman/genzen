@@ -87,6 +87,38 @@ list once when the seed comes back full, so the grid is never short.
   ordinary pending cards, filed into the open group like any other generation.
   `Animate` was removed from the same menu; `/video` still accepts `?image=<id>`
   but nothing links to it
+- **Shots is the panel's action, not a card's** (#553). The staged reference
+  set is already the answer to "which pictures", so the way in is a `Shots`
+  button in the Ref images header -- absent until something is staged. The
+  dialog crosses the pictures you tick with the angles you tick: two and two is
+  four generations, **each carrying exactly one reference**
+  (`sourceImageId`, never `referenceImageIds`). That is the opposite errand
+  from the panel's own multi-image path, which sends the set together and asks
+  for one picture back. Unlike Outpaint the model _is_ a choice, because that
+  question is open -- which model keeps a subject itself while the camera moves
+  -- and it is one model at a time, defaulting to Nano Banana 2. Results land
+  in the grid as ordinary pending cards, filed into the open group; nothing is
+  loaded into the panel. The angles are `src/lib/prompts/shots/`.
+  **Instructions are typed in the dialog, never inherited from the panel** --
+  the panel's prompt is whatever was last generated with, and folding it in
+  silently would make "sixteen angles of this picture" also a restyle.
+  **The prompt is written by a vision model in two passes, and there are no
+  controls for it.** `writeShotScene` runs once per picture and writes the world
+  -- subject, place, light, grade. `writeShot` runs once per angle and writes
+  only the frame -- camera, framing, focal length, depth of field. **The caller
+  concatenates them**, which is the load-bearing part: handing the scene to the
+  second pass to carry forward puts a paraphrase in every shot, and the
+  paraphrase is drift. In code the scene is byte-identical across all sixteen by
+  construction. **An instruction that changes the world -- a different
+  environment, a different outfit, longer hair -- is applied in the scene pass
+  only**, so it comes out identical in every frame; the shot pass is told it as
+  established fact and takes only framing from what was typed. Two other ways of
+  writing these were built, offered as a control, judged on pictures and
+  deleted: the bare angle sent to FAL with no writer (random and poor), and one
+  vision call per angle writing scene and shot together (consistent renders,
+  drifting light -- the symptom that motivated the split). **Shots requires
+  `ANTHROPIC_API_KEY`** and fails loudly without it rather than falling back
+  (#365)
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

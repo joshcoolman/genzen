@@ -2,8 +2,8 @@
 
 Prompt craft for the video lineup — LTX-2.5 Fast, MiniMax H3, Flux 3, MiniMax
 H3 Max. Video is genzen's newest surface and the one with the least prose
-behind it: `src/features/video/models.ts` documents every *endpoint* in
-exhaustive detail, but nothing yet documents how to write the *prompt* that
+behind it: `src/features/video/models.ts` documents every _endpoint_ in
+exhaustive detail, but nothing yet documents how to write the _prompt_ that
 goes to those endpoints, or how the three modes (text-to-video, image-to-video,
 first-and-last-frame) each want to be addressed.
 
@@ -45,7 +45,7 @@ families are not interchangeable:
 
 `dolly` is not `zoom`; `pan` is not `truck`. Picking the wrong family is a
 common reason a clip "moves wrong." Name **one** move per clip and describe what
-it *reveals*, not the mechanics of the move itself:
+it _reveals_, not the mechanics of the move itself:
 
     Weak:   Camera pans left
     Strong: Camera pans left to reveal a bustling market square
@@ -64,7 +64,7 @@ a glitch. One choice per clip: static, or a single named move.
 "Sad," "confused," "nervous" are not renderable. Their visible symptoms are:
 tears, a slumped posture, a furrowed brow, hands worrying at a sleeve. This
 matters more in video than in stills because an emotion in motion is a
-*behaviour* — write the behaviour.
+_behaviour_ — write the behaviour.
 
 ## Keep it inside the model's coherence budget
 
@@ -80,7 +80,7 @@ that hold across the lineup:
 - **Budget the length of the prompt.** LTX explicitly degrades past ~80 words —
   pick the most important five or six elements rather than piling on. Longer is
   not the universal rule it sometimes is for stills (z-image being the lineup's
-  long-prompt exception on the *image* side).
+  long-prompt exception on the _image_ side).
 - **Expect to re-roll.** A meaningful fraction of video outputs carry artifacts;
   a different seed is the fix, not a longer prompt.
 
@@ -90,15 +90,15 @@ genzen's `endpointFor` routes to one of three endpoints depending on which
 frames are staged. Each wants the prompt written differently:
 
 - **Text-to-video** — the model invents the whole shot. The prompt carries
-  *everything*: subject, scene, action, camera, audio. This is where the full
+  _everything_: subject, scene, action, camera, audio. This is where the full
   six-element structure earns its keep.
 - **Image-to-video** (a first frame is staged) — the frame already establishes
   subject, composition and lighting. **Do not re-describe them** — the prompt's
-  job is now *motion*: what the subject does, where the camera goes, how the
+  job is now _motion_: what the subject does, where the camera goes, how the
   scene evolves from that opening frame. A prompt that re-specifies the picture
   fights the frame.
 - **First-and-last-frame** (Flux 3's separate endpoint) — both ends are pinned.
-  The prompt describes the *transition* between them: the path the motion takes
+  The prompt describes the _transition_ between them: the path the motion takes
   from the start frame to the end frame. Not the two frames (they're supplied) —
   the journey.
 
@@ -121,7 +121,7 @@ the prompt, not an afterthought:
   six-element structure and the post-move description. Honours "static"
   literally. Cannot render readable text — keep signs and titles out. Degrades
   past ~80 words.
-- **MiniMax H3** — cheapest per second, *follows the first frame* closely
+- **MiniMax H3** — cheapest per second, _follows the first frame_ closely
   (its image endpoint even drops `aspect_ratio` because the output tracks the
   image). No audio. Its strength is image-to-video continuity, so lean on a
   staged first frame and write motion, not scene.
@@ -160,11 +160,11 @@ the prompt, not an afterthought:
   a constraint the UI could enforce rather than leaving to prose.
 - **Audio prompting only applies to two models.** `supportsAudio` in
   [`models.ts`](../../src/features/video/models.ts) already gates the toggle;
-  the prompt guidance for *what to write* in the audio channel (ambient / voice /
+  the prompt guidance for _what to write_ in the audio channel (ambient / voice /
   music / quoted dialogue) is the missing half, relevant only when that toggle
   is on.
 - **Text-render limits are model facts, not user error.** LTX cannot render
   readable text; a user asking for a title card on LTX will be disappointed and
   won't know why. This is the kind of per-model limit the picker's `description`
   field could carry a hint for.
-</content>
+  </content>

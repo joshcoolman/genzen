@@ -1,0 +1,1 @@
+Side-On Compression - Camera far to one side, long lens. Clean profile or near-profile with space flattened, so foreground, subject and background stack into bands rather than receding. The silhouette reads as a single graphic shape.

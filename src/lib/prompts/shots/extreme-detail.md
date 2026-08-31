@@ -1,0 +1,1 @@
+Extreme Detail, Non-Intuitive Direction - Camera extremely close to a single feature such as a seam, joint, edge, opening or change of material, approached from an unusual direction such as from beneath or from behind an overhanging part. Macro depth of field. Abstract and textural.

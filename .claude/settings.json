@@ -1,8 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(gh issue *)"
-    ]
+    "allow": ["Bash(gh issue *)"]
   },
   "hooks": {
     "SessionStart": [

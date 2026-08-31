@@ -1,0 +1,1 @@
+Forced-Perspective Foreground Thrust - Camera very low and very close, with the subject's nearest projecting element extended toward the lens so it reads massively out of proportion in the foreground. The rest of the form tapers back and away. Widest lens in the set.

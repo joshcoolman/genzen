@@ -1,0 +1,1 @@
+Frontal Symmetrical, Long Lens - Camera square to the front at mid-height, longer focal length, subject centered and symmetrical. Deliberately flat and deadpan, with no oblique angle and no foreshortening. Reads as a catalogue or specimen frame.

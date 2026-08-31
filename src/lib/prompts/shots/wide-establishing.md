@@ -1,0 +1,1 @@
+Wide Establishing, Subject Small - Camera far back and slightly elevated, subject occupying a small fraction of frame. Atmospheric depth, environment dominant. The place contains the subject rather than the subject dominating the place.

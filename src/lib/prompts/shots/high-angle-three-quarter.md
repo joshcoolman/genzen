@@ -1,0 +1,1 @@
+High-Angle Three-Quarter - Camera well above the subject and off-center, looking down along a diagonal. Top surfaces become visible and the form reads as an abstract shape against the ground plane. The ground, not the sky, is the backdrop.

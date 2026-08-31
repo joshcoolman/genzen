@@ -1,0 +1,181 @@
+/* Wide enough for three angles to a row. Sixteen tiles one to a row is a
+   scroll long enough that the selection at the top is off screen by the time
+   you reach the bottom of it. */
+.content {
+  max-width: 36rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+/* The running count, because the price of the press is the product of two
+   selections and neither one is visible from the other. */
+.count {
+  flex: 1;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.all {
+  flex: none;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.all:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.all:disabled {
+  cursor: default;
+}
+
+/* Wraps rather than scrolls: a reference off the right edge is one you forget
+   to untick, and the strip is rarely more than a handful. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.thumb {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: none;
+  padding: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--slot-empty);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  /* Unpicked reads as dimmed rather than merely unbordered: at this size the
+     border is a hairline and the picture is the whole tile. */
+  opacity: 0.4;
+  transition:
+    opacity var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.thumbOn {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.thumb:disabled {
+  cursor: default;
+}
+
+.thumbCheck {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--accent);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  min-width: 0;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-in-out),
+    border-color var(--duration-fast) var(--ease-in-out);
+}
+
+.tile:hover:not(:disabled) {
+  background: var(--surface-raised);
+}
+
+/* Taken reads off the border, as the outpaint grid and the gallery's selected
+   cards do -- a filled tile competes with the label inside it. */
+.tileOn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.tileLabel {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+/* The three that need the reference to show the subject's back. Quiet on
+   purpose: it is a caution about this picture, not a disabled control. */
+.tileNote {
+  flex: none;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.tileCheck {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+}
+
+/* The switch and what it costs, on one line each. The note is not a tooltip:
+   the price of turning it on is a Claude call per tile, and that belongs where
+   the switch is rather than behind a hover. */
+.enhance {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+  cursor: pointer;
+}
+
+.enhanceLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text);
+}
+
+.enhanceNote {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

@@ -1,0 +1,1 @@
+Worm's-Eye Hero - Camera at ground level directly beneath the subject's leading edge, tilted steeply upward, close enough that the base of the subject fills the lower frame. Wide lens. Extreme foreshortening makes the near mass monumental while the top recedes small and distant.

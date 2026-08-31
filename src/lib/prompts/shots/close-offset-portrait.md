@@ -1,0 +1,1 @@
+Close Offset Portrait - Camera very close to the subject's most characteristic upper feature, positioned slightly above or below its center line at an offset angle rather than square on. Shallow depth of field, the near surface rendered in full texture.

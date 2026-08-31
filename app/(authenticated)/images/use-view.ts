@@ -24,6 +24,11 @@ import {
   buildOutpaintPrompt,
   outpaintModelId,
 } from '#/features/ai-images/outpaint'
+import {
+  writeShot,
+  writeShotScene,
+} from '#/features/ai-images/server/write-shot-prompt.action'
+import { findShot } from '#/lib/prompts/shots'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -1001,6 +1006,130 @@ export function useView(initial: Array<SavedAiImage>) {
    * tiles immediately, and each is swapped for its real row or dropped on the
    * spot -- the same contract `useGenerator` has with `onSubmitOutcome`.
    */
+  /**
+   * Shots (#553): every staged reference, from every angle picked, one
+   * generation each.
+   *
+   * **Each submit carries exactly one picture.** `sourceImageId` and nothing
+   * else -- no `referenceImageIds` -- because two references in one request is
+   * the combine the generator panel already does, and this is the opposite
+   * errand: the same treatment applied to each subject separately. Two
+   * characters and two angles is four rows, not one.
+   *
+   * The loop is `runOutpaint`'s, for the reasons written there: optimistic
+   * cards first so the press shows its full count immediately, then submitted
+   * one after another rather than together, because each call reserves a row
+   * before it reaches FAL.
+   *
+   * **A failure drops its own card and keeps going.** Sixteen angles across
+   * three references is forty-eight submits, and stopping the run on the first
+   * refusal would throw away the forty-seven that would have worked. That
+   * covers the enhanced path's extra failure too: a prompt the writer could not
+   * produce loses its own tile and nothing else.
+   *
+   * **The scene is written once per picture, before any submit.** That is the
+   * whole of `scene-shot`: sixteen angles sharing one paragraph of scene, so
+   * the light and colour cannot differ between them. A picture whose scene
+   * cannot be written loses all of its tiles at once and the run continues with
+   * the others -- there is nothing to submit for it, and pretending otherwise
+   * would spend money on the drift this mode exists to remove.
+   */
+  const [shotsOpen, setShotsOpen] = useState(false)
+  const [shooting, setShooting] = useState(false)
+
+  const runShots = useCallback(
+    async (
+      imageIds: Array<string>,
+      shotIds: Array<string>,
+      model: string,
+      instructions: string,
+    ) => {
+      if (imageIds.length === 0 || shotIds.length === 0) return
+
+      setShooting(true)
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        shotIds.map((shotId) => ({
+          imageId,
+          shotId,
+          placeholderId: `shot-${imageId}-${shotId}-${stamp}`,
+        })),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: findShot(pair.shotId)?.label ?? pair.shotId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      // One scene per picture, reused by every angle of it. Written before the
+      // submits rather than lazily inside the loop so a bad key or an
+      // unreadable object fails once, loudly, instead of sixteen times.
+      const scenes = new Map<string, string>()
+      for (const imageId of imageIds) {
+        try {
+          const { scene } = await writeShotScene({ imageId, instructions })
+          scenes.set(imageId, scene)
+        } catch (err) {
+          for (const p of pairs.filter((x) => x.imageId === imageId)) {
+            gallery.removeOptimisticCard(p.placeholderId)
+          }
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : 'Could not write the scene for one of the pictures',
+          )
+        }
+      }
+
+      for (const pair of pairs) {
+        const label = findShot(pair.shotId)?.label ?? pair.shotId
+        const scene = scenes.get(pair.imageId)
+        if (!scene) continue
+        try {
+          const { prompt } = await writeShot({
+            imageId: pair.imageId,
+            shotId: pair.shotId,
+            scene,
+            instructions,
+          })
+          const created = await generateImage({
+            prompt,
+            model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
+      setShooting(false)
+      setShotsOpen(false)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [gallery, groups, prefs, activeGroupId],
+  )
+
   const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
     null,
   )
@@ -1124,6 +1253,11 @@ export function useView(initial: Array<SavedAiImage>) {
     cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),
     outpainting,
     runOutpaint,
+    shotsOpen,
+    openShots: useCallback(() => setShotsOpen(true), []),
+    closeShots: useCallback(() => setShotsOpen(false), []),
+    shooting,
+    runShots,
     error,
     setError,
   }

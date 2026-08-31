@@ -1,6 +1,6 @@
 # Hitting an exact colour or an exact string
 
-Two techniques for when the picture has to match a *specification*, not just a
+Two techniques for when the picture has to match a _specification_, not just a
 vibe: a precise colour (a brand hex), and rendered text (a real string of
 letters the model must spell). Both are cases where "describe what you want" is
 not enough — you have a target the output is right or wrong against.
@@ -22,19 +22,19 @@ it's a second signal that disambiguates the code:
 
 **Bind each colour to a specific object.** Loose colours bleed onto the wrong
 thing. Say which object gets which colour, and use spatial words when two of the
-same object exist ("the *left* chair in #…").
+same object exist ("the _left_ chair in #…").
 
 **Keep the palette to 3–5 colours.** More than that and the model starts mixing
 them. For a defined scheme, state it as a small named palette up front:
 
     Palette: #2ECC71 (emerald), #3498DB (sky blue), #F1C40F (sunflower), #FFFFFF (white)
 
-**Gradients** take a start and end colour: *"gradient from #FF6B6B (coral) at the
-horizon to #87CEEB (sky blue) at the top."*
+**Gradients** take a start and end colour: _"gradient from #FF6B6B (coral) at the
+horizon to #87CEEB (sky blue) at the top."_
 
 When a colour still comes out wrong: add the name if it's missing, name the
-exact object, cut the total number of colours, or emphasise with *"maintaining
-exact colour #XXXXXX."* Colours also shift under coloured light — pin the
+exact object, cut the total number of colours, or emphasise with _"maintaining
+exact colour #XXXXXX."_ Colours also shift under coloured light — pin the
 lighting neutral if the hex has to stay true.
 
 ## Rendered text
@@ -46,8 +46,8 @@ in rough order of leverage:
    `a poster reading FRESH BREAD`. genzen's `enhance-prompt.md` already does this;
    the rest of this list is what it doesn't yet say.
 2. **Front-load it.** Text described early in the prompt renders more reliably
-   than text mentioned at the end. *"A sign reading 'OPEN' in a window…"* beats
-   *"A window with a sign that says 'OPEN'."*
+   than text mentioned at the end. _"A sign reading 'OPEN' in a window…"_ beats
+   _"A window with a sign that says 'OPEN'."_
 3. **Keep it short.** One to four words is the reliable zone. Long strings
    misspell — the failure rate climbs with length, and common words beat coined
    ones.
@@ -55,7 +55,7 @@ in rough order of leverage:
    "elegant cursive script," "classic serif," "monospace terminal," "distressed
    vintage display." Vague font requests get vague fonts.
 5. **State size hierarchy and placement** when there's more than one string:
-   *"large headline 'SUMMER FEST' above smaller 'JULY 15–17', both centred."*
+   _"large headline 'SUMMER FEST' above smaller 'JULY 15–17', both centred."_
 
 Text can carry effects (neon, metallic/3D, embossed, outline, gradient fill —
 gradient text combines with the hex rule above), but effects are secondary to
@@ -68,7 +68,7 @@ prompt's complexity so the model has attention to spare for the letters.
 ## How this maps to genzen / opportunities
 
 - **Model choice decides whether text is even possible.** The lineup is split:
-  z-image turbo renders English *and* Chinese accurately (its
+  z-image turbo renders English _and_ Chinese accurately (its
   [`guide-z-image-turbo.md`](../../src/lib/prompts/guide-z-image-turbo.md) says
   so), FLUX.2 is strong on typography, and others are weak or (on the video
   side) cannot render readable text at all. A title-card or signage request
@@ -89,4 +89,4 @@ prompt's complexity so the model has attention to spare for the letters.
 - **Both are precision knobs, and belong wherever brand/spec work is surfaced.**
   If genzen ever grows a "match this brand" or "exact colours" mode, these two
   techniques are its prompt-side implementation.
-</content>
+  </content>
