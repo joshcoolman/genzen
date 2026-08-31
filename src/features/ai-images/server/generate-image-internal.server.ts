@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
-import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import type { GenerationOrigin } from '#/lib/types/db'
+import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
@@ -21,8 +21,6 @@ import {
   markGenerationFailed,
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateImageInput {
   /** The string sent to the provider. Retry replays this one. */
@@ -227,6 +225,10 @@ export async function generateImageInternal(
       // The library path goes through the shared upload, so a submit against
       // three models moves these bytes once rather than three times (#313).
       if (sourceImageId) {
+        // Null means the row or its file is gone -- a real missing source. A
+        // read that failed throws its own reason now (#556): both used to land
+        // on the sentence below, so a dead connection read as a deleted
+        // picture and sent you looking in Trash.
         const uploaded = await uploadLibraryImageToFal(sourceImageId, userId)
         if (!uploaded) throw new Error('Source image not found')
         imageUrl = uploaded

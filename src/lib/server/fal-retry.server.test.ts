@@ -16,6 +16,27 @@ describe('a dead pooled connection is retried, a rejected request is not', () =>
     expect(isTransientNetworkError(deadSession())).toBe(true)
   })
 
+  it('recognises a corrupted TLS record (#556, second failure)', () => {
+    // The one the first pass missed: the set listed HTTP/2 codes by name, so a
+    // TLS alert went out as a failed generation without a retry.
+    const tls = new TypeError('fetch failed', {
+      cause: Object.assign(
+        new Error(
+          '80E1FFFB01000000:error:0A0003FC:SSL routines:ssl3_read_bytes:ssl/tls alert bad record mac:ssl/record/rec_layer_s3.c:1590',
+        ),
+        { code: 'ERR_SSL_SSLV3_ALERT_BAD_RECORD_MAC' },
+      ),
+    })
+    expect(isTransientNetworkError(tls)).toBe(true)
+  })
+
+  it('covers HTTP/2 codes it was never told about by name', () => {
+    const unknown = Object.assign(new Error('stream closed'), {
+      code: 'ERR_HTTP2_STREAM_CLOSED_UNEXPECTEDLY',
+    })
+    expect(isTransientNetworkError(unknown)).toBe(true)
+  })
+
   it('does not treat a FAL rejection as transient', () => {
     const refused = Object.assign(new Error('Unprocessable entity'), {
       status: 422,

@@ -1,10 +1,10 @@
 'use server'
 
-import { fal } from '@fal-ai/client'
 import { endpointFor } from '../models'
 import { RetryNotReproducible, planHasImages, planRetry } from '../retry-plan'
 import { buildFalInput } from './fal-params.server'
 import type { RetryMetadata } from '../retry-plan'
+import { fal } from '#/lib/server/fal-client.server'
 import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, jsonb, sql } from '#/lib/server/db.server'
@@ -20,8 +20,6 @@ import {
   markGenerationFailed,
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 interface RetryGenerationInput {
   recordId: string

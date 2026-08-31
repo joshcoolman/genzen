@@ -68,6 +68,41 @@ async function downloadAndUploadToFal(storagePath: string): Promise<string> {
   return uploadBufferToFal(await blob.arrayBuffer())
 }
 
+/**
+ * How many reference uploads are in flight at once (#556).
+ *
+ * It was every one of them: an eleven-image set opened eleven concurrent
+ * multi-megabyte uploads to FAL, and both transport failures seen so far are
+ * the kind that concurrency on one shared connection produces -- a destroyed
+ * HTTP/2 session, then a corrupted TLS record that took down five of the eleven
+ * while six went through. The retry survives either; not opening eleven at once
+ * is what stops provoking them. Three is enough to keep the wall clock close to
+ * parallel, since the bytes and not the round trips are the cost.
+ */
+const UPLOAD_CONCURRENCY = 3
+
+/** `Promise.all` over `map`, with at most `limit` running, preserving order.
+ *  Order matters here: models read the image list positionally. */
+async function mapWithLimit<T, TResult>(
+  items: Array<T>,
+  limit: number,
+  run: (item: T) => Promise<TResult>,
+): Promise<Array<TResult>> {
+  const results = new Array<TResult>(items.length)
+  let next = 0
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (next < items.length) {
+        const index = next++
+        results[index] = await run(items[index])
+      }
+    },
+  )
+  await Promise.all(workers)
+  return results
+}
+
 /** Read a library object's bytes, scoped to its owner. */
 export async function readLibraryImageBytes(
   imageId: string,
@@ -141,8 +176,10 @@ export async function uploadLibraryImagesToFal(
   const pathById = new Map(rows.map((r) => [r.id, r.storage_path]))
 
   const causes: Array<string> = []
-  const uploaded = await Promise.all(
-    imageIds.map(async (id) => {
+  const uploaded = await mapWithLimit(
+    imageIds,
+    UPLOAD_CONCURRENCY,
+    async (id) => {
       const storagePath = pathById.get(id)
       if (!storagePath) {
         causes.push('no stored file')
@@ -157,7 +194,7 @@ export async function uploadLibraryImagesToFal(
         causes.push(causeOf(error))
         return null
       }
-    }),
+    },
   )
   const usable = uploaded.filter((u): u is string => u !== null)
   if (usable.length !== imageIds.length) {
@@ -170,9 +207,20 @@ export async function uploadLibraryImagesToFal(
   return usable
 }
 
-/** The same, for the one image a generation calls its source. Returns null when
- *  the row is gone or unreadable, which the caller reports as a missing source
- *  -- the reference path drops one and carries on, a missing source cannot. */
+/** Thrown when the source row exists and its bytes did not make it to FAL.
+ *  Separate from a null return, which now means only "there is no such row":
+ *  the caller reported both as "Source image not found", so a dead connection
+ *  read as a deleted picture and sent you looking in Trash (#556). */
+export class SourceImageUnreadableError extends Error {
+  constructor(why: string) {
+    super(`The source image could not be sent. (${why})`)
+    this.name = 'SourceImageUnreadableError'
+  }
+}
+
+/** The same, for the one image a generation calls its source. Returns null only
+ *  when the row or its file is genuinely gone; a failed read throws, because
+ *  the reference path drops one and carries on and a missing source cannot. */
 export async function uploadLibraryImageToFal(
   imageId: string,
   userId: string,
@@ -191,6 +239,6 @@ export async function uploadLibraryImageToFal(
     )
   } catch (error) {
     console.error(`[fal] source ${imageId} (${storagePath}) failed:`, error)
-    return null
+    throw new SourceImageUnreadableError(causeOf(error))
   }
 }

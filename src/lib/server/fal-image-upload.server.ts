@@ -1,7 +1,5 @@
-import { fal } from '@fal-ai/client'
+import { fal } from './fal-client.server'
 import { withNetworkRetry } from './fal-retry.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
 
