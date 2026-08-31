@@ -20,7 +20,6 @@ import {
    model is curated. */
 const singleImageIds = () =>
   CANVAS_MODELS.filter((m) => m.maxRefs === 0).map(pickerId)
-const SEEDREAM_45_ID = 'fal-ai/bytedance/seedream/v4.5/text-to-image'
 
 /**
  * Canvas is image-in -> image-out: every model offered here generates *from* the
