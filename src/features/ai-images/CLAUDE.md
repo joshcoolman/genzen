@@ -5,6 +5,27 @@ no `.tsx` here.** The generation UI Images and Canvas share lives in
 `app/(authenticated)/_components/` (`generator-panel/` and what it composes);
 anything one route renders lives with that route.
 
+## Images on the way to FAL
+
+**Every image the app sends FAL goes through `uploadBufferToFal`**, which
+shrinks it first (`fal-image-prepare.server.ts`, #560) and retries a dead
+connection around it (#556). The stored file is never touched -- this is a
+transport concern, and the library row keeps its full-resolution original.
+
+- **2048 long edge, JPEG at 95.** The number and the evidence are the reference
+  sheet's: a model downscales a reference before it looks at anything, around a
+  1024-1536 long edge, so pixels past this are the same detail squeezed harder.
+- **Heavy PNGs are re-encoded even when they are already small enough to
+  send.** This is the clause that does the work -- the eight 1920-2560px
+  keyframes behind #556 were 12.8MB of lossless PNG, and came out 1.7MB.
+  A long-edge rule alone would have changed nothing.
+- **Transparency keeps its format**, because flattening alpha onto a colour is a
+  change to the picture rather than a compression choice.
+- **Never fatal, and never bigger.** Anything sharp cannot read (the library
+  holds mp4) goes through untouched, and a re-encode that grew the file is
+  discarded -- flat graphics beat JPEG outright, which is also why a fixture of
+  random noise tested the safety net rather than the behaviour.
+
 ## Rules
 
 - **`models.ts` is the lineup.** `IMAGE_MODELS` is one entry per model and the
