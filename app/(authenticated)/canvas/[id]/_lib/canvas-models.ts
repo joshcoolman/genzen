@@ -65,7 +65,8 @@ export const CANVAS_EDIT_MODELS: Array<CanvasEditModel> = CANVAS_MODELS.filter(
 ).map((m) => ({ id: m.withImages!, name: m.name, maxRefImages: m.maxRefs }))
 
 /**
- * Largest reference cap across curated canvas edit models (Seedream → 10).
+ * Largest reference cap across curated canvas edit models (Nano Banana 2 → 13
+ * since #459; it was Seedream before that).
  */
 export const CANVAS_GROUP_MAX_REFS = CANVAS_EDIT_MODELS.reduce(
   (max, m) => Math.max(max, m.maxRefImages),

@@ -8,8 +8,10 @@ import {
   PanelRight,
   TextInitial,
   Trash2,
+  Upload,
   ZoomIn,
 } from 'lucide-react'
+import { useRef } from 'react'
 import { ZOOM_STOPS } from '../../_hooks/use-prefs'
 import styles from './toolbar.module.css'
 import type { PrefsState } from '../../_hooks/use-prefs'
@@ -69,6 +71,10 @@ interface ToolbarProps {
    *  direction has nothing to order and the control below is not drawn. The
    *  order in effect is said in the row under the heading instead. */
   manualOrder?: boolean
+  /** Files chosen from disk. Passed only where the route is about managing the
+   *  library rather than feeding a generation -- scoped to Uploads, or inside a
+   *  group (#550) -- and undefined is what leaves the button out. */
+  onUploadFiles?: (files: Array<File>) => void
 }
 
 export function Toolbar({
@@ -80,15 +86,48 @@ export function Toolbar({
   onTrashGroup,
   onNewGroup,
   manualOrder,
+  onUploadFiles,
 }: ToolbarProps) {
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  /* One input for both placements below, so the control can move between the
+     group branch and the top-level one without two of these. */
+  const uploadButton = onUploadFiles ? (
+    <>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        className={styles.fileInput}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? [])
+          // Cleared so choosing the same file twice in a row still fires.
+          e.target.value = ''
+          if (files.length > 0) onUploadFiles(files)
+        }}
+      />
+      <button
+        type="button"
+        className={styles.newGroup}
+        onClick={() => fileInput.current?.click()}
+      >
+        <Upload className={styles.newGroupIcon} />
+        Upload
+      </button>
+    </>
+  ) : null
+
   return (
     <div className={styles.toolbar}>
-      {/* **No Upload button, and no file input behind one** (#491). Choosing a
-          file from disk belongs to the library picker inside the generator
-          panel (#489) -- where the image is about to be used -- and everything
-          else arrives by paste, which uploads it and makes it the reference
-          image in one gesture. A second route to the same thing, further from
-          the work, is what was here.
+      {/* **An Upload button, but only where the route is about the library**
+          (#550). #491 removed the old one and was right to: an always-present
+          file picker is a second route to what the generator panel's library
+          picker (#489) does closer to the work. That objection does not reach a
+          control that appears when you have said you are filing rather than
+          feeding -- scoped to Uploads, or standing in a group. Paste stops
+          being the only way in, which it had to once paste stopped making the
+          image a reference.
 
           No page title either: the sidebar says which route this is, and
           "Images" above a grid of images said nothing. The group's name and the
@@ -100,6 +139,10 @@ export function Toolbar({
              (#431, #477) -- both of them here because this is where you can
              see what they will apply to. */
           <>
+            {/* Files into the group you are standing in -- the same
+                destination a paste has here (#348), and no dialog asking
+                which group you meant. */}
+            {uploadButton}
             {/* Exporting the group you are standing in, for the same reason
                 Trash group lives here: the contents are on screen. Left of
                 Trash group so the harmless act is not the one that moves when
@@ -138,14 +181,19 @@ export function Toolbar({
              are about to work on, then generate into it. Without this the only
              way to make one is to have already made something, which is the
              wrong order for a place to work. */
-          <button
-            type="button"
-            className={styles.newGroup}
-            onClick={onNewGroup}
-          >
-            <FolderPlus className={styles.newGroupIcon} />
-            New group
-          </button>
+          <>
+            {/* Top level, and only while scoped to Uploads: the one state out
+                here that is a statement about managing the library. */}
+            {uploadButton}
+            <button
+              type="button"
+              className={styles.newGroup}
+              onClick={onNewGroup}
+            >
+              <FolderPlus className={styles.newGroupIcon} />
+              New group
+            </button>
+          </>
         )}
       </div>
       <TooltipProvider delay={300}>

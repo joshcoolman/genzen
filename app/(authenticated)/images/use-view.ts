@@ -778,23 +778,31 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * **Paste is the only way a file gets into this route** (#491), and it does
-   * both halves of the gesture: the image is uploaded to the library and it
-   * becomes the reference image, because a screenshot pasted here is almost
-   * always about to be generated from. Choosing a file from disk is the
-   * library picker's job now, inside the panel where it is used (#489).
+   * **A paste uploads and stops there** (#550) -- it no longer also makes the
+   * image the reference. The panel's library picker is the deliberate route to
+   * a reference now (#489), and the pasted cards are on screen, so selecting
+   * them is the next move rather than something that already happened to you.
    *
    * The open group is the destination. At top level `activeGroupId` is null and
    * the image lands loose; inside a group it lands in it, with no dialog -- a
    * group is a focus session, and asking which group you meant while you are
    * standing in one is ceremony (#348).
    */
-  useUploads(user.id, gallery, activeGroupId, {
+  const { uploadFiles } = useUploads(user.id, gallery, activeGroupId, {
     // Same rule as a generation: an upload while scoped to Generations would
     // land somewhere the grid is not showing.
     onStart: prefs.revealAll,
-    onDone: pushReference,
   })
+
+  /**
+   * **The Upload button's files, offered only where the route is about the
+   * library rather than about a generation** (#550): scoped to Uploads, or
+   * inside a group. #491's objection to a button was "a second route to the
+   * same thing, further from the work" -- true of one always present and
+   * competing with the panel's picker, not of one that appears when you have
+   * said you are filing rather than feeding.
+   */
+  const canUpload = Boolean(activeGroupId) || prefs.originFilter === 'uploads'
 
   /**
    * Create, and stay where you are. Always -- empty group or not.
@@ -1231,6 +1239,9 @@ export function useView(initial: Array<SavedAiImage>) {
     userImages,
     modelSelector,
     generator,
+    /** The Upload button, offered only where the route is about the library
+     *  (#550). Undefined is what hides the control. */
+    uploadFiles: canUpload ? uploadFiles : undefined,
     prefs,
     dock,
     download,

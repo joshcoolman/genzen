@@ -33,15 +33,15 @@ beforeEach(() => vi.clearAllMocks())
 describe('image truncation', () => {
   it('sends what the endpoint holds and reports the rest', async () => {
     withSchema({ imageInputParam: 'image_urls' })
-    // Nano Banana 2 holds four; six were staged.
+    // Nano Banana 2 holds fourteen since #459; sixteen were staged.
     const built = await buildFalInput({
       modelId: 'fal-ai/nano-banana-2/edit',
       prompt: 'x',
-      imageUrls: urls(6),
+      imageUrls: urls(16),
     })
-    expect((built.input.image_urls as Array<string>).length).toBe(4)
-    expect(built.imagesRequested).toBe(6)
-    expect(built.imagesUsed).toBe(4)
+    expect((built.input.image_urls as Array<string>).length).toBe(14)
+    expect(built.imagesRequested).toBe(16)
+    expect(built.imagesUsed).toBe(14)
   })
 
   it('keeps the FIRST images, which is what the note claims', async () => {

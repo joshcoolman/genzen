@@ -27,6 +27,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     userImages,
     modelSelector,
     generator,
+    uploadFiles,
     prefs,
     dock,
     download,
@@ -98,6 +99,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           panelOpen={dock.open}
           onTogglePanel={() => dock.setOpen(!dock.open)}
           groupName={activeGroup?.name}
+          /* Undefined wherever the route is about generating rather than
+             filing, which is what leaves the button out (#550). */
+          onUploadFiles={uploadFiles}
           /* Same rule as Trash group: only inside one, where the set it
              exports is what you are looking at (#477). */
           onDownloadGroup={
