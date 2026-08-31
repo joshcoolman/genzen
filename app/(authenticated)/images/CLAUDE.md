@@ -98,7 +98,14 @@ list once when the seed comes back full, so the grid is never short.
   question is open -- which model keeps a subject itself while the camera moves
   -- and it is one model at a time, defaulting to Nano Banana 2. Results land
   in the grid as ordinary pending cards, filed into the open group; nothing is
-  loaded into the panel. The angles are `src/lib/prompts/shots/`
+  loaded into the panel. The angles are `src/lib/prompts/shots/`.
+  **Instructions are typed in the dialog, never inherited from the panel** --
+  the panel's prompt is whatever was last generated with, and folding it in
+  silently would make "sixteen angles of this picture" also a restyle. A typed
+  instruction outranks the constant block's freeze, which is the only reason it
+  does anything (the block locks the environment, so an appended nudge would
+  otherwise be two contradictory orders); the camera position outranks the
+  instruction
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

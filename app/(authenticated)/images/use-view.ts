@@ -1026,7 +1026,12 @@ export function useView(initial: Array<SavedAiImage>) {
   const [shooting, setShooting] = useState(false)
 
   const runShots = useCallback(
-    async (imageIds: Array<string>, shotIds: Array<string>, model: string) => {
+    async (
+      imageIds: Array<string>,
+      shotIds: Array<string>,
+      model: string,
+      instructions: string,
+    ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
       setShooting(true)
@@ -1061,7 +1066,7 @@ export function useView(initial: Array<SavedAiImage>) {
         const label = findShot(pair.shotId)?.label ?? pair.shotId
         try {
           const created = await generateImage({
-            prompt: await buildShotPrompt(pair.shotId),
+            prompt: await buildShotPrompt(pair.shotId, instructions),
             model,
             origin: 'images',
             sourceImageId: pair.imageId,

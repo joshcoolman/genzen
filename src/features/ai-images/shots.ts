@@ -60,20 +60,42 @@ export function defaultShotModelId(): string {
 }
 
 /**
- * The constant block, then the shot. Both are `.md` and both are loaded lazily
- * (#322): the dialog imports this module for its model list, and a static
- * import would ship all sixteen shot descriptions to the browser.
+ * The constant block, then the shot, then whatever the user typed.
  *
- * Order matters -- the block inventories the reference and freezes it, and the
- * shot then says where the camera goes. Reversed, the freeze reads as a
- * correction to the instruction above it.
+ * Order is the precedence, and it is the whole design. The block inventories
+ * the reference and freezes it; the shot says where the camera goes; the
+ * override block re-ranks the two against an instruction and hands the
+ * instruction over last.
+ *
+ * **A nudge has to outrank the freeze, or it does nothing.** The constant block
+ * locks the environment, the lighting and the colour grade -- so "inside a
+ * clean cement warehouse" appended to it is two contradictory orders, and the
+ * model picks one. `overrides.md` is what makes that a ranking instead of a
+ * collision: the instruction beats the freeze, silence leaves the freeze
+ * standing, and the camera position beats the instruction. It is loaded only
+ * when there is something to rank, so the no-nudge path is byte-identical to
+ * the sixteen prompts that were proven by hand (#553).
+ *
+ * Every file is `.md` and every load is lazy (#322): the dialog imports this
+ * module for its model list, and static imports would ship all sixteen shot
+ * descriptions to the browser.
  */
-export async function buildShotPrompt(shotId: string): Promise<string> {
+export async function buildShotPrompt(
+  shotId: string,
+  instructions = '',
+): Promise<string> {
   const shot = findShot(shotId)
   if (!shot) throw new Error(`Unknown shot "${shotId}"`)
+  const nudge = instructions.trim()
   const [{ default: constant }, { default: description }] = await Promise.all([
     import('#/lib/prompts/shots/constant.md'),
     shot.system(),
   ])
-  return [constant.trim(), description.trim()].join('\n\n')
+  const parts = [constant.trim(), description.trim()]
+  if (nudge) {
+    const { default: overrides } =
+      await import('#/lib/prompts/shots/overrides.md')
+    parts.push(overrides.trim(), nudge)
+  }
+  return parts.join('\n\n')
 }

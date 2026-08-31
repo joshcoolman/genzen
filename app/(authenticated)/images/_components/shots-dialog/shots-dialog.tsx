@@ -21,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
   SingleSelect,
+  Textarea,
 } from '#/components'
 import { cx } from '#/lib/utils'
 
@@ -34,6 +35,7 @@ interface ShotsDialogProps {
     imageIds: Array<string>,
     shotIds: Array<string>,
     modelId: string,
+    instructions: string,
   ) => void
   onCancel: () => void
 }
@@ -54,6 +56,12 @@ interface ShotsDialogProps {
  * **The images start selected and the angles start empty.** Staging a
  * reference is already a decision; picking angles is the one being made here.
  *
+ * **Instructions are typed here, not inherited from the panel.** The panel's
+ * prompt is whatever was last generated with, and quietly folding it into a
+ * shot run would make "sixteen angles of this picture" also a restyle nobody
+ * asked for. Empty on every open, for the same reason: this is the moment the
+ * environment occurs to you, looking at the picture and the angles together.
+ *
  * **The three rear shots are labelled, not hidden or reordered.** They are
  * right when the reference shows the subject's back and invented when it does
  * not, and only the person looking at the picture knows which. A note on the
@@ -69,6 +77,7 @@ export function ShotsDialog({
   const models = useMemo(() => shotModelOptions(), [])
   const [pickedImages, setPickedImages] = useState<Array<string>>([])
   const [pickedShots, setPickedShots] = useState<Array<string>>([])
+  const [instructions, setInstructions] = useState('')
   const [modelId, setModelId] = useState(() => defaultShotModelId())
 
   // Opening is the fresh question. The strip cannot change while this is over
@@ -79,6 +88,7 @@ export function ShotsDialog({
     if (!open) return
     setPickedImages(images.map((i) => i.id))
     setPickedShots([])
+    setInstructions('')
   }, [open, images])
 
   const total = pickedImages.length * pickedShots.length
@@ -186,6 +196,23 @@ export function ShotsDialog({
           </div>
         </div>
 
+        <div className={styles.section}>
+          <div className={styles.head}>
+            <span className={styles.label}>Instructions</span>
+            <span className={styles.count}>optional</span>
+          </div>
+          {/* What it can and cannot do is worth saying at the field rather than
+              discovering: an instruction outranks the frozen scene, and the
+              angle outranks the instruction. */}
+          <Textarea
+            rows={2}
+            value={instructions}
+            disabled={busy}
+            placeholder="Change something about the scene -- inside a clean cement warehouse"
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+        </div>
+
         <SingleSelect
           options={models}
           value={modelId}
@@ -213,7 +240,9 @@ export function ShotsDialog({
             loading={busy}
             loadingText="Sending"
             disabled={total === 0}
-            onClick={() => onGenerate(pickedImages, pickedShots, modelId)}
+            onClick={() =>
+              onGenerate(pickedImages, pickedShots, modelId, instructions)
+            }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}
           </ActionButton>
