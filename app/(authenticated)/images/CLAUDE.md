@@ -87,6 +87,18 @@ list once when the seed comes back full, so the grid is never short.
   ordinary pending cards, filed into the open group like any other generation.
   `Animate` was removed from the same menu; `/video` still accepts `?image=<id>`
   but nothing links to it
+- **Shots is the panel's action, not a card's** (#553). The staged reference
+  set is already the answer to "which pictures", so the way in is a `Shots`
+  button in the Ref images header -- absent until something is staged. The
+  dialog crosses the pictures you tick with the angles you tick: two and two is
+  four generations, **each carrying exactly one reference**
+  (`sourceImageId`, never `referenceImageIds`). That is the opposite errand
+  from the panel's own multi-image path, which sends the set together and asks
+  for one picture back. Unlike Outpaint the model _is_ a choice, because that
+  question is open -- which model keeps a subject itself while the camera moves
+  -- and it is one model at a time, defaulting to Nano Banana 2. Results land
+  in the grid as ordinary pending cards, filed into the open group; nothing is
+  loaded into the panel. The angles are `src/lib/prompts/shots/`
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
