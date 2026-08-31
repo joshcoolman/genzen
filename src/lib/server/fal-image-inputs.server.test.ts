@@ -146,6 +146,18 @@ describe('an unreadable reference fails before FAL is paid (#364)', () => {
     ).rejects.toThrow(/1 of 2/)
   })
 
+  it('carries the reason the upload failed, not just the count (#556)', async () => {
+    // A `catch {}` here once turned a FAL-side refusal into a sentence blaming
+    // the library, and there was no way to tell them apart after the fact.
+    const id = freshId()
+    mockSql.mockResolvedValue([{ id, storage_path: `path/${id}` }])
+    mockUpload.mockRejectedValueOnce(new Error('fal said 429'))
+
+    await expect(uploadLibraryImagesToFal([id], 'user-1')).rejects.toThrow(
+      /fal said 429/,
+    )
+  })
+
   it('says nothing was generated, because nothing was', async () => {
     const gone = freshId()
     mockSql.mockResolvedValue([])

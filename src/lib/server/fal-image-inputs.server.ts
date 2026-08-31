@@ -106,12 +106,25 @@ export async function readLibraryImageBytes(
  *  faithful without its source -- and references took the opposite path for no
  *  stated reason. */
 export class ReferenceImageUnreadableError extends Error {
-  constructor(missing: number, total: number) {
+  constructor(missing: number, total: number, why?: string) {
     super(
-      `${missing} of ${total} reference images could not be read. Nothing was generated.`,
+      `${missing} of ${total} reference images could not be read. Nothing was generated.` +
+        (why ? ` (${why})` : ''),
     )
     this.name = 'ReferenceImageUnreadableError'
   }
+}
+
+/** Why one image did not make it to FAL, short enough to sit in an error a
+ *  person reads on a card. The three causes look identical from the outside and
+ *  need different fixes: the row has no file, the bucket would not hand the
+ *  bytes over, or FAL refused the upload. Losing that distinction cost an
+ *  afternoon (#556) -- a `catch {}` turned a FAL-side failure into a sentence
+ *  claiming seven library images were unreadable, while every object sat in the
+ *  bucket and downloaded fine on the next attempt. */
+function causeOf(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.length > 120 ? `${message.slice(0, 120)}...` : message
 }
 
 export async function uploadLibraryImagesToFal(
@@ -126,15 +139,21 @@ export async function uploadLibraryImagesToFal(
   `
   const pathById = new Map(rows.map((r) => [r.id, r.storage_path]))
 
+  const causes: Array<string> = []
   const uploaded = await Promise.all(
     imageIds.map(async (id) => {
       const storagePath = pathById.get(id)
-      if (!storagePath) return null
+      if (!storagePath) {
+        causes.push('no stored file')
+        return null
+      }
       try {
         return await cachedFalUpload(userId, id, () =>
           downloadAndUploadToFal(storagePath),
         )
-      } catch {
+      } catch (error) {
+        console.error(`[fal] reference ${id} (${storagePath}) failed:`, error)
+        causes.push(causeOf(error))
         return null
       }
     }),
@@ -144,6 +163,7 @@ export async function uploadLibraryImagesToFal(
     throw new ReferenceImageUnreadableError(
       imageIds.length - usable.length,
       imageIds.length,
+      causes[0],
     )
   }
   return usable
@@ -168,7 +188,8 @@ export async function uploadLibraryImageToFal(
     return await cachedFalUpload(userId, imageId, () =>
       downloadAndUploadToFal(storagePath),
     )
-  } catch {
+  } catch (error) {
+    console.error(`[fal] source ${imageId} (${storagePath}) failed:`, error)
     return null
   }
 }
