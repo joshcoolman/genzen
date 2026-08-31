@@ -82,6 +82,14 @@ interface ShotsDialogProps {
  * True Overhead from FLUX.2 Pro, which is the only one of the two that will
  * actually put the camera above the subject.
  *
+ * **One subject across all sixteen is a starting point, not the goal, and a
+ * mixed set is not a bug to tidy up.** A tile teaches what the angle *is*; it
+ * is not demonstrating that the feature holds a subject. Sixteen frames of the
+ * same woman quietly say this is a portrait tool, where a worm's-eye of a car
+ * beside a macro of a jacket say it works on anything. Swapping one is a file
+ * drop: a square image at `public/shots/<shot id>.webp`, ids from
+ * `src/lib/prompts/shots/index.ts`, no code change.
+ *
  * **Dutch Angle is the one tile that lies, and it is left in.** Neither model
  * will roll the camera -- both hand back the reference framing -- and two
  * unrelated models failing the same way is the answer, not a prompt to try
