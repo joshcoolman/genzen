@@ -224,3 +224,20 @@ describe('reference uploads are capped, and stay in order', () => {
     ])
   })
 })
+
+describe('a source that failed to upload is not a source that is gone (#556)', () => {
+  it('throws with the reason when the read fails', async () => {
+    const id = freshId()
+    mockSql.mockResolvedValue([{ id, storage_path: `p/${id}` }])
+    mockUpload.mockRejectedValueOnce(new Error('tls alert bad record mac'))
+
+    await expect(uploadLibraryImageToFal(id, 'user-1')).rejects.toThrow(
+      /bad record mac/,
+    )
+  })
+
+  it('still returns null when there is genuinely no row', async () => {
+    mockSql.mockResolvedValue([])
+    expect(await uploadLibraryImageToFal(freshId(), 'user-1')).toBeNull()
+  })
+})

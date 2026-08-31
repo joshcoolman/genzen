@@ -207,9 +207,20 @@ export async function uploadLibraryImagesToFal(
   return usable
 }
 
-/** The same, for the one image a generation calls its source. Returns null when
- *  the row is gone or unreadable, which the caller reports as a missing source
- *  -- the reference path drops one and carries on, a missing source cannot. */
+/** Thrown when the source row exists and its bytes did not make it to FAL.
+ *  Separate from a null return, which now means only "there is no such row":
+ *  the caller reported both as "Source image not found", so a dead connection
+ *  read as a deleted picture and sent you looking in Trash (#556). */
+export class SourceImageUnreadableError extends Error {
+  constructor(why: string) {
+    super(`The source image could not be sent. (${why})`)
+    this.name = 'SourceImageUnreadableError'
+  }
+}
+
+/** The same, for the one image a generation calls its source. Returns null only
+ *  when the row or its file is genuinely gone; a failed read throws, because
+ *  the reference path drops one and carries on and a missing source cannot. */
 export async function uploadLibraryImageToFal(
   imageId: string,
   userId: string,
@@ -228,6 +239,6 @@ export async function uploadLibraryImageToFal(
     )
   } catch (error) {
     console.error(`[fal] source ${imageId} (${storagePath}) failed:`, error)
-    return null
+    throw new SourceImageUnreadableError(causeOf(error))
   }
 }

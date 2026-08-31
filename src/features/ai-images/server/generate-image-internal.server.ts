@@ -227,6 +227,10 @@ export async function generateImageInternal(
       // The library path goes through the shared upload, so a submit against
       // three models moves these bytes once rather than three times (#313).
       if (sourceImageId) {
+        // Null means the row or its file is gone -- a real missing source. A
+        // read that failed throws its own reason now (#556): both used to land
+        // on the sentence below, so a dead connection read as a deleted
+        // picture and sent you looking in Trash.
         const uploaded = await uploadLibraryImageToFal(sourceImageId, userId)
         if (!uploaded) throw new Error('Source image not found')
         imageUrl = uploaded
