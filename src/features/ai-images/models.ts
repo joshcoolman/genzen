@@ -155,11 +155,20 @@ export const IMAGE_MODELS: Array<ModelEntry> = [
     category: 'Specialized',
     textToImage: 'fal-ai/nano-banana-2',
     withImages: 'fal-ai/nano-banana-2/edit',
-    maxRefs: 3,
+    // 13, so capacity is 14. FAL's `/edit` schema declares `image_urls` as an
+    // unbounded array with no `maxItems` -- same as FLUX.2 Pro -- so nothing
+    // here is enforced by the endpoint; 14 is the figure FAL's model page
+    // documents. It was 3 until #459, which made the least constrained
+    // multi-image model in the lineup the most constrained one in the app.
+    maxRefs: 13,
     // $0.08, not the $0.04 this said until #400. FAL's pricing API has always
     // said 0.08 and the row's estimate came from there, so the two halves of the
     // app disagreed and the number you read *before* clicking was the wrong one
     // -- on a daily driver, at half the real price.
+    // It is the 1K price. The `/edit` schema also takes `resolution`
+    // (0.5K/1K/2K/4K at 0.75x/1x/1.5x/2x) and `enable_web_search` (+$0.015),
+    // none of which the app ever sends -- so one flat number is honest today
+    // and stops being honest the moment any of them becomes settable (#459).
     price: 0.08,
     useCase: 'Reasoning-guided generation',
     promptGuide: 'src/lib/prompts/guide-nano-banana-2.md',

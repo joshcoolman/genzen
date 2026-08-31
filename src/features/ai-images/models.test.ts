@@ -87,6 +87,10 @@ const LEGACY_ALL_IMAGE_MODELS = [
  * so 10 claimed an eleventh slot FAL would have filled by silently dropping the
  * first image. The old number is left in the fixture with the offset spelled
  * out, because a fixture quietly edited to match the code pins nothing.
+ *
+ * Nano Banana's 3 is a third kind of change: not a correction but a raise
+ * (#459). FAL documents 14 images for that endpoint, so the app was capping a
+ * daily driver at four for no reason FAL imposed.
  */
 const LEGACY_EDIT_CAPS: Record<string, number> = {
   'fal-ai/nano-banana-2/edit': 3,
@@ -94,8 +98,9 @@ const LEGACY_EDIT_CAPS: Record<string, number> = {
   'fal-ai/bytedance/seedream/v4.5/edit': 10,
 }
 
-/** Endpoints whose legacy cap was one too high. Value is the corrected cap. */
+/** Endpoints whose cap has since moved. Value is the current cap. */
 const CORRECTED_EDIT_CAPS: Record<string, number> = {
+  'fal-ai/nano-banana-2/edit': 13,
   'fal-ai/bytedance/seedream/v4/edit': 9,
   'fal-ai/bytedance/seedream/v4.5/edit': 9,
 }
@@ -231,9 +236,10 @@ describe('maxRefsFor', () => {
 describe('imageCapacityFor', () => {
   it('is one more than maxRefs, because the source was always in the count', () => {
     // The case that made the off-by-one visible: the panel read `0/3` for an
-    // endpoint that takes four images.
-    expect(imageCapacityFor('fal-ai/nano-banana-2')).toBe(4)
-    expect(maxRefsFor('fal-ai/nano-banana-2')).toBe(3)
+    // endpoint that took four images. It takes fourteen since #459, and the
+    // relationship is the thing under test.
+    expect(imageCapacityFor('fal-ai/nano-banana-2')).toBe(14)
+    expect(maxRefsFor('fal-ai/nano-banana-2')).toBe(13)
   })
 
   it('is 1 for a single-image editor, not 0', () => {
