@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SUBJECT_SLOTS, readSubjects, writeSubjects } from './test-subjects'
 import { deriveLightingEffect } from './_actions/derive-effect.action'
 import { renderLightingCandidate } from './_actions/render-candidate.action'
+import { saveLightingEffect } from './_actions/save-effect.action'
 import { slugify } from './effect-file'
+import type { SavedEffect } from './_actions/save-effect.action'
 import type { PinnedSubjects, SubjectSlot } from './test-subjects'
 import type { PickedImage } from '../_components/image-input/image-input'
 import type { CapturedEffect } from './effect-file'
@@ -56,7 +58,12 @@ export function useView() {
   const [gels, setGels] = useState<Array<{ token: string; color: string }>>([])
 
   const [candidates, setCandidates] = useState<Array<Candidate>>(emptyGrid)
+  /** Which tile represents the effect. It becomes the dialog's thumbnail, so
+   *  picking one is part of saving rather than a separate opinion. */
+  const [chosen, setChosen] = useState<string | null>(null)
   const [isDeriving, setIsDeriving] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saved, setSaved] = useState<SavedEffect | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // The pinned pair is read once, client-side: it is localStorage, and a server
@@ -91,6 +98,8 @@ export function useView() {
       // A grid from the previous setup beside prose that has been replaced is
       // the one thing that would make this page lie about what it tested.
       setCandidates(emptyGrid())
+      setChosen(null)
+      setSaved(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Derive failed')
     } finally {
@@ -111,6 +120,9 @@ export function useView() {
             : c,
         ),
       )
+      // A choice pointing at a tile that is being redrawn is a choice about a
+      // picture nobody can see any more.
+      setChosen((current) => (current === key ? null : current))
       try {
         const { url } = await renderLightingCandidate({
           subjectImageId: subject.id,
@@ -163,6 +175,41 @@ export function useView() {
     [modelId],
   )
 
+  const save = useCallback(async () => {
+    const tile = candidates.find((c) => c.key === chosen)
+    if (!tile?.url) return
+    setIsSaving(true)
+    setError(null)
+    try {
+      setSaved(
+        await saveLightingEffect({
+          name,
+          setup,
+          gels,
+          thumbnailUrl: tile.url,
+        }),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [candidates, chosen, name, setup, gels])
+
+  // Everything, not just the reference: leaving a derived setup on screen under
+  // a cleared reference is the page describing a picture it is no longer
+  // holding.
+  const reset = useCallback(() => {
+    setReference([])
+    setName('')
+    setSetup('')
+    setGels([])
+    setCandidates(emptyGrid())
+    setChosen(null)
+    setSaved(null)
+    setError(null)
+  }, [])
+
   return {
     userImages,
     reference,
@@ -185,6 +232,12 @@ export function useView() {
       )
     }, []),
     candidates,
+    chosen,
+    setChosen,
+    saved,
+    isSaving,
+    save,
+    reset,
     captured,
     estimate,
     isDeriving,
@@ -192,6 +245,11 @@ export function useView() {
     error,
     canDerive: reference.length > 0 && !isDeriving,
     canRun: subjectsReady && setup.trim().length > 0,
+    canSave:
+      !!chosen &&
+      !!candidates.find((c) => c.key === chosen)?.url &&
+      name.trim().length > 0 &&
+      !isSaving,
     derive,
     runAll,
     runOne,

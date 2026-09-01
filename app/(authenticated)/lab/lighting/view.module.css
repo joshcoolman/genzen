@@ -149,6 +149,53 @@
   background: var(--surface-sunken);
 }
 
+.tileChoose {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tileChoose:disabled {
+  cursor: default;
+}
+
+/* The chosen candidate, marked on the tile rather than listed somewhere else:
+   it is the picture that will be the effect's thumbnail, so the confirmation
+   belongs on the picture. */
+.tileChosen {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tileCheck {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline-start: var(--space-4);
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.saved {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.byHand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
 .tileImage {
   inline-size: 100%;
   block-size: 100%;

@@ -25,10 +25,11 @@ import { cx } from '#/lib/utils'
 /**
  * Turning a picture you admire into an effect you can reuse (#562).
  *
- * **The page is the conversion, in one direction.** A reference goes in, prose
- * comes out, the prose is tested on two fixed subjects, and what you leave with
- * is the text of a `.md` file. Nothing here writes to the repo or the database:
- * capture is a copy, and shipping an effect is a commit.
+ * **The page is the conversion, and it finishes the job.** A reference goes in,
+ * prose comes out, the prose is tested on two fixed subjects, and Save writes
+ * the three files that make it a real effect -- including the candidate you
+ * picked, which becomes the tile the Lighting dialog shows. Nothing is live
+ * until the diff is committed.
  *
  * **The grid is two columns of two, not four of one.** The columns are the
  * portrait and the object, and the split is the diagnosis -- see
@@ -217,19 +218,41 @@ export function View() {
                     {v.candidates
                       .filter((c) => c.slot === slot)
                       .map((c) => (
-                        <div key={c.key} className={styles.tile}>
-                          {c.url ? (
-                            <img
-                              src={c.url}
-                              alt={`${label} candidate`}
-                              className={styles.tileImage}
-                            />
-                          ) : (
-                            <span className={styles.tileNote}>
-                              {c.status === 'running'
-                                ? 'Rendering'
-                                : (c.error ?? '')}
-                            </span>
+                        <div
+                          key={c.key}
+                          className={cx(
+                            styles.tile,
+                            v.chosen === c.key && styles.tileChosen,
+                          )}
+                        >
+                          {/* Clicking a candidate is how the effect gets its
+                              thumbnail, so the grid is the picker rather than a
+                              separate control listing the same four tiles
+                              again. */}
+                          <button
+                            type="button"
+                            className={styles.tileChoose}
+                            disabled={!c.url}
+                            aria-pressed={v.chosen === c.key}
+                            aria-label={`Represent this effect with this ${label.toLowerCase()} candidate`}
+                            onClick={() => v.setChosen(c.key)}
+                          >
+                            {c.url ? (
+                              <img
+                                src={c.url}
+                                alt={`${label} candidate`}
+                                className={styles.tileImage}
+                              />
+                            ) : (
+                              <span className={styles.tileNote}>
+                                {c.status === 'running'
+                                  ? 'Rendering'
+                                  : (c.error ?? '')}
+                              </span>
+                            )}
+                          </button>
+                          {v.chosen === c.key && (
+                            <Check className={styles.tileCheck} />
                           )}
                           {/* Re-running one tile is the whole point of four:
                               the description is fine and the model was noisy,
@@ -253,30 +276,62 @@ export function View() {
 
           <section className={styles.section}>
             <header className={styles.head}>
-              <h2 className={styles.title}>Capture</h2>
+              <h2 className={styles.title}>Save</h2>
               <p className={styles.hint}>
-                Two edits, and this page makes neither of them. Save the first
-                as{' '}
-                <code className={styles.file}>
-                  src/lib/prompts/lighting/{v.captured.id}.md
-                </code>{' '}
-                and paste the second into{' '}
-                <code className={styles.file}>LIGHTING_EFFECTS</code>.
+                Pick the candidate that represents the effect, then save. It
+                writes three files -- the setup, its entry in{' '}
+                <code className={styles.file}>LIGHTING_EFFECTS</code>, and the
+                picture the Lighting dialog puts on the tile. Nothing is live
+                until you commit them.
               </p>
             </header>
-            <div className={styles.capture}>
-              <pre className={styles.code}>{effectFileBody(v.captured)}</pre>
-              <CopyButton text={effectFileBody(v.captured)} />
+            <div className={styles.row}>
+              <ActionButton
+                onClick={() => void v.save()}
+                loading={v.isSaving}
+                loadingText="Writing"
+                disabled={!v.canSave}
+              >
+                Save effect
+              </ActionButton>
+              {!v.chosen && (
+                <span className={styles.hint}>
+                  Click a candidate above to choose the thumbnail.
+                </span>
+              )}
+              <Button variant="ghost" onClick={v.reset}>
+                Start another
+              </Button>
             </div>
-            <div className={styles.capture}>
-              <pre className={styles.code}>
-                {effectRegistryEntry(v.captured)}
-              </pre>
-              <CopyButton text={effectRegistryEntry(v.captured)} />
-            </div>
-            <Button variant="ghost" onClick={() => v.setReference([])}>
-              Start another
-            </Button>
+
+            {v.saved && (
+              <ul className={styles.saved}>
+                {v.saved.files.map((file) => (
+                  <li key={file}>
+                    <code className={styles.file}>{file}</code>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Kept beside the button rather than replaced by it: Save writes
+                into the repo and so only runs under `pnpm dev`, and the two
+                edits are small enough to make by hand when it cannot. */}
+            <details className={styles.byHand}>
+              <summary className={styles.hint}>
+                Or make the edits by hand
+              </summary>
+              <div className={styles.capture}>
+                <pre className={styles.code}>{effectFileBody(v.captured)}</pre>
+                <CopyButton text={effectFileBody(v.captured)} />
+              </div>
+              <div className={styles.capture}>
+                <pre className={styles.code}>
+                  {effectRegistryEntry(v.captured)}
+                </pre>
+                <CopyButton text={effectRegistryEntry(v.captured)} />
+              </div>
+            </details>
           </section>
         </>
       )}

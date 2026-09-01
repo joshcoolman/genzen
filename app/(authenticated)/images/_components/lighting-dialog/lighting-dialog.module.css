@@ -119,6 +119,19 @@
   cursor: default;
 }
 
+/* Square, and bled to the tile's edges: the caption sits under the picture the
+   way a shot tile reads. Only tiles that have a file get one, so the grid can
+   hold both shapes while effects written before #562 catch up. */
+.tileImage {
+  inline-size: calc(100% + var(--space-24));
+  margin: calc(var(--space-12) * -1) calc(var(--space-12) * -1) 0;
+  margin-inline-end: calc(var(--space-24) * -1);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-start-start-radius: var(--radius-sm);
+  border-start-end-radius: var(--radius-sm);
+}
+
 .tileLabel {
   min-width: 0;
   font-family: var(--font-mono);

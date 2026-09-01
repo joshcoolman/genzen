@@ -183,12 +183,23 @@ way to know a piece of it is any good is to render it.
   throwaway cards per attempt on the Images wall is a cleanup job. The cost of
   that is real and named rather than hidden: **these runs do not appear in
   Activity**, so the page prints the estimate before the press.
-- **Capture is a copy, not a write.** What you leave with is the text of two
-  edits -- the `.md` and its `LIGHTING_EFFECTS` entry -- and making them is a
-  commit. A lab page that wrote to the repo would be a build step disguised as a
-  button; one that wrote to a table would be lab state in the database, which
-  this folder does not do. The issue's second tier, effects as rows, waits for
-  the day effects are user content rather than something we ship.
+- **Save writes the repo, and only under `pnpm dev`.** Three files: the `.md`,
+  its `LIGHTING_EFFECTS` entry, and the candidate you picked at
+  `public/lighting/<id>.webp`, which is the picture the Lighting dialog puts on
+  the tile. It started as a copy-the-text step and that was the wrong shape --
+  the page had derived, tested and named an effect and then offered a clipboard,
+  so the one moment it could have finished the job was the moment it stopped.
+  **The result is a diff, not a deployment**, which is what makes writing files
+  acceptable here: `git status` is the review and a bad effect is a
+  `git checkout`. The deployed filesystem is read-only and ephemeral, so Save
+  refuses there rather than half-working; authoring is the same local activity
+  as editing one of these `.md` files by hand. The copy blocks stay behind a
+  disclosure for exactly that case. A table is still not on the table -- that is
+  the issue's second tier, and it waits for the day effects are user content
+  rather than something we ship.
+- **An id already in the registry is refused rather than overwritten**, and the
+  fix is a different name, one field away. Overwriting would silently replace an
+  effect other work may already be judging.
 - **The test subjects are pinned in `localStorage`, not checked into
   `public/`.** Checked-in subjects are right for something that ships and wrong
   for a page whose first job is finding out which two pictures are good tests.
