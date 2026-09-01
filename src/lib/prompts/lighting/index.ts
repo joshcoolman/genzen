@@ -11,7 +11,21 @@
  * how the first pair were written, and a truck came back as a background split
  * with the paint untouched.
  *
- * Four things established by the 2026-09-01 test and the run that followed it,
+ * **An effect describes a lighting setup, never a finished picture.** Say where
+ * the sources are, what they are gelled, what the room behind is shaped like --
+ * and let what the photograph looks like fall out of that. The split field was
+ * written the other way round, from a reference image, as "two flat fields
+ * divided by one hard vertical edge". That is a description of the artifact:
+ * the reference is a subject standing in a corner with a cool source on one
+ * side and a warm one on the other, and the edge is where the two walls meet.
+ * Written as an outcome it is a graphic-design instruction, and models obeyed
+ * it as one -- a vehicle came back as two colour rectangles with the paint
+ * untouched. The two writer passes cannot rescue this: they bind an effect's
+ * surface references to a real subject, and an effect with no causes in it has
+ * nothing to bind. The hard rake never had the problem because it was written
+ * as a setup from the start, which is why it is the one that generalises.
+ *
+ * Five things established by the 2026-09-01 test and the runs that followed it,
  * kept here because this is the only record of them:
  *
  * **`wrapper.md` is assembly, not an effect.** It is identical for every one of
