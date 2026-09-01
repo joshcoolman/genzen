@@ -77,6 +77,16 @@ transport concern, and the library row keeps its full-resolution original.
   the caller so the scene text cannot vary between shots. Its header records the
   two alternatives that were tried and deleted, and why a per-angle scene is the
   one thing not to reintroduce.
+- **`lighting.ts` is shots' surface on outpaint's mechanism** (#563): the same
+  cross of staged pictures against picked treatments, but the prompt is fixed
+  text -- `wrapper.md` plus one effect from `src/lib/prompts/lighting/`,
+  assembled by `buildLightingPrompt` and never written by a model. No vision
+  pass, so no `ANTHROPIC_API_KEY`; shots needs one because sixteen frames of a
+  subject must agree with each other, and two relights of one picture have
+  nothing to agree about. It keeps the model picker for shots' reason and
+  excludes Z-Image Turbo for outpaint's. The registry header records what the
+  proving run established about the prose -- sentence order, and the palette
+  being separable -- and is what to read before editing an effect.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.
