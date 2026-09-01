@@ -147,13 +147,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — clear [#502](https://github.com/joshcoolman/genzen/issues/502):
-two dead webhook variables still set on the deployed Railway service. There are
-no webhooks (#362); the variables are the last trace. Open the issue, delete
-them on Railway, close it.
-[#562](https://github.com/joshcoolman/genzen/issues/562) is the follow-on to
-Lighting -- making new effects in the lab from a reference picture, which is
-also what would give the dialog's tiles a thumbnail.
+**Focus** — build [#562](https://github.com/joshcoolman/genzen/issues/562):
+the surface for making a new lighting effect from a reference picture. Read that
+issue first. The method is proven by hand — hand a model the reference and tell
+it the output must work on a person, a car, a chair or a product, and it writes
+a setup back — and `src/lib/prompts/lighting/index.ts` holds what an effect must
+be for that output to be usable. Two effects already work, so the frontend half
+is done; this is about authoring more of them.
+[#502](https://github.com/joshcoolman/genzen/issues/502) is also open and
+unrelated: two dead webhook variables still set on the deployed Railway service.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
