@@ -60,11 +60,6 @@ export const LIGHTING_EFFECTS = [
     label: 'Soft Split Field',
     file: 'src/lib/prompts/lighting/soft-split-field.md',
     system: () => import('./soft-split-field.md'),
-    /** Rendered the background split and left the subject neutral on
-     *  `xai/grok-imagine-image/v2.0/edit`. Verified on Nano Banana 2. The
-     *  note predates the writer passes, which exist to fix that class of
-     *  failure -- worth re-judging, and worth keeping until it has been. */
-    note: 'Nano Banana only',
   },
   {
     id: 'hard-rake-dark-ground',

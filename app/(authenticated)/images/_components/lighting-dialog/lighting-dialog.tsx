@@ -69,12 +69,15 @@ interface LightingDialogProps {
  * lights are asked fresh each time, and a nine-row table above them would bury
  * the question being asked.
  *
- * **The note under Soft Split Field is a model result, not a caution about the
- * picture.** Grok renders it as a backdrop swap with the skin untouched -- and
- * Grok is the default, so this is the note most likely to be read. It stays
- * visible rather than filtering the model list, on Shots' reasoning about
- * `needsBack`: say what is known and leave the press to the person looking at
- * it.
+ * **A tile is a name and nothing else, and one tile carried a caution that had
+ * to go.** Soft Split Field was labelled "Nano Banana only", from the finding
+ * that Grok rendered it as a backdrop swap with the subject untouched. The
+ * label was inert -- nothing read it, and every selected model always got every
+ * picked effect -- and the finding turned out to be about the prompt rather
+ * than the model: it described a painted backdrop, and Grok obeyed most
+ * literally. A note like Shots' `needsBack` earns its place by being a fact
+ * about *this picture* that only the person looking can judge. A fact about a
+ * model belongs in the file that fixes it.
  *
  * **It closes on the press, not on the run** (#563). Generate puts the pending
  * cards on the wall and the dialog goes away; the submits carry on behind it.
@@ -203,9 +206,6 @@ export function LightingDialog({
                   onClick={() => toggle(setPickedEffects, effect.id)}
                 >
                   <span className={styles.tileLabel}>{effect.label}</span>
-                  {'note' in effect && (
-                    <span className={styles.tileNote}>{effect.note}</span>
-                  )}
                   {isOn && <Check className={styles.tileCheck} />}
                 </button>
               )

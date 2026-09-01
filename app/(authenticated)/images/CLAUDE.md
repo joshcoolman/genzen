@@ -151,9 +151,11 @@ list once when the seed comes back full, so the grid is never short.
   own `ModelSelector` -- the whole image-accepting lineup minus Z-Image Turbo,
   which is denoise-with-strength and cannot take an instruction -- collapsed by
   default, because the model is the only selection that survives an open. It
-  starts on Grok Imagine. The split field renders on Nano Banana 2 and comes
-  back on Grok as a backdrop swap with the skin untouched, which the dialog says
-  on the tile rather than filtering the list. **The tiles are words, not thumbnails**:
+  starts on Grok Imagine. **Nothing about an effect gates a model**: every
+  ticked model gets every ticked effect. A "Nano Banana only" note on the split
+  field's tile was removed once it was clear it recorded a prompt fault rather
+  than a model limit -- and it had never gated anything, being a label nothing
+  read. **The tiles are words, not thumbnails**:
   a light has a name that already means something, and a picture of one would
   be a render commissioned to illustrate itself until #562 can make an effect
   from a reference picture that already exists
