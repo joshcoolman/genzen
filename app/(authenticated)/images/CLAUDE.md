@@ -127,33 +127,29 @@ list once when the seed comes back full, so the grid is never short.
   busy state: there is nothing to show after the press, because there is no
   dialog. A failure still speaks, taking its own card away and toasting from
   behind the closed one
-- **Lighting is Shots' surface and Shots' two passes** (#563). A `Lighting`
+- **Lighting is Shots' surface on outpaint's mechanism** (#563). A `Lighting`
   button beside `Shots` in the Ref images header, on the same condition, opening
   the same shape of dialog: tick pictures, tick lights, every pair is its own
-  generation carrying exactly one reference. **The prompt is written in two
-  passes**, so **Lighting requires `ANTHROPIC_API_KEY`** and fails loudly
-  without it (#365). `writeLightingSubject` runs once per picture and inventories
-  the subject's surfaces -- what faces the camera, what turns away, the upper
-  edges, where a centre line falls. `writeLighting` runs once per effect and
-  binds the effect's general language to those surfaces. **An effect is
-  therefore not a prompt**: it names surfaces by role and never by anatomy,
-  because it has to land on a truck as readily as a face.
-  **It shipped without the writer** -- the effect sent to FAL as written -- and
-  that is why the split is here: the first two effects came from portrait
-  sessions and named a cheek and a neck, so a truck came back as a background
-  split with the paint untouched. Vaguer prose is not the fix; the action's
-  header says why. Shots walked the same road over six sessions, ending in the
-  same place. There is no Instructions field: an effect is already a finished
-  paragraph about light, and a typed nudge beside it either says nothing or
-  fights it. **The models are multi-selected, where Shots takes one**: a relight
+  generation carrying exactly one reference. **No model writes the prompt** --
+  `buildLightingPrompt` joins `wrapper.md` to one effect and fills in its gels
+  -- so **Lighting needs no `ANTHROPIC_API_KEY`**, where Shots does.
+  **An effect is a lighting setup, never a description of a picture**: sources,
+  angles, gels, contrast, what the ground behind does. Nothing describes the
+  subject, because the model is looking at it. Getting that wrong is what two
+  vision passes were briefly built to paper over, and
+  `src/lib/prompts/lighting/index.ts` is the record of both. There is no
+  Instructions field: an effect is already a finished description of a light,
+  and a typed nudge beside it either says nothing or fights it. **The models are multi-selected, where Shots takes one**: a relight
   is a single picture you compare, so one subject through four models is the
   useful press, and the count is pictures x lights x models. It is the panel's
   own `ModelSelector` -- the whole image-accepting lineup minus Z-Image Turbo,
   which is denoise-with-strength and cannot take an instruction -- collapsed by
   default, because the model is the only selection that survives an open. It
-  starts on Grok Imagine. The split field renders on Nano Banana 2 and comes
-  back on Grok as a backdrop swap with the skin untouched, which the dialog says
-  on the tile rather than filtering the list. **The tiles are words, not thumbnails**:
+  starts on Grok Imagine. **Nothing about an effect gates a model**: every
+  ticked model gets every ticked effect. A "Nano Banana only" note on the split
+  field's tile was removed once it was clear it recorded a prompt fault rather
+  than a model limit -- and it had never gated anything, being a label nothing
+  read. **The tiles are words, not thumbnails**:
   a light has a name that already means something, and a picture of one would
   be a render commissioned to illustrate itself until #562 can make an effect
   from a reference picture that already exists

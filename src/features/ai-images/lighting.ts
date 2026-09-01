@@ -1,17 +1,23 @@
 import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 import { getModelsByCapability } from '#/features/ai-images/model-selector/unified-models'
+import { findLightingEffect } from '#/lib/prompts/lighting'
+import wrapper from '#/lib/prompts/lighting/wrapper.md'
 
 /**
  * Lighting: one picture in, the same picture under a named light (#563).
  *
- * **Shots' surface and Shots' two passes.** It is opened from the reference
+ * **Shots' surface, outpaint's mechanism.** It is opened from the reference
  * strip and multi-selects, so every staged picture crossed with every effect
- * crossed with every model is its own generation. The prompt is written by
- * `server/write-lighting-prompt.action.ts`: a surface inventory once per
- * picture, then each effect bound to those surfaces. It shipped without a
- * writer -- the effect sent as written -- and that works on the subject the
- * effect was written from and nothing else. The action's header records the
- * whole of it; do not re-derive it here.
+ * crossed with every model is its own generation. But the prompt is fixed text
+ * -- `wrapper.md` plus one effect, with its gels substituted -- exactly as
+ * `buildOutpaintPrompt` assembles one. No model writes it, so Lighting needs no
+ * `ANTHROPIC_API_KEY`.
+ *
+ * It did have two vision passes for a day, and the reason they went is in
+ * `src/lib/prompts/lighting/index.ts`: they were the right fix for prose that
+ * described a photograph instead of a lighting setup. Setup prose needs no
+ * writer, and a writer between it and FAL can only paraphrase the precision
+ * away.
  *
  * **The models are the panel's, multi-selected.** Every model that takes an
  * image can attempt a relight, so the offer is the whole image-accepting
@@ -73,4 +79,33 @@ export function defaultLightingModelId(): string {
     )
   }
   return pickerId(model)
+}
+
+/**
+ * The wrapper, a blank line, the effect with its gels filled in.
+ *
+ * Assembly here and prose in the `.md` (#322), the same split outpaint uses:
+ * changing what a light looks like is a text edit. The gels are the one part of
+ * a setup a control could reasonably vary, so they are `{TOKEN}`s rather than
+ * sentences, and an unresolved one throws -- reaching FAL it would render as a
+ * picture, not an error, and the picture would be plausible.
+ */
+export async function buildLightingPrompt(effectId: string): Promise<string> {
+  const effect = findLightingEffect(effectId)
+  if (!effect) throw new Error(`Unknown lighting effect "${effectId}"`)
+
+  const { default: description } = await effect.system()
+  const gels: Record<string, string> = effect.gels
+
+  const filled = description.replace(/\{([A-Z_]+)\}/g, (_, token: string) => {
+    const value = gels[token]
+    if (!value) {
+      throw new Error(
+        `Lighting effect "${effectId}" uses {${token}}, which it does not declare`,
+      )
+    }
+    return value
+  })
+
+  return `${wrapper.trim()}\n\n${filled.trim()}`
 }
