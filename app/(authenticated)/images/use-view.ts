@@ -29,10 +29,7 @@ import {
   writeShotScene,
 } from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
-import {
-  writeLighting,
-  writeLightingSubject,
-} from '#/features/ai-images/server/write-lighting-prompt.action'
+import { buildLightingPrompt } from '#/features/ai-images/lighting'
 import { findLightingEffect } from '#/lib/prompts/lighting'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
@@ -1157,12 +1154,10 @@ export function useView(initial: Array<SavedAiImage>) {
    * asking for the picture -- which also means a pair cannot fail before it
    * reaches FAL the way a shot can when its scene will not write.
    *
-   * **The prompt is written in two passes, like Shots'**, and for a reason the
-   * action's header holds: an effect describes a lighting setup for any
-   * subject, and something has to bind it to this one. `writeLightingSubject`
-   * runs once per picture and `writeLighting` once per effect on top of it, so
-   * a picture whose inventory cannot be written loses all of its tiles at once
-   * and the run carries on with the others.
+   * **Nothing here writes a prompt**, where `runShots` runs two vision passes
+   * before it can submit anything. An effect is a lighting setup with its gels
+   * filled in, so `buildLightingPrompt` is a string join -- which is why this
+   * loop has no per-picture pass in front of it and no Anthropic dependency.
    *
    * **The third multiplication is the models**, where Shots has one. A relight
    * is a single picture you compare, so putting one subject through four models
@@ -1224,48 +1219,12 @@ export function useView(initial: Array<SavedAiImage>) {
       // Closed on the cards, not on the run -- see `runShots`.
       setLightingOpen(false)
 
-      // One inventory per picture, reused by every effect and every model of
-      // it. Written before the submits rather than lazily inside the loop so an
-      // unreadable object fails once, loudly, instead of once per pair.
-      const subjects = new Map<string, string>()
-      for (const imageId of imageIds) {
-        try {
-          const { subject } = await writeLightingSubject({ imageId })
-          subjects.set(imageId, subject)
-        } catch (err) {
-          for (const p of pairs.filter((x) => x.imageId === imageId)) {
-            gallery.removeOptimisticCard(p.placeholderId)
-          }
-          toast.error(
-            err instanceof Error
-              ? err.message
-              : 'Could not read one of the pictures',
-          )
-        }
-      }
-
-      // Written once per picture-and-effect, not per pair: the models differ in
-      // what they do with a prompt, not in what it should say, so writing it
-      // again for each would be one Claude call per model to arrive at the same
-      // paragraph.
-      const prompts = new Map<string, string>()
-
       for (const pair of pairs) {
         const label = findLightingEffect(pair.effectId)?.label ?? pair.effectId
-        const subject = subjects.get(pair.imageId)
-        if (!subject) continue
-        const key = `${pair.imageId}:${pair.effectId}`
         try {
-          if (!prompts.has(key)) {
-            const { prompt } = await writeLighting({
-              imageId: pair.imageId,
-              effectId: pair.effectId,
-              subject,
-            })
-            prompts.set(key, prompt)
-          }
+          const prompt = await buildLightingPrompt(pair.effectId)
           const created = await generateImage({
-            prompt: prompts.get(key)!,
+            prompt,
             model: pair.model,
             origin: 'images',
             sourceImageId: pair.imageId,

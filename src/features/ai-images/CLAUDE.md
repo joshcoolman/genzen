@@ -77,14 +77,14 @@ transport concern, and the library row keeps its full-resolution original.
   the caller so the scene text cannot vary between shots. Its header records the
   two alternatives that were tried and deleted, and why a per-angle scene is the
   one thing not to reintroduce.
-- **`lighting.ts` is shots' surface and shots' two passes** (#563): the same
-  cross of staged pictures against picked treatments, with the prompt written by
-  `server/write-lighting-prompt.action.ts` -- a surface inventory once per
-  picture, then each effect bound to it, `wrapper.md` prepended in code. So it
-  needs `ANTHROPIC_API_KEY` like shots does. It shipped sending the effect
-  straight to FAL, which works on the subject the effect was written from and
-  nothing else; that file's header is the record, and is what to read before
-  touching any of it. **Its models are multi-selected and are the panel's
+- **`lighting.ts` is shots' surface on outpaint's mechanism** (#563): the same
+  cross of staged pictures against picked treatments, but the prompt is fixed
+  text -- `wrapper.md` plus one effect from `src/lib/prompts/lighting/` with its
+  `{GEL}` tokens filled from the registry, assembled by `buildLightingPrompt`
+  and never written by a model. No `ANTHROPIC_API_KEY`, where shots needs one.
+  Two vision passes existed here for a day and were deleted; that folder's
+  `index.ts` says why, and is what to read before editing an effect.
+  **Its models are multi-selected and are the panel's
   own**, not a dialog-local list: `lightingModelIds()` is the `sidebar`
   capability minus Z-Image Turbo, excluded for outpaint's reason, and
   everything else that accepts an image is offered because whether a model can

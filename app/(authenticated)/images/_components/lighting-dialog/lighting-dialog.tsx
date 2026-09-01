@@ -43,9 +43,10 @@ interface LightingDialogProps {
  * Tick pictures, tick lights, press Generate (#563).
  *
  * **Shots' dialog with one section removed, deliberately kept that close.**
- * Same place in the panel, same "every pair is its own generation", same two
- * writer passes behind it, so the two read as one idea applied twice rather
- * than two features that happen to sit together. What is gone is the
+ * Same place in the panel, same "every pair is its own generation", so the two
+ * read as one idea applied twice rather than two features that happen to sit
+ * together. What is behind them differs: Shots writes its prompt with two
+ * vision passes and this sends a fixed setup. What is gone is the
  * Instructions field: an effect is a whole finished paragraph about light, and
  * a typed nudge landing next to it either says nothing or fights it -- Shots
  * needs one because a camera angle says nothing about where the subject is.
