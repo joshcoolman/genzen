@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
+import { ModelSelector } from '../../../_components/model-selector/model-selector'
 import styles from './lighting-dialog.module.css'
 import type { RefImage } from '#/features/ai-images/hooks/use-generator'
 import { estimateImageCostCents } from '#/features/ai-images/models'
 import {
   defaultLightingModelId,
-  lightingModelOptions,
+  lightingModelIds,
 } from '#/features/ai-images/lighting'
+import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
+import { pricedForImages } from '#/features/ai-images/model-selector/unified-models'
 import { LIGHTING_EFFECTS } from '#/lib/prompts/lighting'
 import {
   ActionButton,
@@ -20,7 +23,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  SingleSelect,
 } from '#/components'
 import { cx } from '#/lib/utils'
 
@@ -33,7 +35,7 @@ interface LightingDialogProps {
   onGenerate: (
     imageIds: Array<string>,
     effectIds: Array<string>,
-    modelId: string,
+    modelIds: Array<string>,
   ) => void
   onCancel: () => void
 }
@@ -56,9 +58,20 @@ interface LightingDialogProps {
  * picture of the light in hand at the moment the effect is created -- until
  * then a thumbnail would be a render commissioned to illustrate itself.
  *
+ * **The models are multi-selected and the picker is collapsed.** Shots takes
+ * one model because a sixteen-frame set is a thing you look at whole; a relight
+ * is one picture you compare, so the useful press is one subject through
+ * several models at once. It is the panel's own `ModelSelector` rather than a
+ * dialog-local control, so the row of prices and reference capacities means the
+ * same thing here as it does in the sidebar. Closed by default because the
+ * model is the only selection that survives an open -- the pictures and the
+ * lights are asked fresh each time, and a nine-row table above them would bury
+ * the question being asked.
+ *
  * **The note under Soft Split Field is a model result, not a caution about the
- * picture.** Grok renders it as a backdrop swap with the skin untouched. It
- * stays visible rather than filtering the model list, on Shots' reasoning about
+ * picture.** Grok renders it as a backdrop swap with the skin untouched -- and
+ * Grok is the default, so this is the note most likely to be read. It stays
+ * visible rather than filtering the model list, on Shots' reasoning about
  * `needsBack`: say what is known and leave the press to the person looking at
  * it.
  */
@@ -69,10 +82,16 @@ export function LightingDialog({
   onGenerate,
   onCancel,
 }: LightingDialogProps) {
-  const models = useMemo(() => lightingModelOptions(), [])
+  const allowedIds = useMemo(() => lightingModelIds(), [])
+  const modelSelector = useModelSelector({
+    capability: 'sidebar',
+    mode: 'multi',
+    allowedIds,
+    storageScope: 'lighting',
+    defaultId: defaultLightingModelId(),
+  })
   const [pickedImages, setPickedImages] = useState<Array<string>>([])
   const [pickedEffects, setPickedEffects] = useState<Array<string>>([])
-  const [modelId, setModelId] = useState(() => defaultLightingModelId())
 
   // Opening is the fresh question, exactly as in Shots: the pictures default to
   // whatever is staged and the lights start empty, because staging a reference
@@ -85,11 +104,23 @@ export function LightingDialog({
     setPickedEffects([])
   }, [open, images])
 
-  const total = pickedImages.length * pickedEffects.length
+  // Three multiplications, not two: every picture, under every light, through
+  // every model. Four references and two lights across three models is
+  // twenty-four generations, and the count on the button is the only thing that
+  // says so before the press.
+  const total =
+    pickedImages.length *
+    pickedEffects.length *
+    modelSelector.selectedIds.length
 
   const estimate = useMemo(
-    () => estimateImageCostCents([modelId], Math.max(total, 1), true),
-    [modelId, total],
+    () =>
+      estimateImageCostCents(
+        modelSelector.selectedIds,
+        Math.max(pickedImages.length * pickedEffects.length, 1),
+        true,
+      ),
+    [modelSelector.selectedIds, pickedImages.length, pickedEffects.length],
   )
 
   function toggle(
@@ -176,12 +207,23 @@ export function LightingDialog({
           </div>
         </div>
 
-        <SingleSelect
-          options={models}
-          value={modelId}
-          /* Null is SingleSelect reporting the chosen pill pressed again. There
-             is no "no model" here, so that press is a no-op. */
-          onChange={(next) => next && setModelId(next)}
+        {/* The panel's own picker, multi-select and collapsed. Collapsed
+            because the model is the one thing here that persists between
+            opens -- the pictures and the lights are asked fresh every time,
+            and a nine-row table above them would bury both. The summary line
+            still names what is selected, so it is closed rather than
+            hidden. Priced for the edit endpoint, always: a relight sends a
+            source image, so there is no cheaper reading of these rows. */}
+        <ModelSelector
+          mode="multi"
+          persistKey="genzen:lighting-models:expanded"
+          defaultExpanded={false}
+          selectedIds={modelSelector.selectedIds}
+          visibleModels={pricedForImages(modelSelector.models, true)}
+          stagedImageCount={1}
+          onToggleSelected={modelSelector.toggleSelected}
+          onToggleAll={modelSelector.toggleAll}
+          onSelectOnly={(id) => modelSelector.selectOnly([id])}
         />
 
         {/* Zero until both halves are picked -- the same rule Generate
@@ -199,7 +241,9 @@ export function LightingDialog({
             loading={busy}
             loadingText="Sending"
             disabled={total === 0}
-            onClick={() => onGenerate(pickedImages, pickedEffects, modelId)}
+            onClick={() =>
+              onGenerate(pickedImages, pickedEffects, modelSelector.selectedIds)
+            }
           >
             {total > 1 ? `Generate ${total} images` : 'Generate'}
           </ActionButton>

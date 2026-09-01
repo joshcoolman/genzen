@@ -130,10 +130,15 @@ list once when the seed comes back full, so the grid is never short.
   each other; two relights of one picture have nothing to agree about. There is
   no Instructions field for the same reason: an effect is already a finished
   paragraph about light, and a typed nudge beside it either says nothing or
-  fights it. The model picker stays, because that question is as open as Shots'
-  -- the split field renders on Nano Banana 2 and comes back on Grok as a
-  backdrop swap with the skin untouched, which the dialog says on the tile
-  rather than filtering the list. **The tiles are words, not thumbnails**:
+  fights it. **The models are multi-selected, where Shots takes one**: a relight
+  is a single picture you compare, so one subject through four models is the
+  useful press, and the count is pictures x lights x models. It is the panel's
+  own `ModelSelector` -- the whole image-accepting lineup minus Z-Image Turbo,
+  which is denoise-with-strength and cannot take an instruction -- collapsed by
+  default, because the model is the only selection that survives an open. It
+  starts on Grok Imagine. The split field renders on Nano Banana 2 and comes
+  back on Grok as a backdrop swap with the skin untouched, which the dialog says
+  on the tile rather than filtering the list. **The tiles are words, not thumbnails**:
   a light has a name that already means something, and a picture of one would
   be a render commissioned to illustrate itself until #562 can make an effect
   from a reference picture that already exists

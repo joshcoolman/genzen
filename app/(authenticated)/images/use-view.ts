@@ -1141,13 +1141,18 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * Lighting (#563): every staged reference under every light picked, one
-   * generation each.
+   * Lighting (#563): every staged reference, under every light picked, through
+   * every model picked -- one generation each.
    *
    * `runShots`' loop with the writer taken out. The prompt is the wrapper plus
    * the effect, both fixed text, so there is nothing to ask a model before
    * asking for the picture -- which also means a pair cannot fail before it
    * reaches FAL the way a shot can when its scene will not write.
+   *
+   * **The third multiplication is the models**, where Shots has one. A relight
+   * is a single picture you compare, so putting one subject through four models
+   * in one press is the useful gesture; a sixteen-frame shot set is a thing you
+   * look at whole, and crossing it by models would be sixty-four.
    *
    * Everything else holds for the same reasons written on `runShots`: one
    * picture per submit and never `referenceImageIds`, because two references in
@@ -1163,9 +1168,14 @@ export function useView(initial: Array<SavedAiImage>) {
     async (
       imageIds: Array<string>,
       effectIds: Array<string>,
-      model: string,
+      models: Array<string>,
     ) => {
-      if (imageIds.length === 0 || effectIds.length === 0) return
+      if (
+        imageIds.length === 0 ||
+        effectIds.length === 0 ||
+        models.length === 0
+      )
+        return
 
       setLighting(true)
       // Making something is an implicit request to see it (#444).
@@ -1173,11 +1183,14 @@ export function useView(initial: Array<SavedAiImage>) {
 
       const stamp = Date.now()
       const pairs = imageIds.flatMap((imageId) =>
-        effectIds.map((effectId) => ({
-          imageId,
-          effectId,
-          placeholderId: `light-${imageId}-${effectId}-${stamp}`,
-        })),
+        effectIds.flatMap((effectId) =>
+          models.map((model) => ({
+            imageId,
+            effectId,
+            model,
+            placeholderId: `light-${imageId}-${effectId}-${model}-${stamp}`,
+          })),
+        ),
       )
 
       for (const pair of pairs) {
@@ -1185,8 +1198,8 @@ export function useView(initial: Array<SavedAiImage>) {
           pendingCard(
             {
               placeholderId: pair.placeholderId,
-              model,
-              title: getModelName(model),
+              model: pair.model,
+              title: getModelName(pair.model),
               prompt: findLightingEffect(pair.effectId)?.label ?? pair.effectId,
               sourceImageId: pair.imageId,
             },
@@ -1201,7 +1214,7 @@ export function useView(initial: Array<SavedAiImage>) {
           const prompt = await buildLightingPrompt(pair.effectId)
           const created = await generateImage({
             prompt,
-            model,
+            model: pair.model,
             origin: 'images',
             sourceImageId: pair.imageId,
             groupId: activeGroupId,

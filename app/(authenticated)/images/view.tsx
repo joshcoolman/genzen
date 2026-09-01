@@ -321,8 +321,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         open={lightingOpen}
         images={generator.refImages}
         busy={lighting}
-        onGenerate={(imageIds, effectIds, modelId) =>
-          void runLighting(imageIds, effectIds, modelId)
+        onGenerate={(imageIds, effectIds, modelIds) =>
+          void runLighting(imageIds, effectIds, modelIds)
         }
         onCancel={closeLighting}
       />
