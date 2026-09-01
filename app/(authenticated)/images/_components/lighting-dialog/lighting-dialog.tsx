@@ -53,12 +53,13 @@ interface LightingDialogProps {
  *
  * **The tiles are words, not pictures.** Shots earned thumbnails because a
  * camera position is geometry you cannot name faster than you can see it; a
- * light has a name that already means something. They would be worth adding
- * once #562 can make an effect from a reference picture, since that flow has a
- * picture of the light in hand at the moment the effect is created -- until
- * then a thumbnail would be a render commissioned to illustrate itself. It
- * would also be a picture of the light on one subject, which is the assumption
- * the writer passes exist to undo.
+ * light has a name that already means something. `/lab/lighting` (#562) does now
+ * put four renders of an effect on screen at the moment it is written, but it
+ * keeps none of them: capture there is the text of a `.md`, and nothing on that
+ * page is stored. A thumbnail here needs a picture that survives the tab, which
+ * is a decision about where an effect's example image lives (#274) rather than
+ * a missing render. It would also be a picture of the light on one subject,
+ * which is the assumption the writer passes exist to undo.
  *
  * **The models are multi-selected and the picker is collapsed.** Shots takes
  * one model because a sixteen-frame set is a thing you look at whole; a relight

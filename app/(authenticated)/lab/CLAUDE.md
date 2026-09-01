@@ -1,10 +1,11 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Six pages
+Where a feature is worked on before it is part of the app (#424). Seven pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
-none could be improved there. **Frames and Sequence are the other kind: things
-the app has never been able to do at all**, built here first so they can be used
-for real before anyone decides where they belong (#317, #497).
+none could be improved there. **Frames, Sequence and Lighting are the other
+kind: things the app has never been able to do at all**, built here first so
+they can be used for real before anyone decides where they belong (#317, #497,
+#562).
 
 ## Why these three are here
 
@@ -36,8 +37,9 @@ both worth knowing before editing the page:
 - **The numbers in a prompt are a contract with `useGenerator`, not
   decoration.** A prompt saying "image 2" only means anything because the submit
   prepends `[Image 1, Image 2, ...]` — see `src/features/ai-images/CLAUDE.md`.
-  That half lives in the app, deliberately: the lab does not generate, so a
-  numbering contract it kept to itself would be one Images never honours. It is
+  That half lives in the app, deliberately: Variations hands its run over
+  rather than sending it, so a numbering contract it kept to itself would be one
+  Images never honours. It is
   not lab code leaking outward, and moving it under `lab/` would break the
   feature silently.
 
@@ -141,6 +143,57 @@ a "no" now has somewhere to go.
   need a way to ask for "frames", which needs a marker the library query knows
   about, which is the schema this folder may not grow. The frames themselves
   survive in Images; only the run is lost, same as every other page here.
+
+## Lighting is where an effect is written, not where one is applied
+
+Applying is shipped: the Lighting dialog crosses staged pictures with named
+effects (#563). Writing one was hand work with no surface at all. This page is
+the conversion (#562) -- a reference photograph in, a lighting setup out, tested
+before it is trusted.
+
+Its question: **does this reference survive being turned into words?** A
+picture is an inseparable bundle -- hue, direction, hardness, falloff and
+background welded together, with no clause that peels one out -- and a word is
+too coarse, because "gel lighting" names a family and a model hands back the
+family's average. Prose that is neither is the only reusable form, and the only
+way to know a piece of it is any good is to render it.
+
+- **`derive.md` forbids naming a technique, and that is the mechanism rather
+  than a style rule.** "Split gel" is a pointer; a model handed a pointer
+  returns the average of everything the pointer covers. Forbidding it forces a
+  sentence about where a light stood, which is the only thing another model can
+  render. The same file forbids naming anything in the picture, for the reason
+  `src/lib/prompts/lighting/index.ts` paid for: an effect that mentions a cheek
+  is dead on a truck.
+- **Two test subjects, a face and an object, and the second one is the
+  point.** The issue asked for one canonical portrait. A portrait-only grid
+  cannot show the failure this page exists to catch -- #566's split field passed
+  on faces and returned flat colour rectangles on a truck, because the prose
+  described a photograph instead of a lighting setup. A test whose inputs cannot
+  show the failure reports success, which is worse than no test.
+- **Four candidates, two per subject, and each one re-runs alone.** Four is what
+  tells the failures apart: all four wrong is the prose, one or two right is the
+  model being noisy, one column landing while the other does not is prose that
+  described a picture. One candidate answers none of that, and re-deriving to
+  get another draw would change the thing being tested.
+- **It generates, and it stores nothing** -- the only page here that spends
+  money. Every other generation in the app reserves a row, queues and is
+  reconciled by polling; a candidate is a synchronous FAL call whose URL lives
+  as long as the tab. A judging grid is thrown away by design, and four
+  throwaway cards per attempt on the Images wall is a cleanup job. The cost of
+  that is real and named rather than hidden: **these runs do not appear in
+  Activity**, so the page prints the estimate before the press.
+- **Capture is a copy, not a write.** What you leave with is the text of two
+  edits -- the `.md` and its `LIGHTING_EFFECTS` entry -- and making them is a
+  commit. A lab page that wrote to the repo would be a build step disguised as a
+  button; one that wrote to a table would be lab state in the database, which
+  this folder does not do. The issue's second tier, effects as rows, waits for
+  the day effects are user content rather than something we ship.
+- **The test subjects are pinned in `localStorage`, not checked into
+  `public/`.** Checked-in subjects are right for something that ships and wrong
+  for a page whose first job is finding out which two pictures are good tests.
+  Freezing the pair into the repo is the graduation step, once it has stopped
+  changing.
 
 ## Endpoint Explorer is the one that does not send anything anywhere
 

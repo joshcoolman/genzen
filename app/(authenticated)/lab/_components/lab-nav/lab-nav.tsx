@@ -14,6 +14,7 @@ const SECTIONS = [
   { href: '/lab/enhance', label: 'Enhance' },
   { href: '/lab/describe', label: 'Describe' },
   { href: '/lab/variations', label: 'Variations' },
+  { href: '/lab/lighting', label: 'Lighting' },
   { href: '/lab/frames', label: 'Frames' },
   { href: '/lab/sequence', label: 'Sequence' },
   { href: '/lab/endpoint-explorer', label: 'Endpoints' },
