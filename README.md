@@ -147,14 +147,15 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — [#563](https://github.com/joshcoolman/genzen/issues/563): a Lighting
-button beside Shots, picking looks off a wall of examples and applying them to
-your own image or prompt. The mechanic is proven outside the app — a reference
-picture becomes jargon-free prose, and the prose relights a subject that shares
-nothing with it. [#562](https://github.com/joshcoolman/genzen/issues/562) makes
-new effects in the lab and follows.
-[#502](https://github.com/joshcoolman/genzen/issues/502) is also open: two dead
-webhook variables still set on the deployed Railway service.
+**Focus** — build [#563](https://github.com/joshcoolman/genzen/issues/563): a
+Lighting button beside Shots. **Read that issue and its comment first; they are
+the spec.** The mechanic is already proven outside the app, two effects are
+written verbatim on the issue, and the surface copies
+`app/(authenticated)/images/_components/shots-dialog/`. Do not re-derive any of
+it. [#562](https://github.com/joshcoolman/genzen/issues/562) makes new effects
+in the lab and comes after.
+[#502](https://github.com/joshcoolman/genzen/issues/502) is also open and
+unrelated: two dead webhook variables still set on the deployed Railway service.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
