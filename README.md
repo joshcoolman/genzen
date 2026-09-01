@@ -147,9 +147,14 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — clearing the board. [#502](https://github.com/joshcoolman/genzen/issues/502)
-is the one left in the column: two dead webhook variables still set on the
-deployed Railway service.
+**Focus** — [#563](https://github.com/joshcoolman/genzen/issues/563): a Lighting
+button beside Shots, picking looks off a wall of examples and applying them to
+your own image or prompt. The mechanic is proven outside the app — a reference
+picture becomes jargon-free prose, and the prose relights a subject that shares
+nothing with it. [#562](https://github.com/joshcoolman/genzen/issues/562) makes
+new effects in the lab and follows.
+[#502](https://github.com/joshcoolman/genzen/issues/502) is also open: two dead
+webhook variables still set on the deployed Railway service.
 
 Updated when Focus changes. Everything else is the board at
 `localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
