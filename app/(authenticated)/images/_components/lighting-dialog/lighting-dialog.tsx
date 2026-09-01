@@ -31,7 +31,6 @@ interface LightingDialogProps {
   /** The reference strip's contents -- every one of them a candidate to
    *  relight, which is the top half of this dialog. */
   images: Array<RefImage>
-  busy: boolean
   onGenerate: (
     imageIds: Array<string>,
     effectIds: Array<string>,
@@ -74,11 +73,18 @@ interface LightingDialogProps {
  * visible rather than filtering the model list, on Shots' reasoning about
  * `needsBack`: say what is known and leave the press to the person looking at
  * it.
+ *
+ * **It closes on the press, not on the run** (#563). Generate puts the pending
+ * cards on the wall and the dialog goes away; the submits carry on behind it.
+ * Held open until the last one landed, a press across three models sat there
+ * for several seconds looking like nothing had happened -- and the one place
+ * the work is actually visible was covered by the dialog reporting it. Nothing
+ * here is disabled or spinning for the same reason: there is no state to show
+ * after the press, because there is no dialog.
  */
 export function LightingDialog({
   open,
   images,
-  busy,
   onGenerate,
   onCancel,
 }: LightingDialogProps) {
@@ -167,7 +173,6 @@ export function LightingDialog({
                   aria-pressed={isOn}
                   aria-label={image.title}
                   title={image.title}
-                  disabled={busy}
                   onClick={() => toggle(setPickedImages, image.id)}
                 >
                   {isOn && <Check className={styles.thumbCheck} />}
@@ -193,7 +198,6 @@ export function LightingDialog({
                   type="button"
                   className={cx(styles.tile, isOn && styles.tileOn)}
                   aria-pressed={isOn}
-                  disabled={busy}
                   onClick={() => toggle(setPickedEffects, effect.id)}
                 >
                   <span className={styles.tileLabel}>{effect.label}</span>
@@ -238,8 +242,6 @@ export function LightingDialog({
             Cancel
           </Button>
           <ActionButton
-            loading={busy}
-            loadingText="Sending"
             disabled={total === 0}
             onClick={() =>
               onGenerate(pickedImages, pickedEffects, modelSelector.selectedIds)

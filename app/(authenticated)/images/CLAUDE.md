@@ -118,7 +118,15 @@ list once when the seed comes back full, so the grid is never short.
   vision call per angle writing scene and shot together (consistent renders,
   drifting light -- the symptom that motivated the split). **Shots requires
   `ANTHROPIC_API_KEY`** and fails loudly without it rather than falling back
-  (#365)
+  (#365).
+  **Both dialogs close on the press, not on the run** (#563). Generate puts the
+  pending cards up and the dialog goes; the vision calls and the submits carry
+  on behind it. Held open until the last one landed, a big press sat there for
+  seconds looking like nothing had happened -- with the dialog covering the
+  grid, which is the one place the work is visible. So neither dialog has a
+  busy state: there is nothing to show after the press, because there is no
+  dialog. A failure still speaks, taking its own card away and toasting from
+  behind the closed one
 - **Lighting is Shots' surface without the writer** (#563). A `Lighting` button
   beside `Shots` in the Ref images header, on the same condition, opening the
   same shape of dialog: tick pictures, tick lights, every pair is its own

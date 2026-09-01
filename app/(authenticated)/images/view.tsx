@@ -57,9 +57,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     lightingOpen,
     openLighting,
     closeLighting,
-    lighting,
     runLighting,
-    shooting,
     runShots,
     groups,
     workingByGroup,
@@ -307,7 +305,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <ShotsDialog
         open={shotsOpen}
         images={generator.refImages}
-        busy={shooting}
         onGenerate={(imageIds, shotIds, modelId, instructions) =>
           void runShots(imageIds, shotIds, modelId, instructions)
         }
@@ -320,7 +317,6 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
       <LightingDialog
         open={lightingOpen}
         images={generator.refImages}
-        busy={lighting}
         onGenerate={(imageIds, effectIds, modelIds) =>
           void runLighting(imageIds, effectIds, modelIds)
         }

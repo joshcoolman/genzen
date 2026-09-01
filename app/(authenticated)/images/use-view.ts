@@ -1045,7 +1045,6 @@ export function useView(initial: Array<SavedAiImage>) {
    * would spend money on the drift this mode exists to remove.
    */
   const [shotsOpen, setShotsOpen] = useState(false)
-  const [shooting, setShooting] = useState(false)
 
   const runShots = useCallback(
     async (
@@ -1056,7 +1055,6 @@ export function useView(initial: Array<SavedAiImage>) {
     ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
-      setShooting(true)
       // Making something is an implicit request to see it (#444).
       prefs.revealAll()
 
@@ -1083,6 +1081,15 @@ export function useView(initial: Array<SavedAiImage>) {
           ),
         )
       }
+
+      // Closed here, on the cards rather than on the run (#563). Everything
+      // below is network -- a vision call per picture and a submit per frame --
+      // and a dialog held open across it reads as a press that did not land.
+      // The tiles are already on the wall by this line, which is the app's
+      // answer to "what is happening" everywhere else; a failure below takes
+      // its own card away and says so, and it can say so from behind a closed
+      // dialog exactly as well.
+      setShotsOpen(false)
 
       // One scene per picture, reused by every angle of it. Written before the
       // submits rather than lazily inside the loop so a bad key or an
@@ -1132,8 +1139,6 @@ export function useView(initial: Array<SavedAiImage>) {
         }
       }
 
-      setShooting(false)
-      setShotsOpen(false)
       void gallery.refresh({ silent: true })
       void groups.refresh()
     },
@@ -1162,7 +1167,6 @@ export function useView(initial: Array<SavedAiImage>) {
    * its own card and lets the rest of the run finish.
    */
   const [lightingOpen, setLightingOpen] = useState(false)
-  const [lighting, setLighting] = useState(false)
 
   const runLighting = useCallback(
     async (
@@ -1177,7 +1181,6 @@ export function useView(initial: Array<SavedAiImage>) {
       )
         return
 
-      setLighting(true)
       // Making something is an implicit request to see it (#444).
       prefs.revealAll()
 
@@ -1208,6 +1211,9 @@ export function useView(initial: Array<SavedAiImage>) {
         )
       }
 
+      // Closed on the cards, not on the run -- see `runShots`.
+      setLightingOpen(false)
+
       for (const pair of pairs) {
         const label = findLightingEffect(pair.effectId)?.label ?? pair.effectId
         try {
@@ -1229,8 +1235,6 @@ export function useView(initial: Array<SavedAiImage>) {
         }
       }
 
-      setLighting(false)
-      setLightingOpen(false)
       void gallery.refresh({ silent: true })
       void groups.refresh()
     },
@@ -1366,12 +1370,10 @@ export function useView(initial: Array<SavedAiImage>) {
     shotsOpen,
     openShots: useCallback(() => setShotsOpen(true), []),
     closeShots: useCallback(() => setShotsOpen(false), []),
-    shooting,
     runShots,
     lightingOpen,
     openLighting: useCallback(() => setLightingOpen(true), []),
     closeLighting: useCallback(() => setLightingOpen(false), []),
-    lighting,
     runLighting,
     error,
     setError,
