@@ -30,7 +30,6 @@ interface ShotsDialogProps {
   /** The reference strip's contents. Every one of them is a candidate subject;
    *  which ones get shot is the top half of this dialog. */
   images: Array<RefImage>
-  busy: boolean
   onGenerate: (
     imageIds: Array<string>,
     shotIds: Array<string>,
@@ -101,11 +100,18 @@ interface ShotsDialogProps {
  * right when the reference shows the subject's back and invented when it does
  * not, and only the person looking at the picture knows which. A note on the
  * tile is the whole intervention; anything stronger decides for them.
+ *
+ * **It closes on the press, not on the run** (#563). Generate puts the pending
+ * cards on the wall and the dialog goes away; the submits carry on behind it.
+ * Held open until the last one landed, a sixteen-angle press sat there for
+ * several seconds looking like nothing had happened -- and the one place the
+ * work is actually visible was covered by the dialog reporting it. Nothing here
+ * is disabled or spinning for the same reason: there is no state to show after
+ * the press, because there is no dialog.
  */
 export function ShotsDialog({
   open,
   images,
-  busy,
   onGenerate,
   onCancel,
 }: ShotsDialogProps) {
@@ -181,7 +187,6 @@ export function ShotsDialog({
                   aria-pressed={isOn}
                   aria-label={image.title}
                   title={image.title}
-                  disabled={busy}
                   onClick={() => toggle(setPickedImages, image.id)}
                 >
                   {isOn && <Check className={styles.thumbCheck} />}
@@ -200,7 +205,6 @@ export function ShotsDialog({
             <button
               type="button"
               className={styles.all}
-              disabled={busy}
               onClick={() =>
                 setPickedShots(allShots ? [] : SHOTS.map((s) => s.id))
               }
@@ -217,7 +221,6 @@ export function ShotsDialog({
                   type="button"
                   className={cx(styles.tile, isOn && styles.tileOn)}
                   aria-pressed={isOn}
-                  disabled={busy}
                   onClick={() => toggle(setPickedShots, shot.id)}
                 >
                   {/* The example is the label. Sixteen camera positions
@@ -255,7 +258,6 @@ export function ShotsDialog({
           <Textarea
             rows={2}
             value={instructions}
-            disabled={busy}
             placeholder="Change something about the scene -- inside a clean cement warehouse"
             onChange={(e) => setInstructions(e.target.value)}
           />
@@ -285,8 +287,6 @@ export function ShotsDialog({
             Cancel
           </Button>
           <ActionButton
-            loading={busy}
-            loadingText="Sending"
             disabled={total === 0}
             onClick={() =>
               onGenerate(pickedImages, pickedShots, modelId, instructions)

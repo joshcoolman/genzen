@@ -77,6 +77,22 @@ transport concern, and the library row keeps its full-resolution original.
   the caller so the scene text cannot vary between shots. Its header records the
   two alternatives that were tried and deleted, and why a per-angle scene is the
   one thing not to reintroduce.
+- **`lighting.ts` is shots' surface on outpaint's mechanism** (#563): the same
+  cross of staged pictures against picked treatments, but the prompt is fixed
+  text -- `wrapper.md` plus one effect from `src/lib/prompts/lighting/`,
+  assembled by `buildLightingPrompt` and never written by a model. No vision
+  pass, so no `ANTHROPIC_API_KEY`; shots needs one because sixteen frames of a
+  subject must agree with each other, and two relights of one picture have
+  nothing to agree about. **Its models are multi-selected and are the panel's
+  own**, not a dialog-local list: `lightingModelIds()` is the `sidebar`
+  capability minus Z-Image Turbo, excluded for outpaint's reason, and
+  everything else that accepts an image is offered because whether a model can
+  hold an instruction this long is the open question. The default is Grok
+  Imagine and rides on `useModelSelector`'s `defaultId`, added for this --
+  pinning it to the head of `allowedIds` would have made the picker the one
+  place where the list is not price-sorted. The registry header records what the
+  proving run established about the prose -- sentence order, and the palette
+  being separable -- and is what to read before editing an effect.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.

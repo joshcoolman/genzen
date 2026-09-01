@@ -29,6 +29,8 @@ import {
   writeShotScene,
 } from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
+import { buildLightingPrompt } from '#/features/ai-images/lighting'
+import { findLightingEffect } from '#/lib/prompts/lighting'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -1043,7 +1045,6 @@ export function useView(initial: Array<SavedAiImage>) {
    * would spend money on the drift this mode exists to remove.
    */
   const [shotsOpen, setShotsOpen] = useState(false)
-  const [shooting, setShooting] = useState(false)
 
   const runShots = useCallback(
     async (
@@ -1054,7 +1055,6 @@ export function useView(initial: Array<SavedAiImage>) {
     ) => {
       if (imageIds.length === 0 || shotIds.length === 0) return
 
-      setShooting(true)
       // Making something is an implicit request to see it (#444).
       prefs.revealAll()
 
@@ -1081,6 +1081,15 @@ export function useView(initial: Array<SavedAiImage>) {
           ),
         )
       }
+
+      // Closed here, on the cards rather than on the run (#563). Everything
+      // below is network -- a vision call per picture and a submit per frame --
+      // and a dialog held open across it reads as a press that did not land.
+      // The tiles are already on the wall by this line, which is the app's
+      // answer to "what is happening" everywhere else; a failure below takes
+      // its own card away and says so, and it can say so from behind a closed
+      // dialog exactly as well.
+      setShotsOpen(false)
 
       // One scene per picture, reused by every angle of it. Written before the
       // submits rather than lazily inside the loop so a bad key or an
@@ -1130,8 +1139,102 @@ export function useView(initial: Array<SavedAiImage>) {
         }
       }
 
-      setShooting(false)
-      setShotsOpen(false)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [gallery, groups, prefs, activeGroupId],
+  )
+
+  /**
+   * Lighting (#563): every staged reference, under every light picked, through
+   * every model picked -- one generation each.
+   *
+   * `runShots`' loop with the writer taken out. The prompt is the wrapper plus
+   * the effect, both fixed text, so there is nothing to ask a model before
+   * asking for the picture -- which also means a pair cannot fail before it
+   * reaches FAL the way a shot can when its scene will not write.
+   *
+   * **The third multiplication is the models**, where Shots has one. A relight
+   * is a single picture you compare, so putting one subject through four models
+   * in one press is the useful gesture; a sixteen-frame shot set is a thing you
+   * look at whole, and crossing it by models would be sixty-four.
+   *
+   * Everything else holds for the same reasons written on `runShots`: one
+   * picture per submit and never `referenceImageIds`, because two references in
+   * one request is the combine the panel already does; optimistic cards up
+   * front so the press shows its full count; submitted one after another
+   * because each call reserves a row before it reaches FAL; and a failure drops
+   * its own card and lets the rest of the run finish.
+   */
+  const [lightingOpen, setLightingOpen] = useState(false)
+
+  const runLighting = useCallback(
+    async (
+      imageIds: Array<string>,
+      effectIds: Array<string>,
+      models: Array<string>,
+    ) => {
+      if (
+        imageIds.length === 0 ||
+        effectIds.length === 0 ||
+        models.length === 0
+      )
+        return
+
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        effectIds.flatMap((effectId) =>
+          models.map((model) => ({
+            imageId,
+            effectId,
+            model,
+            placeholderId: `light-${imageId}-${effectId}-${model}-${stamp}`,
+          })),
+        ),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model: pair.model,
+              title: getModelName(pair.model),
+              prompt: findLightingEffect(pair.effectId)?.label ?? pair.effectId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      // Closed on the cards, not on the run -- see `runShots`.
+      setLightingOpen(false)
+
+      for (const pair of pairs) {
+        const label = findLightingEffect(pair.effectId)?.label ?? pair.effectId
+        try {
+          const prompt = await buildLightingPrompt(pair.effectId)
+          const created = await generateImage({
+            prompt,
+            model: pair.model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
       void gallery.refresh({ silent: true })
       void groups.refresh()
     },
@@ -1267,8 +1370,11 @@ export function useView(initial: Array<SavedAiImage>) {
     shotsOpen,
     openShots: useCallback(() => setShotsOpen(true), []),
     closeShots: useCallback(() => setShotsOpen(false), []),
-    shooting,
     runShots,
+    lightingOpen,
+    openLighting: useCallback(() => setLightingOpen(true), []),
+    closeLighting: useCallback(() => setLightingOpen(false), []),
+    runLighting,
     error,
     setError,
   }
