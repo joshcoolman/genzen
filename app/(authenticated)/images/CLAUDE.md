@@ -119,6 +119,24 @@ list once when the seed comes back full, so the grid is never short.
   drifting light -- the symptom that motivated the split). **Shots requires
   `ANTHROPIC_API_KEY`** and fails loudly without it rather than falling back
   (#365)
+- **Lighting is Shots' surface without the writer** (#563). A `Lighting` button
+  beside `Shots` in the Ref images header, on the same condition, opening the
+  same shape of dialog: tick pictures, tick lights, every pair is its own
+  generation carrying exactly one reference. What it does not have is a vision
+  pass. An effect is a fixed paragraph in `src/lib/prompts/lighting/`, prefixed
+  in code by `wrapper.md` -- "keep the subject, change only the light" -- so
+  there is nothing to write per run and **no `ANTHROPIC_API_KEY` is needed**.
+  Shots writes a scene because sixteen frames of one subject have to agree with
+  each other; two relights of one picture have nothing to agree about. There is
+  no Instructions field for the same reason: an effect is already a finished
+  paragraph about light, and a typed nudge beside it either says nothing or
+  fights it. The model picker stays, because that question is as open as Shots'
+  -- the split field renders on Nano Banana 2 and comes back on Grok as a
+  backdrop swap with the skin untouched, which the dialog says on the tile
+  rather than filtering the list. **The tiles are words, not thumbnails**:
+  a light has a name that already means something, and a picture of one would
+  be a render commissioned to illustrate itself until #562 can make an effect
+  from a reference picture that already exists
 
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt

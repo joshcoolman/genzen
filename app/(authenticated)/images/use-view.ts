@@ -29,6 +29,8 @@ import {
   writeShotScene,
 } from '#/features/ai-images/server/write-shot-prompt.action'
 import { findShot } from '#/lib/prompts/shots'
+import { buildLightingPrompt } from '#/features/ai-images/lighting'
+import { findLightingEffect } from '#/lib/prompts/lighting'
 import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -1138,6 +1140,90 @@ export function useView(initial: Array<SavedAiImage>) {
     [gallery, groups, prefs, activeGroupId],
   )
 
+  /**
+   * Lighting (#563): every staged reference under every light picked, one
+   * generation each.
+   *
+   * `runShots`' loop with the writer taken out. The prompt is the wrapper plus
+   * the effect, both fixed text, so there is nothing to ask a model before
+   * asking for the picture -- which also means a pair cannot fail before it
+   * reaches FAL the way a shot can when its scene will not write.
+   *
+   * Everything else holds for the same reasons written on `runShots`: one
+   * picture per submit and never `referenceImageIds`, because two references in
+   * one request is the combine the panel already does; optimistic cards up
+   * front so the press shows its full count; submitted one after another
+   * because each call reserves a row before it reaches FAL; and a failure drops
+   * its own card and lets the rest of the run finish.
+   */
+  const [lightingOpen, setLightingOpen] = useState(false)
+  const [lighting, setLighting] = useState(false)
+
+  const runLighting = useCallback(
+    async (
+      imageIds: Array<string>,
+      effectIds: Array<string>,
+      model: string,
+    ) => {
+      if (imageIds.length === 0 || effectIds.length === 0) return
+
+      setLighting(true)
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        effectIds.map((effectId) => ({
+          imageId,
+          effectId,
+          placeholderId: `light-${imageId}-${effectId}-${stamp}`,
+        })),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: findLightingEffect(pair.effectId)?.label ?? pair.effectId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      for (const pair of pairs) {
+        const label = findLightingEffect(pair.effectId)?.label ?? pair.effectId
+        try {
+          const prompt = await buildLightingPrompt(pair.effectId)
+          const created = await generateImage({
+            prompt,
+            model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
+      setLighting(false)
+      setLightingOpen(false)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [gallery, groups, prefs, activeGroupId],
+  )
+
   const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
     null,
   )
@@ -1269,6 +1355,11 @@ export function useView(initial: Array<SavedAiImage>) {
     closeShots: useCallback(() => setShotsOpen(false), []),
     shooting,
     runShots,
+    lightingOpen,
+    openLighting: useCallback(() => setLightingOpen(true), []),
+    closeLighting: useCallback(() => setLightingOpen(false), []),
+    lighting,
+    runLighting,
     error,
     setError,
   }
