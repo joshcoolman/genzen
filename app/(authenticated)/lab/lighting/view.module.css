@@ -1,0 +1,238 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hint {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+}
+
+/* The two pinned subjects, side by side at any width they fit: they are a pair
+   and reading them stacked invites treating one as primary. */
+.subjects {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-16);
+}
+
+.subject {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.subjectLabel,
+.columnLabel {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.setup {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1.6;
+}
+
+.gels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-8);
+}
+
+.gel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.token,
+.file {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Sized like Describe's mode trigger, so the two lab pages that pick from a
+   menu weigh the same. */
+.modelTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--field);
+  color: var(--text);
+  font-size: var(--text-2xs);
+  transition: background-color var(--duration-normal) var(--ease-in-out);
+}
+
+.modelTrigger:hover {
+  background: var(--field-hover);
+}
+
+.modelIcon,
+.modelCheck {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.modelIcon {
+  color: var(--text-muted);
+}
+
+.modelCheck {
+  margin-right: var(--space-6);
+}
+
+.modelCheckHidden {
+  visibility: hidden;
+}
+
+/* Two columns, one per subject, at every width. Stacking them would put the
+   portrait's two candidates above the object's and lose the comparison the
+   split exists to make. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  min-inline-size: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-8);
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.tileChoose {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tileChoose:disabled {
+  cursor: default;
+}
+
+/* The chosen candidate, marked on the tile rather than listed somewhere else:
+   it is the picture that will be the effect's thumbnail, so the confirmation
+   belongs on the picture. */
+.tileChosen {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tileCheck {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline-start: var(--space-4);
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--accent);
+  pointer-events: none;
+}
+
+.saved {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.byHand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.tileImage {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.tileNote {
+  padding: var(--space-8);
+  font-size: var(--text-3xs);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.tileRerun {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline-end: var(--space-4);
+}
+
+.capture {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-8);
+}
+
+.code {
+  flex: 1;
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-12);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}

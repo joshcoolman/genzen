@@ -95,13 +95,27 @@ export async function buildLightingPrompt(effectId: string): Promise<string> {
   if (!effect) throw new Error(`Unknown lighting effect "${effectId}"`)
 
   const { default: description } = await effect.system()
-  const gels: Record<string, string> = effect.gels
+  return composeLightingPrompt(description, effect.gels, effectId)
+}
 
+/**
+ * The assembly itself, given prose and gels rather than an id.
+ *
+ * Split out for the lab's authoring page (#562), which has a setup that is not
+ * in the registry yet and must render it through *exactly* this path. A
+ * candidate assembled any other way is a test of a string the shipped effect
+ * will never send.
+ */
+export function composeLightingPrompt(
+  description: string,
+  gels: Record<string, string>,
+  label = 'effect',
+): string {
   const filled = description.replace(/\{([A-Z_]+)\}/g, (_, token: string) => {
     const value = gels[token]
     if (!value) {
       throw new Error(
-        `Lighting effect "${effectId}" uses {${token}}, which it does not declare`,
+        `Lighting effect "${label}" uses {${token}}, which it does not declare`,
       )
     }
     return value

@@ -51,14 +51,15 @@ interface LightingDialogProps {
  * a typed nudge landing next to it either says nothing or fights it -- Shots
  * needs one because a camera angle says nothing about where the subject is.
  *
- * **The tiles are words, not pictures.** Shots earned thumbnails because a
- * camera position is geometry you cannot name faster than you can see it; a
- * light has a name that already means something. They would be worth adding
- * once #562 can make an effect from a reference picture, since that flow has a
- * picture of the light in hand at the moment the effect is created -- until
- * then a thumbnail would be a render commissioned to illustrate itself. It
- * would also be a picture of the light on one subject, which is the assumption
- * the writer passes exist to undo.
+ * **A tile shows its light where there is a picture of it, and says its name
+ * where there is not.** Thumbnails arrived with `/lab/lighting` (#562): saving
+ * an effect there writes the candidate you picked to
+ * `public/lighting/<id>.webp`, the same file-drop convention `public/shots/`
+ * uses, so there is no path in the registry to keep in step. An effect written
+ * before that page existed has no such file and falls back to the name alone --
+ * which is why the picture is optional rather than assumed. It is still a
+ * picture of the light on one subject, which is the assumption the setup prose
+ * exists to undo; it illustrates the effect, it does not promise it.
  *
  * **The models are multi-selected and the picker is collapsed.** Shots takes
  * one model because a sixteen-frame set is a thing you look at whole; a relight
@@ -196,21 +197,15 @@ export function LightingDialog({
             </span>
           </div>
           <div className={styles.grid}>
-            {LIGHTING_EFFECTS.map((effect) => {
-              const isOn = pickedEffects.includes(effect.id)
-              return (
-                <button
-                  key={effect.id}
-                  type="button"
-                  className={cx(styles.tile, isOn && styles.tileOn)}
-                  aria-pressed={isOn}
-                  onClick={() => toggle(setPickedEffects, effect.id)}
-                >
-                  <span className={styles.tileLabel}>{effect.label}</span>
-                  {isOn && <Check className={styles.tileCheck} />}
-                </button>
-              )
-            })}
+            {LIGHTING_EFFECTS.map((effect) => (
+              <EffectTile
+                key={effect.id}
+                id={effect.id}
+                label={effect.label}
+                on={pickedEffects.includes(effect.id)}
+                onClick={() => toggle(setPickedEffects, effect.id)}
+              />
+            ))}
           </div>
         </div>
 
@@ -255,5 +250,54 @@ export function LightingDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * One light. The thumbnail is found by name -- `public/lighting/<id>.webp` --
+ * so adding one is a file drop, exactly as it is for a shot.
+ *
+ * **A missing file is a state, not an error.** There is no way to ask the
+ * server whether the picture exists before rendering, so the tile assumes one
+ * and stands down when the load fails. The alternative is a flag in the
+ * registry that has to be remembered every time a `.webp` is written or
+ * deleted, which is a second copy of a fact the filesystem already holds.
+ */
+function EffectTile({
+  id,
+  label,
+  on,
+  onClick,
+}: {
+  id: string
+  label: string
+  on: boolean
+  onClick: () => void
+}) {
+  const [hasImage, setHasImage] = useState(true)
+
+  return (
+    <button
+      type="button"
+      className={cx(styles.tile, on && styles.tileOn)}
+      aria-pressed={on}
+      onClick={onClick}
+    >
+      {hasImage && (
+        // Decorative: the name below is the accessible name, and the picture is
+        // the same information in another form.
+        <img
+          className={styles.tileImage}
+          src={`/lighting/${id}.webp`}
+          alt=""
+          width={256}
+          height={256}
+          loading="lazy"
+          onError={() => setHasImage(false)}
+        />
+      )}
+      <span className={styles.tileLabel}>{label}</span>
+      {on && <Check className={styles.tileCheck} />}
+    </button>
   )
 }
