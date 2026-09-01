@@ -127,16 +127,23 @@ list once when the seed comes back full, so the grid is never short.
   busy state: there is nothing to show after the press, because there is no
   dialog. A failure still speaks, taking its own card away and toasting from
   behind the closed one
-- **Lighting is Shots' surface without the writer** (#563). A `Lighting` button
-  beside `Shots` in the Ref images header, on the same condition, opening the
-  same shape of dialog: tick pictures, tick lights, every pair is its own
-  generation carrying exactly one reference. What it does not have is a vision
-  pass. An effect is a fixed paragraph in `src/lib/prompts/lighting/`, prefixed
-  in code by `wrapper.md` -- "keep the subject, change only the light" -- so
-  there is nothing to write per run and **no `ANTHROPIC_API_KEY` is needed**.
-  Shots writes a scene because sixteen frames of one subject have to agree with
-  each other; two relights of one picture have nothing to agree about. There is
-  no Instructions field for the same reason: an effect is already a finished
+- **Lighting is Shots' surface and Shots' two passes** (#563). A `Lighting`
+  button beside `Shots` in the Ref images header, on the same condition, opening
+  the same shape of dialog: tick pictures, tick lights, every pair is its own
+  generation carrying exactly one reference. **The prompt is written in two
+  passes**, so **Lighting requires `ANTHROPIC_API_KEY`** and fails loudly
+  without it (#365). `writeLightingSubject` runs once per picture and inventories
+  the subject's surfaces -- what faces the camera, what turns away, the upper
+  edges, where a centre line falls. `writeLighting` runs once per effect and
+  binds the effect's general language to those surfaces. **An effect is
+  therefore not a prompt**: it names surfaces by role and never by anatomy,
+  because it has to land on a truck as readily as a face.
+  **It shipped without the writer** -- the effect sent to FAL as written -- and
+  that is why the split is here: the first two effects came from portrait
+  sessions and named a cheek and a neck, so a truck came back as a background
+  split with the paint untouched. Vaguer prose is not the fix; the action's
+  header says why. Shots walked the same road over six sessions, ending in the
+  same place. There is no Instructions field: an effect is already a finished
   paragraph about light, and a typed nudge beside it either says nothing or
   fights it. **The models are multi-selected, where Shots takes one**: a relight
   is a single picture you compare, so one subject through four models is the

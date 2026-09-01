@@ -1,18 +1,17 @@
 import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
 import { getModelsByCapability } from '#/features/ai-images/model-selector/unified-models'
-import { findLightingEffect, lightingWrapper } from '#/lib/prompts/lighting'
 
 /**
  * Lighting: one picture in, the same picture under a named light (#563).
  *
- * **Shots' surface, outpaint's mechanism.** It is opened from the reference
- * strip and multi-selects like Shots, so every staged picture crossed with
- * every effect is its own generation. But there is no vision pass in front of
- * it and no prompt written per run: the effect is a fixed paragraph and the
- * wrapper is prepended in code, exactly as `buildOutpaintPrompt` does. Shots
- * needs a scene written once because sixteen frames of one subject have to
- * agree with each other; two relights of one picture have nothing to agree
- * about, so the writer would be spend with no drift to remove.
+ * **Shots' surface and Shots' two passes.** It is opened from the reference
+ * strip and multi-selects, so every staged picture crossed with every effect
+ * crossed with every model is its own generation. The prompt is written by
+ * `server/write-lighting-prompt.action.ts`: a surface inventory once per
+ * picture, then each effect bound to those surfaces. It shipped without a
+ * writer -- the effect sent as written -- and that works on the subject the
+ * effect was written from and nothing else. The action's header records the
+ * whole of it; do not re-derive it here.
  *
  * **The models are the panel's, multi-selected.** Every model that takes an
  * image can attempt a relight, so the offer is the whole image-accepting
@@ -74,20 +73,4 @@ export function defaultLightingModelId(): string {
     )
   }
   return pickerId(model)
-}
-
-/**
- * The wrapper, a blank line, the effect -- which is the exact string the test
- * ran. Assembly here and prose in the `.md` (#322): changing what a light looks
- * like is a text edit, and nothing about the join is per-effect.
- */
-export async function buildLightingPrompt(effectId: string): Promise<string> {
-  const effect = findLightingEffect(effectId)
-  if (!effect) throw new Error(`Unknown lighting effect "${effectId}"`)
-
-  const [{ default: wrapper }, { default: description }] = await Promise.all([
-    lightingWrapper(),
-    effect.system(),
-  ])
-  return `${wrapper.trim()}\n\n${description.trim()}`
 }
