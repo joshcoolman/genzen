@@ -163,7 +163,7 @@ that drifts, and one did.
 
 **Last shipped**
 
-- 2026-09-01 — Lighting: a button beside Shots that relights every staged reference under every effect picked, through every model picked. The prompt is written in two passes — a surface inventory per picture, then the effect bound to it — so an effect lands on a truck as readily as a face. Both dialogs now close on the press instead of the run (#563)
+- 2026-09-01 — Lighting: a button beside Shots that relights every staged reference under every effect picked, through every model picked. An effect is a lighting setup — sources, angles, gels — and never a description of a picture, which is what makes it land on a truck as readily as a face. Gels are templated with defaults. Both dialogs now close on the press instead of the run (#563)
 - 2026-08-31 — References go to FAL downscaled: 2048 long edge, JPEG 95, transport only — the stored row keeps its full-resolution original. 12.8MB to 1.7MB on the eight-keyframe set behind #556. Never upscales, never flattens transparency, never returns a bigger file, and anything sharp cannot read passes through untouched (#560)
 - 2026-08-31 — A paste into Images uploads and stops there; the Upload button is back, scoped to Uploads or a group (#550)
 - 2026-08-31 — Nano Banana 2 takes 14 images, not 4 (#459)
