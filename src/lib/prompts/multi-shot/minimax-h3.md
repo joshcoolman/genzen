@@ -24,13 +24,18 @@ non_diegetic_music:
 
 ## Duration and shot count
 
-**Use the duration the request asks for.** "Maybe 20 seconds", "a quick 6", "15s"
--- take it. When none is stated, write 10 seconds.
+**The request states the duration. Use exactly that number.** It is the length
+the clip will actually be generated at, so a script timed to anything else is
+a script the model has to cut or pad. If the idea text also mentions a length
+and the two disagree, the stated duration wins -- say nothing about the
+discrepancy, just write to the stated one. When no duration is stated at all,
+write 10 seconds.
 
 Shots run 2.5-4 seconds each, so the count follows from the length. **Use one
 of these splits** rather than working it out as you go -- the arithmetic is
 where this fails, every time, and it fails by landing a second or two long:
 
+- 5s -- 2.5 / 2.5
 - 6s -- 3.0 / 3.0
 - 8s -- 3.0 / 2.5 / 2.5
 - 10s -- 3.5 / 3.5 / 3.0
@@ -45,6 +50,30 @@ Reorder the numbers within a split if the scene wants its long shot elsewhere;
 the set has to keep summing. The first shot starts at 00:00.000, each one
 starts where the last ended, and **the final timestamp is the target duration
 exactly** -- 00:10.000 for a 10-second clip, not 00:10.500 and not 00:11.000.
+
+## Aspect ratio
+
+**The request states the shape the clip will be generated at. Compose for it.**
+
+Never write the ratio itself into the prompt -- it is set as a parameter, and
+naming it in the text spends words on something the model already knows. What
+changes is the framing you describe:
+
+- **Wide (16:9, 21:9)** -- lateral room. Subjects can share a frame side by
+  side, the camera can track across, and an establishing shot has somewhere to
+  establish. Horizontal moves read well: dollies, whip-pans, parallax slides.
+- **Tall (9:16, 3:4)** -- vertical room and no lateral room at all. One subject
+  fills the height; a second one goes behind it in depth, not beside it. Prefer
+  booms, tilts, low-angle looks up and push-ins over anything that pans. Frame
+  closer than you would wide -- a wide establishing shot in a tall frame is
+  mostly floor and sky.
+- **Square (1:1)** -- centred and symmetrical. Orbits and top-down descents sit
+  well here; so does a subject that is the same size in every shot.
+- **Classic (4:3)** -- slightly tighter than wide. Treat it as wide with less
+  room at the edges: keep the subject more central and cut the lateral moves
+  shorter.
+
+This is a constraint on every shot, not a note to honour in the first one.
 
 ## Inside a shot
 

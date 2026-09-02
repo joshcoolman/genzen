@@ -335,9 +335,16 @@ tail with no end decides whether the real thing is worth building.
   above the idea box chooses between the image lineup -- the original page, one
   card per model -- and a multi-shot writer from `src/lib/prompts/multi-shot/`,
   which turns three words into a shot-by-shot video prompt and answers with one
-  card. **Duration is read out of the request** -- "maybe 20 seconds" is part of
-  what you type -- and falls back to 10s; a writer for another video model's
-  dialect is a new file plus an entry in that folder's `index.ts`.
+  card. **Duration and aspect ratio are controls** (#522), shown only for a
+  multi-shot target, and their options come off the video model the writer
+  names (`videoModelSlug` in that folder's `index.ts`) -- so the length offered
+  is always one the clip can actually be generated at. They were read out of
+  the prose until then, which looked cheaper and was not: the clip is submitted
+  with a duration and a ratio as _parameters_ whatever the text said, so the
+  script could be timed to 20s and generated at 6. The two values ride in the
+  user turn as data; the prose about what to do with them is in the writer's
+  `.md`, where a stated duration beats one mentioned in the idea text. A writer
+  for another video model's dialect is still a new file plus an entry.
   The model selector is hidden rather than disabled for a multi-shot run: the
   instruction names the video model it writes for, so an image selection is not
   a choice taken away, it is not part of the question.
