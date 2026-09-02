@@ -37,6 +37,16 @@
  * and prepended in code, so a new effect is one file plus one entry and never a
  * restatement of "keep the subject".
  *
+ * **The housekeeping line does not hold a source out of frame.** Every effect
+ * ends by saying there is no visible beam and no visible fixture, and on the
+ * shipped side-lit setups nothing ever draws one. The overhead single source is
+ * different: on a hard-surfaced subject against a dark ground, Grok drew the
+ * lamp and its throw in six of six candidates across three phrasings, including
+ * one that put the fixture outside the frame in the setup and described what
+ * the frame holds instead. It is a model finding rather than prose to fix --
+ * the same effect on a face is exactly right -- and it is written down so the
+ * next overhead effect does not spend three rounds rediscovering it (#576).
+ *
  * **Nothing in an effect may depend on which gels are loaded.** "Dusty pink
  * midtones" is true of teal and coral and of nothing else; the meeting zone
  * says "midtones between them" instead. A phrase that only works for the
@@ -63,6 +73,29 @@ export const LIGHTING_EFFECTS = [
       FRONT_GEL: 'a cold cyan blue',
       GROUND_GEL: 'deep navy',
     },
+  },
+  {
+    id: 'hard-top-deep-wells',
+    label: 'Hard Top, Deep Wells',
+    file: 'src/lib/prompts/lighting/hard-top-deep-wells.md',
+    system: () => import('./hard-top-deep-wells.md'),
+    gels: {},
+  },
+  {
+    id: 'neutral-key-coloured-rim',
+    label: 'Neutral Key, Coloured Rim',
+    file: 'src/lib/prompts/lighting/neutral-key-coloured-rim.md',
+    system: () => import('./neutral-key-coloured-rim.md'),
+    gels: {
+      RIM_GEL: 'an electric blue',
+    },
+  },
+  {
+    id: 'soft-front-white-ground',
+    label: 'Soft Front, White Ground',
+    file: 'src/lib/prompts/lighting/soft-front-white-ground.md',
+    system: () => import('./soft-front-white-ground.md'),
+    gels: {},
   },
 ] as const
 
