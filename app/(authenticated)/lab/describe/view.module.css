@@ -1,3 +1,26 @@
+/* Optional, and below the picker rather than above it: the picture and the
+   mode are what every run needs, and a note is what most runs do not have. A
+   closed disclosure keeps it out of the way while still saying it exists --
+   the same shape as Enhance's steering box, deliberately, because it is the
+   same kind of control (#474). */
+.guidance {
+  margin-block-end: var(--space-16);
+}
+
+.guidance summary {
+  cursor: pointer;
+}
+
+.guidanceSummary {
+  margin-block-end: var(--space-8);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.guidance[open] .guidanceSummary {
+  color: var(--text);
+}
+
 .actions {
   display: flex;
   align-items: center;

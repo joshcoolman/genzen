@@ -29,7 +29,11 @@
   color: var(--text);
 }
 
-.pending {
+/* Both non-result states -- thinking, and the empty hint before a first roll
+   -- are the same quiet line. Named for how it reads rather than for the
+   loading state alone, which is what it was called when only that state
+   existed. */
+.muted {
   display: flex;
   align-items: center;
   gap: var(--space-8);

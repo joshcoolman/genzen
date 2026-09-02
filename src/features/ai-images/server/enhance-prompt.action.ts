@@ -43,6 +43,19 @@ interface EnhancePromptInput {
    * to say about the result.
    */
   multiShotId?: string
+  /**
+   * The clip's length in seconds, and the shape it will be generated at.
+   *
+   * **Multi-shot only, and they are data rather than instruction** -- the prose
+   * about what to do with them lives in the writer's `.md`, this only carries
+   * the two values into the user turn (#522). They matter because the script is
+   * timed: the writer lays shots on a timeline that has to sum to the duration
+   * the clip is actually submitted at, and it composes for the frame's shape.
+   * Left out, the instruction falls back to 10 seconds and picks its own
+   * framing.
+   */
+  duration?: number
+  aspectRatio?: string
 }
 
 export async function enhancePrompt(data: EnhancePromptInput) {
@@ -67,6 +80,25 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     : (guide ?? enhancePromptSkill.trim())
   const steering = data.steering?.trim()
 
+  // Appended to the request, not to the instruction: these are the two facts
+  // about *this* run, and the `.md` is the standing prose about how to use
+  // them. Only for a multi-shot writer -- an image guide has no timeline and no
+  // aspect param, so a stray line about seconds would be noise it has to
+  // ignore.
+  const spec =
+    multiShot && (data.duration || data.aspectRatio)
+      ? [
+          '',
+          '',
+          [
+            data.duration ? `Duration: ${data.duration} seconds.` : null,
+            data.aspectRatio ? `Aspect ratio: ${data.aspectRatio}.` : null,
+          ]
+            .filter(Boolean)
+            .join(' '),
+        ].join('\n')
+      : ''
+
   const response = await generateText({
     model: ai.reasoning,
     // Steered runs are longer by construction, and a truncated prompt reads as
@@ -80,7 +112,7 @@ export async function enhancePrompt(data: EnhancePromptInput) {
     messages: [
       {
         role: 'user',
-        content: `Here is the prompt to enhance. Return ONLY the final enhanced prompt text — no preamble, no markdown, no explanation, no quotes around it.\n\nPrompt:\n${trimmed}`,
+        content: `Here is the prompt to enhance. Return ONLY the final enhanced prompt text — no preamble, no markdown, no explanation, no quotes around it.\n\nPrompt:\n${trimmed}${spec}`,
       },
     ],
   })

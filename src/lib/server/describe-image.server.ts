@@ -1,11 +1,29 @@
 import { generateText } from 'ai'
 import type { DescribeMode } from '#/lib/prompts/describe'
 import { describeMode } from '#/lib/prompts/describe'
+import describeGuidance from '#/lib/prompts/describe-guidance.md'
 import { ai, requireAiRole } from '#/lib/server/ai.server'
 
 export async function describeImage(
   image: string,
   mode: DescribeMode,
+  /**
+   * The user's note about what they want described (#474).
+   *
+   * **It rides in the user turn, never merged into the mode's instruction
+   * file.** Enhance's steering goes in the system prompt because it is a
+   * standing preference the guide has to arbitrate against; this is a
+   * one-shot question about the picture in front of you, and it belongs beside
+   * the picture. Keeping it out of the system prompt also means the mode's
+   * contract -- what kind of output this is -- is never something the note is
+   * in a position to overwrite, which is the shape of the leak #468 found in
+   * Enhance: a pasted note's word count ended up in the result because it was
+   * concatenated into the instruction rather than framed as input.
+   *
+   * `describe-guidance.md` is the framing that says take the subject and
+   * discard the format. Empty or absent is the previous behaviour exactly.
+   */
+  guidance?: string,
 ): Promise<string> {
   const { system, userText } = describeMode(mode)
 
@@ -46,6 +64,8 @@ export async function describeImage(
     base64 = image
   }
 
+  const note = guidance?.trim()
+
   const { text } = await generateText({
     model: ai.fast,
     system: (await system()).default,
@@ -55,6 +75,17 @@ export async function describeImage(
         content: [
           { type: 'image', image: `data:${mime};base64,${base64}` },
           { type: 'text', text: userText },
+          // A part of its own rather than appended to `userText`: the frame is
+          // addressed to the model about the note, and running the two
+          // together makes the note read as part of the standing turn.
+          ...(note
+            ? [
+                {
+                  type: 'text' as const,
+                  text: `${describeGuidance.trim()}\n\n${note}`,
+                },
+              ]
+            : []),
         ],
       },
     ],

@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  SingleSelect,
   Textarea,
 } from '#/components'
 import { cx } from '#/lib/utils'
@@ -116,6 +117,51 @@ export function View() {
             placeholder="One idea, written any way at all — e.g. a dragon stuck in a grocery store"
             disabled={v.isRunning}
           />
+
+          {/* Directly under the idea, and only for a multi-shot target: these
+              are the two facts the script is *written against* rather than
+              settings applied afterwards. The writer lays shots on a timeline
+              that has to sum to the duration, and composes for the frame's
+              shape -- so a run at 6s and a run at 15s are different scripts,
+              not the same script trimmed.
+
+              The options are the video model's own (`multiShotOptions`), so
+              the length offered here is always one the clip can be generated
+              at. */}
+          {v.shotOptions && (
+            <div className={styles.shotSpec}>
+              <div className={styles.shotControl}>
+                <span className={styles.shotLabel}>Duration</span>
+                <SingleSelect
+                  value={String(v.duration)}
+                  onChange={(value) =>
+                    v.setDuration(
+                      Number(value ?? v.shotOptions?.defaultDuration),
+                    )
+                  }
+                  options={v.shotOptions.durations.map((seconds) => ({
+                    value: String(seconds),
+                    label: `${seconds}s`,
+                  }))}
+                />
+              </div>
+              <div className={styles.shotControl}>
+                <span className={styles.shotLabel}>Aspect</span>
+                <SingleSelect
+                  value={v.aspectRatio}
+                  onChange={(value) =>
+                    v.setAspectRatio(
+                      value ?? v.shotOptions?.aspectRatios[0] ?? '16:9',
+                    )
+                  }
+                  options={v.shotOptions.aspectRatios.map((ratio) => ({
+                    value: ratio,
+                    label: ratio,
+                  }))}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Below the idea, because it is the standing thing and the idea is
               what changes run to run — and optional, so it must not sit

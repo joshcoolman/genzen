@@ -35,7 +35,7 @@ export function LabShell({ children }: { children: React.ReactNode }) {
   }, [collapsed, hydrated])
 
   return (
-    <div className={cx(styles.shell, collapsed && styles.shellCollapsed)}>
+    <div className={styles.shell}>
       <aside
         className={cx(styles.sidebar, collapsed && styles.sidebarCollapsed)}
       >
