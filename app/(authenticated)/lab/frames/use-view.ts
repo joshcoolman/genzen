@@ -102,6 +102,7 @@ export function useView(clips: Array<VideoRecord>) {
         imageId: image.id,
         clipId: clip.id,
         timeSeconds,
+        kind: 'scrub',
       }).catch(() => {})
 
       setFrames((current) => [
