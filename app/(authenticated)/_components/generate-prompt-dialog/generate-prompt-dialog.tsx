@@ -190,7 +190,7 @@ export function GeneratePromptButton({
             }}
           />
 
-          <DialogFooter className={styles.footer}>
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>

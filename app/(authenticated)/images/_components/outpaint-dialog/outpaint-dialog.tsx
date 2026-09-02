@@ -145,7 +145,7 @@ export function OutpaintDialog({
 
           <div className={styles.groups}>
             {groups.map((group) => (
-              <div key={group.name} className={styles.group}>
+              <div key={group.name}>
                 <div className={styles.groupLabel}>{group.name}</div>
                 <div className={styles.grid}>
                   {group.items.map((ratio) => {
