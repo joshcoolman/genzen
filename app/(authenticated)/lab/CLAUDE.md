@@ -1,11 +1,11 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Seven pages
+Where a feature is worked on before it is part of the app (#424). Eight pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
-none could be improved there. **Frames, Sequence and Lighting are the other
-kind: things the app has never been able to do at all**, built here first so
-they can be used for real before anyone decides where they belong (#317, #497,
-#562).
+none could be improved there. **Frames, Sequence, Lighting and Editor are the
+other kind: things the app has never been able to do at all**, built here first
+so they can be used for real before anyone decides where they belong (#317,
+#497, #562, #515).
 
 ## Why these three are here
 
@@ -90,6 +90,53 @@ into order, press play.
   clip's first and last frame side by side — went there when the picker wanted
   what the run drew. The bar is two pages, and a copy under one page's
   `_components/` is the same thing drifting into two.
+
+## Editor is not one of them either
+
+Sequence answers "does this order cut together". It cannot answer "is this shot
+holding too long", because nothing there can trim and nothing there produces a
+file. Editor is that page: in and out points per clip, one crossfade, and an
+Export that writes a real mp4 into the library (#515).
+
+- **Export encodes on the server, and the issue says ffmpeg.wasm.** #515 was
+  filed on 2026-08-28 and #499 put real ffmpeg in the app on the 29th, so the
+  client-side plan is the expensive way to do the same thing: the clips are in
+  a private bucket the server already reads, so nothing has to be pulled into a
+  tab to be cut. `src/lib/server/stitch-timeline.server.ts` is the encoder;
+  the route owns only the action that feeds it.
+- **Two ffmpeg passes, not one.** Every segment is normalised alone — trimmed,
+  fitted onto the first clip's canvas, given an audio track whether or not it
+  had one — and only then joined. `xfade` and `concat` both require inputs that
+  already agree on size, frame rate, pixel format and stream layout, so a
+  single graph doing all of it fails on the first clip whose shape differs,
+  which is most timelines worth making.
+- **A silent clip gets a silent track rather than no track.** Half the lineup
+  emits no audio and Veo emits some; a graph mapping `0:a` dies on the first
+  silent one. `hasAudio` reads ffmpeg's stream list off stderr — and reads the
+  _output_, not the exit code, because `-f null -` succeeds on a video-only
+  file and the first version therefore called every silent clip audible.
+- **The output pixel format is pinned to yuv420p.** Inherited, the filter chain
+  settled on yuv444p and libx264 chose High 4:4:4 Predictive — an export that
+  plays in Chrome and not in QuickTime or Safari. A test asserts it.
+- **The track is proportional; Sequence's row is not.** `clip-row/`'s own note
+  says equal tiles are right for arrangement and that proportional widths
+  "would be a different page's answer". This is that page — pacing is the
+  question, and it cannot be read off tiles of equal size.
+- **Every clip on the track has its length read, not just the selected one.**
+  The trim panel reads `duration` off the player it already has, which was
+  enough for the selected clip and wrong for the rest: their widths, the total,
+  and the out point sent to the export were all computed from a length nobody
+  had read, so a clip you had not clicked exported as a zero-length segment.
+  `clip-duration.ts` loads a detached `<video>` per track entry instead.
+- **A crossfade longer than the shortest clip is refused, not clamped.** Said in
+  the page before the encode and again on the server, because finding it out at
+  the end of a two-minute export is finding it out too late. Silently
+  shortening the user's choice would produce something the timeline did not
+  depict.
+- **Reordering is two arrows, not drag.** Sequence solved drag properly and it
+  took a slot-opening, width-conserving implementation to stop the row
+  oscillating under the pointer. Inheriting that is the obvious move if this
+  page earns its place; a second, worse attempt at it is not.
 
 ## Frames is not one of them
 
