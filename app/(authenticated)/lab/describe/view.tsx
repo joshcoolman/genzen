@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Textarea,
 } from '#/components'
 import { DESCRIBE_MODES, describeMode } from '#/lib/prompts/describe'
 import { cx } from '#/lib/utils'
@@ -37,6 +38,19 @@ export function View() {
         onOpen={() => void v.userImages.refresh()}
         disabled={v.isRunning}
       />
+
+      <details className={styles.guidance}>
+        <summary className={styles.guidanceSummary}>
+          What to describe {v.guidance.trim() ? '· on' : '· optional'}
+        </summary>
+        <Textarea
+          value={v.guidance}
+          onChange={(e) => v.setGuidance(e.target.value)}
+          rows={3}
+          placeholder="An aspect to concentrate on, or something to leave out — lighting and colour only, no people, what is the camera doing. Empty describes the whole picture."
+          disabled={v.isRunning}
+        />
+      </details>
 
       <div className={styles.actions}>
         {/* A menu, not the segmented SingleSelect this replaced: the list of
@@ -85,6 +99,10 @@ export function View() {
         <RunCard
           key={v.runs.length - i}
           label={`${describeMode(r.mode).label} · ${r.title}`}
+          /* The note is the only thing that varies between two runs of one
+             picture in one mode, so without it the cards are unreadable as a
+             comparison -- which is the whole point of the page. */
+          input={r.guidance || undefined}
           output={r.output}
         />
       ))}

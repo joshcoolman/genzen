@@ -11,6 +11,12 @@ interface CaptionImageInput {
   imageBase64?: string
   imageId?: string
   mode?: DescribeMode
+  /**
+   * What the user wants described -- an aspect to concentrate on, something to
+   * leave out (#474). Optional: absent is the mode's full output, which is
+   * what every caller but the lab's Describe page sends.
+   */
+  guidance?: string
 }
 
 export async function captionImage(data: CaptionImageInput) {
@@ -35,6 +41,10 @@ export async function captionImage(data: CaptionImageInput) {
     image = Buffer.from(await blob.arrayBuffer()).toString('base64')
   }
 
-  const result = await describeImage(image, data.mode ?? DEFAULT_DESCRIBE_MODE)
+  const result = await describeImage(
+    image,
+    data.mode ?? DEFAULT_DESCRIBE_MODE,
+    data.guidance,
+  )
   return { caption: result }
 }
