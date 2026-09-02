@@ -225,9 +225,9 @@ that drifts, and one did.
 
 **Last shipped**
 
+- 2026-09-01 — README: the front door leads with what genzen is, who it is for and where it is going, rather than with Docker and Node floors. Cost is stated up front — six generations quoted at $0.304 before the press — and honest about being an estimate. Two screenshots, in `public/screenshots/`, referenced repo-relative and rewritten by the `/readme` route (#570)
 - 2026-09-01 — Lab: a Lighting page that writes an effect instead of applying one. A reference photograph in, a lighting setup out under a rule that forbids naming a technique or anything in the picture, then four candidates on two pinned test subjects — a face and an object, because prose that describes a photograph passes on faces and returns colour rectangles on a truck. It generates and stores nothing; capture is the text of the `.md` (#562)
 - 2026-09-01 — Lighting: a button beside Shots that relights every staged reference under every effect picked, through every model picked. An effect is a lighting setup — sources, angles, gels — and never a description of a picture, which is what makes it land on a truck as readily as a face. Gels are templated with defaults. Both dialogs now close on the press instead of the run (#563)
 - 2026-08-31 — References go to FAL downscaled: 2048 long edge, JPEG 95, transport only — the stored row keeps its full-resolution original. 12.8MB to 1.7MB on the eight-keyframe set behind #556. Never upscales, never flattens transparency, never returns a bigger file, and anything sharp cannot read passes through untouched (#560)
 - 2026-08-31 — A paste into Images uploads and stops there; the Upload button is back, scoped to Uploads or a group (#550)
 - 2026-08-31 — Nano Banana 2 takes 14 images, not 4 (#459)
-- 2026-08-31 — FAL gets its own transport with HTTP/2 off: a destroyed pooled session left the server unable to reach FAL at all, and retrying could not clear it. Reference uploads are capped at three in flight, and a failed upload now names its cause instead of blaming the library (#556)
