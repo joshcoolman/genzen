@@ -54,6 +54,12 @@ export interface ThumbnailProps {
   fallback?: ReactNode
   imageOverlay?: ReactNode
   className?: string
+  /** `data-*` attributes on the root. The grid's pointer gestures find their
+   *  targets by hit-testing the DOM rather than through a React handler --
+   *  the sweep's rectangle (#440), the drag's drop targets (#438) -- so a tile
+   *  has to say what it is somewhere `closest()` and `querySelectorAll` can
+   *  read it. Names only: this is a marker seam, not a props escape hatch. */
+  dataAttrs?: Record<`data-${string}`, string>
 
   children?: ReactNode
 }
@@ -87,6 +93,7 @@ export function Thumbnail({
   fallback,
   imageOverlay,
   className,
+  dataAttrs,
   children,
 }: ThumbnailProps) {
   const [loaded, setLoaded] = useState(false)
@@ -118,6 +125,7 @@ export function Thumbnail({
       onClick={asButton ? onClick : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      {...dataAttrs}
     >
       <div className={styles.frame}>
         <div

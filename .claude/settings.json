@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'SESSION START (genzen): Orient from the two durable surfaces before anything else -- the README `## Status` block (last shipped / up next) and `gh issue list`. Greet the user in 2-3 lines summarizing where the project is, then ask whether to continue that work. There is no continuation file; do not look for one. If they decline or open a different task, drop it.'"
+            "command": "echo 'SESSION START (genzen): Orient before anything else. Read the README `## Status` block and `gh issue list --state open --json number,title,labels`. The four rank labels (focus, now, next, later) are the columns of the upnext board at localhost:3210/kanban/genzen, which is what Josh actually reads -- assume he is looking at it. Greet in 2-3 lines: what is in Focus, and what is queued in Now. He often opens with nothing but an issue number, so read that issue and say so if something in Now should be cleared first. There is no continuation file; do not look for one. If he opens a different task, drop it.'"
           }
         ]
       }

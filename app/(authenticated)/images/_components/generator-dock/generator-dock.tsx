@@ -23,6 +23,12 @@ interface GeneratorDockProps {
     isLoading: boolean
     refresh: () => Promise<void>
   }
+  /** The open group, which an upload from the picker lands in (#549). */
+  uploadGroupId?: string | null
+  /** Opens the Shots dialog for the staged references (#553). */
+  onShots?: () => void
+  /** Opens the Lighting dialog for the staged references (#563). */
+  onLighting?: () => void
 }
 
 /**
@@ -41,12 +47,18 @@ export function GeneratorDock({
   generator,
   modelSelector,
   userImages,
+  uploadGroupId,
+  onShots,
+  onLighting,
 }: GeneratorDockProps) {
   const panel = (
     <GeneratorPanel
       generator={generator}
       modelSelector={modelSelector}
       userImages={userImages}
+      uploadGroupId={uploadGroupId}
+      onShots={onShots}
+      onLighting={onLighting}
       modelDisplay={isMobile ? 'dropdown' : undefined}
     />
   )

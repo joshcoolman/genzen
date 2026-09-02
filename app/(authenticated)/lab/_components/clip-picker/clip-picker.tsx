@@ -2,9 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Check } from 'lucide-react'
-import { aspectLabel, aspectRatio, clipFacts, sameAspect } from '../clip-facts'
+import { ClipFrames } from '../clip-frames/clip-frames'
 import styles from './clip-picker.module.css'
 import type { VideoRecord } from '../../../video/_actions/generate-video.action'
+import {
+  aspectLabel,
+  aspectRatio,
+  clipFacts,
+  sameAspect,
+} from '#/features/video/clip-facts'
 import {
   Button,
   Dialog,
@@ -12,11 +18,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  MediaBox,
 } from '#/components'
 
-/** The tile edge. Paired with `--tile` in the stylesheet, which is the grid's
- *  column width: `MediaBox` is sized in px, not by its container. */
+/** The edge of one frame. A tile holds two, so `--tile` in the stylesheet --
+ *  the grid's column width -- is twice this: a `MediaBox` is sized in px, not
+ *  by its container. */
 const TILE = 132
 
 /**
@@ -46,6 +52,13 @@ const TILE = 132
  * **`max` defaults to 1 and the whole thing is written for more.** Selection is
  * a set and the caller takes an array, so picking several clips — to stitch, to
  * compare — is raising a number rather than rewriting this.
+ *
+ * **Both ends of each clip, the same as the run** (`ClipFrames`). It showed a
+ * first frame only, which meant the dialog you choose a clip in could not
+ * answer the question you were choosing for: what a clip cuts into is decided
+ * by the frame it *ends* on, and that frame was the one place it was never
+ * shown. Frames gets them too -- it picks a clip to pull a frame out of, and
+ * which frames there are is exactly its question.
  *
  * **`matchRatio` narrows the grid to one shape, and only Sequence passes it**
  * (#512). Clips of different shapes cannot cut together — a portrait clip after
@@ -207,12 +220,10 @@ export function ClipPicker({
                         read as missing from the dialog entirely. Letterboxed,
                         the shape of the clip is visible too, which is a fact
                         worth having when you are choosing one. */}
-                    <MediaBox
-                      kind="video"
-                      src={`/img/${clip.id}`}
-                      alt={clip.title}
+                    <ClipFrames
+                      clip={clip}
                       size={TILE}
-                      fit="contain"
+                      alt={clip.title}
                       pad={0}
                     />
                     {/* The position in the run being built, not a tick: with

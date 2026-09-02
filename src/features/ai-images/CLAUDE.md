@@ -5,6 +5,27 @@ no `.tsx` here.** The generation UI Images and Canvas share lives in
 `app/(authenticated)/_components/` (`generator-panel/` and what it composes);
 anything one route renders lives with that route.
 
+## Images on the way to FAL
+
+**Every image the app sends FAL goes through `uploadBufferToFal`**, which
+shrinks it first (`fal-image-prepare.server.ts`, #560) and retries a dead
+connection around it (#556). The stored file is never touched -- this is a
+transport concern, and the library row keeps its full-resolution original.
+
+- **2048 long edge, JPEG at 95.** The number and the evidence are the reference
+  sheet's: a model downscales a reference before it looks at anything, around a
+  1024-1536 long edge, so pixels past this are the same detail squeezed harder.
+- **Heavy PNGs are re-encoded even when they are already small enough to
+  send.** This is the clause that does the work -- the eight 1920-2560px
+  keyframes behind #556 were 12.8MB of lossless PNG, and came out 1.7MB.
+  A long-edge rule alone would have changed nothing.
+- **Transparency keeps its format**, because flattening alpha onto a colour is a
+  change to the picture rather than a compression choice.
+- **Never fatal, and never bigger.** Anything sharp cannot read (the library
+  holds mp4) goes through untouched, and a re-encode that grew the file is
+  discarded -- flat graphics beat JPEG outright, which is also why a fixture of
+  random noise tested the safety net rather than the behaviour.
+
 ## Rules
 
 - **`models.ts` is the lineup.** `IMAGE_MODELS` is one entry per model and the
@@ -34,6 +55,45 @@ anything one route renders lives with that route.
 - **`useGenerator` takes a required `origin`** (`images | canvas`), written to
   every row it creates, so a new host cannot be an unmarked generation source
   (#207).
+- **`outpaint.ts` holds the one knob, the prompt assembly, and what the lab
+  proved.** Outpainting is a card action on /images; the lab page that vetted it
+  is gone (#528). The model is a constant rather than a control because that
+  question is answered -- changing it is one line and no UI. Read the file's
+  header before swapping the model or editing the prose: it records that asking
+  plainly is enough (so compositing is not to be built speculatively), that the
+  instruction pads and never crops, and that a denoise-from-image endpoint
+  cannot do this at all. The prose is `src/lib/prompts/outpaint.md` (#322); only
+  the assembly is code.
+- **`shots.ts` is outpaint's trade widened** (#553): a fixed instruction plus a
+  reference, no typed prompt, fired from the picture you already have. What it
+  adds is a model picker, because outpaint's question was settled and this one
+  is not. Z-Image Turbo is excluded for the reason `outpaint.ts` records --
+  denoise-with-strength cannot take an instruction -- so offering it would spend
+  money reproducing the reference. The sixteen angles and the constant block
+  are `src/lib/prompts/shots/`, loaded lazily so a client reading the registry
+  for its labels does not bundle the prose; only the assembly is code. The prompt itself is
+  written by two vision passes in `server/write-shot-prompt.action.ts` --
+  `writeShotScene` once per picture, `writeShot` once per angle, concatenated by
+  the caller so the scene text cannot vary between shots. Its header records the
+  two alternatives that were tried and deleted, and why a per-angle scene is the
+  one thing not to reintroduce.
+- **`lighting.ts` is shots' surface on outpaint's mechanism** (#563): the same
+  cross of staged pictures against picked treatments, but the prompt is fixed
+  text -- `wrapper.md` plus one effect from `src/lib/prompts/lighting/` with its
+  `{GEL}` tokens filled from the registry, assembled by `buildLightingPrompt`
+  and never written by a model. No `ANTHROPIC_API_KEY`, where shots needs one.
+  Two vision passes existed here for a day and were deleted; that folder's
+  `index.ts` says why, and is what to read before editing an effect.
+  **Its models are multi-selected and are the panel's
+  own**, not a dialog-local list: `lightingModelIds()` is the `sidebar`
+  capability minus Z-Image Turbo, excluded for outpaint's reason, and
+  everything else that accepts an image is offered because whether a model can
+  hold an instruction this long is the open question. The default is Grok
+  Imagine and rides on `useModelSelector`'s `defaultId`, added for this --
+  pinning it to the head of `allowedIds` would have made the picker the one
+  place where the list is not price-sorted. The registry header records what the
+  proving run established about the prose -- sentence order, and the palette
+  being separable -- and is what to read before editing an effect.
 - **The hooks here are the ones both routes use.** Everything else this feature
   held moved to `app/(authenticated)/images/_hooks/` in #189 — Images was the
   only consumer, and `features/` is earned by two.

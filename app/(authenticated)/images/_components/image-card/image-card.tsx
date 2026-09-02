@@ -2,12 +2,12 @@
 
 import {
   CheckCircle2,
-  Clapperboard,
   Download,
   EyeOff,
   FolderMinus,
   FolderPlus,
   ImageIcon,
+  Maximize2,
   MoreHorizontal,
   Trash2,
 } from 'lucide-react'
@@ -37,8 +37,8 @@ interface ImageCardProps {
    *  what the corner icon does, and Trash moves behind Cmd. */
   onHide?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  /** Take this still to /video as the first frame (#305). */
-  onAnimate?: (img: SavedAiImage) => void
+  /** Reframe it to other shapes (#430). Opens the ratio dialog. */
+  onOutpaint?: (img: SavedAiImage) => void
   /** The card click: opens the lightbox over everything. */
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click on the image: add it to the generator's reference images,
@@ -62,6 +62,12 @@ interface ImageCardProps {
   /** Select mode. The whole card is the target, and nothing else responds. */
   selectionActive?: boolean
   onSelect?: (id: string, shiftKey: boolean) => void
+  /** A reorder drag would drop before this card (#505) -- drawn as a rule down
+   *  the gap on its leading edge. */
+  dropBefore?: boolean
+  /** This is the card being dragged. Faded, so the grid shows where it came
+   *  from while the preview shows where it is going. */
+  lifted?: boolean
 }
 
 /**
@@ -81,7 +87,7 @@ export function ImageCard({
   onDelete,
   onHide,
   onDownload,
-  onAnimate,
+  onOutpaint,
   onOpen,
   onAddReference,
   onUsePrompt,
@@ -92,6 +98,8 @@ export function ImageCard({
   selected,
   selectionActive,
   onSelect,
+  dropBefore,
+  lifted,
 }: ImageCardProps) {
   const moreButton = (
     <DropdownMenu>
@@ -104,24 +112,32 @@ export function ImageCard({
         }
       />
       <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
-        {onDownload && (
-          <DropdownMenuItem onClick={() => onDownload(img)}>
-            <Download />
-            Download
-          </DropdownMenuItem>
-        )}
-        {onAnimate && img.status === 'completed' && (
-          <DropdownMenuItem onClick={() => onAnimate(img)}>
-            <Clapperboard />
-            Animate
-          </DropdownMenuItem>
-        )}
+        {/* The order is the one they get reached in, not the one they were
+            added in: file it, reshape it, take a copy, throw it away. Animate
+            was above these and is gone -- /video takes a first frame of its
+            own, and the handoff was a verb nobody used.
 
-        {/* Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
+            Groups (#319). One item, opening a dialog -- see `onAddToGroup`. */}
         {onAddToGroup && (
           <DropdownMenuItem onClick={() => onAddToGroup(img)}>
             <FolderPlus />
             Add to group
+          </DropdownMenuItem>
+        )}
+
+        {/* Only once there is a picture to widen -- a pending or failed row
+            has no pixels to extend. */}
+        {onOutpaint && img.status === 'completed' && (
+          <DropdownMenuItem onClick={() => onOutpaint(img)}>
+            <Maximize2 />
+            Outpaint
+          </DropdownMenuItem>
+        )}
+
+        {onDownload && (
+          <DropdownMenuItem onClick={() => onDownload(img)}>
+            <Download />
+            Download
           </DropdownMenuItem>
         )}
 
@@ -223,9 +239,17 @@ export function ImageCard({
          50% instead, which put it in the same state as a group card -- and a
          group genuinely cannot be selected, so the grid was telling you the
          one thing about images that is not true of them. */
-      className={
-        selectionActive && !selected ? styles.selectableTile : undefined
-      }
+      className={cx(
+        selectionActive && !selected && styles.selectableTile,
+        dropBefore && styles.dropBefore,
+        lifted && styles.lifted,
+      )}
+      /* Where the grid's drag finds the card it lifted (#438). On every image
+         card, not only in select mode: dragging one thumbnail onto a group is
+         the single-image half of the gesture. A group card carries
+         `data-drop-group-id` instead -- groups do not nest, so one is a
+         destination and never a passenger. */
+      dataAttrs={{ 'data-drag-image-id': img.id }}
       overlayActionsLeft={selectionActive ? undefined : moreButton}
       overlayActions={selectionActive ? undefined : cornerAction}
       imageOverlay={

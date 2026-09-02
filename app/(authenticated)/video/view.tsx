@@ -1,14 +1,32 @@
 'use client'
 
+import {
+  EyeOff,
+  FolderMinus,
+  FolderPlus,
+  ScanSearch,
+  Trash2,
+} from 'lucide-react'
 import { ExistingImagePicker } from '../_components/existing-image-picker/existing-image-picker'
 import { ModelSelector } from '../_components/model-selector/model-selector'
+import { GroupHeading } from '../_components/group-heading/group-heading'
+import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
+import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { VideoForm } from './_components/video-form/video-form'
 import { VideoList } from './_components/video-list/video-list'
 import { useView } from './use-view'
 import styles from './video.module.css'
 import type { VideoRecord } from './_actions/generate-video.action'
 import { frameCapacityFor } from '#/features/video/models'
-import { PageHeader, RefImageStrip, Stack } from '#/components'
+import {
+  Button,
+  ConfirmDialog,
+  NameDialog,
+  PageHeader,
+  RefImageStrip,
+  SelectionDrawer,
+  Stack,
+} from '#/components'
 
 export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
   const {
@@ -30,7 +48,38 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
     collectSources,
     clearSources,
     clearEndSources,
-    videos,
+    cells,
+    visibility,
+    hideSelected,
+    focusSelected,
+    groups,
+    expandedGroupIds,
+    groupMembers,
+    toggleGroupMembers,
+    workingByGroup,
+    hiddenByGroup,
+    activeGroup,
+    activeGroupId,
+    groupFlow,
+    setGroupFlow,
+    closeGroupFlow,
+    startAddToGroup,
+    addToGroup,
+    createGroup,
+    removeFromGroup,
+    openGroup,
+    leaveGroup,
+    renameGroup,
+    dissolveGroup,
+    trashGroup,
+    selectedIds,
+    toggleSelected,
+    clearSelection,
+    selectedCount,
+    isBatchDeleting,
+    deleteSelected,
+    playingId,
+    setPlayingId,
     deleteVideo,
     continueFrom,
     isContinuing,
@@ -56,10 +105,23 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
   return (
     <Stack gap={24}>
-      <PageHeader
-        title="Video"
-        description="An image you already made, plus a note, comes back moving."
-      />
+      {/* The group's name **replaces** the route's header rather than sitting
+          under it (#517), which is what Images does and for the same reason:
+          two titles is two `h1`s, and the second one is the answer to "where
+          am I" that the first one no longer gives. Leaving a group puts the
+          route header back. */}
+      {activeGroup ? (
+        <GroupHeading
+          name={activeGroup.name}
+          backLabel="Video"
+          onBack={leaveGroup}
+        />
+      ) : (
+        <PageHeader
+          title="Video"
+          description="An image you already made, plus a note, comes back moving."
+        />
+      )}
 
       <ExistingImagePicker
         open={pickerTarget !== null}
@@ -79,11 +141,49 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
 
       <div className={styles.columns}>
         <div className={styles.clips}>
+          {/* Above the wall, not under it (#504, #537): a statement about
+              clips that are missing is no use in the place you reach after
+              running out of clips. */}
+          <HiddenBar
+            hidden={visibility.hiddenImages.map((video) => ({
+              id: video.id,
+              // A clip's `title` is its model, which is the wrong word in a
+              // tooltip that says "Show <this>". The prompt is what names the
+              // take, and a clip made before prompts were stored falls back to
+              // the word for the thing.
+              title: video.description ?? 'clip',
+            }))}
+            onShowAll={() => void visibility.showAll()}
+            onUnhide={(id: string) => void visibility.unhide([id])}
+            focusCount={visibility.focusIds?.size ?? null}
+            onClearFocus={visibility.clearFocus}
+            noun={{ one: 'clip', many: 'clips' }}
+          />
+
           <VideoList
-            videos={videos}
+            cells={cells}
+            isInGroup={!!activeGroupId}
             onDelete={(id) => void deleteVideo(id)}
+            onHide={(id) => void visibility.hide([id])}
             onContinue={(video) => void continueFrom(video)}
+            playingId={playingId}
+            onPlay={setPlayingId}
             continuingId={isContinuing}
+            selectedIds={selectedIds}
+            onSelect={toggleSelected}
+            onOpenGroup={openGroup}
+            onRenameGroup={(group) => setGroupFlow({ kind: 'rename', group })}
+            onDissolveGroup={(group) =>
+              setGroupFlow({ kind: 'confirm-dissolve', group })
+            }
+            onTrashGroup={(group) =>
+              setGroupFlow({ kind: 'confirm-trash', group })
+            }
+            expandedGroupIds={expandedGroupIds}
+            groupMembers={groupMembers}
+            onToggleGroupMembers={toggleGroupMembers}
+            workingByGroup={workingByGroup}
+            hiddenByGroup={hiddenByGroup}
           />
         </div>
 
@@ -184,6 +284,142 @@ export function View({ initialVideos }: { initialVideos: Array<VideoRecord> }) {
           />
         </div>
       </div>
+
+      {/* Five verbs, against Images' seven. A still is a thing you file,
+          sheet, zip and share; a clip is a take you group, hide or prune.
+          There is no reference sheet -- a sheet of clips is not a thing -- and
+          no zip in this pass (#517). Hide and Focus arrived in #537: a wall of
+          takes of one shot is mostly near-misses you want out of the way while
+          you judge the two that worked, and trashing one to tidy up is a real
+          loss. */}
+      <SelectionDrawer count={selectedCount} onClear={clearSelection}>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={startAddToGroup}
+        >
+          <FolderPlus size={14} />
+          Add to group
+        </Button>
+        {/* Only inside a group: the mirror of Add to group, and it should look
+            like one -- a folder losing an item, not a broken link. */}
+        {activeGroupId && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={isBatchDeleting}
+            onClick={() => void removeFromGroup()}
+          >
+            <FolderMinus size={14} />
+            Remove from group
+          </Button>
+        )}
+        {/* Hide and Focus are a pair and stay one (#537): Focus shows only
+            the selection, Hide removes only it, and neither destroys
+            anything. They sit before Trash, which is the only verb here that
+            does. */}
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isBatchDeleting || visibility.busy}
+          onClick={() => void hideSelected()}
+        >
+          <EyeOff size={14} />
+          Hide
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={focusSelected}
+        >
+          <ScanSearch size={14} />
+          Focus
+        </Button>
+        {/* Not `danger` and not "Delete": this moves rows to Trash, where they
+            sit until it is emptied -- red belongs to Delete Forever. */}
+        <Button
+          size="sm"
+          disabled={isBatchDeleting}
+          onClick={() => void deleteSelected()}
+        >
+          <Trash2 size={14} />
+          {isBatchDeleting ? 'Trashing...' : `Trash ${selectedCount}`}
+        </Button>
+      </SelectionDrawer>
+
+      {/* Pick a group, or fall through to naming a new one. Never opened with
+          an empty list -- `startAddToGroup` sends you straight to the name
+          dialog instead. */}
+      <GroupPickerDialog
+        open={groupFlow?.kind === 'pick'}
+        groups={groups}
+        count={groupFlow?.kind === 'pick' ? groupFlow.targets.length : 0}
+        description={
+          groupFlow?.kind === 'pick'
+            ? `${groupFlow.targets.length} clip${groupFlow.targets.length === 1 ? '' : 's'}`
+            : undefined
+        }
+        onPick={(groupId) => {
+          if (groupFlow?.kind !== 'pick') return
+          void addToGroup(groupId, groupFlow.targets)
+        }}
+        onNewGroup={() => {
+          if (groupFlow?.kind !== 'pick') return
+          setGroupFlow({ kind: 'create', targets: groupFlow.targets })
+        }}
+        onCancel={closeGroupFlow}
+      />
+
+      <NameDialog
+        open={groupFlow?.kind === 'create'}
+        title="New group"
+        confirmLabel="Create"
+        onSubmit={(name) => {
+          if (groupFlow?.kind !== 'create') return
+          void createGroup(name, groupFlow.targets)
+        }}
+        onCancel={closeGroupFlow}
+      />
+
+      <NameDialog
+        open={groupFlow?.kind === 'rename'}
+        title="Rename group"
+        initialName={groupFlow?.kind === 'rename' ? groupFlow.group.name : ''}
+        confirmLabel="Rename"
+        onSubmit={(name) => void renameGroup(name)}
+        onCancel={closeGroupFlow}
+      />
+
+      <ConfirmDialog
+        open={groupFlow?.kind === 'confirm-dissolve'}
+        title="Ungroup these clips?"
+        message={
+          groupFlow?.kind === 'confirm-dissolve'
+            ? `All ${groupFlow.group.count} clip${groupFlow.group.count === 1 ? '' : 's'} go back to the top level. Only the group "${groupFlow.group.name}" goes away.`
+            : ''
+        }
+        confirmLabel="Ungroup"
+        destructive={false}
+        onConfirm={() => void dissolveGroup()}
+        onCancel={closeGroupFlow}
+      />
+
+      <ConfirmDialog
+        open={groupFlow?.kind === 'confirm-trash'}
+        title="Trash this group?"
+        message={
+          groupFlow?.kind === 'confirm-trash'
+            ? groupFlow.group.count === 0
+              ? `"${groupFlow.group.name}" is empty, so this just removes the group.`
+              : `"${groupFlow.group.name}" and its ${groupFlow.group.count} clip${groupFlow.group.count === 1 ? '' : 's'} go to Trash. You can restore the clips from there.`
+            : ''
+        }
+        confirmLabel="Trash group"
+        onConfirm={() => void trashGroup()}
+        onCancel={closeGroupFlow}
+      />
     </Stack>
   )
 }

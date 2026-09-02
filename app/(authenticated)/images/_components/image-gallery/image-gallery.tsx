@@ -1,3 +1,5 @@
+import { useDragReorder } from '../../_hooks/use-drag-reorder'
+import { useDragToGroup } from '../../_hooks/use-drag-to-group'
 import { useSweepSelect } from '../../_hooks/use-sweep-select'
 import { GroupCard } from '../group-card/group-card'
 import { PendingImageCard } from '../pending-image-card/pending-image-card'
@@ -5,7 +7,7 @@ import { ImageCard } from '../image-card/image-card'
 import { FailedImageCard } from '../failed-image-card/failed-image-card'
 import styles from './image-gallery.module.css'
 import type { SavedAiImage } from '#/features/ai-images/types'
-import type { ImageGroupSummary } from '../../_hooks/use-groups'
+import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import { getModelName } from '#/features/ai-images/models'
 import { cx } from '#/lib/utils'
 import { EmptyState, ImageGridSkeleton } from '#/components'
@@ -51,7 +53,7 @@ interface ImageGalleryProps {
   onHide: (img: SavedAiImage) => void
   onRetry?: (img: SavedAiImage) => void
   onDownload?: (img: SavedAiImage) => void
-  onAnimate?: (img: SavedAiImage) => void
+  onOutpaint?: (img: SavedAiImage) => void
   onOpen?: (img: SavedAiImage) => void
   /** Cmd/Ctrl-click: the power moves (#284 follow-up). Plain sets the source,
    *  Shift pushes a reference, and on the prompt it loads the text. */
@@ -61,6 +63,8 @@ interface ImageGalleryProps {
   /** Per-group count of work in flight (#350) -- generations queued, uploads
    *  still sending. Client-derived, so it costs nothing to keep current. */
   workingByGroup?: Record<string, number>
+  /** How many of each group's images are hidden (#546). */
+  hiddenByGroup?: Record<string, number>
   /** Which groups have their strip expanded to every member (#352), and the
    *  ids to draw once the read lands. */
   expandedGroupIds?: Set<string>
@@ -83,6 +87,17 @@ interface ImageGalleryProps {
   /** Shift-drag across the grid (#440): every card the rectangle touches
    *  joins. Additive only -- see `useSweepSelect`. */
   onSweepSelect?: (ids: Array<string>) => void
+  /** Every picked id, in grid order -- what comes along when the drag starts
+   *  on a card that is part of the selection (#438). */
+  selectedIds?: Array<string>
+  /** Drag a thumbnail onto a group card to file it there (#438). The same
+   *  write the picker dialog makes; absent inside a group, where there are no
+   *  group cards to drop onto. */
+  onDropOnGroup?: (groupId: string, ids: Array<string>) => void
+  /** Drag a card to a new place inside the open group (#505). The whole
+   *  ordered list; absent at top level, where the only order is the
+   *  library's. */
+  onReorder?: (orderedIds: Array<string>) => void
   /** A click on the grid's own background -- the gaps between cards. Clearing
    *  the selection is what it means (#439); absent when there is none. */
   onBackgroundClick?: () => void
@@ -98,13 +113,14 @@ export function ImageGallery({
   onHide,
   onRetry,
   onDownload,
-  onAnimate,
+  onOutpaint,
   keyFor,
   onOpen,
   onAddReference,
   onUsePrompt,
   onLoad,
   workingByGroup,
+  hiddenByGroup,
   expandedGroupIds,
   groupMembers,
   onToggleGroupMembers,
@@ -120,6 +136,9 @@ export function ImageGallery({
   isSelected,
   onSelect,
   onSweepSelect,
+  selectedIds,
+  onDropOnGroup,
+  onReorder,
   onBackgroundClick,
 }: ImageGalleryProps) {
   /* Shift-drag to sweep (#440). Only once select mode is on, which is what
@@ -131,6 +150,28 @@ export function ImageGallery({
     enabled: Boolean(selectionActive && onSweepSelect),
     onSweep: onSweepSelect ?? (() => {}),
   })
+  /* Drag a card onto a group card to file it (#438). Shift tells this apart
+     from the sweep above -- one press, two gestures, and the modifier decides
+     which. Enabled wherever there is a write to call: inside a group the grid
+     holds no group cards, so the hook arms and finds nothing to drop onto. */
+  const drag = useDragToGroup({
+    enabled: Boolean(onDropOnGroup),
+    selectionActive: Boolean(selectionActive),
+    isSelected: isSelected ?? (() => false),
+    selectedIds: selectedIds ?? [],
+    onDrop: onDropOnGroup ?? (() => {}),
+  })
+
+  /* And inside a group, the same press rearranges instead (#505). The two are
+     mutually exclusive by construction: `onDropOnGroup` is passed only at top
+     level and `onReorder` only inside a group, so exactly one of them is ever
+     armed. */
+  const reorder = useDragReorder({
+    enabled: Boolean(onReorder),
+    ids: cells.flatMap((c) => (c.kind === 'image' ? [c.image.id] : [])),
+    onReorder: onReorder ?? (() => {}),
+  })
+
   /* The gaps between cards are empty space too, and they belong to the grid
      rather than to the frame around it (#439). Identity again, never a bubbled
      click: everything in this grid is something you can click on purpose. */
@@ -149,9 +190,17 @@ export function ImageGallery({
         </EmptyState>
       ) : (
         <div
-          className={cx(styles.grid, sweep.sweeping && styles.sweeping)}
+          className={cx(
+            styles.grid,
+            (sweep.sweeping || drag.dragging || reorder.dragging) &&
+              styles.sweeping,
+          )}
           onClick={clearOnBackground}
-          onPointerDown={sweep.onPointerDown}
+          onPointerDown={(e) => {
+            sweep.onPointerDown(e)
+            drag.onPointerDown(e)
+            reorder.onPointerDown(e)
+          }}
           style={{
             // `zoom`, not `transform: scale()`. A transform paints smaller
             // without touching layout, so the grid would keep its old
@@ -183,6 +232,7 @@ export function ImageGallery({
                   group={group}
                   showInfo={showInfo}
                   working={workingByGroup?.[group.id] ?? 0}
+                  hidden={hiddenByGroup?.[group.id] ?? 0}
                   expanded={expanded}
                   members={expanded ? groupMembers?.[group.id] : undefined}
                   /* Only when there is something the strip is not already
@@ -205,6 +255,8 @@ export function ImageGallery({
                   onDissolve={onDissolveGroup ?? (() => {})}
                   onTrash={onTrashGroup}
                   selectionActive={selectionActive}
+                  dragActive={drag.dragging}
+                  dropActive={drag.drag?.overGroupId === group.id}
                 />
               )
             }
@@ -244,13 +296,19 @@ export function ImageGallery({
               <ImageCard
                 key={keyFor?.(img.id) ?? img.id}
                 img={img}
+                /* Where the card would land, drawn as a rule down the gap
+                   before it (#505). A gap rather than a highlighted card: a
+                   card says "swap with me", and a long move made of swaps is
+                   not the gesture. */
+                dropBefore={reorder.drag?.beforeId === img.id}
+                lifted={reorder.drag?.id === img.id}
                 imageUrl={imageUrls[img.id]}
                 onHide={onHide}
                 objectFit="contain"
                 showInfo={showInfo}
                 onDelete={onDelete}
                 onDownload={onDownload}
-                onAnimate={onAnimate}
+                onOutpaint={onOutpaint}
                 onOpen={onOpen}
                 onAddReference={onAddReference}
                 onUsePrompt={onUsePrompt}
@@ -264,12 +322,68 @@ export function ImageGallery({
               />
             )
           })}
+
+          {/* The one insertion point no card can anchor: past the last one.
+              A cell of its own in the grid's flow, so it lands where the next
+              card would rather than being positioned against a guess. */}
+          {reorder.drag?.index !== null && reorder.drag?.beforeId === null && (
+            <div className={styles.dropEnd} aria-hidden="true" />
+          )}
         </div>
       )}
 
       {/* Outside the grid on purpose: the grid carries `zoom`, and a rectangle
           drawn inside it would be scaled along with the cards. Fixed, in
           client coordinates, over everything and taking nothing. */}
+      {/* What is in the air, under the pointer and taking nothing -- a target
+          that moved with the cursor would be the only thing the hit test ever
+          found. Fixed and outside the grid for the same reason the marquee is:
+          the grid carries `zoom`. */}
+      {drag.drag && (
+        <div
+          className={styles.dragPreview}
+          style={{ left: drag.drag.x, top: drag.drag.y }}
+        >
+          {/* Three at most, fanned. Beyond that the count says it -- a stack
+              of nine thumbnails is a picture of a stack rather than of what is
+              moving. */}
+          {drag.drag.ids.slice(0, 3).map((id, i) => (
+            <span
+              key={id}
+              className={styles.dragThumb}
+              style={{
+                backgroundImage: imageUrls[id]
+                  ? `url(${imageUrls[id]})`
+                  : undefined,
+                transform: `translate(${i * 6}px, ${i * 6}px)`,
+                zIndex: 3 - i,
+              }}
+            />
+          ))}
+          {drag.drag.ids.length > 1 && (
+            <span className={styles.dragCount}>{drag.drag.ids.length}</span>
+          )}
+        </div>
+      )}
+
+      {/* The lifted card under the pointer, the same stack the group drag
+          draws -- one gesture family, one picture of it. */}
+      {reorder.drag && (
+        <div
+          className={styles.dragPreview}
+          style={{ left: reorder.drag.x, top: reorder.drag.y }}
+        >
+          <span
+            className={styles.dragThumb}
+            style={{
+              backgroundImage: imageUrls[reorder.drag.id]
+                ? `url(${imageUrls[reorder.drag.id]})`
+                : undefined,
+            }}
+          />
+        </div>
+      )}
+
       {sweep.rect && (
         <div
           className={styles.marquee}

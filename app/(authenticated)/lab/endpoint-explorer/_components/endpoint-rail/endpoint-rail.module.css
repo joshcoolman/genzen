@@ -1,0 +1,78 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.item {
+  inline-size: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--row-hover);
+  color: var(--text);
+}
+
+.itemActive {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  inline-size: 0.4375rem;
+  block-size: 0.4375rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.dotOk {
+  background: var(--success);
+}
+
+.dotBad {
+  background: var(--danger);
+}

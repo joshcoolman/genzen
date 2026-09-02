@@ -1,6 +1,6 @@
 'use server'
 
-import { fal } from '@fal-ai/client'
+import { fal } from './fal-client.server'
 import { resolveAuth } from './auth.server'
 import { sql } from './db.server'
 import {
@@ -9,8 +9,6 @@ import {
   processVideoResult,
 } from './fal-completion.server'
 import { extractFalError } from './fal-error.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 /**
  * How long a generation may stay `pending` before the app stops believing in it

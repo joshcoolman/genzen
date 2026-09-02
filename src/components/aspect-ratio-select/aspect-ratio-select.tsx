@@ -10,6 +10,8 @@ import {
   useFloating,
 } from '@floating-ui/react-dom'
 import styles from './aspect-ratio-select.module.css'
+import { ALL_RATIOS } from './aspect-ratio-constants'
+import { RatioIcon } from './ratio-icon'
 import { cx } from '#/lib/utils'
 
 interface AspectRatioSelectProps {
@@ -20,62 +22,6 @@ interface AspectRatioSelectProps {
   ratios?: { landscape?: Array<string>; portrait?: Array<string> }
   disabled?: boolean
   className?: string
-}
-
-const ALL_RATIOS = [
-  { label: '16:9', w: 16, h: 9, group: 'Landscape' },
-  { label: '2:1', w: 2, h: 1, group: 'Landscape' },
-  { label: '3:2', w: 3, h: 2, group: 'Landscape' },
-  { label: '4:3', w: 4, h: 3, group: 'Landscape' },
-  { label: '21:9', w: 21, h: 9, group: 'Landscape' },
-  { label: '5:4', w: 5, h: 4, group: 'Landscape' },
-  { label: '1:1', w: 1, h: 1, group: 'Square' },
-  { label: '4:5', w: 4, h: 5, group: 'Portrait' },
-  { label: '3:4', w: 3, h: 4, group: 'Portrait' },
-  { label: '2:3', w: 2, h: 3, group: 'Portrait' },
-  { label: '9:16', w: 9, h: 16, group: 'Portrait' },
-  { label: '1:2', w: 1, h: 2, group: 'Portrait' },
-]
-
-const ICON_SIZE = 20
-
-function RatioIcon({ w, h }: { w: number; h: number }) {
-  const ratio = w / h
-  let iconW: number
-  let iconH: number
-
-  if (ratio >= 1) {
-    iconW = ICON_SIZE
-    iconH = ICON_SIZE / ratio
-  } else {
-    iconH = ICON_SIZE
-    iconW = ICON_SIZE * ratio
-  }
-
-  iconW = Math.max(iconW, 8)
-  iconH = Math.max(iconH, 8)
-
-  const x = (ICON_SIZE - iconW) / 2
-  const y = (ICON_SIZE - iconH) / 2
-
-  return (
-    <svg
-      width={ICON_SIZE}
-      height={ICON_SIZE}
-      viewBox={`0 0 ${ICON_SIZE} ${ICON_SIZE}`}
-      fill="none"
-    >
-      <rect
-        x={x + 0.75}
-        y={y + 0.75}
-        width={iconW - 1.5}
-        height={iconH - 1.5}
-        rx={2.5}
-        stroke="currentColor"
-        strokeWidth={1.5}
-      />
-    </svg>
-  )
 }
 
 function parseRatio(label: string): { w: number; h: number } {

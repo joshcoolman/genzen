@@ -57,6 +57,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm check:colors
       - run: pnpm check:tokens
+      - run: pnpm check:classes
       - run: pnpm typecheck
       - run: pnpm test
 

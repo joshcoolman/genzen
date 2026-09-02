@@ -9,6 +9,20 @@ source images; `use-view.ts` owns everything after the first paint.
 
 ## Quirks
 
+- **The wall is `minmax(12rem, 1fr)`, down from 20rem** (#535). 20rem was set
+  when a card was a player and a caption; a card is now a player, two end
+  frames and a caption, so the same column bought a much taller card -- at a
+  typical window, one clip per row filling the content column with a single
+  take. 12rem is the largest minimum that still fits three across at the width
+  this route renders at, which is the density that reads right. Cards still
+  stretch past it on a wider screen; it is a floor, not a fixed size.
+
+  **There is no size control, and that is Images' own lesson.** Its thumb zoom
+  is a keyboard-only multiplier with nothing on screen -- #284 deleted the size
+  dropdown that preceded it. If Video ever wants variable size, promote that
+  mechanism (`zoom` on the grid element, three lines) rather than adding the
+  control Images removed.
+
 - **The lineup is `src/features/video/models.ts`, not this folder** -- promoted
   in #398, when Activity became its second consumer and needed to name and
   filter clips. Durations, aspect ratios, resolution, price and the request's
@@ -74,14 +88,37 @@ source images; `use-view.ts` owns everything after the first paint.
   `<video>`: a clip has a duration, native controls, and no poster frame
   anywhere in the app, so bending the primitive every still renders through
   around a media element would serve one route at everything's expense. What it
-  _does_ borrow is the type scale -- the model badge is `--text-3xs` in the
-  picture's corner and the prompt is `--text-3xs` at 1.5 clamped to three
-  lines, both matching the image card exactly. Hand-written, they had drifted
-  to `--text-sm` and no badge at all, so a clip and a still read as different
-  kinds of record when they are the same row in the same table. **No overlay
-  actions**: native controls already own the bottom edge, and a second set of
-  buttons above them is two rows of controls arguing, so the verbs are text in
-  the caption. `video-list/` is now the grid and nothing else.
+  _does_ borrow is the type scale -- the prompt is `--text-3xs` at 1.5 clamped
+  to three lines, matching the image card exactly, and the model reads at that
+  size too. Hand-written, they had drifted to `--text-sm` and no model label at
+  all, so a clip and a still read as different
+  kinds of record when they are the same row in the same table. **The player and
+  both frames are one thumbnail, and the chrome sits on its corners** (#534) --
+  `...` top-left, the corner action top-right and the select tick bottom-left,
+  the gallery card's own corners. **The model is not up there** (#536): it is a
+  fact in the caption, because at #535's density a label nearly half the card's
+  width, over a half-width end frame, was the loudest thing on a card whose job
+  is to show the clip -- which is the corner #537 then filled with Hide, making
+  that a port rather than a decision. All three are 20px, which is #536's rule
+  about a matched set. Every marker is **always
+  on**, where a still hides its `...` until hover: a clip card is a player, a
+  pair of end frames and a caption, so it already reads as an object with
+  controls rather than as a bare picture -- and the menu is the only route to
+  Download and Delete, so one you have to hover to discover is one nobody
+  discovers.
+  `video-list/` is now the grid and nothing else.
+
+  **This replaced the no-overlay-actions rule**, which said the file verbs had
+  to be text in the caption because native controls own the player's bottom
+  edge. Two things retired it, both consequences of earlier changes: treating
+  the block as one unit puts the player's bottom edge in the _middle_ of it, so
+  the bottom corners belong to the two frames, which never have controls; and
+  since #530 a card has controls only while it is playing, where before every
+  card carried a scrubber permanently. It holds in the one case worth checking
+  -- a pending or failed clip has no frames block, so the corners land on the
+  player, but such a clip never plays. The frames exist exactly when the clip
+  is playable; the controls exist only while it plays.
+
 - **Continue carries on from a clip's last frame** (#494). One press reads the
   frame at the end of a finished clip, saves it as an ordinary upload, and sets
   it as the first frame -- replacing five manual steps that all worked
@@ -89,17 +126,130 @@ source images; `use-view.ts` owns everything after the first paint.
   it). Enough friction that a four-clip sequence did not get made.
 
   **It sets up the next generation and stops.** No auto-run: the point is a
-  frame in the slot, not a submitted job. The prompt is cleared rather than
-  carried over, because the frame is the continuity and the words are about
-  what happens next. Any end frame is dropped for the same reason -- it
-  described where the _last_ clip was going.
+  frame in the slot, not a submitted job. **It carries the clip's prompt over**,
+  and used to clear it. Clearing was argued from the sentence -- the frame is
+  the continuity, the words are about what happens next -- and was wrong about
+  the work: continuing is usually the same shot carried on, so an empty box
+  meant retyping most of a prompt to change a clause. Any end frame is still
+  dropped, because unlike a prompt there is no part of it to edit.
 
-  It sits above a rule in the caption, alone on the left, with the facts and
-  the file verbs pushed right below it: Download and Delete act on the clip in
-  front of you, Continue starts the next one, and a row mixing the two read as
-  three file operations. The mechanism is `src/features/video/frame-capture.ts`,
-  shared with `lab/frames` -- and it lands _near_ the end of the clip rather
-  than provably on the last sample, so a seam may be a frame or two loose.
+- **The card is built to be scanned, because a wall of takes is near-identical
+  cards** (#537). Three things do it, and all three are about the numbers being
+  in one place: the prompt **reserves all three of its clamped lines** whether
+  or not it needs them, the facts row is pinned to the card's **bottom edge**
+  with `margin-block-start: auto` (the grid stretches cards to their row's
+  height, so without it a short card left a band of empty surface under its
+  numbers), and Continue is **top-aligned** rather than sitting on the prompt's
+  last line, which moved whenever a sentence ran long. Cards get taller than
+  their content needs; that is the trade, and it is the right one here.
+
+  **The two always-on markers on the picture are the same 20px.** The tick sets
+  it flat; the `...` gets there through `ExpandableIconButton`'s pill, which is
+  its icon plus `--space-4` a side, so `.menuIcon` is `0.75rem`. They sit in
+  opposite corners of one picture, and at two diameters they read as two
+  systems rather than one pair.
+  **Continue sits in the caption's top-right** (#534, #537), and it is still the one act on
+  this card that starts new work rather than acting on this row -- which is why
+  it is on the prompt's line and not in the `...` menu with Download and
+  Delete. It has moved twice: a caption text link (#494), then the last frame
+  itself (#534's predecessor #530), then back to the caption.
+
+  **That last move is not drift, and the reason matters.** A picture with a
+  button embedded in its right half is exactly why nothing else could go on
+  that block -- so Continue is now buying the whole unit's uniformity, which
+  was not on the table when #530 chose the frame. The frames are plain
+  pictures; the corners are free. Below them a rule, then only the two facts a
+  clip _is_ -- shape and duration. Nothing in that row is clickable any more.
+  The mechanism is `src/features/video/frame-capture.ts`, shared with
+  `lab/frames` -- and it lands _near_ the end of the clip rather than provably
+  on the last sample, so a seam may be a frame or two loose.
+
+- **A card says the clip's shape, then its duration, and not its cost.** Shape
+  is what decides whether two clips can cut together (#512) and no surface
+  showed it; cost came off because every generation is already a row in the
+  Activity log, which is where a spend question gets asked, and on a card it
+  was per-item noise beside a Download button. `clipFacts` and the shape
+  helpers are `src/features/video/clip-facts.ts` -- they moved out of
+  `lab/_components/` when this card became their second consumer.
+- **The player shows a poster and one play button until it is played.** A grid
+  of cards was five sets of scrubbers, timecodes and overflow menus competing
+  with five pictures, and the pictures are what the page is for. Pressing Play
+  hands the card to the native controls, which then stay: sticky rather than
+  on hover, because chrome that follows the pointer flickers across a grid and
+  a scrubber has to stay put while it is in use.
+
+  The real win is not visual. `poster` (the row's own `thumbnail_path`, #499)
+  plus `preload="none"` means a card fetches an image it already has and no
+  video at all until asked. That also retires `firstFrameSrc` on this
+  surface -- the `#t=0.001` seek existed to make a `<video>` paint frame one
+  when nothing else could, which is #500's job everywhere else.
+
+  **One clip plays at a time, and `use-view` owns which** (`playingId`). A card
+  cannot know another one started, so left to themselves six of them play at
+  once. A card is engaged only while it holds the id; taking it away rewinds
+  that card to its first frame and drops it back to a poster and a play button.
+  Pausing with the native controls does _not_ release it -- only another card's
+  Play does, or the controls would vanish under a pointer that was using them.
+
+  The rewind is guarded on the card having actually played. Touching
+  `currentTime` on a `preload="none"` element that never loaded asks the
+  browser to fetch the clip, which is the thing the poster exists to avoid.
+
+- **The player and the clip's two ends are one block.** Half the card each,
+  flush under the player, no gap between them and none at the edges. The player
+  stays -- it is most of what the card is for -- and the frames are the two it
+  is worst at showing: the one it opens on, and the one the next clip has to
+  start from. Any gap in there and they read as three things that happen to be
+  stacked rather than one bigger thumbnail.
+
+  They are plain `<img>` on `thumbnail_path` and `?v=end`, deliberately not the
+  lab's `ClipFrames`, which draws frame one as a `<video>` because a lab tile
+  has no player above it. A grid, not flex: 50/50 has to hold exactly, and two
+  flex items disagree by a pixel when their intrinsic widths differ -- the seam
+  down the middle of the card is the one place that shows.
+
+  **The strip owns the height, not the frames** — one `aspect-ratio` on the
+  container, twice one frame's, with both cells at `height: 100%`. Sized
+  separately the two derive a height from a fractional column width and round
+  differently: the last frame rode a pixel high, and a hairline of card showed
+  under the first while the clip played. One height computed once cannot
+  disagree with itself, and `overflow: hidden` clips what is left of a
+  fractional column.
+
+  **The stage takes the clip's own shape, clamped to between 21:9 and 4:3.**
+  Set inline from `width`/`height`, the same way the two frames are. Within the
+  clamp there is nothing to letterbox and nothing to crop: the poster and the
+  playing clip are the same picture in the same box, so pressing Play changes
+  the controls and nothing else. Outside it — a portrait clip, an ultrawide
+  one — the stage lands on the nearest bound and `object-fit: contain` centres
+  the clip in it, which is the standard box a vertical clip wants anyway.
+
+  **The shape is the one the caption names, not the exact rectangle FAL
+  returned** (`namedRatio`). One 21:9 request comes back as both 1504x672
+  (2.238) and 1568x672 (2.333); `sameAspect` calls them one shape, the caption
+  says `21:9` on both, and a stage sized from the raw ratio then stood two such
+  cards ~14px apart in height. Three parts of the app agreeing and a fourth
+  disagreeing was the bug — the crop it costs is under the 5% the app already
+  treats as no difference.
+
+  **The clamp is there because `VideoList` is a grid and grid rows are as tall
+  as their tallest card.** Unbounded, a portrait clip is a card three times the
+  height of the 21:9 one beside it and every short card in that row sits over
+  dead space. Clamped, the raggedness is the range real horizontal shapes
+  occupy — 21:9 to 4:3, about 100px of stage at a 20rem column.
+
+  **`cover`, in both states.** Snapping to the named shape means the stage can
+  be up to the 5% tolerance off the picture's true rectangle, and `contain`
+  draws that difference as thin edges down the sides — at rest and while
+  playing alike. Filling the box absorbs it, at the cost of the same 5%
+  cropped, which is what the app already treats as no difference. The two
+  frames fill their halves the same way, so a card never shows an edge in any
+  state.
+
+  The exception it also swallows: a clip outside the clamp — portrait, or
+  ultrawide — is now cropped to the nearest allowed box rather than centred in
+  it. That is a real crop, not a 5% one, and it is the thing to revisit if
+  portrait clips start mattering. There are six in the library today.
 
 - **Last frame is optional, and its slot stays visible when empty.** With one,
   the model solves the move between two stills instead of inventing where the
@@ -200,6 +350,111 @@ source images; `use-view.ts` owns everything after the first paint.
   for this** -- its list filtered to `upload` and `ai_generated` while its
   Empty Trash destroyed every trashed row regardless, so a binned clip was
   invisible in the one place that could restore it and swept anyway.
+- **Several clips at once, and five verbs: Add to group, Remove from group,
+  Hide, Focus, Trash** (#517, #537). Images' drawer carries seven -- a still is
+  a thing you file, sheet, zip and share; a clip is a take you group, hide or
+  prune. There is no
+  reference sheet, because a sheet of clips is not a thing, and no zip yet.
+  `useSelection` and `SelectionDrawer` are borrowed unchanged -- both exist so
+  a route supplies the verbs and nothing else -- and the trash is
+  `trashGalleryImages(ids)`, which dispatches on `status` and never on
+  `source`, so it was already right for clips. One call for the set (#329):
+  React serialises server actions, so a loop would freeze the wall for one
+  round trip per clip.
+- **Hide takes a clip off the wall without destroying it** (#537), and it is
+  `src/features/visibility/` -- promoted out of `images/_hooks/` in the same
+  change, on the two-consumer rule that moved groups here in #517. The same
+  shape as grouping was: `setImagesHidden` never filtered on `source`, so the
+  write was already right for a clip and only the surface was missing. It
+  matters more here than on a wall of stills -- a wall of takes of one shot is
+  mostly near-misses you want out of the way while you judge the two that
+  worked, and a clip is expensive enough that binning one to tidy up is a real
+  loss. **The corner icon hides; Cmd makes it Trash**, carried over from the
+  gallery card unchanged: trashing was the path of least resistance for tidying
+  a wall because it was the only one-click thing on it, so the ease points at
+  the safe verb and the destructive one keeps the same spot behind a modifier.
+  A second icon was the thing to avoid -- the mis-click that matters is the
+  destructive one. The `...` menu keeps a plain Delete, and both are at
+  `/account/shortcuts`. **`HiddenBar` sits above the wall**, app-shared since
+  #537; a hidden clip is out of a group card's swatch strip too, filtered
+  client-side exactly as #504 does it, and the group's `count` is left alone
+  because it is a fact about the group rather than a description of the screen.
+  **The bar counts what is hidden where you are standing** (#546) -- this group
+  or top level -- and the group card says ", 2 hidden" beside its count, so a
+  clip hidden inside a group is still visible as a fact from outside it.
+- **Groups are `src/features/groups/`, and this route is why they are there.**
+  They were `images/_actions/` until #517; a clip has always been a
+  `user_images` row, so it already carried `group_id` and no write had ever
+  filtered on `source`. `kind` (`'image'` / `'video'`) keeps the namespaces
+  disjoint -- read that feature's CLAUDE.md rather than re-deriving why a
+  shared pool was refused. `useGroups('video')` is the whole of this route's
+  side of it.
+- **A clip generated while a group is open is filed into it**, the way a
+  generation is on Images. That is the half that makes a group a place to work
+  rather than a folder. `generateVideo` takes a `groupId` and
+  `createPendingGeneration` verifies it against both the user and the kind --
+  which it derives from `source`, so this route passes no kind at all.
+- **`?group=<id>`, not a route segment**, and the same `view.tsx` with one
+  filter. The clips are filtered client-side off `group_id`, exactly as the
+  gallery does it: the route already holds every row, so a group view is a
+  filter rather than a second query. At top level a grouped clip is _absent_ --
+  the group card stands in for it, which is the collapse that makes grouping
+  worth having.
+- **The group's name replaces the route's `PageHeader`**, rather than sitting
+  under it. Two titles is two `h1`s, and the second is the answer to "where am
+  I" that the first one no longer gives. Images does the same thing with its
+  scope row.
+- **`VideoGroupCard` is a sibling of `GroupCard`, not a generalisation** (#446's
+  precedent): the dropdowns differ, and copying sixty lines is cheaper than a
+  prop that turns half of one off. What matters about it:
+
+  **It looks like a group, not like a clip.** A clip card is a player -- play
+  button, native controls, two end frames flush underneath, verbs in the
+  caption. This is stills, and the only thing to press is the card. That is
+  what says "this is eleven things, not one".
+
+  **And it still reads as video**: the cover is 16:9, edge to edge, cropped.
+  Wider than the image group card's tile on purpose -- a square cover in this
+  wall would read as an image group that had wandered onto the wrong route.
+  Cropping is deliberate in both the cover and the swatches; every clip card
+  beside it already states its own shape, and this card is not where that fact
+  lives.
+
+  **The swatches are square and capped, which is the one departure forced by
+  this wall.** `VideoList` is `minmax(20rem, 1fr)`, so on a wide screen a card
+  is 600px and five `1fr` cells become 110px boxes -- a strip outweighing the
+  cover above it, reading as a second and worse grid of pictures. They stop
+  growing at `--clip-swatch` and the row is left-aligned. The strip is a count
+  you can see, not five pictures to study.
+
+  **Select mode is a selection, not a switch** (#325, unchanged). Being in the
+  mode is having something picked; Escape and Deselect all are the way out
+  because emptying the selection is the only thing leaving could mean, and the
+  tick sits on every card always so picking up again after a delete is one
+  click rather than a mode to re-enter.
+
+  **In select mode the whole picture is the target** (#538), as a still's whole
+  tile is. Only in select mode: with nothing picked, Play owns the player and
+  Continue owns its corner, and a card-wide target would take both away. The
+  overlay sits under the tick and the `...` (`z-index: 2` against their 3), so
+  those keep their own clicks, and stops at the caption so the prompt stays
+  selectable text.
+
+  **Entering select mode stops whatever was playing**, which is what lets there
+  be no exception. Picking and watching are different things to be doing, and
+  the wall is one or the other: in select mode every card is a poster and a
+  tick, with nothing under the picture that a click would rather have gone to.
+  It briefly covered every card _except_ the playing one, whose scrubber was in
+  use -- a rule that had to be stated, and that read on the wall as one tile
+  behaving unlike its neighbours. The card rewinds itself on the way out, the
+  same as when another card takes playback.
+
+  **The tick is the way in** -- the card deliberately does _not_
+  become one big toggle in select mode the way a still does, because a click
+  anywhere on it would have to take Play away. It sits bottom-left of the unit,
+  the gallery card's own corner (#534); it was top-left while the chrome was
+  positioned against the player rather than against the whole block.
+
 - **Clips are `user_images` rows that the gallery does not show.** `source` is
   `ai_video`, and `listGalleryImages` filters `source in ('upload',
 'ai_generated')`. **Activity did not pick them up for free** -- this file said

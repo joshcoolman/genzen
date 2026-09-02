@@ -146,6 +146,18 @@ describe('an unreadable reference fails before FAL is paid (#364)', () => {
     ).rejects.toThrow(/1 of 2/)
   })
 
+  it('carries the reason the upload failed, not just the count (#556)', async () => {
+    // A `catch {}` here once turned a FAL-side refusal into a sentence blaming
+    // the library, and there was no way to tell them apart after the fact.
+    const id = freshId()
+    mockSql.mockResolvedValue([{ id, storage_path: `path/${id}` }])
+    mockUpload.mockRejectedValueOnce(new Error('fal said 429'))
+
+    await expect(uploadLibraryImagesToFal([id], 'user-1')).rejects.toThrow(
+      /fal said 429/,
+    )
+  })
+
   it('says nothing was generated, because nothing was', async () => {
     const gone = freshId()
     mockSql.mockResolvedValue([])
@@ -158,5 +170,74 @@ describe('an unreadable reference fails before FAL is paid (#364)', () => {
     // No references selected and references-that-could-not-be-read are
     // different facts, and only the second is an error.
     expect(await uploadLibraryImagesToFal([], 'user-1')).toEqual([])
+  })
+})
+
+/**
+ * #556. Eleven references opened eleven concurrent uploads to FAL, and both
+ * transport failures seen so far are what concurrency on one shared connection
+ * produces. The cap is the part that stops provoking them.
+ */
+describe('reference uploads are capped, and stay in order', () => {
+  it('never runs more than three uploads at once', async () => {
+    const ids = Array.from({ length: 11 }, () => freshId())
+    mockSql.mockResolvedValue(
+      ids.map((id) => ({ id, storage_path: `p/${id}` })),
+    )
+
+    let inFlight = 0
+    let peak = 0
+    mockUpload.mockImplementation(async () => {
+      inFlight++
+      peak = Math.max(peak, inFlight)
+      await new Promise((r) => setTimeout(r, 1))
+      inFlight--
+      return 'https://fal.test/x'
+    })
+
+    await uploadLibraryImagesToFal(ids, 'user-1')
+    expect(peak).toBeLessThanOrEqual(3)
+    expect(mockUpload).toHaveBeenCalledTimes(11)
+  })
+
+  it('answers in the caller’s order, not completion order', async () => {
+    const ids = Array.from({ length: 6 }, () => freshId())
+    mockSql.mockResolvedValue(
+      ids.map((id) => ({ id, storage_path: `p/${id}` })),
+    )
+    // Later items finish first, which is exactly what an unordered gather
+    // would scramble: the prompt labels these "[Image 1, Image 2, ...]".
+    let n = 0
+    mockUpload.mockImplementation(async () => {
+      const mine = n++
+      await new Promise((r) => setTimeout(r, (6 - mine) * 2))
+      return `https://fal.test/${mine}`
+    })
+
+    expect(await uploadLibraryImagesToFal(ids, 'user-1')).toEqual([
+      'https://fal.test/0',
+      'https://fal.test/1',
+      'https://fal.test/2',
+      'https://fal.test/3',
+      'https://fal.test/4',
+      'https://fal.test/5',
+    ])
+  })
+})
+
+describe('a source that failed to upload is not a source that is gone (#556)', () => {
+  it('throws with the reason when the read fails', async () => {
+    const id = freshId()
+    mockSql.mockResolvedValue([{ id, storage_path: `p/${id}` }])
+    mockUpload.mockRejectedValueOnce(new Error('tls alert bad record mac'))
+
+    await expect(uploadLibraryImageToFal(id, 'user-1')).rejects.toThrow(
+      /bad record mac/,
+    )
+  })
+
+  it('still returns null when there is genuinely no row', async () => {
+    mockSql.mockResolvedValue([])
+    expect(await uploadLibraryImageToFal(freshId(), 'user-1')).toBeNull()
   })
 })

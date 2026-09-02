@@ -45,6 +45,16 @@ interface GeneratorPanelProps {
   modelSelector: ReturnType<typeof useModelSelector>
   userImages: UserImagesData
   modelDisplay?: 'panel' | 'dropdown'
+  /** The group the surrounding route is standing in, which an upload from the
+   *  picker lands in (#549). Canvas has none and passes nothing. */
+  uploadGroupId?: string | null
+  /** Opens the Shots dialog for the staged set (#553). Optional because the
+   *  route owns the submits, not the panel: Images passes it, Canvas does not,
+   *  and the button is absent rather than dead where nobody handles it. */
+  onShots?: () => void
+  /** Opens the Lighting dialog for the staged set (#563). Optional on the same
+   *  reasoning as `onShots`, and passed by the same routes. */
+  onLighting?: () => void
 }
 
 /**
@@ -63,6 +73,9 @@ export function GeneratorPanel({
   modelSelector,
   userImages,
   modelDisplay = 'panel',
+  uploadGroupId = null,
+  onShots,
+  onLighting,
 }: GeneratorPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const { confirm, dialogProps } = useConfirm()
@@ -159,6 +172,33 @@ export function GeneratorPanel({
       <div className={styles.refsGroup}>
         <div className={styles.refsHead}>
           <span className={styles.refsLabel}>Ref images</span>
+          {/* Shots (#553): the staged set is already the answer to "which
+              pictures", so the way in is here rather than a card's `...` menu.
+              It needs at least one reference and has nothing to say during a
+              run, on the same condition Clear uses. */}
+          {onShots && generator.refImages.length > 0 && !generator.loading && (
+            <button
+              type="button"
+              onClick={onShots}
+              className={styles.refsClear}
+            >
+              Shots
+            </button>
+          )}
+          {/* Lighting (#563): the same errand as Shots against the same staged
+              set -- one treatment applied to each picture separately -- so it
+              stands beside it rather than behind a menu of its own. */}
+          {onLighting &&
+            generator.refImages.length > 0 &&
+            !generator.loading && (
+              <button
+                type="button"
+                onClick={onLighting}
+                className={styles.refsClear}
+              >
+                Lighting
+              </button>
+            )}
           {generator.refImages.length > 0 && !generator.loading && (
             <button
               type="button"
@@ -192,6 +232,7 @@ export function GeneratorPanel({
            often a file on disk, and getting it in used to mean leaving this
            dialog for the Images toolbar and coming back. */
         onRefresh={userImages.refresh}
+        uploadGroupId={uploadGroupId}
         onConfirm={(selected) =>
           generator.addRefImages(
             selected.map((s) => ({ id: s.id, url: s.url, title: s.title })),

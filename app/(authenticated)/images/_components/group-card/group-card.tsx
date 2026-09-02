@@ -8,7 +8,7 @@ import {
   Unlink,
 } from 'lucide-react'
 import styles from './group-card.module.css'
-import type { ImageGroupSummary } from '../../_hooks/use-groups'
+import type { ImageGroupSummary } from '#/features/groups/hooks/use-groups'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import {
   Thumbnail,
 } from '#/components'
 import { imageUrl } from '#/lib/image-url'
+import { cx } from '#/lib/utils'
 
 /** Five, filling the caption's width. A group with fewer members still draws
  *  five cells -- the empty ones ghost, which keeps the row the same shape on
@@ -32,6 +33,11 @@ interface GroupCardProps {
    *  queued, uploads still sending. Client-derived and passed in, so saying so
    *  costs no round trip and the strip below is never asked to be a spinner. */
   working?: number
+  /** How many of its images are hidden (#546). The bar above the wall reports
+   *  only what is hidden where you are standing, so without this a picture
+   *  hidden inside a group is invisible from out here with nothing saying so.
+   *  Same line as the count, same register as `working`. */
+  hidden?: number
   onOpen: (group: ImageGroupSummary) => void
   onRename: (group: ImageGroupSummary) => void
   /** Move every picture into another group and drop this one (#350). Absent
@@ -53,6 +59,13 @@ interface GroupCardProps {
   /** Something in the grid is selected (#325). A group cannot join a selection,
    *  so it steps out of the way rather than offering its own verbs. */
   selectionActive?: boolean
+  /** A drag is in flight somewhere in the grid (#438). The card is inert to
+   *  clicks during a selection and live to drops at the same time -- which is
+   *  not a contradiction but does have to be deliberate, so the dimming that
+   *  says "not for you" lifts for as long as there is something to catch. */
+  dragActive?: boolean
+  /** The pointer is over this card right now. */
+  dropActive?: boolean
 }
 
 /**
@@ -78,6 +91,7 @@ export function GroupCard({
   group,
   showInfo = true,
   working = 0,
+  hidden = 0,
   onOpen,
   onRename,
   onMove,
@@ -87,6 +101,8 @@ export function GroupCard({
   expanded = false,
   members,
   selectionActive,
+  dragActive = false,
+  dropActive = false,
 }: GroupCardProps) {
   // Built here rather than read from the gallery's URL map: that map only covers
   // the rows the grid is currently rendering, and a group's members are
@@ -231,7 +247,13 @@ export function GroupCard({
          image card is. A group can never be part of the selection, and opening
          one navigates *and* drops the selection on the way in -- so a stray
          click here used to throw away the picking that was in progress. */
-      dimmed={selectionActive}
+      dimmed={selectionActive && !dragActive}
+      className={cx(dragActive && styles.droppable, dropActive && styles.over)}
+      /* The drag's drop targets are found by hit-testing (#438), so the card
+         has to name itself in the DOM. Always present: measuring happens once
+         at drag start, and a target that only appears mid-drag would never be
+         measured. */
+      dataAttrs={{ 'data-drop-group-id': group.id }}
       /* `...` and nothing else. The trash that sat in the opposite corner went
          in #431: it was the same icon in the same place an image card carries
          one, in a grid that mixes the two, so the click that bins a whole
@@ -251,7 +273,18 @@ export function GroupCard({
       fallback={<div className={styles.empty} />}
       /* The slot an image card fills with the model name. Same corner, same
          register: it says what kind of thing the picture is standing for. */
-      imageOverlay={<span className={styles.kind}>Image group</span>}
+      imageOverlay={
+        <>
+          <span className={styles.kind}>Image group</span>
+          {/* Confirmation before you let go, and it names the destination
+              rather than saying "Add to group" -- with four cards on screen
+              the question is *which* one, and the generic phrasing answers
+              the one you were not asking. */}
+          {dropActive && (
+            <span className={styles.dropHint}>Add to {group.name}</span>
+          )}
+        </>
+      }
       onClick={selectionActive ? undefined : () => onOpen(group)}
     >
       {showInfo && (
@@ -271,6 +304,9 @@ export function GroupCard({
               {working > 0 && (
                 <span className={styles.working}>, {working} working</span>
               )}
+              {/* After working, and in the same quiet grey: it is a fact about
+                  the group that is true until you change it, not news. */}
+              {hidden > 0 && <span>, {hidden} hidden</span>}
             </span>
           </div>
           {/* The row is the toggle (#352). A button rather than the card's own

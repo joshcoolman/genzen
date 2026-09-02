@@ -1,0 +1,1 @@
+Dutch Angle, Mid-Distance - Camera at mid-height and medium distance, rolled fifteen to twenty degrees off level. Horizon tilts and verticals lean. Nothing about the subject changes; the instability is entirely optical.

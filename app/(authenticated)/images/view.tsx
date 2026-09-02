@@ -1,13 +1,17 @@
 'use client'
 
+import { GroupHeading } from '../_components/group-heading/group-heading'
+import { GroupPickerDialog } from '../_components/group-picker-dialog/group-picker-dialog'
+import { HiddenBar } from '../_components/hidden-bar/hidden-bar'
 import { ImageGallery } from './_components/image-gallery/image-gallery'
 import { DownloadDialog } from './_components/download-dialog/download-dialog'
 import { GeneratorDock } from './_components/generator-dock/generator-dock'
-import { GroupHeading } from './_components/group-heading/group-heading'
-import { GroupPickerDialog } from './_components/group-picker-dialog/group-picker-dialog'
 import { ImageViewer } from './_components/image-viewer/image-viewer'
+import { OutpaintDialog } from './_components/outpaint-dialog/outpaint-dialog'
+import { OrderRow } from './_components/order-row/order-row'
 import { ScopeRow } from './_components/scope-row/scope-row'
-import { HiddenBar } from './_components/hidden-bar/hidden-bar'
+import { ShotsDialog } from './_components/shots-dialog/shots-dialog'
+import { LightingDialog } from './_components/lighting-dialog/lighting-dialog'
 import { SelectionActions } from './_components/selection-actions/selection-actions'
 import { Toolbar } from './_components/toolbar/toolbar'
 import { Workspace } from './_components/workspace/workspace'
@@ -24,6 +28,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     userImages,
     modelSelector,
     generator,
+    uploadFiles,
     prefs,
     dock,
     download,
@@ -41,12 +46,29 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     addReference,
     usePromptText,
     loadIntoPanel,
-    animate,
+    outpaintTarget,
+    startOutpaint,
+    cancelOutpaint,
+    outpainting,
+    runOutpaint,
+    shotsOpen,
+    openShots,
+    closeShots,
+    lightingOpen,
+    openLighting,
+    closeLighting,
+    runLighting,
+    runShots,
     groups,
     workingByGroup,
+    hiddenByGroup,
     visibleGroupMembers,
     activeGroup,
     activeGroupId,
+    manualOrder,
+    hasManualOrder,
+    reorderGroupImages,
+    setGroupOrderMode,
     openGroup,
     leaveGroup,
     groupFlow,
@@ -81,6 +103,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           panelOpen={dock.open}
           onTogglePanel={() => dock.setOpen(!dock.open)}
           groupName={activeGroup?.name}
+          /* Undefined wherever the route is about generating rather than
+             filing, which is what leaves the button out (#550). */
+          onUploadFiles={uploadFiles}
           /* Same rule as Trash group: only inside one, where the set it
              exports is what you are looking at (#477). */
           onDownloadGroup={
@@ -98,6 +123,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
               : undefined
           }
           onNewGroup={() => setGroupFlow({ kind: 'create', targets: [] })}
+          manualOrder={manualOrder}
         />
 
         {/* Above the wall, not under it (#504): a statement about pictures
@@ -105,9 +131,8 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
             of pictures. */}
         <HiddenBar
           hidden={visibility.hiddenImages}
-          imageUrls={gallery.imageUrls}
           onShowAll={() => void visibility.showAll()}
-          onUnhide={(id) => void visibility.unhide([id])}
+          onUnhide={(id: string) => void visibility.unhide([id])}
           focusCount={visibility.focusIds?.size ?? null}
           onClearFocus={visibility.clearFocus}
         />
@@ -115,7 +140,24 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         {/* Top level only -- inside a group the group is already the scope
             (#444), and the heading takes this row's place. */}
         {activeGroup ? (
-          <GroupHeading name={activeGroup.name} onBack={leaveGroup} />
+          <>
+            <GroupHeading
+              name={activeGroup.name}
+              backLabel="Images"
+              onBack={leaveGroup}
+            />
+            {/* Only once an arrangement exists (#505) -- dragging a card is
+                what creates one, so the control arrives as the result of the
+                gesture rather than as a precondition for it. It sits where
+                `ScopeRow` sits at top level, which is the slot for a statement
+                about what you are looking at. */}
+            {(hasManualOrder || manualOrder) && (
+              <OrderRow
+                value={manualOrder ? 'manual' : 'date'}
+                onChange={(order) => void setGroupOrderMode(order === 'manual')}
+              />
+            )}
+          </>
         ) : (
           <ScopeRow
             value={prefs.originFilter}
@@ -134,12 +176,13 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onHide={(img) => void visibility.hide([img.id])}
           onRetry={gallery.retryImage}
           onDownload={download.start}
-          onAnimate={animate}
+          onOutpaint={startOutpaint}
           onOpen={viewer.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
           onLoad={(img) => void loadIntoPanel(img)}
           workingByGroup={workingByGroup}
+          hiddenByGroup={hiddenByGroup}
           expandedGroupIds={groups.expandedIds}
           /* Same rule as the swatches on a collapsed card (#504): the
              expanded strip is pictures, so a hidden one does not belong in it,
@@ -178,6 +221,24 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           /* Shift-drag sweeps a region into the selection (#440). Additive
              only, which is why it is `addMany` and not `toggle`. */
           onSweepSelect={selection.addMany}
+          selectedIds={selectedIds}
+          /* Drag onto a group card to file it there (#438) -- the same write
+             the picker dialog makes, which is why the dialog stays: it is how
+             you reach a group scrolled out of view, and how you create one on
+             the way. Only at top level, where group cards are in the grid. */
+          onDropOnGroup={
+            activeGroupId
+              ? undefined
+              : (groupId, ids) => void addToGroup(groupId, ids)
+          }
+          /* Inside a group the same press rearranges instead (#505). Exactly
+             one of the two drags is ever armed -- there are no group cards to
+             drop onto in here, and no arrangement to make out there. */
+          onReorder={
+            activeGroupId
+              ? (orderedIds) => void reorderGroupImages(orderedIds)
+              : undefined
+          }
           onBackgroundClick={selectMode ? selection.clearSelection : undefined}
         />
 
@@ -207,6 +268,9 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
         generator={generator}
         modelSelector={modelSelector}
         userImages={userImages}
+        uploadGroupId={activeGroupId}
+        onShots={openShots}
+        onLighting={openLighting}
       />
 
       {viewer.isOpen && (
@@ -218,8 +282,46 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onNext={viewer.next}
           onPrev={viewer.prev}
           onDelete={viewer.deleteAndAdvance}
+          onHide={viewer.hideAndAdvance}
         />
       )}
+
+      {/* One picture, one or more shapes (#430). Opened from a card's `...`;
+          it owns nothing but its own selection, so closing it is enough to
+          undo it. */}
+      <OutpaintDialog
+        image={outpaintTarget}
+        imageUrl={
+          outpaintTarget ? gallery.imageUrls[outpaintTarget.id] : undefined
+        }
+        busy={outpainting}
+        onGenerate={(ratios) => void runOutpaint(ratios)}
+        onCancel={cancelOutpaint}
+      />
+
+      {/* One camera move applied to each staged reference on its own (#553).
+          Opened from the panel's Ref images header, because the strip is
+          already the answer to "which pictures". */}
+      <ShotsDialog
+        open={shotsOpen}
+        images={generator.refImages}
+        onGenerate={(imageIds, shotIds, modelId, instructions) =>
+          void runShots(imageIds, shotIds, modelId, instructions)
+        }
+        onCancel={closeShots}
+      />
+
+      {/* One light applied to each staged reference on its own (#563). Same
+          way in as Shots, for the same reason: the strip already answers
+          "which pictures". */}
+      <LightingDialog
+        open={lightingOpen}
+        images={generator.refImages}
+        onGenerate={(imageIds, effectIds, modelIds) =>
+          void runLighting(imageIds, effectIds, modelIds)
+        }
+        onCancel={closeLighting}
+      />
 
       {/* Groups (#319). One flow, four surfaces: pick a group, name a new one,
           or confirm the two that change what exists. */}

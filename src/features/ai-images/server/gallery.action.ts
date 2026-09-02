@@ -201,34 +201,3 @@ export async function deleteGalleryImage(imageId: string): Promise<void> {
   `
   await clearCanvasMembership(userId, [imageId])
 }
-
-/**
- * Hide or unhide many images (#504).
- *
- * The non-destructive sibling of `trashGalleryImages`, and the reason it
- * exists: the only way to make an image stop cluttering a group was to trash
- * it, so reducing visual noise meant destroying work. A hidden image keeps its
- * group, its canvas membership and its objects -- nothing is cleared, because
- * nothing is being taken away.
- *
- * That is the whole difference from Trash, which clears `group_id` and canvas
- * membership so a restore has one destination (#319, #446). Unhiding is not a
- * restore; the image never went anywhere.
- *
- * One statement for the whole set, for the reason #329 gave: selecting things
- * is *for* bulk, and a loop of server actions is one round trip per image with
- * a route re-render on each.
- */
-export async function setImagesHidden(
-  imageIds: Array<string>,
-  hidden: boolean,
-): Promise<void> {
-  const { userId } = await resolveAuth()
-  if (imageIds.length === 0) return
-
-  await sql`
-    update user_images
-    set hidden_at = ${hidden ? sql`now()` : sql`null`}
-    where user_id = ${userId} and id = any(${imageIds})
-  `
-}

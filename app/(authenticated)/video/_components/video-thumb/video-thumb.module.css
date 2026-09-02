@@ -7,18 +7,79 @@
   background: var(--surface);
 }
 
-/* The badge is positioned against this rather than the card, so it sits on the
-   picture the way a still's does instead of floating over the caption. */
+/* **The whole thumbnail: the player and both frames** (#534). Every piece of
+   overlay chrome is positioned against this rather than against the player,
+   which is the change that makes the corners usable: the player's bottom edge
+   -- where native controls live -- is now the *middle* of this box, and the
+   bottom corners belong to the two frames, which have no controls ever.
+
+   On a pending or failed clip there is no frames block and this is just the
+   player, so the bottom corners land on it. Safe anyway: such a clip never
+   plays, so it has no controls either. */
+.unit {
+  position: relative;
+}
+
+/* Only the player. It keeps `position: relative` for the play button, which is
+   the player's control and centres on the player rather than on the unit. */
 .stage {
   position: relative;
 }
 
+/* `aspect-ratio` is a fallback: the component sets the clip's own shape inline,
+   clamped and snapped to the shape it reads as.
+
+   **`cover`, in both states.** Snapping means the box can be up to the 5%
+   tolerance off the picture's true rectangle, and `contain` draws that
+   difference as thin edges down the sides -- at rest and while playing alike.
+   Filling the box absorbs it, at the cost of the same 5% cropped, which is what
+   the app already treats as no difference at all. The two frames below fill
+   their halves the same way, so a card never shows an edge in any state.
+
+   The exception it also swallows: a clip outside the clamp -- portrait, or
+   ultrawide -- is cropped to the nearest allowed box rather than centred in it.
+   That is a real crop, not a 5% one, and it is the thing to watch if portrait
+   clips start mattering. */
 .player {
   display: block;
   width: 100%;
   background: var(--image-backing);
   aspect-ratio: 16 / 9;
-  object-fit: contain;
+  object-fit: cover;
+}
+
+/* The only thing on an unplayed card. Centred and larger than the badge on the
+   last frame, because those are two different weights of invitation: this one
+   is the card's main verb, that one is a way out of it.
+
+   Same fill as the frame's badge, for the same reason -- it sits on a picture
+   that could be any colour, and a bare glyph disappears against half of them. */
+.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--surface-sunken) 75%, transparent);
+  color: var(--text);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+.play:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.play:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .state {
@@ -44,34 +105,14 @@
   }
 }
 
-/* `Thumbnail`'s `.modelBadge`, matched deliberately -- same size, same padding,
-   same radius, same scrim -- so a clip and a still label themselves the same
-   way. Not composed from it: that class belongs to a primitive this component
-   does not render, and importing across module boundaries to share five
-   declarations is how a primitive acquires a second owner.
+/* `card-caption.module.css`'s block: the same padding, the same gap.
 
-   Top rather than bottom, which is the one honest departure: the native video
-   controls own the bottom edge, and a badge there would sit under the
-   scrubber. */
-.badge {
-  position: absolute;
-  top: var(--space-8);
-  right: var(--space-8);
-  max-width: calc(100% - var(--space-8) * 2);
-  overflow: hidden;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--scrim);
-  color: var(--text-muted);
-  font-size: var(--text-3xs);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-/* `card-caption.module.css`'s block: the same padding, the same gap. */
+   **It grows to fill the card** so `.facts` can sit on the bottom edge. The
+   grid stretches cards to their row's height, so without this a short card
+   ended with its facts row floating above a band of empty surface. */
 .caption {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-8) var(--space-12) var(--space-12);
@@ -81,9 +122,18 @@
    clamped to three lines. It read at `--text-sm` here, which made the same
    sentence look like a different kind of text depending on which route you
    were on. Three lines is enough to recognise a prompt; Activity shows it
-   whole. */
+   whole.
+
+   **It reserves all three lines whether or not it needs them** (#537). A wall
+   of takes of the same shot is a page of near-identical cards, so the only
+   thing that makes it scannable is that the numbers are always in the same
+   place -- and a prompt that ran to two lines pushed its card's facts row down
+   while its neighbour's stayed up. Reserved, every card is read at one height.
+   `4.5em` is the clamp: three lines at the 1.5 this sets, in the element's own
+   size, so the two cannot drift apart. */
 .prompt {
   display: -webkit-box;
+  min-height: 4.5em;
   overflow: hidden;
   margin: 0;
   font-size: var(--text-3xs);
@@ -93,78 +143,270 @@
   line-clamp: 3;
 }
 
-/* Continue starts the next clip; everything below the rule is about this one
-   (#494). Left edge, quiet, and the same type as its neighbours -- it is a
-   convenience, not a call to action, and a filled button here would outweigh
-   the picture above it. */
+/* The clip's two ends, flush under the player: half the card each, no gap
+   between them and none at the edges. The player, the frame it opens on and
+   the frame it stops at are one picture of the clip -- a gap anywhere in there
+   makes them three things that happen to be stacked, and the card stops
+   reading as one bigger thumbnail.
+
+   A grid rather than flex, because 50/50 has to hold exactly: two flex items
+   at `flex: 1` disagree by a pixel when their intrinsic widths differ, and the
+   seam down the middle of the card is the one place that shows. */
+.ends {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  /* `aspect-ratio` is set inline, twice one frame's: the strip owns the height,
+     so the two cells cannot round to different ones. `overflow` clips the half
+     pixel left over when a column width is fractional. */
+  overflow: hidden;
+}
+
+/* **Shaped by the clip**, from the row's own width and height set inline, so
+   each frame is edge-to-edge: nothing letterboxed, nothing cropped, and the
+   pair's outline is one more place the clip's shape is legible -- the fact the
+   caption below now leads with.
+
+   No fixed height. The column is half the card and the height follows the
+   shape, so a 21:9 pair is short and a portrait pair is tall, which is the
+   same thing the clip itself is. */
+/* Both frames fill their cell exactly, at the height the strip decided.
+   `cover` rather than a shape of their own: the cell is already the clip's
+   shape, so this crops nothing and only absorbs the fractional pixel. */
+.end {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--image-backing);
+  object-fit: cover;
+}
+
+/* The prompt, and Continue beside it (#534).
+
+   **Top-aligned since #537**, where it sat on the prompt's last line before.
+   The last line is wherever the prompt happens to end, so the verb moved down
+   a row whenever a sentence ran long -- which is the same scanning problem the
+   reserved height below fixes, in the one control on this card. */
+.promptRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+/* **The one act on this card that starts new work**, which is why it is here
+   and not in the `...` menu with Download and Delete. It was the last frame
+   itself until #534; moving it out is what makes that block a picture rather
+   than a control, and the unit's corners usable.
+
+   **The word came off in #537 -- a circle and the arrow, in the caption's
+   top-right corner.** At three cards across, `Continue` was the only text on
+   the card competing with the prompt for the same line, and repeated down a
+   wall of near-identical takes it read as part of the caption rather than as a
+   control. The glyph carries it: `ArrowUpRight` is the same arrow it wore as a
+   badge on the last frame, so it is recognisably the same verb that moved. The
+   accessible name and the tooltip still say the whole thing.
+
+   It does not shrink: a wrapping prompt must not squeeze it to nothing. */
 .continue {
-  display: inline-flex;
+  display: flex;
+  flex: none;
   align-items: center;
-  gap: var(--space-4);
-  margin-block-start: var(--space-4);
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
   padding: 0;
   border: none;
-  background: none;
-  color: color-mix(in oklab, var(--text) 35%, transparent);
-  font-size: var(--text-3xs);
-  line-height: 1.5;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
   cursor: pointer;
+  transition:
+    color var(--duration-normal) var(--ease-in-out),
+    background var(--duration-normal) var(--ease-in-out);
 }
 
 .continue:hover:not(:disabled) {
-  color: var(--text);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.continue:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .continue:disabled {
   cursor: default;
 }
 
-/* The whole row pushed right, under a rule (#494). It used to run facts left
-   and verbs right, split by the spacer; Continue took the left edge, so the
-   split became a rule instead and the facts joined the verbs. Delete stays
-   last, which is what keeps it in the same place on every card whether or not
-   a Download sits beside it -- a destructive verb never lands under a finger
-   repeating a Download click. Same reasoning Trash's rows already carry. */
+/* Only the two facts a clip *is* -- Download and Delete left this row for the
+   menu in #534. Left-aligned, under a rule; there is nothing here to click, so
+   there is no destructive verb to keep in a fixed position any more.
+
+   **On the card's bottom edge** (#537) -- `auto` rather than a fixed margin,
+   so a card stretched to its row's height keeps its numbers at the bottom
+   instead of leaving a band of empty surface beneath them. Every card in a row
+   reads its facts off one line. */
 .facts {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-8);
-  margin-block-start: var(--space-4);
+  margin-block-start: auto;
   padding-block-start: var(--space-4);
   border-block-start: 1px solid var(--border);
-  color: color-mix(in oklab, var(--text) 35%, transparent);
   font-size: var(--text-3xs);
   line-height: 1.5;
 }
 
-.spacer {
-  flex: 1;
-}
-
-/* Quiet until wanted, matching the caption's own `Details` link: one of these
-   per card across a wall of clips, so it sits below the picture until you stop
-   on one. */
-.action,
-.destructive {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color var(--duration-normal) var(--ease-in-out);
-}
-
-.action:hover {
+/* Full strength. These are what the clip *is*. */
+.fact {
   color: var(--text);
 }
 
-.destructive:hover {
+/* **The model, at the right edge of the facts row rather than on the picture**
+   (#536). It was `Thumbnail`'s badge in a corner of the unit, matched to the
+   gallery card's -- which is right for a still and wrong here once the wall got
+   dense (#535): at a 12rem card the label is nearly half its width, sitting
+   over a half-width end frame, and it became the loudest thing on a card whose
+   whole job is to show the clip.
+   
+   So it reads as what it is: one more fact, in the row of facts, same size as
+   the shape and the duration. A step quieter than those, because they are what
+   the clip *is* and this is what made it -- and pushed to the right edge, so
+   the two kinds of fact are told apart by position without a separator. */
+.model {
+  margin-inline-start: auto;
+  overflow: hidden;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* `...`, top-left -- the gallery card's corner, but **always on, where a
+   still's is hover-revealed**. The divergence is deliberate. A still hides its
+   chrome because the picture is the thing and the grid is dense with them; a
+   clip card is a player, a pair of end frames and a caption, so it already
+   reads as an object with controls rather than as a bare picture, and one more
+   fixed marker in a corner costs it nothing. It also joins the two markers
+   already always on here -- the select tick and the model badge -- so the
+   card has no chrome that appears only if you happen to point at it.
+
+   Which is the real reason: a menu you have to hover to discover is one nobody
+   discovers, and this is now the only route to Download and Delete. */
+.actions {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--space-6);
+  z-index: 3;
+}
+
+/* The corner action (#537), in the slot #536 emptied of the model label. Same
+   offsets as `.actions`, mirrored -- the gallery card's arrangement exactly:
+   menu one side, the safe one-click verb the other, the tick below. */
+.cornerAction {
+  position: absolute;
+  top: var(--space-6);
+  right: var(--space-6);
+  z-index: 3;
+}
+
+/* **Sized so the `...` circle, the corner action and the select tick all
+   match** (#536, #537). The tick is a
+   flat `1.25rem`; `ExpandableIconButton`'s pill is its icon plus `--space-4`
+   of padding on each side, so a `0.75rem` glyph lands the circle on the same
+   20px. They are the always-on markers on the picture and they sit in three of
+   its corners -- at two diameters they read as two systems rather than as one
+   set. Shared by the menu's glyph and the corner action's.
+
+   The icon, not the padding: the padding is the primitive's, shared with every
+   other overlay button in the app. */
+.menuIcon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.destructive:hover,
+.destructive[data-highlighted] {
+  background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* Select mode (#517), borrowed wholesale from the gallery card so a clip and a
+   still say "picked" the same way: accent border when taken, a hair of grey
+   when selectable and not taken, nothing at all when nothing is picked.
+
+   Border colour only -- never width, and never a transform. The card is a
+   player with two frames flush under it, and a card that changed size on
+   selection would move every clip in the row. */
+.selectedItem {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* A step up from the resting border, not an announcement -- the gallery's own
+   value, arrived at there after full `--text-muted` turned the grid into a
+   page of outlined boxes competing with the pictures. */
+.selectableItem {
+  border-color: color-mix(in oklab, var(--text-muted) 50%, var(--border));
+}
+
+/* The whole picture as a select target, in select mode only (#538). Under the
+   two markers above it -- they are `z-index: 3` -- so the tick and the `...`
+   keep their own clicks; everything else on the picture is this. Sized to the
+   unit, so it covers the player and both frames and stops at the caption. */
+.selectOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* **Bottom-left, which is the gallery card's own corner** (#534). It was
+   top-left while the chrome was positioned against the player, where the
+   bottom edge belonged to native controls; against the unit that corner is the
+   outside edge of the first frame, and nothing is drawn there.
+
+   Same scrim and size as the gallery's tick, so the control is recognisably
+   the same one on both routes. Always on, unlike the menu above it: it is the
+   only thing saying a clip can be picked at all. */
+.selectTick {
+  position: absolute;
+  bottom: var(--space-8);
+  left: var(--space-8);
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--scrim);
+  backdrop-filter: blur(8px);
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 3;
+}
+
+.selectTick:hover {
+  color: var(--text);
+}
+
+.selectTick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.selectTickIcon {
+  width: 100%;
+  height: 100%;
+}
+
+/* No transition, matching the gallery's: selecting is a discrete answer to a
+   click, and easing it makes the wall feel like it is deciding. */
+.selectTickOn {
+  color: var(--accent);
 }

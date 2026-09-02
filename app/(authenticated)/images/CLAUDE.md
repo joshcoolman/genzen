@@ -40,7 +40,10 @@ list once when the seed comes back full, so the grid is never short.
   row of them in a card corner is more to mis-click, and the mis-click that
   matters is the destructive one. The drawer's plain Trash stays the fallback
   and the deliberate bulk case; both are at `/account/shortcuts`.
-  **Hide and focus are one predicate** (`isVisible` in `_hooks/use-visibility.ts`),
+  **Hide and focus are one predicate** (`isVisible` in
+  `src/features/visibility/`, promoted out of `_hooks/` in #537 when Video
+  became the second consumer -- `HiddenBar` went to
+  `app/(authenticated)/_components/` in the same change),
   because "hide these eight" and "show only these two" are the same filtered
   view from opposite ends. Only hiding persists: `hidden_at` is a column,
   independent of `deleted_at` -- trashing does not clear it, so a restore puts
@@ -56,12 +59,101 @@ list once when the seed comes back full, so the grid is never short.
   the grid for one build, which is the one place it cannot work -- you reach
   it after running out of pictures, which is when you have stopped looking.
   Toned, at the top, and absent entirely when there is nothing to say.
+  **It reports what is hidden where you are standing** (#546) -- the open
+  group, or top level, under the origin scope you are in -- because `Show`
+  sits under that sentence and has to act on the things it counted. Unscoped
+  it said "4 hidden" over a wall missing nothing, and Show from inside a group
+  unhid the whole library. The group card carries the other half: it says
+  ", 3 hidden" beside its count, so a picture hidden in a group is not
+  invisible from out here.
   **Clicking it opens a tray of the hidden pictures**; a thumbnail there is
   one click from coming back, and `Show` on the bar brings all of them.
   **Hidden rows are never drawn in the grid** -- the first shape toggled them
   back in among the visible ones while still calling them hidden, which read
   as broken: "4 hidden" over four visible pictures. The tray is a holding
   area, plainly somewhere else, so the wall stays true
+- **Outpaint is a card action, and the model is not a choice** (#430). The
+  `...` menu opens a dialog of every aspect ratio; tick as many as you need and
+  Generate submits one edit per shape against Grok Imagine 2.0. The lab page
+  that answered "which model can outpaint" is deleted (#528) -- a settled
+  question a picker would ask again before every press -- so the model is
+  `OUTPAINT_MODEL_SLUG` in `src/features/ai-images/outpaint.ts`, one line to
+  change and no UI. What that page established is written up there. **The shape the picture already is stays in the grid,
+  greyed and labelled `Current`**: absent, it reads as an option the app does
+  not support. It is measured from the thumbnail (`matchRatio`), not read from
+  `generation_metadata.aspect_ratio`, because an upload has none and a
+  generation's records what was asked for rather than what came back.
+  **Nothing is loaded into the panel** -- the results land in the grid as
+  ordinary pending cards, filed into the open group like any other generation.
+  `Animate` was removed from the same menu; `/video` still accepts `?image=<id>`
+  but nothing links to it
+- **Shots is the panel's action, not a card's** (#553). The staged reference
+  set is already the answer to "which pictures", so the way in is a `Shots`
+  button in the Ref images header -- absent until something is staged. The
+  dialog crosses the pictures you tick with the angles you tick: two and two is
+  four generations, **each carrying exactly one reference**
+  (`sourceImageId`, never `referenceImageIds`). That is the opposite errand
+  from the panel's own multi-image path, which sends the set together and asks
+  for one picture back. Unlike Outpaint the model _is_ a choice, because that
+  question is open -- which model keeps a subject itself while the camera moves
+  -- and it is one model at a time, defaulting to Nano Banana 2. Results land
+  in the grid as ordinary pending cards, filed into the open group; nothing is
+  loaded into the panel. The angles are `src/lib/prompts/shots/`.
+  **Instructions are typed in the dialog, never inherited from the panel** --
+  the panel's prompt is whatever was last generated with, and folding it in
+  silently would make "sixteen angles of this picture" also a restyle.
+  **The prompt is written by a vision model in two passes, and there are no
+  controls for it.** `writeShotScene` runs once per picture and writes the world
+  -- subject, place, light, grade. `writeShot` runs once per angle and writes
+  only the frame -- camera, framing, focal length, depth of field. **The caller
+  concatenates them**, which is the load-bearing part: handing the scene to the
+  second pass to carry forward puts a paraphrase in every shot, and the
+  paraphrase is drift. In code the scene is byte-identical across all sixteen by
+  construction. **An instruction that changes the world -- a different
+  environment, a different outfit, longer hair -- is applied in the scene pass
+  only**, so it comes out identical in every frame; the shot pass is told it as
+  established fact and takes only framing from what was typed. Two other ways of
+  writing these were built, offered as a control, judged on pictures and
+  deleted: the bare angle sent to FAL with no writer (random and poor), and one
+  vision call per angle writing scene and shot together (consistent renders,
+  drifting light -- the symptom that motivated the split). **Shots requires
+  `ANTHROPIC_API_KEY`** and fails loudly without it rather than falling back
+  (#365).
+  **Both dialogs close on the press, not on the run** (#563). Generate puts the
+  pending cards up and the dialog goes; the vision calls and the submits carry
+  on behind it. Held open until the last one landed, a big press sat there for
+  seconds looking like nothing had happened -- with the dialog covering the
+  grid, which is the one place the work is visible. So neither dialog has a
+  busy state: there is nothing to show after the press, because there is no
+  dialog. A failure still speaks, taking its own card away and toasting from
+  behind the closed one
+- **Lighting is Shots' surface on outpaint's mechanism** (#563). A `Lighting`
+  button beside `Shots` in the Ref images header, on the same condition, opening
+  the same shape of dialog: tick pictures, tick lights, every pair is its own
+  generation carrying exactly one reference. **No model writes the prompt** --
+  `buildLightingPrompt` joins `wrapper.md` to one effect and fills in its gels
+  -- so **Lighting needs no `ANTHROPIC_API_KEY`**, where Shots does.
+  **An effect is a lighting setup, never a description of a picture**: sources,
+  angles, gels, contrast, what the ground behind does. Nothing describes the
+  subject, because the model is looking at it. Getting that wrong is what two
+  vision passes were briefly built to paper over, and
+  `src/lib/prompts/lighting/index.ts` is the record of both. There is no
+  Instructions field: an effect is already a finished description of a light,
+  and a typed nudge beside it either says nothing or fights it. **The models are multi-selected, where Shots takes one**: a relight
+  is a single picture you compare, so one subject through four models is the
+  useful press, and the count is pictures x lights x models. It is the panel's
+  own `ModelSelector` -- the whole image-accepting lineup minus Z-Image Turbo,
+  which is denoise-with-strength and cannot take an instruction -- collapsed by
+  default, because the model is the only selection that survives an open. It
+  starts on Grok Imagine. **Nothing about an effect gates a model**: every
+  ticked model gets every ticked effect. A "Nano Banana only" note on the split
+  field's tile was removed once it was clear it recorded a prompt fault rather
+  than a model limit -- and it had never gated anything, being a label nothing
+  read. **The tiles are words, not thumbnails**:
+  a light has a name that already means something, and a picture of one would
+  be a render commissioned to illustrate itself until #562 can make an effect
+  from a reference picture that already exists
+
 - **The card has two icons, and a click opens the viewer.** `...` and
   Delete on the image, the model in its bottom-right corner; the whole prompt
   under it, being its own copy button. The model sat at the top of the caption
@@ -78,13 +170,11 @@ list once when the seed comes back full, so the grid is never short.
   is still the info toggle's job
 - **There is no source image; there is one set (#297).** The panel holds an
   ordered set of zero to N **Reference images**. Index 0 is the only asymmetry
-  left: the aspect ratio is derived from it, and it is submitted first. **Two
-  ways in, both inside the panel or under your fingers**: the library picker
-  (which uploads from disk since #489) and a paste on this route, which uploads
-  the image and pushes it onto the front of the set in one gesture (#491). The
-  toolbar's Upload button and its "Upload to group" flow are gone -- they were a
-  second route to the same act, further from where the image gets used, and
-  upload-and-immediately-use cost two gestures because of it
+  left: the aspect ratio is derived from it, and it is submitted first. **One
+  way in, and it is always deliberate**: the library picker inside the panel,
+  which uploads from disk since #489. A paste on this route used to push the
+  image onto the front of the set as well as uploading it (#491); it stopped in
+  #550, because an unnoticed reference is a generation you paid for
 - **Nothing caps the set (#341).** Stage as many images as you like against any
   selection; each model takes what its endpoint holds, `buildFalInput` drops the
   rest, and `images_used`/`images_requested` on the row make the card say "1 of
@@ -228,6 +318,71 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   it is cleared by the next press as well as by the click it waits for: a sweep
   that ends where no click follows otherwise leaves it armed to eat an
   unrelated click later
+- **Drag a thumbnail onto a group card to file it there (#438).** The picker
+  dialog stays -- it is how you reach a group scrolled out of view and how you
+  create one on the way -- so this is the shortcut for the case where the
+  destination is already on screen. Drag one card and it moves alone; drag a
+  card that is **part of the selection** and the whole selection comes with it;
+  drag an **unselected** card while a selection is up and it still moves alone,
+  because dragging a thing you are pointing at should move that thing rather
+  than depend on state you are not looking at. `_hooks/use-drag-to-group.ts`,
+  pointer events rather than HTML5 DnD -- native DnD's drag image is one
+  element, which is wrong for "five pictures are coming with this", and the
+  canvas already works in pointer events. Four things there are decisions.
+  **A group card is inert to clicks during a selection and live to drops at the
+  same time** (#325 dimmed it so a stray click could not throw away the picking
+  in progress); the dimming lifts for the length of a drag, so what is
+  droppable is visible exactly while there is something to drop. **A group card
+  is never draggable** -- groups do not nest, so it is a destination only.
+  **A press on a control does nothing**: `...`, the corner icon, the caption's
+  copy button and the select tick are all excluded, and a press that never
+  crosses five pixels reaches the card as an ordinary click. **Shift is what
+  tells this apart from the sweep** -- one press, two gestures, decided by the
+  modifier rather than by what it lands on. Scope falls out for free: inside a
+  group the grid holds no group cards, so the gesture is top level only with no
+  special case. The write is `addToGroup`, the same one the dialog calls -- there
+  is no server work in this at all. `reorderImages`/`updateImageOrder` went with
+  it: dead since drag-to-reorder was unwired, and leaving a corpse beside a live
+  drag gesture is two answers to what a plain drag means. Manual ordering (#505)
+  is a group-scoped resequence and will build what it needs
+- **Inside a group, the same drag rearranges (#505).** The two gestures never
+  run at once and do not need to be told apart: `use-drag-to-group` is armed
+  only at top level, where there are group cards to drop onto, and
+  `_hooks/use-drag-reorder.ts` only inside a group, where there is an order to
+  make. Same five-pixel threshold, same excluded controls, same Escape, same
+  swallowed click. **The insertion point is a gap, not a card** -- hit-testing
+  which card you are over and swapping makes a long move a run of swaps; the
+  gap is picked by which half of a card the pointer is in, and drawn as a rule
+  down that card's leading edge (inside the tile, because `Thumbnail` is
+  `overflow: hidden` and a line in the gutter is clipped away). **One card at a
+  time**, even with a selection up: moving several into one place raises
+  questions -- contiguous or not, in what order, what happens to the gap they
+  leave -- that the asked-for gesture does not need answered. The index
+  arithmetic is `moveTo` in `src/lib/reorder.ts`, extracted and tested because
+  it is wrong in exactly one direction when it is wrong: a gap past the card's
+  own place shifts by one when the card is removed, and every leftward drag
+  works either way.
+
+  **Two facts, kept apart** -- whether an arrangement _exists_ (any member with
+  a `group_position`, derived, never stored) and whether it is _in effect_
+  (`image_groups.manual_order`). Collapsing them would make the way back
+  destructive. So `OrderRow` -- `By date | Manual`, in `ScopeRow`'s slot and
+  `ScopeRow`'s register, since inside a group there is no origin scope --
+  appears only once an arrangement exists, and switching to By date keeps every
+  position. **The first drag is what turns it on**; there is no mode to declare
+  first, which is #284's rule about touching the picture you are looking at.
+  While Manual is in effect the toolbar's newest/oldest control is not drawn,
+  because a direction has nothing to order.
+
+  **`group_position`, not `sort_order`.** That column is the _library's_ order,
+  and a group card sorts among the top-level thumbnails on its newest member's
+  `sort_order` (#324) -- writing an arrangement into it would move the group
+  card around the top-level grid every time you rearranged the inside of the
+  group. **Nulls sort last, and that is the whole of "a new image goes to the
+  end"**: none of the three paths that put a row into a group writes a position,
+  a never-arranged group is all nulls and therefore chronological as before, and
+  the next drag numbers everything including the new arrivals
+
 - **A click opens the viewer, and #308's in-place preview is gone.** For three
   days the click turned the grid area, and only the grid area, into one large
   image -- toolbar still there, no scrim, hidden click zones in the outer
@@ -248,7 +403,15 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   me this bigger and let me move through the set" is the whole job, and
   anything proposed for it should have to answer why it is not a card action or
   a route. Delete and Backspace send to Trash, which is the one thing this has
-  that Explore's does not.
+  that Explore's does not. **`H` hides and moves on** (#545) -- the card's own
+  pairing (#504) reaching the surface where the judging actually happens, since
+  until then the only verb in here was the destructive one. Both are also
+  buttons on the picture's lower-left: key-only would have left the destructive
+  verb as the only _visible_ one, which is the inversion #504 removed from the
+  card. `actAndAdvance` in `use-image-viewer.ts` serves both -- the cursor moves
+  _before_ the act, because either one shrinks the list under it. A bare letter
+  is safe because the viewer holds no text field. Listed at
+  `/account/shortcuts`, in the same commit as the binding.
 
   Explore's `image-detail/` is the three-column one (image, prompt, filmstrip)
   and is **not shared, not imported, and not to be renamed toward "lightbox"**.
@@ -323,15 +486,24 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   id can change underneath it. The one remount left in that burst is
   `PendingImageCard` giving way to `ImageCard`, which is a real change of
   component and not a key problem
-- **Paste is the only way a file enters this route, and it does both halves**
-  (#491). `_hooks/use-uploads.ts` uploads the image into the library -- into the
-  open group, if you are standing in one -- and then hands it to `pushReference`
-  in `use-view.ts`, the same function Cmd-click on a card uses, so it lands at
-  the front of the reference set with the panel open. A screenshot pasted here
-  is almost always about to be generated from; making that two gestures was the
-  friction. It gets a blob preview immediately, being one image the user is
-  holding in mind. Choosing a file from disk belongs to the library picker
-  inside the panel (#489)
+- **A paste uploads, and stops there** (#550). `_hooks/use-uploads.ts` puts
+  every image on the clipboard into the library -- into the open group, if you
+  are standing in one -- with a blob preview immediately. It used to also hand
+  the file to `pushReference`, so a paste made it the reference image in one
+  gesture (#491). That read was fair while paste was the only way in and it was
+  always one screenshot: #489 gave references their own deliberate route, and
+  five files copied in Finder arriving as five references is not what anyone
+  meant by that paste. **The cost was never symmetric**, which is what settled
+  it -- an unwanted reference is not clutter you click away, it is a real
+  generation with real spend once it goes unnoticed. All a paste tells us is
+  that you want the images in the system
+- **The toolbar's Upload button is back, scoped** (#550). It appears while
+  scoped to Uploads, or inside a group -- both states about managing the library
+  rather than feeding a generation -- and nowhere else. #491's objection was "a
+  second route to the same thing, further from the work", which is true of an
+  always-present picker competing with the panel's library picker (#489) and not
+  true of a control that shows up when you have said you are filing. It shares
+  `uploadFiles` with the paste, so the destination rule is the same one
 - **Where an upload lands depends on where you are (#348, #350).** At top level
   a pasted image lands loose; inside a group it lands in the open group, with no
   dialog -- a group is a focus session, and asking which group you meant while
@@ -431,8 +603,12 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
   membership is a column rather than a join table for that reason: two groups
   would make an image vanish from top level twice. **There is no origin
   filtering inside a group** -- the group is already the scope. Groups do not
-  nest. `_actions/groups.action.ts` owns the writes, and **every one of them
-  returns what it changed** (#331): the affected group summaries, the images
+  nest. **The writes live in `src/features/groups/`, not here** -- they were
+  this route's `_actions/` until Video became a second consumer (#517), and
+  `kind` now keeps the two namespaces disjoint, so nothing on this route can
+  see or join a group of clips. `GroupHeading` and `GroupPickerDialog` moved to
+  `app/(authenticated)/_components/` in the same change; `GroupCard` did not,
+  because Video draws its own. Every write **returns what it changed** (#331): the affected group summaries, the images
   whose `group_id` moved, and the ids a group trash soft-deleted. That is still
   server truth rather than client arithmetic -- a write moves a cover, a count,
   a preview strip and a grid position at once -- but it costs one round trip
@@ -472,8 +648,9 @@ group` opens a dialog because a flyout of names commits you to picking one at
   burst** -- when a group's in-flight count reaches zero -- because that is the
   only moment the strip has something new to show. It counts pending rows and
   nothing else. A parallel count of uploads-in-flight, keyed by destination, went
-  with the toolbar's Upload (#491): a paste only ever targets the group you are
-  already looking at, where the card itself is on screen
+  with the toolbar's Upload (#491) and did not come back with it (#550): both a
+  paste and the button only ever target the group you are already looking at,
+  where the card itself is on screen
 - **Clicking the swatch strip grows it through the whole group (#352).** The
   strip keeps its five columns and its first row; the card just gets taller,
   five across, for as many rows as the group needs, at one even gap in both

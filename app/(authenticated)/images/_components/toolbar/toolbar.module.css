@@ -110,6 +110,18 @@
    Trash group inside a group and New group at top level. The way back is not
    here at all -- it is the heading over the grid (#432). */
 
+/* The Upload button's input (#550). Hidden rather than absent -- the button
+   clicks it -- and `display: none` would make it unclickable in some browsers,
+   so it is taken out of the layout instead. */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Quieter than the pills beside it: making a group is occasional, and filtering
    is the thing this row is mostly for. */
 .newGroup {

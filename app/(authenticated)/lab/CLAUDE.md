@@ -1,10 +1,11 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Six pages
+Where a feature is worked on before it is part of the app (#424). Seven pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
-none could be improved there. **Frames and Sequence are the other kind: things
-the app has never been able to do at all**, built here first so they can be used
-for real before anyone decides where they belong (#317, #497).
+none could be improved there. **Frames, Sequence and Lighting are the other
+kind: things the app has never been able to do at all**, built here first so
+they can be used for real before anyone decides where they belong (#317, #497,
+#562).
 
 ## Why these three are here
 
@@ -36,8 +37,9 @@ both worth knowing before editing the page:
 - **The numbers in a prompt are a contract with `useGenerator`, not
   decoration.** A prompt saying "image 2" only means anything because the submit
   prepends `[Image 1, Image 2, ...]` — see `src/features/ai-images/CLAUDE.md`.
-  That half lives in the app, deliberately: the lab does not generate, so a
-  numbering contract it kept to itself would be one Images never honours. It is
+  That half lives in the app, deliberately: Variations hands its run over
+  rather than sending it, so a numbering contract it kept to itself would be one
+  Images never honours. It is
   not lab code leaking outward, and moving it under `lab/` would break the
   feature silently.
 
@@ -83,9 +85,11 @@ into order, press play.
   gapless swap — the idle element is holding `index + 1`, so a jump anywhere else
   loads a fresh source and blanks for a beat. That is the right trade: a skip is
   a move _between_ cuts, never one of the cuts being judged.
-- **The clip picker moved to `lab/_components/`** when this page wanted it whole.
-  Two lab pages share it; a second copy under another page's `_components/` is
-  the same dialog drifting into two.
+- **`lab/_components/` is what a second page wanted whole.** The clip picker
+  went there when Sequence wanted the dialog Frames had; `clip-frames/` — a
+  clip's first and last frame side by side — went there when the picker wanted
+  what the run drew. The bar is two pages, and a copy under one page's
+  `_components/` is the same thing drifting into two.
 
 ## Frames is not one of them
 
@@ -140,46 +144,145 @@ a "no" now has somewhere to go.
   about, which is the schema this folder may not grow. The frames themselves
   survive in Images; only the run is lost, same as every other page here.
 
-## Outpaint is the one that spends money
+## Lighting is where an effect is written, not where one is applied
 
-Widen a picture to a shape it does not have, without typing the prompt that
-asks for it (#430). Everything else here costs fractions of a cent at Claude;
-one press of this against four models is real FAL spend, and the page exists to
-be pressed repeatedly while the instruction is tuned. So the estimate is under
-Generate as it is on Images and Video, and each result card carries what FAL
-charged — the one page built for experimenting cannot be the one place you
-cannot see what experimenting costs.
+Applying is shipped: the Lighting dialog crosses staged pictures with named
+effects (#563). Writing one was hand work with no surface at all. This page is
+the conversion (#562) -- a reference photograph in, a lighting setup out, tested
+before it is trusted.
 
-- **It asks plainly, composites nothing, and that turned out to be enough.**
-  The picture goes to the model with `outpaint.md` and the target ratio, and
-  that is all — no canvas, no empty bars drawn for the model to fill, no crop.
-  That was the open question the page existed to settle, and Josh settled it by
-  use on 2026-08-19: portrait sources to 5:4 and to 1:1 both came back right.
-  **So the compositing alternative is not needed and should not be built
-  speculatively** (#317 proved the browser could do it; nothing has asked it
-  to).
-  Worth knowing for whoever edits the instruction: any ratio change has two
-  valid answers, pad or crop, and the `.md` commits to padding and forbids the
-  other outright. It is written entirely in the language of growth, with no
-  clause for a target that is smaller in some dimension — that gap was looked
-  for and did not show up in results, so it stays as it is.
-- **Multi-select models, because there are two questions in one press.** Is the
-  instruction good, and can this model outpaint at all? A smeared result answers
-  neither alone; four models answer both at once. Same reason Video's selector
-  is multi (#417).
-- **Rows are written with `origin: 'images'`,** which is a small lie. The column
-  is constrained to `upload | images | canvas` and widening it is a migration,
-  which a lab page does not get.
-- **Results settle through the app's own poll.** They are `user_images` rows, so
-  `useGenerationPoll` plus a re-read of the library is the whole mechanism —
-  and the pictures survive in Images while the run itself does not, exactly as
-  Frames' do.
+Its question: **does this reference survive being turned into words?** A
+picture is an inseparable bundle -- hue, direction, hardness, falloff and
+background welded together, with no clause that peels one out -- and a word is
+too coarse, because "gel lighting" names a family and a model hands back the
+family's average. Prose that is neither is the only reusable form, and the only
+way to know a piece of it is any good is to render it.
 
-Promotion, when the instruction settles, is two surfaces at different arities:
-`...` on a thumbnail for one image, and a verb on the selection bar for one
-generation per selected image. That bar's verbs are all free and reversible
-today, so the first one that spends money carries its count and cost on the
-item.
+- **`derive.md` forbids naming a technique, and that is the mechanism rather
+  than a style rule.** "Split gel" is a pointer; a model handed a pointer
+  returns the average of everything the pointer covers. Forbidding it forces a
+  sentence about where a light stood, which is the only thing another model can
+  render. The same file forbids naming anything in the picture, for the reason
+  `src/lib/prompts/lighting/index.ts` paid for: an effect that mentions a cheek
+  is dead on a truck.
+- **Two test subjects, a face and an object, and the second one is the
+  point.** The issue asked for one canonical portrait. A portrait-only grid
+  cannot show the failure this page exists to catch -- #566's split field passed
+  on faces and returned flat colour rectangles on a truck, because the prose
+  described a photograph instead of a lighting setup. A test whose inputs cannot
+  show the failure reports success, which is worse than no test.
+- **Four candidates, two per subject, and each one re-runs alone.** Four is what
+  tells the failures apart: all four wrong is the prose, one or two right is the
+  model being noisy, one column landing while the other does not is prose that
+  described a picture. One candidate answers none of that, and re-deriving to
+  get another draw would change the thing being tested.
+- **It generates, and it stores nothing** -- the only page here that spends
+  money. Every other generation in the app reserves a row, queues and is
+  reconciled by polling; a candidate is a synchronous FAL call whose URL lives
+  as long as the tab. A judging grid is thrown away by design, and four
+  throwaway cards per attempt on the Images wall is a cleanup job. The cost of
+  that is real and named rather than hidden: **these runs do not appear in
+  Activity**, so the page prints the estimate before the press.
+- **Save writes the repo, and only under `pnpm dev`.** Three files: the `.md`,
+  its `LIGHTING_EFFECTS` entry, and the candidate you picked at
+  `public/lighting/<id>.webp`, which is the picture the Lighting dialog puts on
+  the tile. It started as a copy-the-text step and that was the wrong shape --
+  the page had derived, tested and named an effect and then offered a clipboard,
+  so the one moment it could have finished the job was the moment it stopped.
+  **The result is a diff, not a deployment**, which is what makes writing files
+  acceptable here: `git status` is the review and a bad effect is a
+  `git checkout`. The deployed filesystem is read-only and ephemeral, so Save
+  refuses there rather than half-working; authoring is the same local activity
+  as editing one of these `.md` files by hand. The copy blocks stay behind a
+  disclosure for exactly that case. A table is still not on the table -- that is
+  the issue's second tier, and it waits for the day effects are user content
+  rather than something we ship.
+- **An id already in the registry is refused rather than overwritten**, and the
+  fix is a different name, one field away. Overwriting would silently replace an
+  effect other work may already be judging.
+- **The test subjects are pinned in `localStorage`, not checked into
+  `public/`.** Checked-in subjects are right for something that ships and wrong
+  for a page whose first job is finding out which two pictures are good tests.
+  Freezing the pair into the repo is the graduation step, once it has stopped
+  changing.
+
+## Endpoint Explorer is the one that does not send anything anywhere
+
+Paste a FAL model URL; it fetches that endpoint's published OpenAPI document and
+says whether we could build controls for it (#523). No key, no queue, no spend --
+which is the point, because the question only gets answered by pointing it at
+dozens of endpoints.
+
+Its question: **does one parser hold across real FAL schemas?** MiniMax's are
+pristine and publish their own UI hints -- `x-fal-order-properties` for field
+order, `_fal_ui_field` marking a media slot, both evidently what FAL's own form
+is drawn from. Mirelo's publish neither and wrap every optional in
+`anyOf [T, null]`. Whether that is a spectrum five control kinds cover or a long
+tail with no end decides whether the real thing is worth building.
+
+- **Checking and keeping are separate acts.** Checking is free and most checks
+  are a glance, so a page that saved every one would be a wall of reports nobody
+  asked to keep. Save puts an endpoint in the rail; the rail is the short list
+  worth coming back to, and a refusal can be saved too -- re-checking one after
+  the parser learns something is most of why the list exists.
+- **The rail is single-select, and that is not a placeholder.** One endpoint's
+  controls at a time is the shape the real thing wants -- the same call Video
+  made in #417, for the same reason: these models disagree about almost
+  everything, so anything showing two at once has to intersect them and the
+  differences are what you came for. Today the content area holds the report;
+  later it holds the controls and what they generated.
+- **Required is muted text after the field's description, not a mark on its
+  name.** A red asterisk beside a green tick reads as two verdicts about one
+  field when only one of them is a verdict at all.
+- **The report is the compatibility check.** It is not a throwaway view of one:
+  whatever gets built on top, a pasted URL has to be accepted or refused, and
+  this is that decision rendered as a page instead of hidden behind a green dot.
+- **An unsupported field fails the endpoint even when it is optional.** Ignoring
+  it and sending the default reads as generous and is how a form silently stops
+  offering half of what a model does.
+- **Failures are saved like successes.** The list is the record of what has been
+  looked at; dropping the refusals makes the same URL worth pasting twice.
+- **Six control kinds, and the sixth is not a control.** text, textarea, enum,
+  number, boolean, media -- and `group`, a set of fields that may repeat. Kling
+  v3 Pro needs it twice: `multi_prompt` is a shot list (prompt + duration per
+  shot) and `elements` is a character (frontal image, reference angles, a clip,
+  a voice) referred to from the prompt as `@Element1`. Both are _optional_, so
+  the generous parser would have passed that endpoint and silently never offered
+  either -- and they are the entire reason to reach for it. Drawing a group
+  means a repeater, which arrives with the controls.
+- **A group is only as supported as its members**, for the same reason an
+  unsupported optional fails the endpoint: a form with a hole in it.
+- **Except when the schema declares a default.** An optional field we cannot
+  draw is skipped if FAL says what the model does without it -- omitting it then
+  accepts a stated value rather than silently switching something off. That is
+  the whole rule, and it draws the line where the shapes actually differ:
+  `image_size` is optional and defaults to `landscape_4_3` on FLUX and
+  `{2048, 2048}` on Seedream, a size nobody was going to type; Kling's
+  `multi_prompt` and `elements` and Recraft's `image_weights` declare nothing,
+  and leaving those out is a silent no to the capability that was the reason to
+  pick the model. So it still blocks the endpoints the strict rule was for, and
+  stops blocking three it should never have caught.
+  **A skipped field is still printed, with the default it will get** -- a dash
+  rather than a cross, since the endpoint works without it. Hiding it would
+  recreate the silence the strict rule existed to avoid.
+- **Findings from real schemas, kept because none was guessable:** the output
+  media hides behind a `$ref` that is _not_ always called `File` (`Image` for
+  FLUX, `Video-Output` for mirelo, and matching the name reported both as
+  returning nothing displayable); `image_urls` -- an array of strings -- is how
+  every multi-image editor on FAL spells its reference slot, so refusing arrays
+  outright failed the commonest shape there is; a media param may be a `$ref` to
+  a `{ url, ... }` object rather than a string (cassetteai's `video_url`) --
+  same control, different thing to send, which `asObject` records; the media
+  hint has **two spellings**, `_fal_ui_field` at the top level and
+  `ui: { field }` inside a nested schema, and a reader that knew one classified
+  Kling's element fields by name alone; and FLUX's `image_size` is genuinely
+  `anyOf [object, enum]`, which stays refused because a control that is both
+  does not exist.
+- **`x-fal` on a media param carries real limits** -- max file size, min
+  dimensions, duration and FPS ranges. Read by nobody yet; it is the validation
+  layer, not something needed to draw a control.
+- **It parses and reports; it does not generate and does not draw the
+  controls.** Those wait on what this says.
 
 ## Quirks
 
@@ -284,6 +387,15 @@ item.
   can give every clip. If the answer to "who writes this, and does it survive
   deleting `lab/`?" is the app and yes, it is not a lab migration.
 
+  **`fal_endpoints` (#523) is the second exception, and it passes the same test
+  for a different reason.** Endpoint Explorer keeps the FAL endpoints you have
+  pasted in; re-pasting a URL you already checked is what makes a validator
+  useless on its second day, so collecting them is the feature rather than one
+  page's scratch state. It is also the table the real Endpoint Explorer needs
+  whatever surface ends up owning it — this page is merely first to want it.
+  `generation_metadata` was not an option: an endpoint is not an image and has
+  no row to hang off.
+
 - **The rail collapses, and `layout.tsx` is a shell around a client
   component.** The collapsed state lives above both columns — the aside narrows
   and the main widens together — so `LabShell` owns it and the layout renders
@@ -323,7 +435,9 @@ throws. **Whether the output is any good is Josh's call.** That is the whole
 reason these pages exist: the judgement is the work, and it needs the eye of the
 person who knows what they were after.
 
-Two things follow, both learned by getting them wrong on Outpaint (#441):
+Two things follow, both learned by getting them wrong on Outpaint (#441) --
+a page that has since shipped into the app and been deleted (#528), which does
+not date the lessons:
 
 - **Do not spend real money proving a page works.** A render and a wired control
   cost nothing to check. If a live generation is genuinely needed, it is one

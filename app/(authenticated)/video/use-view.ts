@@ -1,9 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { generateVideo, listVideos } from './_actions/generate-video.action'
 import type { VideoRecord } from './_actions/generate-video.action'
+import type {
+  GroupWrite,
+  ImageGroupSummary,
+} from '#/features/groups/hooks/use-groups'
 import {
   DEFAULT_VIDEO_MODEL,
   aspectRatiosFor,
@@ -14,15 +18,22 @@ import {
   videoModelBySlug,
   videoModelsByPrice,
 } from '#/features/video/models'
-import { deleteGalleryImage } from '#/features/ai-images/server/gallery.action'
+import {
+  deleteGalleryImage,
+  trashGalleryImages,
+} from '#/features/ai-images/server/gallery.action'
 import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-poll'
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { captureLastFrame } from '#/features/video/frame-capture'
+import { findClipEndFrame } from '#/features/video/server/find-clip-end-frame.action'
 import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { usePersistedState } from '#/lib/use-persisted-state'
+import { useSelection } from '#/lib/use-selection'
+import { useGroups } from '#/features/groups/hooks/use-groups'
+import { useVisibility } from '#/features/visibility/hooks/use-visibility'
 import { toast } from '#/components'
 
 /** Which model the picker is on. One slug; see `readSlug`. */
@@ -127,6 +138,37 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   const userImages = useUserImages(user.id)
 
+  const router = useRouter()
+
+  /**
+   * Groups of clips (#517), the same mechanism Images has -- promoted to
+   * `src/features/groups/` when this route became its second consumer.
+   *
+   * `'video'` scopes the whole hook: this route sees video groups and only
+   * those, and a clip can never join an image group. The namespaces are
+   * disjoint by the `kind` column, for the reason `0012_group_kind.sql` gives.
+   */
+  const groups = useGroups('video')
+
+  /**
+   * The group being worked in lives in the URL, not in local state (#319's
+   * rule, unchanged). A group is a place: it survives a reload and it can be
+   * linked to. `?group=` rather than a route segment, because the view inside
+   * a group is this same view with one filter -- a second component is where
+   * the last attempt at grouping went wrong.
+   */
+  const activeGroupId = searchParams.get('group')
+  const activeGroup = groups.groups.find((g) => g.id === activeGroupId) ?? null
+
+  // A group that no longer exists -- dissolved in another tab, or a stale link
+  // -- drops you back to top level rather than showing an empty wall.
+  useEffect(() => {
+    if (!activeGroupId || groups.loading) return
+    if (!groups.groups.some((g) => g.id === activeGroupId)) {
+      router.replace('/video')
+    }
+  }, [activeGroupId, groups.loading, groups.groups, router])
+
   const [videos, setVideos] = useState(initialVideos)
   // A list, not a field: one first frame can carry several takes, and queueing
   // them is cheaper than sitting through one before writing the next. Same
@@ -156,9 +198,12 @@ export function useView(initialVideos: Array<VideoRecord>) {
   // spends three sentences failing to pin down.
   const [endSources, setEndSources] = useState<Array<SourceImage>>([])
 
-  // `?image=<id>` is how Animate hands a card over. It resolves once the
-  // library has loaded, because the strip needs a URL and a title, not just an
-  // id.
+  // `?image=<id>` pre-loads the first frame from a library row. It was how
+  // Images' `Animate` menu item handed a card over; that item is gone, so
+  // nothing in the app links here today and the parameter is kept as the
+  // route's front door for a still -- it costs one effect and it is what any
+  // future handoff would use. It resolves once the library has loaded, because
+  // the strip needs a URL and a title, not just an id.
   const handoffId = searchParams.get('image')
   useEffect(() => {
     if (!handoffId || sources.length > 0 || userImages.isLoading) return
@@ -221,6 +266,392 @@ export function useView(initialVideos: Array<VideoRecord>) {
     [refresh],
   )
 
+  /**
+   * Hide, and its twin focus (#537).
+   *
+   * The same hook Images uses, promoted here in this change -- a clip is a
+   * `user_images` row and `hidden_at` is a column on it, so the whole job was
+   * a surface one. Same shape as grouping before #517: the mechanism was
+   * already generic and only this route did not offer it.
+   *
+   * It matters more here than it did on the wall of stills. A wall of takes of
+   * one shot is mostly near-misses you want out of the way while you judge the
+   * two that worked, and a clip is expensive enough that binning one to tidy
+   * up is a real loss.
+   */
+  /**
+   * Where you are standing, without visibility in it (#546).
+   *
+   * The wall is this and then `visibility.visible`; the bar is this and then
+   * the opposite. Kept apart because the bar is asked about hidden rows, and a
+   * predicate that already excluded them would answer no to every one.
+   */
+  const inScope = useCallback(
+    (video: VideoRecord) =>
+      activeGroupId ? video.group_id === activeGroupId : !video.group_id,
+    [activeGroupId],
+  )
+
+  const visibility = useVisibility({
+    rows: videos,
+    inScope,
+    patch: (ids, hiddenAt) => {
+      const picked = new Set(ids)
+      setVideos((current) =>
+        current.map((video) =>
+          picked.has(video.id) ? { ...video, hidden_at: hiddenAt } : video,
+        ),
+      )
+    },
+  })
+
+  /**
+   * The clips this view is showing.
+   *
+   * At top level a grouped clip is *absent*, not shown twice -- the group card
+   * stands in for its members, which is the collapse that makes grouping worth
+   * having. Inside a group it is exactly that group's clips. Filtered here
+   * rather than in SQL, the way the gallery does it: the route already holds
+   * every row, so a group view is one filter instead of a second query.
+   */
+  const shownVideos = useMemo(
+    // Visibility first, so top level and every group inherit it and neither
+    // can forget -- the rule Images wrote in #504.
+    () => videos.filter((video) => visibility.visible(video) && inScope(video)),
+    [videos, visibility.visible, inScope],
+  )
+
+  /**
+   * The wall's cells: loose clips and group cards in one order.
+   *
+   * A group's key is its newest live member's time, which `readGroups` already
+   * computes -- so a group sorts among the clips by the same clock they do,
+   * and a group with a clip from this morning sits exactly where that clip
+   * would have. Sorting groups as a block ahead of every clip would pin one
+   * finished months ago above this morning's work.
+   *
+   * No group cards inside a group: membership is exclusive, so a group card
+   * there would stand in for members already on screen.
+   */
+  const cells = useMemo(() => {
+    const clipCells = shownVideos.map((video) => ({
+      key: video.id,
+      cell: { kind: 'clip' as const, video },
+      sortOrder: new Date(video.created_at).getTime() / 1000,
+    }))
+
+    const groupCells = activeGroupId
+      ? []
+      : groups.groups.map((group) => ({
+          key: group.id,
+          // A hidden clip does not appear in the group card's strip either
+          // (#537), exactly as #504 handles it for a still. Filtered here
+          // rather than in the read that builds it: the route holds every row,
+          // so this costs no round trip and tracks Show the moment it is
+          // pressed. `count` is left alone -- it is a fact about the group,
+          // not a description of what is on screen.
+          cell: {
+            kind: 'group' as const,
+            group: {
+              ...group,
+              preview_image_ids: group.preview_image_ids.filter(
+                (id) => !visibility.withheldIds.has(id),
+              ),
+            },
+          },
+          sortOrder: group.sort_order,
+        }))
+
+    return [...groupCells, ...clipCells]
+      .sort((a, b) => b.sortOrder - a.sortOrder)
+      .map(({ key, cell }) => ({ key, ...cell }))
+  }, [shownVideos, groups.groups, activeGroupId, visibility.withheldIds])
+
+  /**
+   * What each group has in flight, counted off rows this hook already holds.
+   *
+   * Arithmetic rather than a field on the summary (#350): a count that rode on
+   * the group read would make every settle a reason to re-read the groups,
+   * which is the churn that read is trying not to cause.
+   */
+  const workingByGroup = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const video of videos) {
+      if (!video.group_id || video.status !== 'pending') continue
+      counts[video.group_id] = (counts[video.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [videos])
+
+  /**
+   * How many of each group's clips are hidden -- the other half of #546.
+   *
+   * The bar counts only what is hidden where you are standing, so without this
+   * a clip hidden inside a group is invisible from out here with nothing
+   * saying so. Same arithmetic as `workingByGroup`, on rows already in hand.
+   */
+  const hiddenByGroup = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const video of videos) {
+      if (!video.group_id || !video.hidden_at) continue
+      counts[video.group_id] = (counts[video.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [videos])
+
+  // Re-read the summaries when a group *finishes*, not when each clip lands: a
+  // settled clip changes that group's cover and count, and one read at the end
+  // of a batch is the cheapest moment to pick both up.
+  const workingRef = useRef(workingByGroup)
+  useEffect(() => {
+    const before = workingRef.current
+    workingRef.current = workingByGroup
+    const drained = Object.keys(before).some(
+      (groupId) => before[groupId] > 0 && !workingByGroup[groupId],
+    )
+    if (drained) void groups.refresh()
+  }, [workingByGroup, groups.refresh])
+
+  /**
+   * Patch the rows a group write moved, rather than re-reading the wall.
+   *
+   * Membership is a column on the clip row and this hook holds every row, so
+   * filing four clips is a field change here -- the group card's new cover and
+   * count arrive with the write's own response a moment later.
+   */
+  const applyGroupWrite = useCallback(
+    (write: GroupWrite | null) => {
+      // A failure has already toasted and re-read the groups; the wall re-reads
+      // too rather than this trying to remember what it moved.
+      if (!write) {
+        void refresh()
+        return
+      }
+      if (write.moved) {
+        const moved = new Set(write.moved.ids)
+        const groupId = write.moved.groupId
+        setVideos((current) =>
+          current.map((video) =>
+            moved.has(video.id) ? { ...video, group_id: groupId } : video,
+          ),
+        )
+      }
+      if (write.trashed.length > 0) {
+        const gone = new Set(write.trashed)
+        setVideos((current) => current.filter((video) => !gone.has(video.id)))
+      }
+    },
+    [refresh],
+  )
+
+  /**
+   * What the group dialogs are doing, and to which clips.
+   *
+   * One piece of state for all of them rather than a boolean and a target
+   * apiece: they are steps in one flow -- pick a group, or fall through to
+   * naming a new one -- and separate flags let two of them be open at once.
+   */
+  const [groupFlow, setGroupFlow] = useState<
+    | { kind: 'pick'; targets: Array<string> }
+    | { kind: 'create'; targets: Array<string> }
+    | { kind: 'rename'; group: ImageGroupSummary }
+    | { kind: 'confirm-dissolve'; group: ImageGroupSummary }
+    | { kind: 'confirm-trash'; group: ImageGroupSummary }
+    | null
+  >(null)
+
+  const closeGroupFlow = useCallback(() => setGroupFlow(null), [])
+
+  /**
+   * Picking several clips at once, to bin them in one go (#517).
+   *
+   * `useSelection` and `SelectionDrawer` unchanged from Images -- the whole
+   * point of both is that a route supplies the verbs and nothing else. The
+   * verbs here are one, deliberately: a wall of takes is a thing you prune,
+   * and everything else grouping would add is a separate piece of work.
+   *
+   * **Select mode is a selection, not a switch** (#325, unchanged): being in
+   * the mode is having something picked, so Deselect all and Escape are the
+   * way out because emptying the selection is the only thing leaving could
+   * mean. The tick is on every card always, which is what makes picking up
+   * again after a delete one click rather than a mode to re-enter.
+   *
+   * The item list is the clip list in render order, so shift-click selects the
+   * range you can see between two cards.
+   */
+  const selection = useSelection({
+    items: shownVideos.map((video) => video.id),
+  })
+  const selectMode = selection.count > 0
+
+  useEffect(() => {
+    if (!selectMode) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') selection.clearSelection()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectMode, selection])
+
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false)
+
+  /**
+   * Bin the selection.
+   *
+   * `trashGalleryImages` is the gallery's own bulk trash, taken as-is: it
+   * dispatches on `status`, never on `source`, so the three outcomes it already
+   * decides between are the three this route wants -- a generating clip is
+   * cancelled at FAL first, a generating or failed row goes outright, and a
+   * finished one soft-deletes into Trash, which lists clips (#384). Same
+   * reasoning `deleteVideo` gives for borrowing the single-row version.
+   *
+   * One call for the set (#329), not a loop: React serialises server actions,
+   * so eight clips would be eight round trips with the wall frozen until the
+   * last.
+   *
+   * The cards leave on the click and a failure re-reads, which is the trade
+   * `deleteVideo` already makes.
+   */
+  const deleteSelected = useCallback(async () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+
+    const picked = new Set(ids)
+    setIsBatchDeleting(true)
+    setVideos((current) => current.filter((video) => !picked.has(video.id)))
+    // Which also leaves the mode -- the ticks are still on every card, so
+    // picking up again is one click.
+    selection.clearSelection()
+    try {
+      await trashGalleryImages(ids)
+    } catch {
+      toast.error('Could not delete those clips')
+      await refresh()
+    } finally {
+      setIsBatchDeleting(false)
+    }
+  }, [selection, refresh])
+
+  /** The drawer's Hide: the picked clips leave the wall, nothing is destroyed,
+   *  and the bar above says how many are being held. */
+  const hideSelected = useCallback(async () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+    selection.clearSelection()
+    await visibility.hide(ids)
+  }, [selection, visibility])
+
+  /** The drawer's Focus: show only these. Dies with the page -- a spotlight
+   *  left on yesterday is indistinguishable from a broken wall. */
+  const focusSelected = useCallback(() => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+    visibility.focusOn(ids)
+    selection.clearSelection()
+  }, [selection, visibility])
+
+  /**
+   * "Add to group", from the selection drawer.
+   *
+   * With no groups yet it skips the picker and goes straight to naming one --
+   * "choose from nothing, or make one" is not a choice worth rendering.
+   */
+  const startAddToGroup = useCallback(() => {
+    const targets = [...selection.selectedIds]
+    if (targets.length === 0) return
+    setGroupFlow({
+      kind: groups.groups.length === 0 ? 'create' : 'pick',
+      targets,
+    })
+  }, [selection.selectedIds, groups.groups.length])
+
+  /** File clips into an existing group. They leave the wall on the click. */
+  const addToGroup = useCallback(
+    async (groupId: string, ids: Array<string>) => {
+      closeGroupFlow()
+      selection.clearSelection()
+      applyGroupWrite(await groups.addTo(groupId, ids))
+    },
+    [groups, selection, closeGroupFlow, applyGroupWrite],
+  )
+
+  /** Name a new group and file the clips into it in one step. */
+  const createGroup = useCallback(
+    async (name: string, ids: Array<string>) => {
+      closeGroupFlow()
+      selection.clearSelection()
+      applyGroupWrite(await groups.create(name, ids))
+    },
+    [groups, selection, closeGroupFlow, applyGroupWrite],
+  )
+
+  /** The drawer's Remove from group -- only inside one. Deletes nothing. */
+  const removeFromGroup = useCallback(async () => {
+    const ids = [...selection.selectedIds]
+    if (ids.length === 0) return
+    selection.clearSelection()
+    applyGroupWrite(await groups.removeFrom(ids))
+  }, [groups, selection, applyGroupWrite])
+
+  /**
+   * Open a group -- dropping the selection on the way in.
+   *
+   * Picking a few clips, filing them and then clicking that group is one
+   * continuous intention, and it ends with wanting to be inside the group
+   * rather than still picking things.
+   */
+  const openGroup = useCallback(
+    (group: ImageGroupSummary) => {
+      selection.clearSelection()
+      router.push(`/video?group=${group.id}`)
+    },
+    [selection, router],
+  )
+
+  const leaveGroup = useCallback(() => router.push('/video'), [router])
+
+  const renameGroup = useCallback(
+    async (name: string) => {
+      if (groupFlow?.kind !== 'rename') return
+      const { group } = groupFlow
+      closeGroupFlow()
+      applyGroupWrite(await groups.rename(group.id, name))
+    },
+    [groupFlow, groups, closeGroupFlow, applyGroupWrite],
+  )
+
+  /** Ungroup: the clips return to the wall, the group row goes. */
+  const dissolveGroup = useCallback(async () => {
+    if (groupFlow?.kind !== 'confirm-dissolve') return
+    const { group } = groupFlow
+    closeGroupFlow()
+    if (activeGroupId === group.id) router.push('/video')
+    applyGroupWrite(await groups.dissolve(group.id))
+  }, [
+    groupFlow,
+    groups,
+    closeGroupFlow,
+    applyGroupWrite,
+    activeGroupId,
+    router,
+  ])
+
+  /** The only group action that touches clips, which is why it asks first. */
+  const trashGroup = useCallback(async () => {
+    if (groupFlow?.kind !== 'confirm-trash') return
+    const { group } = groupFlow
+    closeGroupFlow()
+    if (activeGroupId === group.id) router.push('/video')
+    applyGroupWrite(await groups.trash(group.id))
+  }, [
+    groupFlow,
+    groups,
+    closeGroupFlow,
+    applyGroupWrite,
+    activeGroupId,
+    router,
+  ])
+
   const openPicker = useCallback(
     (target: 'first' | 'last') => {
       void userImages.refresh()
@@ -269,51 +700,122 @@ export function useView(initialVideos: Array<VideoRecord>) {
    * which is exactly why it was worth collapsing: nothing was broken, it was
    * just enough friction that a four-clip sequence did not get made.
    *
-   * **It sets up the next generation and stops.** No auto-run, and the prompt
-   * is cleared rather than carried over: the frame is the continuity, and the
-   * words are about what happens next, which is a different sentence every
-   * time. An end frame from the previous run is dropped for the same reason --
-   * it described where the last clip was going, not this one.
+   * **It sets up the next generation and stops.** No auto-run.
+   *
+   * **The prompt comes with it, and it used to be cleared.** The reasoning for
+   * clearing was that the frame is the continuity and the words are about what
+   * happens next, which is a different sentence every time. True of the
+   * sentence, wrong about the work: continuing is usually the same shot carried
+   * on, so most of that sentence is the one that made the clip you are
+   * continuing from, and starting from empty meant retyping it to change a
+   * clause. It arrives editable, not locked.
+   *
+   * An end frame from the previous run is still dropped -- it described where
+   * the last clip was going, not this one, and unlike the prompt there is no
+   * part of it to edit.
    *
    * The frame is saved as an ordinary upload, the same classification
    * `lab/frames` gives it: it was not generated by a model, it was cut out of
    * something that was. So it lands in Images, and the library is re-read
    * because the picker's list is what the strip resolves against.
    */
+  /**
+   * The one clip the page is playing, if any.
+   *
+   * **Here rather than in the card**, which is the whole point: a card cannot
+   * know that another one started, so six of them could be playing at once.
+   * The page holds it, a card is engaged only while it holds the id, and
+   * starting a clip is what takes it away from whatever had it.
+   */
+  const [playingId, setPlayingId] = useState<string | null>(null)
+
+  /**
+   * **Entering select mode stops whatever was playing** (#538).
+   *
+   * Picking and watching are different things to be doing, and the wall should
+   * be one or the other: in select mode every card is a poster and a tick, so
+   * the whole picture can be the select target with nothing underneath it that
+   * a click would rather have gone to.
+   *
+   * This is what removes the exception the overlay used to carry. It covered
+   * every card *except* the playing one, whose scrubber was in use -- a rule
+   * that had to be stated, and read on the card as one tile behaving unlike
+   * its neighbours. Nothing is playing here now, so there is no exception.
+   *
+   * The card rewinds itself on the way out: losing `isPlaying` pauses it and
+   * returns it to its first frame, which is the same thing that happens when
+   * another card takes playback.
+   */
+  useEffect(() => {
+    if (selectMode) setPlayingId(null)
+  }, [selectMode])
+
   const [isContinuing, setIsContinuing] = useState<string | null>(null)
+
+  /** Pull the clip's final frame into the library and return the new row. */
+  const extractEndFrame = useCallback(
+    async (video: VideoRecord) => {
+      const { blob, timeSeconds } = await captureLastFrame(`/img/${video.id}`)
+
+      const image = await saveFileToLibrary({
+        userId: user.id,
+        file: new File([blob], `frame-${video.id}-end.png`, {
+          type: 'image/png',
+        }),
+        title: `Frame \u00b7 ${video.title}`,
+        description: video.description,
+      })
+
+      // Best effort: a frame without its origin stamped is still a usable
+      // first frame, so a failure here must not lose the extraction. It does
+      // mean an unstamped frame is not found by `findClipEndFrame` and the
+      // next Continue extracts again -- a duplicate, which is what this path
+      // already did every time.
+      void stampFrameSource({
+        imageId: image.id,
+        clipId: video.id,
+        timeSeconds,
+        kind: 'end',
+      }).catch(() => {})
+
+      return image
+    },
+    [user.id],
+  )
 
   const continueFrom = useCallback(
     async (video: VideoRecord) => {
       setIsContinuing(video.id)
       try {
-        const { blob, timeSeconds } = await captureLastFrame(`/img/${video.id}`)
+        /* Continue on a clip you have already continued from reused nothing:
+           it re-extracted the same final frame and wrote a second identical
+           PNG to the library, indistinguishable from the first except by id
+           (#542). Asking for the existing row first costs one query and skips
+           a 20-30MB download, a decode and an upload when it hits.
 
-        const image = await saveFileToLibrary({
-          userId: user.id,
-          file: new File([blob], `frame-${video.id}-end.png`, {
-            type: 'image/png',
-          }),
-          title: `Frame \u00b7 ${video.title}`,
-          description: video.description,
-        })
+           Deliberately silent -- the slot fills the way it always does. The
+           duplicate was never something the user asked for, so not making it
+           is not an event worth reporting. */
+        const existing = await findClipEndFrame({ clipId: video.id })
 
-        // Best effort: a frame without its origin stamped is still a usable
-        // first frame, so a failure here must not lose the extraction.
-        void stampFrameSource({
-          imageId: image.id,
-          clipId: video.id,
-          timeSeconds,
-        }).catch(() => {})
+        const frame = existing ?? (await extractEndFrame(video))
 
         setSources([
           {
-            id: image.id,
-            url: imageUrl(image.id, 'thumb'),
-            title: image.title,
+            id: frame.id,
+            url: imageUrl(frame.id, 'thumb'),
+            /* `title` is nullable on the row and not on a source chip. The
+               fallback is the name the extraction path gives a fresh frame,
+               so a reused one is labelled identically to a new one. */
+            title: frame.title ?? `Frame \u00b7 ${video.title}`,
           },
         ])
         setEndSources([])
-        setPrompts([''])
+        /* The clip's own prompt, not an empty box. Continuing is usually the
+           same shot carried on, so what you want in front of you is what made
+           the clip you are continuing from -- edited, not retyped. It cleared
+           the prompt until now, which made the commonest case the most work. */
+        setPrompts([video.description ?? ''])
         void userImages.refresh()
       } catch (err) {
         toast.error(
@@ -325,7 +827,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
         setIsContinuing(null)
       }
     },
-    [user.id, userImages],
+    [extractEndFrame, userImages],
   )
 
   const filledPrompts = useMemo(
@@ -430,6 +932,9 @@ export function useView(initialVideos: Array<VideoRecord>) {
           aspectRatio,
           resolution,
           modelSlug: model.slug,
+          // Every clip made while a group is open is filed into it. This is
+          // the half that makes a group a place to work rather than a folder.
+          groupId: activeGroupId,
         })
       }
       // Refresh once so the pending cards appear; the poll takes it from here.
@@ -450,6 +955,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
     resolution,
     model,
     refresh,
+    activeGroupId,
   ])
 
   return {
@@ -472,7 +978,40 @@ export function useView(initialVideos: Array<VideoRecord>) {
     collectSources,
     clearSources,
     clearEndSources,
-    videos,
+    videos: shownVideos,
+    cells,
+    visibility,
+    hideSelected,
+    focusSelected,
+    groups: groups.groups,
+    groupsLoading: groups.loading,
+    expandedGroupIds: groups.expandedIds,
+    groupMembers: groups.members,
+    toggleGroupMembers: groups.toggleExpanded,
+    workingByGroup,
+    hiddenByGroup,
+    activeGroup,
+    activeGroupId,
+    groupFlow,
+    setGroupFlow,
+    closeGroupFlow,
+    startAddToGroup,
+    addToGroup,
+    createGroup,
+    removeFromGroup,
+    openGroup,
+    leaveGroup,
+    renameGroup,
+    dissolveGroup,
+    trashGroup,
+    selectedIds: selection.selectedIds,
+    toggleSelected: selection.toggle,
+    clearSelection: selection.clearSelection,
+    selectedCount: selection.count,
+    isBatchDeleting,
+    deleteSelected,
+    playingId,
+    setPlayingId,
     deleteVideo,
     continueFrom,
     isContinuing,

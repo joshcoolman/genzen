@@ -1,0 +1,1 @@
+Neutral Three-Quarter, Eye Level - Camera at the subject's own mid-height, medium distance, subject turned roughly forty-five degrees toward the lens. Standard focal length, level horizon, even framing. No distortion and no drama.

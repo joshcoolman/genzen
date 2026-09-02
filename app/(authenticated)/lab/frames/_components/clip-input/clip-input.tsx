@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { ClipPicker } from '../../../_components/clip-picker/clip-picker'
-import { clipFacts } from '../../../_components/clip-facts'
 import styles from './clip-input.module.css'
 import type { VideoRecord } from '../../../../video/_actions/generate-video.action'
+import { clipFacts } from '#/features/video/clip-facts'
 import { MediaBox } from '#/components'
 
 /** The strip's tile. Paired with `--tile` in the stylesheet: MediaBox takes a

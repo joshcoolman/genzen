@@ -185,7 +185,7 @@ export function useView() {
             },
       )
 
-    // Concurrent, unlike Outpaint's sequential loop. Nothing here reserves a
+    // Concurrent, unlike a generation submit's sequential loop. Nothing here reserves a
     // database row or joins a queue that answers in its own order — these are
     // independent text calls, and a card that has come back should be readable
     // while the rest are still out.

@@ -1,0 +1,125 @@
+import { IMAGE_MODELS, pickerId } from '#/features/ai-images/models'
+import { getModelsByCapability } from '#/features/ai-images/model-selector/unified-models'
+import { findLightingEffect } from '#/lib/prompts/lighting'
+import wrapper from '#/lib/prompts/lighting/wrapper.md'
+
+/**
+ * Lighting: one picture in, the same picture under a named light (#563).
+ *
+ * **Shots' surface, outpaint's mechanism.** It is opened from the reference
+ * strip and multi-selects, so every staged picture crossed with every effect
+ * crossed with every model is its own generation. But the prompt is fixed text
+ * -- `wrapper.md` plus one effect, with its gels substituted -- exactly as
+ * `buildOutpaintPrompt` assembles one. No model writes it, so Lighting needs no
+ * `ANTHROPIC_API_KEY`.
+ *
+ * It did have two vision passes for a day, and the reason they went is in
+ * `src/lib/prompts/lighting/index.ts`: they were the right fix for prose that
+ * described a photograph instead of a lighting setup. Setup prose needs no
+ * writer, and a writer between it and FAL can only paraphrase the precision
+ * away.
+ *
+ * **The models are the panel's, multi-selected.** Every model that takes an
+ * image can attempt a relight, so the offer is the whole image-accepting
+ * lineup rather than a curated few, drawn by the same `ModelSelector` the
+ * sidebar uses: one picture through four models is one press, and comparing
+ * them is most of the point. What is known already says why it is a control
+ * rather than a constant -- Nano Banana 2 renders both effects, and Grok
+ * renders the split field as a backdrop swap with the skin left neutral. That
+ * is a finding about how far an instruction reaches, not a bad prompt, and the
+ * only way to keep finding it is to be able to send an effect somewhere else.
+ */
+
+/**
+ * Where the picker starts, and it is a judgement rather than a benchmark: Grok
+ * Imagine is what these effects were being looked at on, it is what outpaint
+ * settled on for reaching a picture with an instruction, and the hard rake was
+ * its best result of the 2026-09-01 test. A starting point to argue with --
+ * both effects also render on Nano Banana 2, which is one click away.
+ */
+export const DEFAULT_LIGHTING_MODEL_SLUG = 'grok-imagine-image-2'
+
+/**
+ * The one exclusion, and it is not a quality call: Z-Image Turbo's image
+ * endpoint is denoise-from-image with a `strength` dial rather than instruct
+ * editing, so a relight comes back as the reference at any strength -- the
+ * same finding that keeps it out of outpaint and Shots. Its text-to-image
+ * endpoint *does* render the hard rake, from nothing, which is a different
+ * feature. Everything else that accepts an image is offered: whether a model
+ * can hold an instruction this long is the open question, so answering it here
+ * would delete the evidence.
+ */
+const EXCLUDED_SLUGS = new Set(['z-image-turbo'])
+
+/**
+ * The picker's lineup, as ids. The `sidebar` capability -- the same list the
+ * panel offers -- keyed by picker id, so a submit carries the model and
+ * `endpointFor` picks the edit endpoint off the source image.
+ *
+ * Passed as `allowedIds`, which preserves order, so the price sort
+ * `getModelsByCapability` applies survives into the dialog. The default
+ * selection rides separately on `defaultId` for exactly that reason: pinning
+ * Grok to the head of this list to make it the default would break the one
+ * thing the price column exists to show.
+ */
+export function lightingModelIds(): Array<string> {
+  const excluded = new Set(
+    IMAGE_MODELS.filter((m) => EXCLUDED_SLUGS.has(m.slug)).map(pickerId),
+  )
+  return getModelsByCapability('sidebar')
+    .map((m) => m.id)
+    .filter((id) => !excluded.has(id))
+}
+
+export function defaultLightingModelId(): string {
+  const model = IMAGE_MODELS.find((m) => m.slug === DEFAULT_LIGHTING_MODEL_SLUG)
+  if (!model) {
+    throw new Error(
+      `Default lighting model "${DEFAULT_LIGHTING_MODEL_SLUG}" is not in the lineup`,
+    )
+  }
+  return pickerId(model)
+}
+
+/**
+ * The wrapper, a blank line, the effect with its gels filled in.
+ *
+ * Assembly here and prose in the `.md` (#322), the same split outpaint uses:
+ * changing what a light looks like is a text edit. The gels are the one part of
+ * a setup a control could reasonably vary, so they are `{TOKEN}`s rather than
+ * sentences, and an unresolved one throws -- reaching FAL it would render as a
+ * picture, not an error, and the picture would be plausible.
+ */
+export async function buildLightingPrompt(effectId: string): Promise<string> {
+  const effect = findLightingEffect(effectId)
+  if (!effect) throw new Error(`Unknown lighting effect "${effectId}"`)
+
+  const { default: description } = await effect.system()
+  return composeLightingPrompt(description, effect.gels, effectId)
+}
+
+/**
+ * The assembly itself, given prose and gels rather than an id.
+ *
+ * Split out for the lab's authoring page (#562), which has a setup that is not
+ * in the registry yet and must render it through *exactly* this path. A
+ * candidate assembled any other way is a test of a string the shipped effect
+ * will never send.
+ */
+export function composeLightingPrompt(
+  description: string,
+  gels: Record<string, string>,
+  label = 'effect',
+): string {
+  const filled = description.replace(/\{([A-Z_]+)\}/g, (_, token: string) => {
+    const value = gels[token]
+    if (!value) {
+      throw new Error(
+        `Lighting effect "${label}" uses {${token}}, which it does not declare`,
+      )
+    }
+    return value
+  })
+
+  return `${wrapper.trim()}\n\n${filled.trim()}`
+}

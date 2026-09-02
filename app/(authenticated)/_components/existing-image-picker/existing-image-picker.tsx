@@ -55,6 +55,19 @@ interface ExistingImagePickerProps {
    * (#491); this is now the only place a file is chosen from disk.
    */
   onRefresh?: () => Promise<void>
+  /**
+   * The group the caller is standing in, which an upload here lands in (#549).
+   *
+   * Paste already works this way (#350) -- the row is born a member rather than
+   * being moved in after the batch, so it never flashes at top level and is
+   * then taken away. The picker was the one way in that did not, so uploading
+   * from inside a group put the files somewhere you were not looking, and they
+   * read as lost.
+   *
+   * Callers with no group (video, lab, canvas) pass nothing and land at top
+   * level, exactly as before.
+   */
+  uploadGroupId?: string | null
 }
 
 export function ExistingImagePicker({
@@ -70,6 +83,7 @@ export function ExistingImagePicker({
   initialSelectedIds,
   autoConfirm,
   onRefresh,
+  uploadGroupId = null,
 }: ExistingImagePickerProps) {
   const { user } = useAuth()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -206,6 +220,7 @@ export function ExistingImagePicker({
           userId: user.id,
           file,
           title: file.name,
+          groupId: uploadGroupId,
         })
         uploadedIds.push(created.id)
       } catch (err) {

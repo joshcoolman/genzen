@@ -20,7 +20,6 @@ import {
    model is curated. */
 const singleImageIds = () =>
   CANVAS_MODELS.filter((m) => m.maxRefs === 0).map(pickerId)
-const SEEDREAM_45_ID = 'fal-ai/bytedance/seedream/v4.5/text-to-image'
 
 /**
  * Canvas is image-in -> image-out: every model offered here generates *from* the
@@ -89,10 +88,16 @@ describe('canvas reference-capacity gating', () => {
     expect(canvasModelIdsForRefCount(CANVAS_GROUP_MAX_REFS + 1)).toEqual([])
   })
 
-  it('the highest-capacity model survives a max-size group (Seedream)', () => {
-    expect(canvasModelIdsForRefCount(CANVAS_GROUP_MAX_REFS)).toContain(
-      SEEDREAM_45_ID,
+  it('the model that sets the maximum survives a max-size group', () => {
+    // Named by derivation rather than by model: which model holds the most
+    // references changes (Seedream until #459, Nano Banana 2 after it), and a
+    // hardcoded name turns that into a failing test rather than a raised cap.
+    const widest = CANVAS_MODELS.filter(
+      (m) => m.maxRefs === CANVAS_GROUP_MAX_REFS,
     )
+    expect(widest.length).toBeGreaterThan(0)
+    const surviving = canvasModelIdsForRefCount(CANVAS_GROUP_MAX_REFS)
+    for (const m of widest) expect(surviving).toContain(pickerId(m))
   })
 
   it('CANVAS_EDIT_MODELS excludes single-image-only models', () => {

@@ -176,10 +176,18 @@
 /* The image's own lower-left corner, inset from it, not the viewport's. Far
    from the X in the opposite corner: they were neighbours at first, which put
    "delete this" one small slip from "close this". */
-.delete {
+.actions {
   position: absolute;
   bottom: var(--space-12);
   left: var(--space-12);
+  display: flex;
+  gap: var(--space-8);
+}
+
+/* One shape for both verbs (#545). They differ only in the colour they warm
+   to on hover, which is the whole of "one of these is the destructive one" --
+   two sizes or two treatments would make them read as unrelated controls. */
+.action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,8 +204,15 @@
     color var(--duration-normal) var(--ease-in-out);
 }
 
-.delete:hover {
+.action:hover {
   background: var(--surface-raised);
+}
+
+.hide:hover {
+  color: var(--text);
+}
+
+.delete:hover {
   color: var(--danger);
 }
 

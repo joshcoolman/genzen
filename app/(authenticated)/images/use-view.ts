@@ -9,13 +9,29 @@ import { useReferenceSheet } from './_hooks/use-reference-sheet'
 import { usePrefs } from './_hooks/use-prefs'
 import { useUploads } from './_hooks/use-uploads'
 import { useGallery } from './_hooks/use-gallery'
-import { useVisibility } from './_hooks/use-visibility'
 import { useImageViewer } from './_hooks/use-image-viewer'
-import { useGroups } from './_hooks/use-groups'
-import type { GroupWrite, ImageGroupSummary } from './_hooks/use-groups'
+import type {
+  GroupWrite,
+  ImageGroupSummary,
+} from '#/features/groups/hooks/use-groups'
 import type { GalleryCell } from './_components/image-gallery/image-gallery'
 import type { SavedAiImage } from '#/features/ai-images/types'
+import { useVisibility } from '#/features/visibility/hooks/use-visibility'
+import { useGroups } from '#/features/groups/hooks/use-groups'
 import { loadGeneration } from '#/features/ai-images/server/load-generation.action'
+import { generateImage } from '#/features/ai-images/server/generate-image.action'
+import {
+  buildOutpaintPrompt,
+  outpaintModelId,
+} from '#/features/ai-images/outpaint'
+import {
+  writeShot,
+  writeShotScene,
+} from '#/features/ai-images/server/write-shot-prompt.action'
+import { findShot } from '#/lib/prompts/shots'
+import { buildLightingPrompt } from '#/features/ai-images/lighting'
+import { findLightingEffect } from '#/lib/prompts/lighting'
+import { getModelName } from '#/features/ai-images/models'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
 import { useModelSelector } from '#/features/ai-images/model-selector/use-model-selector'
@@ -94,8 +110,12 @@ export function useView(initial: Array<SavedAiImage>) {
   const searchParams = useSearchParams()
   const activeGroupId = searchParams.get('group')
 
-  const groups = useGroups()
+  const groups = useGroups('image')
   const activeGroup = groups.groups.find((g) => g.id === activeGroupId) ?? null
+  /** The open group renders in its hand-set order (#505). Only ever true
+   *  inside a group -- at top level there is one order and it is the
+   *  library's. */
+  const manualOrder = Boolean(activeGroup?.manual_order)
 
   // A group that no longer exists -- dissolved on another tab, or a stale link
   // -- must not leave the grid showing nothing with a name in the toolbar.
@@ -110,12 +130,69 @@ export function useView(initial: Array<SavedAiImage>) {
 
   const gallery = useGallery({ userId: user.id, initial })
 
+  const prefs = usePrefs()
+
+  // Group, then order. There is no origin scope any more (#348): a group is a
+  // scope you made on purpose, and it turned out to be the only one worth
+  // having -- `use-prefs` had predicted its own deletion in a comment.
+  //
+  // At top level a grouped image is *absent*, not shown twice: the group card
+  // stands in for its members. If members also appeared loose, the wall would
+  // be exactly as tall as before.
+  /**
+   * **Uploads ignores grouping entirely: every upload, grouped or not** (#444).
+   *
+   * The other scopes are a filter over what is loose, because at top level a
+   * group card stands in for its members and that collapse is the whole payoff
+   * -- a wall of thirty becomes three cards and eight loose pictures. Uploads
+   * is not that kind of question. An upload is something you put there
+   * deliberately, and "show me my uploads" means all of them; where each one
+   * happens to sit is somebody else's concern. So this scope shows no group
+   * cards either -- there is nothing left for them to stand in for.
+   *
+   * This is the rule that replaces keeping a group called Uploads by hand,
+   * which decayed every time you uploaded again.
+   */
+  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
+
+  /**
+   * **Where you are standing, as a predicate, with visibility left out of it**
+   * (#546).
+   *
+   * The wall is this and then `visibility.visible`; the hidden bar is this and
+   * then the opposite. Splitting the scope out of the filter is what lets the
+   * bar count what is hidden *here* -- it is asked of hidden rows, so it must
+   * not know about hiding, or it would answer no to every one of them.
+   *
+   * Origin is part of it, because the bar's promise is "this is what comes
+   * back if you press Show". Under `Uploads`, a hidden generation coming back
+   * would land somewhere you are not looking, so it is not this bar's business
+   * either.
+   */
+  const inScope = useCallback(
+    (img: SavedAiImage) => {
+      if (activeGroupId) return img.group_id === activeGroupId
+      if (uploadsIgnoreGroups) return img.origin === 'upload'
+      if (img.group_id) return false
+      if (prefs.originFilter === 'all') return true
+      return img.origin === prefs.originFilter
+    },
+    [activeGroupId, uploadsIgnoreGroups, prefs.originFilter],
+  )
+
   // What the grid is allowed to draw (#504): hidden rows, and the focus
   // spotlight. Sits above the scope filter below rather than inside it,
   // because it applies inside a group and at top level alike.
-  const visibility = useVisibility(gallery)
+  //
+  // It is handed `inScope` and every row, not the scoped rows: the wall wants
+  // both filters, the bar wants the scope without the hiding, and the group
+  // cards want neither (#546).
+  const visibility = useVisibility({
+    rows: gallery.images,
+    patch: (ids, hiddenAt) => gallery.patchImages(ids, { hidden_at: hiddenAt }),
+    inScope,
+  })
   const userImages = useUserImages(user.id)
-  const prefs = usePrefs()
   const dock = useDock()
   const download = useDownload()
   // Selection-based, not group-based (#476): a sheet is made of whatever is
@@ -245,6 +322,27 @@ export function useView(initial: Array<SavedAiImage>) {
   }, [gallery.images])
 
   /**
+   * How many of each group's images are hidden -- the other half of #546.
+   *
+   * Once the bar counts only what is hidden *here*, an image hidden inside a
+   * group is invisible from top level with nothing anywhere saying so, which
+   * is the "hidden state you cannot see is a slower kind of lost" failure #504
+   * built the bar to prevent, reintroduced one level down. The group card says
+   * it instead, in the line that already reports what the group is doing.
+   *
+   * Arithmetic on rows in hand, exactly like `workingByGroup` above: no read,
+   * and it tracks a hide on the frame the card leaves.
+   */
+  const hiddenByGroup = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const img of gallery.images) {
+      if (!img.group_id || !img.hidden_at) continue
+      counts[img.group_id] = (counts[img.group_id] ?? 0) + 1
+    }
+    return counts
+  }, [gallery.images])
+
+  /**
    * Refresh the summaries when a group *finishes*, not when each image lands.
    *
    * One read per burst rather than one per settle. That is the moment the
@@ -261,32 +359,6 @@ export function useView(initial: Array<SavedAiImage>) {
     if (drained) void groups.refresh()
   }, [workingByGroup, groups.refresh])
 
-  /**
-   * Uploads ignores grouping entirely: every upload, grouped or not.
-   */
-  // Group, then order. There is no origin scope any more (#348): a group is a
-  // scope you made on purpose, and it turned out to be the only one worth
-  // having -- `use-prefs` had predicted its own deletion in a comment.
-  //
-  // At top level a grouped image is *absent*, not shown twice: the group card
-  // stands in for its members. If members also appeared loose, the wall would
-  // be exactly as tall as before.
-  /**
-   * **Uploads ignores grouping entirely: every upload, grouped or not** (#444).
-   *
-   * The other scopes are a filter over what is loose, because at top level a
-   * group card stands in for its members and that collapse is the whole payoff
-   * -- a wall of thirty becomes three cards and eight loose pictures. Uploads
-   * is not that kind of question. An upload is something you put there
-   * deliberately, and "show me my uploads" means all of them; where each one
-   * happens to sit is somebody else's concern. So this scope shows no group
-   * cards either -- there is nothing left for them to stand in for.
-   *
-   * This is the rule that replaces keeping a group called Uploads by hand,
-   * which decayed every time you uploaded again.
-   */
-  const uploadsIgnoreGroups = !activeGroupId && prefs.originFilter === 'uploads'
-
   // Group first, then scope, then order. The filter is client-side on purpose:
   // the gallery already holds every row, so switching scopes is instant and
   // costs no round trip -- and `origin` is immutable, so a filtered-out row
@@ -299,25 +371,32 @@ export function useView(initial: Array<SavedAiImage>) {
     // Visibility first (#504), so every branch below inherits it and none can
     // forget: a hidden image is hidden inside a group, at top level, and under
     // every scope. A per-branch filter would be four places to keep in step.
-    const shown = gallery.images.filter(visibility.visible)
+    const shown = gallery.images.filter(
+      (img) => visibility.visible(img) && inScope(img),
+    )
     if (activeGroupId) {
-      return shown.filter((img) => img.group_id === activeGroupId)
+      if (!manualOrder) return shown
+      /* Ascending, nulls last, then oldest first among the nulls -- which is
+         the whole of "a new image lands at the end" (#505). Nothing writes a
+         position when a row joins a group, on any of the three paths that put
+         one there; an unpositioned row simply sorts after every positioned
+         one, and the next drag gives it a number along with everything else. */
+      return [...shown].sort((a, b) => {
+        const ap = a.group_position ?? Infinity
+        const bp = b.group_position ?? Infinity
+        if (ap !== bp) return ap - bp
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+      })
     }
-    if (uploadsIgnoreGroups) {
-      return shown.filter((img) => img.origin === 'upload')
-    }
-    const loose = shown.filter((img) => !img.group_id)
-    if (prefs.originFilter === 'all') return loose
-    return loose.filter((img) => img.origin === prefs.originFilter)
-  }, [
-    gallery.images,
-    visibility.visible,
-    activeGroupId,
-    uploadsIgnoreGroups,
-    prefs.originFilter,
-  ])
+    return shown
+  }, [gallery.images, visibility.visible, inScope, activeGroupId, manualOrder])
 
-  const images = prefs.sortAsc ? [...scoped].reverse() : scoped
+  /* The arrangement is the order, so the toolbar's newest/oldest toggle does
+     not apply to it (#505) -- and the toolbar hides that control inside an
+     arranged group rather than leaving it there doing nothing. */
+  const images = prefs.sortAsc && !manualOrder ? [...scoped].reverse() : scoped
 
   /**
    * The grid's cells: loose images and group cards in one order (#324).
@@ -334,6 +413,12 @@ export function useView(initial: Array<SavedAiImage>) {
    * each need their own reversal to stay interleaved.
    */
   const cells: Array<GalleryCell> = useMemo(() => {
+    /* An arranged group is already in its order, and there are no group cards
+       inside a group to interleave with it -- so the sort below has nothing to
+       decide and would only undo the arrangement. */
+    if (manualOrder) {
+      return scoped.map((image) => ({ kind: 'image' as const, image }))
+    }
     const imageCells = scoped.map((image) => ({
       cell: { kind: 'image' as const, image },
       sortOrder:
@@ -380,6 +465,7 @@ export function useView(initial: Array<SavedAiImage>) {
     activeGroupId,
     uploadsIgnoreGroups,
     prefs.sortAsc,
+    manualOrder,
   ])
 
   // The expanded group strip (#352), minus anything hidden (#504).
@@ -401,7 +487,14 @@ export function useView(initial: Array<SavedAiImage>) {
     [images],
   )
 
-  const viewer = useImageViewer(viewerImages, gallery.deleteImage)
+  /* Delete and its safe twin, both stepping on through the set (#545). The
+     hide is `visibility.hide` unchanged -- the row leaves the grid, so it
+     leaves this list, which is the same shrink a delete causes. */
+  const viewer = useImageViewer(
+    viewerImages,
+    gallery.deleteImage,
+    (img) => void visibility.hide([img.id]),
+  )
 
   // Cmd-Ctrl-+/- zooms the grid, the way Cmd-+/- zooms the page (#403). The
   // extra Control is what keeps the browser's own zoom reachable -- this
@@ -622,6 +715,43 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
+   * The drop at the end of a reorder drag (#505).
+   *
+   * Optimistic in the half that matters: the grid holds the new order in the
+   * same tick, because the client already knows the sequence it just built --
+   * there is nothing to ask the server for. The write persists it and returns
+   * the group summary, which is where `manual_order` flipping to true arrives.
+   *
+   * The whole ordered list every time, not the one image that moved: every
+   * member needs a number for the arrangement to be total, since an unnumbered
+   * row sorts after every numbered one. It is one statement either way.
+   */
+  const reorderGroupImages = useCallback(
+    async (orderedIds: Array<string>) => {
+      if (!activeGroupId) return
+      gallery.setGroupPositions(orderedIds)
+      applyGroupWrite(await groups.reorder(activeGroupId, orderedIds))
+    },
+    [activeGroupId, gallery, groups, applyGroupWrite],
+  )
+
+  /**
+   * Newest first, or the arrangement (#505).
+   *
+   * Free in both directions: turning the arrangement off keeps every position,
+   * so this is a way of looking at the group rather than a way of throwing
+   * work away. That is why the control can stay a plain toggle with no confirm
+   * on it.
+   */
+  const setGroupOrderMode = useCallback(
+    async (manual: boolean) => {
+      if (!activeGroupId) return
+      applyGroupWrite(await groups.setOrderMode(activeGroupId, manual))
+    },
+    [activeGroupId, groups, applyGroupWrite],
+  )
+
+  /**
    * A pasted image onto the front of the reference strip (#491).
    *
    * Shared with `addReference` below (Cmd-click on a card), which is the same
@@ -650,23 +780,31 @@ export function useView(initial: Array<SavedAiImage>) {
   )
 
   /**
-   * **Paste is the only way a file gets into this route** (#491), and it does
-   * both halves of the gesture: the image is uploaded to the library and it
-   * becomes the reference image, because a screenshot pasted here is almost
-   * always about to be generated from. Choosing a file from disk is the
-   * library picker's job now, inside the panel where it is used (#489).
+   * **A paste uploads and stops there** (#550) -- it no longer also makes the
+   * image the reference. The panel's library picker is the deliberate route to
+   * a reference now (#489), and the pasted cards are on screen, so selecting
+   * them is the next move rather than something that already happened to you.
    *
    * The open group is the destination. At top level `activeGroupId` is null and
    * the image lands loose; inside a group it lands in it, with no dialog -- a
    * group is a focus session, and asking which group you meant while you are
    * standing in one is ceremony (#348).
    */
-  useUploads(user.id, gallery, activeGroupId, {
+  const { uploadFiles } = useUploads(user.id, gallery, activeGroupId, {
     // Same rule as a generation: an upload while scoped to Generations would
     // land somewhere the grid is not showing.
     onStart: prefs.revealAll,
-    onDone: pushReference,
   })
+
+  /**
+   * **The Upload button's files, offered only where the route is about the
+   * library rather than about a generation** (#550): scoped to Uploads, or
+   * inside a group. #491's objection to a button was "a second route to the
+   * same thing, further from the work" -- true of one always present and
+   * competing with the panel's picker, not of one that appears when you have
+   * said you are filing rather than feeding.
+   */
+  const canUpload = Boolean(activeGroupId) || prefs.originFilter === 'uploads'
 
   /**
    * Create, and stay where you are. Always -- empty group or not.
@@ -862,14 +1000,316 @@ export function useView(initial: Array<SavedAiImage>) {
     [generator, dock],
   )
 
-  /** Take a still to /video as its first frame (#305). A navigation rather
-   *  than a panel: video is its own route, and the image travels as an id in
-   *  the URL so the target needs no shared state. */
-  const animate = useCallback(
-    (img: SavedAiImage) => {
-      router.push(`/video?image=${img.id}`)
+  /**
+   * Outpaint (#430): reframe one picture into one or more other shapes.
+   *
+   * **A side errand, not a change of context.** Nothing here touches the
+   * panel, the reference set or the model selection -- the whole gesture is
+   * "this picture, these shapes, go", and the results arrive in the grid like
+   * any other generation. That is the difference from Load, which exists to
+   * put you back in the middle of a past setup.
+   *
+   * Submitted one after another rather than together, as the lab and Video do:
+   * each call reserves a row before it reaches FAL, and firing them at once
+   * interleaves the reservations against a queue that answers in its own
+   * order. Optimistic cards go up first so a press with four shapes shows four
+   * tiles immediately, and each is swapped for its real row or dropped on the
+   * spot -- the same contract `useGenerator` has with `onSubmitOutcome`.
+   */
+  /**
+   * Shots (#553): every staged reference, from every angle picked, one
+   * generation each.
+   *
+   * **Each submit carries exactly one picture.** `sourceImageId` and nothing
+   * else -- no `referenceImageIds` -- because two references in one request is
+   * the combine the generator panel already does, and this is the opposite
+   * errand: the same treatment applied to each subject separately. Two
+   * characters and two angles is four rows, not one.
+   *
+   * The loop is `runOutpaint`'s, for the reasons written there: optimistic
+   * cards first so the press shows its full count immediately, then submitted
+   * one after another rather than together, because each call reserves a row
+   * before it reaches FAL.
+   *
+   * **A failure drops its own card and keeps going.** Sixteen angles across
+   * three references is forty-eight submits, and stopping the run on the first
+   * refusal would throw away the forty-seven that would have worked. That
+   * covers the enhanced path's extra failure too: a prompt the writer could not
+   * produce loses its own tile and nothing else.
+   *
+   * **The scene is written once per picture, before any submit.** That is the
+   * whole of `scene-shot`: sixteen angles sharing one paragraph of scene, so
+   * the light and colour cannot differ between them. A picture whose scene
+   * cannot be written loses all of its tiles at once and the run continues with
+   * the others -- there is nothing to submit for it, and pretending otherwise
+   * would spend money on the drift this mode exists to remove.
+   */
+  const [shotsOpen, setShotsOpen] = useState(false)
+
+  const runShots = useCallback(
+    async (
+      imageIds: Array<string>,
+      shotIds: Array<string>,
+      model: string,
+      instructions: string,
+    ) => {
+      if (imageIds.length === 0 || shotIds.length === 0) return
+
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        shotIds.map((shotId) => ({
+          imageId,
+          shotId,
+          placeholderId: `shot-${imageId}-${shotId}-${stamp}`,
+        })),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: findShot(pair.shotId)?.label ?? pair.shotId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      // Closed here, on the cards rather than on the run (#563). Everything
+      // below is network -- a vision call per picture and a submit per frame --
+      // and a dialog held open across it reads as a press that did not land.
+      // The tiles are already on the wall by this line, which is the app's
+      // answer to "what is happening" everywhere else; a failure below takes
+      // its own card away and says so, and it can say so from behind a closed
+      // dialog exactly as well.
+      setShotsOpen(false)
+
+      // One scene per picture, reused by every angle of it. Written before the
+      // submits rather than lazily inside the loop so a bad key or an
+      // unreadable object fails once, loudly, instead of sixteen times.
+      const scenes = new Map<string, string>()
+      for (const imageId of imageIds) {
+        try {
+          const { scene } = await writeShotScene({ imageId, instructions })
+          scenes.set(imageId, scene)
+        } catch (err) {
+          for (const p of pairs.filter((x) => x.imageId === imageId)) {
+            gallery.removeOptimisticCard(p.placeholderId)
+          }
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : 'Could not write the scene for one of the pictures',
+          )
+        }
+      }
+
+      for (const pair of pairs) {
+        const label = findShot(pair.shotId)?.label ?? pair.shotId
+        const scene = scenes.get(pair.imageId)
+        if (!scene) continue
+        try {
+          const { prompt } = await writeShot({
+            imageId: pair.imageId,
+            shotId: pair.shotId,
+            scene,
+            instructions,
+          })
+          const created = await generateImage({
+            prompt,
+            model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
     },
-    [router],
+    [gallery, groups, prefs, activeGroupId],
+  )
+
+  /**
+   * Lighting (#563): every staged reference, under every light picked, through
+   * every model picked -- one generation each.
+   *
+   * `runShots`' loop with the writer taken out. The prompt is the wrapper plus
+   * the effect, both fixed text, so there is nothing to ask a model before
+   * asking for the picture -- which also means a pair cannot fail before it
+   * reaches FAL the way a shot can when its scene will not write.
+   *
+   * **Nothing here writes a prompt**, where `runShots` runs two vision passes
+   * before it can submit anything. An effect is a lighting setup with its gels
+   * filled in, so `buildLightingPrompt` is a string join -- which is why this
+   * loop has no per-picture pass in front of it and no Anthropic dependency.
+   *
+   * **The third multiplication is the models**, where Shots has one. A relight
+   * is a single picture you compare, so putting one subject through four models
+   * in one press is the useful gesture; a sixteen-frame shot set is a thing you
+   * look at whole, and crossing it by models would be sixty-four.
+   *
+   * Everything else holds for the same reasons written on `runShots`: one
+   * picture per submit and never `referenceImageIds`, because two references in
+   * one request is the combine the panel already does; optimistic cards up
+   * front so the press shows its full count; submitted one after another
+   * because each call reserves a row before it reaches FAL; and a failure drops
+   * its own card and lets the rest of the run finish.
+   */
+  const [lightingOpen, setLightingOpen] = useState(false)
+
+  const runLighting = useCallback(
+    async (
+      imageIds: Array<string>,
+      effectIds: Array<string>,
+      models: Array<string>,
+    ) => {
+      if (
+        imageIds.length === 0 ||
+        effectIds.length === 0 ||
+        models.length === 0
+      )
+        return
+
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const stamp = Date.now()
+      const pairs = imageIds.flatMap((imageId) =>
+        effectIds.flatMap((effectId) =>
+          models.map((model) => ({
+            imageId,
+            effectId,
+            model,
+            placeholderId: `light-${imageId}-${effectId}-${model}-${stamp}`,
+          })),
+        ),
+      )
+
+      for (const pair of pairs) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: pair.placeholderId,
+              model: pair.model,
+              title: getModelName(pair.model),
+              prompt: findLightingEffect(pair.effectId)?.label ?? pair.effectId,
+              sourceImageId: pair.imageId,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      // Closed on the cards, not on the run -- see `runShots`.
+      setLightingOpen(false)
+
+      for (const pair of pairs) {
+        const label = findLightingEffect(pair.effectId)?.label ?? pair.effectId
+        try {
+          const prompt = await buildLightingPrompt(pair.effectId)
+          const created = await generateImage({
+            prompt,
+            model: pair.model,
+            origin: 'images',
+            sourceImageId: pair.imageId,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(pair.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(pair.placeholderId)
+          toast.error(err instanceof Error ? err.message : `${label} failed`)
+        }
+      }
+
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [gallery, groups, prefs, activeGroupId],
+  )
+
+  const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
+    null,
+  )
+  const [outpainting, setOutpainting] = useState(false)
+
+  const runOutpaint = useCallback(
+    async (ratios: Array<string>) => {
+      const source = outpaintTarget
+      if (!source || ratios.length === 0) return
+      const model = outpaintModelId()
+
+      setOutpainting(true)
+      // Making something is an implicit request to see it (#444).
+      prefs.revealAll()
+
+      const placeholders = ratios.map((ratio) => ({
+        ratio,
+        placeholderId: `outpaint-${source.id}-${ratio}-${Date.now()}`,
+      }))
+      for (const p of placeholders) {
+        gallery.addOptimisticCard(
+          pendingCard(
+            {
+              placeholderId: p.placeholderId,
+              model,
+              title: getModelName(model),
+              prompt: `Outpaint to ${p.ratio}`,
+              sourceImageId: source.id,
+            },
+            activeGroupId,
+          ),
+        )
+      }
+
+      for (const p of placeholders) {
+        try {
+          const created = await generateImage({
+            prompt: buildOutpaintPrompt(p.ratio),
+            model,
+            origin: 'images',
+            aspectRatio: p.ratio,
+            sourceImageId: source.id,
+            groupId: activeGroupId,
+          })
+          gallery.replaceOptimisticCard(p.placeholderId, (card) => ({
+            ...card,
+            id: created.recordId,
+          }))
+        } catch (err) {
+          gallery.removeOptimisticCard(p.placeholderId)
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : `Outpaint to ${p.ratio} failed`,
+          )
+        }
+      }
+
+      setOutpainting(false)
+      setOutpaintTarget(null)
+      void gallery.refresh({ silent: true })
+      void groups.refresh()
+    },
+    [outpaintTarget, gallery, groups, prefs, activeGroupId],
   )
 
   return {
@@ -878,8 +1318,17 @@ export function useView(initial: Array<SavedAiImage>) {
     gallery,
     groups,
     workingByGroup,
+    hiddenByGroup,
     visibleGroupMembers,
     activeGroup,
+    manualOrder,
+    reorderGroupImages,
+    setGroupOrderMode,
+    /* Whether an arrangement *exists*, which is a different question from
+       whether it is in effect (#505). Derived from the rows in hand rather
+       than stored, and only meaningful inside a group -- which is the only
+       place the control that reads it renders. */
+    hasManualOrder: scoped.some((img) => img.group_position != null),
     activeGroupId,
     openGroup,
     leaveGroup,
@@ -898,6 +1347,9 @@ export function useView(initial: Array<SavedAiImage>) {
     userImages,
     modelSelector,
     generator,
+    /** The Upload button, offered only where the route is about the library
+     *  (#550). Undefined is what hides the control. */
+    uploadFiles: canUpload ? uploadFiles : undefined,
     prefs,
     dock,
     download,
@@ -915,7 +1367,19 @@ export function useView(initial: Array<SavedAiImage>) {
     addReference,
     usePromptText,
     loadIntoPanel,
-    animate,
+    outpaintTarget,
+    startOutpaint: setOutpaintTarget,
+    cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),
+    outpainting,
+    runOutpaint,
+    shotsOpen,
+    openShots: useCallback(() => setShotsOpen(true), []),
+    closeShots: useCallback(() => setShotsOpen(false), []),
+    runShots,
+    lightingOpen,
+    openLighting: useCallback(() => setLightingOpen(true), []),
+    closeLighting: useCallback(() => setLightingOpen(false), []),
+    runLighting,
     error,
     setError,
   }

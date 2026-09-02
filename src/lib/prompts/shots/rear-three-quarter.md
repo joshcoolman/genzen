@@ -1,0 +1,1 @@
+Rear Three-Quarter - Camera behind the subject and offset to one side, medium distance, slightly above mid-height. Shows the back and one flank together, with the direction the subject faces leading out of frame.

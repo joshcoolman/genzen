@@ -14,9 +14,10 @@ const SECTIONS = [
   { href: '/lab/enhance', label: 'Enhance' },
   { href: '/lab/describe', label: 'Describe' },
   { href: '/lab/variations', label: 'Variations' },
+  { href: '/lab/lighting', label: 'Lighting' },
   { href: '/lab/frames', label: 'Frames' },
   { href: '/lab/sequence', label: 'Sequence' },
-  { href: '/lab/outpaint', label: 'Outpaint' },
+  { href: '/lab/endpoint-explorer', label: 'Endpoints' },
 ]
 
 export function LabNav({
@@ -62,9 +63,9 @@ export function LabNav({
             title={collapsed ? label : undefined}
           >
             {/* The first letter is not an icon, and is not pretending to be
-                one. Five experiments with no visual identity would need five
-                invented glyphs, each of which has to be learned -- an initial
-                is already the name, truncated. */}
+                one. Experiments with no visual identity would each need an
+                invented glyph that has to be learned -- an initial is already
+                the name, truncated. */}
             <span className={styles.linkInitial} aria-hidden="true">
               {label[0]}
             </span>

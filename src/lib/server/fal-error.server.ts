@@ -30,6 +30,39 @@ function extractDetailMessages(detail: unknown): Array<string> {
 }
 
 /**
+ * A thrown value as a sentence, following `.cause` down.
+ *
+ * Node's `fetch` reports every network failure as the single word pair "fetch
+ * failed" and puts the actual reason -- `ECONNRESET`, `ETIMEDOUT`, a TLS
+ * error -- on `cause`. Reading only `.message` therefore turns every one of
+ * them into the same useless string, which is what `generation_error` held for
+ * three failed generations in #556 and what made them unanswerable.
+ *
+ * Depth is capped because an `AggregateError` chain can be long, and this ends
+ * up in a column and on a card.
+ */
+export function describeThrown(err: unknown, depth = 3): string {
+  const parts: Array<string> = []
+  let current: unknown = err
+  for (let i = 0; i <= depth && current; i++) {
+    const record = asRecord(current)
+    const message =
+      record && typeof record.message === 'string' && record.message
+        ? record.message
+        : typeof current === 'string'
+          ? current
+          : null
+    const code = record && typeof record.code === 'string' ? record.code : null
+    const part = [message, code && code !== message ? `(${code})` : null]
+      .filter(Boolean)
+      .join(' ')
+    if (part && !parts.includes(part)) parts.push(part)
+    current = record?.cause
+  }
+  return parts.join(': ') || 'unknown error'
+}
+
+/**
  * Walks an unknown thrown value (typically a FAL SDK error) and produces a
  * structured blob with the most specific human-readable message we can find.
  *
@@ -91,7 +124,12 @@ export function extractFalError(err: unknown): FalErrorBlob {
   }
 
   if (err instanceof Error && err.message) {
-    blob.message = err.message
+    // The cause chain, not just the message -- see describeThrown.
+    blob.message = describeThrown(err)
+    const causeCode = asRecord(errObj.cause)?.code
+    if (blob.code === 'unknown' && typeof causeCode === 'string') {
+      blob.code = causeCode
+    }
     return blob
   }
 

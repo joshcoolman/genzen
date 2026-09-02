@@ -1,33 +1,20 @@
-import { fal } from '@fal-ai/client'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
-
-type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
-
-/** Detect MIME type from magic bytes -- don't trust Content-Type headers. */
-export function detectImageMimeType(bytes: Uint8Array): ImageMediaType {
-  if (
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47
-  )
-    return 'image/png'
-  if (
-    bytes[0] === 0x52 &&
-    bytes[1] === 0x49 &&
-    bytes[2] === 0x46 &&
-    bytes[3] === 0x46
-  )
-    return 'image/webp'
-  if (bytes[0] === 0x47 && bytes[1] === 0x49) return 'image/gif'
-  return 'image/jpeg'
-}
+import { fal } from './fal-client.server'
+import {
+  detectImageMimeType,
+  prepareImageForFal,
+} from './fal-image-prepare.server'
+import { withNetworkRetry } from './fal-retry.server'
+import type { ImageMediaType } from './fal-image-prepare.server'
 
 /** Upload raw bytes to FAL storage with auto-detected MIME. Returns FAL URL. */
 export async function uploadBufferToFal(buffer: ArrayBuffer): Promise<string> {
-  const mimeType = detectImageMimeType(new Uint8Array(buffer))
-  return fal.storage.upload(new Blob([buffer], { type: mimeType }))
+  // Every image the app sends FAL goes through here, which is why both of these
+  // live at this level: the shrink that keeps a set from being 20MB on the wire
+  // (#560), and the retry that survives a dead connection (#556).
+  const { buffer: bytes, mimeType } = await prepareImageForFal(buffer)
+  return withNetworkRetry('storage.upload', () =>
+    fal.storage.upload(new Blob([bytes], { type: mimeType })),
+  )
 }
 
 /** Fetch image from URL, detect MIME, upload to FAL storage. Returns FAL URL. */

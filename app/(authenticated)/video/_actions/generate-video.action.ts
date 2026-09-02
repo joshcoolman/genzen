@@ -1,6 +1,7 @@
 'use server'
 
-import { fal } from '@fal-ai/client'
+import { fal } from '#/lib/server/fal-client.server'
+import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import {
   DEFAULT_VIDEO_MODEL,
   aspectRatiosFor,
@@ -21,8 +22,6 @@ import {
 } from '#/lib/server/create-pending-generation.server'
 import { uploadLibraryImagesToFal } from '#/lib/server/fal-image-inputs.server'
 
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
-
 export interface GenerateVideoInput {
   /** Optional. Without one the model invents the whole shot from the prompt --
    *  a different endpoint, and the one that needs the better prompt. */
@@ -38,6 +37,11 @@ export interface GenerateVideoInput {
    *  switch cannot fail a submit. */
   resolution?: string
   modelSlug?: string
+  /** File the clip into a group at birth (#517), the way a generation made
+   *  inside an image group is. This is the half that makes a group a place to
+   *  work rather than a folder. Verified server-side against both the caller's
+   *  user id and the group's kind -- see `createPendingGeneration`. */
+  groupId?: string | null
 }
 
 /**
@@ -56,6 +60,7 @@ export async function generateVideo({
   aspectRatio,
   resolution,
   modelSlug,
+  groupId,
 }: GenerateVideoInput): Promise<{ recordId: string }> {
   const { userId } = await resolveAuth()
 
@@ -132,6 +137,7 @@ export async function generateVideo({
     userId,
     origin: 'images',
     source: 'ai_video',
+    groupId,
     generationType: hasFirstFrame ? 'image_to_video' : 'text_to_video',
     falModelId: endpoint.id,
     prompt: trimmed,
@@ -169,23 +175,25 @@ export async function generateVideo({
     // frame `start_image_url`, H3's image endpoint has no `aspect_ratio`, and
     // only two of the three take `generate_audio`. Sending a param an endpoint
     // does not declare is how a submit fails at FAL rather than here.
-    const { request_id } = await fal.queue.submit(endpoint.id, {
-      input: {
-        prompt: trimmed,
-        ...(uploadedUrl && endpoint.firstFrameParam
-          ? { [endpoint.firstFrameParam]: uploadedUrl }
-          : {}),
-        ...(uploadedEndUrl && endpoint.acceptsEndImage
-          ? { end_image_url: uploadedEndUrl }
-          : {}),
-        duration,
-        ...(endpoint.aspectRatios.length > 0
-          ? { aspect_ratio: aspectRatio }
-          : {}),
-        resolution: sentResolution,
-        ...(model.supportsAudio ? { generate_audio: true } : {}),
-      },
-    })
+    const { request_id } = await withNetworkRetry('queue.submit', () =>
+      fal.queue.submit(endpoint.id, {
+        input: {
+          prompt: trimmed,
+          ...(uploadedUrl && endpoint.firstFrameParam
+            ? { [endpoint.firstFrameParam]: uploadedUrl }
+            : {}),
+          ...(uploadedEndUrl && endpoint.acceptsEndImage
+            ? { end_image_url: uploadedEndUrl }
+            : {}),
+          duration,
+          ...(endpoint.aspectRatios.length > 0
+            ? { aspect_ratio: aspectRatio }
+            : {}),
+          resolution: sentResolution,
+          ...(model.supportsAudio ? { generate_audio: true } : {}),
+        },
+      }),
+    )
 
     await markGenerationSubmitted(recordId, request_id)
   } catch (err) {
@@ -206,11 +214,20 @@ export interface VideoRecord {
   status: string
   generation_error: string | null
   created_at: string
+  /** The one group this clip sits in, or null for top level (#517). Filtered
+   *  client-side exactly as the gallery does it -- the route holds every row
+   *  already, so a group view is a filter rather than a second query. */
+  group_id: string | null
   generation_metadata: Record<string, unknown> | null
   /** The clip's rectangle, off frame one (#499). Null on a clip whose poster
    *  never decoded, which is the only reason its aspect ratio is unknown. */
   width: number | null
   height: number | null
+  /** Taken out of the wall without being destroyed (#537). The same column a
+   *  still uses -- `setImagesHidden` never filtered on `source`, so the write
+   *  was correct for a clip the day it shipped and only the surface was
+   *  missing. Null means visible. */
+  hidden_at: string | null
   /** Whether the row points at a stored final frame, not the path itself (#512).
    *  Storage keys are the server's business -- the browser asks `/img/[id]?v=end`
    *  -- but a surface that draws the ending has to know there is one to draw. */
@@ -228,7 +245,8 @@ export async function listVideos(): Promise<Array<VideoRecord>> {
   const rows = await sql<Array<VideoRecord>>`
     select id, title, description, status, generation_error,
            to_json(created_at)#>>'{}' as created_at,
-           generation_metadata, width, height,
+           generation_metadata, width, height, group_id,
+           to_json(hidden_at)#>>'{}' as hidden_at,
            end_frame_path is not null as has_end_frame
     from user_images
     where user_id = ${userId}

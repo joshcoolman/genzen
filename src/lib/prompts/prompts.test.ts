@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DESCRIBE_MODES } from './describe'
 import { MULTI_SHOT_PROMPTS, multiShotOptions } from './multi-shot'
+import { SHOTS } from './shots'
 import { videoModelBySlug } from '#/features/video/models'
 
 const ROOT = new URL('../../../', import.meta.url).pathname
@@ -67,6 +68,23 @@ describe('model instructions live in .md files (#322)', () => {
     walk(join(ROOT, 'src'))
     walk(join(ROOT, 'app'))
     expect(offenders).toEqual([])
+  })
+})
+
+describe('shots registry', () => {
+  it('loads real prose for every shot, and names a file that exists', async () => {
+    for (const shot of SHOTS) {
+      const { default: system } = await shot.system()
+      expect(system.length, shot.id).toBeGreaterThan(100)
+      expect(readFileSync(join(ROOT, shot.file), 'utf8')).toBe(system)
+    }
+  })
+
+  // The set is the unit -- sixteen positions around one subject, judged
+  // together (#553). A duplicated id would silently drop one from the grid.
+  it('has sixteen shots with distinct ids', () => {
+    expect(SHOTS).toHaveLength(16)
+    expect(new Set(SHOTS.map((s) => s.id)).size).toBe(16)
   })
 })
 

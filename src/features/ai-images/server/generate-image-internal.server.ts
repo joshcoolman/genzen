@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
-import { fal } from '@fal-ai/client'
 import { buildFalInput } from './fal-params.server'
 import type { GenerationOrigin } from '#/lib/types/db'
+import { fal } from '#/lib/server/fal-client.server'
+import { withNetworkRetry } from '#/lib/server/fal-retry.server'
 import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { DEFAULT_DESCRIBE_MODE } from '#/lib/prompts/describe'
@@ -20,8 +21,6 @@ import {
   markGenerationFailed,
   markGenerationSubmitted,
 } from '#/lib/server/create-pending-generation.server'
-
-fal.config({ credentials: () => process.env.FAL_KEY ?? '' })
 
 export interface GenerateImageInput {
   /** The string sent to the provider. Retry replays this one. */
@@ -226,6 +225,10 @@ export async function generateImageInternal(
       // The library path goes through the shared upload, so a submit against
       // three models moves these bytes once rather than three times (#313).
       if (sourceImageId) {
+        // Null means the row or its file is gone -- a real missing source. A
+        // read that failed throws its own reason now (#556): both used to land
+        // on the sentence below, so a dead connection read as a deleted
+        // picture and sent you looking in Trash.
         const uploaded = await uploadLibraryImageToFal(sourceImageId, userId)
         if (!uploaded) throw new Error('Source image not found')
         imageUrl = uploaded
@@ -239,18 +242,6 @@ export async function generateImageInternal(
       falModelId = endpointFor(model, true)
     } else if (sourceBuffer) {
       const buffer = sourceBuffer
-
-      // Detect mime type from magic bytes
-      let mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' =
-        'image/jpeg'
-      const bytes = new Uint8Array(buffer.subarray(0, 4))
-      if (bytes[0] === 0x89 && bytes[1] === 0x50) {
-        mimeType = 'image/png'
-      } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
-        mimeType = 'image/gif'
-      } else if (bytes[0] === 0x52 && bytes[1] === 0x49) {
-        mimeType = 'image/webp'
-      }
 
       // If no user prompt, ask Haiku for a plain factual description of the image
       if (!effectivePrompt) {
@@ -267,8 +258,13 @@ export async function generateImageInternal(
         )
       }
 
-      imageUrl = await fal.storage.upload(
-        new Blob([buffer], { type: mimeType }),
+      // Through the shared helper, so this path gets the transient-transport
+      // retry every other upload has (#556).
+      imageUrl = await uploadBufferToFal(
+        buffer.buffer.slice(
+          buffer.byteOffset,
+          buffer.byteOffset + buffer.byteLength,
+        ),
       )
 
       // Use image-mode endpoint if specified
@@ -316,9 +312,10 @@ export async function generateImageInternal(
 
     // Submit to FAL async queue (returns immediately)
 
-    const { request_id } = await (fal.queue.submit as any)(falModelId, {
-      input: falInput,
-    })
+    const { request_id } = await withNetworkRetry<{ request_id: string }>(
+      'queue.submit',
+      () => (fal.queue.submit as any)(falModelId, { input: falInput }),
+    )
 
     const estimatedCostCents = await computeFalCostCents(falModelId, {
       aspectRatio,

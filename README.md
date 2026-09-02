@@ -1,6 +1,68 @@
 # GenZen
 
-A personal workspace for working with AI image models.
+The multi-step prompt work that makes AI images good, packaged as things you
+can click. Pick a picture, pick a light, press Go. There is no graph to
+assemble.
+
+Fan one prompt across several models and compare what comes back side by side.
+Keep the results in a library with groups rather than a folder of downloads.
+Take one picture and get sixteen camera angles of the same subject, or relight
+it under a named lighting setup. Nothing is a credit or a surprise: tick three
+models and a count of two and the panel quotes those six generations at $0.304
+before you press.
+
+![The Images route: a group of results, each card labelled with the model that
+made it, and the generator panel with three models
+ticked](public/screenshots/genzen-images.jpg)
+
+_One prompt, two reference images, three models, six pictures — quoted at
+$0.304 before the press. Shots and Lighting sit above the references._
+
+These are estimates rather than invoices — FAL's image queue never returns a
+cost, so the figure is computed from a published rate and it is the estimate
+that gets recorded. Close enough to plan a session against and to know what an
+afternoon cost, not close enough to reconcile a bill to the penny. Every
+generation's is kept, and Activity and the account page total them.
+
+![The account Overview: total spend, images and videos, a per-model breakdown,
+and a status panel showing auth, Postgres, FAL and Anthropic
+connected](public/screenshots/genzen-account.jpg)
+
+_Spend to date, split by model, with a running count of what each one made._
+
+## Who it is for
+
+One person, on their own machine, spending their own money at fal.ai. There is
+no signup and no hosted version — you supply a FAL key and generations bill
+your account directly. It has real accounts and per-user isolation, but no
+orgs, teams or sharing. [`docs/OVERVIEW.md`](docs/OVERVIEW.md) says what it
+deliberately is not.
+
+Running it is one FAL key and one command. Postgres, storage and auth come up
+as local containers, so there is no cloud account to open and nothing to
+provision before the app boots; deploying it to Railway is roughly as short.
+Setup is below.
+
+## Where this is going
+
+Shots and Lighting look like two features. They are two instances of one
+mechanism: a reasoning model looks at your particular picture and inventories
+what is actually in it, then applies craft knowledge — photography, lighting,
+composition — bound to the surfaces it found. Pass one grounds, pass two
+art-directs; `writeLightingSubject`, then `writeLighting`.
+
+The image models cannot do that half. They render what a prompt asks for, and
+have no view on why a corner gives a hard vertical edge where a flat wall gives
+a gradient, or that a truck has no cheek. The reasoning model is what turns a
+vague intention into the instruction an art director would have given.
+
+The same shape has other slots — lens and depth, composition and blocking,
+grade and palette — and none of them are built. The one that matters most is
+already half-built inside Shots: sixteen frames of one subject have to agree
+with each other, and a set that agrees is the hard part of multi-shot video.
+Stills are the cheap rehearsal for it.
+
+That is intent rather than a promise. What is actually queued is on the board.
 
 ## Run it locally
 
@@ -147,17 +209,25 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
+**Focus** — [#562](https://github.com/joshcoolman/genzen/issues/562) has its
+surface: `/lab/lighting` turns a reference picture into a lighting setup, tests
+it on a face and an object, and hands back the text of the `.md`. Open it, drop
+Pinterest references at it, and judge what comes back — the effects that survive
+get committed to `src/lib/prompts/lighting/`.
+[#502](https://github.com/joshcoolman/genzen/issues/502) is also open and
+unrelated: two dead webhook variables still set on the deployed Railway service.
+
+Updated when Focus changes. Everything else is the board at
+`localhost:3210/kanban/genzen` — **Now** is queued and small things to clear
+first, **Next** is an honest read on what follows, Later and Unsorted are
+parking lots. The labels are the ranking; a list here would be a second copy
+that drifts, and one did.
+
 **Last shipped**
 
-- 2026-08-29 — Enhance's multi-shot writer takes a duration and an aspect ratio as controls instead of reading them out of your prose, and both come off the video model it writes for — so the script is timed to a length the clip can actually be generated at, and composed for the shape it will be generated in
-- 2026-08-29 — Video picks one model at a time, and each model gets its whole capability: MiniMax H3 Max joins the lineup as a text-only model tuned for prompt adherence (the target the multi-shot writer was missing) with a 480p/768p resolution control that moves the price, and the settings are that model's rather than an intersection across several
-- 2026-08-28 — Enhance writes multi-shot video prompts: pick "Multi-shot · MiniMax H3" as the target and a few words come back as a timestamped shot-by-shot script, with the duration read out of what you typed (#520)
-- 2026-08-28 — Describe's prompts are a folder with a registry, picked from a menu, so adding one is a file drop and an entry (#519)
-- 2026-08-28 — Generate panel polish: the stepper is a pill, reference images sit in a labelled box, each model is its own block with selection shown by its border alone, and aspect, count and Generate share one row (#518)
-- 2026-08-27 — Sequence shows both ends of every clip: each tile is the frame it opens on beside the frame it ends on, the picker offers only clips that match the run's aspect ratio, and skip jumps straight to a clip and plays it (#512)
-
-**Up next**
-
-The open issues labelled [`focus`](https://github.com/joshcoolman/genzen/labels/focus),
-then [`next`](https://github.com/joshcoolman/genzen/labels/next). The labels are
-the ranking; a list here would be a second copy of it that drifts.
+- 2026-09-02 — Enhance's multi-shot writer takes a duration and an aspect ratio as controls instead of reading them out of your prose, and both come off the video model it writes for — so the script is timed to a length the clip can actually be generated at, and composed for the shape it will be generated in (#522)
+- 2026-09-01 — README: the front door leads with what genzen is, who it is for and where it is going, rather than with Docker and Node floors. Cost is stated up front — six generations quoted at $0.304 before the press — and honest about being an estimate. Two screenshots, in `public/screenshots/`, referenced repo-relative and rewritten by the `/readme` route (#570)
+- 2026-09-01 — Lab: a Lighting page that writes an effect instead of applying one. A reference photograph in, a lighting setup out under a rule that forbids naming a technique or anything in the picture, then four candidates on two pinned test subjects — a face and an object, because prose that describes a photograph passes on faces and returns colour rectangles on a truck. It generates and stores nothing; capture is the text of the `.md` (#562)
+- 2026-09-01 — Lighting: a button beside Shots that relights every staged reference under every effect picked, through every model picked. An effect is a lighting setup — sources, angles, gels — and never a description of a picture, which is what makes it land on a truck as readily as a face. Gels are templated with defaults. Both dialogs now close on the press instead of the run (#563)
+- 2026-08-31 — References go to FAL downscaled: 2048 long edge, JPEG 95, transport only — the stored row keeps its full-resolution original. 12.8MB to 1.7MB on the eight-keyframe set behind #556. Never upscales, never flattens transparency, never returns a bigger file, and anything sharp cannot read passes through untouched (#560)
+- 2026-08-31 — A paste into Images uploads and stops there; the Upload button is back, scoped to Uploads or a group (#550)

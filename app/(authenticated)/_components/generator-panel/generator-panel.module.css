@@ -59,10 +59,17 @@
   gap: var(--space-6);
 }
 
+/* Label left, actions right. `space-between` did that while there was one
+   action; with Shots beside Clear it would push Shots to the middle of the
+   row, so the label takes the slack instead. */
 .refsHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.refsHead .refsLabel {
+  flex: 1;
 }
 
 /* The dock's title, not an eyebrow. An uppercase tracked-out label would be a

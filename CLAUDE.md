@@ -67,8 +67,10 @@ earned; see `docs/DELTAS.md`.
 | activity    | Chronological cost/time log of every generation (inc failures)       | `src/features/activity/CLAUDE.md`    |
 | ai-images   | Multi-model image generation, edit, variation workflows              | `src/features/ai-images/CLAUDE.md`   |
 | auth        | Password verification + signed session cookie                        | `src/features/auth/CLAUDE.md`        |
+| groups      | Named sets of library rows, one namespace per surface                | `src/features/groups/CLAUDE.md`      |
 | theme       | Six user-chosen colors, derived into the palette tokens.css declares | `src/features/theme/CLAUDE.md`       |
 | user-images | User image uploads, library, and asset management                    | `src/features/user-images/CLAUDE.md` |
+| visibility  | Hiding rows from a wall, and focusing on a few, without trashing     | `src/features/visibility/CLAUDE.md`  |
 | video       | The video lineup: three models, their endpoints, and what each takes | `src/features/video/CLAUDE.md`       |
 
 **Route-owned surfaces** — these had a `features/` folder until #181 and now
@@ -129,33 +131,103 @@ a one-line fix to something already merged.
 
 ## Orientation and capture
 
-Two durable surfaces, no continuation file: the README `## Status` block (last
-shipped / up next) and open GitHub issues. Read both at session start.
+No continuation file. Read the README `## Status` block and the open issues at
+session start. `## Status` is one Focus line naming the live card, a pointer at
+the board, and at most six one-line bullets of what shipped. It never lists
+what is queued -- the labels are the ranking, and a hand-written copy of them
+drifted inside a single session before it was cut.
 
-**Issues are ranked by three labels — `focus`, `next`, `later`** — which the
-upnext app renders as group headers, **oldest-touched first within a group**, and
-an issue carrying none of them lands in Unsorted. Reordering is a label toggle,
-not a priority number.
+**The upnext board at `localhost:3210/kanban/genzen` is the surface Josh
+actually works from**, and he is the only developer. He reads the board,
+discusses what to do next from it, and rarely opens this repo's README at all
+— so `## Status` is orientation for a cold session, not something he consults,
+while the board is what he is looking at while talking to you. Keep both true;
+know which one is load-bearing for whom.
 
-Two things this said wrongly until 2026-08-18, both of which cost a sort:
+**A session often opens with nothing but a number.** "549" means the card he is
+looking at, so read that issue first and orient from the board rather than
+asking what he means. Two things are worth saying back before starting: if the
+card is blocked by or duplicates another, and if something in Now should be
+cleared first -- offer it, do not just start. "The focus items" or "those three
+in focus" resolves by column, not by guesswork.
 
-- **`now` is an upnext bucket that has no label in this repo**, and `focus` —
-  which every ranked issue here actually uses — was not named at all. `gh` fails
-  outright on a label it cannot resolve, so a `--remove-label` naming `now`
-  removes nothing and reports success on the add, leaving an issue in two groups.
-- **The direction is ascending, not most-recent-first.** A label edit touches
-  `updatedAt`, so filing an issue _appends it to the bottom_ of its group and the
-  **top of a group is the next thing to do**. Re-applying a label an issue already
-  carries is a no-op and will not move it; forcing a position takes a remove and
-  then an add. After changing any issue's
-  labels, title or state, run `curl -s -X POST localhost:3210/api/nudge` so any
-  open upnext tab repaints immediately — it answers `{"nudged":n}`, and `n` is how
-  many tabs heard it, so `0` means nothing was listening rather than nothing
-  happened. A push, not a poll, on purpose: polling re-spawns `gh` for every issue
-  on a schedule forever, including on a tab left open all weekend.
+He points at cards by number, and says how much runway one gets — "finish the focus tickets" is a work session, "do 459 quickly" is a
+cherry-pick. **A card leaves the board when its issue closes**, so closing is
+part of finishing, not a follow-up. A half-shipped ticket is the one thing that
+can lie to the board: #545 merged its first half and stayed open, reading as
+done for days. Split it or retitle it — never leave a card promising what has
+already shipped.
+
+**Which column: four labels — `focus`, `now`, `next`, `later`** — and an issue
+carrying none lands in Unsorted. They are five different questions, not five
+degrees of urgency:
+
+- **`focus`** — what this session is working on. One or two cards. It answers
+  "what are we doing", and an empty Focus column is the signal to promote from
+  Now.
+- **`now`** — queued for Focus, and the place for small things that should be
+  cleared before anything bigger starts. The shape: a bug noticed mid-session
+  that has been on the radar, does not affect much, but will bite later if it
+  is left. Not a session's worth of work — the thing you do so it stops being
+  in the way.
+- **`next`** — just outside the current session. An accurate read on what to
+  expect, which is the whole job: if Next is wrong, the board stops being worth
+  looking at.
+- **`later`** — the dumping ground. Real, understood, not soon. Nothing here is
+  waiting on a decision.
+- **Unsorted** — the backlog. Big, vague, captured rather than planned; go/no-go
+  questions and major features nobody has committed to. A small concrete chore
+  does not belong here — that is a `later` at worst.
+
+**Where in the column: an integer key in the issue body**, written as
+`<!-- upnext: 150 -->` at the very end. GitHub strips it from rendered HTML, so
+it is invisible while travelling with the issue — no second store, and three
+machines read the same numbers. The sort is bucket, then **keyed above
+unkeyed**, then key ascending, then `updatedAt` ascending. Keys are sparse
+(step 100) so inserting between two cards is one write.
+
+Three things worth knowing, all of which have cost a sort:
+
+- **A label toggle does not set position.** This file said until 2026-08-30 that
+  the order was oldest-touched and that a remove-then-add forced a position.
+  Both are wrong — an unkeyed card sinks below every keyed one no matter how
+  recently it was touched. To place a card, write its key, or drag it on the
+  board and hit Commit, which is upnext's own tested path. `updatedAt` only
+  breaks ties in the unkeyed tail.
+- **All four labels exist.** This said until 2026-08-29 that `now` was a bucket
+  with no label here; it is a real label and issues carry it. The warning behind
+  that line is still the one that matters: `gh` fails outright on a label it
+  cannot resolve, so a `--remove-label` naming one that does not exist removes
+  nothing and reports success on the add, leaving an issue in two groups. Check
+  `gh label list` rather than trusting this paragraph — it has been wrong once.
+- **Nudge after any change.** After editing an issue's labels, title, body or
+  state, run `curl -s -X POST localhost:3210/api/nudge` so any open upnext tab
+  repaints immediately — it answers `{"nudged":n}`, and `n` is how many tabs
+  heard it, so `0` means nothing was listening rather than nothing happened. A
+  push, not a poll, on purpose: polling re-spawns `gh` for every issue on a
+  schedule forever, including on a tab left open all weekend.
+
+**How Josh works, and what it asks of you.** He files ideas constantly and
+does not spend time sorting them. He is looking at the board, reading titles,
+and assuming that is where things stand.
+
+- **Titles are the product.** A card is read at a glance, in a column, next to
+  eleven others. Tight and specific beats complete. If a title needs opening to
+  be judged, it is wrong.
+- **Capture without ceremony.** An idea gets an issue, not a conversation about
+  whether it deserves one. Vague, pie-in-the-sky or nothing-to-do-yet goes to
+  Unsorted; work you have both agreed matters goes to Now or Next. **"Backlog"
+  in his words means Unsorted**, never the `later` label.
+- **Verbosity is the failure mode.** Not just in issues -- in replies. Lead with
+  the answer, cut the recap, and do not narrate what you are about to do.
+- **Push back anyway.** Terse does not mean compliant. Say what would go wrong,
+  in a sentence, then get on with it.
 
 **Write an issue so it makes sense cold.** The title says what is wrong or what
-to build, in words you would say out loud -- never the name of a pattern. The
+to build, in words you would say out loud -- never the name of a pattern. It
+also carries its own scope, because the board is read by title and nothing
+else: "Paste should not attach reference images" names no surface, and the card
+cannot be judged without opening it. The
 first line states the problem plainly, with no conclusion and no invented term
 ahead of its definition. Reasoning and evidence still belong there, further
 down. And an issue born from a conversation ends with **"Where this came from"**,
@@ -218,6 +290,7 @@ it is safe.
 - There is no Tailwind and no CSS framework (#186). `src/styles/tokens.css` is the token layer, `src/styles/base.css` the reset, and every component has a `.module.css` beside it. `src/styles.css` imports those two and nothing else. Reach for `cx` from `#/lib/utils` to join module classes -- `cn`/`tailwind-merge` are gone. Two scripts guard it, both in `pnpm check` and CI: `check:colors` (no raw color outside tokens.css, #229) and `check:tokens` (no `var(--x)` that is declared nowhere, #407 -- an undeclared property does not error, it is dropped, so this breaks silently)
 - **Every instruction sent to a model is a `.md` file in `src/lib/prompts/`**, imported as a string (#322). Assembly -- interleaving an image with text, branching on inputs -- stays in TypeScript beside its caller; only prose lives there. Two tests enforce it: nothing but `.md` in that folder, and no long model-addressed string in any `.ts`. The point is that changing what a model is told should be a text edit, not a code change
 - **A family of prompts one feature switches between is a subfolder with an `index.ts` registry** -- `src/lib/prompts/describe/` is the pattern. The registry holds wiring only (id, label, the one-line user turn, a lazy `import()` of the `.md`) and everything else derives from it, so adding a prompt is a file drop plus one entry, not an edit in four places. `index.ts` is the one non-`.md` file a prompt folder may hold. Load the markdown with `() => import('./x.md')`, not a static import: client modules read these registries for their labels, and a static import puts every prompt's text in the browser bundle
+- **Every FAL call goes through `src/lib/server/fal-client.server.ts`** -- import `fal` from there, never from `@fal-ai/client`. It configures credentials _and_ a transport with **HTTP/2 disabled** (`fal-fetch.server.ts`, `undici` is a direct dependency for it). Node's built-in fetch negotiates h2 and pools the session; a destroyed session stays in the pool, so a server that has been up a while cannot reach FAL at all and **retrying does not clear it** -- it needs a restart. That is why `fal.config` lives in one module and not six (#556): a new call site copies the credentials it can see and silently misses the transport
 - FAL generation uses on-demand polling via `src/lib/server/check-pending-generations.action.ts`. **There are no webhooks** -- the route, the flag and the env vars went in #362. Polling is the only path a result reaches the app, which is why nothing may switch it off
 - **Pasting an image you already own uploads it again, as a new row.** The
   clipboard used to carry the record id instead (#213) so it did not; the only

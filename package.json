@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "format": "prettier --check .",
-    "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs && node scripts/check-undeclared-tokens.mjs",
+    "check": "prettier --write . && eslint --fix && node scripts/check-raw-colors.mjs && node scripts/check-undeclared-tokens.mjs && node scripts/check-module-classes.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "users": "node scripts/users.mjs",
     "local:up": "node scripts/local-up.mjs",
@@ -19,7 +19,8 @@
     "start": "next start --port 3000",
     "check:claude-md": "node scripts/check-claude-md.mjs",
     "check:colors": "node scripts/check-raw-colors.mjs",
-    "check:tokens": "node scripts/check-undeclared-tokens.mjs"
+    "check:tokens": "node scripts/check-undeclared-tokens.mjs",
+    "check:classes": "node scripts/check-module-classes.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
@@ -42,6 +43,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "sharp": "^0.34.5",
+    "undici": "^8.10.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

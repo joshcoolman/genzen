@@ -1,5 +1,6 @@
 import { first, jsonb, sql } from './db.server'
 import { addCanvasMembers, requireCanvas } from './canvas-membership.server'
+import { describeThrown } from './fal-error.server'
 import type { GenerationOrigin } from '#/lib/types/db'
 import { modelTitleFor } from '#/features/ai-images/models'
 
@@ -79,11 +80,20 @@ export async function createPendingGeneration({
   // first, and an id that does not resolve files the image at top level rather
   // than failing the generation: a wrong group is worth losing, a picture is
   // not.
+  //
+  // **The kind is checked too, and derived from `source` rather than asked for**
+  // (#517). A clip belongs in a video group and a still in an image one, and
+  // this function already knows which it is making -- a caller passing its own
+  // kind would be a second opinion to disagree with. Same forgiving outcome: a
+  // group of the wrong kind resolves to nothing and the row lands at top level,
+  // where it is visible and one click from being filed properly.
+  const wantedKind = source === 'ai_video' ? 'video' : 'image'
   const owned = groupId
     ? first(
         await sql<Array<{ id: string }>>`
           select id from image_groups
           where id = ${groupId} and user_id = ${userId}
+            and kind = ${wantedKind}
         `,
       )
     : null
@@ -184,7 +194,11 @@ export function describeGenerationError(
 ): string {
   const parts: Array<string> = []
 
-  if (err instanceof Error && err.message.trim()) parts.push(err.message.trim())
+  // The cause chain, not just the message: Node's fetch reports every network
+  // failure as the bare string "fetch failed" and hides the reason on `cause`
+  // (#556).
+  if (err instanceof Error && err.message.trim())
+    parts.push(describeThrown(err).trim())
 
   const body = (err as { body?: unknown } | null)?.body
   if (body && typeof body === 'object') {
