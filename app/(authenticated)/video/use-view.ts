@@ -26,6 +26,7 @@ import { useGenerationPoll } from '#/features/ai-images/hooks/use-generation-pol
 import { saveFileToLibrary } from '#/features/user-images/lib/save-to-library'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { captureLastFrame } from '#/features/video/frame-capture'
+import { findClipEndFrame } from '#/features/video/server/find-clip-end-frame.action'
 import { stampFrameSource } from '#/features/video/server/stamp-frame.action'
 import { useAuth } from '#/lib/auth'
 import { imageUrl } from '#/lib/image-url'
@@ -751,34 +752,62 @@ export function useView(initialVideos: Array<VideoRecord>) {
 
   const [isContinuing, setIsContinuing] = useState<string | null>(null)
 
+  /** Pull the clip's final frame into the library and return the new row. */
+  const extractEndFrame = useCallback(
+    async (video: VideoRecord) => {
+      const { blob, timeSeconds } = await captureLastFrame(`/img/${video.id}`)
+
+      const image = await saveFileToLibrary({
+        userId: user.id,
+        file: new File([blob], `frame-${video.id}-end.png`, {
+          type: 'image/png',
+        }),
+        title: `Frame \u00b7 ${video.title}`,
+        description: video.description,
+      })
+
+      // Best effort: a frame without its origin stamped is still a usable
+      // first frame, so a failure here must not lose the extraction. It does
+      // mean an unstamped frame is not found by `findClipEndFrame` and the
+      // next Continue extracts again -- a duplicate, which is what this path
+      // already did every time.
+      void stampFrameSource({
+        imageId: image.id,
+        clipId: video.id,
+        timeSeconds,
+        kind: 'end',
+      }).catch(() => {})
+
+      return image
+    },
+    [user.id],
+  )
+
   const continueFrom = useCallback(
     async (video: VideoRecord) => {
       setIsContinuing(video.id)
       try {
-        const { blob, timeSeconds } = await captureLastFrame(`/img/${video.id}`)
+        /* Continue on a clip you have already continued from reused nothing:
+           it re-extracted the same final frame and wrote a second identical
+           PNG to the library, indistinguishable from the first except by id
+           (#542). Asking for the existing row first costs one query and skips
+           a 20-30MB download, a decode and an upload when it hits.
 
-        const image = await saveFileToLibrary({
-          userId: user.id,
-          file: new File([blob], `frame-${video.id}-end.png`, {
-            type: 'image/png',
-          }),
-          title: `Frame \u00b7 ${video.title}`,
-          description: video.description,
-        })
+           Deliberately silent -- the slot fills the way it always does. The
+           duplicate was never something the user asked for, so not making it
+           is not an event worth reporting. */
+        const existing = await findClipEndFrame({ clipId: video.id })
 
-        // Best effort: a frame without its origin stamped is still a usable
-        // first frame, so a failure here must not lose the extraction.
-        void stampFrameSource({
-          imageId: image.id,
-          clipId: video.id,
-          timeSeconds,
-        }).catch(() => {})
+        const frame = existing ?? (await extractEndFrame(video))
 
         setSources([
           {
-            id: image.id,
-            url: imageUrl(image.id, 'thumb'),
-            title: image.title,
+            id: frame.id,
+            url: imageUrl(frame.id, 'thumb'),
+            /* `title` is nullable on the row and not on a source chip. The
+               fallback is the name the extraction path gives a fresh frame,
+               so a reused one is labelled identically to a new one. */
+            title: frame.title ?? `Frame \u00b7 ${video.title}`,
           },
         ])
         setEndSources([])
@@ -798,7 +827,7 @@ export function useView(initialVideos: Array<VideoRecord>) {
         setIsContinuing(null)
       }
     },
-    [user.id, userImages],
+    [extractEndFrame, userImages],
   )
 
   const filledPrompts = useMemo(

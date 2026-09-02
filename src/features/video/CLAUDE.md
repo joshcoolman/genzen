@@ -23,7 +23,14 @@ about the form, the picker and the card; this folder holds only the catalog.
   takes a structural `ClipShape`, not the route's `VideoRecord`, because nothing
   here may import from `app/`
 - `server/stamp-frame.action.ts` -- writes `frame_source` into the frame's
-  `generation_metadata`, so a still knows which clip it was cut from
+  `generation_metadata`, so a still knows which clip it was cut from, and
+  whether it is that clip's end (`kind: 'end'`) or a position someone scrubbed
+  to (`kind: 'scrub'`)
+- `server/find-clip-end-frame.action.ts` -- reads it back: the library row
+  already holding a clip's end frame, so Continue reuses one instead of
+  extracting a second identical PNG (#542). Provenance rather than
+  `file_hash`, which no query has ever used and which browser PNG encoding
+  makes unreliable across machines
 
 **`clip-facts.ts` arrived the same way**: it was `lab/_components/clip-facts.ts`,
 shared between the lab's picker and its run, until the Video card wanted a
