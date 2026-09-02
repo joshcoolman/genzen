@@ -1,0 +1,127 @@
+/* The cut, to scale: every clip is as wide as the share of the finished piece
+   it accounts for. See the component's note for why this row is proportional
+   where Sequence's is not. */
+.track {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-4);
+  min-block-size: 5.5rem;
+  padding: var(--space-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  overflow-x: auto;
+}
+
+.clip {
+  position: relative;
+  flex-basis: 0;
+  min-inline-size: 4rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.face {
+  display: flex;
+  align-items: flex-end;
+  inline-size: 100%;
+  block-size: 100%;
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background-color: var(--image-backing);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  text-align: left;
+}
+
+.clipSelected .face {
+  border-color: var(--accent);
+}
+
+/* A wash under the label rather than a shadow on the text: the poster behind
+   it can be any colour, and a clip that starts on a white frame made the title
+   unreadable. */
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-3xs);
+  line-height: var(--leading-tight);
+}
+
+.length {
+  font-family: var(--font-mono);
+  font-size: var(--text-3xs);
+  line-height: var(--leading-tight);
+  color: var(--text-muted);
+}
+
+/* Only on the selected clip, and over the poster rather than beside it: a row
+   of three buttons under every tile would be most of the track's height. */
+.controls {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline: var(--space-4);
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.control {
+  display: grid;
+  place-items: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--scrim);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.control:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.control:disabled {
+  opacity: 0.35;
+}
+
+.controlIcon {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+}
+
+.add {
+  display: grid;
+  place-items: center;
+  flex: 0 0 3rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.add:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.addIcon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
