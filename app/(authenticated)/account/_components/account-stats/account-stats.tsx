@@ -82,7 +82,7 @@ export function AccountStats({ stats }: { stats: Stats }) {
       )}
 
       {stats.models.length > 0 && (
-        <div className={styles.models}>
+        <div>
           <span className={styles.modelsTitle}>
             Models by use
             {busiest && (
