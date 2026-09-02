@@ -1,6 +1,68 @@
 # GenZen
 
-A personal workspace for working with AI image models.
+The multi-step prompt work that makes AI images good, packaged as things you
+can click. Pick a picture, pick a light, press Go. There is no graph to
+assemble.
+
+Fan one prompt across several models and compare what comes back side by side.
+Keep the results in a library with groups rather than a folder of downloads.
+Take one picture and get sixteen camera angles of the same subject, or relight
+it under a named lighting setup. Nothing is a credit or a surprise: tick three
+models and a count of two and the panel quotes those six generations at $0.304
+before you press.
+
+![The Images route: a group of results, each card labelled with the model that
+made it, and the generator panel with three models
+ticked](public/screenshots/genzen-images.jpg)
+
+_One prompt, two reference images, three models, six pictures — quoted at
+$0.304 before the press. Shots and Lighting sit above the references._
+
+These are estimates rather than invoices — FAL's image queue never returns a
+cost, so the figure is computed from a published rate and it is the estimate
+that gets recorded. Close enough to plan a session against and to know what an
+afternoon cost, not close enough to reconcile a bill to the penny. Every
+generation's is kept, and Activity and the account page total them.
+
+![The account Overview: total spend, images and videos, a per-model breakdown,
+and a status panel showing auth, Postgres, FAL and Anthropic
+connected](public/screenshots/genzen-account.jpg)
+
+_Spend to date, split by model, with a running count of what each one made._
+
+## Who it is for
+
+One person, on their own machine, spending their own money at fal.ai. There is
+no signup and no hosted version — you supply a FAL key and generations bill
+your account directly. It has real accounts and per-user isolation, but no
+orgs, teams or sharing. [`docs/OVERVIEW.md`](docs/OVERVIEW.md) says what it
+deliberately is not.
+
+Running it is one FAL key and one command. Postgres, storage and auth come up
+as local containers, so there is no cloud account to open and nothing to
+provision before the app boots; deploying it to Railway is roughly as short.
+Setup is below.
+
+## Where this is going
+
+Shots and Lighting look like two features. They are two instances of one
+mechanism: a reasoning model looks at your particular picture and inventories
+what is actually in it, then applies craft knowledge — photography, lighting,
+composition — bound to the surfaces it found. Pass one grounds, pass two
+art-directs; `writeLightingSubject`, then `writeLighting`.
+
+The image models cannot do that half. They render what a prompt asks for, and
+have no view on why a corner gives a hard vertical edge where a flat wall gives
+a gradient, or that a truck has no cheek. The reasoning model is what turns a
+vague intention into the instruction an art director would have given.
+
+The same shape has other slots — lens and depth, composition and blocking,
+grade and palette — and none of them are built. The one that matters most is
+already half-built inside Shots: sixteen frames of one subject have to agree
+with each other, and a set that agrees is the hard part of multi-shot video.
+Stills are the cheap rehearsal for it.
+
+That is intent rather than a promise. What is actually queued is on the board.
 
 ## Run it locally
 
