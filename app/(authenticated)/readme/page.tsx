@@ -8,7 +8,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function Readme() {
   const source = await readFile(path.join(process.cwd(), 'README.md'), 'utf8')
-  const html = await marked.parse(source)
+  // Image paths are written repo-relative so GitHub renders them. Here they are
+  // served from `public/`, and a relative src would resolve against `/readme/`.
+  const html = (await marked.parse(source)).replaceAll('src="public/', 'src="/')
   return (
     <article
       className={styles.markdown}
