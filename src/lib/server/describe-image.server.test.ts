@@ -11,7 +11,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  * nothing else, whatever the note says.
  */
 
-const generateText = vi.fn(async () => ({ text: '  a description  ' }))
+const generateText = vi.fn(async (_options: unknown) => ({
+  text: '  a description  ',
+}))
 
 vi.mock('ai', () => ({ generateText }))
 vi.mock('#/lib/server/ai.server', () => ({
@@ -26,7 +28,7 @@ const { default: guidanceFrame } =
 
 /** The parts of the one user message a call sent. */
 function sentParts() {
-  const call = generateText.mock.calls.at(-1)?.[0] as unknown as {
+  const call = generateText.mock.calls.at(-1)?.[0] as {
     system: string
     messages: Array<{ content: Array<{ type: string; text?: string }> }>
   }
