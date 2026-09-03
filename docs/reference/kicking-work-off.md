@@ -43,7 +43,7 @@ as exactly the thing the app is supposed to be good at feeling slow.
 against expiring provider urls, a Keep button to promote a result into the
 library, a hand-rolled tile that reported "Rendering" for a minute after the
 picture existed. Every one of those is something Images already does. What was
-genuinely new in that page was one thing: a model writing *who* to generate.
+genuinely new in that page was one thing: a model writing _who_ to generate.
 
 **The test for a new surface: what does it know that the wall does not?** That
 part is the feature. Everything else it needs, it should be submitting into.

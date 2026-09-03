@@ -283,6 +283,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onPrev={viewer.prev}
           onDelete={viewer.deleteAndAdvance}
           onHide={viewer.hideAndAdvance}
+          onUsePrompt={usePromptText}
         />
       )}
 
