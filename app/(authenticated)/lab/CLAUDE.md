@@ -276,7 +276,7 @@ being a fast loop rather than one considered request.
 - **Sonnet for a cast, Haiku for a handful.** Ten people who have to spread
   without being told how is a real reasoning job; one more person, with the
   board attached, is not -- and it sits behind a button pressed four times in a
-  row, where ten seconds of Sonnet *is* the experience.
+  row, where ten seconds of Sonnet _is_ the experience.
 - **Squares appear before anyone is written into them.** The writer takes a
   second or two and the submit a moment more, and a press that waited for both
   showed nothing at all in the meantime -- three `+` presses looked like three

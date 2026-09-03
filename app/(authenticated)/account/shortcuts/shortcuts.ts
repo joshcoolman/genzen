@@ -140,6 +140,11 @@ export const shortcutGroups: Array<ShortcutGroup> = [
         what: 'Hide this one and move on',
         note: 'The same pair as the card’s corner: Delete destroys, H clears it away. The next picture takes its place, so a pass through a group of near-identical shots is a run of single keystrokes. It is in the bar above the grid when you come back out.',
       },
+      {
+        keys: 'P',
+        what: 'Show or hide the prompt column',
+        note: 'It stays as you leave it, on every image and next time you open the viewer — reading the prompt is most of what judging a take is, so it is a mode rather than a per-image click. The panel’s text is a copy button, and ⌘-clicking it loads the prompt into the generator.',
+      },
       { keys: 'Escape', what: 'Close it' },
     ],
   },

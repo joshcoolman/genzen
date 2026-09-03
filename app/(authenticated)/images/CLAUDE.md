@@ -399,10 +399,21 @@ aspect ratios)`, and a bigger sheet would only squeeze the same detail
 - **The viewer is `_components/image-viewer/`, and it is nothing to do with
   Explore's overlay.** A plain lightbox: scrim over the app, the picture
   centred, chevrons either side, an X, a counter, click outside the image to
-  dismiss, arrows and Escape. **No prompt, no filmstrip, no metadata** -- "show
-  me this bigger and let me move through the set" is the whole job, and
-  anything proposed for it should have to answer why it is not a card action or
-  a route. Delete and Backspace send to Trash, which is the one thing this has
+  dismiss, arrows and Escape. **No filmstrip and no metadata** -- and nothing
+  else proposed for it gets in without answering why it is not a card action or
+  a route.
+
+  **The one thing that did get in is the prompt column** (#580), because
+  judging a take means reading the text that made it and the alternative was
+  closing the viewer to read the card's clamped three lines. It is a **mode**:
+  `P` toggles it, `genzen:viewer-prompt` remembers the answer, and it is on by
+  default. Per-image would be forty keystrokes across a set of forty. Switched
+  off this is the plain lightbox it has always been, which is the whole reason
+  it is allowed here at all -- imposed, it was wrong, and was removed once
+  already. The panel's text is a `CopyText` carrying the card's exact contract
+  (click copies, Cmd-click loads the generator), it renders for an upload too
+  saying there is no prompt, and its width is `clamp(18rem, 25%, 34rem)` rather
+  than a bare quarter -- a literal 25% is a 90-character line on an ultrawide. Delete and Backspace send to Trash, which is the one thing this has
   that Explore's does not. **`H` hides and moves on** (#545) -- the card's own
   pairing (#504) reaching the surface where the judging actually happens, since
   until then the only verb in here was the destructive one. Both are also

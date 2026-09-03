@@ -1,5 +1,6 @@
-/* A plain lightbox: scrim, picture, chevrons, X, counter. Explore's image-detail
-   is the three-column one; this shares nothing with it on purpose. */
+/* A lightbox: scrim, picture, chevrons, X, counter, and a prompt column that
+   switches off (#580). Explore's image-detail is the three-column one; this
+   shares nothing with it on purpose. */
 
 .root {
   /* One knob for the breathing room, used on all four sides. Tune here rather
@@ -11,12 +12,23 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-dialog);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: stretch;
   /* Semi-opaque rather than solid. The app staying faintly visible is what
      says this is a layer over your work rather than a different place -- and
      it is the reason clicking out is guessable without being told. */
   background: var(--scrim);
+}
+
+/* Everything but the panel. `position: relative` is what re-anchors the
+   chevrons, the counter and the X off the viewport and onto the picture's
+   column -- against the viewport the X would sit over the prompt. */
+.main {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 /* `min-height: 0` and the explicit box sizing are what make "the image always
@@ -221,6 +233,78 @@
   height: 1rem;
 }
 
+/* Bounded in `ch`-ish terms rather than left as a fraction. A literal quarter
+   is a ~90-character line on an ultrawide and unreadable on a laptop; this
+   holds the three-quarters intent between about 45 and 60 characters, which is
+   the band a prompt is actually read in. The percentage resolves against the
+   overlay, so it still tracks the window. */
+.panel {
+  flex: none;
+  box-sizing: border-box;
+  width: clamp(18rem, 25%, 34rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: var(--space-24);
+  padding-top: var(--space-48);
+  border-left: 1px solid var(--border);
+  background: color-mix(in oklab, var(--bg) 88%, transparent);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.panelTitle {
+  flex: none;
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* The prompt is the reason the column exists, so it is set at reading size and
+   left ragged -- not clamped the way the card's caption is. The card jogs your
+   memory; this is the text you are judging the picture against. */
+.panelPrompt {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.panelPromptText {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text);
+  white-space: pre-wrap;
+}
+
+.panelEmpty {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-leading);
+  color: var(--text-muted);
+}
+
+/* Says which way the mode is set, from the corner furthest from anything that
+   acts on the image. Quiet until hovered: it is a status line first. */
+.promptToggle {
+  position: absolute;
+  bottom: var(--space-12);
+  left: var(--space-12);
+  padding: var(--space-4) var(--space-8);
+  border: none;
+  border-radius: var(--radius-full);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-leading);
+  color: color-mix(in oklab, var(--text) 55%, transparent);
+  cursor: pointer;
+  transition: color var(--duration-normal) var(--ease-in-out);
+}
+
+.promptToggle:hover {
+  color: var(--text);
+}
+
 /* Narrow: the gutters give way before the picture does. Nothing is hidden --
    that was the bug in the layout this replaces. */
 @media (max-width: 40rem) {
@@ -239,5 +323,19 @@
 
   .navNext {
     right: var(--space-4);
+  }
+
+  /* Below this the split is two cramped columns rather than one good one, so
+     the picture keeps the width and the prompt goes under it. */
+  .root {
+    flex-direction: column;
+  }
+
+  .panel {
+    width: 100%;
+    max-height: 40%;
+    padding-top: var(--space-24);
+    border-left: none;
+    border-top: 1px solid var(--border);
   }
 }

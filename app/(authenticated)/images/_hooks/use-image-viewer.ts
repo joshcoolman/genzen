@@ -8,6 +8,10 @@ export interface ViewerItem {
   id: string
   /** Model name for a generation, filename for an upload. Alt text only. */
   title: string
+  /** What the viewer's prompt panel reads (#580), derived exactly as the
+   *  card's caption is so the two never disagree about the same image. Absent
+   *  on an upload with no description -- there is nothing that made it. */
+  prompt?: string
 }
 
 export interface ImageViewerState {
@@ -51,7 +55,15 @@ export function useImageViewer(
     const urls: Record<string, string> = {}
 
     for (const img of images) {
-      list.push({ id: img.id, title: img.title })
+      // `description` wins where one was written, the way it does on the card.
+      // An upload falls through to nothing rather than to its filename: the
+      // panel says "no prompt", which is true, where a filename in a prompt
+      // column would read as one.
+      const prompt =
+        img.origin === 'upload'
+          ? img.description
+          : (img.description ?? img.generation_metadata?.prompt)
+      list.push({ id: img.id, title: img.title, prompt: prompt ?? undefined })
       if (img.storage_path) urls[img.id] = imageUrl(img.id)
     }
 
