@@ -89,12 +89,11 @@ export const createUserImageSchema = z.object({
     .max(200, 'Title must be 200 characters or less')
     .trim(),
 
-  description: z
-    .string()
-    .max(1000, 'Description must be 1000 characters or less')
-    .trim()
-    .nullable()
-    .optional(),
+  /* No length cap (#582). The 1000 that used to be here mirrored a database
+     check that no longer exists, and on a generation this field holds the
+     prompt -- Shots and Lighting routinely write three or four thousand
+     characters. */
+  description: z.string().trim().nullable().optional(),
 
   file: z
     .instanceof(File, { message: 'File is required' })
@@ -132,12 +131,11 @@ export const updateUserImageSchema = z.object({
     .trim()
     .optional(),
 
-  description: z
-    .string()
-    .max(1000, 'Description must be 1000 characters or less')
-    .trim()
-    .nullable()
-    .optional(),
+  /* No length cap (#582). The 1000 that used to be here mirrored a database
+     check that no longer exists, and on a generation this field holds the
+     prompt -- Shots and Lighting routinely write three or four thousand
+     characters. */
+  description: z.string().trim().nullable().optional(),
 })
 
 /**

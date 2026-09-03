@@ -212,9 +212,14 @@ export function ImageCard({
   // to where the prompt would be. A description still wins if one was written.
   const isUpload = img.origin === 'upload'
   const badge = isUpload ? 'Upload' : img.title
+  /* A generation reads its metadata first (#582). `description` is a *copy*
+     of the prompt written at completion, and it was the truncated one -- so
+     Cmd-clicking this caption loaded a prompt cut mid-word into the panel, and
+     generating from it made the cut permanent on a new row. The metadata is
+     what was submitted; the copy is for search. */
   const caption = isUpload
     ? (img.description ?? img.title)
-    : (img.description ?? img.generation_metadata?.prompt)
+    : (img.generation_metadata?.prompt ?? img.description)
   // Only when the endpoint could not hold everything it was given (#341). The
   // panel no longer refuses those images, so this is where you find out.
   const refNote = refUsageNote(img.generation_metadata)
