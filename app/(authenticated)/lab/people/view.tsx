@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, Plus, Sparkles, X } from 'lucide-react'
+import { Check, Plus, RotateCw, Sparkles, X } from 'lucide-react'
 import { LabPage } from '../_components/lab-page/lab-page'
 import styles from './view.module.css'
 import { useView } from './use-view'
@@ -33,6 +33,101 @@ import { cx } from '#/lib/utils'
 export function View() {
   const v = useView()
   const [riffing, setRiffing] = useState<Tile | null>(null)
+
+  function renderTile(tile: Tile) {
+    const spawned = v.childCount(tile.key)
+    const busy = v.busyKey === tile.key
+    return (
+      <figure
+        key={tile.key}
+        className={cx(
+          styles.tile,
+          tile.parentKey && styles.tileChild,
+          tile.keptImageId && styles.tileKept,
+        )}
+      >
+        {tile.url ? (
+          <img
+            src={tile.url}
+            alt={tile.spec.slice(0, 80)}
+            title={tile.spec}
+            className={styles.image}
+            onError={() => v.markExpired(tile.key)}
+          />
+        ) : (
+          <span className={styles.placeholder}>
+            {tile.status === 'running'
+              ? 'Rendering'
+              : tile.status === 'expired'
+                ? 'Expired'
+                : (tile.error ?? 'Failed')}
+          </span>
+        )}
+
+        {spawned > 0 && (
+          <span
+            className={styles.badge}
+            title={`${spawned} generated from this one`}
+          >
+            {spawned}
+          </span>
+        )}
+
+        <div className={styles.actions}>
+          {/* Keep first and checked once done: it is the only gesture
+                    here that writes anything, and the only one that is not
+                    reversible by pressing again. */}
+          <IconButton
+            aria-label={tile.keptImageId ? 'Kept' : 'Keep'}
+            title={tile.keptImageId ? 'In your library' : 'Keep'}
+            disabled={!tile.url || busy || !!tile.keptImageId}
+            onClick={() => void v.keep(tile)}
+          >
+            <Check size={15} />
+          </IconButton>
+          <IconButton
+            aria-label="One more like this"
+            title="One more like this, on Grok"
+            disabled={!tile.url || busy}
+            onClick={() => void v.moreLike(tile)}
+          >
+            <Plus size={15} />
+          </IconButton>
+          <IconButton
+            aria-label="More like this, with options"
+            title="More like this..."
+            disabled={!tile.url || busy}
+            onClick={() => setRiffing(tile)}
+          >
+            <Sparkles size={15} />
+          </IconButton>
+          {/* A dropped connection or an expired url costs a click
+                    rather than the face: the spec is on the tile, so running
+                    it again needs nothing rewritten. */}
+          {(tile.status === 'failed' || tile.status === 'expired') && (
+            <IconButton
+              aria-label="Try this one again"
+              title="Try again"
+              disabled={busy}
+              onClick={() => v.retry(tile)}
+            >
+              <RotateCw size={15} />
+            </IconButton>
+          )}
+          <IconButton
+            aria-label="Discard"
+            title="Discard"
+            disabled={busy}
+            onClick={() => v.discard(tile.key)}
+          >
+            <X size={15} />
+          </IconButton>
+        </div>
+
+        <figcaption className={styles.caption}>{tile.modelName}</figcaption>
+      </figure>
+    )
+  }
 
   return (
     <LabPage
@@ -119,89 +214,28 @@ export function View() {
       )}
 
       <div className={styles.board}>
-        {v.tiles.map((tile) => {
-          const spawned = v.childCount(tile.key)
-          const busy = v.busyKey === tile.key
-          return (
-            <figure
-              key={tile.key}
-              className={cx(
-                styles.tile,
-                tile.parentKey && styles.tileChild,
-                tile.keptImageId && styles.tileKept,
-              )}
-            >
-              {tile.url ? (
-                <img
-                  src={tile.url}
-                  alt={tile.spec.slice(0, 80)}
-                  title={tile.spec}
-                  className={styles.image}
-                  onError={() => v.markExpired(tile.key)}
-                />
-              ) : (
-                <span className={styles.placeholder}>
-                  {tile.status === 'running'
-                    ? 'Rendering'
-                    : tile.status === 'expired'
-                      ? 'Expired'
-                      : (tile.error ?? 'Failed')}
+        {v.sets.map((set, index) => (
+          <section key={set.batchKey} className={styles.set}>
+            <header className={styles.setHead}>
+              <span className={styles.setLabel}>
+                Set {index + 1} &middot; {set.cast.length}
+              </span>
+            </header>
+            <div className={styles.grid}>{set.cast.map(renderTile)}</div>
+            {set.more.length > 0 && (
+              <>
+                {/* Everything asked for *about* this set, under it: a `+` is a
+                    follow-up question about one of these faces, not a new
+                    press, and putting it inline would move the faces being
+                    compared. */}
+                <span className={styles.moreLabel}>
+                  More from this set &middot; {set.more.length}
                 </span>
-              )}
-
-              {spawned > 0 && (
-                <span
-                  className={styles.badge}
-                  title={`${spawned} generated from this one`}
-                >
-                  {spawned}
-                </span>
-              )}
-
-              <div className={styles.actions}>
-                {/* Keep first and checked once done: it is the only gesture
-                    here that writes anything, and the only one that is not
-                    reversible by pressing again. */}
-                <IconButton
-                  aria-label={tile.keptImageId ? 'Kept' : 'Keep'}
-                  title={tile.keptImageId ? 'In your library' : 'Keep'}
-                  disabled={!tile.url || busy || !!tile.keptImageId}
-                  onClick={() => void v.keep(tile)}
-                >
-                  <Check size={15} />
-                </IconButton>
-                <IconButton
-                  aria-label="One more like this"
-                  title="One more like this, on Grok"
-                  disabled={!tile.url || busy}
-                  onClick={() => void v.moreLike(tile)}
-                >
-                  <Plus size={15} />
-                </IconButton>
-                <IconButton
-                  aria-label="More like this, with options"
-                  title="More like this..."
-                  disabled={!tile.url || busy}
-                  onClick={() => setRiffing(tile)}
-                >
-                  <Sparkles size={15} />
-                </IconButton>
-                <IconButton
-                  aria-label="Discard"
-                  title="Discard"
-                  disabled={busy}
-                  onClick={() => v.discard(tile.key)}
-                >
-                  <X size={15} />
-                </IconButton>
-              </div>
-
-              <figcaption className={styles.caption}>
-                {tile.modelName}
-              </figcaption>
-            </figure>
-          )
-        })}
+                <div className={styles.grid}>{set.more.map(renderTile)}</div>
+              </>
+            )}
+          </section>
+        ))}
       </div>
 
       <MoreLikeDialog

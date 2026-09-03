@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { childCount, insertTiles, newTile } from './board'
-import type { Tile } from './board'
+import { bySet, childCount, insertTiles, newTile } from './board'
 
-function tile(spec: string, parentKey?: string): Tile {
+function tile(spec: string, opts?: { parentKey?: string; batchKey?: string }) {
   return newTile({
     spec,
     modelId: 'fal-ai/z-image/turbo',
     modelName: 'Z-Image Turbo',
-    parentKey,
+    batchKey: opts?.batchKey ?? 'set-1',
+    parentKey: opts?.parentKey,
   })
 }
 
@@ -19,32 +19,57 @@ describe('the board', () => {
     expect(next.map((t) => t.spec)).toEqual(['a', 'b', 'c'])
   })
 
-  it('puts a child after its parent, not at the end of the board', () => {
-    const parent = tile('a')
-    const board = [parent, tile('b'), tile('c')]
+  it('puts a riff under its own set, not at the end of the board', () => {
+    const first = tile('a')
+    const board = [first, tile('b'), tile('c', { batchKey: 'set-2' })]
 
-    const next = insertTiles(board, [tile('a2', parent.key)], parent.key)
+    const next = insertTiles(
+      board,
+      [tile('a2', { parentKey: first.key })],
+      first.key,
+    )
 
-    expect(next.map((t) => t.spec)).toEqual(['a', 'a2', 'b', 'c'])
+    expect(next.map((t) => t.spec)).toEqual(['a', 'b', 'a2', 'c'])
   })
 
-  it('puts a second child after the first, so presses read in press order', () => {
+  it('keeps riffs in press order within their set', () => {
     const parent = tile('a')
     const board = insertTiles(
       [parent, tile('b')],
-      [tile('a2', parent.key)],
+      [tile('a2', { parentKey: parent.key })],
       parent.key,
     )
 
-    const next = insertTiles(board, [tile('a3', parent.key)], parent.key)
+    const next = insertTiles(
+      board,
+      [tile('b2', { parentKey: parent.key })],
+      parent.key,
+    )
 
-    expect(next.map((t) => t.spec)).toEqual(['a', 'a2', 'a3', 'b'])
+    expect(next.map((t) => t.spec)).toEqual(['a', 'b', 'a2', 'b2'])
+  })
+
+  it('splits a set into its cast and what was asked about it', () => {
+    const parent = tile('a')
+    const board = [
+      parent,
+      tile('b'),
+      tile('a2', { parentKey: parent.key }),
+      tile('c', { batchKey: 'set-2' }),
+    ]
+
+    const sets = bySet(board)
+
+    expect(sets.map((s) => s.batchKey)).toEqual(['set-1', 'set-2'])
+    expect(sets[0].cast.map((t) => t.spec)).toEqual(['a', 'b'])
+    expect(sets[0].more.map((t) => t.spec)).toEqual(['a2'])
+    expect(sets[1].more).toEqual([])
   })
 
   it('counts direct children only -- the badge is not a descendant count', () => {
     const parent = tile('a')
-    const child = tile('a2', parent.key)
-    const grandchild = tile('a3', child.key)
+    const child = tile('a2', { parentKey: parent.key })
+    const grandchild = tile('a3', { parentKey: child.key })
 
     const board = [parent, child, grandchild]
 

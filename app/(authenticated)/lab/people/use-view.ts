@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PEOPLE_MODELS, defaultModelId, quickModelId } from './models'
 import {
+  bySet,
   childCount,
   insertTiles,
   newTile,
@@ -87,13 +88,23 @@ export function useView() {
   )
 
   const runSpecs = useCallback(
-    (specs: Array<string>, models: Array<PeopleModel>, parentKey?: string) => {
+    (
+      specs: Array<string>,
+      models: Array<PeopleModel>,
+      into: { batchKey: string; parentKey?: string },
+    ) => {
       const added = specs.flatMap((spec) =>
         models.map((m) =>
-          newTile({ spec, modelId: m.id, modelName: m.name, parentKey }),
+          newTile({
+            spec,
+            modelId: m.id,
+            modelName: m.name,
+            batchKey: into.batchKey,
+            parentKey: into.parentKey,
+          }),
         ),
       )
-      update((current) => insertTiles(current, added, parentKey))
+      update((current) => insertTiles(current, added, into.parentKey))
       void Promise.all(added.map(render))
     },
     [render, update],
@@ -114,7 +125,11 @@ export function useView() {
     setIsWriting(true)
     setError(null)
     try {
-      runSpecs(await writeCast({ count }), models)
+      // A press is a set: one Generate, one block on the board, and everything
+      // spawned off a face in it stays inside that block.
+      runSpecs(await writeCast({ count }), models, {
+        batchKey: crypto.randomUUID(),
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'The cast failed')
     } finally {
@@ -139,7 +154,10 @@ export function useView() {
       setError(null)
       try {
         const specs = await writeMoreLike({ spec: tile.spec, count: wanted })
-        runSpecs(specs, on, tile.key)
+        runSpecs(specs, on, {
+          batchKey: tile.batchKey,
+          parentKey: tile.key,
+        })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'That failed')
       } finally {
@@ -172,6 +190,23 @@ export function useView() {
       }
     },
     [update],
+  )
+
+  /** A tile that failed or expired, run again in place. The spec is on the
+   *  tile, so nothing has to be written a second time -- and without this a
+   *  dropped connection costs the face rather than a click. */
+  const retry = useCallback(
+    (tile: Tile) => {
+      update((current) =>
+        current.map((t) =>
+          t.key === tile.key
+            ? { ...t, status: 'running', url: null, error: null }
+            : t,
+        ),
+      )
+      void render(tile)
+    },
+    [render, update],
   )
 
   const discard = useCallback(
@@ -207,6 +242,7 @@ export function useView() {
     modelIds,
     toggleModel,
     tiles,
+    sets: useMemo(() => bySet(tiles), [tiles]),
     childCount: useCallback((key: string) => childCount(tiles, key), [tiles]),
     isWriting,
     busyKey,
@@ -216,6 +252,7 @@ export function useView() {
     generate,
     moreLike,
     keep,
+    retry,
     discard,
     clear,
     markExpired,

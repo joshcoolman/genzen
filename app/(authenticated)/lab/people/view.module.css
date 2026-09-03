@@ -90,9 +90,43 @@
   color: var(--text-muted);
 }
 
-/* Fixed columns rather than auto-fit: a face is judged against its neighbours,
-   and a grid that reflows between presses moves the one you were looking at. */
+/* Sets stacked down the page, each one a press. */
 .board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+/* A set is judged whole, so it is drawn as a block with a rule above it --
+   ten faces from one press, plus whatever was asked about them underneath. */
+.set {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--border);
+}
+
+.setHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.setLabel,
+.moreLabel {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.moreLabel {
+  margin-top: var(--space-8);
+}
+
+.grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   gap: var(--space-12);

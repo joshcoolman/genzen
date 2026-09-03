@@ -12,10 +12,11 @@
  * in Activity, and the FAL urls a saved board holds expire, so a board left
  * overnight comes back with dead tiles.
  *
- * **A child lands directly after its parent's family, not at the end.** You
- * press `+` because you want to compare against the face you pressed it on,
- * and a family scattered twenty tiles apart is not a comparison. The cost is
- * that a press shifts everything after it, which is the lesser problem.
+ * **The board is a stack of sets, one per Generate.** A press is a thing you
+ * judge whole -- ten faces shot the same afternoon -- so a set is drawn between
+ * rules and never interleaved with another. Everything spawned off a tile in a
+ * set stays inside that set, below the cast it came from: a `+` is a follow-up
+ * question about one of these ten, not a new press.
  *
  * Pure and separate from the view so the placement can be tested without
  * rendering anything -- it is the half that is easy to get subtly wrong.
@@ -25,6 +26,9 @@ const KEY = 'genzen:lab:people:board'
 
 export interface Tile {
   key: string
+  /** The Generate press this tile belongs to. Children inherit their parent's,
+   *  which is what keeps a follow-up inside the set it asked about. */
+  batchKey: string
   /** The paragraph that made it. Carried so a child can be written from it. */
   spec: string
   modelId: string
@@ -39,7 +43,9 @@ export interface Tile {
 }
 
 export function newTile(
-  init: Pick<Tile, 'spec' | 'modelId' | 'modelName'> & { parentKey?: string },
+  init: Pick<Tile, 'spec' | 'modelId' | 'modelName' | 'batchKey'> & {
+    parentKey?: string
+  },
 ): Tile {
   return {
     key: crypto.randomUUID(),
@@ -58,10 +64,18 @@ export function childCount(tiles: Array<Tile>, key: string): number {
 }
 
 /**
- * Place new tiles after the parent and after any children it already has, so
- * pressing `+` three times reads left to right in the order you pressed it
- * rather than stacking backwards. With no parent they go on the end, which is
- * what makes a second Generate add a row rather than replace the board.
+ * Where new tiles go.
+ *
+ * **A press with no parent appends a set**, so a second Generate adds a block
+ * below rather than replacing the board.
+ *
+ * **A `+` or a riff appends inside its parent's set, after everything already
+ * there.** Not directly beside the parent: a set is judged as a set, and tiles
+ * dropped into the middle of the cast move the faces being compared. Order
+ * within a set is press order, and a tile takes its slot the moment it is
+ * pressed even though it fills in later -- so a press made while three others
+ * are still rendering lands after those three rather than jumping ahead of
+ * them.
  */
 export function insertTiles(
   tiles: Array<Tile>,
@@ -70,13 +84,35 @@ export function insertTiles(
 ): Array<Tile> {
   if (!parentKey) return [...tiles, ...added]
 
-  const parentAt = tiles.findIndex((t) => t.key === parentKey)
-  if (parentAt === -1) return [...tiles, ...added]
+  const parent = tiles.find((t) => t.key === parentKey)
+  if (!parent) return [...tiles, ...added]
 
-  let at = parentAt + 1
-  while (at < tiles.length && tiles[at].parentKey === parentKey) at += 1
+  let at = tiles.length
+  while (at > 0 && tiles[at - 1].batchKey !== parent.batchKey) at -= 1
 
   return [...tiles.slice(0, at), ...added, ...tiles.slice(at)]
+}
+
+/** The board as sets, in the order they were pressed -- the cast of each, then
+ *  everything spawned from it. */
+export function bySet(
+  tiles: Array<Tile>,
+): Array<{ batchKey: string; cast: Array<Tile>; more: Array<Tile> }> {
+  const order: Array<string> = []
+  const sets = new Map<string, { cast: Array<Tile>; more: Array<Tile> }>()
+
+  for (const tile of tiles) {
+    let set = sets.get(tile.batchKey)
+    if (!set) {
+      set = { cast: [], more: [] }
+      sets.set(tile.batchKey, set)
+      order.push(tile.batchKey)
+    }
+    if (tile.parentKey) set.more.push(tile)
+    else set.cast.push(tile)
+  }
+
+  return order.map((batchKey) => ({ batchKey, ...sets.get(batchKey)! }))
 }
 
 export function readBoard(): Array<Tile> {
@@ -94,7 +130,13 @@ export function readBoard(): Array<Tile> {
     return parsed
       .filter(
         (t): t is Tile =>
-          !!t && typeof t === 'object' && typeof (t as Tile).key === 'string',
+          !!t &&
+          typeof t === 'object' &&
+          typeof (t as Tile).key === 'string' &&
+          // Boards saved before sets existed have no batch to belong to. There
+          // is one such board, on one machine, and inventing a set for it is
+          // more code than the board is worth.
+          typeof (t as Tile).batchKey === 'string',
       )
       .map((t) => ({
         ...t,
