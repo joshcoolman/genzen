@@ -40,6 +40,7 @@ import { useGenerator } from '#/features/ai-images/hooks/use-generator'
 import { useUserImages } from '#/features/user-images/hooks/use-user-images'
 import { useSelection } from '#/lib/use-selection'
 import { getRatioOptions, toast } from '#/components'
+import { captionImage } from '#/features/ai-images/server/caption-image.action'
 
 /**
  * The card a generation shows between the click and its row (#313).
@@ -1246,6 +1247,43 @@ export function useView(initial: Array<SavedAiImage>) {
     [gallery, groups, prefs, activeGroupId],
   )
 
+  /**
+   * Write a prompt for this picture onto its own row (#586).
+   *
+   * `reconstruct`, not `anchor`: the stored text is meant to be run, not read.
+   * Once it lands the caption is a prompt, so Cmd-clicking it loads a fresh
+   * take on the same subject into the panel -- which is the point, and is why
+   * this is worth a menu item rather than a trip to the Describe lab.
+   *
+   * Optimistic nothing: the row is patched only from what came back. A
+   * describe takes a few seconds and the toast is the only thing saying so,
+   * so it is dismissed by id rather than left to time out under the result.
+   */
+  const describeImage = useCallback(
+    async (img: SavedAiImage) => {
+      const pending = toast('Describing...', { duration: Infinity })
+      try {
+        const { caption } = await captionImage({
+          imageId: img.id,
+          mode: 'reconstruct',
+          persist: true,
+        })
+        gallery.patchImages([img.id], { description: caption })
+        toast.dismiss(pending)
+        toast.success('Described')
+      } catch (err) {
+        toast.dismiss(pending)
+        // The likeliest cause by far is an empty ANTHROPIC_API_KEY, which is
+        // normal locally -- so the message names the reason rather than
+        // reporting a generic failure.
+        toast.error(
+          err instanceof Error ? err.message : 'Could not describe that image',
+        )
+      }
+    },
+    [gallery],
+  )
+
   const [outpaintTarget, setOutpaintTarget] = useState<SavedAiImage | null>(
     null,
   )
@@ -1367,6 +1405,7 @@ export function useView(initial: Array<SavedAiImage>) {
     addReference,
     usePromptText,
     loadIntoPanel,
+    describeImage,
     outpaintTarget,
     startOutpaint: setOutpaintTarget,
     cancelOutpaint: useCallback(() => setOutpaintTarget(null), []),

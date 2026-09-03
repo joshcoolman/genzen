@@ -6,6 +6,7 @@ import { resolveAuth } from '#/lib/server/auth.server'
 import { first, sql } from '#/lib/server/db.server'
 import { describeImage } from '#/lib/server/describe-image.server'
 import { createImageStorage } from '#/lib/image-storage'
+import { updateImageDescription } from '#/features/user-images/server/images.action'
 
 interface CaptionImageInput {
   imageBase64?: string
@@ -17,6 +18,15 @@ interface CaptionImageInput {
    * what every caller but the lab's Describe page sends.
    */
   guidance?: string
+  /**
+   * Write the result to the row's `description` (#586).
+   *
+   * Off by default: the lab's Describe page is a place to read an answer and
+   * try another mode, and storing every look would overwrite a caption the
+   * user had written. Only the card menu, which exists to annotate the row,
+   * asks for it. Requires `imageId` -- there is no row to write to otherwise.
+   */
+  persist?: boolean
 }
 
 export async function captionImage(data: CaptionImageInput) {
@@ -46,5 +56,10 @@ export async function captionImage(data: CaptionImageInput) {
     data.mode ?? DEFAULT_DESCRIBE_MODE,
     data.guidance,
   )
+  if (data.persist) {
+    if (!data.imageId) throw new Error('persist requires an imageId')
+    await updateImageDescription(data.imageId, result)
+  }
+
   return { caption: result }
 }
