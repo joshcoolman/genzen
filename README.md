@@ -209,11 +209,12 @@ inlines nothing else, and the `VITE_` prefix carries no meaning here (#225).
 
 ## Status
 
-**Focus** — [#562](https://github.com/joshcoolman/genzen/issues/562) has its
-surface: `/lab/lighting` turns a reference picture into a lighting setup, tests
-it on a face and an object, and hands back the text of the `.md`. Open it, drop
-Pinterest references at it, and judge what comes back — the effects that survive
-get committed to `src/lib/prompts/lighting/`.
+**Focus** — [#578](https://github.com/joshcoolman/genzen/issues/578): move
+People out of the lab and into Images. The lab page works and is merged, but
+half of it is a worse copy of the Images wall — read
+`docs/reference/kicking-work-off.md` first, then the issue, which is the spec.
+The prompts, the model cull and the writer strategy carry over unchanged; what
+changes is where the press lives and that a cast files into a group.
 [#502](https://github.com/joshcoolman/genzen/issues/502) is also open and
 unrelated: two dead webhook variables still set on the deployed Railway service.
 
@@ -225,7 +226,7 @@ that drifts, and one did.
 
 **Last shipped**
 
-- 2026-09-02 — Lab: a People board. Type a number, and Claude writes that many strangers as one cast before anything renders — the cheap version, one prompt pressed ten times, returns the same man ten times, which 60 images settled. Three models survived a nine-model sweep; Z-Image Turbo drafts at half a cent. The board accumulates and lives in localStorage, `+` gets one more of a face on Grok, and Keep is the only thing that writes a library row (#578)
+- 2026-09-02 — Lab: a People page. Press Generate Person, look, press again: Claude invents someone unlike everyone already on the board — because ten independent presses of one prompt return the same man ten times, which 60 images settled — and submits them as ordinary generations, so a face is in Images, Activity and Trash like any other picture. Three models survived a nine-model sweep; Z-Image Turbo drafts at half a cent. `+` on a face gets another from its bucket (#578)
 - 2026-09-02 — Lighting: three more effects, each off the gelled-dark-studio axis. Hard Top, Deep Wells (one overhead source, no gel), Neutral Key, Coloured Rim (white light on the subject, the gel confined to edges) and Soft Front, White Ground (high-key, the ground overexposed to white). 24 candidates on a face and a truck settled the prose; the overhead one draws its own lamp on a hard-surfaced subject no matter how the housekeeping line is phrased, which is written down in the registry (#576)
 - 2026-09-02 — Lab: an Editor that cuts clips into one real file. In and out points per clip set from the playhead, reordering, one crossfade, and an Export that encodes server-side with the ffmpeg already in the app and lands an ordinary clip in your library — not a browser wasm build, because #499 put real ffmpeg here the day after the ticket was written (#515)
 - 2026-09-02 — Enhance's multi-shot writer takes a duration and an aspect ratio as controls instead of reading them out of your prose, and both come off the video model it writes for — so the script is timed to a length the clip can actually be generated at, and composed for the shape it will be generated in (#522)
