@@ -25,8 +25,16 @@ const SLUGS = [
 
 export const DEFAULT_MODEL_SLUG = 'z-image-turbo'
 
-/** The model a `+` press uses, with no dialog and no choice. */
-export const QUICK_MODEL_SLUG = 'grok-imagine-image-2'
+/**
+ * The model a `+` press uses, with no dialog and no choice -- the cheapest and
+ * fastest one, deliberately.
+ *
+ * It was Grok for a day, on the logic that a face worth riffing on is worth
+ * spending on. Backwards: `+` is the jam-on-it gesture, three presses in a row
+ * while looking at one face, and it is only useful if the answers arrive while
+ * you are still looking. Spending is what the dialog is for.
+ */
+export const QUICK_MODEL_SLUG = 'z-image-turbo'
 
 export interface PeopleModel {
   id: string

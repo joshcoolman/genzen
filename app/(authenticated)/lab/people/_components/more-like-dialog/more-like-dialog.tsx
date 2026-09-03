@@ -70,8 +70,6 @@ export function MoreLikeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {tile?.url && <img src={tile.url} alt="" className={styles.preview} />}
-
         <div className={styles.row}>
           <span className={styles.label}>How many</span>
           <NumberStepper

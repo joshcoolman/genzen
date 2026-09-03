@@ -1,14 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { bySet, childCount, insertTiles, newTile } from './board'
+import { bySet, childCount, insertTiles, lastBatchKey } from './board'
+import type { Tile } from './board'
 
-function tile(spec: string, opts?: { parentKey?: string; batchKey?: string }) {
-  return newTile({
+let n = 0
+function tile(
+  spec: string,
+  opts?: { parentKey?: string; batchKey?: string },
+): Tile {
+  n += 1
+  return {
+    recordId: `row-${n}`,
     spec,
-    modelId: 'fal-ai/z-image/turbo',
-    modelName: 'Z-Image Turbo',
     batchKey: opts?.batchKey ?? 'set-1',
-    parentKey: opts?.parentKey,
-  })
+    parentKey: opts?.parentKey ?? null,
+  }
 }
 
 describe('the board', () => {
@@ -25,8 +30,8 @@ describe('the board', () => {
 
     const next = insertTiles(
       board,
-      [tile('a2', { parentKey: first.key })],
-      first.key,
+      [tile('a2', { parentKey: first.recordId })],
+      first.recordId,
     )
 
     expect(next.map((t) => t.spec)).toEqual(['a', 'b', 'a2', 'c'])
@@ -36,14 +41,14 @@ describe('the board', () => {
     const parent = tile('a')
     const board = insertTiles(
       [parent, tile('b')],
-      [tile('a2', { parentKey: parent.key })],
-      parent.key,
+      [tile('a2', { parentKey: parent.recordId })],
+      parent.recordId,
     )
 
     const next = insertTiles(
       board,
-      [tile('b2', { parentKey: parent.key })],
-      parent.key,
+      [tile('b2', { parentKey: parent.recordId })],
+      parent.recordId,
     )
 
     expect(next.map((t) => t.spec)).toEqual(['a', 'b', 'a2', 'b2'])
@@ -54,7 +59,7 @@ describe('the board', () => {
     const board = [
       parent,
       tile('b'),
-      tile('a2', { parentKey: parent.key }),
+      tile('a2', { parentKey: parent.recordId }),
       tile('c', { batchKey: 'set-2' }),
     ]
 
@@ -66,14 +71,21 @@ describe('the board', () => {
     expect(sets[1].more).toEqual([])
   })
 
+  it('joins a lone press to the most recent set', () => {
+    const board = [tile('a'), tile('b', { batchKey: 'set-2' })]
+
+    expect(lastBatchKey(board)).toBe('set-2')
+    expect(lastBatchKey([])).toBeNull()
+  })
+
   it('counts direct children only -- the badge is not a descendant count', () => {
     const parent = tile('a')
-    const child = tile('a2', { parentKey: parent.key })
-    const grandchild = tile('a3', { parentKey: child.key })
+    const child = tile('a2', { parentKey: parent.recordId })
+    const grandchild = tile('a3', { parentKey: child.recordId })
 
     const board = [parent, child, grandchild]
 
-    expect(childCount(board, parent.key)).toBe(1)
-    expect(childCount(board, child.key)).toBe(1)
+    expect(childCount(board, parent.recordId)).toBe(1)
+    expect(childCount(board, child.recordId)).toBe(1)
   })
 })

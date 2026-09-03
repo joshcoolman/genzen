@@ -145,15 +145,8 @@
   justify-content: center;
 }
 
-/* A child sits directly after its parent, so the only thing left to say is
-   that it came from one. */
-.tileChild {
-  border-color: var(--accent-soft);
-}
-
-.tileKept {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+.tileHeld {
+  border-style: dashed;
 }
 
 .image {
@@ -168,6 +161,29 @@
   font-size: var(--text-2xs);
   color: var(--text-muted);
   text-align: center;
+}
+
+/* A reserved square is a promise, so it has to look alive from the click --
+   the whole point of putting it there before there is anyone to render. */
+.placeholderPending {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placeholderPending {
+    animation: none;
+  }
 }
 
 .badge {
