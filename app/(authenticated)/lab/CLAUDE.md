@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Eight pages
+Where a feature is worked on before it is part of the app (#424). Nine pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames, Sequence, Lighting and Editor are the
 other kind: things the app has never been able to do at all**, built here first
@@ -252,6 +252,66 @@ way to know a piece of it is any good is to render it.
   for a page whose first job is finding out which two pictures are good tests.
   Freezing the pair into the repo is the graduation step, once it has stopped
   changing.
+
+## People is a button you press over and over
+
+Scrolling Pinterest for an hour to end up with a set of different-looking
+people shot the same way is the work this replaces (#578). Press Generate
+Person, look, press again; when a face is worth chasing, press `+` on it.
+
+Its question: **how many of these are worth developing?** Everything here
+follows from the answer being two or three out of thirty, and from the session
+being a fast loop rather than one considered request.
+
+- **A press writes the person first, and the writer is not optional.** One
+  prompt carrying "any gender, any ethnicity, chosen freely and differently
+  each time", pressed ten times, returns ten East Asian men in their late
+  twenties, and pressing again returns the same face -- sixty images settled
+  it. An independent call cannot know what the other nine produced, so nothing
+  inside a single prompt can spread a set.
+- **Pressing one at a time is the same failure unless the board is sent
+  along.** Each press hands the writer the people already on screen and asks
+  for someone unlike all of them. The board is the history; without it, jamming
+  the button is exactly the case above.
+- **Sonnet for a cast, Haiku for a handful.** Ten people who have to spread
+  without being told how is a real reasoning job; one more person, with the
+  board attached, is not -- and it sits behind a button pressed four times in a
+  row, where ten seconds of Sonnet *is* the experience.
+- **Squares appear before anyone is written into them.** The writer takes a
+  second or two and the submit a moment more, and a press that waited for both
+  showed nothing at all in the meantime -- three `+` presses looked like three
+  clicks into a void. Nothing is disabled while a press is in flight, either.
+- **Every tile is an ordinary generation.** Reserved row, queue, the app's own
+  polling: they are in Images from the moment they are asked for, the spend is
+  in Activity, a refresh keeps them, and the X is `deleteGalleryImage`. The
+  page held FAL urls in the browser and had a Keep button for one day; that was
+  a parallel implementation of four things the app already does, and it lost
+  the board on reload while the urls expired underneath it.
+- **`board.ts` keeps only what the library cannot know**: the order, which
+  press each face came from, and which face a riff came from. A tile whose row
+  is gone is not drawn, which is the whole of what discard has to do.
+- **A set is a press, drawn between rules -- but a lone press joins the set
+  above it.** Ten at once is a block to judge whole; jamming Generate Person
+  should grow one block, not draw a rule between every face.
+- **`+` is one more like this on the cheapest model, no dialog.** It was Grok
+  for a day on the logic that a face worth riffing on is worth spending on,
+  which is backwards: `+` is only useful if the answer arrives while you are
+  still looking at the face. The dialog is where spending happens.
+- **More like this is written from the spec, never from the picture.** Handing
+  the tile back as a reference returns cousins -- a model given a face reads a
+  person, not a category. Reusing the parent's spec with "now someone else from
+  this bucket" appended is faster still and was tried: too alike, because a
+  paragraph naming a mole and a jawline is a description of a person however it
+  is framed.
+- **Three models, and six were culled on the room rather than the face.** Both
+  Seedreams draw the lamp into a background the clause calls flat; GPT Image 2
+  plasticises skin at four times the price of the model that does it better;
+  FLUX.2 Flash loses at its own price point. Z-Image Turbo is the default at
+  half a cent because the loop only works if a press is nearly free.
+- **The studio clause is prepended in code and the writer may not mention
+  lighting, background, framing, camera or wardrobe.** That split is what makes
+  thirty tiles read as one afternoon; a spec describing its own lighting is
+  describing a photograph instead of a person.
 
 ## Endpoint Explorer is the one that does not send anything anywhere
 

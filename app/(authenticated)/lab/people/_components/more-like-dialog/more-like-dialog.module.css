@@ -1,0 +1,66 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  max-width: 26rem;
+}
+
+/* The face being riffed on, small: it is the reminder of which tile this is,
+   not the thing being judged -- that judgement already happened on the board. */
+.preview {
+  width: 6rem;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.label {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
+.model {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-12);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.model:hover {
+  border-color: var(--accent-hover);
+  color: var(--text);
+}
+
+.modelOn {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface-raised);
+}
+
+.price {
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
