@@ -48,6 +48,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
     loadIntoPanel,
     outpaintTarget,
     startOutpaint,
+    describeImage,
     cancelOutpaint,
     outpainting,
     runOutpaint,
@@ -177,6 +178,7 @@ export function View({ initial }: { initial: Array<SavedAiImage> }) {
           onRetry={gallery.retryImage}
           onDownload={download.start}
           onOutpaint={startOutpaint}
+          onDescribe={describeImage}
           onOpen={viewer.open}
           onAddReference={addReference}
           onUsePrompt={usePromptText}
