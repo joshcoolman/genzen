@@ -112,9 +112,7 @@ export async function processImageResult(
           file_size = ${fileSize},
           mime_type = 'image/png',
           title = ${modelTitleFor(model)},
-          description = ${
-            prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
-          },
+          description = ${prompt},
           generation_metadata =
             coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({
               seed: falResultData.seed,
@@ -231,9 +229,7 @@ export async function processVideoResult(
           file_size = ${fileSize},
           mime_type = 'video/mp4',
           title = ${title},
-          description = ${
-            prompt.length > 997 ? prompt.substring(0, 997) + '...' : prompt
-          },
+          description = ${prompt},
           generation_metadata =
             coalesce(generation_metadata, '{}'::jsonb) || ${jsonb({
               // Kept deliberately: if a future ingest change fails midway, a

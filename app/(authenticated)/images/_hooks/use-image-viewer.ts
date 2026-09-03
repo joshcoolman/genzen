@@ -10,7 +10,9 @@ export interface ViewerItem {
   title: string
   /** What the viewer's prompt panel reads (#580), derived exactly as the
    *  card's caption is so the two never disagree about the same image. Absent
-   *  on an upload with no description -- there is nothing that made it. */
+   *  on an upload with no description -- there is nothing that made it.
+   *  A generation prefers its metadata over `description`, which is only a
+   *  copy and was for a long time a truncated one (#582). */
   prompt?: string
 }
 
@@ -62,7 +64,7 @@ export function useImageViewer(
       const prompt =
         img.origin === 'upload'
           ? img.description
-          : (img.description ?? img.generation_metadata?.prompt)
+          : (img.generation_metadata?.prompt ?? img.description)
       list.push({ id: img.id, title: img.title, prompt: prompt ?? undefined })
       if (img.storage_path) urls[img.id] = imageUrl(img.id)
     }
