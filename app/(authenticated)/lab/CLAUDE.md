@@ -1,6 +1,6 @@
 # Lab
 
-Where a feature is worked on before it is part of the app (#424). Eight pages
+Where a feature is worked on before it is part of the app (#424). Nine pages
 today. Three of them — Enhance, Describe, Variations — existed in `/images` and
 none could be improved there. **Frames, Sequence, Lighting and Editor are the
 other kind: things the app has never been able to do at all**, built here first
@@ -252,6 +252,61 @@ way to know a piece of it is any good is to render it.
   for a page whose first job is finding out which two pictures are good tests.
   Freezing the pair into the repo is the graduation step, once it has stopped
   changing.
+
+## People is a board to throw away, not a page to finish something on
+
+Scrolling Pinterest for an hour to end up with ten different-looking people
+shot the same way is the work this replaces (#578). Type a number, press
+Generate, scan, keep the two or three worth developing in Images.
+
+Its question: **how many of these are worth pursuing?** Everything about the
+page follows from the answer being "two or three out of thirty".
+
+- **The cast is written by Claude in one call, and that is not an
+  optimisation.** One prompt carrying "any gender, any ethnicity, chosen freely
+  and differently each time", pressed ten times, returns ten East Asian men in
+  their late twenties -- and pressing again returns the same face. Sixty images
+  settled it: an independent call cannot know what the other nine produced, so
+  nothing inside a single prompt can spread a set. Ten specs written together
+  spread across both genders, eight ethnicities and four age decades, and held
+  it over three separate casts. `writeCast` therefore requires
+  `ANTHROPIC_API_KEY` and throws without it -- a silent fall back to the cheap
+  version would still return images, and they would all be the same person.
+- **Three models, and six were culled on the room rather than the face.** Both
+  Seedreams draw the lamp into a background the clause calls flat and evenly
+  lit; GPT Image 2 plasticises skin at four times the price of the model that
+  does it better; FLUX.2 Flash loses at its own price point. Z-Image Turbo is
+  the default at half a cent, because a draft pass is five or ten presses and
+  the good ones get re-rendered on Nano Banana or Grok afterwards.
+- **The number typed is people, and every selected model renders all of them.**
+  Ten with three models on is thirty images and ten faces -- a model toggle buys
+  a second opinion on a person, not more people. The estimate says so before
+  the press.
+- **The studio clause is prepended in code and the writer is forbidden to
+  mention lighting, background, framing, camera or wardrobe.** That split is
+  what makes thirty tiles read as one afternoon's shoot; a spec that described
+  its own lighting would be describing a photograph instead of a person.
+- **Keep is the only thing that writes.** Nothing is stored until then -- same
+  bet as Lighting's candidate render, and here the reason is louder, because a
+  board of thirty is mostly rejects and every one would be a row to go and
+  delete. Keep downloads the bytes rather than pointing a row at a FAL url,
+  which expires. Both costs are named on the page: these runs are not in
+  Activity, and a board left overnight comes back with dead tiles.
+- **The board is in `localStorage` and accumulates across presses.** Clear
+  empties it, discard drops one, and a refresh keeps what is there. Pushing
+  every candidate into Images instead was considered and rejected: it inverts
+  the work, leaving sixteen rows out of twenty to be hand-deleted from the one
+  surface that should stay curated.
+- **Two gestures per tile, for two passes.** `+` is one more like this on Grok
+  with no dialog -- the click-click-click pass. The dialog is the deliberate
+  one, with a count and models, and it deliberately does not inherit the cheap
+  default. A child lands directly after its parent, and the badge counts direct
+  children, because after fifteen clicks what is actually lost is which faces
+  you already chased.
+- **More like this is written from the spec, never from the picture.** Handing
+  the tile back as a reference image is the obvious build and returns cousins:
+  a model given a face reads a person, not a category. The paragraph that made
+  the tile already describes the bucket exactly, so no face enters the pipeline.
 
 ## Endpoint Explorer is the one that does not send anything anywhere
 

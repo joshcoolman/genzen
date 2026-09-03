@@ -15,6 +15,7 @@ const SECTIONS = [
   { href: '/lab/describe', label: 'Describe' },
   { href: '/lab/variations', label: 'Variations' },
   { href: '/lab/lighting', label: 'Lighting' },
+  { href: '/lab/people', label: 'People' },
   { href: '/lab/frames', label: 'Frames' },
   { href: '/lab/sequence', label: 'Sequence' },
   { href: '/lab/editor', label: 'Editor' },
